@@ -1,0 +1,78 @@
+version: '3.8'
+
+services:
+  # Banco de dados MariaDB
+  db:
+    image: mariadb:10.6
+    container_name: ambientar_db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ambientar123
+      MYSQL_DATABASE: ambientar
+      MYSQL_USER: ambientar
+      MYSQL_PASSWORD: ambientar123
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./config/mysql:/etc/mysql/conf.d
+    ports:
+      - "3306:3306"
+    networks:
+      - ambientar_network
+
+  # Redis para cache
+  redis:
+    image: redis:7-alpine
+    container_name: ambientar_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    networks:
+      - ambientar_network
+
+  # Aplicação principal AmbientaR
+  app:
+    build: .
+    container_name: ambientar_app
+    restart: unless-stopped
+    depends_on:
+      - db
+      - redis
+    environment:
+      - DB_HOST=db
+      - DB_PORT=3306
+      - DB_NAME=ambientar
+      - DB_USER=ambientar
+      - DB_PASSWORD=ambientar123
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    volumes:
+      - ./apps:/app/apps
+      - ./sites:/app/sites
+      - ./config:/app/config
+    ports:
+      - "8000:8000"
+    networks:
+      - ambientar_network
+
+  # Nginx como proxy reverso
+  nginx:
+    image: nginx:alpine
+    container_name: ambientar_nginx
+    restart: unless-stopped
+    depends_on:
+      - app
+    volumes:
+      - ./config/nginx:/etc/nginx/conf.d
+      - ./sites:/var/www/html
+    ports:
+      - "80:80"
+      - "443:443"
+    networks:
+      - ambientar_network
+
+volumes:
+  db_data:
+
+networks:
+  ambientar_network:
+    driver: bridge

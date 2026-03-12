@@ -1,0 +1,39 @@
+{
+  "system": {
+    "timestamp": "2025-08-14T22:07:17.624564",
+    "cpu_percent": 93.1,
+    "memory_percent": 84.7,
+    "memory_used_gb": 6.51,
+    "memory_available_gb": 1.18,
+    "disk_read_mb": 119624.07,
+    "disk_write_mb": 137989.0
+  },
+  "processes": [
+    {
+      "pid": 14640,
+      "memory_percent": 0.11614499775595168,
+      "name": "python.exe",
+      "cpu_percent": 1.0,
+      "memory_mb": 9.15
+    },
+    {
+      "pid": 24304,
+      "memory_percent": 0.1520497707599265,
+      "name": "python.exe",
+      "cpu_percent": 0.0,
+      "memory_mb": 11.98
+    }
+  ],
+  "docker": [
+    {
+      "error": "Docker não disponível ou comando falhou"
+    }
+  ],
+  "alerts": [
+    {
+      "type": "HIGH_CPU",
+      "message": "CPU em 93.1% (limite: 80.0%)",
+      "severity": "WARNING"
+    }
+  ]
+}

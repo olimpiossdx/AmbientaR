@@ -1,0 +1,92 @@
+2025-08-14 21:12:45,169 - ambientar - INFO - 🚀 Iniciando AmbientaR - Plataforma de Consultoria Ambiental
+2025-08-14 21:12:45,185 - ambientar - INFO - Iniciando operação: carregar_configuracoes
+2025-08-14 21:12:45,217 - ambientar - INFO - Configurações carregadas com sucesso
+2025-08-14 21:12:45,245 - ambientar.performance - INFO - {"operation": "carregar_configuracoes", "duration_ms": 47.5, "timestamp": "2025-08-14T21:12:45.233341"}
+2025-08-14 21:12:45,273 - ambientar - INFO - Operação concluída: carregar_configuracoes
+2025-08-14 21:12:45,278 - ambientar - INFO - Iniciando operação: configurar_ambiente
+2025-08-14 21:12:45,295 - ambientar - INFO - Diretório apps adicionado ao PYTHONPATH
+2025-08-14 21:12:45,308 - ambientar - INFO - Variáveis de ambiente configuradas
+2025-08-14 21:12:45,337 - ambientar.performance - INFO - {"operation": "configurar_ambiente", "duration_ms": 58.78, "timestamp": "2025-08-14T21:12:45.337224"}
+2025-08-14 21:12:45,359 - ambientar - INFO - Operação concluída: configurar_ambiente
+2025-08-14 21:12:45,384 - ambientar - INFO - Iniciando operação: verificar_dependencias
+2025-08-14 21:12:58,404 - ambientar - INFO - Pacote fastapi disponível
+2025-08-14 21:13:00,349 - ambientar - INFO - Pacote uvicorn disponível
+2025-08-14 21:13:06,585 - ambientar - INFO - Pacote sqlalchemy disponível
+2025-08-14 21:13:07,100 - ambientar - INFO - Pacote pymysql disponível
+2025-08-14 21:13:07,113 - ambientar - WARNING - Pacote jinja2 não encontrado
+2025-08-14 21:13:07,127 - ambientar - WARNING - Pacote reportlab não encontrado
+2025-08-14 21:13:07,130 - ambientar - ERROR - Pacotes faltando: jinja2, reportlab
+2025-08-14 21:13:07,159 - ambientar.performance - INFO - {"operation": "verificar_dependencias", "duration_ms": 21771.78, "timestamp": "2025-08-14T21:13:07.156139"}
+2025-08-14 21:13:07,173 - ambientar - WARNING - Operação lenta detectada: verificar_dependencias levou 21.77s
+2025-08-14 21:13:07,185 - ambientar - INFO - Operação concluída: verificar_dependencias
+2025-08-14 21:13:07,195 - ambientar - ERROR - Dependências não satisfeitas. Encerrando aplicação.
+2025-08-14 21:24:59,708 - ambientar - INFO - 🚀 Iniciando AmbientaR - Plataforma de Consultoria Ambiental
+2025-08-14 21:24:59,722 - ambientar - INFO - Iniciando operação: carregar_configuracoes
+2025-08-14 21:24:59,763 - ambientar - INFO - Configurações carregadas com sucesso
+2025-08-14 21:24:59,793 - ambientar.performance - INFO - {"operation": "carregar_configuracoes", "duration_ms": 71.04, "timestamp": "2025-08-14T21:24:59.793117"}
+2025-08-14 21:24:59,827 - ambientar - INFO - Operação concluída: carregar_configuracoes
+2025-08-14 21:24:59,848 - ambientar - INFO - Iniciando operação: configurar_ambiente
+2025-08-14 21:24:59,869 - ambientar - INFO - Diretório apps adicionado ao PYTHONPATH
+2025-08-14 21:24:59,878 - ambientar - INFO - Variáveis de ambiente configuradas
+2025-08-14 21:24:59,900 - ambientar.performance - INFO - {"operation": "configurar_ambiente", "duration_ms": 46.3, "timestamp": "2025-08-14T21:24:59.897514"}
+2025-08-14 21:24:59,929 - ambientar - INFO - Operação concluída: configurar_ambiente
+2025-08-14 21:24:59,977 - ambientar - INFO - Iniciando operação: verificar_dependencias
+2025-08-14 21:25:13,366 - ambientar - INFO - Pacote fastapi disponível
+2025-08-14 21:25:14,592 - ambientar - INFO - Pacote uvicorn disponível
+2025-08-14 21:25:21,477 - ambientar - INFO - Pacote sqlalchemy disponível
+2025-08-14 21:25:22,052 - ambientar - INFO - Pacote pymysql disponível
+2025-08-14 21:25:23,391 - ambientar - INFO - Pacote jinja2 disponível
+2025-08-14 21:25:23,522 - ambientar - INFO - Pacote reportlab disponível
+2025-08-14 21:25:23,554 - ambientar - INFO - Todas as dependências estão disponíveis
+2025-08-14 21:25:23,605 - ambientar.performance - INFO - {"operation": "verificar_dependencias", "duration_ms": 23618.84, "timestamp": "2025-08-14T21:25:23.605014"}
+2025-08-14 21:25:23,641 - ambientar - WARNING - Operação lenta detectada: verificar_dependencias levou 23.62s
+2025-08-14 21:25:23,691 - ambientar - INFO - Operação concluída: verificar_dependencias
+2025-08-14 21:25:23,756 - ambientar - INFO - Iniciando operação: verificar_conexao_banco
+2025-08-14 21:25:23,883 - ambientar - ERROR - Falha na conexão com banco de dados
+2025-08-14 21:25:23,958 - ambientar.performance - INFO - {"operation": "verificar_conexao_banco", "duration_ms": 192.71, "timestamp": "2025-08-14T21:25:23.949514"}
+2025-08-14 21:25:23,991 - ambientar - INFO - Operação concluída: verificar_conexao_banco
+2025-08-14 21:25:24,102 - ambientar - WARNING - Banco de dados não disponível, mas continuando em modo desenvolvimento
+2025-08-14 21:25:24,181 - ambientar - INFO - ✅ Ambiente configurado com sucesso!
+2025-08-14 21:25:24,266 - ambientar - INFO - 📁 Diretório raiz: C:\Users\Andrew\Documents\AmbientaR
+2025-08-14 21:25:24,304 - ambientar - INFO - 🔧 Modo debug: true
+2025-08-14 21:25:24,345 - ambientar - INFO - 📋 Próximos passos:
+2025-08-14 21:25:24,397 - ambientar - INFO -    1. ✅ Dependências Python instaladas
+2025-08-14 21:25:24,488 - ambientar - INFO -    2. 🔄 Configurar banco de dados
+2025-08-14 21:25:24,525 - ambientar - INFO -    3. 🔄 Integrar ERPNext
+2025-08-14 21:25:24,557 - ambientar - INFO -    4. 🔄 Configurar módulos ambientais
+2025-08-14 21:25:24,595 - ambientar.performance - INFO - {"operation": "inicializacao_completa", "duration_ms": 24886.86, "timestamp": "2025-08-14T21:25:24.595190"}
+2025-08-14 21:25:24,623 - ambientar - WARNING - Operação lenta detectada: inicializacao_completa levou 24.89s
+2025-08-15 19:23:01,365 - ambientar - INFO - 🚀 Iniciando AmbientaR - Plataforma de Consultoria Ambiental
+2025-08-15 19:23:01,365 - ambientar - INFO - Iniciando operação: carregar_configuracoes
+2025-08-15 19:23:01,371 - ambientar - INFO - Configurações carregadas com sucesso
+2025-08-15 19:23:01,371 - ambientar.performance - INFO - {"operation": "carregar_configuracoes", "duration_ms": 5.41, "timestamp": "2025-08-15T19:23:01.371026"}
+2025-08-15 19:23:01,371 - ambientar - INFO - Operação concluída: carregar_configuracoes
+2025-08-15 19:23:01,371 - ambientar - INFO - Iniciando operação: configurar_ambiente
+2025-08-15 19:23:01,372 - ambientar - INFO - Diretório apps adicionado ao PYTHONPATH
+2025-08-15 19:23:01,372 - ambientar - INFO - Variáveis de ambiente configuradas
+2025-08-15 19:23:01,372 - ambientar.performance - INFO - {"operation": "configurar_ambiente", "duration_ms": 1.74, "timestamp": "2025-08-15T19:23:01.372763"}
+2025-08-15 19:23:01,372 - ambientar - INFO - Operação concluída: configurar_ambiente
+2025-08-15 19:23:01,372 - ambientar - INFO - Iniciando operação: verificar_dependencias
+2025-08-15 19:23:01,674 - ambientar - INFO - Pacote fastapi disponível
+2025-08-15 19:23:01,706 - ambientar - INFO - Pacote uvicorn disponível
+2025-08-15 19:23:01,934 - ambientar - INFO - Pacote sqlalchemy disponível
+2025-08-15 19:23:01,950 - ambientar - INFO - Pacote pymysql disponível
+2025-08-15 19:23:02,000 - ambientar - INFO - Pacote jinja2 disponível
+2025-08-15 19:23:02,000 - ambientar - INFO - Pacote reportlab disponível
+2025-08-15 19:23:02,000 - ambientar - INFO - Todas as dependências estão disponíveis
+2025-08-15 19:23:02,000 - ambientar.performance - INFO - {"operation": "verificar_dependencias", "duration_ms": 627.27, "timestamp": "2025-08-15T19:23:02.000038"}
+2025-08-15 19:23:02,000 - ambientar - INFO - Operação concluída: verificar_dependencias
+2025-08-15 19:23:02,000 - ambientar - INFO - Iniciando operação: verificar_conexao_banco
+2025-08-15 19:23:02,000 - ambientar - ERROR - Falha na conexão com banco de dados
+2025-08-15 19:23:02,000 - ambientar.performance - INFO - {"operation": "verificar_conexao_banco", "duration_ms": 0.0, "timestamp": "2025-08-15T19:23:02.000038"}
+2025-08-15 19:23:02,000 - ambientar - INFO - Operação concluída: verificar_conexao_banco
+2025-08-15 19:23:02,000 - ambientar - WARNING - Banco de dados não disponível, mas continuando em modo desenvolvimento
+2025-08-15 19:23:02,000 - ambientar - INFO - ✅ Ambiente configurado com sucesso!
+2025-08-15 19:23:02,000 - ambientar - INFO - 📁 Diretório raiz: C:\Users\Andrew\Documents\AmbientaR
+2025-08-15 19:23:02,000 - ambientar - INFO - 🔧 Modo debug: true
+2025-08-15 19:23:02,000 - ambientar - INFO - 📋 Próximos passos:
+2025-08-15 19:23:02,000 - ambientar - INFO -    1. ✅ Dependências Python instaladas
+2025-08-15 19:23:02,000 - ambientar - INFO -    2. 🔄 Configurar banco de dados
+2025-08-15 19:23:02,000 - ambientar - INFO -    3. 🔄 Integrar ERPNext
+2025-08-15 19:23:02,000 - ambientar - INFO -    4. 🔄 Configurar módulos ambientais
+2025-08-15 19:23:02,000 - ambientar.performance - INFO - {"operation": "inicializacao_completa", "duration_ms": 634.42, "timestamp": "2025-08-15T19:23:02.000038"}

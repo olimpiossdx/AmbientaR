@@ -1,0 +1,46 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <title>AmbientaR - Plataforma de Consultoria Ambiental</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+        .container { max-width: 1200px; margin: 0 auto; text-align: center; }
+        h1 { font-size: 3em; margin-bottom: 20px; }
+        .stats { display: flex; justify-content: space-around; margin: 40px 0; }
+        .stat-box { background: rgba(255,255,255,0.1); padding: 20px; border-radius: 10px; }
+        .menu { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin: 40px 0; }
+        .menu-item { background: rgba(255,255,255,0.1); padding: 30px; border-radius: 10px; text-decoration: none; color: white; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1> AmbientaR</h1>
+        <p>Plataforma de Consultoria Ambiental</p>
+        <p>Sistema otimizado e livre de travamentos!</p>
+        
+        <div class="stats">
+            <div class="stat-box">
+                <h3>2</h3>
+                <p>Projetos Ativos</p>
+            </div>
+            <div class="stat-box">
+                <h3>5</h3>
+                <p>Estudos em Andamento</p>
+            </div>
+        </div>
+        
+        <div class="menu">
+            <a href="/projects" class="menu-item">
+                <h3> Projetos</h3>
+                <p>Gerenciar projetos ambientais</p>
+            </a>
+            <a href="/studies" class="menu-item">
+                <h3> Estudos</h3>
+                <p>Visualizar estudos ambientais</p>
+            </a>
+        </div>
+    </div>
+</body>
+</html>

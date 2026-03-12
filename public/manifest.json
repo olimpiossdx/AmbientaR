@@ -1,0 +1,11 @@
+
+{
+    "name": "AmbientaR",
+    "short_name": "AmbientaR",
+    "description": "Gestão Ambiental Inteligente",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#ffffff",
+    "theme_color": "#4CAF50",
+    "icons": []
+}

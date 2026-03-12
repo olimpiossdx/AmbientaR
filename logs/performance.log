@@ -1,0 +1,92 @@
+{"timestamp": "2025-08-14T21:12:45.169970", "level": "INFO", "logger": "ambientar", "message": "🚀 Iniciando AmbientaR - Plataforma de Consultoria Ambiental", "asctime": "2025-08-14 21:12:45,169"}
+{"timestamp": "2025-08-14T21:12:45.185840", "level": "INFO", "logger": "ambientar", "message": "Iniciando operação: carregar_configuracoes", "asctime": "2025-08-14 21:12:45,185"}
+{"timestamp": "2025-08-14T21:12:45.217965", "level": "INFO", "logger": "ambientar", "message": "Configurações carregadas com sucesso", "asctime": "2025-08-14 21:12:45,217"}
+{"timestamp": "2025-08-14T21:12:45.245584", "level": "INFO", "logger": "ambientar.performance", "message": "{\"operation\": \"carregar_configuracoes\", \"duration_ms\": 47.5, \"timestamp\": \"2025-08-14T21:12:45.233341\"}", "asctime": "2025-08-14 21:12:45,245"}
+{"timestamp": "2025-08-14T21:12:45.273441", "level": "INFO", "logger": "ambientar", "message": "Operação concluída: carregar_configuracoes", "asctime": "2025-08-14 21:12:45,273"}
+{"timestamp": "2025-08-14T21:12:45.278440", "level": "INFO", "logger": "ambientar", "message": "Iniciando operação: configurar_ambiente", "asctime": "2025-08-14 21:12:45,278"}
+{"timestamp": "2025-08-14T21:12:45.295954", "level": "INFO", "logger": "ambientar", "message": "Diretório apps adicionado ao PYTHONPATH", "asctime": "2025-08-14 21:12:45,295"}
+{"timestamp": "2025-08-14T21:12:45.308470", "level": "INFO", "logger": "ambientar", "message": "Variáveis de ambiente configuradas", "asctime": "2025-08-14 21:12:45,308"}
+{"timestamp": "2025-08-14T21:12:45.337224", "level": "INFO", "logger": "ambientar.performance", "message": "{\"operation\": \"configurar_ambiente\", \"duration_ms\": 58.78, \"timestamp\": \"2025-08-14T21:12:45.337224\"}", "asctime": "2025-08-14 21:12:45,337"}
+{"timestamp": "2025-08-14T21:12:45.359142", "level": "INFO", "logger": "ambientar", "message": "Operação concluída: configurar_ambiente", "asctime": "2025-08-14 21:12:45,359"}
+{"timestamp": "2025-08-14T21:12:45.384363", "level": "INFO", "logger": "ambientar", "message": "Iniciando operação: verificar_dependencias", "asctime": "2025-08-14 21:12:45,384"}
+{"timestamp": "2025-08-14T21:12:58.404313", "level": "INFO", "logger": "ambientar", "message": "Pacote fastapi disponível", "asctime": "2025-08-14 21:12:58,404"}
+{"timestamp": "2025-08-14T21:13:00.349622", "level": "INFO", "logger": "ambientar", "message": "Pacote uvicorn disponível", "asctime": "2025-08-14 21:13:00,349"}
+{"timestamp": "2025-08-14T21:13:06.585301", "level": "INFO", "logger": "ambientar", "message": "Pacote sqlalchemy disponível", "asctime": "2025-08-14 21:13:06,585"}
+{"timestamp": "2025-08-14T21:13:07.100801", "level": "INFO", "logger": "ambientar", "message": "Pacote pymysql disponível", "asctime": "2025-08-14 21:13:07,100"}
+{"timestamp": "2025-08-14T21:13:07.113983", "level": "WARNING", "logger": "ambientar", "message": "Pacote jinja2 não encontrado", "asctime": "2025-08-14 21:13:07,113"}
+{"timestamp": "2025-08-14T21:13:07.127038", "level": "WARNING", "logger": "ambientar", "message": "Pacote reportlab não encontrado", "asctime": "2025-08-14 21:13:07,127"}
+{"timestamp": "2025-08-14T21:13:07.130251", "level": "ERROR", "logger": "ambientar", "message": "Pacotes faltando: jinja2, reportlab", "asctime": "2025-08-14 21:13:07,130"}
+{"timestamp": "2025-08-14T21:13:07.159410", "level": "INFO", "logger": "ambientar.performance", "message": "{\"operation\": \"verificar_dependencias\", \"duration_ms\": 21771.78, \"timestamp\": \"2025-08-14T21:13:07.156139\"}", "asctime": "2025-08-14 21:13:07,159"}
+{"timestamp": "2025-08-14T21:13:07.173542", "level": "WARNING", "logger": "ambientar", "message": "Operação lenta detectada: verificar_dependencias levou 21.77s", "asctime": "2025-08-14 21:13:07,173"}
+{"timestamp": "2025-08-14T21:13:07.185536", "level": "INFO", "logger": "ambientar", "message": "Operação concluída: verificar_dependencias", "asctime": "2025-08-14 21:13:07,185"}
+{"timestamp": "2025-08-14T21:13:07.195951", "level": "ERROR", "logger": "ambientar", "message": "Dependências não satisfeitas. Encerrando aplicação.", "asctime": "2025-08-14 21:13:07,195"}
+{"timestamp": "2025-08-14T21:24:59.708328", "level": "INFO", "logger": "ambientar", "message": "🚀 Iniciando AmbientaR - Plataforma de Consultoria Ambiental", "asctime": "2025-08-14 21:24:59,708"}
+{"timestamp": "2025-08-14T21:24:59.722077", "level": "INFO", "logger": "ambientar", "message": "Iniciando operação: carregar_configuracoes", "asctime": "2025-08-14 21:24:59,722"}
+{"timestamp": "2025-08-14T21:24:59.763547", "level": "INFO", "logger": "ambientar", "message": "Configurações carregadas com sucesso", "asctime": "2025-08-14 21:24:59,763"}
+{"timestamp": "2025-08-14T21:24:59.793118", "level": "INFO", "logger": "ambientar.performance", "message": "{\"operation\": \"carregar_configuracoes\", \"duration_ms\": 71.04, \"timestamp\": \"2025-08-14T21:24:59.793117\"}", "asctime": "2025-08-14 21:24:59,793"}
+{"timestamp": "2025-08-14T21:24:59.827289", "level": "INFO", "logger": "ambientar", "message": "Operação concluída: carregar_configuracoes", "asctime": "2025-08-14 21:24:59,827"}
+{"timestamp": "2025-08-14T21:24:59.848175", "level": "INFO", "logger": "ambientar", "message": "Iniciando operação: configurar_ambiente", "asctime": "2025-08-14 21:24:59,848"}
+{"timestamp": "2025-08-14T21:24:59.869447", "level": "INFO", "logger": "ambientar", "message": "Diretório apps adicionado ao PYTHONPATH", "asctime": "2025-08-14 21:24:59,869"}
+{"timestamp": "2025-08-14T21:24:59.878067", "level": "INFO", "logger": "ambientar", "message": "Variáveis de ambiente configuradas", "asctime": "2025-08-14 21:24:59,878"}
+{"timestamp": "2025-08-14T21:24:59.900934", "level": "INFO", "logger": "ambientar.performance", "message": "{\"operation\": \"configurar_ambiente\", \"duration_ms\": 46.3, \"timestamp\": \"2025-08-14T21:24:59.897514\"}", "asctime": "2025-08-14 21:24:59,900"}
+{"timestamp": "2025-08-14T21:24:59.929675", "level": "INFO", "logger": "ambientar", "message": "Operação concluída: configurar_ambiente", "asctime": "2025-08-14 21:24:59,929"}
+{"timestamp": "2025-08-14T21:24:59.977352", "level": "INFO", "logger": "ambientar", "message": "Iniciando operação: verificar_dependencias", "asctime": "2025-08-14 21:24:59,977"}
+{"timestamp": "2025-08-14T21:25:13.366278", "level": "INFO", "logger": "ambientar", "message": "Pacote fastapi disponível", "asctime": "2025-08-14 21:25:13,366"}
+{"timestamp": "2025-08-14T21:25:14.592090", "level": "INFO", "logger": "ambientar", "message": "Pacote uvicorn disponível", "asctime": "2025-08-14 21:25:14,592"}
+{"timestamp": "2025-08-14T21:25:21.477071", "level": "INFO", "logger": "ambientar", "message": "Pacote sqlalchemy disponível", "asctime": "2025-08-14 21:25:21,477"}
+{"timestamp": "2025-08-14T21:25:22.052650", "level": "INFO", "logger": "ambientar", "message": "Pacote pymysql disponível", "asctime": "2025-08-14 21:25:22,052"}
+{"timestamp": "2025-08-14T21:25:23.391750", "level": "INFO", "logger": "ambientar", "message": "Pacote jinja2 disponível", "asctime": "2025-08-14 21:25:23,391"}
+{"timestamp": "2025-08-14T21:25:23.522705", "level": "INFO", "logger": "ambientar", "message": "Pacote reportlab disponível", "asctime": "2025-08-14 21:25:23,522"}
+{"timestamp": "2025-08-14T21:25:23.554653", "level": "INFO", "logger": "ambientar", "message": "Todas as dependências estão disponíveis", "asctime": "2025-08-14 21:25:23,554"}
+{"timestamp": "2025-08-14T21:25:23.605015", "level": "INFO", "logger": "ambientar.performance", "message": "{\"operation\": \"verificar_dependencias\", \"duration_ms\": 23618.84, \"timestamp\": \"2025-08-14T21:25:23.605014\"}", "asctime": "2025-08-14 21:25:23,605"}
+{"timestamp": "2025-08-14T21:25:23.641334", "level": "WARNING", "logger": "ambientar", "message": "Operação lenta detectada: verificar_dependencias levou 23.62s", "asctime": "2025-08-14 21:25:23,641"}
+{"timestamp": "2025-08-14T21:25:23.691248", "level": "INFO", "logger": "ambientar", "message": "Operação concluída: verificar_dependencias", "asctime": "2025-08-14 21:25:23,691"}
+{"timestamp": "2025-08-14T21:25:23.756804", "level": "INFO", "logger": "ambientar", "message": "Iniciando operação: verificar_conexao_banco", "asctime": "2025-08-14 21:25:23,756"}
+{"timestamp": "2025-08-14T21:25:23.883723", "level": "ERROR", "logger": "ambientar", "message": "Falha na conexão com banco de dados", "error_type": "ImportError", "error_message": "cannot import name 'ambientar' from 'config' (unknown location)", "asctime": "2025-08-14 21:25:23,883"}
+{"timestamp": "2025-08-14T21:25:23.958328", "level": "INFO", "logger": "ambientar.performance", "message": "{\"operation\": \"verificar_conexao_banco\", \"duration_ms\": 192.71, \"timestamp\": \"2025-08-14T21:25:23.949514\"}", "asctime": "2025-08-14 21:25:23,958"}
+{"timestamp": "2025-08-14T21:25:23.991967", "level": "INFO", "logger": "ambientar", "message": "Operação concluída: verificar_conexao_banco", "asctime": "2025-08-14 21:25:23,991"}
+{"timestamp": "2025-08-14T21:25:24.102241", "level": "WARNING", "logger": "ambientar", "message": "Banco de dados não disponível, mas continuando em modo desenvolvimento", "asctime": "2025-08-14 21:25:24,102"}
+{"timestamp": "2025-08-14T21:25:24.181082", "level": "INFO", "logger": "ambientar", "message": "✅ Ambiente configurado com sucesso!", "asctime": "2025-08-14 21:25:24,181"}
+{"timestamp": "2025-08-14T21:25:24.266110", "level": "INFO", "logger": "ambientar", "message": "📁 Diretório raiz: C:\\Users\\Andrew\\Documents\\AmbientaR", "asctime": "2025-08-14 21:25:24,266"}
+{"timestamp": "2025-08-14T21:25:24.304257", "level": "INFO", "logger": "ambientar", "message": "🔧 Modo debug: true", "asctime": "2025-08-14 21:25:24,304"}
+{"timestamp": "2025-08-14T21:25:24.345834", "level": "INFO", "logger": "ambientar", "message": "📋 Próximos passos:", "asctime": "2025-08-14 21:25:24,345"}
+{"timestamp": "2025-08-14T21:25:24.397108", "level": "INFO", "logger": "ambientar", "message": "   1. ✅ Dependências Python instaladas", "asctime": "2025-08-14 21:25:24,397"}
+{"timestamp": "2025-08-14T21:25:24.488246", "level": "INFO", "logger": "ambientar", "message": "   2. 🔄 Configurar banco de dados", "asctime": "2025-08-14 21:25:24,488"}
+{"timestamp": "2025-08-14T21:25:24.525129", "level": "INFO", "logger": "ambientar", "message": "   3. 🔄 Integrar ERPNext", "asctime": "2025-08-14 21:25:24,525"}
+{"timestamp": "2025-08-14T21:25:24.557453", "level": "INFO", "logger": "ambientar", "message": "   4. 🔄 Configurar módulos ambientais", "asctime": "2025-08-14 21:25:24,557"}
+{"timestamp": "2025-08-14T21:25:24.595190", "level": "INFO", "logger": "ambientar.performance", "message": "{\"operation\": \"inicializacao_completa\", \"duration_ms\": 24886.86, \"timestamp\": \"2025-08-14T21:25:24.595190\"}", "asctime": "2025-08-14 21:25:24,595"}
+{"timestamp": "2025-08-14T21:25:24.623427", "level": "WARNING", "logger": "ambientar", "message": "Operação lenta detectada: inicializacao_completa levou 24.89s", "asctime": "2025-08-14 21:25:24,623"}
+{"timestamp": "2025-08-15T19:23:01.365613", "level": "INFO", "logger": "ambientar", "message": "🚀 Iniciando AmbientaR - Plataforma de Consultoria Ambiental", "asctime": "2025-08-15 19:23:01,365"}
+{"timestamp": "2025-08-15T19:23:01.365613", "level": "INFO", "logger": "ambientar", "message": "Iniciando operação: carregar_configuracoes", "asctime": "2025-08-15 19:23:01,365"}
+{"timestamp": "2025-08-15T19:23:01.371027", "level": "INFO", "logger": "ambientar", "message": "Configurações carregadas com sucesso", "asctime": "2025-08-15 19:23:01,371"}
+{"timestamp": "2025-08-15T19:23:01.371027", "level": "INFO", "logger": "ambientar.performance", "message": "{\"operation\": \"carregar_configuracoes\", \"duration_ms\": 5.41, \"timestamp\": \"2025-08-15T19:23:01.371026\"}", "asctime": "2025-08-15 19:23:01,371"}
+{"timestamp": "2025-08-15T19:23:01.371027", "level": "INFO", "logger": "ambientar", "message": "Operação concluída: carregar_configuracoes", "asctime": "2025-08-15 19:23:01,371"}
+{"timestamp": "2025-08-15T19:23:01.371027", "level": "INFO", "logger": "ambientar", "message": "Iniciando operação: configurar_ambiente", "asctime": "2025-08-15 19:23:01,371"}
+{"timestamp": "2025-08-15T19:23:01.372763", "level": "INFO", "logger": "ambientar", "message": "Diretório apps adicionado ao PYTHONPATH", "asctime": "2025-08-15 19:23:01,372"}
+{"timestamp": "2025-08-15T19:23:01.372763", "level": "INFO", "logger": "ambientar", "message": "Variáveis de ambiente configuradas", "asctime": "2025-08-15 19:23:01,372"}
+{"timestamp": "2025-08-15T19:23:01.372763", "level": "INFO", "logger": "ambientar.performance", "message": "{\"operation\": \"configurar_ambiente\", \"duration_ms\": 1.74, \"timestamp\": \"2025-08-15T19:23:01.372763\"}", "asctime": "2025-08-15 19:23:01,372"}
+{"timestamp": "2025-08-15T19:23:01.372763", "level": "INFO", "logger": "ambientar", "message": "Operação concluída: configurar_ambiente", "asctime": "2025-08-15 19:23:01,372"}
+{"timestamp": "2025-08-15T19:23:01.372763", "level": "INFO", "logger": "ambientar", "message": "Iniciando operação: verificar_dependencias", "asctime": "2025-08-15 19:23:01,372"}
+{"timestamp": "2025-08-15T19:23:01.674803", "level": "INFO", "logger": "ambientar", "message": "Pacote fastapi disponível", "asctime": "2025-08-15 19:23:01,674"}
+{"timestamp": "2025-08-15T19:23:01.706684", "level": "INFO", "logger": "ambientar", "message": "Pacote uvicorn disponível", "asctime": "2025-08-15 19:23:01,706"}
+{"timestamp": "2025-08-15T19:23:01.934584", "level": "INFO", "logger": "ambientar", "message": "Pacote sqlalchemy disponível", "asctime": "2025-08-15 19:23:01,934"}
+{"timestamp": "2025-08-15T19:23:01.950465", "level": "INFO", "logger": "ambientar", "message": "Pacote pymysql disponível", "asctime": "2025-08-15 19:23:01,950"}
+{"timestamp": "2025-08-15T19:23:02.000038", "level": "INFO", "logger": "ambientar", "message": "Pacote jinja2 disponível", "asctime": "2025-08-15 19:23:02,000"}
+{"timestamp": "2025-08-15T19:23:02.000038", "level": "INFO", "logger": "ambientar", "message": "Pacote reportlab disponível", "asctime": "2025-08-15 19:23:02,000"}
+{"timestamp": "2025-08-15T19:23:02.000038", "level": "INFO", "logger": "ambientar", "message": "Todas as dependências estão disponíveis", "asctime": "2025-08-15 19:23:02,000"}
+{"timestamp": "2025-08-15T19:23:02.000038", "level": "INFO", "logger": "ambientar.performance", "message": "{\"operation\": \"verificar_dependencias\", \"duration_ms\": 627.27, \"timestamp\": \"2025-08-15T19:23:02.000038\"}", "asctime": "2025-08-15 19:23:02,000"}
+{"timestamp": "2025-08-15T19:23:02.000038", "level": "INFO", "logger": "ambientar", "message": "Operação concluída: verificar_dependencias", "asctime": "2025-08-15 19:23:02,000"}
+{"timestamp": "2025-08-15T19:23:02.000038", "level": "INFO", "logger": "ambientar", "message": "Iniciando operação: verificar_conexao_banco", "asctime": "2025-08-15 19:23:02,000"}
+{"timestamp": "2025-08-15T19:23:02.000038", "level": "ERROR", "logger": "ambientar", "message": "Falha na conexão com banco de dados", "error_type": "ImportError", "error_message": "cannot import name 'ambientar' from 'config' (unknown location)", "asctime": "2025-08-15 19:23:02,000"}
+{"timestamp": "2025-08-15T19:23:02.000038", "level": "INFO", "logger": "ambientar.performance", "message": "{\"operation\": \"verificar_conexao_banco\", \"duration_ms\": 0.0, \"timestamp\": \"2025-08-15T19:23:02.000038\"}", "asctime": "2025-08-15 19:23:02,000"}
+{"timestamp": "2025-08-15T19:23:02.000038", "level": "INFO", "logger": "ambientar", "message": "Operação concluída: verificar_conexao_banco", "asctime": "2025-08-15 19:23:02,000"}
+{"timestamp": "2025-08-15T19:23:02.000038", "level": "WARNING", "logger": "ambientar", "message": "Banco de dados não disponível, mas continuando em modo desenvolvimento", "asctime": "2025-08-15 19:23:02,000"}
+{"timestamp": "2025-08-15T19:23:02.000038", "level": "INFO", "logger": "ambientar", "message": "✅ Ambiente configurado com sucesso!", "asctime": "2025-08-15 19:23:02,000"}
+{"timestamp": "2025-08-15T19:23:02.000038", "level": "INFO", "logger": "ambientar", "message": "📁 Diretório raiz: C:\\Users\\Andrew\\Documents\\AmbientaR", "asctime": "2025-08-15 19:23:02,000"}
+{"timestamp": "2025-08-15T19:23:02.000038", "level": "INFO", "logger": "ambientar", "message": "🔧 Modo debug: true", "asctime": "2025-08-15 19:23:02,000"}
+{"timestamp": "2025-08-15T19:23:02.000038", "level": "INFO", "logger": "ambientar", "message": "📋 Próximos passos:", "asctime": "2025-08-15 19:23:02,000"}
+{"timestamp": "2025-08-15T19:23:02.000038", "level": "INFO", "logger": "ambientar", "message": "   1. ✅ Dependências Python instaladas", "asctime": "2025-08-15 19:23:02,000"}
+{"timestamp": "2025-08-15T19:23:02.000038", "level": "INFO", "logger": "ambientar", "message": "   2. 🔄 Configurar banco de dados", "asctime": "2025-08-15 19:23:02,000"}
+{"timestamp": "2025-08-15T19:23:02.000038", "level": "INFO", "logger": "ambientar", "message": "   3. 🔄 Integrar ERPNext", "asctime": "2025-08-15 19:23:02,000"}
+{"timestamp": "2025-08-15T19:23:02.000038", "level": "INFO", "logger": "ambientar", "message": "   4. 🔄 Configurar módulos ambientais", "asctime": "2025-08-15 19:23:02,000"}
+{"timestamp": "2025-08-15T19:23:02.000038", "level": "INFO", "logger": "ambientar.performance", "message": "{\"operation\": \"inicializacao_completa\", \"duration_ms\": 634.42, \"timestamp\": \"2025-08-15T19:23:02.000038\"}", "asctime": "2025-08-15 19:23:02,000"}
