@@ -1,0 +1,47 @@
+---
+description: AmbientaR – Firebase, repo vs nuvem, Blaze, deploy e app em produção
+alwaysApply: true
+---
+
+# AmbientaR — Firebase, repositório e deploy (referência do utilizador)
+
+## Onde está cada coisa
+
+- **Pasta local (ex.: `G:\AmbientaR`)** e **GitHub**: o **código** e a pasta **`docs/`** (markdown). É o mesmo projeto versionado no Git.
+- **Firebase** (projeto **`studio-316805764-e4d13`**): **Auth**, **Firestore** (dados da app), **Storage** (ficheiros), **Functions**, **regras** publicadas, **Hosting** apenas do que fizeres deploy. **Não** copia o repositório. Os `.md` de `docs/` **não** vão sozinhos para o Firebase.
+
+## Ficheiros de configuração
+
+- App Firebase: `src/firebase/config.ts` e `.firebaserc` (default = mesmo `projectId`).
+- Regras Firestore para deploy: `src/firebase/rules/firestore.rules` (via `firebase.json`).
+- Atenção: `npm run build` corre **postbuild** → `npm run deploy:rules` (tenta publicar regras após cada build local).
+
+## Desenvolvimento local
+
+- `npm install` → `npm run dev` → **http://localhost:9002** (hostname `0.0.0.0`). Mais rápido: `npm run dev:turbo`.
+- Sem emuladores: dados em **nuvem**. Utilizador **Firebase Auth** válido para páginas autenticadas.
+- Só publicar regras Firestore: `npx firebase login` → `npm run deploy:rules`.
+
+## Depois de ativar o plano Blaze (ordem sugerida)
+
+1. **Console Firebase**: Authentication (métodos usados), **Firestore** e **Storage** criados; região coerente (ex. `southamerica-east1`).
+2. **CLI**: `npx firebase login`; projeto `npx firebase use studio-316805764-e4d13` (ou confiar no `.firebaserc`).
+3. **`.env.local` / `.env`**: segredos e variáveis necessárias; **não** commitar segredos.
+4. **`npm run deploy:rules`**.
+5. **Storage**: o `firebase.json` pode não ter bloco `storage`; regras iniciais na consola ou adicionar `storage` + `storage.rules` e `firebase deploy --only storage`.
+6. **Functions** (se a app usar): `npm run deploy:functions` (pasta `functions` com dependências instaladas).
+7. **Utilizadores**: em Firestore, `users/{uid}` com **role** correto — ver `docs/firebase-deploy-rules.md`.
+
+## Produção (site Next.js na internet)
+
+- **`firebase deploy --only hosting`**: serve **`public/`** (estáticos). **Não** é deploy completo do Next (SSR, API routes, etc.).
+- **App Next completa “tudo Google”**: **Firebase App Hosting** (existe `apphosting.yaml` no repo), ligando o **GitHub** no console Firebase; **ou** Vercel / Cloud Run com o **mesmo** `projectId` Firebase.
+
+## Documentação no repositório
+
+- `AGENTS.md`, `docs/firebase-deploy-rules.md`, `docs/FIREBASE-PLANO-CUSTOS.md`.
+
+## Git em disco `G:` (Windows)
+
+- Se o Git acusar **dubious ownership** em `G:/AmbientaR`:  
+  `git config --global --add safe.directory G:/AmbientaR`
