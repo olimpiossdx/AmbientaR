@@ -117,7 +117,7 @@ export function useCollection<T = any>(
     );
 
     return () => unsubscribe();
-  }, [queryKey]); // Re-run if the key changes, not the object reference.
+  }, [queryKey, memoizedTargetRefOrQuery]); // Re-run if key/object changes.
   
   return { data, isLoading, error };
 }

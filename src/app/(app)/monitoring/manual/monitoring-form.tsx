@@ -23,10 +23,13 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
 import type { ManualMonitoringLog } from '@/lib/types';
+import type { WaterPermit, TelemetryReading } from '@/lib/types';
 import { useFirebase, errorEmitter } from '@/firebase';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { collection, doc, addDoc, updateDoc } from 'firebase/firestore';
 import { DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { AlertTriangle, CheckCircle2 } from "lucide-react";
+import { calculateWaterCompliance, mapManualLogToTelemetryReading } from "@/lib/water-compliance-engine";
 
 const formSchema = z.object({
   logDate: z.date({ required_error: 'A data é obrigatória.' }),
@@ -47,10 +50,19 @@ interface MonitoringFormProps {
   currentItem?: ManualMonitoringLog | null;
   outorgaId: string;
   pontoId: string;
+  permit?: WaterPermit | null;
+  existingReadings?: TelemetryReading[];
   onSuccess?: () => void;
 }
 
-export function MonitoringForm({ currentItem, outorgaId, pontoId, onSuccess }: MonitoringFormProps) {
+export function MonitoringForm({
+  currentItem,
+  outorgaId,
+  pontoId,
+  permit,
+  existingReadings = [],
+  onSuccess,
+}: MonitoringFormProps) {
   const [loading, setLoading] = React.useState(false);
   const { toast } = useToast();
   const { firestore, user } = useFirebase();
@@ -67,6 +79,30 @@ export function MonitoringForm({ currentItem, outorgaId, pontoId, onSuccess }: M
       horimeterEnd: currentItem?.horimeterEnd || 0,
     },
   });
+  const watchedValues = form.watch();
+
+  const compliancePreview = React.useMemo(() => {
+    if (!permit) return null;
+    const simulated: ManualMonitoringLog = {
+      id: currentItem?.id || "preview",
+      outorgaId,
+      pontoId,
+      logDate: watchedValues.logDate ? watchedValues.logDate.toISOString() : new Date().toISOString(),
+      startTime: watchedValues.startTime || "00:00",
+      endTime: watchedValues.endTime || "00:00",
+      flowRateLps: Number(watchedValues.flowRateLps || 0),
+      flowRateM3h: Number(watchedValues.flowRateM3h || 0),
+      horimeterStart: Number(watchedValues.horimeterStart || 0),
+      horimeterEnd: Number(watchedValues.horimeterEnd || 0),
+      userId: user?.uid || "",
+      createdAt: null as any,
+    };
+    return calculateWaterCompliance(
+      [...existingReadings, mapManualLogToTelemetryReading(simulated)],
+      permit,
+      watchedValues.logDate || new Date(),
+    );
+  }, [permit, currentItem, outorgaId, pontoId, watchedValues, existingReadings, user?.uid]);
 
   async function onSubmit(values: FormValues) {
     setLoading(true);
@@ -156,6 +192,26 @@ export function MonitoringForm({ currentItem, outorgaId, pontoId, onSuccess }: M
               <FormField control={form.control} name="flowRateLps" render={({ field }) => (<FormItem><FormLabel>Vazão (L/s)</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>)} />
               <FormField control={form.control} name="flowRateM3h" render={({ field }) => (<FormItem><FormLabel>Vazão (m³/h)</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>)} />
           </div>
+          {compliancePreview && (
+            <div className={cn("rounded-lg border p-3", compliancePreview.isExceeded ? "border-red-400 bg-red-50" : "border-green-400 bg-green-50")}>
+              <p className="text-sm font-medium mb-1 flex items-center gap-2">
+                {compliancePreview.isExceeded ? (
+                  <AlertTriangle className="h-4 w-4 text-red-600" />
+                ) : (
+                  <CheckCircle2 className="h-4 w-4 text-green-600" />
+                )}
+                Análise de impacto do lançamento
+              </p>
+              <p className="text-sm">
+                Uso estimado no mês: <strong>{compliancePreview.usagePercentage.toFixed(2)}%</strong>
+              </p>
+              {compliancePreview.alerts.slice(0, 3).map((alert, idx) => (
+                <p key={`${alert.type}-${idx}`} className="text-xs text-red-700 mt-1">
+                  - {alert.message}
+                </p>
+              ))}
+            </div>
+          )}
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onSuccess}>Cancelar</Button>

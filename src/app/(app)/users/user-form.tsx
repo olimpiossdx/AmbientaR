@@ -33,20 +33,20 @@ import { FirestorePermissionError } from '@/firebase/errors';
 import {
   createUserWithEmailAndPassword
 } from 'firebase/auth';
-import { doc, setDoc, updateDoc, collection, query, where, getDocs, writeBatch, addDoc } from 'firebase/firestore';
+import { doc, setDoc, updateDoc, collection, query, where, getDocs, addDoc } from 'firebase/firestore';
 import { Label } from '@/components/ui/label';
 import { DialogFooter } from '@/components/ui/dialog';
 import { logUserAction } from '@/lib/audit-log';
-import { cn } from '@/lib/utils';
-import { parse } from 'date-fns';
+import { formatCpfCnpjDisplay } from '@/lib/masks';
 
 const baseSchema = z.object({
   name: z.string().min(2, 'O nome é obrigatório.'),
   email: z.string().email('Por favor, insira um e-mail válido.'),
-  role: z.enum(['admin', 'client', 'representative', 'technical', 'sales', 'financial', 'gestor', 'supervisor', 'diretor_fauna']),
+  role: z.enum(['admin', 'client', 'representative', 'technical', 'sales', 'financial', 'gestor', 'supervisor', 'diretor_fauna', 'advogado']),
   status: z.enum(['active', 'inactive']),
   userCpf: z.string().optional(),
   cpf: z.string().optional(),
+  cpfs: z.array(z.object({ value: z.string().min(11, 'CPF deve ter 11 dígitos.') })).optional(),
   cnpjs: z.array(z.object({ value: z.string().min(14, "O CNPJ deve ser válido.") })).optional(),
   dataNascimento: z.date().optional(),
   photoURL: z.string().optional(),
@@ -65,13 +65,15 @@ const createFormSchema = baseSchema
   })
   .refine(
     (data) => {
-      if (data.role !== 'client' && data.role !== 'representative') return true;
-      return !!data.cpf || (data.cnpjs && data.cnpjs.length > 0);
+      if (data.role !== 'representative') return true;
+      const hasCpfs = data.cpfs && data.cpfs.some((c: { value: string }) => (c.value || '').replace(/\D/g, '').length >= 11);
+      const hasCnpjs = data.cnpjs && data.cnpjs.some((c: { value: string }) => (c.value || '').replace(/\D/g, '').length >= 14);
+      return !!hasCpfs || !!hasCnpjs;
     },
     {
       message:
-        'Para os perfis "Cliente" e "Representante", é obrigatório informar o CPF do interessado ou pelo menos um CNPJ para acesso aos dados.',
-      path: ['cpf'],
+        'Para o perfil Representante, informe ao menos um CPF ou CNPJ ao qual solicita acesso.',
+      path: ['cpfs'],
     },
   );
 
@@ -98,22 +100,39 @@ const editFormSchema = baseSchema
   )
   .refine(
     (data) => {
-      if (data.role !== 'client' && data.role !== 'representative') return true;
-      return !!data.cpf || (data.cnpjs && data.cnpjs.length > 0);
+      if (data.role !== 'representative') return true;
+      const hasCpfs = data.cpfs && data.cpfs.some((c: { value: string }) => (c.value || '').replace(/\D/g, '').length >= 11);
+      const hasCnpjs = data.cnpjs && data.cnpjs.some((c: { value: string }) => (c.value || '').replace(/\D/g, '').length >= 14);
+      return !!hasCpfs || !!hasCnpjs;
     },
     {
       message:
-        'Para os perfis "Cliente" e "Representante", é obrigatório informar o CPF do interessado ou pelo menos um CNPJ para acesso aos dados.',
-      path: ['cpf'],
+        'Para o perfil Representante, informe ao menos um CPF ou CNPJ ao qual solicita acesso.',
+      path: ['cpfs'],
     },
   );
 
 
 type UserFormValues = z.infer<typeof createFormSchema>;
 
+/** Item da lista de representantes que solicitam acesso aos dados do cliente (titular). */
+export type RepresentativeForClient = {
+  id: string;
+  requestedByName: string;
+  requestedByUserId: string;
+  status: string;
+  representativeCpf?: string;
+};
+
 interface UserFormProps {
   currentUser?: AppUser | null;
   onSuccess?: () => void;
+  /** CPF ao qual o representante solicita acesso (vindo de access_requests). Exibido em modo somente leitura quando preenchido. */
+  representativeRequestedCpf?: string | null;
+  /** Quando o usuário editado é cliente (titular), lista de representantes que solicitam ou têm acesso aos dados dele. */
+  representativesForThisClient?: RepresentativeForClient[];
+  /** CPFs/CNPJs que o representante já solicitou acesso (para preencher ao editar). */
+  representativeRequestedCpfsCnpjs?: string[];
 }
 
 const roles: { value: UserRole; label: string }[] = [
@@ -126,9 +145,10 @@ const roles: { value: UserRole; label: string }[] = [
   { value: 'gestor', label: 'Gestor Ambiental' },
   { value: 'supervisor', label: 'Supervisor' },
   { value: 'diretor_fauna', label: 'Diretor de Fauna' },
+  { value: 'advogado', label: 'Advogado' },
 ];
 
-export function UserForm({ currentUser, onSuccess }: UserFormProps) {
+export function UserForm({ currentUser, onSuccess, representativeRequestedCpf, representativesForThisClient, representativeRequestedCpfsCnpjs }: UserFormProps) {
   const [loading, setLoading] = React.useState(false);
   const [showPassword, setShowPassword] = React.useState(false);
   const { toast } = useToast();
@@ -145,9 +165,12 @@ export function UserForm({ currentUser, onSuccess }: UserFormProps) {
       status: currentUser?.status || 'active',
       password: '',
       confirmPassword: '',
-      userCpf: currentUser?.userCpf || '',
+      userCpf: currentUser?.userCpf || currentUser?.cpf || '',
       cpf: currentUser?.cpf || '',
-      cnpjs: currentUser?.cnpjs?.map(c => ({ value: c })) || [],
+      cpfs: currentUser?.role === 'representative' && representativeRequestedCpfsCnpjs?.length
+        ? representativeRequestedCpfsCnpjs.filter(v => { const d = (v || '').replace(/\D/g, ''); return d.length >= 11 && d.length <= 14; }).map(v => ({ value: v || '' }))
+        : [],
+      cnpjs: currentUser?.cnpjs?.length ? currentUser.cnpjs.map(c => ({ value: c })) : (currentUser?.role === 'representative' && representativeRequestedCpfsCnpjs?.length ? representativeRequestedCpfsCnpjs.filter(v => (v || '').replace(/\D/g, '').length >= 14).map(v => ({ value: v || '' })) : []),
       dataNascimento: currentUser?.dataNascimento ? new Date(currentUser.dataNascimento) : undefined,
       photoURL: currentUser?.photoURL || '',
     },
@@ -157,13 +180,13 @@ export function UserForm({ currentUser, onSuccess }: UserFormProps) {
     control: form.control,
     name: "cnpjs",
   });
+
+  const { fields: cpfsFields, append: cpfsAppend, remove: cpfsRemove } = useFieldArray({
+    control: form.control,
+    name: "cpfs",
+  });
   
   const selectedRole = form.watch('role');
-
-
-  const handleCpfChange = (value: string) => {
-    form.setValue('cpf', value, { shouldValidate: true });
-  };
 
   const handleUserCpfChange = (value: string) => {
     form.setValue('userCpf', value, { shouldValidate: true });
@@ -178,6 +201,10 @@ export function UserForm({ currentUser, onSuccess }: UserFormProps) {
     value = value.replace(/(\d{4})(\d)/, '$1-$2');
 
     form.setValue(`cnpjs.${index}.value`, value, { shouldValidate: true });
+  };
+
+  const handleCpfListItemChange = (value: string, index: number) => {
+    form.setValue(`cpfs.${index}.value`, value, { shouldValidate: true });
   };
 
   const handleDateInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -203,25 +230,50 @@ export function UserForm({ currentUser, onSuccess }: UserFormProps) {
       return;
     }
     
-    const cnpjsArray = values.cnpjs?.map(c => c.value) || [];
+    const cnpjsArray = values.cnpjs?.map(c => c.value).filter(Boolean) || [];
+    const cpfsArray = (values.cpfs || []).map(c => (c.value || '').trim()).filter(v => v.replace(/\D/g, '').length >= 11);
 
     if (currentUser) {
       // --- Update existing user logic ---
       const userRef = doc(firestore, 'users', currentUser.id);
+      const isEditingSelf = auth.currentUser?.uid === currentUser.id;
       const updateData: Partial<AppUser> = {
         name: values.name,
         email: values.email,
         role: values.role,
         status: values.status,
         userCpf: values.userCpf || '',
-        cpf: values.cpf || '',
+        cpf: values.role === 'representative' ? (cpfsArray[0] || '') : (values.cpf || ''),
         cnpjs: cnpjsArray,
         photoURL: values.photoURL || '',
         dataNascimento: values.dataNascimento?.toISOString() || '',
+        ...(isEditingSelf ? { cadastroIncompleto: false } : {}),
       };
 
       updateDoc(userRef, updateData)
-        .then(() => {
+        .then(async () => {
+          if (values.role === 'representative' && currentUser.id) {
+            const existingSet = new Set((representativeRequestedCpfsCnpjs || []).map(v => (v || '').replace(/\D/g, '')));
+            const allCpfCnpj = [...cpfsArray, ...cnpjsArray];
+            for (const cpfOuCnpj of allCpfCnpj) {
+              const normalized = (cpfOuCnpj || '').trim();
+              const digits = normalized.replace(/\D/g, '');
+              if (digits.length < 11 || existingSet.has(digits)) continue;
+              existingSet.add(digits);
+              try {
+                await addDoc(collection(firestore, 'access_requests'), {
+                  requestedByUserId: currentUser.id,
+                  requestedByEmail: values.email,
+                  requestedByName: values.name,
+                  cpfOfInterested: normalized,
+                  status: 'pending',
+                  createdAt: new Date().toISOString(),
+                } as Omit<AccessRequest, 'id'>);
+              } catch (e) {
+                console.warn('Erro ao criar pedido de acesso para', normalized, e);
+              }
+            }
+          }
           toast({
             title: 'Usuário atualizado!',
             description: 'As informações do usuário foram salvas com sucesso.',
@@ -277,7 +329,7 @@ export function UserForm({ currentUser, onSuccess }: UserFormProps) {
                 role: values.role,
                 status: values.status,
                 userCpf: values.userCpf || '',
-                cpf: values.cpf || '',
+                cpf: values.role === 'representative' ? (cpfsArray[0] || '') : (values.cpf || ''),
                 cnpjs: cnpjsArray,
                 photoURL: values.photoURL || '',
                 dataNascimento: values.dataNascimento?.toISOString() || '',
@@ -287,13 +339,10 @@ export function UserForm({ currentUser, onSuccess }: UserFormProps) {
             await setDoc(doc(firestore, 'users', newUserId), userDocData);
             logUserAction(firestore, auth, 'create_user', { newUserId: newUserId, newUserName: values.name });
 
-            // Só criar Cliente + Empreendedor automaticamente quando for o titular (perfil Cliente e próprio CPF).
+            // Cliente (titular): criar Cliente + Empreendedor pelo próprio CPF.
             if (values.role === 'client') {
-                const cpfPessoal = (values.userCpf || '').trim();
-                const cpfPessoalDigits = cpfPessoal.replace(/\D/g, '');
-                const cpfInteressadoDigits = (values.cpf || '').replace(/\D/g, '');
-                const ehTitular = cpfPessoalDigits.length >= 11 && (!values.cpf || cpfInteressadoDigits.length < 11 || cpfInteressadoDigits === cpfPessoalDigits);
-                if (ehTitular) {
+                const cpfPessoal = (values.userCpf || '').trim().replace(/\D/g, '');
+                if (cpfPessoal.length >= 11) {
                     try {
                         const clientData = {
                             name: values.name,
@@ -319,20 +368,25 @@ export function UserForm({ currentUser, onSuccess }: UserFormProps) {
                 }
             }
 
-            // Se perfil Cliente ou Representante e CPF do interessado diferente do CPF pessoal, criar pedido de acesso para o titular aprovar
-            const cpfDigits = (v: string) => (v || '').replace(/\D/g, '');
-            if ((values.role === 'client' || values.role === 'representative') && values.cpf && cpfDigits(values.cpf).length >= 11) {
-                const userCpfDigits = cpfDigits(values.userCpf || '');
-                if (userCpfDigits.length < 11 || userCpfDigits !== cpfDigits(values.cpf)) {
-                    const accessRequestsRef = collection(firestore, 'access_requests');
-                    await addDoc(accessRequestsRef, {
-                        requestedByUserId: newUserId,
-                        requestedByEmail: values.email,
-                        requestedByName: values.name,
-                        cpfOfInterested: values.cpf.trim(),
-                        status: 'pending',
-                        createdAt: new Date().toISOString(),
-                    } as Omit<AccessRequest, 'id'>);
+            // Representante: criar um pedido de acesso por CPF/CNPJ informado (titular aprovará em Meu Perfil).
+            if (values.role === 'representative') {
+                const accessRequestsRef = collection(firestore, 'access_requests');
+                const allCpfCnpj = [...cpfsArray, ...cnpjsArray];
+                for (const cpfOuCnpj of allCpfCnpj) {
+                    const normalized = (cpfOuCnpj || '').trim();
+                    if (normalized.replace(/\D/g, '').length < 11) continue;
+                    try {
+                        await addDoc(accessRequestsRef, {
+                            requestedByUserId: newUserId,
+                            requestedByEmail: values.email,
+                            requestedByName: values.name,
+                            cpfOfInterested: normalized,
+                            status: 'pending',
+                            createdAt: new Date().toISOString(),
+                        } as Omit<AccessRequest, 'id'>);
+                    } catch (e) {
+                        console.warn('Erro ao criar pedido de acesso para', normalized, e);
+                    }
                 }
             }
 
@@ -365,7 +419,7 @@ export function UserForm({ currentUser, onSuccess }: UserFormProps) {
                 <div className="flex-1 overflow-y-auto pr-6 pl-1 -mr-6 -ml-1 space-y-4">
                     <div className="space-y-4 rounded-md border p-4 bg-muted/30">
                         <h3 className="text-sm font-medium">Checagem inicial — CPF</h3>
-                        <p className="text-xs text-muted-foreground">A primeira informação do cadastro de usuário é o CPF. Informe o CPF pessoal do usuário e, se for perfil Cliente, o CPF do interessado cujos dados ele poderá acessar.</p>
+                        <p className="text-xs text-muted-foreground">Informe o CPF pessoal do usuário (documento de identificação). Representantes informam depois os CPFs/CNPJs ao qual solicitam acesso.</p>
                     <FormField
                     control={form.control}
                     name="userCpf"
@@ -380,6 +434,13 @@ export function UserForm({ currentUser, onSuccess }: UserFormProps) {
                         </FormItem>
                     )}
                     />
+                    {currentUser?.role === 'representative' && representativeRequestedCpf && (
+                        <div className="rounded border bg-muted/50 p-3">
+                            <p className="text-xs font-medium text-muted-foreground">CPF ao qual solicita acesso</p>
+                            <p className="text-sm font-medium mt-1">{formatCpfCnpjDisplay(representativeRequestedCpf)}</p>
+                            <p className="text-xs text-muted-foreground mt-1">Informado no cadastro; o titular deve aprovar em Meu Perfil → Aprovar acesso de representantes.</p>
+                        </div>
+                    )}
                     </div>
                     <FormField
                     control={form.control}
@@ -498,46 +559,81 @@ export function UserForm({ currentUser, onSuccess }: UserFormProps) {
                     )}
                     {form.watch('role') === 'client' && (
                     <div className='space-y-4 rounded-md border p-4'>
-                        <h3 className="text-sm font-medium">Documentos de Vinculação (Cliente)</h3>
-                        <p className='text-sm text-muted-foreground'>CPF ou CNPJ do interessado cujos dados este usuário poderá acessar. Quando o CPF do interessado for <strong>igual</strong> ao CPF pessoal (titular), serão criados automaticamente registros em Clientes e Empreendedores. Quando for <strong>diferente</strong> (consultor/representante), o usuário terá apenas cadastro aqui em Usuários para acessar um ou mais clientes, mediante aprovação do titular.</p>
-                        <FormField
-                        control={form.control}
-                        name="cpf"
-                        render={({ field }) => (
-                            <FormItem>
-                            <FormLabel>CPF do interessado (acesso aos dados)</FormLabel>
-                            <FormControl>
-                                <MaskedInput mask="cpf" placeholder="000.000.000-00" {...field} onChange={handleCpfChange} />
-                            </FormControl>
-                            <FormMessage />
-                            </FormItem>
+                        <h3 className="text-sm font-medium">Acesso aos seus dados (Cliente titular)</h3>
+                        <p className='text-sm text-muted-foreground'>Como titular, você só precisa aprovar ou rejeitar pedidos de representantes que queiram acessar seus dados. Não é necessário informar CPF/CNPJ de interessado aqui.</p>
+                        {representativesForThisClient && representativesForThisClient.length > 0 ? (
+                          <div className="rounded-md border bg-muted/30 p-3 space-y-2">
+                            <h4 className="text-sm font-medium">Representantes que solicitam acesso aos seus dados</h4>
+                            <ul className="space-y-2">
+                              {representativesForThisClient.map((rep) => (
+                                <li key={rep.id} className="flex items-center justify-between gap-2 text-sm">
+                                  <span><strong>{rep.requestedByName}</strong>{rep.representativeCpf ? ` — CPF ${formatCpfCnpjDisplay(rep.representativeCpf)}` : ''}</span>
+                                  <span className="text-muted-foreground capitalize">{rep.status === 'pending' ? 'Pendente de aprovação' : rep.status}</span>
+                                </li>
+                              ))}
+                            </ul>
+                            <p className="text-xs text-muted-foreground">Aprove ou rejeite em Configurações → Usuários (Meu Perfil) → card &quot;Aprovar acesso de representantes&quot;.</p>
+                          </div>
+                        ) : (
+                          <p className="text-xs text-muted-foreground">Nenhum representante solicitou acesso no momento. Quando alguém solicitar, aparecerá aqui e em Meu Perfil.</p>
                         )}
-                        />
+                    </div>
+                    )}
+                    {form.watch('role') === 'representative' && (
+                    <div className='space-y-4 rounded-md border p-4'>
+                        <h3 className="text-sm font-medium">CPFs/CNPJs ao qual solicito acesso</h3>
+                        <p className='text-sm text-muted-foreground'>Informe o CPF ou CNPJ de cada titular cujos dados você deseja acessar. O titular aprovará (ou não) em Meu Perfil.</p>
                         <div>
-                        <Label>CNPJs</Label>
-                        {fields.map((field, index) => (
+                          <Label>CPFs</Label>
+                          {cpfsFields.map((field, index) => (
                             <div key={field.id} className="flex items-center gap-2 mt-2">
-                            <FormField
+                              <FormField
                                 control={form.control}
-                                name={`cnpjs.${index}.value`}
-                                render={({ field }) => (
-                                <FormItem className="flex-1">
+                                name={`cpfs.${index}.value`}
+                                render={({ field: f }) => (
+                                  <FormItem className="flex-1">
                                     <FormControl>
-                                    <Input placeholder="00.000.000/0000-00" {...field} onChange={(e) => handleCnpjChange(e, index)} maxLength={18} />
+                                      <MaskedInput mask="cpf" placeholder="000.000.000-00" {...f} onChange={(val) => handleCpfListItemChange(val, index)} />
                                     </FormControl>
                                     <FormMessage />
-                                </FormItem>
+                                  </FormItem>
                                 )}
-                            />
-                            <Button type="button" variant="destructive" size="icon" onClick={() => remove(index)}>
+                              />
+                              <Button type="button" variant="destructive" size="icon" onClick={() => cpfsRemove(index)}>
                                 <Trash2 className="h-4 w-4" />
-                            </Button>
+                              </Button>
                             </div>
-                        ))}
-                        <Button type="button" variant="outline" size="sm" className="mt-2" onClick={() => append({ value: "" })}>
+                          ))}
+                          <Button type="button" variant="outline" size="sm" className="mt-2" onClick={() => cpfsAppend({ value: "" })}>
+                            <PlusCircle className="mr-2 h-4 w-4" />
+                            Adicionar CPF
+                          </Button>
+                        </div>
+                        <div>
+                          <Label>CNPJs</Label>
+                          {fields.map((field, index) => (
+                            <div key={field.id} className="flex items-center gap-2 mt-2">
+                              <FormField
+                                control={form.control}
+                                name={`cnpjs.${index}.value`}
+                                render={({ field: f }) => (
+                                  <FormItem className="flex-1">
+                                    <FormControl>
+                                      <Input placeholder="00.000.000/0000-00" {...f} onChange={(e) => handleCnpjChange(e, index)} maxLength={18} />
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                              <Button type="button" variant="destructive" size="icon" onClick={() => remove(index)}>
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          ))}
+                          <Button type="button" variant="outline" size="sm" className="mt-2" onClick={() => append({ value: "" })}>
                             <PlusCircle className="mr-2 h-4 w-4" />
                             Adicionar CNPJ
-                        </Button>
+                          </Button>
                         </div>
                     </div>
                     )}

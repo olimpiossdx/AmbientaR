@@ -2,6 +2,8 @@
 
 Este documento sugere **estrutura, fluxos e implementação** para que a IA atue como componente central de **preenchimento e elaboração de relatórios**, com base em dados do empreendedor, detalhes locais e técnicos do empreendimento, pesquisas em ferramentas governamentais e **templates** carregados no sistema.
 
+> Status geral do projeto atualizado em 30/03/2026: os módulos operacionais de gestão (incluindo `Autos de Infração - Defesa` e `Contratos-Fornecedores`) já estão ativos e documentados em `docs/ARQUITETURA_ATUAL.md`; este documento permanece como referência de roadmap para a camada de IA.
+
 ---
 
 ## 1. Visão geral do que pode ser feito

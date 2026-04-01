@@ -54,3 +54,13 @@ Salve. Na próxima vez que o usuário fizer login, o app usará esse role.
 |------|------------------|
 | Publicar regras | `npm run deploy:rules` (terminal) |
 | Ajustar role | Firebase Console → Firestore → users → documento do UID |
+
+---
+
+## Atualizações de regras já publicadas (30/03/2026)
+
+- **Admin total (catch-all):** `match /{document=**} { allow read, write: if isAdmin(); }`.
+- **Defesa de Auto de Infração:** coleção `autoInfracaoDefesas`.
+- **Contratos-Fornecedores:** coleção `supplierContracts` com escrita para `admin`, `sales`, `supervisor`, `financial`.
+
+Se aparecer erro de permissão em módulos novos, confirme que o deploy foi feito no projeto correto (`studio-316805764-e4d13`) e refaça `npm run deploy:rules`.

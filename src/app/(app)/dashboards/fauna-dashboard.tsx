@@ -10,6 +10,7 @@ import type { FaunaStudy } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PageHeader } from '@/components/page-header';
 import AgendaWidget from './agenda-widget';
+import { AuthorizationReportsHubCard } from '@/components/authorization-reports-hub-card';
 
 export default function FaunaDashboard() {
   const firestore = useFirestore();
@@ -88,6 +89,7 @@ export default function FaunaDashboard() {
     <div className="flex flex-col h-full">
       <PageHeader title="Painel do Diretor de Fauna" />
        <main className="flex-1 overflow-auto p-4 md:p-6 space-y-8">
+            <AuthorizationReportsHubCard role="diretor_fauna" />
             <AgendaWidget />
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             <Card>

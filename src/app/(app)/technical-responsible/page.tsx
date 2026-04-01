@@ -1,6 +1,6 @@
 
 'use client';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { PageHeader } from '@/components/page-header';
@@ -77,6 +77,13 @@ export default function TechnicalResponsiblePage() {
   }, [firestore, user]);
 
   const { data: responsibles, isLoading } = useCollection<TechnicalResponsible>(responsiblesQuery);
+  const sortedResponsibles = useMemo(
+    () =>
+      [...(responsibles || [])].sort((a, b) =>
+        (a.name || '').localeCompare(b.name || '', 'pt-BR', { sensitivity: 'base' }),
+      ),
+    [responsibles],
+  );
 
   const handleView = (item: TechnicalResponsible) => {
     setViewingItem(item);
@@ -153,7 +160,7 @@ export default function TechnicalResponsiblePage() {
                         <TableCell className="text-right"><Skeleton className="h-8 w-24" /></TableCell>
                       </TableRow>
                     ))}
-                  {!isLoading && responsibles?.map((item) => (
+                  {!isLoading && sortedResponsibles.map((item) => (
                     <TableRow key={item.id}>
                       <TableCell className="font-medium">{item.name}</TableCell>
                       <TableCell>{item.cpf}</TableCell>
@@ -198,7 +205,7 @@ export default function TechnicalResponsiblePage() {
                       </TableCell>
                     </TableRow>
                   ))}
-                  {!isLoading && responsibles?.length === 0 && (
+                  {!isLoading && sortedResponsibles.length === 0 && (
                     <TableRow>
                       <TableCell colSpan={5} className="h-24 text-center">
                         Nenhum responsável técnico encontrado.

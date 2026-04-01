@@ -27,7 +27,7 @@ function NewLicensePageContent() {
                   </CardHeader>
                   <CardContent>
                       <LicenseForm
-                          currentItem={null}
+                          currentLicense={null}
                           onSuccess={handleSuccess}
                       />
                   </CardContent>

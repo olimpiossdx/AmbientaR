@@ -1,4 +1,4 @@
-'use server';
+"use server";
 
 /**
  * @fileOverview An AI-powered tool to generate financial reports based on revenue and expense data.
@@ -6,25 +6,25 @@
  * - generateFinancialReport - A function that handles the generation of financial reports.
  */
 
-import {ai} from '@/ai/genkit';
+import { ai, aiModel } from "@/ai/genkit";
 import {
   GenerateFinancialReportInputSchema,
   GenerateFinancialReportOutputSchema,
   type GenerateFinancialReportInput,
   type GenerateFinancialReportOutput,
-} from '@/lib/types';
-
+} from "@/lib/types";
 
 export async function generateFinancialReport(
-  input: GenerateFinancialReportInput
+  input: GenerateFinancialReportInput,
 ): Promise<GenerateFinancialReportOutput> {
   return generateFinancialReportFlow(input);
 }
 
 const prompt = ai.definePrompt({
-  name: 'generateFinancialReportPrompt',
-  input: {schema: GenerateFinancialReportInputSchema},
-  output: {schema: GenerateFinancialReportOutputSchema},
+  name: "generateFinancialReportPrompt",
+  model: aiModel,
+  input: { schema: GenerateFinancialReportInputSchema },
+  output: { schema: GenerateFinancialReportOutputSchema },
   prompt: `You are an expert accountant and financial analyst for a Brazilian environmental consulting firm. Your task is to generate a clear and concise financial report based on the provided revenue and expense data.
 
   The report should be in Portuguese (Brazil).
@@ -59,12 +59,12 @@ const prompt = ai.definePrompt({
 
 const generateFinancialReportFlow = ai.defineFlow(
   {
-    name: 'generateFinancialReportFlow',
+    name: "generateFinancialReportFlow",
     inputSchema: GenerateFinancialReportInputSchema,
     outputSchema: GenerateFinancialReportOutputSchema,
   },
-  async input => {
-    const {output} = await prompt(input);
+  async (input) => {
+    const { output } = await prompt(input, { model: aiModel });
     return output!;
-  }
+  },
 );

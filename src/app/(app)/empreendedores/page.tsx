@@ -1,10 +1,15 @@
-
-'use client';
-import { useMemo, useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { PageHeader } from '@/components/page-header';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+"use client";
+import { useMemo, useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { PageHeader } from "@/components/page-header";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -12,7 +17,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
+} from "@/components/ui/table";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,21 +25,40 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, PlusCircle, Import, Eye, Pencil, Trash2, Search } from 'lucide-react';
-import { useCollection, useFirestore, useUser as useAuthUser, useMemoFirebase, errorEmitter } from '@/firebase';
-import { collection, doc, deleteDoc, query, where, OrFilterConstraint } from 'firebase/firestore';
-import type { Client, Empreendedor } from '@/lib/types';
-import { Skeleton } from '@/components/ui/skeleton';
+} from "@/components/ui/dropdown-menu";
 import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-    DialogDescription,
-    DialogFooter,
-    DialogClose
-} from '@/components/ui/dialog';
+  MoreHorizontal,
+  PlusCircle,
+  Import,
+  Eye,
+  Pencil,
+  Trash2,
+} from "lucide-react";
+import {
+  useCollection,
+  useFirestore,
+  useMemoFirebase,
+  errorEmitter,
+} from "@/firebase";
+import {
+  collection,
+  doc,
+  deleteDoc,
+  query,
+  where,
+  getDocs,
+} from "firebase/firestore";
+import type { Client, Empreendedor } from "@/lib/types";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -44,29 +68,41 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import { useToast } from '@/hooks/use-toast';
-import { FirestorePermissionError } from '@/firebase/errors';
-import { useAuth } from '@/firebase';
-import { ClientImportDialog } from './client-import-dialog';
-import { useCadastroMenuDebug } from '@/lib/cadastro-menu-debug';
-import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
-import { Separator } from '@/components/ui/separator';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
+} from "@/components/ui/alert-dialog";
+import { useToast } from "@/hooks/use-toast";
+import { FirestorePermissionError } from "@/firebase/errors";
+import { useAuth } from "@/firebase";
+import { ClientImportDialog } from "./client-import-dialog";
+import { useCadastroMenuDebug } from "@/lib/cadastro-menu-debug";
+import {
+  Tooltip,
+  TooltipProvider,
+  TooltipTrigger,
+  TooltipContent,
+} from "@/components/ui/tooltip";
+import { Separator } from "@/components/ui/separator";
+import { Label } from "@/components/ui/label";
+import { formatCpfCnpjDisplay } from "@/lib/masks";
+import { CardSearchInput } from "@/components/card-search-input";
 
-const DetailItem = ({ label, value }: { label: string, value?: string | null | string[] }) => {
-    const display = Array.isArray(value)
-      ? value.filter((s) => typeof s === 'string' && s.length > 1).join(', ') || (value.length > 0 ? value.join('') : 'Não informado')
-      : (value || 'Não informado');
-    return (
+const DetailItem = ({
+  label,
+  value,
+}: {
+  label: string;
+  value?: string | null | string[];
+}) => {
+  const display = Array.isArray(value)
+    ? value.filter((s) => typeof s === "string" && s.length > 1).join(", ") ||
+      (value.length > 0 ? value.join("") : "Não informado")
+    : value || "Não informado";
+  return (
     <div className="space-y-1">
-        <Label className="text-sm font-medium">{label}</Label>
-        <p className="text-sm text-muted-foreground">{display}</p>
+      <Label className="text-sm font-medium">{label}</Label>
+      <p className="text-sm text-muted-foreground">{display}</p>
     </div>
-    );
+  );
 };
-
 
 export default function EmpreendedoresPage() {
   const router = useRouter();
@@ -75,45 +111,123 @@ export default function EmpreendedoresPage() {
   const [isViewOpen, setIsViewOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
   const [itemToView, setItemToView] = useState<Empreendedor | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
 
   const firestore = useFirestore();
   const { user } = useAuth();
   const { toast } = useToast();
-  
-  const canWrite = user && (user.role === 'admin' || user.role === 'supervisor' || user.role === 'gestor');
+
+  const canWrite =
+    user &&
+    (user.role === "admin" ||
+      user.role === "supervisor" ||
+      user.role === "gestor");
+
+  const [fallbackEmpreendedores, setFallbackEmpreendedores] = useState<
+    Empreendedor[] | null
+  >(null);
 
   const empreendedoresQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
-    
-    if (user.role === 'client') {
-      const userDocuments = [user.cpf, ...(user.cnpjs || [])].filter(Boolean) as string[];
+
+    if (user.role === "client") {
+      const userDocuments = [
+        user.cpf || user.userCpf,
+        ...(user.cnpjs || []),
+      ].filter(Boolean) as string[];
       if (userDocuments.length > 0) {
-        return query(collection(firestore, 'empreendedores'), where('cpfCnpj', 'in', userDocuments));
+        return query(
+          collection(firestore, "empreendedores"),
+          where("cpfCnpj", "in", userDocuments),
+        );
       } else {
-        return query(collection(firestore, 'empreendedores'), where('cpfCnpj', '==', 'invalid-placeholder-for-empty-query'));
+        return query(
+          collection(firestore, "empreendedores"),
+          where("cpfCnpj", "==", "invalid-placeholder-for-empty-query"),
+        );
       }
     }
 
-    if (user.role === 'representative') {
-      // Representante enxerga apenas empreendedores que o titular aprovou explicitamente.
-      return query(collection(firestore, 'empreendedores'), where('approvedUserIds', 'array-contains', user.id));
+    if (user.role === "representative") {
+      return query(
+        collection(firestore, "empreendedores"),
+        where("approvedUserIds", "array-contains", user.id),
+      );
     }
-    
-    return collection(firestore, 'empreendedores');
+
+    return collection(firestore, "empreendedores");
   }, [firestore, user]);
 
-  const { data: empreendedores, isLoading } = useCollection<Empreendedor>(empreendedoresQuery);
+  const { data: empreendedores, isLoading } =
+    useCollection<Empreendedor>(empreendedoresQuery);
+
+  // Representante: fallback quando approvedUserIds não retorna nada — busca por access_requests aprovados e cpfCnpj.
+  useEffect(() => {
+    if (!firestore || !user || user.role !== "representative" || isLoading)
+      return;
+    if (empreendedores && empreendedores.length > 0) {
+      setFallbackEmpreendedores(null);
+      return;
+    }
+    const repUid = user.id ?? (user as any).uid;
+    const accessRequestsRef = collection(firestore, "access_requests");
+    const empreendedoresRef = collection(firestore, "empreendedores");
+    const qApproved = query(
+      accessRequestsRef,
+      where("status", "==", "approved"),
+      where("requestedByUserId", "==", repUid),
+    );
+    getDocs(qApproved)
+      .then((snap) => {
+        if (snap.docs.length === 0) {
+          setFallbackEmpreendedores([]);
+          return;
+        }
+        const cpfs = new Set<string>();
+        snap.docs.forEach((d) => {
+          const cpf = (d.data().cpfOfInterested || "").trim();
+          const digits = cpf.replace(/\D/g, "");
+          if (digits.length >= 11) {
+            cpfs.add(cpf);
+            cpfs.add(digits);
+          }
+        });
+        const cpfList = Array.from(cpfs).slice(0, 10);
+        if (cpfList.length === 0) {
+          setFallbackEmpreendedores([]);
+          return;
+        }
+        const qEmp = query(empreendedoresRef, where("cpfCnpj", "in", cpfList));
+        getDocs(qEmp)
+          .then((snapEmp) => {
+            const list: Empreendedor[] = snapEmp.docs.map(
+              (d) => ({ id: d.id, ...d.data() }) as Empreendedor,
+            );
+            setFallbackEmpreendedores(list);
+          })
+          .catch(() => setFallbackEmpreendedores([]));
+      })
+      .catch(() => setFallbackEmpreendedores([]));
+  }, [firestore, user, isLoading, empreendedores]);
+
+  const displayedEmpreendedores = useMemo(
+    () =>
+      empreendedores && empreendedores.length > 0
+        ? empreendedores
+        : (fallbackEmpreendedores ?? []),
+    [empreendedores, fallbackEmpreendedores],
+  );
 
   const filteredEmpreendedores = useMemo(() => {
-    if (!empreendedores) return [];
+    if (!displayedEmpreendedores.length) return [];
     const term = searchTerm.trim().toLowerCase();
-    if (!term) return empreendedores;
-    return empreendedores.filter((item) => {
-      const name = item.name?.toLowerCase() ?? '';
-      const cpfCnpj = item.cpfCnpj?.toLowerCase() ?? '';
-      const email = item.email?.toLowerCase() ?? '';
-      const municipio = item.municipio?.toLowerCase() ?? '';
+    const base = !term
+      ? displayedEmpreendedores
+      : displayedEmpreendedores.filter((item) => {
+      const name = item.name?.toLowerCase() ?? "";
+      const cpfCnpj = item.cpfCnpj?.toLowerCase() ?? "";
+      const email = item.email?.toLowerCase() ?? "";
+      const municipio = item.municipio?.toLowerCase() ?? "";
       return (
         name.includes(term) ||
         cpfCnpj.includes(term) ||
@@ -121,21 +235,25 @@ export default function EmpreendedoresPage() {
         municipio.includes(term)
       );
     });
-  }, [empreendedores, searchTerm]);
+    return [...base].sort((a, b) =>
+      (a.name || "").localeCompare(b.name || "", "pt-BR", { sensitivity: "base" }),
+    );
+  }, [displayedEmpreendedores, searchTerm]);
 
   useCadastroMenuDebug();
 
   useEffect(() => {
-    if (typeof window === 'undefined' || process.env.NODE_ENV !== 'development') return;
-    console.groupCollapsed('[Cadastro Debug] Empreendedores');
-    console.log('loading', isLoading);
-    console.log('count', empreendedores?.length ?? 0);
-    console.log('canWrite', canWrite);
+    if (typeof window === "undefined" || process.env.NODE_ENV !== "development")
+      return;
+    console.groupCollapsed("[Cadastro Debug] Empreendedores");
+    console.log("loading", isLoading);
+    console.log("count", empreendedores?.length ?? 0);
+    console.log("canWrite", canWrite);
     console.groupEnd();
   }, [isLoading, empreendedores?.length, canWrite]);
 
   const handleAddNew = () => {
-    router.push('/empreendedores/new');
+    router.push("/empreendedores/new");
   };
 
   const handleEdit = (item: Empreendedor) => {
@@ -154,21 +272,21 @@ export default function EmpreendedoresPage() {
 
   const handleDelete = () => {
     if (!firestore || !itemToDelete) return;
-    
-    const docRef = doc(firestore, 'empreendedores', itemToDelete);
+
+    const docRef = doc(firestore, "empreendedores", itemToDelete);
     deleteDoc(docRef)
       .then(() => {
         toast({
-          title: 'Empreendedor deletado',
-          description: 'O empreendedor foi removido com sucesso.',
+          title: "Empreendedor deletado",
+          description: "O empreendedor foi removido com sucesso.",
         });
       })
       .catch(async (serverError) => {
         const permissionError = new FirestorePermissionError({
           path: docRef.path,
-          operation: 'delete',
+          operation: "delete",
         });
-        errorEmitter.emit('permission-error', permissionError);
+        errorEmitter.emit("permission-error", permissionError);
       })
       .finally(() => {
         setIsAlertOpen(false);
@@ -180,10 +298,15 @@ export default function EmpreendedoresPage() {
     <>
       <div className="flex flex-col h-full">
         <PageHeader title="Empreendedores">
-          <div className='flex gap-2'>
+          <div className="flex gap-2">
             {canWrite && (
               <>
-                 <Button size="sm" className="gap-1" variant="outline" onClick={() => setIsImportOpen(true)}>
+                <Button
+                  size="sm"
+                  className="gap-1"
+                  variant="outline"
+                  onClick={() => setIsImportOpen(true)}
+                >
                   <Import className="h-4 w-4" />
                   Importar de Clientes
                 </Button>
@@ -199,177 +322,198 @@ export default function EmpreendedoresPage() {
           <Card>
             <CardHeader>
               <CardTitle>Gerenciamento de Empreendedores</CardTitle>
-               <CardDescription>Adicione, edite e visualize todos os seus empreendedores (clientes técnicos).</CardDescription>
+              <CardDescription>
+                {user?.role === "representative"
+                  ? "Empreendedores dos titulares (clientes) que você representa — após aprovação de acesso em Configurações → Usuários."
+                  : "Adicione, edite e visualize todos os seus empreendedores (clientes técnicos)."}
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
                 <div className="text-sm text-muted-foreground">
-                  {empreendedores?.length ? `Total: ${empreendedores.length} empreendedor(es)` : null}
+                  {displayedEmpreendedores.length
+                    ? `Total: ${displayedEmpreendedores.length} empreendedor(es)`
+                    : null}
                 </div>
-                <div className="flex items-center gap-2 w-full">
-                  <Input
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    placeholder="Buscar por nome, CPF/CNPJ, email ou município..."
-                    className="h-9 w-full"
-                  />
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="icon"
-                          className="h-9 w-9 shrink-0"
-                        >
-                          <Search className="h-4 w-4" />
-                          <span className="sr-only">Buscar empreendedor</span>
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Filtrar empreendedores digitando na caixa de busca</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </div>
+                <CardSearchInput
+                  value={searchTerm}
+                  onChange={setSearchTerm}
+                  placeholder="Buscar por nome, CPF/CNPJ, email ou município..."
+                  className="w-full"
+                />
               </div>
               <TooltipProvider>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Nome</TableHead>
-                    <TableHead className="hidden sm:table-cell">CPF/CNPJ</TableHead>
-                    <TableHead className="hidden md:table-cell">Email</TableHead>
-                    <TableHead className="text-right">Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {isLoading &&
-                    Array.from({ length: 5 }).map((_, i) => (
-                      <TableRow key={i}>
-                        <TableCell>
-                          <Skeleton className="h-5 w-32" />
-                        </TableCell>
-                        <TableCell className="hidden sm:table-cell">
-                          <Skeleton className="h-5 w-32" />
-                        </TableCell>
-                        <TableCell className="hidden md:table-cell">
-                          <Skeleton className="h-5 w-48" />
-                        </TableCell>
-                        <TableCell className="text-right">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Nome</TableHead>
+                      <TableHead className="hidden sm:table-cell">
+                        CPF/CNPJ
+                      </TableHead>
+                      <TableHead className="hidden md:table-cell">
+                        Email
+                      </TableHead>
+                      <TableHead className="text-right">Ações</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {isLoading &&
+                      Array.from({ length: 5 }).map((_, i) => (
+                        <TableRow key={i}>
+                          <TableCell>
+                            <Skeleton className="h-5 w-32" />
+                          </TableCell>
+                          <TableCell className="hidden sm:table-cell">
+                            <Skeleton className="h-5 w-32" />
+                          </TableCell>
+                          <TableCell className="hidden md:table-cell">
+                            <Skeleton className="h-5 w-48" />
+                          </TableCell>
+                          <TableCell className="text-right">
                             <Skeleton className="h-8 w-24" />
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    {!isLoading &&
+                      filteredEmpreendedores.map((item) => (
+                        <TableRow key={item.id}>
+                          <TableCell className="font-medium">
+                            {item.name}
+                          </TableCell>
+                          <TableCell className="hidden sm:table-cell text-muted-foreground">
+                            {formatCpfCnpjDisplay(item.cpfCnpj)}
+                          </TableCell>
+                          <TableCell className="hidden md:table-cell text-muted-foreground">
+                            {item.email}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex items-center justify-end gap-1">
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => handleView(item)}
+                                  >
+                                    <Eye className="h-4 w-4" />
+                                    <span className="sr-only">Visualizar</span>
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Visualizar detalhes</p>
+                                </TooltipContent>
+                              </Tooltip>
+                              {canWrite && (
+                                <>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => handleEdit(item)}
+                                      >
+                                        <Pencil className="h-4 w-4" />
+                                        <span className="sr-only">Editar</span>
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>Editar empreendedor</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="text-destructive hover:text-destructive"
+                                        onClick={() =>
+                                          openDeleteConfirm(item.id)
+                                        }
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                        <span className="sr-only">Deletar</span>
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>Deletar empreendedor</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </>
+                              )}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    {!isLoading && filteredEmpreendedores.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={4} className="h-24 text-center">
+                          Nenhum empreendedor encontrado.
                         </TableCell>
                       </TableRow>
-                    ))}
-                  {!isLoading && filteredEmpreendedores.map((item) => (
-                    <TableRow key={item.id}>
-                      <TableCell className="font-medium">{item.name}</TableCell>
-                       <TableCell className="hidden sm:table-cell text-muted-foreground">
-                        {item.cpfCnpj}
-                      </TableCell>
-                      <TableCell className="hidden md:table-cell text-muted-foreground">
-                        {item.email}
-                      </TableCell>
-                      <TableCell className="text-right">
-                           <div className="flex items-center justify-end gap-1">
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <Button variant="ghost" size="icon" onClick={() => handleView(item)}>
-                                            <Eye className="h-4 w-4" />
-                                            <span className="sr-only">Visualizar</span>
-                                        </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent><p>Visualizar detalhes</p></TooltipContent>
-                                </Tooltip>
-                            {canWrite && (
-                                <>
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <Button variant="ghost" size="icon" onClick={() => handleEdit(item)}>
-                                            <Pencil className="h-4 w-4" />
-                                            <span className="sr-only">Editar</span>
-                                        </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent><p>Editar empreendedor</p></TooltipContent>
-                                </Tooltip>
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => openDeleteConfirm(item.id)}>
-                                            <Trash2 className="h-4 w-4" />
-                                            <span className="sr-only">Deletar</span>
-                                        </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent><p>Deletar empreendedor</p></TooltipContent>
-                                </Tooltip>
-                                </>
-                            )}
-                            </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                   {!isLoading && filteredEmpreendedores.length === 0 && (
-                        <TableRow>
-                            <TableCell colSpan={4} className="h-24 text-center">
-                                Nenhum empreendedor encontrado.
-                            </TableCell>
-                        </TableRow>
                     )}
-                </TableBody>
-              </Table>
+                  </TableBody>
+                </Table>
               </TooltipProvider>
             </CardContent>
           </Card>
         </main>
       </div>
 
-        <Dialog open={isViewOpen} onOpenChange={setIsViewOpen}>
-            <DialogContent className="sm:max-w-2xl">
-                <DialogHeader>
-                    <DialogTitle>{itemToView?.name}</DialogTitle>
-                    <DialogDescription>
-                        Detalhes do empreendedor cadastrado.
-                    </DialogDescription>
-                </DialogHeader>
-                {itemToView && (
-                    <div className="max-h-[60vh] overflow-y-auto pr-4 space-y-4">
-                        <DetailItem label="Nome / Razão Social" value={itemToView.name} />
-                        <Separator />
-                        <div className="grid grid-cols-2 gap-4">
-                           <DetailItem label="CPF/CNPJ" value={itemToView.cpfCnpj} />
-                           <DetailItem label="Tipo" value={itemToView.entityType} />
-                        </div>
-                         <DetailItem label="CTF/IBAMA" value={itemToView.ctfIbama} />
-                        <Separator />
-                        <h4 className="font-semibold text-foreground">Contato & Endereço</h4>
-                        <DetailItem label="Email" value={itemToView.email} />
-                        <DetailItem label="Telefone" value={itemToView.phone} />
-                         <DetailItem label="Endereço" value={`${itemToView.address || ''}, ${itemToView.numero || ''}`} />
-                         <DetailItem label="Bairro/Distrito" value={itemToView.bairro} />
-                         <div className="grid grid-cols-3 gap-4">
-                            <DetailItem label="Município" value={itemToView.municipio} />
-                            <DetailItem label="UF" value={itemToView.uf} />
-                            <DetailItem label="CEP" value={itemToView.cep} />
-                        </div>
-                    </div>
-                )}
-                 <DialogFooter>
-                    <DialogClose asChild>
-                        <Button type="button" variant="outline">
-                        Fechar
-                        </Button>
-                    </DialogClose>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
-
+      <Dialog open={isViewOpen} onOpenChange={setIsViewOpen}>
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>{itemToView?.name}</DialogTitle>
+            <DialogDescription>
+              Detalhes do empreendedor cadastrado.
+            </DialogDescription>
+          </DialogHeader>
+          {itemToView && (
+            <div className="max-h-[60vh] overflow-y-auto pr-4 space-y-4">
+              <DetailItem label="Nome / Razão Social" value={itemToView.name} />
+              <Separator />
+              <div className="grid grid-cols-2 gap-4">
+                <DetailItem
+                  label="CPF/CNPJ"
+                  value={formatCpfCnpjDisplay(itemToView.cpfCnpj)}
+                />
+                <DetailItem label="Tipo" value={itemToView.entityType} />
+              </div>
+              <DetailItem label="CTF/IBAMA" value={itemToView.ctfIbama} />
+              <Separator />
+              <h4 className="font-semibold text-foreground">
+                Contato & Endereço
+              </h4>
+              <DetailItem label="Email" value={itemToView.email} />
+              <DetailItem label="Telefone" value={itemToView.phone} />
+              <DetailItem
+                label="Endereço"
+                value={`${itemToView.address || ""}, ${itemToView.numero || ""}`}
+              />
+              <DetailItem label="Bairro/Distrito" value={itemToView.bairro} />
+              <div className="grid grid-cols-3 gap-4">
+                <DetailItem label="Município" value={itemToView.municipio} />
+                <DetailItem label="UF" value={itemToView.uf} />
+                <DetailItem label="CEP" value={itemToView.cep} />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button type="button" variant="outline">
+                Fechar
+              </Button>
+            </DialogClose>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {canWrite && (
-        <ClientImportDialog 
-            isOpen={isImportOpen} 
-            onOpenChange={setIsImportOpen} 
-            onImportSuccess={() => {
-                setIsImportOpen(false);
-            }}
+        <ClientImportDialog
+          isOpen={isImportOpen}
+          onOpenChange={setIsImportOpen}
+          onImportSuccess={() => {
+            setIsImportOpen(false);
+          }}
         />
       )}
 
@@ -378,12 +522,15 @@ export default function EmpreendedoresPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta ação não pode ser desfeita. Isso irá deletar permanentemente o empreendedor.
+              Esta ação não pode ser desfeita. Isso irá deletar permanentemente
+              o empreendedor.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete}>Deletar</AlertDialogAction>
+            <AlertDialogAction onClick={handleDelete}>
+              Deletar
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

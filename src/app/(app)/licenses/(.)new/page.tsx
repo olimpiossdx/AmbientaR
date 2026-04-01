@@ -23,7 +23,7 @@ function NewLicenseModalContent() {
                     </DialogDescription>
                 </DialogHeader>
                 <LicenseForm
-                    currentItem={null}
+                    currentLicense={null}
                     onSuccess={handleSuccess}
                 />
             </DialogContent>

@@ -23,7 +23,7 @@ export default function NewInspectionPage() {
                     <CardHeader>
                         <CardTitle>Registrar Nova Vistoria</CardTitle>
                         <CardDescription>
-                        Preencha o formulário abaixo para registrar uma nova fiscalização ou vistoria de campo.
+                        Preencha o formulário abaixo para registrar uma nova vistoria em campo.
                         </CardDescription>
                     </CardHeader>
                     <CardContent>

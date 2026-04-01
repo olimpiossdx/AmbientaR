@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import {
   Table,
   TableBody,
@@ -37,6 +38,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
+import { useMemo } from 'react';
 
 type ExpenseTableProps = {
   expenses?: Expense[] | null;
@@ -58,8 +60,18 @@ export function ExpenseTable({ expenses: expensesProp, isLoadingExpenses: isLoad
   }, [firestore, user]);
 
   const { data: hookExpenses, isLoading: hookLoading } = useCollection<Expense>(expensesProp !== undefined ? null : expensesQuery);
-  const expenses = expensesProp !== undefined ? (expensesProp ?? []) : (hookExpenses ?? []);
+  const expenses = useMemo(
+    () => (expensesProp !== undefined ? (expensesProp ?? []) : (hookExpenses ?? [])),
+    [expensesProp, hookExpenses],
+  );
   const isLoading = expensesProp !== undefined ? (isLoadingExpensesProp ?? false) : hookLoading;
+  const sortedExpenses = useMemo(
+    () =>
+      [...(expenses || [])].sort(
+        (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
+      ),
+    [expenses],
+  );
 
   const handleAddNew = () => {
     router.push('/cash-flow/new?type=expense');
@@ -113,6 +125,57 @@ export function ExpenseTable({ expenses: expensesProp, isLoadingExpenses: isLoad
         </Button>
       </div>
        <TooltipProvider>
+        <div className="space-y-3 md:hidden">
+          {isLoading &&
+            Array.from({ length: 3 }).map((_, i) => (
+              <Card key={i}>
+                <CardContent className="p-4 space-y-2">
+                  <Skeleton className="h-5 w-36" />
+                  <Skeleton className="h-4 w-32" />
+                </CardContent>
+              </Card>
+            ))}
+          {!isLoading &&
+            sortedExpenses.map((item) => (
+              <Card key={item.id} className="rounded-xl border-border/70 shadow-sm">
+                <CardContent className="p-4 space-y-3">
+                  <div className="min-w-0">
+                    <p className="font-medium truncate">{item.description}</p>
+                    <p className="text-sm text-muted-foreground">{formatDate(item.date)}</p>
+                    <p className="text-sm font-medium text-red-600 dark:text-red-500">
+                      {formatCurrency(item.amount)}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    {item.fileUrl && (
+                      <Button asChild variant="ghost" size="icon">
+                        <a href={item.fileUrl} target="_blank" rel="noopener noreferrer">
+                          <Paperclip className="h-4 w-4" />
+                        </a>
+                      </Button>
+                    )}
+                    <Button variant="ghost" size="icon" onClick={() => handleEdit(item)}>
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="text-destructive hover:text-destructive"
+                      onClick={() => openDeleteConfirm(item.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          {!isLoading && sortedExpenses.length === 0 && (
+            <div className="h-24 flex items-center justify-center text-sm text-muted-foreground">
+              Nenhuma despesa encontrada.
+            </div>
+          )}
+        </div>
+        <div className="hidden md:block">
         <Table>
             <TableHeader>
             <TableRow>
@@ -134,7 +197,7 @@ export function ExpenseTable({ expenses: expensesProp, isLoadingExpenses: isLoad
                     <TableCell className="text-right"><Skeleton className="h-8 w-24" /></TableCell>
                 </TableRow>
                 ))}
-            {expenses?.map((item) => (
+            {sortedExpenses.map((item) => (
                 <TableRow key={item.id}>
                 <TableCell className="text-muted-foreground">{formatDate(item.date)}</TableCell>
                 <TableCell className="font-medium">{item.description}</TableCell>
@@ -179,13 +242,14 @@ export function ExpenseTable({ expenses: expensesProp, isLoadingExpenses: isLoad
                 </TableCell>
                 </TableRow>
             ))}
-            {!isLoading && expenses?.length === 0 && (
+            {!isLoading && sortedExpenses.length === 0 && (
                 <TableRow>
                 <TableCell colSpan={5} className="h-24 text-center">Nenhuma despesa encontrada.</TableCell>
                 </TableRow>
             )}
             </TableBody>
         </Table>
+        </div>
       </TooltipProvider>
       
       <AlertDialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>

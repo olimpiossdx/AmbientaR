@@ -29,5 +29,7 @@ Sem `cpfCnpjSet`, o cliente só terá acesso quando o documento tiver `cpfCnpj` 
 - **projects**, **licenses**, **outorgas**, **intervencoes**: get para cliente se `empreendedorId` apontar para empreendedor cujo `cpfCnpj` seja do cliente.
 - **invoices**, **commercialProposals**: get para cliente se `clientId` apontar para client do cliente.
 - **contracts**: get para cliente se `contratante.clientId` apontar para client do cliente.
+- **supplierContracts**: leitura geral para autenticados; módulo operacional focado em perfis financeiros/administrativos.
+- **autoInfracaoDefesas**: acesso administrativo (não faz parte do escopo client/representative).
 
 O app deve filtrar as listagens por CPF/CNPJ (e IDs derivados) para o perfil client.

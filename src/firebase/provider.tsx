@@ -25,6 +25,33 @@ interface FirebaseContextState {
 
 export const FirebaseContext = createContext<FirebaseContextState | undefined>(undefined);
 
+/** Redirecionamentos que dependem de usePathname/useRouter. Só monta no cliente para evitar "useContext null" durante geração (SSR/Turbopack). */
+function AuthRedirects({ children }: { children: ReactNode }) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  if (!mounted) return <>{children}</>;
+  return <AuthRedirectsInner>{children}</AuthRedirectsInner>;
+}
+
+function AuthRedirectsInner({ children }: { children: ReactNode }) {
+  const ctx = useContext(FirebaseContext);
+  const pathname = usePathname();
+  const router = useRouter();
+  const appUser = ctx?.user ?? null;
+  const isInitialized = ctx?.isInitialized ?? false;
+  useEffect(() => {
+    if (isInitialized && !appUser && pathname !== '/login' && pathname !== '/forgot-password' && pathname !== '/register') {
+      router.push('/login');
+    }
+  }, [appUser, isInitialized, pathname, router]);
+  useEffect(() => {
+    if (appUser && (pathname === '/login' || pathname === '/register' || pathname === '/forgot-password')) {
+      router.replace('/');
+    }
+  }, [appUser, pathname, router]);
+  return <>{children}</>;
+}
+
 export const FirebaseProvider: React.FC<{ children: ReactNode; firebaseApp: FirebaseApp; firestore: Firestore; auth: Auth; }> = ({
   children,
   firebaseApp,
@@ -33,8 +60,6 @@ export const FirebaseProvider: React.FC<{ children: ReactNode; firebaseApp: Fire
 }) => {
   const [appUser, setAppUser] = useState<AppUser | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
-  const router = useRouter();
-  const pathname = usePathname();
   const { toast } = useToast();
 
   const updateUserOnlineStatus = useCallback(async (uid: string, isOnline: boolean) => {
@@ -133,21 +158,8 @@ export const FirebaseProvider: React.FC<{ children: ReactNode; firebaseApp: Fire
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
   }, [auth, firestore, updateUserOnlineStatus]);
-  
-  useEffect(() => {
-    if (isInitialized && !appUser && pathname !== '/login' && pathname !== '/forgot-password' && pathname !== '/register') {
-      router.push('/login');
-    }
-  }, [appUser, isInitialized, pathname, router]);
 
-  // Redirecionar para o painel só depois do appUser estar definido (evita voltar para /login)
-  useEffect(() => {
-    if (appUser && (pathname === '/login' || pathname === '/register' || pathname === '/forgot-password')) {
-      router.replace('/');
-    }
-  }, [appUser, pathname, router]);
-
-  const login = async (email: string, password_hash: string): Promise<boolean> => {
+  const login = useCallback(async (email: string, password_hash: string): Promise<boolean> => {
     if (!auth || !firestore) {
       toast({
         variant: 'destructive',
@@ -218,7 +230,7 @@ export const FirebaseProvider: React.FC<{ children: ReactNode; firebaseApp: Fire
       });
       return false;
     }
-  };
+  }, [auth, firestore, toast, updateLastLogin]);
 
   const logout = useCallback(async () => {
     if (auth && auth.currentUser && firestore) {
@@ -242,7 +254,7 @@ export const FirebaseProvider: React.FC<{ children: ReactNode; firebaseApp: Fire
   return (
     <FirebaseContext.Provider value={contextValue}>
       <FirebaseErrorListener />
-      {children}
+      <AuthRedirects>{children}</AuthRedirects>
     </FirebaseContext.Provider>
   );
 };
@@ -275,6 +287,7 @@ export const useFirebaseApp = (): FirebaseApp => {
 type MemoFirebase<T> = T & { __memo?: boolean };
 
 export function useMemoFirebase<T>(factory: () => T, deps: DependencyList): T | MemoFirebase<T> {
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const memoized = useMemo(factory, deps);
   
   if (typeof memoized !== 'object' || memoized === null) return memoized;

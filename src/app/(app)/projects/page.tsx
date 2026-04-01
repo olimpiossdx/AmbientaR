@@ -1,10 +1,15 @@
-
-'use client';
-import { useMemo, useState, useEffect, Suspense } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
-import { PageHeader } from '@/components/page-header';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+"use client";
+import { useMemo, useState, useEffect, Suspense } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
+import { PageHeader } from "@/components/page-header";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -12,7 +17,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
+} from "@/components/ui/table";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,21 +25,34 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, PlusCircle, Pencil, Trash2, Eye } from 'lucide-react';
-import { useCollection, useFirestore, useUser as useAuthUser, useMemoFirebase, errorEmitter } from '@/firebase';
-import { collection, doc, deleteDoc, query, where, getDocs } from 'firebase/firestore';
-import type { Project, Empreendedor } from '@/lib/types';
-import { Skeleton } from '@/components/ui/skeleton';
+} from "@/components/ui/dropdown-menu";
+import { MoreHorizontal, PlusCircle, Pencil, Trash2, Eye } from "lucide-react";
 import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-    DialogDescription,
-    DialogFooter,
-    DialogClose
-} from '@/components/ui/dialog';
+  useCollection,
+  useFirestore,
+  useUser as useAuthUser,
+  useMemoFirebase,
+  errorEmitter,
+} from "@/firebase";
+import {
+  collection,
+  doc,
+  deleteDoc,
+  query,
+  where,
+  getDocs,
+} from "firebase/firestore";
+import type { Project, Empreendedor } from "@/lib/types";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -44,134 +62,284 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import { useToast } from '@/hooks/use-toast';
-import { FirestorePermissionError } from '@/firebase/errors';
-import { useAuth } from '@/firebase';
-import { useCadastroMenuDebug } from '@/lib/cadastro-menu-debug';
-import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
-import { Separator } from '@/components/ui/separator';
-import { Label } from '@/components/ui/label';
+} from "@/components/ui/alert-dialog";
+import { useToast } from "@/hooks/use-toast";
+import { FirestorePermissionError } from "@/firebase/errors";
+import { useAuth } from "@/firebase";
+import { useCadastroMenuDebug } from "@/lib/cadastro-menu-debug";
+import {
+  Tooltip,
+  TooltipProvider,
+  TooltipTrigger,
+  TooltipContent,
+} from "@/components/ui/tooltip";
+import { Separator } from "@/components/ui/separator";
+import { Label } from "@/components/ui/label";
+import { CardSearchInput } from "@/components/card-search-input";
 
-const DetailItem = ({ label, value }: { label: string, value?: string | null }) => (
-    <div className="space-y-1">
-        <Label className="text-sm font-medium">{label}</Label>
-        <p className="text-sm text-muted-foreground">{value || 'Não informado'}</p>
-    </div>
+const DetailItem = ({
+  label,
+  value,
+}: {
+  label: string;
+  value?: string | null;
+}) => (
+  <div className="space-y-1">
+    <Label className="text-sm font-medium">{label}</Label>
+    <p className="text-sm text-muted-foreground">{value || "Não informado"}</p>
+  </div>
 );
 
 function ProjectsPageContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const statusFilter = searchParams.get('status');
+  const statusFilter = searchParams.get("status");
 
   const [isAlertOpen, setIsAlertOpen] = useState(false);
   const [isViewOpen, setIsViewOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
   const [itemToView, setItemToView] = useState<Project | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
 
   const firestore = useFirestore();
   const { user } = useAuth();
   const { toast } = useToast();
-  
-  const canWrite = user && (user.role === 'admin' || user.role === 'supervisor' || user.role === 'gestor');
 
-  const [empreendedorIdsForUser, setEmpreendedorIdsForUser] = useState<string[] | undefined>(undefined);
+  const canWrite =
+    user &&
+    (user.role === "admin" ||
+      user.role === "supervisor" ||
+      user.role === "gestor");
+
+  const [empreendedorIdsForUser, setEmpreendedorIdsForUser] = useState<
+    string[] | undefined
+  >(undefined);
 
   useEffect(() => {
     if (!firestore || !user) return;
 
     // Cliente titular: filtra empreendimentos pelos seus próprios documentos (CPF/CNPJs).
-    if (user.role === 'client') {
+    if (user.role === "client") {
       setEmpreendedorIdsForUser(undefined);
-      const userDocuments = [user.cpf, ...(user.cnpjs || [])].filter(Boolean) as string[];
+      const userDocuments = [
+        user.cpf || user.userCpf,
+        ...(user.cnpjs || []),
+      ].filter(Boolean) as string[];
       if (userDocuments.length > 0) {
-        const empreendedoresRef = collection(firestore, 'empreendedores');
-        const q = query(empreendedoresRef, where('cpfCnpj', 'in', userDocuments));
+        const empreendedoresRef = collection(firestore, "empreendedores");
+        const q = query(
+          empreendedoresRef,
+          where("cpfCnpj", "in", userDocuments),
+        );
         getDocs(q)
-          .then(snapshot => {
-            const ids = snapshot.docs.map(doc => doc.id);
-            setEmpreendedorIdsForUser(ids.length > 0 ? ids : ['invalid-placeholder-for-empty-query']);
+          .then((snapshot) => {
+            const ids = snapshot.docs.map((doc) => doc.id);
+            setEmpreendedorIdsForUser(
+              ids.length > 0 ? ids : ["invalid-placeholder-for-empty-query"],
+            );
           })
-          .catch(err => {
+          .catch((err) => {
             console.error("Error fetching empreendedor IDs:", err);
-            setEmpreendedorIdsForUser(['invalid-placeholder-for-empty-query']);
+            setEmpreendedorIdsForUser(["invalid-placeholder-for-empty-query"]);
           });
       } else {
-        setEmpreendedorIdsForUser(['invalid-placeholder-for-empty-query']);
+        setEmpreendedorIdsForUser(["invalid-placeholder-for-empty-query"]);
       }
       return;
     }
 
-    // Representante: filtra empreendimentos aprovados explicitamente pelo titular (approvedUserIds).
-    if (user.role === 'representative') {
+    // Representante: empreendimentos dos titulares que aprovaram o acesso (approvedUserIds); fallback por access_requests.
+    if (user.role === "representative") {
       setEmpreendedorIdsForUser(undefined);
-      const empreendedoresRef = collection(firestore, 'empreendedores');
-      const q = query(empreendedoresRef, where('approvedUserIds', 'array-contains', user.id));
-      getDocs(q)
-        .then(snapshot => {
-          const ids = snapshot.docs.map(doc => doc.id);
-          setEmpreendedorIdsForUser(ids.length > 0 ? ids : ['invalid-placeholder-for-empty-query']);
+      const repUid = user.id ?? (user as any).uid;
+      const empreendedoresRef = collection(firestore, "empreendedores");
+      const accessRequestsRef = collection(firestore, "access_requests");
+      const qEmp = query(
+        empreendedoresRef,
+        where("approvedUserIds", "array-contains", repUid),
+      );
+      getDocs(qEmp)
+        .then((snapshot) => {
+          let ids = snapshot.docs.map((d) => d.id);
+          if (ids.length > 0) {
+            setEmpreendedorIdsForUser(ids);
+            return;
+          }
+          const qApproved = query(
+            accessRequestsRef,
+            where("status", "==", "approved"),
+            where("requestedByUserId", "==", repUid),
+          );
+          getDocs(qApproved)
+            .then((snapReq) => {
+              if (snapReq.docs.length === 0) {
+                setEmpreendedorIdsForUser([
+                  "invalid-placeholder-for-empty-query",
+                ]);
+                return;
+              }
+              const cpfs = new Set<string>();
+              snapReq.docs.forEach((d) => {
+                const cpf = (d.data().cpfOfInterested || "").trim();
+                const digits = cpf.replace(/\D/g, "");
+                if (digits.length >= 11) {
+                  cpfs.add(cpf);
+                  cpfs.add(digits);
+                }
+              });
+              const cpfList = Array.from(cpfs).slice(0, 10);
+              if (cpfList.length === 0) {
+                setEmpreendedorIdsForUser([
+                  "invalid-placeholder-for-empty-query",
+                ]);
+                return;
+              }
+              const qByCpf = query(
+                empreendedoresRef,
+                where("cpfCnpj", "in", cpfList),
+              );
+              getDocs(qByCpf)
+                .then((snapEmp) => {
+                  ids = snapEmp.docs.map((d) => d.id);
+                  setEmpreendedorIdsForUser(
+                    ids.length > 0
+                      ? ids
+                      : ["invalid-placeholder-for-empty-query"],
+                  );
+                })
+                .catch(() =>
+                  setEmpreendedorIdsForUser([
+                    "invalid-placeholder-for-empty-query",
+                  ]),
+                );
+            })
+            .catch(() =>
+              setEmpreendedorIdsForUser([
+                "invalid-placeholder-for-empty-query",
+              ]),
+            );
         })
-        .catch(err => {
-          console.error("Error fetching empreendedor IDs for representative:", err);
-          setEmpreendedorIdsForUser(['invalid-placeholder-for-empty-query']);
+        .catch((err) => {
+          console.error(
+            "Error fetching empreendedor IDs for representative:",
+            err,
+          );
+          setEmpreendedorIdsForUser(["invalid-placeholder-for-empty-query"]);
         });
     }
   }, [user, firestore]);
-  
+
   const projectsQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
 
-    if (user.role === 'client' || user.role === 'representative' || user.role === 'technical') {
+    if (
+      user.role === "client" ||
+      user.role === "representative" ||
+      user.role === "technical"
+    ) {
       if (empreendedorIdsForUser === undefined) {
         return null;
       }
       if (empreendedorIdsForUser.length === 0) {
-          // If a client has no empreendedores, return a query that finds nothing.
-          return query(collection(firestore, 'projects'), where('empreendedorId', 'in', ['invalid-placeholder']));
+        // If a client has no empreendedores, return a query that finds nothing.
+        return query(
+          collection(firestore, "projects"),
+          where("empreendedorId", "in", ["invalid-placeholder"]),
+        );
       }
-      return query(collection(firestore, 'projects'), where('empreendedorId', 'in', empreendedorIdsForUser));
+      return query(
+        collection(firestore, "projects"),
+        where("empreendedorId", "in", empreendedorIdsForUser),
+      );
     }
-    
-    return collection(firestore, 'projects');
+
+    return collection(firestore, "projects");
   }, [firestore, user, empreendedorIdsForUser]);
-  
-  const { data: allProjects, isLoading: isLoadingProjects } = useCollection<Project>(projectsQuery);
 
-  const empreendedoresQuery = useMemoFirebase(() => firestore ? collection(firestore, 'empreendedores') : null, [firestore]);
-  const { data: empreendedores, isLoading: isLoadingEmpreendedores } = useCollection<Empreendedor>(empreendedoresQuery);
-  const empreendedoresMap = new Map(empreendedores?.map(c => [c.id, c.name]));
+  const { data: allProjects, isLoading: isLoadingProjects } =
+    useCollection<Project>(projectsQuery);
 
-  const isLoading = isLoadingProjects || isLoadingEmpreendedores || (user?.role === 'client' && empreendedorIdsForUser === undefined);
-  
+  const empreendedoresQuery = useMemoFirebase(
+    () => (firestore ? collection(firestore, "empreendedores") : null),
+    [firestore],
+  );
+  const { data: empreendedores, isLoading: isLoadingEmpreendedores } =
+    useCollection<Empreendedor>(empreendedoresQuery);
+  const empreendedoresMap = useMemo(
+    () => new Map(empreendedores?.map((c) => [c.id, c.name])),
+    [empreendedores],
+  );
+
+  const isLoading =
+    isLoadingProjects ||
+    isLoadingEmpreendedores ||
+    ((user?.role === "client" || user?.role === "representative") &&
+      empreendedorIdsForUser === undefined);
+
   const filteredProjects = useMemo(() => {
     if (!allProjects) return [];
-    if (!statusFilter) return allProjects;
-    
-    if (statusFilter === 'andamento') {
-      return allProjects.filter(p => p.status !== 'Vencida' && p.status !== 'Cancelada');
-    }
-    if (statusFilter === 'concluido') {
-      return allProjects.filter(p => p.status === 'Vencida' || p.status === 'Cancelada');
-    }
-    return allProjects;
-  }, [allProjects, statusFilter]);
+    const term = searchTerm.trim().toLowerCase();
+    const base = !statusFilter
+      ? allProjects
+      : statusFilter === "andamento"
+        ? allProjects.filter((p) => p.status !== "Vencida" && p.status !== "Cancelada")
+        : statusFilter === "concluido"
+          ? allProjects.filter((p) => p.status === "Vencida" || p.status === "Cancelada")
+          : allProjects;
+
+    const termFiltered = !term
+      ? base
+      : base.filter((p) => {
+      const nome = (p.propertyName || "").toLowerCase();
+      const municipio = (p.municipio || "").toLowerCase();
+      const atividade = (p.activity || "").toLowerCase();
+      const empreendedor = (empreendedoresMap.get(p.empreendedorId) || "").toLowerCase();
+      return (
+        nome.includes(term) ||
+        municipio.includes(term) ||
+        atividade.includes(term) ||
+        empreendedor.includes(term)
+      );
+    });
+    return [...termFiltered].sort((a, b) =>
+      (a.propertyName || "").localeCompare(b.propertyName || "", "pt-BR", {
+        sensitivity: "base",
+      }),
+    );
+  }, [allProjects, statusFilter, searchTerm, empreendedoresMap]);
 
   useCadastroMenuDebug();
 
   useEffect(() => {
-    if (typeof window === 'undefined' || process.env.NODE_ENV !== 'development') return;
-    console.groupCollapsed('[Cadastro Debug] Empreendimentos');
-    console.log('loading', { isLoadingProjects, isLoadingEmpreendedores, isLoading });
-    console.log('counts', { allProjects: allProjects?.length ?? 0, empreendedores: empreendedores?.length ?? 0, filteredProjects: filteredProjects.length });
-    console.log('statusFilter', statusFilter);
-    console.log('canWrite', canWrite);
+    if (typeof window === "undefined" || process.env.NODE_ENV !== "development")
+      return;
+    console.groupCollapsed("[Cadastro Debug] Empreendimentos");
+    console.log("loading", {
+      isLoadingProjects,
+      isLoadingEmpreendedores,
+      isLoading,
+    });
+    console.log("counts", {
+      allProjects: allProjects?.length ?? 0,
+      empreendedores: empreendedores?.length ?? 0,
+      filteredProjects: filteredProjects.length,
+    });
+    console.log("statusFilter", statusFilter);
+    console.log("canWrite", canWrite);
     console.groupEnd();
-  }, [isLoading, allProjects?.length, empreendedores?.length, filteredProjects.length, statusFilter, canWrite]);
+  }, [
+    isLoading,
+    isLoadingProjects,
+    isLoadingEmpreendedores,
+    allProjects?.length,
+    empreendedores?.length,
+    filteredProjects.length,
+    statusFilter,
+    canWrite,
+  ]);
 
   const handleAddNew = () => {
-    router.push('/projects/new');
+    router.push("/projects/new");
   };
 
   const handleEdit = (item: Project) => {
@@ -190,20 +358,20 @@ function ProjectsPageContent() {
 
   const handleDelete = () => {
     if (!firestore || !itemToDelete) return;
-    const docRef = doc(firestore, 'projects', itemToDelete);
+    const docRef = doc(firestore, "projects", itemToDelete);
     deleteDoc(docRef)
       .then(() => {
         toast({
-          title: 'Projeto deletado',
-          description: 'O projeto foi removido com sucesso.',
+          title: "Projeto deletado",
+          description: "O projeto foi removido com sucesso.",
         });
       })
       .catch(async (serverError) => {
         const permissionError = new FirestorePermissionError({
           path: docRef.path,
-          operation: 'delete',
+          operation: "delete",
         });
-        errorEmitter.emit('permission-error', permissionError);
+        errorEmitter.emit("permission-error", permissionError);
       })
       .finally(() => {
         setIsAlertOpen(false);
@@ -217,8 +385,8 @@ function ProjectsPageContent() {
         <PageHeader title="Empreendimentos">
           {canWrite && (
             <Button size="sm" className="gap-1" onClick={handleAddNew}>
-                <PlusCircle className="h-4 w-4" />
-                Adicionar Empreendimento
+              <PlusCircle className="h-4 w-4" />
+              Adicionar Empreendimento
             </Button>
           )}
         </PageHeader>
@@ -226,137 +394,191 @@ function ProjectsPageContent() {
           <Card>
             <CardHeader>
               <CardTitle>Gerenciamento de Empreendimentos</CardTitle>
-              <CardDescription>Cadastre, edite e visualize os empreendimentos.</CardDescription>
+              <CardDescription>
+                {user?.role === "representative"
+                  ? "Empreendimentos dos titulares (clientes) que você representa — mesmos dados visíveis no perfil do cliente."
+                  : "Cadastre, edite e visualize os empreendimentos."}
+              </CardDescription>
+              <CardSearchInput
+                value={searchTerm}
+                onChange={setSearchTerm}
+                placeholder="Buscar empreendimento, município, atividade..."
+              />
             </CardHeader>
             <CardContent>
-             <TooltipProvider>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Empreendimento</TableHead>
-                    <TableHead>Município</TableHead>
-                    <TableHead className="text-right">Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {isLoading &&
-                    Array.from({ length: 5 }).map((_, i) => (
-                      <TableRow key={i}>
-                        <TableCell><Skeleton className="h-5 w-48" /></TableCell>
-                        <TableCell><Skeleton className="h-5 w-32" /></TableCell>
-                        <TableCell className="text-right"><Skeleton className="h-8 w-24" /></TableCell>
-                      </TableRow>
-                    ))}
-                  {!isLoading && filteredProjects?.map((item) => (
-                    <TableRow key={item.id}>
-                      <TableCell className="font-medium">{item.propertyName}</TableCell>
-                      <TableCell className="text-muted-foreground">{item.municipio || 'N/A'}</TableCell>
-                      <TableCell className="text-right">
-                          <div className="flex items-center justify-end gap-1">
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <Button variant="ghost" size="icon" onClick={() => handleView(item)}>
-                                        <Eye className="h-4 w-4" />
-                                        <span className="sr-only">Visualizar</span>
-                                    </Button>
-                                </TooltipTrigger>
-                                <TooltipContent><p>Visualizar detalhes</p></TooltipContent>
-                            </Tooltip>
-                            {canWrite && (
-                                <>
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <Button variant="ghost" size="icon" onClick={() => handleEdit(item)}>
-                                            <Pencil className="h-4 w-4" />
-                                            <span className="sr-only">Editar</span>
-                                        </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent><p>Editar empreendimento</p></TooltipContent>
-                                </Tooltip>
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => openDeleteConfirm(item.id)}>
-                                            <Trash2 className="h-4 w-4" />
-                                            <span className="sr-only">Deletar</span>
-                                        </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent><p>Deletar empreendimento</p></TooltipContent>
-                                </Tooltip>
-                                </>
-                            )}
-                            </div>
-                      </TableCell>
+              <TooltipProvider>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Empreendimento</TableHead>
+                      <TableHead>Município</TableHead>
+                      <TableHead className="text-right">Ações</TableHead>
                     </TableRow>
-                  ))}
-                   {!isLoading && filteredProjects?.length === 0 && (
-                        <TableRow>
-                            <TableCell colSpan={3} className="h-24 text-center">
-                                Nenhum empreendimento encontrado.
-                            </TableCell>
+                  </TableHeader>
+                  <TableBody>
+                    {isLoading &&
+                      Array.from({ length: 5 }).map((_, i) => (
+                        <TableRow key={i}>
+                          <TableCell>
+                            <Skeleton className="h-5 w-48" />
+                          </TableCell>
+                          <TableCell>
+                            <Skeleton className="h-5 w-32" />
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Skeleton className="h-8 w-24" />
+                          </TableCell>
                         </TableRow>
+                      ))}
+                    {!isLoading &&
+                      filteredProjects?.map((item) => (
+                        <TableRow key={item.id}>
+                          <TableCell className="font-medium">
+                            {item.propertyName}
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {item.municipio || "N/A"}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex items-center justify-end gap-1">
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => handleView(item)}
+                                  >
+                                    <Eye className="h-4 w-4" />
+                                    <span className="sr-only">Visualizar</span>
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Visualizar detalhes</p>
+                                </TooltipContent>
+                              </Tooltip>
+                              {canWrite && (
+                                <>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => handleEdit(item)}
+                                      >
+                                        <Pencil className="h-4 w-4" />
+                                        <span className="sr-only">Editar</span>
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>Editar empreendimento</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="text-destructive hover:text-destructive"
+                                        onClick={() =>
+                                          openDeleteConfirm(item.id)
+                                        }
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                        <span className="sr-only">Deletar</span>
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>Deletar empreendimento</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </>
+                              )}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    {!isLoading && filteredProjects?.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={3} className="h-24 text-center">
+                          Nenhum empreendimento encontrado.
+                        </TableCell>
+                      </TableRow>
                     )}
-                </TableBody>
-              </Table>
+                  </TableBody>
+                </Table>
               </TooltipProvider>
             </CardContent>
           </Card>
         </main>
       </div>
 
-        <Dialog open={isViewOpen} onOpenChange={setIsViewOpen}>
-            <DialogContent className="sm:max-w-xl">
-                <DialogHeader>
-                    <DialogTitle>{itemToView?.propertyName}</DialogTitle>
-                    <DialogDescription>
-                        Detalhes do empreendimento.
-                    </DialogDescription>
-                </DialogHeader>
-                {itemToView && (
-                     <div className="max-h-[60vh] overflow-y-auto pr-4 space-y-4">
-                        <DetailItem label="Nome da Propriedade" value={itemToView.propertyName} />
-                        <DetailItem label="Nome Fantasia" value={itemToView.fantasyName} />
-                        <Separator />
-                        <DetailItem label="Atividade Principal" value={itemToView.activity} />
-                        <Separator />
-                        <div className="grid grid-cols-2 gap-4">
-                           <DetailItem label="Matrícula" value={itemToView.matricula} />
-                           <DetailItem label="Comarca" value={itemToView.comarca} />
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <DetailItem label="Código INCRA" value={itemToView.incraCode} />
-                            <DetailItem label="CNPJ" value={itemToView.cnpj} />
-                        </div>
-                        <Separator />
-                        <h4 className="font-semibold text-foreground">Endereço</h4>
-                        <DetailItem label="Endereço" value={`${itemToView.address || ''}, ${itemToView.numero || ''}`} />
-                         <div className="grid grid-cols-3 gap-4">
-                            <DetailItem label="Município" value={itemToView.municipio} />
-                            <DetailItem label="UF" value={itemToView.uf} />
-                            <DetailItem label="CEP" value={itemToView.cep} />
-                        </div>
-                    </div>
-                )}
-                 <DialogFooter>
-                    <DialogClose asChild>
-                        <Button type="button" variant="outline">
-                        Fechar
-                        </Button>
-                    </DialogClose>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
-      
+      <Dialog open={isViewOpen} onOpenChange={setIsViewOpen}>
+        <DialogContent className="sm:max-w-xl">
+          <DialogHeader>
+            <DialogTitle>{itemToView?.propertyName}</DialogTitle>
+            <DialogDescription>Detalhes do empreendimento.</DialogDescription>
+          </DialogHeader>
+          {itemToView && (
+            <div className="max-h-[60vh] overflow-y-auto pr-4 space-y-4">
+              <DetailItem
+                label="Nome da Propriedade"
+                value={itemToView.propertyName}
+              />
+              <DetailItem
+                label="Nome Fantasia"
+                value={itemToView.fantasyName}
+              />
+              <Separator />
+              <DetailItem
+                label="Atividade Principal"
+                value={itemToView.activity}
+              />
+              <Separator />
+              <div className="grid grid-cols-2 gap-4">
+                <DetailItem label="Matrícula" value={itemToView.matricula} />
+                <DetailItem label="Comarca" value={itemToView.comarca} />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <DetailItem label="Código INCRA" value={itemToView.incraCode} />
+                <DetailItem label="CNPJ" value={itemToView.cnpj} />
+              </div>
+              <Separator />
+              <h4 className="font-semibold text-foreground">Endereço</h4>
+              <DetailItem
+                label="Endereço"
+                value={`${itemToView.address || ""}, ${itemToView.numero || ""}`}
+              />
+              <div className="grid grid-cols-3 gap-4">
+                <DetailItem label="Município" value={itemToView.municipio} />
+                <DetailItem label="UF" value={itemToView.uf} />
+                <DetailItem label="CEP" value={itemToView.cep} />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button type="button" variant="outline">
+                Fechar
+              </Button>
+            </DialogClose>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <AlertDialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta ação não pode ser desfeita. Isso irá deletar permanentemente o empreendimento.
+              Esta ação não pode ser desfeita. Isso irá deletar permanentemente
+              o empreendimento.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete}>Deletar</AlertDialogAction>
+            <AlertDialogAction onClick={handleDelete}>
+              Deletar
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -369,5 +591,5 @@ export default function ProjectsPage() {
     <Suspense fallback={<div>Carregando...</div>}>
       <ProjectsPageContent />
     </Suspense>
-  )
+  );
 }

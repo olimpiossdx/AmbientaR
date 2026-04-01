@@ -276,6 +276,22 @@ export default function DreContabilPage() {
               <Skeleton className="h-64 w-full" />
             ) : dre ? (
               <>
+                <div className="space-y-3 md:hidden">
+                  {[
+                    ['Receita Bruta de Serviços', formatCurrency(dre.receitaBruta)],
+                    ['Receita Líquida', formatCurrency(dre.receitaLiquida)],
+                    ['Despesas Operacionais', formatCurrency(dre.despesasOperacionais)],
+                    ['Resultado Líquido', formatCurrency(dre.resultadoLiquido)],
+                  ].map(([label, value]) => (
+                    <Card key={label} className="rounded-xl border-border/70 shadow-sm">
+                      <CardContent className="p-4">
+                        <p className="text-sm text-muted-foreground">{label}</p>
+                        <p className="text-lg font-semibold">{value}</p>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+                <div className="hidden md:block">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -326,6 +342,7 @@ export default function DreContabilPage() {
                     </TableRow>
                   </TableBody>
                 </Table>
+                </div>
 
                 <p className="text-xs text-muted-foreground mt-4 flex items-center gap-1">
                   <Link2 className="h-3 w-3" />

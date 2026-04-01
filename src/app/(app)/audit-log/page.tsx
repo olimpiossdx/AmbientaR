@@ -74,15 +74,17 @@ export default function AuditLogPage() {
   };
 
   const getRoleText = (role: AppUser['role']) => {
-    const roles = {
+    const roles: Record<AppUser["role"], string> = {
       admin: 'Admin',
       client: 'Cliente',
+      representative: 'Representante',
       technical: 'Técnico',
       sales: 'Vendas',
       financial: 'Financeiro',
       gestor: 'Gestor Ambiental',
       supervisor: 'Supervisor',
       diretor_fauna: 'Diretor de Fauna',
+      advogado: 'Advogado',
     };
     return roles[role] || role;
   };

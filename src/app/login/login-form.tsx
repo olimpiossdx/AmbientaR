@@ -67,12 +67,16 @@ export function LoginForm() {
   }
 
   return (
-    <Card className="shadow-lg bg-card/80 backdrop-blur-sm border">
-      <CardHeader>
-        <CardTitle className="text-xl">Acesse sua Conta</CardTitle>
-        <CardDescription>Insira suas credenciais para entrar no sistema.</CardDescription>
+    <Card className="border border-border bg-card shadow-sm">
+      <CardHeader className="space-y-1 pb-4">
+        <CardTitle className="text-lg font-semibold text-foreground">
+          Acesse sua Conta
+        </CardTitle>
+        <CardDescription className="text-muted-foreground">
+          Insira suas credenciais para entrar no sistema.
+        </CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="pt-0">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField

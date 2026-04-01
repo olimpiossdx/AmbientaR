@@ -41,7 +41,7 @@ export default function EditInspectionPage() {
         <main className="flex-1 overflow-auto p-4 md:p-6">
           <p className="text-destructive">Vistoria não encontrada.</p>
           <button type="button" onClick={() => router.push('/inspections')} className="text-primary underline mt-2">
-            Voltar para Fiscalização
+            Voltar para Vistoria em Campo
           </button>
         </main>
       </div>
@@ -55,7 +55,7 @@ export default function EditInspectionPage() {
         <main className="flex-1 overflow-auto p-4 md:p-6">
           <p className="text-muted-foreground">Vistorias aprovadas não podem ser editadas.</p>
           <button type="button" onClick={() => router.push('/inspections')} className="text-primary underline mt-2">
-            Voltar para Fiscalização
+            Voltar para Vistoria em Campo
           </button>
         </main>
       </div>
@@ -77,7 +77,7 @@ export default function EditInspectionPage() {
               <CardHeader>
                 <CardTitle>Editar Registro de Vistoria</CardTitle>
                 <CardDescription>
-                  Altere os dados da fiscalização ou vistoria de campo. Esta vistoria ainda não foi aprovada.
+                  Altere os dados da vistoria em campo. Esta vistoria ainda não foi aprovada.
                 </CardDescription>
               </CardHeader>
               <CardContent>

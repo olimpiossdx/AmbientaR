@@ -1,72 +1,74 @@
+"use client";
 
-'use client';
-
-import * as React from 'react';
-import { MapContainer, TileLayer, FeatureGroup, useMap } from 'react-leaflet';
-import { EditControl } from 'react-leaflet-draw';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
-import 'leaflet-draw/dist/leaflet.draw.css';
-
+import * as React from "react";
+import { MapContainer, TileLayer, FeatureGroup, useMap } from "react-leaflet";
+import { EditControl } from "react-leaflet-draw";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
+import "leaflet-draw/dist/leaflet.draw.css";
 
 // Workaround for a known issue with leaflet icons in Next.js
 // @ts-ignore
 delete L.Icon.Default.prototype._getIconUrl;
 
 L.Icon.Default.mergeOptions({
-  iconRetinaUrl: '/leaflet/marker-icon-2x.png',
-  iconUrl: '/leaflet/marker-icon.png',
-  shadowUrl: '/leaflet/marker-shadow.png',
+  iconRetinaUrl: "/leaflet/marker-icon-2x.png",
+  iconUrl: "/leaflet/marker-icon.png",
+  shadowUrl: "/leaflet/marker-shadow.png",
 });
 
+// Tipo local para representar o GeoJSON retornado por `layer.toGeoJSON()`.
+// Mantemos propositalmente "leve" para não depender de `@types/geojson`.
+type GeoJSONLike = {
+  type: string;
+  [key: string]: unknown;
+};
 
 interface LeafletMapProps {
-  polygon: any;
-  onPolygonCreated: (geoJSON: any) => void;
+  polygon: GeoJSONLike | null;
+  onPolygonCreated: (geoJSON: GeoJSONLike | null) => void;
 }
 
 // Componente para centralizar o mapa quando o polígono for carregado
-const MapUpdater = ({ polygon }: { polygon: any }) => {
-    const map = useMap();
-    React.useEffect(() => {
-        if (polygon) {
-            try {
-                const bounds = L.geoJSON(polygon).getBounds();
-                if (bounds.isValid()) {
-                    map.fitBounds(bounds);
-                }
-            } catch (error) {
-                console.error("Error creating bounds for polygon:", error);
-            }
+const MapUpdater = ({ polygon }: { polygon: GeoJSONLike }) => {
+  const map = useMap();
+  React.useEffect(() => {
+    if (polygon) {
+      try {
+        const bounds = L.geoJSON(polygon).getBounds();
+        if (bounds.isValid()) {
+          map.fitBounds(bounds);
         }
-    }, [polygon, map]);
-    return null;
-}
-
+      } catch (error) {
+        console.error("Error creating bounds for polygon:", error);
+      }
+    }
+  }, [polygon, map]);
+  return null;
+};
 
 const LeafletMap = ({ polygon, onPolygonCreated }: LeafletMapProps) => {
-  
   const handleCreated = (e: any) => {
     const layer = e.layer;
-    onPolygonCreated(layer.toGeoJSON());
+    onPolygonCreated(layer.toGeoJSON() as GeoJSONLike);
   };
 
   const handleEdited = (e: any) => {
     const layers = e.layers;
     layers.eachLayer((layer: any) => {
-      onPolygonCreated(layer.toGeoJSON());
+      onPolygonCreated(layer.toGeoJSON() as GeoJSONLike);
     });
   };
 
   const handleDeleted = () => {
     onPolygonCreated(null);
   };
-  
+
   return (
     <MapContainer
-      center={[-18.5122, -44.5550]}
+      center={[-18.5122, -44.555]}
       zoom={5}
-      style={{ height: '100%', width: '100%' }}
+      style={{ height: "100%", width: "100%" }}
       scrollWheelZoom={true}
     >
       <TileLayer

@@ -37,6 +37,7 @@ import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from '@/comp
 import { Separator } from '@/components/ui/separator';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/firebase';
+import { CardSearchInput } from '@/components/card-search-input';
 
 const DetailItem = ({ label, value }: { label: string, value?: string | string[] | null }) => (
     <div className="space-y-1">
@@ -53,7 +54,7 @@ const DetailItem = ({ label, value }: { label: string, value?: string | string[]
 
 const canWrite = (user: AppUser | null): boolean => {
     if (!user) return false;
-    return user.role === 'admin' || user.role === 'supervisor' || user.role === 'gestor' || user.role === 'technical';
+    return user.role === 'admin' || user.role === 'supervisor' || user.role === 'gestor' || user.role === 'technical' || user.role === 'advogado';
 }
 
 const getStatusLabel = (status: Request['status']) => {
@@ -71,6 +72,8 @@ export default function RequestsPage() {
   const [isViewOpen, setIsViewOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
   const [viewingItem, setViewingItem] = useState<Request | null>(null);
+  const [searchDraft, setSearchDraft] = useState('');
+  const [searchApproved, setSearchApproved] = useState('');
   const router = useRouter();
 
   const { user } = useAuth();
@@ -101,6 +104,48 @@ export default function RequestsPage() {
     const approved = requests.filter(r => r.status === 'Completed');
     return { draftRequests: drafts, approvedRequests: approved };
   }, [requests]);
+  const filteredDraftRequests = useMemo(() => {
+    const term = searchDraft.trim().toLowerCase();
+    const base = !term
+      ? draftRequests
+      : draftRequests.filter((item) => {
+      const empreendedor = (empreendedoresMap.get(item.empreendedorId) || '').toLowerCase();
+      const empreendimento = (projectsMap.get(item.projectId) || '').toLowerCase();
+      return (
+        getSolicitationNumber(item).toLowerCase().includes(term) ||
+        getStatusLabel(item.status).toLowerCase().includes(term) ||
+        (item.services?.join(', ') || '').toLowerCase().includes(term) ||
+        empreendedor.includes(term) ||
+        empreendimento.includes(term)
+      );
+    });
+    return [...base].sort((a, b) =>
+      getSolicitationNumber(a).localeCompare(getSolicitationNumber(b), 'pt-BR', {
+        sensitivity: 'base',
+      }),
+    );
+  }, [draftRequests, empreendedoresMap, projectsMap, searchDraft]);
+  const filteredApprovedRequests = useMemo(() => {
+    const term = searchApproved.trim().toLowerCase();
+    const base = !term
+      ? approvedRequests
+      : approvedRequests.filter((item) => {
+      const empreendedor = (empreendedoresMap.get(item.empreendedorId) || '').toLowerCase();
+      const empreendimento = (projectsMap.get(item.projectId) || '').toLowerCase();
+      return (
+        getSolicitationNumber(item).toLowerCase().includes(term) ||
+        getStatusLabel(item.status).toLowerCase().includes(term) ||
+        (item.services?.join(', ') || '').toLowerCase().includes(term) ||
+        empreendedor.includes(term) ||
+        empreendimento.includes(term)
+      );
+    });
+    return [...base].sort((a, b) =>
+      getSolicitationNumber(a).localeCompare(getSolicitationNumber(b), 'pt-BR', {
+        sensitivity: 'base',
+      }),
+    );
+  }, [approvedRequests, empreendedoresMap, projectsMap, searchApproved]);
 
   const handleAddNew = () => {
     router.push('/requests/new');
@@ -152,7 +197,7 @@ export default function RequestsPage() {
     return date.toLocaleDateString('pt-BR');
   };
 
-  const getSolicitationNumber = (request: Request) => {
+  function getSolicitationNumber(request: Request) {
     const year = request.createdAt ? (request.createdAt.toDate ? request.createdAt.toDate() : new Date(request.createdAt)).getFullYear() : 'S/A';
     return request.solicitationNumber || `${request.id.substring(0,8).toUpperCase()}/${year}`;
   }
@@ -172,6 +217,11 @@ export default function RequestsPage() {
             <CardHeader>
               <CardTitle>Gerenciamento de Processos - Elaboração</CardTitle>
               <CardDescription>Visualize e gerencie todas as solicitações de novos processos ambientais que estão em andamento.</CardDescription>
+              <CardSearchInput
+                value={searchDraft}
+                onChange={setSearchDraft}
+                placeholder="Buscar processo, status, empreendedor..."
+              />
             </CardHeader>
             <CardContent>
                 <TooltipProvider>
@@ -193,7 +243,7 @@ export default function RequestsPage() {
                                     <TableCell colSpan={7}><Skeleton className="h-10 w-full" /></TableCell>
                                 </TableRow>
                             ))}
-                            {!isLoading && draftRequests.map((item) => (
+                            {!isLoading && filteredDraftRequests.map((item) => (
                                 <TableRow key={item.id}>
                                     <TableCell className="font-medium">{getSolicitationNumber(item)}</TableCell>
                                     <TableCell className="text-muted-foreground">{formatDate(item.createdAt)}</TableCell>
@@ -216,7 +266,7 @@ export default function RequestsPage() {
                                     </TableCell>
                                 </TableRow>
                             ))}
-                            {!isLoading && draftRequests.length === 0 && (
+                            {!isLoading && filteredDraftRequests.length === 0 && (
                                 <TableRow>
                                     <TableCell colSpan={7} className="h-24 text-center">Nenhuma solicitação em elaboração.</TableCell>
                                 </TableRow>
@@ -231,6 +281,11 @@ export default function RequestsPage() {
             <CardHeader>
               <CardTitle>Processos Aprovados/Conclusos</CardTitle>
               <CardDescription>Histórico de processos que já foram finalizados.</CardDescription>
+              <CardSearchInput
+                value={searchApproved}
+                onChange={setSearchApproved}
+                placeholder="Buscar no histórico..."
+              />
             </CardHeader>
             <CardContent>
              <TooltipProvider>
@@ -253,8 +308,8 @@ export default function RequestsPage() {
                             <TableCell colSpan={7}><Skeleton className="h-10 w-full" /></TableCell>
                         </TableRow>
                     ))
-                   ) : approvedRequests.length > 0 ? (
-                        approvedRequests.map((item) => (
+                   ) : filteredApprovedRequests.length > 0 ? (
+                        filteredApprovedRequests.map((item) => (
                             <TableRow key={item.id}>
                                 <TableCell className="font-medium">{getSolicitationNumber(item)}</TableCell>
                                 <TableCell className="text-muted-foreground">{formatDate(item.createdAt)}</TableCell>

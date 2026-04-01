@@ -1,10 +1,12 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect, type ReactNode } from 'react';
-import type { FirebaseApp } from 'firebase/app';
-import type { Auth } from 'firebase/auth';
-import type { Firestore } from 'firebase/firestore';
-import { FirebaseProvider } from '@/firebase/provider';
+import React, { useState, useEffect, type ReactNode } from "react";
+import type { FirebaseApp } from "firebase/app";
+import type { Auth } from "firebase/auth";
+import type { Firestore } from "firebase/firestore";
+import { FirebaseProvider } from "@/firebase/provider";
+import { getInstances } from "@/firebase/load-firebase-client";
+import { firebaseConfig } from "@/firebase/config";
 
 interface FirebaseClientProviderProps {
   children: ReactNode;
@@ -16,28 +18,51 @@ type FirebaseInstances = {
   firestore: Firestore;
 };
 
-export function FirebaseClientProvider({ children }: FirebaseClientProviderProps) {
+export function FirebaseClientProvider({
+  children,
+}: FirebaseClientProviderProps) {
   const [instances, setInstances] = useState<FirebaseInstances | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [retryKey, setRetryKey] = useState(0);
 
   useEffect(() => {
-    Promise.all([
-      import('@/firebase/load-firebase-client'),
-      import('@/firebase/config'),
-    ])
-      .then(([{ getInstances }, { firebaseConfig }]) => {
-        const { app, auth, firestore } = getInstances(firebaseConfig);
+    let isDisposed = false;
+    let didInitialize = false;
+    setError(null);
+    setInstances(null);
+
+    const timeout = window.setTimeout(() => {
+      if (!isDisposed && !didInitialize) {
+        setError(
+          (prev) =>
+            prev ?? "Tempo limite ao inicializar Firebase. Tente novamente.",
+        );
+      }
+    }, 10000);
+
+    try {
+      const { app, auth, firestore } = getInstances(firebaseConfig);
+      if (!isDisposed) {
+        didInitialize = true;
+        window.clearTimeout(timeout);
         setInstances({
           firebaseApp: app as unknown as FirebaseApp,
           auth: auth as unknown as Auth,
           firestore: firestore as unknown as Firestore,
         });
-      })
-      .catch((err) => {
-        console.error('Firebase load error:', err);
-        setError(err?.message ?? 'Falha ao carregar Firebase');
-      });
-  }, []);
+      }
+    } catch (err) {
+      console.error("Firebase load error:", err);
+      if (!isDisposed) {
+        window.clearTimeout(timeout);
+        setError((err as Error)?.message ?? "Falha ao carregar Firebase");
+      }
+    }
+    return () => {
+      isDisposed = true;
+      window.clearTimeout(timeout);
+    };
+  }, [retryKey]);
 
   if (error) {
     return (
@@ -45,6 +70,20 @@ export function FirebaseClientProvider({ children }: FirebaseClientProviderProps
         <div className="text-center text-destructive">
           <p className="font-medium">Erro ao carregar Firebase</p>
           <p className="text-sm mt-2">{error}</p>
+          <button
+            type="button"
+            onClick={() => setRetryKey((k) => k + 1)}
+            className="mt-4 rounded-md border border-destructive px-3 py-1 text-sm hover:bg-destructive/10"
+          >
+            Tentar novamente
+          </button>
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            className="mt-2 rounded-md border border-destructive px-3 py-1 text-sm hover:bg-destructive/10"
+          >
+            Recarregar aplicação
+          </button>
         </div>
       </div>
     );

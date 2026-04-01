@@ -1,26 +1,25 @@
-
-'use server';
+"use server";
 /**
  * @fileOverview Fluxo de IA para análise ambiental geoespacial.
  *
  * - analyseArea - Função que recebe dados geoespaciais e retorna um relatório de análise.
  */
 
-import { ai } from '@/ai/genkit';
-import { z } from 'genkit';
+import { ai, aiModel } from "@/ai/genkit";
+import { z } from "genkit";
 import {
-    AnaliseAmbientalInputSchema,
-    AnaliseAmbientalOutputSchema,
-    type AnaliseAmbientalInput,
-    type AnaliseAmbientalOutput,
-} from '@/lib/types/analise-ambiental';
-
+  AnaliseAmbientalInputSchema,
+  AnaliseAmbientalOutputSchema,
+  type AnaliseAmbientalInput,
+  type AnaliseAmbientalOutput,
+} from "@/lib/types/analise-ambiental";
 
 // Mock de Ferramentas (Simulando APIs externas)
 const getDadosCAR = ai.defineTool(
   {
-    name: 'getDadosCAR',
-    description: 'Obtém dados detalhados do Cadastro Ambiental Rural (CAR) a partir do número do recibo.',
+    name: "getDadosCAR",
+    description:
+      "Obtém dados detalhados do Cadastro Ambiental Rural (CAR) a partir do número do recibo.",
     inputSchema: z.object({ numeroCAR: z.string() }),
     outputSchema: z.object({
       areaTotal: z.number(),
@@ -34,18 +33,23 @@ const getDadosCAR = ai.defineTool(
     // Em um cenário real, isso faria uma chamada para a API do SICAR
     return {
       areaTotal: 50.45,
-      situacao: 'Ativo',
+      situacao: "Ativo",
       appDeclarada: 5.2,
       reservaLegalDeclarada: 10.1,
     };
-  }
+  },
 );
 
 const analisarSobreposicao = ai.defineTool(
   {
-    name: 'analisarSobreposicao',
-    description: 'Analisa a sobreposição de uma área poligonal com camadas de dados geoespaciais como biomas, UCs e hidrografia.',
-    inputSchema: z.object({ poligono: z.string().describe("Coordenadas do polígono em formato WKT ou GeoJSON.") }),
+    name: "analisarSobreposicao",
+    description:
+      "Analisa a sobreposição de uma área poligonal com camadas de dados geoespaciais como biomas, UCs e hidrografia.",
+    inputSchema: z.object({
+      poligono: z
+        .string()
+        .describe("Coordenadas do polígono em formato WKT ou GeoJSON."),
+    }),
     outputSchema: z.object({
       bioma: z.string(),
       sobreposicaoUC: z.object({
@@ -60,21 +64,21 @@ const analisarSobreposicao = ai.defineTool(
     console.log(`Analisando sobreposição para o polígono...`);
     // Simula uma análise geoespacial
     return {
-      bioma: 'Cerrado',
+      bioma: "Cerrado",
       sobreposicaoUC: {
         ocorreu: false,
-        nomeUC: 'Parque Estadual da Serra do Cabral',
+        nomeUC: "Parque Estadual da Serra do Cabral",
         distanciaKm: 15,
       },
       hidrografia: [{ nome: "Córrego do Brejo", tipo: "Intermitente" }],
     };
-  }
+  },
 );
-
 
 // Prompt Principal
 const prompt = ai.definePrompt({
-  name: 'analiseAmbientalPrompt',
+  name: "analiseAmbientalPrompt",
+  model: aiModel,
   input: { schema: z.object({ input: AnaliseAmbientalInputSchema }) },
   output: { schema: AnaliseAmbientalOutputSchema },
   tools: [getDadosCAR, analisarSobreposicao],
@@ -100,19 +104,21 @@ const prompt = ai.definePrompt({
 // Fluxo Principal
 const analiseAmbientalFlow = ai.defineFlow(
   {
-    name: 'analiseAmbientalFlow',
+    name: "analiseAmbientalFlow",
     inputSchema: AnaliseAmbientalInputSchema,
     outputSchema: AnaliseAmbientalOutputSchema,
   },
   async (input) => {
-    const { output } = await prompt({ input });
+    const { output } = await prompt({ input }, { model: aiModel });
     if (!output) {
       throw new Error("A IA não conseguiu gerar uma análise.");
     }
     return output;
-  }
+  },
 );
 
-export async function analyseArea(input: AnaliseAmbientalInput): Promise<AnaliseAmbientalOutput> {
+export async function analyseArea(
+  input: AnaliseAmbientalInput,
+): Promise<AnaliseAmbientalOutput> {
   return await analiseAmbientalFlow(input);
 }

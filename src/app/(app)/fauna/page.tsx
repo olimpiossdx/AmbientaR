@@ -50,6 +50,37 @@ export default function FaunaManagementPage() {
   }, [empreendedores]);
 
   const isLoading = isLoadingStudies || isLoadingEmpreendedores;
+  const getSortDateValue = (value: unknown) => {
+    if (!value) return Number.POSITIVE_INFINITY;
+    if (typeof value === "string") {
+      const parsed = new Date(value).getTime();
+      return Number.isNaN(parsed) ? Number.POSITIVE_INFINITY : parsed;
+    }
+    if (
+      typeof value === "object" &&
+      value !== null &&
+      "toDate" in value &&
+      typeof (value as { toDate?: unknown }).toDate === "function"
+    ) {
+      const date = (value as { toDate: () => Date }).toDate();
+      const parsed = date.getTime();
+      return Number.isNaN(parsed) ? Number.POSITIVE_INFINITY : parsed;
+    }
+    return Number.POSITIVE_INFINITY;
+  };
+  const sortedStudies = React.useMemo(
+    () =>
+      [...(studies || [])].sort(
+        (a, b) =>
+          getSortDateValue(a.createdAt) - getSortDateValue(b.createdAt),
+      ),
+    [studies],
+  );
+  const formatCreatedAt = (value: unknown) => {
+    const timestamp = getSortDateValue(value);
+    if (!Number.isFinite(timestamp)) return "N/A";
+    return new Date(timestamp).toLocaleDateString("pt-BR", { timeZone: "UTC" });
+  };
 
   const handleExport = (format: 'pdf' | 'docx') => {
       toast({ title: "Funcionalidade em desenvolvimento" });
@@ -93,6 +124,58 @@ export default function FaunaManagementPage() {
             </CardHeader>
             <CardContent>
               <TooltipProvider>
+                <div className="space-y-3 md:hidden">
+                  {isLoading && Array.from({ length: 3 }).map((_, i) => (
+                    <Card key={i}>
+                      <CardContent className="p-4 space-y-2">
+                        <Skeleton className="h-5 w-44" />
+                        <Skeleton className="h-4 w-36" />
+                        <Skeleton className="h-4 w-24" />
+                      </CardContent>
+                    </Card>
+                  ))}
+                  {!isLoading && sortedStudies?.map((study) => (
+                    <Card key={study.id} className="rounded-xl border-border/70 shadow-sm">
+                      <CardContent className="p-4 space-y-3">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="font-medium truncate">
+                              {empreendedorMap.get(study.empreendedorId) || 'Não definido'}
+                            </p>
+                            <p className="text-sm text-muted-foreground truncate">
+                              {getStudyOrDocumentName(study)}
+                            </p>
+                          </div>
+                          <Badge variant={'outline'} className={cn(getStatusVariant(study.status))}>
+                            {getStatusLabel(study.status)}
+                          </Badge>
+                        </div>
+                        <p className="text-sm">
+                          <span className="text-muted-foreground">Data:</span> {formatCreatedAt(study.createdAt)}
+                        </p>
+                        <div className="flex items-center gap-1">
+                          {study.fileUrl ? (
+                            <Button asChild variant="ghost" size="icon">
+                              <a href={study.fileUrl} target="_blank" rel="noopener noreferrer" aria-label="Ver anexo">
+                                <Paperclip className="h-4 w-4" />
+                              </a>
+                            </Button>
+                          ) : (
+                            <Button variant="ghost" size="icon" onClick={() => handleExport('pdf')}>
+                              <FileText className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                  {!isLoading && sortedStudies?.length === 0 && (
+                    <div className="h-24 flex items-center justify-center text-sm text-muted-foreground">
+                      Nenhum estudo concluído encontrado.
+                    </div>
+                  )}
+                </div>
+                <div className="hidden md:block">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -111,10 +194,11 @@ export default function FaunaManagementPage() {
                         <TableCell className="text-right"><Skeleton className="h-8 w-24 ml-auto" /></TableCell>
                       </TableRow>
                     ))}
-                    {!isLoading && studies?.map((study) => (
+                    {!isLoading && sortedStudies?.map((study) => (
                       <TableRow key={study.id}>
                         <TableCell className="font-medium">{empreendedorMap.get(study.empreendedorId) || 'Não definido'}</TableCell>
                         <TableCell>{getStudyOrDocumentName(study)}</TableCell>
+                        <TableCell className="hidden lg:table-cell">{formatCreatedAt(study.createdAt)}</TableCell>
                         <TableCell>
                           <Badge variant={'outline'} className={cn(getStatusVariant(study.status))}>
                             {getStatusLabel(study.status)}
@@ -147,13 +231,14 @@ export default function FaunaManagementPage() {
                         </TableCell>
                       </TableRow>
                     ))}
-                    {!isLoading && studies?.length === 0 && (
+                    {!isLoading && sortedStudies?.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={4} className="h-24 text-center">Nenhum estudo concluído encontrado.</TableCell>
+                        <TableCell colSpan={5} className="h-24 text-center">Nenhum estudo concluído encontrado.</TableCell>
                       </TableRow>
                     )}
                   </TableBody>
                 </Table>
+                </div>
               </TooltipProvider>
             </CardContent>
           </Card>

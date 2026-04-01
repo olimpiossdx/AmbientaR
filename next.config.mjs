@@ -4,6 +4,14 @@
  */
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  experimental: {
+    /** Evita empacotar pdf.js no bundle do servidor (DOMMatrix/canvas em build). */
+    serverComponentsExternalPackages: [
+      "pdf-parse",
+      "pdfjs-dist",
+      "@napi-rs/canvas",
+    ],
+  },
   webpack: (config, { dev }) => {
     if (dev && config.output) {
       config.output.chunkLoadTimeout = 180000;
@@ -18,6 +26,8 @@ const nextConfig = {
       { protocol: 'https', hostname: 'images.unsplash.com', port: '', pathname: '/**' },
       { protocol: 'https', hostname: 'picsum.photos', port: '', pathname: '/**' },
       { protocol: 'https', hostname: 'firebasestorage.googleapis.com', port: '', pathname: '/**' },
+      { protocol: 'https', hostname: 'storage.googleapis.com', port: '', pathname: '/**' },
+      { protocol: 'https', hostname: 'lh3.googleusercontent.com', port: '', pathname: '/**' },
     ],
   },
 };

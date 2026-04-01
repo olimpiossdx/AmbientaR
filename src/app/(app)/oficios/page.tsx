@@ -1,6 +1,7 @@
 
 'use client';
 import * as React from 'react';
+import { useMemo } from 'react';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -52,16 +53,27 @@ export default function OficiosPage() {
 
   const oficiosQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
+    // Representantes não acessam a coleção de ofícios (evita erro de permissão e segue a regra de negócio).
+    if (user.role === 'representative') return null;
     if (user.role === 'client') {
-      // Clients can only see oficios where they are the recipient.
+      // Clientes veem apenas ofícios em que são destinatários.
       return query(collection(firestore, 'oficios'), where('recipient', '==', user.name));
     }
-    // Other roles can see all oficios
+    // Demais perfis enxergam todos os ofícios (restringidos pelas regras do Firestore).
     return collection(firestore, 'oficios');
   }, [firestore, user]);
 
 
   const { data: oficios, isLoading } = useCollection<Oficio>(oficiosQuery);
+  const sortedOficios = useMemo(
+    () =>
+      [...(oficios || [])].sort((a, b) =>
+        (a.recipient || '').localeCompare(b.recipient || '', 'pt-BR', {
+          sensitivity: 'base',
+        }),
+      ),
+    [oficios],
+  );
 
   const handleAddNew = () => {
     router.push('/oficios/new');
@@ -160,7 +172,7 @@ export default function OficiosPage() {
     <>
       <div className="flex flex-col h-full">
         <PageHeader title="Ofícios e Comunicações">
-          {user?.role !== 'client' && (
+          {user?.role !== 'client' && user?.role !== 'representative' && (
             <Button size="sm" className="gap-1" onClick={handleAddNew}>
               <PlusCircle className="h-4 w-4" />
               Novo Ofício
@@ -200,7 +212,7 @@ export default function OficiosPage() {
                         <TableCell className="text-right"><Skeleton className="h-8 w-24" /></TableCell>
                       </TableRow>
                     ))}
-                  {!isLoading && oficios?.map((item) => (
+                  {!isLoading && sortedOficios.map((item) => (
                     <TableRow key={item.id}>
                       <TableCell className="font-mono">{item.oficioNumber || 'Rascunho'}</TableCell>
                       <TableCell className="text-muted-foreground">{formatDate(item.createdAt)}</TableCell>
@@ -240,7 +252,7 @@ export default function OficiosPage() {
                       </TableCell>
                     </TableRow>
                   ))}
-                   {!isLoading && oficios?.length === 0 && (
+                   {!isLoading && sortedOficios.length === 0 && (
                         <TableRow>
                             <TableCell colSpan={7} className="h-24 text-center">
                                 Nenhum ofício encontrado.

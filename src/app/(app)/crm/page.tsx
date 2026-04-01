@@ -5,23 +5,10 @@ import * as React from 'react';
 import { useRouter } from 'next/navigation';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { MoreHorizontal, PlusCircle, DollarSign, Calendar as CalendarIcon, ChevronDown } from 'lucide-react';
+import { PlusCircle } from 'lucide-react';
 import type { Opportunity, OpportunityStage, Client, AppUser } from '@/lib/types';
 import { useCollection, useFirestore, useMemoFirebase, useUser, errorEmitter } from '@/firebase';
 import { collection, doc, updateDoc, deleteDoc } from 'firebase/firestore';
-import { Skeleton } from '@/components/ui/skeleton';
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-    DropdownMenuSub,
-    DropdownMenuSubContent,
-    DropdownMenuSubTrigger,
-    DropdownMenuPortal,
-    DropdownMenuSeparator
-} from '@/components/ui/dropdown-menu';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -32,27 +19,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import CrmDashboard from './crm-dashboard';
-
-const pipelineStages: OpportunityStage[] = [
-  'Qualificação',
-  'Proposta',
-  'Negociação',
-  'Fechado Ganho',
-  'Fechado Perdido',
-];
-
-const stageColors: Record<OpportunityStage, string> = {
-    'Qualificação': 'border-blue-500',
-    'Proposta': 'border-purple-500',
-    'Negociação': 'border-yellow-500',
-    'Fechado Ganho': 'border-green-500',
-    'Fechado Perdido': 'border-red-500',
-}
+import { CrmPipelineKanban } from './crm-pipeline-kanban';
 
 const canPerformWriteActions = (user: AppUser | null): boolean => {
     if (!user) return false;
@@ -86,11 +57,6 @@ export default function CrmPage() {
     return new Map(clients.map(c => [c.id, c.name]));
   }, [clients]);
 
-  const activeOpportunities = React.useMemo(() => {
-    if (!opportunities) return [];
-    return opportunities.filter(opp => opp.stage !== 'Fechado Ganho' && opp.stage !== 'Fechado Perdido');
-  }, [opportunities]);
-  
   const handleAddNew = () => {
     router.push('/crm/new');
   };
@@ -148,7 +114,10 @@ export default function CrmPage() {
   return (
     <>
       <div className="flex flex-col h-full">
-        <PageHeader title="Painel de Vendas (CRM)">
+        <PageHeader
+          title="Painel de Vendas"
+          description="Visão geral de oportunidades, pipeline e desempenho comercial."
+        >
           {canPerformWriteActions(user) && (
             <Button size="sm" className="gap-1" onClick={handleAddNew}>
                 <PlusCircle className="h-4 w-4" />
@@ -158,77 +127,25 @@ export default function CrmPage() {
         </PageHeader>
         <main className="flex-1 overflow-auto p-4 md:p-6">
             <Tabs defaultValue="overview" className="space-y-4">
-                <TabsList>
-                    <TabsTrigger value="overview">Visão Geral</TabsTrigger>
-                    <TabsTrigger value="pipeline">Pipeline</TabsTrigger>
+                <TabsList className="grid w-full max-w-md grid-cols-2 h-11">
+                    <TabsTrigger value="overview" className="text-sm">Visão Geral</TabsTrigger>
+                    <TabsTrigger value="pipeline" className="text-sm">Pipeline</TabsTrigger>
                 </TabsList>
-                <TabsContent value="overview" className="space-y-4">
-                    <CrmDashboard />
+                <TabsContent value="overview" className="space-y-4 mt-4">
+                    <CrmDashboard onAddNew={canPerformWriteActions(user) ? handleAddNew : undefined} />
                 </TabsContent>
-                <TabsContent value="pipeline">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 items-start">
-                        {pipelineStages.filter(stage => stage !== 'Fechado Ganho' && stage !== 'Fechado Perdido').map(stage => (
-                            <div key={stage} className="flex flex-col gap-4">
-                                <h2 className="font-semibold text-lg px-1">{stage}</h2>
-                                <div className="bg-muted/50 rounded-lg p-2 space-y-4 min-h-[200px]">
-                                    {isLoading && <OpportunityCardSkeleton />}
-                                    {activeOpportunities?.filter(opp => opp.stage === stage).map(opp => (
-                                        <Card key={opp.id} className={cn("bg-card border-l-4", stageColors[stage])}>
-                                            <CardHeader className="p-4 flex-row items-start justify-between">
-                                                <div className="space-y-1">
-                                                    <CardTitle className="text-base">{opp.name}</CardTitle>
-                                                    <p className="text-sm text-muted-foreground">{clientsMap.get(opp.clientId) || 'Cliente desconhecido'}</p>
-                                                </div>
-                                                {canPerformWriteActions(user) && (
-                                                    <DropdownMenu>
-                                                        <DropdownMenuTrigger asChild>
-                                                            <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0">
-                                                                <MoreHorizontal className="h-4 w-4" />
-                                                            </Button>
-                                                        </DropdownMenuTrigger>
-                                                        <DropdownMenuContent align="end">
-                                                            <DropdownMenuItem onClick={() => handleEdit(opp)}>Editar</DropdownMenuItem>
-                                                                <DropdownMenuSub>
-                                                                    <DropdownMenuSubTrigger>Mover para</DropdownMenuSubTrigger>
-                                                                    <DropdownMenuPortal>
-                                                                        <DropdownMenuSubContent>
-                                                                        {pipelineStages.filter(s => s !== stage).map(s => (
-                                                                            <DropdownMenuItem key={s} onClick={() => handleMoveStage(opp.id, s)}>
-                                                                                {s}
-                                                                            </DropdownMenuItem>
-                                                                        ))}
-                                                                        </DropdownMenuSubContent>
-                                                                    </DropdownMenuPortal>
-                                                                </DropdownMenuSub>
-                                                                <DropdownMenuSeparator />
-                                                                <DropdownMenuItem className="text-destructive" onClick={() => openDeleteConfirm(opp.id)}>
-                                                                    Deletar
-                                                                </DropdownMenuItem>
-                                                        </DropdownMenuContent>
-                                                    </DropdownMenu>
-                                                )}
-                                            </CardHeader>
-                                            <CardContent className="p-4 pt-0 space-y-2 text-sm">
-                                                <div className="flex items-center gap-2 text-muted-foreground">
-                                                    <DollarSign className="h-4 w-4"/>
-                                                    <span>{formatCurrency(opp.value)}</span>
-                                                </div>
-                                                <div className="flex items-center gap-2 text-muted-foreground">
-                                                    <CalendarIcon className="h-4 w-4"/>
-                                                    <span>{formatDate(opp.closeDate)}</span>
-                                                </div>
-                                            </CardContent>
-                                        </Card>
-                                    ))}
-                                    {!isLoading && activeOpportunities?.filter(opp => opp.stage === stage).length === 0 && (
-                                        <div className="flex items-center justify-center h-full p-8 text-center">
-                                            <p className="text-sm text-muted-foreground">Arraste oportunidades aqui.</p>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        ))}
-                    </div>
+                <TabsContent value="pipeline" className="mt-4">
+                    <CrmPipelineKanban
+                        opportunities={opportunities ?? []}
+                        clientsMap={clientsMap}
+                        isLoading={isLoading}
+                        canWrite={canPerformWriteActions(user)}
+                        onEdit={handleEdit}
+                        onMoveStage={handleMoveStage}
+                        onDelete={openDeleteConfirm}
+                        formatCurrency={formatCurrency}
+                        formatDate={formatDate}
+                    />
                 </TabsContent>
             </Tabs>
         </main>
@@ -251,19 +168,3 @@ export default function CrmPage() {
     </>
   );
 }
-
-const OpportunityCardSkeleton = () => (
-    <Card className="bg-card">
-        <CardHeader className="p-4 flex-row items-start justify-between">
-            <div className="space-y-2">
-                <Skeleton className="h-5 w-32" />
-                <Skeleton className="h-4 w-24" />
-            </div>
-            <Skeleton className="h-6 w-6 rounded-full" />
-        </CardHeader>
-        <CardContent className="p-4 pt-0 space-y-3">
-             <Skeleton className="h-4 w-20" />
-             <Skeleton className="h-4 w-24" />
-        </CardContent>
-    </Card>
-)

@@ -6,6 +6,7 @@ import EnvironmentalDashboard from './environmental-dashboard';
 import CrmDashboard from '../crm/crm-dashboard';
 import AgendaWidget from './agenda-widget';
 import BirthdayWidget from './birthday-widget';
+import { AuthorizationReportsHubCard } from '@/components/authorization-reports-hub-card';
 
 export default function AdminDashboard() {
 
@@ -13,6 +14,7 @@ export default function AdminDashboard() {
     <div className="flex flex-col h-full">
       <PageHeader title="Painel do Administrador" />
       <main className="flex-1 overflow-auto p-4 md:p-6 space-y-8">
+        <AuthorizationReportsHubCard role="admin" />
         <div>
           <AgendaWidget />
         </div>

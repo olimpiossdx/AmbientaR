@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import {
   Table,
   TableBody,
@@ -58,7 +59,10 @@ export function RevenueTable({ revenues: revenuesProp, isLoadingRevenues: isLoad
   }, [firestore, user]);
 
   const { data: hookRevenues, isLoading: hookRevenuesLoading } = useCollection<Revenue>(revenuesProp !== undefined ? null : revenuesQuery);
-  const revenues = revenuesProp !== undefined ? (revenuesProp ?? []) : (hookRevenues ?? []);
+  const revenues = useMemo(
+    () => (revenuesProp !== undefined ? (revenuesProp ?? []) : (hookRevenues ?? [])),
+    [revenuesProp, hookRevenues],
+  );
   const isLoadingRevenues = revenuesProp !== undefined ? (isLoadingRevenuesProp ?? false) : hookRevenuesLoading;
 
   const clientsQuery = useMemoFirebase(() => firestore ? collection(firestore, 'clients') : null, [firestore]);
@@ -109,6 +113,13 @@ export function RevenueTable({ revenues: revenuesProp, isLoadingRevenues: isLoad
   const formatDate = (dateString: string) => new Date(dateString).toLocaleDateString('pt-BR', { timeZone: 'UTC' });
 
   const isLoading = isLoadingRevenues || isLoadingClients;
+  const sortedRevenues = useMemo(
+    () =>
+      [...(revenues || [])].sort(
+        (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
+      ),
+    [revenues],
+  );
 
   return (
     <>
@@ -119,6 +130,62 @@ export function RevenueTable({ revenues: revenuesProp, isLoadingRevenues: isLoad
         </Button>
       </div>
       <TooltipProvider>
+        <div className="space-y-3 md:hidden">
+          {isLoading &&
+            Array.from({ length: 3 }).map((_, i) => (
+              <Card key={i}>
+                <CardContent className="p-4 space-y-2">
+                  <Skeleton className="h-5 w-36" />
+                  <Skeleton className="h-4 w-40" />
+                </CardContent>
+              </Card>
+            ))}
+          {!isLoading &&
+            sortedRevenues.map((item) => (
+              <Card key={item.id} className="rounded-xl border-border/70 shadow-sm">
+                <CardContent className="p-4 space-y-3">
+                  <div className="min-w-0">
+                    <p className="font-medium truncate">{item.description}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {formatDate(item.date)}
+                    </p>
+                    <p className="text-sm text-muted-foreground truncate">
+                      {item.clientId ? clientsMap.get(item.clientId) || 'N/A' : 'N/A'}
+                    </p>
+                    <p className="text-sm font-medium text-emerald-600 dark:text-emerald-500">
+                      {formatCurrency(item.amount)}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    {item.fileUrl && (
+                      <Button asChild variant="ghost" size="icon">
+                        <a href={item.fileUrl} target="_blank" rel="noopener noreferrer">
+                          <Paperclip className="h-4 w-4" />
+                        </a>
+                      </Button>
+                    )}
+                    <Button variant="ghost" size="icon" onClick={() => handleEdit(item)}>
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="text-destructive hover:text-destructive"
+                      onClick={() => openDeleteConfirm(item.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          {!isLoading && sortedRevenues.length === 0 && (
+            <div className="h-24 flex items-center justify-center text-sm text-muted-foreground">
+              Nenhuma receita encontrada.
+            </div>
+          )}
+        </div>
+        <div className="hidden md:block">
         <Table>
             <TableHeader>
             <TableRow>
@@ -142,7 +209,7 @@ export function RevenueTable({ revenues: revenuesProp, isLoadingRevenues: isLoad
                     <TableCell className="text-right"><Skeleton className="h-8 w-24" /></TableCell>
                 </TableRow>
                 ))}
-            {revenues?.map((item) => (
+            {sortedRevenues.map((item) => (
                 <TableRow key={item.id}>
                 <TableCell className="text-muted-foreground">{formatDate(item.date)}</TableCell>
                 <TableCell className="font-medium">{item.description}</TableCell>
@@ -188,13 +255,14 @@ export function RevenueTable({ revenues: revenuesProp, isLoadingRevenues: isLoad
                 </TableCell>
                 </TableRow>
             ))}
-            {!isLoading && (!revenues || revenues.length === 0) && (
+            {!isLoading && sortedRevenues.length === 0 && (
                 <TableRow>
                 <TableCell colSpan={6} className="h-24 text-center">Nenhuma receita encontrada.</TableCell>
                 </TableRow>
             )}
             </TableBody>
         </Table>
+        </div>
       </TooltipProvider>
       
       <AlertDialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>

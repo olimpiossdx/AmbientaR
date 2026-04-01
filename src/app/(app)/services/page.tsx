@@ -52,8 +52,9 @@ export default function ServicesPage() {
   const filteredServices = useMemo(() => {
     if (!services) return [];
     const term = searchTerm.trim().toLowerCase();
-    if (!term) return services;
-    return services.filter((service) => {
+    const base = !term
+      ? services
+      : services.filter((service) => {
       const name = service.name?.toLowerCase() ?? '';
       const description = (service.description as string | undefined)?.toLowerCase() ?? '';
       return (
@@ -61,6 +62,9 @@ export default function ServicesPage() {
         description.includes(term)
       );
     });
+    return [...base].sort((a, b) =>
+      (a.name || '').localeCompare(b.name || '', 'pt-BR', { sensitivity: 'base' }),
+    );
   }, [services, searchTerm]);
 
   const handleAddNew = () => {

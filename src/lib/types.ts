@@ -436,6 +436,31 @@ export type Project = {
   clientId?: string;
 };
 
+/** Tipo do ponto de monitoramento: bomba (captação) ou monitoramento a jusante */
+export type PontoMonitoramentoTipo = 'bomba' | 'jusante';
+
+export type PontoDeMonitoramento = {
+  id: string;
+  nome: string;
+  /** 'bomba' = ponto da bomba/captação; 'jusante' = monitoramento a jusante */
+  tipo?: PontoMonitoramentoTipo;
+  /** Latitude para exibição no mapa (IGAM/ANA) */
+  lat?: number;
+  /** Longitude para exibição no mapa */
+  lng?: number;
+  /** Identificador da estação no Firebase RTDB ou gateway (ingestão) */
+  rtdbDeviceId?: string;
+  /** Calibração YF-S201/S401: pulsos por litro (ex.: 450). Sobrescreve default no firmware/backend. */
+  pulsesPerLiter?: number;
+  /** Diâmetro interno da tubulação no trecho do sensor (m), para velocidade média V = Q/A */
+  internalDiameterM?: number;
+  /** Código do ponto no sistema MIRA, quando divulgado pelo IGAM */
+  miraPointCode?: string;
+};
+
+/** Tipo de leitura do monitoramento: manual (lançamento diário) ou telemétrica (satélite) */
+export type MonitoringType = 'manual' | 'telemetric';
+
 export type WaterPermit = {
   id: string;
   empreendedorId: string;
@@ -447,7 +472,96 @@ export type WaterPermit = {
   status: PermitStatus;
   description: string; // Finalidade (e.g., Captação de água subterrânea)
   fileUrl?: string;
-  pontosDeMonitoramento: { id: string; nome: string }[];
+  /** manual = lançamento no Manual-Lançamento; telemetric = leitura no Telemetrico-Leitura */
+  monitoringType?: MonitoringType;
+  pontosDeMonitoramento: PontoDeMonitoramento[];
+  /** Identificação da estação/portaria no ambiente MIRA (quando aplicável) */
+  miraStationId?: string;
+  /** Limite de vazão condicionado na outorga (m³/s) — referência para alertas / FR; conforme condicionante */
+  condicionanteFlowLimitM3s?: number;
+  /** Limite de captação mensal (m³). */
+  monthlyLimitM3?: number;
+  /** Limite de captação diário (m³). */
+  dailyLimitM3?: number;
+  /** Limite diário de horas de operação. */
+  dailyHoursLimit?: number;
+  /** Limite máximo de dias com captação no mês. */
+  maxDaysPerMonth?: number;
+};
+
+/** Tipos de uso insignificante de água (submenu Usos Insignificantes). */
+export type InsignificantWaterUseType =
+  | "Poço Tubular"
+  | "Captação Superficial"
+  | "Captação Em Barramento"
+  | "Barramento Sem Captação"
+  | "Captação em Nascente"
+  | "Captação em Cisterna";
+
+/** Registro de uso insignificante — estrutura análoga à outorga (coleção `usosInsignificantes`). */
+export type InsignificantWaterUse = {
+  id: string;
+  usoType: InsignificantWaterUseType;
+  empreendedorId: string;
+  projectId?: string;
+  permitNumber: string;
+  processNumber: string;
+  issueDate: string;
+  expirationDate: string;
+  status: PermitStatus;
+  description: string;
+  fileUrl?: string;
+  monitoringType?: MonitoringType;
+  pontosDeMonitoramento: PontoDeMonitoramento[];
+  /** IGAM / MIRA — mesmo padrão da outorga */
+  miraStationId?: string;
+  condicionanteFlowLimitM3s?: number;
+  monthlyLimitM3?: number;
+  dailyLimitM3?: number;
+  dailyHoursLimit?: number;
+  maxDaysPerMonth?: number;
+};
+
+/** Qualidade da leitura após validação no backend ou no edge */
+export type TelemetryDataQuality = "valid" | "suspect" | "invalid";
+
+/** Leitura telemétrica recebida por equipamento (segundo a segundo). Unidades IGAM/ANA: vazão m³/s, m³/h. */
+export type TelemetryReading = {
+  id: string;
+  /** Preenchido quando a telemetria refere-se a uma outorga */
+  outorgaId?: string;
+  /** Preenchido quando a telemetria refere-se a uso insignificante (mutuamente exclusivo na ingestão) */
+  usoInsignificanteId?: string;
+  pontoId: string;
+  /** Timestamp do evento (segundo a segundo) */
+  timestamp: string; // ISO
+  /** true = bomba ligada, false = desligada */
+  pumpOn: boolean;
+  /** Vazão instantânea (m³/s) - padrão ANA/IGAM */
+  flowRateM3s?: number;
+  /** Vazão (m³/h) - padrão ANA/IGAM */
+  flowRateM3h?: number;
+  /** Pulsos contados na janela de 1 s (sensor tipo YF-S201), se disponível */
+  pulsesPerSecond?: number;
+  /** Vazão derivada em L/min (intermediário de campo) */
+  flowRateLmin?: number;
+  /** Nível hidráulico (m) — medido ou convertido de distância */
+  nivelM?: number;
+  /** Volume captado na leitura (m³), quando consolidado pelo gateway/integrador. */
+  volumeM3?: number;
+  /** Horas ativas relacionadas à leitura (para consolidação diária/mensal). */
+  hoursActive?: number;
+  /** pH */
+  ph?: number;
+  /** Vazão residual a jusante (m³/s) - quando abaixo do mínimo dispara alerta laranja */
+  downstreamResidualM3s?: number;
+  /** Nível mínimo da régua a jusante (m) - referência para alerta */
+  downstreamMinLevelM?: number;
+  /** Alerta: corte total da vazão (bomba desligada e residual zerada) → vermelho */
+  alertRed?: boolean;
+  /** Alerta: residual a jusante abaixo do mínimo → laranja */
+  alertOrange?: boolean;
+  dataQuality?: TelemetryDataQuality;
 };
 
 export type ManualMonitoringLog = {
@@ -1083,7 +1197,7 @@ export type PCA = {
   };
 };
 
-export type UserRole = 'admin' | 'client' | 'representative' | 'technical' | 'sales' | 'financial' | 'gestor' | 'supervisor' | 'diretor_fauna';
+export type UserRole = 'admin' | 'client' | 'representative' | 'technical' | 'sales' | 'financial' | 'gestor' | 'supervisor' | 'diretor_fauna' | 'advogado';
 
 export type ClientPackage = 'gratuito' | 'basico' | 'intermediario' | 'avancado' | 'completo' | 'sob_consulta';
 
@@ -1133,6 +1247,8 @@ export type AppUser = {
   package?: ClientPackage;
   contractAcceptedAt?: any;
   contractSignature?: string;
+  /** true quando o usuário se cadastrou pelo "Cadastre-se" (login) e ainda não completou o cadastro no menu Cadastro. Usado para exibir alerta no sino. */
+  cadastroIncompleto?: boolean;
 };
 
 /** Pedido de acesso: usuário (ex.: Renato) solicita acessar dados do titular (ex.: Célio). O titular aprova ou rejeita. */
@@ -1186,6 +1302,8 @@ export type CommercialProposal = {
 export type Contract = {
     id: string;
     status: 'Rascunho' | 'Aprovado';
+    sourceProposalId?: string;
+    sourceProposalNumber?: string;
     contratante: {
         clientId: string;
         nome: string;
@@ -1400,6 +1518,45 @@ export type Fornecedor = {
     account?: string;
     pixKey?: string;
   };
+};
+
+export type SupplierContract = {
+  id: string;
+  status: 'Rascunho' | 'Aprovado';
+  contractNumber: string;
+  contratante: {
+    nome: string;
+    cnpj: string;
+    endereco?: string;
+    numero?: string;
+    bairro?: string;
+    municipio?: string;
+    uf?: string;
+    cep?: string;
+  };
+  prestador: {
+    supplierId: string;
+    nome: string;
+    cpfCnpj: string;
+    serviceType?: string;
+    email?: string;
+    phone?: string;
+    endereco?: string;
+  };
+  objeto: {
+    servicos: string;
+    observacoes?: string;
+  };
+  pagamento: {
+    valorTotal: number;
+    forma: string;
+  };
+  foro: {
+    comarca: string;
+    uf: string;
+  };
+  dataContrato: string;
+  fileUrl?: string;
 };
 
 export type Service = {

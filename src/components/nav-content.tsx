@@ -25,7 +25,8 @@ function NavContent() {
   const pathname = usePathname();
   const { user } = useAuth();
   const [navItems, setNavItems] = React.useState<NavItem[]>([]);
-  const { isMobile, setOpenMobile } = useSidebar();
+  const { isMobile, open, setOpenMobile, setDesktopSidebarWidth } = useSidebar();
+  const menuRef = React.useRef<HTMLDivElement | null>(null);
 
   const handleLinkClick = () => {
     if (isMobile) {
@@ -37,12 +38,18 @@ function NavContent() {
     if (user) {
       const userRole = user.role;
 
-      const filterItemsByRole = (items: (NavItem | NavSubItem)[]): any[] => {
-          return items
+      const sortByLabel = <T extends { label: string }>(items: T[]): T[] =>
+        [...items].sort((a, b) =>
+          a.label.localeCompare(b.label, "pt-BR", { sensitivity: "base" }),
+        );
+
+      const filterItemsByRole = (items: (NavItem | NavSubItem)[], depth = 0): any[] => {
+          const itemsToProcess = depth === 0 ? items : sortByLabel(items as any[]);
+          return itemsToProcess
             .filter(item => !item.roles || item.roles.includes(userRole))
             .map(item => {
               if ('subItems' in item && item.subItems) {
-                  const filteredSubItems = filterItemsByRole(item.subItems);
+                  const filteredSubItems = filterItemsByRole(item.subItems, depth + 1);
                   if (filteredSubItems.length === 0 && !item.href) {
                       return null;
                   }
@@ -76,6 +83,26 @@ function NavContent() {
     }
   }, [user]);
 
+  const isPathMatch = React.useCallback(
+    (href?: string) => {
+      if (!href) return false;
+      if (href.startsWith("/external")) return false;
+      if (href === "/") return pathname === "/";
+      return pathname === href || pathname.startsWith(`${href}/`);
+    },
+    [pathname],
+  );
+
+  const hasActiveDescendant = React.useCallback(
+    (subItems?: NavSubItem[]): boolean => {
+      if (!subItems || subItems.length === 0) return false;
+      return subItems.some(
+        (subItem) => isPathMatch(subItem.href) || hasActiveDescendant(subItem.subItems),
+      );
+    },
+    [isPathMatch],
+  );
+
   function renderSubItems(subItems: NavSubItem[], pathname: string, userRole: UserRole) {
       return subItems
         .filter(subItem => !subItem.roles || subItem.roles.includes(userRole))
@@ -89,7 +116,7 @@ function NavContent() {
 
           return (
             <SidebarMenuItem key={`${subItem.label}-group`} className="w-full">
-              <Collapsible>
+              <Collapsible defaultOpen={hasActiveDescendant(subItem.subItems)}>
                   <CollapsibleTrigger asChild>
                       <SidebarMenuButton>
                           {subItem.icon && <subItem.icon />}
@@ -112,7 +139,7 @@ function NavContent() {
 
 
         return (
-          <SidebarMenuSubButton key={`${href}-${subItem.label}`} asChild isActive={pathname === href} onClick={handleLinkClick}>
+          <SidebarMenuSubButton key={`${href}-${subItem.label}`} asChild isActive={isPathMatch(href)} onClick={handleLinkClick}>
              <Link {...linkProps}>
               {subItem.icon && <subItem.icon />}
               <span>{subItem.label}</span>
@@ -122,12 +149,40 @@ function NavContent() {
       }).filter(Boolean);
   }
 
+  React.useEffect(() => {
+    if (isMobile || !open) return;
+
+    const calculateWidth = () => {
+      const root = menuRef.current;
+      if (!root) return;
+      const labels = root.querySelectorAll<HTMLElement>(
+        '[data-sidebar="menu-button"] span:last-child, [data-sidebar="menu-sub-button"] span:last-child',
+      );
+      if (labels.length === 0) return;
+      let maxLabelWidth = 0;
+      labels.forEach((el) => {
+        maxLabelWidth = Math.max(maxLabelWidth, el.scrollWidth);
+      });
+      const nextWidth = Math.min(Math.max(maxLabelWidth + 120, 256), 560);
+      setDesktopSidebarWidth(nextWidth);
+    };
+
+    const raf = requestAnimationFrame(calculateWidth);
+    const resizeObserver = new ResizeObserver(() => calculateWidth());
+    if (menuRef.current) resizeObserver.observe(menuRef.current);
+
+    return () => {
+      cancelAnimationFrame(raf);
+      resizeObserver.disconnect();
+    };
+  }, [isMobile, open, navItems, pathname, setDesktopSidebarWidth]);
+
   return (
-      <SidebarMenu>
+      <SidebarMenu ref={menuRef}>
         {navItems.map((item, index) => (
           <SidebarMenuItem key={index} className="w-full">
             {item.subItems && item.subItems.length > 0 ? (
-              <Collapsible>
+              <Collapsible defaultOpen={hasActiveDescendant(item.subItems)}>
                 <CollapsibleTrigger asChild>
                   <SidebarMenuButton>
                     <item.icon />
@@ -144,7 +199,7 @@ function NavContent() {
             ) : item.href ? (
               <SidebarMenuButton
                 asChild
-                isActive={pathname === item.href}
+                isActive={isPathMatch(item.href)}
                 tooltip={{
                   children: item.label,
                 }}

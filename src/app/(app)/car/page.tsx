@@ -1,115 +1,397 @@
-'use client';
+"use client";
 
-import * as React from 'react';
-import { PageHeader } from '@/components/page-header';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import * as React from "react";
+import { PageHeader } from "@/components/page-header";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { useToast } from '@/hooks/use-toast';
-import { useCollection, useFirebase, useMemoFirebase, errorEmitter } from '@/firebase';
-import { collection, doc, updateDoc } from 'firebase/firestore';
-import type { Client, Project } from '@/lib/types';
-import { Skeleton } from '@/components/ui/skeleton';
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { FileText, Upload, Map as MapIcon } from 'lucide-react';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { FirestorePermissionError } from '@/firebase/errors';
+} from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
+import {
+  useCollection,
+  useFirebase,
+  useMemoFirebase,
+  useAuth,
+  errorEmitter,
+} from "@/firebase";
+import {
+  collection,
+  doc,
+  updateDoc,
+  query,
+  where,
+  getDocs,
+} from "firebase/firestore";
+import type { Client, Project } from "@/lib/types";
+import { Skeleton } from "@/components/ui/skeleton";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { FileText, Upload, Map as MapIcon } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { FirestorePermissionError } from "@/firebase/errors";
 
 export default function CarPage() {
-  const { firestore, user } = useFirebase();
+  const { firestore } = useFirebase();
+  const { user } = useAuth();
   const { toast } = useToast();
 
-  const [clientId, setClientId] = React.useState('');
-  const [projectId, setProjectId] = React.useState('');
-  const [receiptNumber, setReceiptNumber] = React.useState('');
-  const [pdfUrl, setPdfUrl] = React.useState('');
-  const [shpUrl, setShpUrl] = React.useState('');
+  const [clientId, setClientId] = React.useState("");
+  const [projectId, setProjectId] = React.useState("");
+  const [receiptNumber, setReceiptNumber] = React.useState("");
+  const [pdfUrl, setPdfUrl] = React.useState("");
+  const [shpUrl, setShpUrl] = React.useState("");
   const [uploadingPdf, setUploadingPdf] = React.useState(false);
   const [uploadingShp, setUploadingShp] = React.useState(false);
   const [saving, setSaving] = React.useState(false);
-
-  const clientsQuery = useMemoFirebase(
-    () => (firestore ? collection(firestore, 'clients') : null),
-    [firestore],
+  const [fallbackClients, setFallbackClients] = React.useState<Client[] | null>(
+    null,
   );
-  const projectsQuery = useMemoFirebase(
-    () => (firestore ? collection(firestore, 'projects') : null),
-    [firestore],
+  const [empreendedorIdsForRep, setEmpreendedorIdsForRep] = React.useState<
+    string[] | undefined
+  >(undefined);
+  const [empreendedoresForRep, setEmpreendedoresForRep] = React.useState<
+    Array<{ id: string; cpfCnpj?: string }>
+  >([]);
+
+  const clientsQuery = useMemoFirebase(() => {
+    if (!firestore || !user) return null;
+    if (user.role === "representative") {
+      return query(
+        collection(firestore, "clients"),
+        where("approvedUserIds", "array-contains", user.id),
+      );
+    }
+    return collection(firestore, "clients");
+  }, [firestore, user]);
+
+  const { data: clients, isLoading: loadingClients } =
+    useCollection<Client>(clientsQuery);
+
+  React.useEffect(() => {
+    if (!firestore || !user || user.role !== "representative" || loadingClients)
+      return;
+    if (clients && clients.length > 0) {
+      setFallbackClients(null);
+      return;
+    }
+    const repUid = user.id ?? (user as any).uid;
+    const accessRequestsRef = collection(firestore, "access_requests");
+    const clientsRef = collection(firestore, "clients");
+    const qApproved = query(
+      accessRequestsRef,
+      where("status", "==", "approved"),
+      where("requestedByUserId", "==", repUid),
+    );
+    getDocs(qApproved)
+      .then((snap) => {
+        if (snap.docs.length === 0) {
+          setFallbackClients([]);
+          return;
+        }
+        const cpfs = new Set<string>();
+        snap.docs.forEach((d) => {
+          const cpf = (d.data().cpfOfInterested || "").trim();
+          const digits = cpf.replace(/\D/g, "");
+          if (digits.length >= 11) {
+            cpfs.add(cpf);
+            cpfs.add(digits);
+          }
+        });
+        const cpfList = Array.from(cpfs).slice(0, 10);
+        if (cpfList.length === 0) {
+          setFallbackClients([]);
+          return;
+        }
+        const qClients = query(clientsRef, where("cpfCnpj", "in", cpfList));
+        getDocs(qClients)
+          .then((snapC) => {
+            const list: Client[] = snapC.docs.map(
+              (d) => ({ id: d.id, ...d.data() }) as Client,
+            );
+            setFallbackClients(list);
+          })
+          .catch(() => setFallbackClients([]));
+      })
+      .catch(() => setFallbackClients([]));
+  }, [firestore, user, loadingClients, clients]);
+
+  const displayedClients = React.useMemo(
+    () => (clients && clients.length > 0 ? clients : (fallbackClients ?? [])),
+    [clients, fallbackClients],
   );
 
-  const { data: clients, isLoading: loadingClients } = useCollection<Client>(clientsQuery);
-  const { data: projects, isLoading: loadingProjects } = useCollection<Project>(projectsQuery);
+  React.useEffect(() => {
+    if (!firestore || !user || user.role !== "representative") return;
+    const repUid = user.id ?? (user as any).uid;
+    const empreendedoresRef = collection(firestore, "empreendedores");
+    const accessRequestsRef = collection(firestore, "access_requests");
+    const qEmp = query(
+      empreendedoresRef,
+      where("approvedUserIds", "array-contains", repUid),
+    );
+    getDocs(qEmp)
+      .then((snapshot) => {
+        let ids = snapshot.docs.map((d) => d.id);
+        const empList = snapshot.docs.map((d) => ({
+          id: d.id,
+          cpfCnpj: d.data().cpfCnpj as string | undefined,
+        }));
+        if (ids.length > 0) {
+          setEmpreendedorIdsForRep(ids);
+          setEmpreendedoresForRep(empList);
+          return;
+        }
+        const qApproved = query(
+          accessRequestsRef,
+          where("status", "==", "approved"),
+          where("requestedByUserId", "==", repUid),
+        );
+        getDocs(qApproved)
+          .then((snapReq) => {
+            if (snapReq.docs.length === 0) {
+              setEmpreendedorIdsForRep([]);
+              setEmpreendedoresForRep([]);
+              return;
+            }
+            const cpfs = new Set<string>();
+            snapReq.docs.forEach((d) => {
+              const cpf = (d.data().cpfOfInterested || "").trim();
+              const digits = cpf.replace(/\D/g, "");
+              if (digits.length >= 11) {
+                cpfs.add(cpf);
+                cpfs.add(digits);
+              }
+            });
+            const cpfList = Array.from(cpfs).slice(0, 10);
+            if (cpfList.length === 0) {
+              setEmpreendedorIdsForRep([]);
+              setEmpreendedoresForRep([]);
+              return;
+            }
+            const qByCpf = query(
+              empreendedoresRef,
+              where("cpfCnpj", "in", cpfList),
+            );
+            getDocs(qByCpf)
+              .then((snapEmp) => {
+                ids = snapEmp.docs.map((d) => d.id);
+                setEmpreendedorIdsForRep(ids);
+                setEmpreendedoresForRep(
+                  snapEmp.docs.map((d) => ({
+                    id: d.id,
+                    cpfCnpj: d.data().cpfCnpj as string | undefined,
+                  })),
+                );
+              })
+              .catch(() => {
+                setEmpreendedorIdsForRep([]);
+                setEmpreendedoresForRep([]);
+              });
+          })
+          .catch(() => {
+            setEmpreendedorIdsForRep([]);
+            setEmpreendedoresForRep([]);
+          });
+      })
+      .catch(() => {
+        setEmpreendedorIdsForRep([]);
+        setEmpreendedoresForRep([]);
+      });
+  }, [firestore, user]);
+
+  const projectsQuery = useMemoFirebase(() => {
+    if (!firestore || !user) return null;
+    if (user.role === "representative") {
+      if (empreendedorIdsForRep === undefined) return null;
+      if (empreendedorIdsForRep.length === 0) {
+        return query(
+          collection(firestore, "projects"),
+          where("empreendedorId", "==", "__none__"),
+        );
+      }
+      return query(
+        collection(firestore, "projects"),
+        where("empreendedorId", "in", empreendedorIdsForRep.slice(0, 10)),
+      );
+    }
+    return collection(firestore, "projects");
+  }, [firestore, user, empreendedorIdsForRep]);
+
+  const { data: projects, isLoading: loadingProjects } =
+    useCollection<Project>(projectsQuery);
 
   const clientsMap = React.useMemo(
-    () => new Map(clients?.map((c) => [c.id, c]) ?? []),
-    [clients],
+    () => new Map(displayedClients.map((c) => [c.id, c])),
+    [displayedClients],
   );
+
+  const onlyDigits = (v: string) => (v || "").replace(/\D/g, "");
+
+  const displayedProjects = React.useMemo(() => {
+    if (!projects) return [];
+    if (user?.role !== "representative") return projects;
+    if (!clientId) return [];
+    const client = clientsMap.get(clientId);
+    if (!client?.cpfCnpj) return [];
+    const clientDigits = onlyDigits(client.cpfCnpj);
+    if (clientDigits.length < 11) return [];
+    const empIdsOfClient = empreendedoresForRep
+      .filter(
+        (e) =>
+          e.cpfCnpj &&
+          (onlyDigits(e.cpfCnpj) === clientDigits ||
+            e.cpfCnpj === client.cpfCnpj),
+      )
+      .map((e) => e.id);
+    if (empIdsOfClient.length === 0) return [];
+    return projects.filter(
+      (p) => p.empreendedorId && empIdsOfClient.includes(p.empreendedorId),
+    );
+  }, [projects, user?.role, clientId, clientsMap, empreendedoresForRep]);
+
+  React.useEffect(() => {
+    if (user?.role === "representative" && !clientId) setProjectId("");
+  }, [user?.role, clientId]);
 
   const projectsWithCar = React.useMemo(
     () => (projects ?? []).filter((p) => !!p.car),
     [projects],
   );
 
-  const handlePdfChange: React.ChangeEventHandler<HTMLInputElement> = async (event) => {
-    const file = event.target.files?.[0];
+  const handlePdfChange: React.ChangeEventHandler<HTMLInputElement> = async (
+    event,
+  ) => {
+    const inputEl = event.currentTarget;
+    const file = inputEl.files?.[0];
     if (!file || !firestore) return;
 
-    if (file.type !== 'application/pdf') {
+    if (file.type !== "application/pdf") {
       toast({
-        variant: 'destructive',
-        title: 'Tipo de arquivo inválido',
-        description: 'Envie um arquivo em PDF para o recibo do CAR.',
+        variant: "destructive",
+        title: "Tipo de arquivo inválido",
+        description: "Envie um arquivo em PDF para o recibo do CAR.",
       });
       return;
     }
 
     try {
       setUploadingPdf(true);
-      const storage = getStorage();
-      const storageRef = ref(storage, `car/${Date.now()}-${file.name}`);
-      const uploadResult = await uploadBytes(storageRef, file);
-      const url = await getDownloadURL(uploadResult.ref);
-      setPdfUrl(url);
-      toast({ title: 'Recibo enviado', description: 'O PDF foi carregado com sucesso.' });
+      // Permite selecionar o mesmo arquivo novamente.
+      inputEl.value = "";
+
+      if (process.env.NODE_ENV === "development") {
+        const formData = new FormData();
+        formData.append("file", file);
+
+        const res = await fetch("/api/uploads/car-pdf", {
+          method: "POST",
+          body: formData,
+        });
+        const data = await res.json();
+        if (!res.ok || !data.url) {
+          throw new Error(data.error || "Falha ao salvar PDF.");
+        }
+
+        setPdfUrl(data.url as string);
+        toast({
+          title: "Recibo enviado",
+          description: "O PDF foi carregado com sucesso.",
+        });
+      } else {
+        const storage = getStorage();
+        const storageRef = ref(storage, `car/${Date.now()}-${file.name}`);
+        const uploadResult = await uploadBytes(storageRef, file);
+        const url = await getDownloadURL(uploadResult.ref);
+        setPdfUrl(url);
+        toast({
+          title: "Recibo enviado",
+          description: "O PDF foi carregado com sucesso.",
+        });
+      }
     } catch (error) {
-      console.error('Erro ao enviar PDF do CAR:', error);
+      console.error("Erro ao enviar PDF do CAR:", error);
       toast({
-        variant: 'destructive',
-        title: 'Erro no upload',
-        description: 'Não foi possível enviar o PDF do CAR.',
+        variant: "destructive",
+        title: "Erro no upload",
+        description: "Não foi possível enviar o PDF do CAR.",
       });
     } finally {
       setUploadingPdf(false);
     }
   };
 
-  const handleShpChange: React.ChangeEventHandler<HTMLInputElement> = async (event) => {
-    const file = event.target.files?.[0];
+  const handleShpChange: React.ChangeEventHandler<HTMLInputElement> = async (
+    event,
+  ) => {
+    const inputEl = event.currentTarget;
+    const file = inputEl.files?.[0];
     if (!file || !firestore) return;
 
     try {
       setUploadingShp(true);
-      const storage = getStorage();
-      const storageRef = ref(storage, `car-shp/${Date.now()}-${file.name}`);
-      const uploadResult = await uploadBytes(storageRef, file);
-      const url = await getDownloadURL(uploadResult.ref);
-      setShpUrl(url);
-      toast({ title: 'Arquivo de geometria enviado', description: 'O arquivo SHP/ZIP foi carregado.' });
+      // Permite selecionar o mesmo arquivo novamente.
+      inputEl.value = "";
+
+      if (process.env.NODE_ENV === "development") {
+        const formData = new FormData();
+        formData.append("file", file);
+
+        const res = await fetch("/api/uploads/car-geometry", {
+          method: "POST",
+          body: formData,
+        });
+        const data = await res.json();
+        if (!res.ok || !data.url) {
+          throw new Error(data.error || "Falha ao salvar geometria.");
+        }
+
+        setShpUrl(data.url as string);
+        toast({
+          title: "Arquivo de geometria enviado",
+          description: "O arquivo SHP/ZIP foi carregado.",
+        });
+      } else {
+        const storage = getStorage();
+        const storageRef = ref(storage, `car-shp/${Date.now()}-${file.name}`);
+        const uploadResult = await uploadBytes(storageRef, file);
+        const url = await getDownloadURL(uploadResult.ref);
+        setShpUrl(url);
+        toast({
+          title: "Arquivo de geometria enviado",
+          description: "O arquivo SHP/ZIP foi carregado.",
+        });
+      }
     } catch (error) {
-      console.error('Erro ao enviar SHP do CAR:', error);
+      console.error("Erro ao enviar SHP do CAR:", error);
       toast({
-        variant: 'destructive',
-        title: 'Erro no upload',
-        description: 'Não foi possível enviar o arquivo de geometria.',
+        variant: "destructive",
+        title: "Erro no upload",
+        description: "Não foi possível enviar o arquivo de geometria.",
       });
     } finally {
       setUploadingShp(false);
@@ -118,28 +400,34 @@ export default function CarPage() {
 
   const handleSave = async () => {
     if (!firestore || !user) {
-      toast({ variant: 'destructive', title: 'Erro de autenticação.' });
+      toast({ variant: "destructive", title: "Erro de autenticação." });
       return;
     }
     if (!projectId) {
-      toast({ variant: 'destructive', title: 'Selecione o empreendimento (fazenda).' });
+      toast({
+        variant: "destructive",
+        title: "Selecione o empreendimento (fazenda).",
+      });
       return;
     }
     if (!receiptNumber.trim()) {
-      toast({ variant: 'destructive', title: 'Informe o número do recibo do CAR.' });
+      toast({
+        variant: "destructive",
+        title: "Informe o número do recibo do CAR.",
+      });
       return;
     }
     if (!pdfUrl) {
       toast({
-        variant: 'destructive',
-        title: 'Envie o PDF do CAR.',
-        description: 'O recibo em PDF é obrigatório para salvar o registro.',
+        variant: "destructive",
+        title: "Envie o PDF do CAR.",
+        description: "O recibo em PDF é obrigatório para salvar o registro.",
       });
       return;
     }
 
     setSaving(true);
-    const projectRef = doc(firestore, 'projects', projectId);
+    const projectRef = doc(firestore, "projects", projectId);
 
     const carData = {
       clientId: clientId || undefined,
@@ -151,31 +439,36 @@ export default function CarPage() {
     try {
       await updateDoc(projectRef, { car: carData });
       toast({
-        title: 'CAR salvo com sucesso',
-        description: 'O cadastro ambiental rural foi vinculado ao empreendimento.',
+        title: "CAR salvo com sucesso",
+        description:
+          "O cadastro ambiental rural foi vinculado ao empreendimento.",
       });
-      setReceiptNumber('');
-      setPdfUrl('');
-      setShpUrl('');
+      setReceiptNumber("");
+      setPdfUrl("");
+      setShpUrl("");
     } catch (error: any) {
-      console.error('Erro ao salvar CAR no projeto:', error);
+      console.error("Erro ao salvar CAR no projeto:", error);
       const permissionError = new FirestorePermissionError({
         path: projectRef.path,
-        operation: 'update',
+        operation: "update",
         requestResourceData: { car: carData },
       });
-      errorEmitter.emit('permission-error', permissionError);
+      errorEmitter.emit("permission-error", permissionError);
       toast({
-        variant: 'destructive',
-        title: 'Erro ao salvar',
-        description: 'Verifique suas permissões de escrita para empreendimentos.',
+        variant: "destructive",
+        title: "Erro ao salvar",
+        description:
+          "Verifique suas permissões de escrita para empreendimentos.",
       });
     } finally {
       setSaving(false);
     }
   };
 
-  const isLoading = loadingClients || loadingProjects;
+  const isLoading =
+    loadingClients ||
+    loadingProjects ||
+    (user?.role === "representative" && empreendedorIdsForRep === undefined);
 
   return (
     <div className="flex flex-col h-full">
@@ -185,7 +478,9 @@ export default function CarPage() {
           <CardHeader>
             <CardTitle>Vincular CAR a Empreendimento</CardTitle>
             <CardDescription>
-              Suba o recibo do CAR em PDF e o arquivo de geometria (SHP/ZIP), vinculando ao cliente e à fazenda.
+              {user?.role === "representative"
+                ? "Você só visualiza clientes e empreendimentos que representa (titulares que aprovaram seu acesso). Suba o recibo em PDF e o arquivo de geometria (SHP/ZIP)."
+                : "Suba o recibo do CAR em PDF e o arquivo de geometria (SHP/ZIP), vinculando ao cliente e à fazenda."}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -199,16 +494,24 @@ export default function CarPage() {
               <>
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2">
-                    <Label>Cliente (opcional)</Label>
+                    <Label>
+                      Cliente{" "}
+                      {user?.role === "representative"
+                        ? "(obrigatório para selecionar fazenda)"
+                        : "(opcional)"}
+                    </Label>
                     <Select
                       value={clientId}
-                      onValueChange={setClientId}
+                      onValueChange={(v) => {
+                        setClientId(v);
+                        if (user?.role === "representative") setProjectId("");
+                      }}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Selecione o cliente proprietário" />
                       </SelectTrigger>
                       <SelectContent>
-                        {clients?.map((c) => (
+                        {displayedClients.map((c) => (
                           <SelectItem key={c.id} value={c.id}>
                             {c.name} — {c.cpfCnpj}
                           </SelectItem>
@@ -221,14 +524,25 @@ export default function CarPage() {
                     <Select
                       value={projectId}
                       onValueChange={setProjectId}
+                      disabled={user?.role === "representative" && !clientId}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Selecione o empreendimento" />
+                        <SelectValue
+                          placeholder={
+                            user?.role === "representative" && !clientId
+                              ? "Selecione primeiro o cliente"
+                              : "Selecione o empreendimento"
+                          }
+                        />
                       </SelectTrigger>
                       <SelectContent>
-                        {projects?.map((p) => (
+                        {(user?.role === "representative"
+                          ? displayedProjects
+                          : (projects ?? [])
+                        ).map((p) => (
                           <SelectItem key={p.id} value={p.id}>
-                            {p.propertyName} {p.municipio ? `— ${p.municipio}/${p.uf}` : ''}
+                            {p.propertyName}{" "}
+                            {p.municipio ? `— ${p.municipio}/${p.uf}` : ""}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -254,7 +568,9 @@ export default function CarPage() {
                       disabled={uploadingPdf}
                     />
                     {uploadingPdf && (
-                      <p className="text-xs text-muted-foreground">Enviando PDF do CAR...</p>
+                      <p className="text-xs text-muted-foreground">
+                        Enviando PDF do CAR...
+                      </p>
                     )}
                   </div>
                 </div>
@@ -268,7 +584,9 @@ export default function CarPage() {
                     disabled={uploadingShp}
                   />
                   {uploadingShp && (
-                    <p className="text-xs text-muted-foreground">Enviando arquivo de geometria...</p>
+                    <p className="text-xs text-muted-foreground">
+                      Enviando arquivo de geometria...
+                    </p>
                   )}
                 </div>
 
@@ -280,7 +598,7 @@ export default function CarPage() {
                     className="gap-2"
                   >
                     <Upload className="h-4 w-4" />
-                    {saving ? 'Salvando...' : 'Salvar CAR'}
+                    {saving ? "Salvando..." : "Salvar CAR"}
                   </Button>
                 </div>
               </>
@@ -292,7 +610,8 @@ export default function CarPage() {
           <CardHeader>
             <CardTitle>Registros de CAR por Empreendimento</CardTitle>
             <CardDescription>
-              Consulte rapidamente quais fazendas já possuem CAR vinculado, com acesso aos arquivos enviados.
+              Consulte rapidamente quais fazendas já possuem CAR vinculado, com
+              acesso aos arquivos enviados.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -307,65 +626,90 @@ export default function CarPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {loadingProjects && (
+                  {loadingProjects &&
                     Array.from({ length: 3 }).map((_, i) => (
                       <TableRow key={i}>
-                        <TableCell><Skeleton className="h-5 w-48" /></TableCell>
-                        <TableCell><Skeleton className="h-5 w-40" /></TableCell>
-                        <TableCell><Skeleton className="h-5 w-32" /></TableCell>
-                        <TableCell className="text-right"><Skeleton className="h-8 w-24 ml-auto" /></TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                  {!loadingProjects && projectsWithCar.map((p) => {
-                    const car = p.car!;
-                    const client = car.clientId ? clientsMap.get(car.clientId) : undefined;
-                    return (
-                      <TableRow key={p.id}>
-                        <TableCell className="font-medium">
-                          {p.propertyName} {p.municipio ? `— ${p.municipio}/${p.uf}` : ''}
+                        <TableCell>
+                          <Skeleton className="h-5 w-48" />
                         </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {client ? `${client.name} — ${client.cpfCnpj}` : 'Não vinculado'}
+                        <TableCell>
+                          <Skeleton className="h-5 w-40" />
                         </TableCell>
-                        <TableCell>{car.receiptNumber}</TableCell>
+                        <TableCell>
+                          <Skeleton className="h-5 w-32" />
+                        </TableCell>
                         <TableCell className="text-right">
-                          <div className="flex items-center justify-end gap-1">
-                            {car.pdfUrl && (
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button asChild variant="ghost" size="icon">
-                                    <a href={car.pdfUrl} target="_blank" rel="noopener noreferrer">
-                                      <FileText className="h-4 w-4" />
-                                      <span className="sr-only">Ver recibo PDF</span>
-                                    </a>
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  <p>Abrir recibo em PDF</p>
-                                </TooltipContent>
-                              </Tooltip>
-                            )}
-                            {car.shpUrl && (
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button asChild variant="ghost" size="icon">
-                                    <a href={car.shpUrl} target="_blank" rel="noopener noreferrer">
-                                      <MapIcon className="h-4 w-4" />
-                                      <span className="sr-only">Baixar geometria</span>
-                                    </a>
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  <p>Baixar arquivo SHP/ZIP</p>
-                                </TooltipContent>
-                              </Tooltip>
-                            )}
-                          </div>
+                          <Skeleton className="h-8 w-24 ml-auto" />
                         </TableCell>
                       </TableRow>
-                    );
-                  })}
+                    ))}
+                  {!loadingProjects &&
+                    projectsWithCar.map((p) => {
+                      const car = p.car!;
+                      const client = car.clientId
+                        ? clientsMap.get(car.clientId)
+                        : undefined;
+                      return (
+                        <TableRow key={p.id}>
+                          <TableCell className="font-medium">
+                            {p.propertyName}{" "}
+                            {p.municipio ? `— ${p.municipio}/${p.uf}` : ""}
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {client
+                              ? `${client.name} — ${client.cpfCnpj}`
+                              : "Não vinculado"}
+                          </TableCell>
+                          <TableCell>{car.receiptNumber}</TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex items-center justify-end gap-1">
+                              {car.pdfUrl && (
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button asChild variant="ghost" size="icon">
+                                      <a
+                                        href={car.pdfUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                      >
+                                        <FileText className="h-4 w-4" />
+                                        <span className="sr-only">
+                                          Ver recibo PDF
+                                        </span>
+                                      </a>
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Abrir recibo em PDF</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              )}
+                              {car.shpUrl && (
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button asChild variant="ghost" size="icon">
+                                      <a
+                                        href={car.shpUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                      >
+                                        <MapIcon className="h-4 w-4" />
+                                        <span className="sr-only">
+                                          Baixar geometria
+                                        </span>
+                                      </a>
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Baixar arquivo SHP/ZIP</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              )}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
                   {!loadingProjects && projectsWithCar.length === 0 && (
                     <TableRow>
                       <TableCell colSpan={4} className="h-24 text-center">
@@ -382,4 +726,3 @@ export default function CarPage() {
     </div>
   );
 }
-

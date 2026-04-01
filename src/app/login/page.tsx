@@ -1,66 +1,67 @@
 
 'use client';
+
 import { Suspense } from 'react';
 import Link from 'next/link';
 import { LoginForm } from './login-form';
 import { Leaf } from 'lucide-react';
 
+/* Mesmo ícone da aplicação (layout): gradiente verde + folha */
 const LogoIcon = () => (
-    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-emerald-400 text-primary-foreground">
-        <Leaf className="h-6 w-6" />
-    </div>
+  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-emerald-400 text-primary-foreground">
+    <Leaf className="h-5 w-5" />
+  </div>
 );
 
 function LoginPageContent() {
   return (
-    <div className="w-full max-w-sm animate-fade-in-up">
-      <div className="mb-6 flex flex-col items-center">
-        <Link href="/" className="flex items-center gap-2 text-foreground mb-2">
-            <LogoIcon />
-            <h1 className="text-4xl font-bold text-foreground">
-                AmbientaR
+    <div className="w-full max-w-[400px] animate-fade-in-up space-y-8">
+      {/* Marca: igual ao restante da aplicação */}
+      <header className="text-center">
+        <Link href="/" className="inline-flex items-center justify-center gap-3">
+          <LogoIcon />
+          <div className="text-left">
+            <h1 className="text-2xl font-bold tracking-tight text-primary">
+              AmbientaR
             </h1>
+            <p className="text-xs text-muted-foreground">
+              Gestão Ambiental Inteligente
+            </p>
+          </div>
         </Link>
-        <p className="text-center text-muted-foreground text-sm">
-          Gestão Ambiental Inteligente
-        </p>
-      </div>
+      </header>
+
+      {/* Formulário */}
       <LoginForm />
-      <div className="mt-4 text-center text-sm text-muted-foreground space-y-2">
-        <p>Não tem uma conta? Escolha como deseja se cadastrar:</p>
-        <div className="flex flex-col sm:flex-row gap-2 justify-center">
-          <Link
-            href="/register?tipo=cliente"
-            className="inline-flex items-center justify-center rounded-md border px-3 py-1.5 text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
-          >
-            Sou Cliente (Titular)
+
+      {/* Cadastre-se e Esqueceu a senha */}
+      <div className="space-y-4 text-center text-sm">
+        <p className="text-muted-foreground">
+          Não tem uma conta?{' '}
+          <Link href="/register" className="font-medium text-primary underline underline-offset-2 hover:no-underline">
+            Cadastre-se
           </Link>
-          <Link
-            href="/register?tipo=representante"
-            className="inline-flex items-center justify-center rounded-md border px-3 py-1.5 text-sm font-medium bg-card text-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
-          >
-            Sou Representante
-          </Link>
-        </div>
-      </div>
-      <div className="mt-2 text-center text-xs text-muted-foreground">
-        <Link href="/forgot-password" className="underline hover:text-primary transition-colors">
+        </p>
+        <Link
+          href="/forgot-password"
+          className="inline-block text-primary underline underline-offset-2 hover:no-underline"
+        >
           Esqueceu a senha?
         </Link>
       </div>
     </div>
-  )
+  );
 }
 
 export default function LoginPage() {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center p-4 bg-gradient-to-br from-background to-green-50/50 dark:to-green-950/20">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4 py-8">
       <Suspense>
         <LoginPageContent />
       </Suspense>
-      <div className="absolute bottom-6 text-center text-xs text-muted-foreground/80">
-        <p>Desenvolvido por Barros e Sá Investimentos</p>
-      </div>
+      <p className="absolute bottom-4 left-0 right-0 text-center text-xs text-muted-foreground">
+        Desenvolvido por Barros e Sá Investimentos
+      </p>
     </div>
   );
 }

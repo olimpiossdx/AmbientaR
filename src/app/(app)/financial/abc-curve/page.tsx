@@ -104,7 +104,17 @@ export default function AbcCurvePage() {
     });
     console.log('abcData', { chartPoints: abcData.chartData.length, tableRows: abcData.tableData.length });
     console.groupEnd();
-  }, [isLoading, revenuesData?.length, invoicesData?.length, clients?.length, abcData.chartData.length, abcData.tableData.length]);
+  }, [
+    isLoadingRevenues,
+    isLoadingInvoices,
+    isLoadingClients,
+    isLoading,
+    revenuesData?.length,
+    invoicesData?.length,
+    clients?.length,
+    abcData.chartData.length,
+    abcData.tableData.length,
+  ]);
 
   const formatCurrency = (value: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
 
@@ -169,6 +179,41 @@ export default function AbcCurvePage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
+            <div className="space-y-3 md:hidden">
+              {isLoading &&
+                Array.from({ length: 5 }).map((_, i) => (
+                  <Card key={i}>
+                    <CardContent className="p-4 space-y-2">
+                      <Skeleton className="h-5 w-40" />
+                      <Skeleton className="h-4 w-32" />
+                    </CardContent>
+                  </Card>
+                ))}
+              {!isLoading && abcData.tableData.map((item) => (
+                <Card key={item.clientId} className="rounded-xl border-border/70 shadow-sm">
+                  <CardContent className="p-4 space-y-2">
+                    <div className="flex items-start justify-between gap-3">
+                      <p className="font-medium">{item.clientName}</p>
+                      <Badge variant="outline" className={cn("font-bold", getClassificationVariant(item.classification))}>
+                        {item.classification}
+                      </Badge>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Receita: {formatCurrency(item.totalRevenue)}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      % Receita: {item.revenuePercentage.toFixed(2)}% | % Acumulada: {item.cumulativeRevenuePercentage.toFixed(2)}%
+                    </p>
+                  </CardContent>
+                </Card>
+              ))}
+              {!isLoading && abcData.tableData.length === 0 && (
+                <div className="h-24 flex items-center justify-center text-sm text-muted-foreground">
+                  Nenhum dado de receita encontrado para análise.
+                </div>
+              )}
+            </div>
+            <div className="hidden md:block">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -211,6 +256,7 @@ export default function AbcCurvePage() {
                  )}
               </TableBody>
             </Table>
+            </div>
           </CardContent>
         </Card>
       </main>

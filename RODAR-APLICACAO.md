@@ -99,3 +99,30 @@ Se o console do navegador mostrar *"Failed to load resource: the server responde
 
 4. **Tratamento de erros na aplicação**
    - Foram adicionados `error.tsx` e `global-error.tsx`: em caso de erro na renderização, a aplicação exibe uma tela de "Algo deu errado" com a mensagem e um botão "Tentar novamente", além de registrar o erro no console do navegador e no terminal do servidor.
+
+---
+
+## Testar no celular na rede local
+
+Para abrir a aplicação no celular usando a **mesma rede Wi-Fi** do computador:
+
+1. **Subir o servidor no PC** (na pasta do projeto):
+   ```powershell
+   npm run dev
+   ```
+   O script já usa `-H 0.0.0.0`, então o servidor escuta em todas as interfaces (incluindo a rede local).
+
+2. **Descobrir o IP do computador na rede:**
+   - No **PowerShell**: `ipconfig`
+   - Procure o bloco **Adaptador de Rede sem Fio Wi-Fi** (ou **Ethernet** se estiver com cabo).
+   - Anote o **Endereço IPv4** (ex.: `192.168.0.105` ou `192.168.1.50`).
+
+3. **No celular:**
+   - Conecte o celular no **mesmo Wi-Fi** que o PC.
+   - Abra o navegador e acesse: **http://SEU_IP:9002**  
+     Exemplo: `http://192.168.0.105:9002`
+
+4. **Se não abrir no celular:**
+   - **Firewall do Windows** pode estar bloqueando a porta 9002. Abra o **Firewall do Windows** → “Permitir um aplicativo ou recurso” → permita **Node.js** nas redes privadas (ou crie uma regra de entrada para a porta **TCP 9002**).
+   - Confirme se o IP do PC está correto (`ipconfig` de novo) e se o celular está na mesma rede.
+   - **Liberar porta 9002 no Firewall:** Na pasta do projeto há o script `liberar-porta-9002-firewall.ps1`. Abra o PowerShell **como Administrador**, vá até a pasta do projeto e execute: `.\liberar-porta-9002-firewall.ps1`. Isso cria uma regra de entrada para TCP 9002 em redes privada e pública. Depois tente de novo no celular.

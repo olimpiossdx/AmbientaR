@@ -53,8 +53,9 @@ export default function SuppliersPage() {
   const filteredSuppliers = useMemo(() => {
     if (!suppliers) return [];
     const term = searchTerm.trim().toLowerCase();
-    if (!term) return suppliers;
-    return suppliers.filter((supplier) => {
+    const base = !term
+      ? suppliers
+      : suppliers.filter((supplier) => {
       const name = supplier.name?.toLowerCase() ?? '';
       const cpfCnpj = supplier.cpfCnpj?.toLowerCase() ?? '';
       const serviceType = supplier.serviceType?.toLowerCase() ?? '';
@@ -64,6 +65,9 @@ export default function SuppliersPage() {
         serviceType.includes(term)
       );
     });
+    return [...base].sort((a, b) =>
+      (a.name || '').localeCompare(b.name || '', 'pt-BR', { sensitivity: 'base' }),
+    );
   }, [suppliers, searchTerm]);
 
   const handleAddNew = () => {
@@ -151,6 +155,54 @@ export default function SuppliersPage() {
                 </div>
               </div>
               <TooltipProvider>
+                <div className="space-y-3 md:hidden">
+                  {isLoading &&
+                    Array.from({ length: 5 }).map((_, i) => (
+                      <Card key={i}>
+                        <CardContent className="p-4 space-y-2">
+                          <Skeleton className="h-5 w-40" />
+                          <Skeleton className="h-4 w-36" />
+                        </CardContent>
+                      </Card>
+                    ))}
+                  {!isLoading &&
+                    filteredSuppliers.map((supplier) => (
+                      <Card key={supplier.id} className="rounded-xl border-border/70 shadow-sm">
+                        <CardContent className="p-4 space-y-3">
+                          <div className="min-w-0">
+                            <p className="font-medium truncate">{supplier.name}</p>
+                            <p className="text-sm text-muted-foreground">{supplier.cpfCnpj}</p>
+                            <p className="text-sm text-muted-foreground truncate">
+                              {supplier.serviceType || "Não informado"}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleEdit(supplier)}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="text-destructive hover:text-destructive"
+                              onClick={() => openDeleteConfirm(supplier.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  {!isLoading && filteredSuppliers.length === 0 && (
+                    <div className="h-24 flex items-center justify-center text-sm text-muted-foreground">
+                      Nenhum fornecedor encontrado.
+                    </div>
+                  )}
+                </div>
+                <div className="hidden md:block">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -190,6 +242,7 @@ export default function SuppliersPage() {
                     )}
                   </TableBody>
                 </Table>
+                </div>
               </TooltipProvider>
             </CardContent>
           </Card>

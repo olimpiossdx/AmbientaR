@@ -1,4 +1,4 @@
-'use server';
+"use server";
 
 /**
  * @fileOverview An AI-powered tool to generate sustainability reports based on project data and environmental metrics.
@@ -6,25 +6,25 @@
  * - generateSustainabilityReport - A function that handles the generation of sustainability reports.
  */
 
-import {ai} from '@/ai/genkit';
+import { ai, aiModel } from "@/ai/genkit";
 import {
   GenerateSustainabilityReportInputSchema,
   GenerateSustainabilityReportOutputSchema,
   type GenerateSustainabilityReportInput,
   type GenerateSustainabilityReportOutput,
-} from '@/lib/types';
-
+} from "@/lib/types";
 
 export async function generateSustainabilityReport(
-  input: GenerateSustainabilityReportInput
+  input: GenerateSustainabilityReportInput,
 ): Promise<GenerateSustainabilityReportOutput> {
   return generateSustainabilityReportFlow(input);
 }
 
 const prompt = ai.definePrompt({
-  name: 'generateSustainabilityReportPrompt',
-  input: {schema: GenerateSustainabilityReportInputSchema},
-  output: {schema: GenerateSustainabilityReportOutputSchema},
+  name: "generateSustainabilityReportPrompt",
+  model: aiModel,
+  input: { schema: GenerateSustainabilityReportInputSchema },
+  output: { schema: GenerateSustainabilityReportOutputSchema },
   prompt: `You are a sustainability expert. You will receive project data and environmental metrics and have to generate a sustainability report.
 
   Pay attention to local regulations in Minas Gerais, Brazil.
@@ -41,12 +41,12 @@ const prompt = ai.definePrompt({
 
 const generateSustainabilityReportFlow = ai.defineFlow(
   {
-    name: 'generateSustainabilityReportFlow',
+    name: "generateSustainabilityReportFlow",
     inputSchema: GenerateSustainabilityReportInputSchema,
     outputSchema: GenerateSustainabilityReportOutputSchema,
   },
-  async input => {
-    const {output} = await prompt(input);
+  async (input) => {
+    const { output } = await prompt(input, { model: aiModel });
     return output!;
-  }
+  },
 );

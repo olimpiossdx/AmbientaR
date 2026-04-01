@@ -84,15 +84,17 @@ export function OficioForm({ currentItem, onSuccess, onCancel }: OficioFormProps
   
   const getRoleText = (role?: AppUser['role']) => {
     if (!role) return '';
-    const roles = {
+    const roles: Record<AppUser["role"], string> = {
       admin: 'Administrador',
       client: 'Cliente',
+      representative: 'Representante',
       technical: 'Técnico',
       sales: 'Vendas',
       financial: 'Financeiro',
       gestor: 'Gestor Ambiental',
       supervisor: 'Supervisor',
       diretor_fauna: 'Diretor de Fauna',
+      advogado: 'Advogado',
     };
     return roles[role] || role;
   };

@@ -1,4 +1,4 @@
-'use server';
+"use server";
 
 /**
  * @fileOverview Um assistente de IA especializado em legislação ambiental.
@@ -6,25 +6,25 @@
  * - askAssistant - Função que recebe uma pergunta e retorna uma resposta.
  */
 
-import {ai} from '@/ai/genkit';
+import { ai, aiModel } from "@/ai/genkit";
 import {
   AssistantInputSchema,
   AssistantOutputSchema,
   type AssistantInput,
   type AssistantOutput,
-} from '@/lib/types';
-
+} from "@/lib/types";
 
 export async function askAssistant(
-  input: AssistantInput
+  input: AssistantInput,
 ): Promise<AssistantOutput> {
   return assistantFlow(input);
 }
 
 const prompt = ai.definePrompt({
-  name: 'assistantPrompt',
-  input: {schema: AssistantInputSchema},
-  output: {schema: AssistantOutputSchema},
+  name: "assistantPrompt",
+  model: aiModel,
+  input: { schema: AssistantInputSchema },
+  output: { schema: AssistantOutputSchema },
   prompt: `Sua base de conhecimento é vasta e multifacetada, mas sua persona principal é a de um especialista sênior em consultoria ambiental, com foco profundo na legislação, normas e procedimentos de Minas Gerais e do Brasil. Você é um assistente de IA chamado "AmbientaR", criado pela Pimenta Consultoria Ambiental. Sua missão é fornecer respostas precisas, bem fundamentadas e práticas para profissionais da área ambiental.
 
 Características da sua Persona:
@@ -72,12 +72,12 @@ Pergunta do usuário: {{{prompt}}}
 
 const assistantFlow = ai.defineFlow(
   {
-    name: 'assistantFlow',
+    name: "assistantFlow",
     inputSchema: AssistantInputSchema,
     outputSchema: AssistantOutputSchema,
   },
-  async input => {
-    const {output} = await prompt(input);
+  async (input) => {
+    const { output } = await prompt(input, { model: aiModel });
     return output!;
-  }
+  },
 );

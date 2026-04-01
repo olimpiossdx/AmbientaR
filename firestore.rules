@@ -83,7 +83,21 @@ service cloud.firestore {
     }
     
     match /oficios/{oficioId} {
-        allow read: if isSignedIn() && (isSupervisor() || resource.data.createdBy == request.auth.uid || (getUserProfile(request.auth.uid) != null && resource.data.recipient == getUserProfile(request.auth.uid).get('name', '')));
+        // Leitura de um documento específico
+        allow get: if isSignedIn()
+          && (
+            isSupervisor()
+            || resource.data.createdBy == request.auth.uid
+            || (
+              getUserProfile(request.auth.uid) != null
+              && resource.data.recipient == getUserProfile(request.auth.uid).get('name', '')
+            )
+          );
+
+        // Listagem/consultas: qualquer usuário autenticado pode listar,
+        // o front já filtra por recipient para clientes.
+        allow list: if isSignedIn();
+
         allow create: if isSignedIn() && request.resource.data.createdBy == request.auth.uid;
         allow update, delete: if isSignedIn() && resource.data.createdBy == request.auth.uid && resource.data.status == 'Rascunho';
     }
@@ -146,6 +160,10 @@ service cloud.firestore {
 
     match /requests/{requestId} {
       allow read, write: if isSignedIn();
+    }
+
+    match /autoInfracaoDefesas/{defesaId} {
+      allow read, write: if isAdmin();
     }
     
     match /outorgas/{outorgaId} {

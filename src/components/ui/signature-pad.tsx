@@ -21,8 +21,8 @@ export const SignaturePad = React.forwardRef<
   // Combine refs if an external ref is provided
   React.useImperativeHandle(ref, () => internalRef.current as HTMLCanvasElement);
 
-  const getCanvas = () => internalRef.current;
-  const getContext = () => getCanvas()?.getContext('2d');
+  const getCanvas = React.useCallback(() => internalRef.current, []);
+  const getContext = React.useCallback(() => getCanvas()?.getContext('2d'), [getCanvas]);
 
   const getCoordinates = (event: React.MouseEvent | React.TouchEvent) => {
     const canvas = getCanvas();
@@ -103,7 +103,7 @@ export const SignaturePad = React.forwardRef<
           img.src = initialDataUrl;
       }
     }
-  }, [initialDataUrl]);
+  }, [getCanvas, getContext, initialDataUrl]);
 
   return (
     <div className="relative w-full h-48 border rounded-md bg-white">

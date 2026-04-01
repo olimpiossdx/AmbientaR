@@ -32,6 +32,22 @@ export function unmask(value: string): string {
   return value.replace(/\D/g, '');
 }
 
+/** Formata CPF para exibição: 000.000.000-00 (sempre 11 dígitos). Retorna string vazia se inválido. */
+export function formatCpfDisplay(value: string | undefined | null): string {
+  if (value == null || value === '') return '';
+  const d = value.replace(/\D/g, '');
+  if (d.length !== 11) return value;
+  return maskCpf(value);
+}
+
+/** Formata CPF ou CNPJ para exibição: 000.000.000-00 ou 00.000.000/0000-00. */
+export function formatCpfCnpjDisplay(value: string | undefined | null): string {
+  if (value == null || value === '') return '';
+  const d = value.replace(/\D/g, '');
+  if (d.length <= 11) return d.length === 11 ? maskCpf(value) : value;
+  return d.length === 14 ? maskCnpj(value) : value;
+}
+
 /** Aplica máscara de telefone: (00) 00000-0000 ou (00) 0000-0000 */
 export function maskPhone(value: string): string {
   const digits = value.replace(/\D/g, '').slice(0, 11);

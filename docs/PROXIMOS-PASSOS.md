@@ -9,7 +9,9 @@ Resumo executivo do que implementar primeiro, com base em [ARQUITETURA-IA-E-RELA
 - **docs/ARQUITETURA-IA-E-RELATORIOS.md** — Visão geral, estrutura de pastas, fluxos, templates, MCP e checklist.
 - **src/lib/types/processo.ts** — Schemas Zod para Processo, Empreendimento, Local, Diagnóstico Técnico.
 - **src/lib/types/relatorio.ts** — Schemas para DocumentoEstudo, RascunhoIA, PreencherRelatorio e GerarTor (input/output).
-- **.cursor/mcp.json.example** — Exemplo de configuração MCP (copiar para `.cursor/mcp.json` e ajustar a URL do servidor Firebase MCP).
+- **.cursor/mcp.json** — Configuração ativa de MCP no Cursor (Firebase MCP em `http://localhost:9000/mcp`).
+- **.cursor/mcp.json.example** — Exemplo de configuração MCP.
+- **docs/MCP-SETUP.md** — Passo a passo para subir Firebase MCP e conectar no Cursor.
 
 ---
 
@@ -23,29 +25,29 @@ Resumo executivo do que implementar primeiro, com base em [ARQUITETURA-IA-E-RELA
 2. **Metadados de templates**  
    Para cada slug em `template-config.ts`, adicionar arquivo `public/templates/<slug>/meta.json` com `instrucoesIA`, `secoesObrigatorias`, `placeholders` (ver doc).
 
-3. **API de enriquecimento**  
-   - Criar `src/ai/flows/enriquecer-processo-flow.ts` (pode reusar tools de `analise-ambiental-flow`).  
+3. **API de enriquecimento**
+   - Criar `src/ai/flows/enriquecer-processo-flow.ts` (pode reusar tools de `analise-ambiental-flow`).
    - Criar `POST /api/ai/enriquecer-processo` que recebe `processoId`, chama o flow e grava o diagnóstico.
 
 ### Fase 2 — Preenchimento com IA
 
-4. **Fluxo preencher relatório**  
-   - Criar `src/ai/flows/preencher-relatorio-flow.ts` (entrada: processoId + tipoDocumento; carrega dados + template; chama prompt com tools).  
-   - Criar `POST /api/ai/preencher-relatorio`.  
+4. **Fluxo preencher relatório**
+   - Criar `src/ai/flows/preencher-relatorio-flow.ts` (entrada: processoId + tipoDocumento; carrega dados + template; chama prompt com tools).
+   - Criar `POST /api/ai/preencher-relatorio`.
    - Na tela do estudo (ex.: RCA), adicionar botão “Gerar rascunho com IA” que chama a API e exibe o resultado em editor editável.
 
-5. **Exportação**  
+5. **Exportação**
    - Revisar se o fluxo atual de exportação PDF/DOCX já usa o conteúdo do formulário; garantir que o rascunho gerado pela IA possa ser editado e então exportado.
 
 ### Fase 3 — ToR e MCP
 
-6. **Fluxo gerar ToR**  
-   - Criar `src/ai/flows/gerar-tor-flow.ts` e `POST /api/ai/gerar-tor`.  
+6. **Fluxo gerar ToR**
+   - Criar `src/ai/flows/gerar-tor-flow.ts` e `POST /api/ai/gerar-tor`.
    - Adicionar opção “Gerar ToR com IA” onde fizer sentido (abertura de EIA/RIMA, RAS, etc.).
 
-7. **MCP**  
-   - Instalar e rodar [firebase-mcp](https://github.com/gannonh/firebase-mcp); configurar credenciais e projeto AmbientaR.  
-   - Copiar `.cursor/mcp.json.example` para `.cursor/mcp.json` e ajustar a URL.  
+7. **MCP**
+   - Instalar e rodar [firebase-mcp](https://github.com/gannonh/firebase-mcp); configurar credenciais e projeto AmbientaR.
+   - Copiar `.cursor/mcp.json.example` para `.cursor/mcp.json` e ajustar a URL.
    - (Opcional) Integrar Composio ou outro MCP para ferramentas governamentais.
 
 ---
