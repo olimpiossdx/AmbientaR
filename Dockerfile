@@ -1,47 +1,24 @@
-FROM python:3.11-slim
+FROM node:18-alpine
 
-# Instalar dependências do sistema
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    libmariadb-dev \
-    libssl-dev \
-    libffi-dev \
-    libjpeg-dev \
-    libpng-dev \
-    libxml2-dev \
-    libxslt1-dev \
-    libfreetype6-dev \
-    liblcms2-dev \
-    libwebp-dev \
-    libharfbuzz-dev \
-    libfribidi-dev \
-    libxcb1-dev \
-    pkg-config \
-    curl \
-    git \
-    && rm -rf /var/lib/apt/lists/*
+# Create app directory
+WORKDIR /usr/src/app
 
-# Definir diretório de trabalho
-WORKDIR /app
+# Install app dependencies
+COPY package*.json ./
+RUN npm install
 
-# Copiar arquivos de dependências
-COPY requirements.txt .
-
-# Instalar dependências Python
-RUN pip install --no-cache-dir -r requirements.txt
-
-# Copiar código da aplicação
+# Copy app source code
 COPY . .
 
-# Criar usuário não-root
-RUN useradd -m -u 1000 ambientar && \
-    chown -R ambientar:ambientar /app
+# Build the Next.js application
+RUN npm run build
 
-# Mudar para usuário não-root
-USER ambientar
+# Expose port 9002
+EXPOSE 9002
 
-# Expor porta
-EXPOSE 8000
+# Use a non-root user
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+USER appuser
 
-# Comando de inicialização
-CMD ["python", "main.py"]
+# Run the application
+CMD [ "npm", "start" ]
