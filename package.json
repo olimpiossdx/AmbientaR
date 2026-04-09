@@ -16,8 +16,8 @@
     "typecheck": "tsc --noEmit",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "prepare": "husky",
-  }
+    "prepare": "husky"
+  },
   "overrides": {
     "browserslist": "^4.23.0",
     "react": "18.3.1",
