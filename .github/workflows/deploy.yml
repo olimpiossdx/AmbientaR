@@ -1,0 +1,45 @@
+name: Deploy to Google Cloud Run
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v0
+        with:
+          service_account_key: ${{ secrets.GCP_SA_KEY }}
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+          export_default_credentials: true
+
+      - name: Configure Docker for GCR
+        run: |
+          gcloud auth configure-docker
+
+      - name: Build Docker image
+        run: |
+          docker build -t gcr.io/${{ secrets.GCP_PROJECT_ID }}/ambientar:${{ github.sha }} .
+          docker tag gcr.io/${{ secrets.GCP_PROJECT_ID }}/ambientar:${{ github.sha }} gcr.io/${{ secrets.GCP_PROJECT_ID }}/ambientar:latest
+
+      - name: Push Docker image to GCR
+        run: |
+          docker push gcr.io/${{ secrets.GCP_PROJECT_ID }}/ambientar:${{ github.sha }}
+          docker push gcr.io/${{ secrets.GCP_PROJECT_ID }}/ambientar:latest
+
+      - name: Deploy to Google Cloud Run
+        run: |
+          gcloud run deploy ambientar \
+            --image gcr.io/${{ secrets.GCP_PROJECT_ID }}/ambientar:${{ github.sha }} \
+            --region southamerica-east1 \
+            --platform managed \
+            --allow-unauthenticated \
+            --port 9002 \
+            --memory 512Mi \
+            --cpu 1
