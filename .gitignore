@@ -56,6 +56,9 @@ firestore-debug.log
 .idx/
 .modified
 
+# Temporários locais (instaladores, cache, etc.)
+.tmp/
+
 # Node.js portátil (usado para rodar sem instalação global)
 .tools/
 node-v*-win-x64/
