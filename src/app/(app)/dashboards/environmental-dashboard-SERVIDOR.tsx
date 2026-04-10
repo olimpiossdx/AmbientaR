@@ -21,6 +21,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import { isClientePortalRole } from '@/lib/role-guards';
 
 type LicenseGroup = 'expiringIn30' | 'expiringIn60' | 'expiringIn180' | 'expiringIn360' | 'expired';
 
@@ -41,7 +42,7 @@ export default function EnvironmentalDashboard({ initialPermits, initialCondicio
   const [dialogCondicionantes, setDialogCondicionantes] = useState<Condicionante[]>([]);
   const [dialogTitle, setDialogTitle] = useState('');
   
-  const isClientView = user?.role === 'client';
+  const isClientView = isClientePortalRole(user?.role);
 
   // Use initial data if provided (for client dashboard), otherwise fetch all data for manager roles
   const { data: permits, isLoading: isLoadingPermits } = useCollection<EnvironmentalPermit>(useMemoFirebase(() => {

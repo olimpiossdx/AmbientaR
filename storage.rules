@@ -4,6 +4,29 @@ rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
 
+    function userRoleForStorage() {
+      return firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role;
+    }
+
+    /** PDF e geometria do CAR: leitura para autenticados; escrita só para perfis que gerem CAR. */
+    function mayWriteCarStorage() {
+      return request.auth != null &&
+        firestore.exists(/databases/(default)/documents/users/$(request.auth.uid)) &&
+        userRoleForStorage() != 'client' &&
+        userRoleForStorage() != 'cliente_autonomo' &&
+        userRoleForStorage() != 'representative';
+    }
+
+    match /car/{fileName} {
+      allow read: if request.auth != null;
+      allow write: if mayWriteCarStorage();
+    }
+
+    match /car-shp/{fileName} {
+      allow read: if request.auth != null;
+      allow write: if mayWriteCarStorage();
+    }
+
     // Permite leitura pública de imagens de branding.
     // A escrita é permitida apenas para o dono do diretório (usuário autenticado).
     match /branding/{userId}/{allPaths=**} {

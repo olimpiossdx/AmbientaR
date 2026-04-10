@@ -31,6 +31,7 @@ import {
   serverTimestamp,
 } from "firebase/firestore";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { isClientePortalRole } from "@/lib/role-guards";
 import {
   Select,
   SelectContent,
@@ -667,7 +668,7 @@ export function ClientForm({
     if (currentClient) {
       const clientRef = doc(firestore, "clients", currentClient.id);
       const isOwnClient =
-        user?.role === "client" && user?.id === currentClient.id;
+        isClientePortalRole(user?.role) && user?.id === currentClient.id;
       updateDoc(clientRef, dataToSave)
         .then(async () => {
           if (isOwnClient && user?.id) {

@@ -1,6 +1,6 @@
-# Roteiro de evolução e correções – AmbientaR (d:\AmbientaR)
+# Roteiro de evolução e correções – AmbientaR (E:\AmbientaR)
 
-**Objetivo:** Manter **d:\AmbientaR** como projeto final e incorporar melhorias de **layout** e **regras Firestore** identificadas na versão **C:\Users\Andrew\OneDrive\Projects\AmbientaR** (sem alterar a estrutura atual do projeto final).
+**Objetivo:** Manter **E:\AmbientaR** como projeto final e incorporar melhorias de **layout** e **regras Firestore** identificadas na versão **C:\Users\Andrew\OneDrive\Projects\AmbientaR** (sem alterar a estrutura atual do projeto final).
 
 **Data da análise:** Março 2025.
 
@@ -8,10 +8,10 @@
 
 ## 1. Resumo executivo
 
-| Área            | OneDrive (referência)     | d:\AmbientaR (final)        | Ação sugerida                          |
+| Área            | OneDrive (referência)     | E:\AmbientaR (final)        | Ação sugerida                          |
 |-----------------|---------------------------|-----------------------------|----------------------------------------|
-| Regras Firestore| firebase/rules + JSDoc    | Dois arquivos (raiz + rules)| Unificar e adotar regras “evolvidas”   |
-| Deploy regras   | firebase.json presente    | firebase.json ausente       | Criar firebase.json                    |
+| Regras Firestore| firebase/rules + JSDoc    | `src/firebase/rules/firestore.rules` único | Manter uma fonte; espelhos removidos   |
+| Deploy regras   | firebase.json presente    | `firebase.json` na raiz     | OK — aponta para `src/firebase/rules/` |
 | Layout (app)    | Cadastro incompleto + gesto| Sem cadastro incompleto    | Portar UX de notificação e gesto       |
 | Sidebar mobile  | Toque para fechar + header| Sheet simples              | Portar gesto e botão “Fechar”         |
 | Tailwind        | Idêntico                  | Idêntico                    | Nenhuma                                |
@@ -23,15 +23,10 @@
 
 ### 2.1 Onde estão as regras
 
-- **d:\AmbientaR**
-  - `src/firestore.rules` – regras com catch-all admin e regras específicas (inclui restrições de status em `commercialProposals` e `contracts`).
-  - `src/firebase/rules/firestore.rules` – regras com helpers “seguros” (getRole com `exists`), JSDoc e coleções extras (consultas, laudos, rag_index, knowledge_sources, inventarios, etc.).
-- **OneDrive**
-  - `firebase.json` aponta para `src/firebase/rules/firestore.rules`.
-  - `src/firestore.rules` – espelho do estilo antigo (catch-all + helpers sem `exists`).
-  - `src/firebase/rules/firestore.rules` – versão “evolvida” (sem catch-all, com JSDoc e helpers seguros).
+- **E:\AmbientaR (atual):** um único ficheiro versionado para deploy: `src/firebase/rules/firestore.rules` (referenciado em `firebase.json`). Ficheiros duplicados `src/firestore.rules` e `firestore.rules` na raiz foram removidos para alinhar GitHub com o que se publica.
+- **Histórico / cópias antigas (OneDrive, etc.):** podem ainda descrever dois ficheiros; ignorar — a política do repo é **só** `src/firebase/rules/firestore.rules`.
 
-### 2.2 Melhorias nas regras (OneDrive → d:\AmbientaR)
+### 2.2 Melhorias nas regras (OneDrive → E:\AmbientaR)
 
 1. **Helpers mais seguros (evitar negação quando doc não existe)**
    - **getRole():** usar `exists(path) ? get(path).data.role : null` em vez de só `get(...).data.role`.
@@ -43,22 +38,22 @@
    - Sugestão: aplicar o mesmo padrão em `src/firebase/rules/firestore.rules` (ou no arquivo que for escolhido como único).
 
 3. **Regras específicas que valem a pena revisar**
-   - **users/notifications:** OneDrive permite `read, write: if request.auth.uid == userId || isAdmin()` (admin pode ler notificações de qualquer usuário). Em d:\AmbientaR está só `request.auth.uid == userId`. Decidir se admin deve poder ler.
-   - **clients:** OneDrive usa `allow read: if request.auth != null; allow write: if isSignedIn();` (mais simples; filtro por cliente no app). d:\AmbientaR usa `!isClient()` para write e `isClient()` só read. Manter comportamento atual ou simplificar como no OneDrive conforme regra de negócio.
-   - **chats:** OneDrive usa `allow list: if isSignedIn();` (sem filtro na regra). d:\AmbientaR usa `request.query.where[0][2] == request.auth.uid`. O do OneDrive é mais simples; o de d:\AmbientaR restringe listagem pela regra. Escolher um padrão e documentar.
+   - **users/notifications:** OneDrive permite `read, write: if request.auth.uid == userId || isAdmin()` (admin pode ler notificações de qualquer usuário). Em E:\AmbientaR está só `request.auth.uid == userId`. Decidir se admin deve poder ler.
+   - **clients:** OneDrive usa `allow read: if request.auth != null; allow write: if isSignedIn();` (mais simples; filtro por cliente no app). E:\AmbientaR usa `!isClient()` para write e `isClient()` só read. Manter comportamento atual ou simplificar como no OneDrive conforme regra de negócio.
+   - **chats:** OneDrive usa `allow list: if isSignedIn();` (sem filtro na regra). E:\AmbientaR usa `request.query.where[0][2] == request.auth.uid`. O do OneDrive é mais simples; o de E:\AmbientaR restringe listagem pela regra. Escolher um padrão e documentar.
    - **oficios:** OneDrive inclui leitura para o destinatário: `resource.data.recipient == getUserProfile(...).get('name','')` e permite `update`/`delete` por admin. Portar essas regras se o fluxo de ofícios for o mesmo.
-   - **licenses / outorgas:** OneDrive usa `allow read: if request.auth != null` (list/get liberado; app filtra). d:\AmbientaR firebase/rules usa `get`/`list` com isManager. Alinhar com o comportamento desejado (cliente listando ou não).
-   - **intervencoes / condicionantes:** OneDrive restringe `list`/`write` a manager; em d:\AmbientaR há `list: if isSignedIn()`. Revisar se condicionantes devem ser listáveis por todos os autenticados ou só por manager.
-   - **appointments:** OneDrive usa `ownerRole != 'financial'` e `ownerId == request.auth.uid` no `get`. Garantir que d:\AmbientaR tenha a mesma lógica se usar eventos financeiros vs públicos.
-   - **commercialProposals / contracts:** Em d:\AmbientaR `src/firestore.rules` há restrição de update de status (Accepted/Rejected e Aprovado só para admin/financeiro). Manter essas restrições no arquivo de regras que for usado em produção.
+   - **licenses / outorgas:** OneDrive usa `allow read: if request.auth != null` (list/get liberado; app filtra). E:\AmbientaR firebase/rules usa `get`/`list` com isManager. Alinhar com o comportamento desejado (cliente listando ou não).
+   - **intervencoes / condicionantes:** OneDrive restringe `list`/`write` a manager; em E:\AmbientaR há `list: if isSignedIn()`. Revisar se condicionantes devem ser listáveis por todos os autenticados ou só por manager.
+   - **appointments:** OneDrive usa `ownerRole != 'financial'` e `ownerId == request.auth.uid` no `get`. Garantir que E:\AmbientaR tenha a mesma lógica se usar eventos financeiros vs públicos.
+   - **commercialProposals / contracts:** Garantir em `src/firebase/rules/firestore.rules` as restrições de update de status (Accepted/Rejected e Aprovado só para admin/financeiro), como no projeto de referência.
 
-4. **Coleções que só existem em d:\AmbientaR**
+4. **Coleções que só existem em E:\AmbientaR**
    - Manter em `src/firebase/rules/firestore.rules`: `consultas`, `laudos`, `rag_index`, `knowledge_sources`, `inventarios`, `inventario_parcelas`, `inventario_individuos`.
    - OneDrive não tem essas coleções nas regras; não remover do projeto final.
 
 ### 2.3 Roteiro sugerido para regras
 
-1. **Criar `firebase.json` na raiz de d:\AmbientaR** (se ainda não existir), com:
+1. **Criar `firebase.json` na raiz de E:\AmbientaR** (se ainda não existir), com:
    ```json
    {
      "firestore": {
@@ -77,7 +72,7 @@
    - Manter as restrições de update em `commercialProposals` e `contracts` (status Accepted/Rejected e Aprovado).
    - Revisar oficios (leitura por destinatário, update/delete por admin), clients, chats, licenses, outorgas, intervencoes, condicionantes e appointments conforme itens acima.
 
-4. **Manter `src/firestore.rules` apenas como espelho/cópia** (ou removê-lo e usar só firebase/rules), conforme política do projeto.
+4. ~~Manter espelho~~ **Feito:** usar só `src/firebase/rules/firestore.rules`; espelhos na raiz e em `src/firestore.rules` removidos (ver `docs/REPOSITORIO-LOCAL-E-GITHUB.md`).
 
 5. **Testar** com `firebase deploy --only firestore:rules` (ou `npm run deploy:rules`) e validar em ambiente de desenvolvimento antes de produção.
 
@@ -95,14 +90,14 @@
   - Contador de notificações: se `cadastroIncompleto`, mostra `notif + 1` (badge no sino).
   - No dropdown de notificações: item fixo “Cadastro incompleto” com link para `/clients` ou `/empreendedores`, estilo destaque (amber).
 
-**Em d:\AmbientaR:** Não existe `cadastroIncompleto` nem essa UX.
+**Em E:\AmbientaR:** Não existe `cadastroIncompleto` nem essa UX.
 
 **Sugestão de roteiro:**
 1. Adicionar `cadastroIncompleto?: boolean` no tipo do usuário (ex.: em `src/lib/types.ts`).
 2. Definir `cadastroIncompleto: true` no fluxo de registro (ex.: `register/page.tsx`) para client/representative.
 3. Ao salvar cliente ou empreendedor vinculado ao usuário, chamar `updateDoc(doc(firestore, 'users', user.id), { cadastroIncompleto: false })` (como no OneDrive em `client-form.tsx` e `empreendedor-form.tsx`).
 4. No formulário de usuário (user-form), ao editar o próprio perfil, enviar `cadastroIncompleto: false`.
-5. No `(app)/layout.tsx` de d:\AmbientaR:
+5. No `(app)/layout.tsx` de E:\AmbientaR:
    - Calcular `cadastroIncompleto` como no OneDrive.
    - Ajustar `unreadCount` para incluir +1 quando cadastro incompleto.
    - Inserir no dropdown de notificações o item “Cadastro incompleto” com link e estilo (amber), antes da lista de notificações.
@@ -114,11 +109,11 @@
 - Clique e toque chamam `setOpenMobile(true)`.
 - Acessibilidade: `role="button"`, `aria-label="Abrir menu"`, `onKeyDown` para Enter/Space.
 
-**Em d:\AmbientaR:** Não existe essa zona; o menu abre só pelo botão do header.
+**Em E:\AmbientaR:** Não existe essa zona; o menu abre só pelo botão do header.
 
 **Sugestão de roteiro:**
 1. No `(app)/layout.tsx`, após o `</header>` e antes do `<div className="flex flex-1 overflow-hidden">`, inserir o mesmo bloco condicional da “zona de gesto” do OneDrive.
-2. Garantir que `useSidebar()` em d:\AmbientaR exporte `openMobile` e `setOpenMobile` (já existe no seu sidebar) e que o layout use `isMobile` e `setOpenMobile` corretamente.
+2. Garantir que `useSidebar()` em E:\AmbientaR exporte `openMobile` e `setOpenMobile` (já existe no seu sidebar) e que o layout use `isMobile` e `setOpenMobile` corretamente.
 
 ### 3.3 Sidebar mobile – fechar por gesto e header com botão
 
@@ -129,7 +124,7 @@
   - Classes do Sheet: `w-full max-w-full ... border-0 shadow-xl data-[state=open]:duration-300 data-[state=closed]:duration-200`.
   - Estrutura: header fixo + área rolável para os itens do menu.
 
-**Em d:\AmbientaR:** Sheet sem gesto de fechar e sem header interno com botão.
+**Em E:\AmbientaR:** Sheet sem gesto de fechar e sem header interno com botão.
 
 **Sugestão de roteiro:**
 1. Em `src/components/ui/sidebar.tsx`, no bloco `if (isMobile)`:
@@ -151,7 +146,7 @@
 Use este checklist ao implementar o roteiro (sem alterar o que não for necessário).
 
 ### Regras Firestore
-- [ ] Criar `firebase.json` na raiz com `firestore.rules` apontando para `src/firebase/rules/firestore.rules`.
+- [x] `firebase.json` na raiz com `firestore.rules` apontando para `src/firebase/rules/firestore.rules`.
 - [ ] Adotar getRole() com `exists(path) ? get(path).data.role : null` no arquivo de regras em uso.
 - [ ] Adotar getUserProfile() com checagem de existência e uso de `userProfile != null` em canViewLicense/canViewOutorga.
 - [ ] Adicionar JSDoc nos blocos match principais.
@@ -174,10 +169,10 @@ Use este checklist ao implementar o roteiro (sem alterar o que não for necessá
 
 ## 5. Referências rápidas
 
-- **Projeto final (base):** d:\AmbientaR  
+- **Projeto final (base):** E:\AmbientaR  
 - **Projeto de referência (melhorias):** C:\Users\Andrew\OneDrive\Projects\AmbientaR  
 - **Regras:** OneDrive usa `src/firebase/rules/firestore.rules` via `firebase.json`.  
 - **Layout:** OneDrive – `src/app/(app)/layout.tsx` (cadastro incompleto, zona de gesto).  
 - **Sidebar:** OneDrive – `src/components/ui/sidebar.tsx` (mobile: gesto + header com botão).
 
-Este roteiro não altera a estrutura do projeto em d:\AmbientaR; apenas orienta a incorporação pontual de melhorias de regras e layout a partir do OneDrive.
+Este roteiro não altera a estrutura do projeto em E:\AmbientaR; apenas orienta a incorporação pontual de melhorias de regras e layout a partir do OneDrive.

@@ -25,7 +25,7 @@ No PowerShell ou CMD: `winget install Cloudflare.cloudflared`
 
 ### 2. Rodar app e túnel
 
-**Terminal 1:** `cd "C:\Users\Andrew\OneDrive\Projects\AmbientaR"` e `npm run dev`  
+**Terminal 1:** `cd E:\AmbientaR` (ou o caminho onde clonaste o repo) e `npm run dev`  
 **Terminal 2:** mesma pasta e `npm run dev:tunnel:cf` (ou duplo clique em `scripts\tunel-celular-cloudflare.cmd`)
 
 ### 3. Copiar a URL

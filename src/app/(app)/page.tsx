@@ -60,6 +60,7 @@ export default function DashboardRouterPage() {
       </div>
     ),
     client: <ClientDashboard />,
+    cliente_autonomo: <ClientDashboard />,
     representative: <ClientDashboard />,
     diretor_fauna: <FaunaDashboard />,
     gestor: (

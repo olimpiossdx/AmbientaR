@@ -44,6 +44,7 @@ import {
   Gift,
   MessageSquareMore,
   X,
+  Compass,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -303,16 +304,26 @@ function ContractContent({
 const PROFILE_CHOICE_TEXT = {
   intro: "Escolha seu perfil de cadastro para continuar:",
   client:
-    "Sou o titular da empresa ou projeto e quero contratar a plataforma para gestão ambiental (licenças, prazos, relatórios).",
+    "Sou titular e contrato o plano com assessoria e gestão da consultoria (acompanhamento sob medida, com supervisão mensal).",
+  cliente_autonomo:
+    "Sou titular e uso os planos de acompanhamento na plataforma para lançar e acompanhar meus dados e prazos por conta própria, sem supervisão mensal da consultoria.",
   representative:
     "Atuo em nome de um cliente titular e preciso de acesso à plataforma para gerenciar os dados dele.",
 };
 
+type RegisterProfileMode = "client" | "cliente_autonomo" | "representative";
+
+function parseRegisterProfileFromTipo(tipo: string | null): RegisterProfileMode {
+  if (tipo === "representante") return "representative";
+  if (tipo === "cliente_autonomo" || tipo === "autonomo") return "cliente_autonomo";
+  return "client";
+}
+
 export default function RegisterPage() {
   const searchParams = useSearchParams();
   const initialTipo = searchParams.get("tipo");
-  const [mode, setMode] = React.useState<"client" | "representative">(
-    initialTipo === "representante" ? "representative" : "client",
+  const [mode, setMode] = React.useState<RegisterProfileMode>(() =>
+    parseRegisterProfileFromTipo(initialTipo),
   );
   const [step, setStep] = React.useState(1);
   const [loading, setLoading] = React.useState(false);
@@ -406,6 +417,9 @@ export default function RegisterPage() {
     return !!selectedPackage;
   };
 
+  const isTitularPlanMode =
+    mode === "client" || mode === "cliente_autonomo";
+
   const handleCancelRegistration = () => {
     if (
       window.confirm(
@@ -460,7 +474,12 @@ export default function RegisterPage() {
         cpf: cpfNormalized,
         userCpf: cpfNormalized,
         cnpjs: [],
-        role: mode === "representative" ? "representative" : "client",
+        role:
+          mode === "representative"
+            ? "representative"
+            : mode === "cliente_autonomo"
+              ? "cliente_autonomo"
+              : "client",
         status: "active",
         package: mode === "representative" ? null : values.selectedPackage,
         contractAcceptedAt:
@@ -496,7 +515,7 @@ export default function RegisterPage() {
 
       // Clientes (titulares): criar apenas o Empreendedor (faltas serão completadas em Cadastro > Empreendedores).
       // Também cria o espelho em Financeiro > Clientes para já aparecer no submenu Clientes.
-      if (mode === "client") {
+      if (isTitularPlanMode) {
         try {
           const empreendedorRef = doc(firestore, "empreendedores", uid);
           const clientRef = doc(firestore, "clients", uid);
@@ -557,7 +576,9 @@ export default function RegisterPage() {
         description:
           mode === "representative"
             ? "Sua conta de representante foi criada. Aguarde o titular conceder acesso aos dados."
-            : "Bem-vindo ao AmbientaR. Você será redirecionado.",
+            : mode === "cliente_autonomo"
+              ? "Bem-vindo ao AmbientaR como Cliente Autônomo. Você será redirecionado."
+              : "Bem-vindo ao AmbientaR. Você será redirecionado.",
       });
 
       router.push("/");
@@ -610,7 +631,9 @@ export default function RegisterPage() {
         <CardDescription>
           {mode === "representative"
             ? "Preencha suas informações para criar sua conta de representante."
-            : "Preencha suas informações para criar sua conta."}
+            : mode === "cliente_autonomo"
+              ? "Preencha suas informações para criar sua conta de Cliente Autônomo."
+              : "Preencha suas informações para criar sua conta de Cliente Gestão."}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -748,7 +771,7 @@ export default function RegisterPage() {
             )}
           />
         )}
-        {mode === "client" ? (
+        {isTitularPlanMode ? (
           <div className="flex gap-3 flex-col sm:flex-row">
             <Button
               type="button"
@@ -997,10 +1020,9 @@ export default function RegisterPage() {
     </Card>
   );
 
-  const stepLabels =
-    mode === "client"
-      ? ["Dados Pessoais", "Pacote", "Contrato"]
-      : ["Dados Pessoais"];
+  const stepLabels = isTitularPlanMode
+    ? ["Dados Pessoais", "Pacote", "Contrato"]
+    : ["Dados Pessoais"];
 
   const renderProfileChoice = () => (
     <Card className="border border-border bg-card shadow-sm">
@@ -1013,7 +1035,7 @@ export default function RegisterPage() {
           Selecione o perfil que corresponde à sua situação para preencher o
           formulário de cadastro.
         </p>
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           <button
             type="button"
             onClick={() => {
@@ -1027,10 +1049,30 @@ export default function RegisterPage() {
             )}
           >
             <span className="font-semibold text-foreground">
-              Sou Cliente (Titular)
+              Cliente Gestão (titular)
             </span>
             <span className="mt-1 text-xs text-muted-foreground">
               {PROFILE_CHOICE_TEXT.client}
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setMode("cliente_autonomo");
+              setHasChosenProfile(true);
+            }}
+            className={cn(
+              "flex flex-col items-start rounded-lg border-2 p-4 text-left transition-colors",
+              "hover:border-primary hover:bg-primary/5",
+              "border-border",
+            )}
+          >
+            <span className="inline-flex items-center gap-1.5 font-semibold text-foreground">
+              <Compass className="h-4 w-4 shrink-0 text-primary" />
+              Cliente Autônomo
+            </span>
+            <span className="mt-1 text-xs text-muted-foreground">
+              {PROFILE_CHOICE_TEXT.cliente_autonomo}
             </span>
           </button>
           <button
@@ -1040,7 +1082,7 @@ export default function RegisterPage() {
               setHasChosenProfile(true);
             }}
             className={cn(
-              "flex flex-col items-start rounded-lg border-2 p-4 text-left transition-colors",
+              "flex flex-col items-start rounded-lg border-2 p-4 text-left transition-colors sm:col-span-2 lg:col-span-1",
               "hover:border-primary hover:bg-primary/5",
               "border-border",
             )}
@@ -1083,7 +1125,9 @@ export default function RegisterPage() {
             {hasChosenProfile
               ? mode === "representative"
                 ? "Cadastro de Representante"
-                : "Cadastro de Cliente"
+                : mode === "cliente_autonomo"
+                  ? "Cadastro de Cliente Autônomo"
+                  : "Cadastro de Cliente Gestão"
               : "Novo cadastro"}
           </p>
           {hasChosenProfile && (
@@ -1099,24 +1143,36 @@ export default function RegisterPage() {
             </button>
           )}
           {hasChosenProfile && (
-            <div className="mt-3 inline-flex items-center gap-1 rounded-full border bg-muted px-1 py-1 text-xs">
+            <div className="mt-3 flex flex-wrap items-center justify-center gap-1 rounded-full border bg-muted px-1 py-1 text-xs max-w-full">
               <button
                 type="button"
                 onClick={() => setMode("client")}
                 className={cn(
-                  "px-3 py-1 rounded-full transition-colors",
+                  "px-2.5 py-1 rounded-full transition-colors whitespace-nowrap",
                   mode === "client"
                     ? "bg-primary text-primary-foreground"
                     : "bg-transparent text-muted-foreground",
                 )}
               >
-                Cliente
+                Cliente Gestão
+              </button>
+              <button
+                type="button"
+                onClick={() => setMode("cliente_autonomo")}
+                className={cn(
+                  "px-2.5 py-1 rounded-full transition-colors whitespace-nowrap",
+                  mode === "cliente_autonomo"
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-transparent text-muted-foreground",
+                )}
+              >
+                Cliente Autônomo
               </button>
               <button
                 type="button"
                 onClick={() => setMode("representative")}
                 className={cn(
-                  "px-3 py-1 rounded-full transition-colors",
+                  "px-2.5 py-1 rounded-full transition-colors whitespace-nowrap",
                   mode === "representative"
                     ? "bg-primary text-primary-foreground"
                     : "bg-transparent text-muted-foreground",
@@ -1132,10 +1188,10 @@ export default function RegisterPage() {
 
         {hasChosenProfile && (
           <>
-            {mode === "client" && renderStepIndicator()}
+            {isTitularPlanMode && renderStepIndicator()}
 
             <p className="text-center text-sm font-medium text-muted-foreground mb-4">
-              {mode === "client" ? (
+              {isTitularPlanMode ? (
                 <>
                   Etapa {step} de 3 — {stepLabels[step - 1]}
                 </>
@@ -1146,9 +1202,9 @@ export default function RegisterPage() {
 
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)}>
-                {mode === "client" && step === 1 && renderStep1()}
-                {mode === "client" && step === 2 && renderStep2()}
-                {mode === "client" && step === 3 && renderStep3()}
+                {isTitularPlanMode && step === 1 && renderStep1()}
+                {isTitularPlanMode && step === 2 && renderStep2()}
+                {isTitularPlanMode && step === 3 && renderStep3()}
                 {mode === "representative" && renderStep1()}
               </form>
             </Form>

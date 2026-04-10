@@ -38,7 +38,10 @@ import {
   XCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { isAdminOrSupervisorRole } from "@/lib/role-guards";
+import {
+  isAdminOrSupervisorRole,
+  isClientePortalRole,
+} from "@/lib/role-guards";
 import {
   useCollection,
   useFirebase,
@@ -200,7 +203,7 @@ export default function CommercialProposalsPage() {
     if (!firestore || !user) return;
 
     // Cliente titular.
-    if (user.role === "client") {
+    if (isClientePortalRole(user.role)) {
       const isSelfRegistered = !!(user as any).package;
       const cRef = collection(firestore, "clients");
       const userCpf = user.cpf || user.userCpf;
@@ -259,7 +262,7 @@ export default function CommercialProposalsPage() {
     if (!firestore || !user) return null;
 
     // Cliente ou representante: apenas propostas dos seus clientes.
-    if (user.role === "client" || user.role === "representative") {
+    if (isClientePortalRole(user.role) || user.role === "representative") {
       if (!clientIdsForUser || clientIdsForUser.length === 0) return null;
       return query(
         collection(firestore, "commercialProposals"),
@@ -287,7 +290,7 @@ export default function CommercialProposalsPage() {
 
   const userClients = useMemo(() => {
     if (!user || !clients) return [];
-    if (user.role !== "client") return [];
+    if (!isClientePortalRole(user.role)) return [];
     const userCpf = user.cpf || user.userCpf;
     const userDocuments = documentVariants(userCpf, user.cnpjs);
     return clients
@@ -299,7 +302,7 @@ export default function CommercialProposalsPage() {
     if (!proposals) return [];
 
     // Cliente: apenas propostas dos seus próprios clientIds (via userClients).
-    if (user?.role === "client") {
+    if (isClientePortalRole(user?.role)) {
       return proposals.filter((p) => userClients.includes(p.clientId));
     }
 
@@ -333,7 +336,10 @@ export default function CommercialProposalsPage() {
     let proposalsToShow = filteredProposals;
 
     // Cliente e representante veem apenas propostas aprovadas (para consulta/download).
-    if (user?.role === "client" || user?.role === "representative") {
+    if (
+      isClientePortalRole(user?.role) ||
+      user?.role === "representative"
+    ) {
       proposalsToShow = proposalsToShow.filter((p) => p.status === "Accepted");
     }
 
@@ -809,7 +815,7 @@ export default function CommercialProposalsPage() {
     <>
       <div className="flex flex-col h-full">
         <PageHeader title="Propostas Comerciais">
-          {user?.role !== "client" && (
+          {!isClientePortalRole(user?.role) && (
             <Button size="sm" className="gap-1" onClick={handleAddNew}>
               <PlusCircle className="h-4 w-4" />
               Criar Proposta
@@ -983,7 +989,8 @@ export default function CommercialProposalsPage() {
               ) : (
                 <Tabs
                   defaultValue={
-                    user?.role === "client" || user?.role === "representative"
+                    isClientePortalRole(user?.role) ||
+                    user?.role === "representative"
                       ? "finalized"
                       : "active"
                   }
@@ -1045,7 +1052,7 @@ export default function CommercialProposalsPage() {
                                 >
                                   <Eye className="h-4 w-4" />
                                 </Button>
-                                {user?.role !== "client" && (
+                                {!isClientePortalRole(user?.role) && (
                                   <>
                                     <Button
                                       variant="ghost"
@@ -1187,7 +1194,7 @@ export default function CommercialProposalsPage() {
                                       <p>Visualizar</p>
                                     </TooltipContent>
                                   </Tooltip>
-                                  {user?.role !== "client" && (
+                                  {!isClientePortalRole(user?.role) && (
                                     <>
                                       <Tooltip>
                                         <TooltipTrigger asChild>

@@ -13,7 +13,7 @@ Use o **terminal** (Cursor ou sistema) com Node.js e os comandos abaixo.
 
 ### Passos
 
-1. **Abrir o terminal** na pasta do projeto (ex.: `F:\SERVIDOR\OneDrive\Projects\AmbientaR`).
+1. **Abrir o terminal** na pasta do projeto (recomendado: `E:\AmbientaR` — ver `docs/REPOSITORIO-LOCAL-E-GITHUB.md`).
 
 2. **Login no Firebase** (só na primeira vez; abre o navegador):
    ```bash

@@ -82,6 +82,7 @@ import {
   Line,
   Legend,
 } from "recharts";
+import { isClientePortalRole } from "@/lib/role-guards";
 
 const canPerformWriteActions = (user: AppUser | null): boolean => {
   if (!user) return false;
@@ -109,7 +110,7 @@ export default function ManualMonitoringPage() {
 
   useEffect(() => {
     if (!firestore || !user) return;
-    if (user.role === "client") {
+    if (isClientePortalRole(user.role)) {
       setEmpreendedorIdsForUser(undefined);
       const userDocuments = [
         user.cpf || user.userCpf,
@@ -195,7 +196,7 @@ export default function ManualMonitoringPage() {
 
   const outorgasQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
-    if (user.role === "client" || user.role === "representative") {
+    if (isClientePortalRole(user.role) || user.role === "representative") {
       if (empreendedorIdsForUser === undefined) return null;
       if (
         empreendedorIdsForUser.length === 0 ||
@@ -240,7 +241,7 @@ export default function ManualMonitoringPage() {
 
   const isLoadingOutorgasList =
     isLoadingOutorgas ||
-    ((user?.role === "client" || user?.role === "representative") &&
+    ((isClientePortalRole(user?.role) || user?.role === "representative") &&
       empreendedorIdsForUser === undefined);
 
   useEffect(() => {

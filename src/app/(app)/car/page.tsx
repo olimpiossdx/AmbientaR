@@ -54,11 +54,13 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { FirestorePermissionError } from "@/firebase/errors";
+import { canManageCarUploadsOnProject } from "@/lib/role-guards";
 
 export default function CarPage() {
   const { firestore } = useFirebase();
   const { user } = useAuth();
   const { toast } = useToast();
+  const canManageCar = canManageCarUploadsOnProject(user?.role);
 
   const [clientId, setClientId] = React.useState("");
   const [projectId, setProjectId] = React.useState("");
@@ -286,6 +288,7 @@ export default function CarPage() {
   const handlePdfChange: React.ChangeEventHandler<HTMLInputElement> = async (
     event,
   ) => {
+    if (!canManageCar) return;
     const inputEl = event.currentTarget;
     const file = inputEl.files?.[0];
     if (!file || !firestore) return;
@@ -348,6 +351,7 @@ export default function CarPage() {
   const handleShpChange: React.ChangeEventHandler<HTMLInputElement> = async (
     event,
   ) => {
+    if (!canManageCar) return;
     const inputEl = event.currentTarget;
     const file = inputEl.files?.[0];
     if (!file || !firestore) return;
@@ -399,6 +403,15 @@ export default function CarPage() {
   };
 
   const handleSave = async () => {
+    if (!canManageCar) {
+      toast({
+        variant: "destructive",
+        title: "Sem permissão",
+        description:
+          "Perfis titular e representante apenas consultam os registros de CAR.",
+      });
+      return;
+    }
     if (!firestore || !user) {
       toast({ variant: "destructive", title: "Erro de autenticação." });
       return;
@@ -472,8 +485,15 @@ export default function CarPage() {
 
   return (
     <div className="flex flex-col h-full">
-      <PageHeader title="Cadastro Ambiental Rural (CAR)" />
+      <PageHeader
+        title={
+          canManageCar
+            ? "Cadastro Ambiental Rural (CAR)"
+            : "Registros de CAR por Empreendimento"
+        }
+      />
       <main className="flex-1 overflow-auto p-4 md:p-6 space-y-6">
+        {canManageCar ? (
         <Card>
           <CardHeader>
             <CardTitle>Vincular CAR a Empreendimento</CardTitle>
@@ -605,13 +625,19 @@ export default function CarPage() {
             )}
           </CardContent>
         </Card>
+        ) : null}
 
         <Card>
           <CardHeader>
-            <CardTitle>Registros de CAR por Empreendimento</CardTitle>
+            <CardTitle>
+              {canManageCar
+                ? "Registros de CAR por Empreendimento"
+                : "Consulta aos registros"}
+            </CardTitle>
             <CardDescription>
-              Consulte rapidamente quais fazendas já possuem CAR vinculado, com
-              acesso aos arquivos enviados.
+              {canManageCar
+                ? "Consulte rapidamente quais fazendas já possuem CAR vinculado, com acesso aos arquivos enviados."
+                : "Visualize quais empreendimentos já possuem CAR vinculado e abra os anexos disponibilizados pela consultoria. O envio e a alteração de arquivos são feitos apenas pela equipe AmbientaR."}
             </CardDescription>
           </CardHeader>
           <CardContent>

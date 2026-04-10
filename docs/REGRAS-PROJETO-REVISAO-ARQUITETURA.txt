@@ -28,8 +28,7 @@ Diretrizes principais:
   - npm run deploy:rules
 - Sem emuladores; dados em nuvem.
 - Regras Firestore:
-  - espelho: src/firestore.rules
-  - deploy: src/firebase/rules/firestore.rules (via firebase.json)
+  - unico ficheiro de deploy: src/firebase/rules/firestore.rules (via firebase.json); sem espelhos em src/ ou raiz
 - build executa postbuild com deploy:rules.
 - Acesso celular por IP da maquina + porta 9002.
 
@@ -42,7 +41,7 @@ Impacto arquitetural:
 Riscos:
 - Publicacao nao intencional de regras em build local.
 - Dependencia alta de credenciais e ambiente cloud.
-- Possivel divergencia entre arquivo espelho e arquivo de deploy.
+- Manter uma unica fonte de regras (firebase/rules) evita divergencia face ao deploy.
 
 2.2) REGRA B - .cursor/rules/ambientar-firebase-e-deploy.mdc
 
@@ -64,7 +63,7 @@ Diretrizes principais:
 - Producao:
   - firebase deploy --only hosting publica apenas estaticos (public/)
   - Next completo deve usar App Hosting, Vercel ou Cloud Run
-- Windows G: pode requerer git config --global --add safe.directory G:/AmbientaR
+- Windows (E:\AmbientaR): pode requerer git config --global --add safe.directory E:/AmbientaR (ajustar ao caminho real)
 
 Impacto arquitetural:
 - Delimita fronteira entre codigo versionado e estado da nuvem.
@@ -89,7 +88,7 @@ Riscos:
 
 - Revisar se build deve continuar acoplado a deploy de regras.
 - Definir stack oficial de producao para Next completo.
-- Garantir sincronismo entre regras espelho e regras de deploy.
+- Confirmar que so existe src/firebase/rules/firestore.rules como fonte de regras versionada.
 - Decidir inclusao formal de regras de Storage no pipeline.
 - Padronizar governanca de roles em users/{uid}.
 - Definir estrategia de testes (cloud-only versus emulacao futura).

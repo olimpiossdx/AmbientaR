@@ -112,7 +112,7 @@ Este arquivo organiza as próximas etapas em blocos executáveis, sempre evitand
     - Leis, deliberações normativas, resoluções, portarias.
     - Termos de Referência oficiais.
     - Laudos antigos e notas internas relevantes.
-    - (Tipo e regras Firestore em `src/lib/types.ts` e `firestore.rules`.)
+    - (Tipo e regras Firestore em `src/lib/types.ts` e `src/firebase/rules/firestore.rules`.)
   - [ ] Implementar pipeline para popular `rag_index` com:
     - PDFs de RCAs/PIAs antigos.
     - Documentos de legislação e normas.

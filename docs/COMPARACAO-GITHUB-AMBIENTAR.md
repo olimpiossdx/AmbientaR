@@ -32,7 +32,7 @@
 | **condicionantes** | list/write só isManager() | list: isManager() \|\| isTechnical() \|\| isClient(); write: isManager() \|\| isTechnical() |
 | **commercialProposals** | allow write geral | create/delete + update com restrição de status (Accepted/Rejected só admin/financial) |
 | **contracts** | allow write geral | create/delete + update com restrição (Aprovado só admin/financial) |
-| **canViewLicense / canViewOutorga** | Não no raiz | Sim (em src/firestore.rules) | Final tem helpers para cliente |
+| **canViewLicense / canViewOutorga** | Não no raiz | Sim (em `src/firebase/rules/firestore.rules`) | Regras canónicas só em `firebase/rules` |
 
 **Conclusão:** O projeto final está à frente nas regras (isTechnical, condicionantes, restrições de update em proposals/contracts). O GitHub tem bug: isTechnical() usada e não definida no firestore.rules da raiz.
 

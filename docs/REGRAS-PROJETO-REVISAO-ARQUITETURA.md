@@ -28,8 +28,7 @@ Este documento consolida as regras persistentes do projeto AmbientaR para revisa
   - `npm run deploy:rules`
 - Sem emuladores: ambiente local usa servicos em nuvem.
 - Regras Firestore:
-  - existe espelho em `src/firestore.rules`
-  - deploy usa `src/firebase/rules/firestore.rules` (via `firebase.json`)
+  - **único ficheiro de deploy:** `src/firebase/rules/firestore.rules` (via `firebase.json`); sem espelhos em `src/` ou raiz
 - Observacao critica de pipeline:
   - `npm run build` aciona postbuild com `deploy:rules`.
 - Rede local/celular:
@@ -46,7 +45,7 @@ Este documento consolida as regras persistentes do projeto AmbientaR para revisa
 **Riscos e atencoes**
 - Build local com deploy implicito pode causar publicacao nao intencional de regras.
 - Ausencia de emuladores aumenta dependencia de credenciais/ambiente cloud.
-- Divergencia entre `src/firestore.rules` e `src/firebase/rules/firestore.rules` pode gerar comportamento inesperado.
+- Manter apenas `src/firebase/rules/firestore.rules` como fonte de regras evita divergência face ao deploy.
 
 ### Regra B - `.cursor/rules/ambientar-firebase-e-deploy.mdc`
 
@@ -68,8 +67,8 @@ Este documento consolida as regras persistentes do projeto AmbientaR para revisa
 - Producao:
   - `firebase deploy --only hosting` publica apenas estaticos de `public/`.
   - Para app Next completa: Firebase App Hosting, Vercel ou Cloud Run.
-- Nota Windows disco G::
-  - usar `git config --global --add safe.directory G:/AmbientaR` em caso de `dubious ownership`.
+- Nota Windows (cópia em `E:\AmbientaR`):
+  - usar `git config --global --add safe.directory E:/AmbientaR` em caso de `dubious ownership` (ajustar ao caminho real se for noutra unidade).
 
 **Impacto arquitetural**
 - Explicita fronteira entre codigo versionado e recursos gerenciados no Firebase.
@@ -94,7 +93,7 @@ Este documento consolida as regras persistentes do projeto AmbientaR para revisa
 
 - Confirmar se o acoplamento `build -> deploy:rules` deve permanecer.
 - Definir estrategia oficial de producao para Next completo (App Hosting x Vercel x Cloud Run).
-- Garantir sincronismo e governanca entre arquivos de regras Firestore (espelho x deploy real).
+- Manter uma unica fonte de regras Firestore versionada: `src/firebase/rules/firestore.rules`.
 - Validar se Storage rules devem entrar no `firebase.json` e pipeline.
 - Formalizar politica de roles e provisionamento de `users/{uid}`.
 - Definir abordagem de testes (cloud-only atual x futura emulacao controlada).

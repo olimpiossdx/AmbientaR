@@ -22,6 +22,7 @@ import { cleanEmptyValues } from '@/lib/utils';
 import _ from 'lodash';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
+import { isClientePortalRole } from '@/lib/role-guards';
 
 
 const formSchema = z.object({
@@ -231,7 +232,7 @@ export function ProjectForm({ currentItem, onSuccess, onCancel }: ProjectFormPro
                                  </SelectTrigger>
                                </FormControl>
                                <SelectContent>
-                                 {users?.filter(u => u.role === 'client').map(user => (
+                                 {users?.filter(u => isClientePortalRole(u.role)).map(user => (
                                    <SelectItem key={user.id} value={user.id}>{user.name}</SelectItem>
                                  ))}
                                </SelectContent>

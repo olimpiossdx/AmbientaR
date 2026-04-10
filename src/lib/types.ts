@@ -1197,7 +1197,18 @@ export type PCA = {
   };
 };
 
-export type UserRole = 'admin' | 'client' | 'representative' | 'technical' | 'sales' | 'financial' | 'gestor' | 'supervisor' | 'diretor_fauna' | 'advogado';
+export type UserRole =
+  | 'admin'
+  | 'client'
+  | 'cliente_autonomo'
+  | 'representative'
+  | 'technical'
+  | 'sales'
+  | 'financial'
+  | 'gestor'
+  | 'supervisor'
+  | 'diretor_fauna'
+  | 'advogado';
 
 export type ClientPackage = 'gratuito' | 'basico' | 'intermediario' | 'avancado' | 'completo' | 'sob_consulta';
 

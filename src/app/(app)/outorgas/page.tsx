@@ -81,6 +81,7 @@ import {
 import { backupAndDeleteParentWithCondicionantes } from "@/lib/deleted-data-backup";
 import { CardSearchInput } from "@/components/card-search-input";
 import { fetchEmpreendedorIdsForRepresentative } from "@/lib/representative-empreendedor-ids";
+import { isClientePortalRole } from "@/lib/role-guards";
 
 const canPerformWriteActions = (user: AppUser | null): boolean => {
   if (!user) return false;
@@ -124,7 +125,7 @@ export default function OutorgasPage() {
   const router = useRouter();
 
   useEffect(() => {
-    if (user?.role === "client" && firestore) {
+    if (isClientePortalRole(user?.role) && firestore) {
       setEmpreendedorIdsForUser(undefined);
       const userDocuments = [
         user.cpf || user.userCpf,
@@ -163,7 +164,7 @@ export default function OutorgasPage() {
     if (!firestore || !user || empreendedorIdsForUser === undefined)
       return null;
 
-    if (user.role === "client" || user.role === "representative") {
+    if (isClientePortalRole(user.role) || user.role === "representative") {
       if (empreendedorIdsForUser.length > 0) {
         return query(
           collection(firestore, "outorgas"),
@@ -234,7 +235,7 @@ export default function OutorgasPage() {
     isLoadingOutorgas ||
     isLoadingEmpreendedores ||
     isLoadingProjects ||
-    ((user?.role === "client" || user?.role === "representative") &&
+    ((isClientePortalRole(user?.role) || user?.role === "representative") &&
       empreendedorIdsForUser === undefined);
 
   // #region agent log — Etapa 6: Gestão Ambiental → Outorgas

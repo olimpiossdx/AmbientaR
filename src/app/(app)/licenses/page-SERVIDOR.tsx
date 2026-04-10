@@ -86,6 +86,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Label } from "@/components/ui/label";
+import { isClientePortalRole } from "@/lib/role-guards";
 
 const canPerformWriteActions = (user: AppUser | null): boolean => {
   if (!user) return false;
@@ -127,7 +128,7 @@ export default function LicensesPage() {
   const router = useRouter();
 
   useEffect(() => {
-    if (user?.role === "client" && firestore) {
+    if (isClientePortalRole(user?.role) && firestore) {
       setEmpreendedorIdsForUser(undefined); // Reset before fetching
       const userDocuments = [
         user.cpf || user.userCpf,
@@ -167,7 +168,7 @@ export default function LicensesPage() {
     if (user.role === "admin") {
       return collection(firestore, "licenses");
     }
-    if (user.role === "client") {
+    if (isClientePortalRole(user.role)) {
       if (empreendedorIdsForUser.length > 0) {
         return query(
           collection(firestore, "licenses"),
@@ -205,7 +206,7 @@ export default function LicensesPage() {
     isLoadingLicenses ||
     isLoadingEmpreendedores ||
     isLoadingProjects ||
-    (user?.role === "client" && empreendedorIdsForUser === undefined);
+    (isClientePortalRole(user?.role) && empreendedorIdsForUser === undefined);
 
   const empreendedoresMap = useMemo(
     () => new Map(allEmpreendedores?.map((e) => [e.id, e.name])),

@@ -24,6 +24,7 @@ import {
   useAuth,
   useDoc,
 } from "@/firebase";
+import { isClientePortalRole } from "@/lib/role-guards";
 import {
   collection,
   query,
@@ -733,7 +734,8 @@ export default function ClientDashboard() {
                   )}
                 </CardContent>
               </Card>
-              {user?.role !== "client" && user?.role !== "representative" ? (
+              {!isClientePortalRole(user?.role) &&
+              user?.role !== "representative" ? (
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">

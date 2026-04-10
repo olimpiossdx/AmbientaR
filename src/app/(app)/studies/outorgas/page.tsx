@@ -84,6 +84,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { isClientePortalRole } from "@/lib/role-guards";
 
 const canPerformWriteActions = (user: AppUser | null): boolean => {
   if (!user) return false;
@@ -126,7 +127,7 @@ export default function OutorgasEstudosPage() {
   const router = useRouter();
 
   useEffect(() => {
-    if (user?.role === "client" && firestore) {
+    if (isClientePortalRole(user?.role) && firestore) {
       setEmpreendedorIdsForUser(undefined); // Reset before fetching
       const userDocuments = [
         user.cpf || user.userCpf,
@@ -162,7 +163,7 @@ export default function OutorgasEstudosPage() {
     if (!firestore || !user || empreendedorIdsForUser === undefined)
       return null;
 
-    if (user.role === "client") {
+    if (isClientePortalRole(user.role)) {
       if (empreendedorIdsForUser.length > 0) {
         return query(
           collection(firestore, "outorgas"),
@@ -204,7 +205,7 @@ export default function OutorgasEstudosPage() {
     isLoadingOutorgas ||
     isLoadingEmpreendedores ||
     isLoadingProjects ||
-    (user?.role === "client" && empreendedorIdsForUser === undefined);
+    (isClientePortalRole(user?.role) && empreendedorIdsForUser === undefined);
 
   const handleAddNew = () => {
     router.push("/studies/outorgas/new");

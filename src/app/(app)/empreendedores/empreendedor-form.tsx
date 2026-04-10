@@ -33,6 +33,7 @@ import {
 } from "firebase/firestore";
 import { useCollection, useMemoFirebase } from "@/firebase";
 import type { AppUser } from "@/lib/types";
+import { isClientePortalRole } from "@/lib/role-guards";
 import {
   Select,
   SelectContent,
@@ -766,7 +767,7 @@ export function EmpreendedorForm({
       userId:
         values.userId ||
         currentItem?.userId ||
-        (user?.role === "client" ? user.id : null),
+        (isClientePortalRole(user?.role) ? user.id : null),
       approvedUserIds: safeRepresentativeUserIds,
     };
 
@@ -787,7 +788,7 @@ export function EmpreendedorForm({
         );
 
         const isOwnEmpreendedor =
-          user?.role === "client" &&
+          isClientePortalRole(user?.role) &&
           (currentItem.userId === user?.id || currentItem.id === user?.id);
         if (isOwnEmpreendedor && user?.id) {
           try {

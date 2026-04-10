@@ -19,7 +19,7 @@ const filePaths = [
   "apphosting.yaml",
   "components.json",
   "docs/backend.json",
-  "firestore.rules",
+  "src/firebase/rules/firestore.rules",
   "next.config.ts",
   "package.json",
   "src/ai/flows/analise-ambiental-flow.ts",

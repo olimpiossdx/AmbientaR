@@ -37,6 +37,7 @@ import {
   ArrowUp,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { isClienteGestao, isClientePortalRole } from "@/lib/role-guards";
 import type {
   AppUser,
   AuditLog,
@@ -205,7 +206,9 @@ export default function UsersPage() {
       case "admin":
         return "Admin";
       case "client":
-        return "Cliente (Titular)";
+        return "Cliente Gestão";
+      case "cliente_autonomo":
+        return "Cliente Autônomo";
       case "representative":
         return "Representante";
       case "technical":
@@ -248,7 +251,8 @@ export default function UsersPage() {
   const canDeleteUser = (target: AppUser | null) =>
     !!target &&
     (user?.role === "admin" ||
-      ((user?.role === "client" || user?.role === "representative") &&
+      ((isClientePortalRole(user?.role) ||
+        user?.role === "representative") &&
         target.id === user?.id));
 
   const handleDelete = () => {
@@ -533,7 +537,7 @@ export default function UsersPage() {
   };
 
   const clientProfileDocRef = useMemoFirebase(() => {
-    if (!firestore || !user || user.role !== "client") return null;
+    if (!firestore || !user || !isClientePortalRole(user.role)) return null;
     return doc(firestore, "users", user.id);
   }, [firestore, user]);
   const { data: clientProfile, isLoading: isLoadingProfile } =
@@ -561,7 +565,7 @@ export default function UsersPage() {
   );
 
   const myClientsQuery = useMemoFirebase(() => {
-    if (!firestore || !user || user.role !== "client") return null;
+    if (!firestore || !user || !isClientePortalRole(user.role)) return null;
     return query(
       collection(firestore, "clients"),
       where("userId", "==", user.id),
@@ -570,7 +574,7 @@ export default function UsersPage() {
   const { data: myClients } = useCollection<Client>(myClientsQuery);
 
   const myEmpreendedoresQuery = useMemoFirebase(() => {
-    if (!firestore || !user || user.role !== "client") return null;
+    if (!firestore || !user || !isClientePortalRole(user.role)) return null;
     return query(
       collection(firestore, "empreendedores"),
       where("userId", "==", user.id),
@@ -611,12 +615,12 @@ export default function UsersPage() {
   );
 
   const clientByIdRef = useMemoFirebase(() => {
-    if (!firestore || !user || user.role !== "client") return null;
+    if (!firestore || !user || !isClientePortalRole(user.role)) return null;
     return doc(firestore, "clients", user.id);
   }, [firestore, user]);
   const { data: clientById } = useDoc<Client>(clientByIdRef);
   const empreendedorByIdRef = useMemoFirebase(() => {
-    if (!firestore || !user || user.role !== "client") return null;
+    if (!firestore || !user || !isClientePortalRole(user.role)) return null;
     return doc(firestore, "empreendedores", user.id);
   }, [firestore, user]);
   const { data: empreendedorById } = useDoc<Empreendedor>(empreendedorByIdRef);
@@ -637,7 +641,7 @@ export default function UsersPage() {
     if (clientById?.cpfCnpj) add(clientById.cpfCnpj);
     if (empreendedorById?.cpfCnpj) add(empreendedorById.cpfCnpj);
     const profile = clientProfile || user;
-    if (user?.role === "client" && profile) {
+    if (isClientePortalRole(user?.role) && profile) {
       add((profile as any).cpf);
       add((profile as any).userCpf);
     }
@@ -684,7 +688,7 @@ export default function UsersPage() {
   // Carrega detalhes dos representantes aprovados para exibir na UI.
   useEffect(() => {
     const loadRepresentatives = async () => {
-      if (!firestore || !user || user.role !== "client") {
+      if (!firestore || !user || !isClienteGestao(user.role)) {
         setApprovedRepresentatives([]);
         return;
       }
@@ -723,14 +727,18 @@ export default function UsersPage() {
     status: string;
     representativeCpf?: string;
   }[] => {
-    if (user?.role === "client")
+    if (isClienteGestao(user?.role))
       return (pendingRequestsForMe || []).map((r) => ({
         id: r.id,
         requestedByName: r.requestedByName,
         requestedByUserId: r.requestedByUserId,
         status: r.status,
       }));
-    if (!editingUser || editingUser.role !== "client" || !allPendingRequests)
+    if (
+      !editingUser ||
+      !isClientePortalRole(editingUser.role) ||
+      !allPendingRequests
+    )
       return [];
     const norm = (s: string) => (s || "").replace(/\D/g, "");
     const clientSet = new Set(
@@ -771,7 +779,7 @@ export default function UsersPage() {
     requestId: string,
     approve: boolean,
   ) => {
-    if (!firestore || !auth || !user || user.role !== "client") return;
+    if (!firestore || !auth || !user || !isClienteGestao(user.role)) return;
     setResolvingRequestId(requestId);
     try {
       const request = pendingRequestsForMe.find((r) => r.id === requestId);
@@ -826,7 +834,7 @@ export default function UsersPage() {
   const handleRevokeRepresentativeAccess = async (
     representativeUserId: string,
   ) => {
-    if (!firestore || !user || user.role !== "client") return;
+    if (!firestore || !user || !isClienteGestao(user.role)) return;
     setRevokingRepresentativeId(representativeUserId);
     try {
       const cpfNormsToMatch = new Set<string>();
@@ -887,7 +895,7 @@ export default function UsersPage() {
     }
   };
 
-  if (user?.role === "client") {
+  if (isClientePortalRole(user?.role)) {
     const clientUser = clientProfile || user;
 
     return (
@@ -995,6 +1003,7 @@ export default function UsersPage() {
                     </CardContent>
                   </Card>
 
+                  {isClienteGestao(user?.role) ? (
                   <Card id="access-requests-card">
                     <CardHeader>
                       <CardTitle>
@@ -1149,8 +1158,9 @@ export default function UsersPage() {
                       </div>
                     </CardContent>
                   </Card>
+                  ) : null}
 
-                  {accessRequestsError && (
+                  {isClienteGestao(user?.role) && accessRequestsError && (
                     <Card className="border-amber-200 bg-amber-50/50 dark:bg-amber-950/20 dark:border-amber-800">
                       <CardContent className="pt-4 space-y-2">
                         <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
@@ -1700,7 +1710,7 @@ export default function UsersPage() {
                                 <TooltipContent>
                                   <p>
                                     {appUser.id === user?.id &&
-                                    (user?.role === "client" ||
+                                    (isClientePortalRole(user?.role) ||
                                       user?.role === "representative")
                                       ? "Excluir usuário de acesso (apenas seus dados de acesso; Clientes/Empreendedores não são alterados)"
                                       : "Excluir usuário (somente administrador)"}
@@ -1875,13 +1885,15 @@ export default function UsersPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>
               {userToDelete?.id === user?.id &&
-              (user?.role === "client" || user?.role === "representative")
+              (isClientePortalRole(user?.role) ||
+                user?.role === "representative")
                 ? "Excluir seu usuário de acesso?"
                 : "Você tem certeza?"}
             </AlertDialogTitle>
             <AlertDialogDescription>
               {userToDelete?.id === user?.id &&
-              (user?.role === "client" || user?.role === "representative") ? (
+              (isClientePortalRole(user?.role) ||
+                user?.role === "representative") ? (
                 <>
                   Será removido apenas o seu <strong>usuário de acesso</strong>{" "}
                   (perfil de login). Você será deslogado. Os dados nos submenus{" "}
@@ -1905,7 +1917,8 @@ export default function UsersPage() {
             </AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete}>
               {userToDelete?.id === user?.id &&
-              (user?.role === "client" || user?.role === "representative")
+              (isClientePortalRole(user?.role) ||
+                user?.role === "representative")
                 ? "Sim, excluir meu usuário de acesso"
                 : "Deletar"}
             </AlertDialogAction>

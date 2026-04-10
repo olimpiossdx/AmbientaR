@@ -90,6 +90,7 @@ import {
 import { backupAndDeleteSingleCondicionante } from "@/lib/deleted-data-backup";
 import { CardSearchInput } from "@/components/card-search-input";
 import { fetchEmpreendedorIdsForRepresentative } from "@/lib/representative-empreendedor-ids";
+import { isClientePortalRole } from "@/lib/role-guards";
 
 /** Variantes de CPF/CNPJ (original + só dígitos) para match no Firestore, máx 10. */
 function documentVariants(
@@ -129,7 +130,7 @@ export default function CompliancePage() {
   const { toast } = useToast();
 
   const isClientLike = useMemo(
-    () => user?.role === "client" || user?.role === "representative",
+    () => isClientePortalRole(user?.role) || user?.role === "representative",
     [user?.role],
   );
 
@@ -145,7 +146,7 @@ export default function CompliancePage() {
         .catch(() => setEmpreendedorIdsForUser(["invalid-placeholder"]));
       return;
     }
-    if (user?.role === "client" && firestore) {
+    if (isClientePortalRole(user?.role) && firestore) {
       setEmpreendedorIdsForUser(undefined);
       const isSelfRegistered = !!(user as any).package;
 

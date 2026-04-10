@@ -38,7 +38,10 @@ import {
   XCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { isAdminOrSupervisorRole } from "@/lib/role-guards";
+import {
+  isAdminOrSupervisorRole,
+  isClientePortalRole,
+} from "@/lib/role-guards";
 import {
   useCollection,
   useFirebase,
@@ -206,7 +209,7 @@ export default function ProposalsPage() {
   // Para `client` e `representative`, a regra é exibir/baixar apenas itens "aprovados".
   // No fluxo de Orçamentos, "aprovado" corresponde ao status `Accepted`.
   const isClientOrRep =
-    user?.role === "client" || user?.role === "representative";
+    isClientePortalRole(user?.role) || user?.role === "representative";
   const displayActiveProposals = isClientOrRep ? [] : activeProposals;
   const displayFinalizedProposals = isClientOrRep
     ? finalizedProposals.filter((p) => p.status === "Accepted")

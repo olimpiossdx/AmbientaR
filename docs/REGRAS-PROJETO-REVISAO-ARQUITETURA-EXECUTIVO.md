@@ -16,7 +16,7 @@ AmbientaR e uma aplicacao Next.js (PWA) com backend Firebase (Auth, Firestore, S
 
 - **Deploy acidental de regras em build local:** pode publicar alteracoes de seguranca sem controle de janela de release.
 - **Gap entre expectativa e capacidade de hosting:** risco de regressao funcional se app Next completa for tratada como site estatico.
-- **Divergencia de regras Firestore:** coexistencia de arquivo espelho (`src/firestore.rules`) e arquivo de deploy pode causar inconsistencias.
+- **Regras Firestore:** existe um unico ficheiro versionado para deploy (`src/firebase/rules/firestore.rules`); ficheiros espelho extra foram removidos para alinhar repo GitHub com o deploy.
 - **Dependencia de cloud para desenvolvimento:** aumenta fragilidade em testes, custo operacional e risco de alteracoes em dados reais.
 - **Governanca de autorizacao por roles:** falhas em `users/{uid}` impactam acesso e fluxos de aprovacao.
 
@@ -28,8 +28,7 @@ AmbientaR e uma aplicacao Next.js (PWA) com backend Firebase (Auth, Firestore, S
   - Cloud Run.
 - Definir politica de deploy de regras:
   - manter ou remover acoplamento `build -> deploy:rules`.
-- Definir politica unica para arquivos de regras:
-  - espelho documental versus artefato unico de deploy.
+- Politica de regras: artefato unico em `src/firebase/rules/firestore.rules` (sem duplicados na raiz ou em `src/firestore.rules`).
 - Formalizar estrategia de testes:
   - cloud-only (atual) versus adocao de emuladores para QA/controladoria.
 

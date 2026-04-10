@@ -74,6 +74,7 @@ import { useToast } from "@/hooks/use-toast";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { isClientePortalRole } from "@/lib/role-guards";
 import {
   Accordion,
   AccordionContent,
@@ -107,7 +108,7 @@ export default function CompliancePage() {
   >(undefined);
 
   useEffect(() => {
-    if (user?.role === "client" && firestore) {
+    if (isClientePortalRole(user?.role) && firestore) {
       setEmpreendedorIdsForUser(undefined);
       const userDocuments = [
         user.cpf || user.userCpf,
@@ -144,9 +145,9 @@ export default function CompliancePage() {
     if (user?.role === "admin") {
       return collection(firestore, "projects");
     }
-    if (user?.role === "client" && empreendedorIdsForUser.length === 0)
+    if (isClientePortalRole(user?.role) && empreendedorIdsForUser.length === 0)
       return null;
-    if (user?.role === "client") {
+    if (isClientePortalRole(user?.role)) {
       return query(
         collection(firestore, "projects"),
         where("empreendedorId", "in", empreendedorIdsForUser),
@@ -168,14 +169,14 @@ export default function CompliancePage() {
     if (user.role === "admin") {
       return collection(firestore, "condicionantes");
     }
-    if (user.role === "client" && projectIds.length === 0) {
+    if (isClientePortalRole(user.role) && projectIds.length === 0) {
       // Do not query if the client has no projects, to avoid permission errors.
       if (empreendedorIdsForUser && empreendedorIdsForUser.length > 0)
         return null;
       // If no empreendedorIds loaded yet, also don't query.
       if (empreendedorIdsForUser === undefined) return null;
     }
-    if (user.role === "client" && projectIds.length > 0) {
+    if (isClientePortalRole(user.role) && projectIds.length > 0) {
       return query(
         collection(firestore, "condicionantes"),
         where("referenceId", "in", projectIds),
@@ -220,7 +221,7 @@ export default function CompliancePage() {
     isLoadingProjects ||
     isLoadingOutorgas ||
     isLoadingIntervencoes ||
-    (user?.role === "client" && empreendedorIdsForUser === undefined);
+    (isClientePortalRole(user?.role) && empreendedorIdsForUser === undefined);
 
   const { licencaGroups, outorgaGroups, intervencaoGroups } = useMemo(() => {
     if (!condicionantes)
@@ -579,7 +580,9 @@ export default function CompliancePage() {
           )}
         </PageHeader>
         <main className="flex-1 overflow-auto p-4 md:p-6">
-          {user?.role === "client" ? renderClientView() : renderManagerView()}
+          {isClientePortalRole(user?.role)
+            ? renderClientView()
+            : renderManagerView()}
         </main>
       </div>
 

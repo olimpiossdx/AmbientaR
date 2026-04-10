@@ -88,6 +88,7 @@ import {
   TooltipContent,
 } from "@/components/ui/tooltip";
 import { CardSearchInput } from "@/components/card-search-input";
+import { isClientePortalRole } from "@/lib/role-guards";
 
 type Report = Inspection;
 
@@ -108,7 +109,7 @@ export default function InspectionReportsListPage() {
   );
 
   React.useEffect(() => {
-    if (user?.role === "client" && firestore) {
+    if (isClientePortalRole(user?.role) && firestore) {
       setEmpreendedorIdsForUser(undefined);
       const userDocuments = [
         user.cpf || user.userCpf,
@@ -141,13 +142,13 @@ export default function InspectionReportsListPage() {
 
   const projectsQuery = useMemoFirebase(() => {
     if (!firestore || empreendedorIdsForUser === undefined) return null;
-    if (user?.role === "client" && empreendedorIdsForUser.length > 0) {
+    if (isClientePortalRole(user?.role) && empreendedorIdsForUser.length > 0) {
       return query(
         collection(firestore, "projects"),
         where("empreendedorId", "in", empreendedorIdsForUser),
       );
     }
-    if (user?.role !== "client") {
+    if (!isClientePortalRole(user?.role)) {
       return collection(firestore, "projects");
     }
     return null;
@@ -165,7 +166,7 @@ export default function InspectionReportsListPage() {
 
   const inspectionsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
-    if (user?.role === "client") {
+    if (isClientePortalRole(user?.role)) {
       if (
         projectIds.length === 0 &&
         empreendedorIdsForUser &&
@@ -214,7 +215,7 @@ export default function InspectionReportsListPage() {
     isLoadingInspections ||
     isLoadingEmpreendedores ||
     isLoadingProjects ||
-    (user?.role === "client" && empreendedorIdsForUser === undefined);
+    (isClientePortalRole(user?.role) && empreendedorIdsForUser === undefined);
   const filteredInspections = React.useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
     const base = inspections || [];
@@ -516,7 +517,7 @@ export default function InspectionReportsListPage() {
                             : null;
                         const isRead = !!readTimestamp;
                         const needsReadConfirmation =
-                          user?.role === "client" ||
+                          isClientePortalRole(user?.role) ||
                           user?.role === "representative";
                         const canAccessDocument =
                           !needsReadConfirmation || isRead;

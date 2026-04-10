@@ -76,6 +76,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
 import { CardSearchInput } from "@/components/card-search-input";
+import { isClientePortalRole } from "@/lib/role-guards";
 
 const DetailItem = ({
   label,
@@ -119,7 +120,7 @@ function ProjectsPageContent() {
     if (!firestore || !user) return;
 
     // Cliente titular: filtra empreendimentos pelos seus próprios documentos (CPF/CNPJs).
-    if (user.role === "client") {
+    if (isClientePortalRole(user.role)) {
       setEmpreendedorIdsForUser(undefined);
       const userDocuments = [
         user.cpf || user.userCpf,
@@ -232,7 +233,7 @@ function ProjectsPageContent() {
   const projectsQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
 
-    if (user.role === "client" || user.role === "representative") {
+    if (isClientePortalRole(user.role) || user.role === "representative") {
       if (empreendedorIdsForUser === undefined) {
         return null;
       }
@@ -269,7 +270,7 @@ function ProjectsPageContent() {
   const isLoading =
     isLoadingProjects ||
     isLoadingEmpreendedores ||
-    ((user?.role === "client" || user?.role === "representative") &&
+    ((isClientePortalRole(user?.role) || user?.role === "representative") &&
       empreendedorIdsForUser === undefined);
 
   const filteredProjects = useMemo(() => {

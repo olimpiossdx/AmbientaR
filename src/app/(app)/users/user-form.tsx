@@ -42,7 +42,7 @@ import { formatCpfCnpjDisplay } from '@/lib/masks';
 const baseSchema = z.object({
   name: z.string().min(2, 'O nome é obrigatório.'),
   email: z.string().email('Por favor, insira um e-mail válido.'),
-  role: z.enum(['admin', 'client', 'representative', 'technical', 'sales', 'financial', 'gestor', 'supervisor', 'diretor_fauna', 'advogado']),
+  role: z.enum(['admin', 'client', 'cliente_autonomo', 'representative', 'technical', 'sales', 'financial', 'gestor', 'supervisor', 'diretor_fauna', 'advogado']),
   status: z.enum(['active', 'inactive']),
   userCpf: z.string().optional(),
   cpf: z.string().optional(),
@@ -137,7 +137,8 @@ interface UserFormProps {
 
 const roles: { value: UserRole; label: string }[] = [
   { value: 'admin', label: 'Admin' },
-  { value: 'client', label: 'Cliente (Titular)' },
+  { value: 'client', label: 'Cliente Gestão' },
+  { value: 'cliente_autonomo', label: 'Cliente Autônomo' },
   { value: 'representative', label: 'Representante' },
   { value: 'technical', label: 'Técnico' },
   { value: 'sales', label: 'Vendas' },
@@ -339,8 +340,8 @@ export function UserForm({ currentUser, onSuccess, representativeRequestedCpf, r
             await setDoc(doc(firestore, 'users', newUserId), userDocData);
             logUserAction(firestore, auth, 'create_user', { newUserId: newUserId, newUserName: values.name });
 
-            // Cliente (titular): criar Cliente + Empreendedor pelo próprio CPF.
-            if (values.role === 'client') {
+            // Titular (Cliente Gestão ou Autônomo): criar Cliente + Empreendedor pelo próprio CPF.
+            if (values.role === 'client' || values.role === 'cliente_autonomo') {
                 const cpfPessoal = (values.userCpf || '').trim().replace(/\D/g, '');
                 if (cpfPessoal.length >= 11) {
                     try {

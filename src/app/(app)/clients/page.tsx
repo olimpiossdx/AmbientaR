@@ -50,6 +50,7 @@ import {
 } from "firebase/firestore";
 import type { Client } from "@/lib/types";
 import { formatCpfCnpjDisplay } from "@/lib/masks";
+import { isClientePortalRole } from "@/lib/role-guards";
 
 function documentVariants(
   cpf: string | undefined,
@@ -136,7 +137,7 @@ export default function ClientsPage() {
   const router = useRouter();
 
   const clientsQueryByUserId = useMemoFirebase(() => {
-    if (!firestore || !user || user.role !== "client") return null;
+    if (!firestore || !user || !isClientePortalRole(user.role)) return null;
     return query(
       collection(firestore, "clients"),
       where("userId", "==", user.id),
@@ -144,7 +145,7 @@ export default function ClientsPage() {
   }, [firestore, user]);
 
   const clientsQueryByCpf = useMemoFirebase(() => {
-    if (!firestore || !user || user.role !== "client") return null;
+    if (!firestore || !user || !isClientePortalRole(user.role)) return null;
     const variants = documentVariants(user.cpf || user.userCpf, user.cnpjs);
     if (variants.length === 0)
       return query(
@@ -277,7 +278,7 @@ export default function ClientsPage() {
   }, [firestore, user, clientsRep]);
 
   const clients = useMemo(() => {
-    if (user?.role === "client") {
+    if (isClientePortalRole(user?.role)) {
       const byId = clientsByUserId ?? [];
       const byCpf = clientsByCpf ?? [];
       const merged = new Map<string, Client>();
@@ -310,7 +311,7 @@ export default function ClientsPage() {
   ]);
 
   const isLoading =
-    user?.role === "client"
+    isClientePortalRole(user?.role)
       ? clientsByUserId === undefined || clientsByCpf === undefined
       : user?.role === "representative"
         ? clientsRep === undefined || fallbackClientsForRep === null

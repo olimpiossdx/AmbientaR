@@ -76,6 +76,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
+import { isClientePortalRole } from "@/lib/role-guards";
 import { FirestorePermissionError } from "@/firebase/errors";
 import jsPDF from "jspdf";
 import { logUserAction } from "@/lib/audit-log";
@@ -206,7 +207,7 @@ export default function InvoicesPage() {
   // Para `client` e `representative`, mostramos/permitimos download apenas de itens "aprovados".
   // Nas faturas, "aprovado" corresponde a `status === 'Paid'`.
   const isClientOrRep =
-    user?.role === "client" || user?.role === "representative";
+    isClientePortalRole(user?.role) || user?.role === "representative";
 
   // Algumas contas podem ter o CPF em `userCpf` em vez de `cpf`.
   // Usamos o primeiro disponível para resolver `clientIdsForUser`.
@@ -221,7 +222,7 @@ export default function InvoicesPage() {
     if (!firestore || !user) return;
 
     // Cliente titular: seus próprios clientes (userId, approvedUserIds, CPF/CNPJ).
-    if (user.role === "client") {
+    if (isClientePortalRole(user.role)) {
       const isSelfRegistered = !!(user as any).package;
       const clientsRef = collection(firestore, "clients");
 
@@ -327,7 +328,7 @@ export default function InvoicesPage() {
     }
 
     // Cliente e representante: apenas faturas dos clientes que podem visualizar.
-    if (user.role === "client" || user.role === "representative") {
+    if (isClientePortalRole(user.role) || user.role === "representative") {
       if (!clientIdsForUser || clientIdsForUser.length === 0) return null;
       return query(
         collection(firestore, "invoices"),

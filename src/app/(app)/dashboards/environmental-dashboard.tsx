@@ -45,6 +45,7 @@ import {
   DialogClose,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { isClientePortalRole } from "@/lib/role-guards";
 type LicenseGroup =
   | "expiringIn30"
   | "expiringIn60"
@@ -82,9 +83,9 @@ export default function EnvironmentalDashboard({
   >([]);
   const [dialogTitle, setDialogTitle] = useState("");
 
-  /** Cliente/representante recebem dados via props (painel do titular). */
+  /** Titulares do portal e representantes recebem dados via props (painel do titular). */
   const isExternalTitularView =
-    user?.role === "client" || user?.role === "representative";
+    isClientePortalRole(user?.role) || user?.role === "representative";
 
   // Projetos (empreendimentos) — separados das licenças ambientais.
   const { data: permits, isLoading: isLoadingPermits } =

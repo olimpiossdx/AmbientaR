@@ -70,6 +70,8 @@ import { SidebarDebugger } from "@/components/sidebar-debugger";
 import { FinancialMenuDebugPanel } from "@/lib/financial-menu-debug";
 import { CadastroMenuDebugPanel } from "@/lib/cadastro-menu-debug";
 import { isRoleAllowedForPath } from "@/lib/route-access";
+import { isClienteGestao, isClientePortalRole } from "@/lib/role-guards";
+import { getRoleLabelPt } from "@/lib/user-role-labels";
 
 const LogoIcon = () => (
   <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-emerald-400 text-primary-foreground">
@@ -129,7 +131,7 @@ const AppLayoutClient = ({ children }: { children: React.ReactNode }) => {
 
   // Consultas auxiliares para identificar todos os CPFs/CNPJs vinculados ao titular (mesma lógica da página de Meu Perfil).
   const accessRequestsQuery = useMemoFirebase(() => {
-    if (!firestore || !user || user.role !== "client") return null;
+    if (!firestore || !user || !isClienteGestao(user.role)) return null;
     // mesma forma que a página de Meu Perfil (UsersPage): apenas where por status
     return query(
       collection(firestore, "access_requests"),
@@ -138,7 +140,7 @@ const AppLayoutClient = ({ children }: { children: React.ReactNode }) => {
   }, [firestore, user]);
 
   const myClientsQuery = useMemoFirebase(() => {
-    if (!firestore || !user || user.role !== "client") return null;
+    if (!firestore || !user || !isClientePortalRole(user.role)) return null;
     return query(
       collection(firestore, "clients"),
       where("userId", "==", user.id),
@@ -146,7 +148,7 @@ const AppLayoutClient = ({ children }: { children: React.ReactNode }) => {
   }, [firestore, user]);
 
   const myEmpreendedoresQuery = useMemoFirebase(() => {
-    if (!firestore || !user || user.role !== "client") return null;
+    if (!firestore || !user || !isClientePortalRole(user.role)) return null;
     return query(
       collection(firestore, "empreendedores"),
       where("userId", "==", user.id),
@@ -154,12 +156,12 @@ const AppLayoutClient = ({ children }: { children: React.ReactNode }) => {
   }, [firestore, user]);
 
   const clientByIdRef = useMemoFirebase(() => {
-    if (!firestore || !user || user.role !== "client") return null;
+    if (!firestore || !user || !isClientePortalRole(user.role)) return null;
     return doc(firestore, "clients", user.id);
   }, [firestore, user]);
 
   const empreendedorByIdRef = useMemoFirebase(() => {
-    if (!firestore || !user || user.role !== "client") return null;
+    if (!firestore || !user || !isClientePortalRole(user.role)) return null;
     return doc(firestore, "empreendedores", user.id);
   }, [firestore, user]);
 
@@ -189,7 +191,7 @@ const AppLayoutClient = ({ children }: { children: React.ReactNode }) => {
     myEmpreendedores?.forEach((e) => add(e.cpfCnpj));
     if (clientById?.cpfCnpj) add(clientById.cpfCnpj);
     if (empreendedorById?.cpfCnpj) add(empreendedorById.cpfCnpj);
-    if (user?.role === "client") {
+    if (isClientePortalRole(user?.role)) {
       add(user.cpf);
       add(user.userCpf);
     }
@@ -245,7 +247,7 @@ const AppLayoutClient = ({ children }: { children: React.ReactNode }) => {
 
   const cadastroIncompleto = Boolean(
     user?.cadastroIncompleto &&
-    (user?.role === "client" || user?.role === "representative"),
+    (isClientePortalRole(user?.role) || user?.role === "representative"),
   );
 
   const unreadCount = React.useMemo(() => {
@@ -277,20 +279,13 @@ const AppLayoutClient = ({ children }: { children: React.ReactNode }) => {
     router.push("/users#access-requests-card");
   };
 
-  const roleLabel: Record<string, string> = {
-    admin: "Administrador",
+  const roleLabelOverrides: Record<string, string> = {
     gestor: "Autorizações/Relatórios",
-    supervisor: "Supervisor",
-    financial: "Financeiro",
-    sales: "Vendas",
-    technical: "Técnico",
-    diretor_fauna: "Diretor de Fauna",
-    advogado: "Advogado",
-    client: "Cliente",
-    representative: "Representante",
   };
   const getActorLabel = (actorRole?: string) =>
-    actorRole ? roleLabel[actorRole] || actorRole : null;
+    actorRole
+      ? roleLabelOverrides[actorRole] ?? getRoleLabelPt(actorRole)
+      : null;
 
   React.useEffect(() => {
     if (isInitialized && !user) {
@@ -330,7 +325,7 @@ const AppLayoutClient = ({ children }: { children: React.ReactNode }) => {
   }, [user]);
   const allowExternalChat = Boolean(featureFlagsData?.allowExternalChat);
   const canRenderChatWidget =
-    user?.role !== "client" && user?.role !== "representative"
+    !isClientePortalRole(user?.role) && user?.role !== "representative"
       ? true
       : allowExternalChat;
 
@@ -432,7 +427,7 @@ const AppLayoutClient = ({ children }: { children: React.ReactNode }) => {
                   onClick={() => {
                     const authUserId = user?.uid || user?.id;
                     router.push(
-                      user?.role === "client"
+                      isClientePortalRole(user?.role)
                         ? authUserId
                           ? `/empreendedores/${authUserId}/edit`
                           : "/empreendedores"

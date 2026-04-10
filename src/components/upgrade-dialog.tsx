@@ -238,7 +238,7 @@ export function UpgradeButton() {
   const [open, setOpen] = React.useState(false);
   const { user } = useFirebase();
 
-  if (!user || user.role !== 'client') return null;
+  if (!user || (user.role !== 'client' && user.role !== 'cliente_autonomo')) return null;
 
   const currentPackage = (user as any)?.package as ClientPackage | undefined;
   const isComplete = currentPackage === 'completo' || currentPackage === 'sob_consulta';

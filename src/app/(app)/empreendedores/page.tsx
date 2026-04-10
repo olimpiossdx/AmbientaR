@@ -84,6 +84,7 @@ import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
 import { formatCpfCnpjDisplay } from "@/lib/masks";
 import { CardSearchInput } from "@/components/card-search-input";
+import { isClientePortalRole } from "@/lib/role-guards";
 
 const DetailItem = ({
   label,
@@ -130,7 +131,7 @@ export default function EmpreendedoresPage() {
   const empreendedoresQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
 
-    if (user.role === "client") {
+    if (isClientePortalRole(user.role)) {
       const userDocuments = [
         user.cpf || user.userCpf,
         ...(user.cnpjs || []),

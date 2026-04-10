@@ -6,6 +6,8 @@
 
 AmbientaR (EcoGestão MG) é uma aplicação Next.js (PWA) de gestão ambiental para pequenas consultorias em Minas Gerais. A interface é em português. Backend: Firebase (Auth, Firestore, Storage), config em `src/firebase/config.ts`.
 
+**Repositório:** cópia de trabalho recomendada em **`E:\AmbientaR`**; manter o **GitHub** alinhado com `git commit` + `git push` (e `git pull` noutras máquinas). Ver `docs/REPOSITORIO-LOCAL-E-GITHUB.md`.
+
 ### Executando a aplicação
 
 - **Dev:** `npm run dev` — porta **9002** (0.0.0.0)
@@ -22,7 +24,7 @@ AmbientaR (EcoGestão MG) é uma aplicação Next.js (PWA) de gestão ambiental 
 - **Next.js 14.** O projeto usa Next 14.2.35 (patch atual da linha 14) com React 18.3.1 (overrides no `package.json`).
 - **PWA:** Em desenvolvimento o service worker pode estar desativado; ícone 404 no manifest é conhecido e não afeta uso.
 - **GOOGLE_GENAI_API_KEY** é opcional; sem ela, fluxos de IA não funcionam mas o restante do app sim.
-- **Regras Firestore:** Dois arquivos de regras existem: `src/firestore.rules` (espelho do repositório de referência) e `src/firebase/rules/firestore.rules` (usado pelo deploy se configurado no `firebase.json`). Admin tem acesso total via regra catch-all; condicionantes permitem list para manager, technical e client; commercialProposals/contracts têm restrições de update de status (espelho do projeto GitHub AmbientaR).
+- **Regras Firestore:** ficheiro único para deploy: `src/firebase/rules/firestore.rules` (definido no `firebase.json`). Admin tem acesso total via regra catch-all; commercialProposals/contracts têm restrições de update de status (espelho do projeto GitHub AmbientaR). *Não* uses ficheiros espelho extra — evita divergência entre GitHub e o que se publica com `npm run deploy:rules`.
 - **Componentes de estabilidade:** `SuppressExtensionErrors` no layout (evita overlay de erros de extensões); `(app)/loading.tsx` para feedback ao navegar.
 - **Deploy:** `.firebaserc` e `firebase.json` na raiz; `npm run deploy:rules` publica as regras.
 - **Alerta de aprovação de representantes:** o perfil cliente (titular) vê em Configurações → Usuários o card "Aprovar acesso de representantes". Para os pedidos pendentes carregarem, as regras do Firestore precisam estar publicadas (a coleção `access_requests` permite read para usuário autenticado). Se aparecer "Não foi possível carregar os pedidos de acesso", o administrador deve executar `npm run deploy:rules` (e estar logado: `firebase login`).

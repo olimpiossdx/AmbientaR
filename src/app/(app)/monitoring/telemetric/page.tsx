@@ -67,6 +67,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { isClientePortalRole } from "@/lib/role-guards";
 
 // Carrega componentes do Google Maps sob demanda (reduz tamanho do bundle inicial).
 const GoogleMap = dynamic(
@@ -214,7 +215,7 @@ export default function TelemetricMonitoringPage() {
 
   useEffect(() => {
     if (!firestore || !user) return;
-    if (user.role === "client") {
+    if (isClientePortalRole(user.role)) {
       setEmpreendedorIdsForUser(undefined);
       const userDocuments = [
         user.cpf || user.userCpf,
@@ -300,7 +301,7 @@ export default function TelemetricMonitoringPage() {
 
   const outorgasQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
-    if (user.role === "client" || user.role === "representative") {
+    if (isClientePortalRole(user.role) || user.role === "representative") {
       if (empreendedorIdsForUser === undefined) return null;
       if (
         empreendedorIdsForUser.length === 0 ||
@@ -334,7 +335,7 @@ export default function TelemetricMonitoringPage() {
 
   const usosInsignificantesQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
-    if (user.role === "client" || user.role === "representative") {
+    if (isClientePortalRole(user.role) || user.role === "representative") {
       if (empreendedorIdsForUser === undefined) return null;
       if (
         empreendedorIdsForUser.length === 0 ||
@@ -536,7 +537,7 @@ export default function TelemetricMonitoringPage() {
   const isLoadingList =
     isLoadingOutorgas ||
     isLoadingUsos ||
-    ((user?.role === "client" || user?.role === "representative") &&
+    ((isClientePortalRole(user?.role) || user?.role === "representative") &&
       empreendedorIdsForUser === undefined);
 
   const handleReportVazaoCaptada = () => {

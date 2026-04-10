@@ -42,6 +42,7 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { useRouter } from 'next/navigation';
+import { isClientePortalRole } from '@/lib/role-guards';
 
 export default function OficiosPage() {
   const [isAlertOpen, setIsAlertOpen] = React.useState(false);
@@ -55,7 +56,7 @@ export default function OficiosPage() {
     if (!firestore || !user) return null;
     // Representantes não acessam a coleção de ofícios (evita erro de permissão e segue a regra de negócio).
     if (user.role === 'representative') return null;
-    if (user.role === 'client') {
+    if (isClientePortalRole(user.role)) {
       // Clientes veem apenas ofícios em que são destinatários.
       return query(collection(firestore, 'oficios'), where('recipient', '==', user.name));
     }
@@ -172,7 +173,7 @@ export default function OficiosPage() {
     <>
       <div className="flex flex-col h-full">
         <PageHeader title="Ofícios e Comunicações">
-          {user?.role !== 'client' && user?.role !== 'representative' && (
+          {!isClientePortalRole(user?.role) && user?.role !== 'representative' && (
             <Button size="sm" className="gap-1" onClick={handleAddNew}>
               <PlusCircle className="h-4 w-4" />
               Novo Ofício
@@ -195,7 +196,7 @@ export default function OficiosPage() {
                     <TableHead>Destinatário</TableHead>
                     <TableHead className="hidden md:table-cell">Assunto</TableHead>
                     <TableHead>Status</TableHead>
-                    {user?.role !== 'client' && <TableHead className="hidden lg:table-cell">Criado por</TableHead>}
+                    {!isClientePortalRole(user?.role) && <TableHead className="hidden lg:table-cell">Criado por</TableHead>}
                     <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -223,14 +224,14 @@ export default function OficiosPage() {
                           className={cn(item.status === 'Concluído' && 'bg-emerald-500/20 text-emerald-700 border-emerald-500/30')}
                         >{item.status}</Badge>
                       </TableCell>
-                       {user?.role !== 'client' && <TableCell className="hidden lg:table-cell text-muted-foreground">{item.creatorName}</TableCell>}
+                       {!isClientePortalRole(user?.role) && <TableCell className="hidden lg:table-cell text-muted-foreground">{item.creatorName}</TableCell>}
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
                           <Tooltip>
                             <TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={() => alert('Visualização em breve!')}><FileText className="h-4 w-4" /></Button></TooltipTrigger>
                             <TooltipContent><p>Visualizar/Imprimir</p></TooltipContent>
                           </Tooltip>
-                          {user?.role !== 'client' && (
+                          {!isClientePortalRole(user?.role) && (
                             <>
                               <Tooltip>
                                 <TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={() => handleEdit(item)} disabled={item.status === 'Concluído'}><Edit className="h-4 w-4" /></Button></TooltipTrigger>

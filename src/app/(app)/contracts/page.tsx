@@ -66,7 +66,10 @@ import type {
   AppUser,
   CommercialProposal,
 } from "@/lib/types";
-import { isAdminOrSupervisorRole } from "@/lib/role-guards";
+import {
+  isAdminOrSupervisorRole,
+  isClientePortalRole,
+} from "@/lib/role-guards";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   AlertDialog,
@@ -157,7 +160,7 @@ export default function ContractsPage() {
     if (!firestore || !user) return;
 
     // Cliente titular.
-    if (user.role === "client") {
+    if (isClientePortalRole(user.role)) {
       const isSelfRegistered = !!(user as any).package;
       const cRef = collection(firestore, "clients");
       const userCpf = user.cpf || user.userCpf;
@@ -414,7 +417,8 @@ export default function ContractsPage() {
   const visibleContracts = useMemo(() => {
     const all = contracts || [];
     if (!user) return all;
-    if (user.role !== "client" && user.role !== "representative") return all;
+    if (!isClientePortalRole(user.role) && user.role !== "representative")
+      return all;
     if (!clientIdsForUser || clientIdsForUser.length === 0) return [];
     const allowedIds = new Set(clientIdsForUser);
     return all.filter((contract) => {
@@ -505,7 +509,7 @@ export default function ContractsPage() {
     <>
       <div className="flex flex-col h-full">
         <PageHeader title="Contratos">
-          {user?.role !== "client" && (
+          {!isClientePortalRole(user?.role) && (
             <div className="flex items-center gap-2">
               <Button
                 size="sm"
@@ -576,7 +580,7 @@ export default function ContractsPage() {
               </div>
             </div>
           </div>
-          {user?.role !== "client" && (
+          {!isClientePortalRole(user?.role) && (
             <Card>
               <CardHeader>
                 <CardTitle>Gerenciamento de Contratos</CardTitle>
@@ -870,7 +874,7 @@ export default function ContractsPage() {
                                   <FileText className="h-4 w-4 text-blue-500" />
                                 </a>
                               </Button>
-                            ) : user?.role !== "client" ? (
+                            ) : !isClientePortalRole(user?.role) ? (
                               <Button
                                 variant="ghost"
                                 size="icon"
@@ -992,7 +996,7 @@ export default function ContractsPage() {
                                     <p>Ver Contrato Assinado</p>
                                   </TooltipContent>
                                 </Tooltip>
-                              ) : user?.role !== "client" ? (
+                              ) : !isClientePortalRole(user?.role) ? (
                                 <Tooltip>
                                   <TooltipTrigger asChild>
                                     <Button
