@@ -1095,7 +1095,19 @@ export default function RegisterPage() {
             </span>
           </button>
         </div>
-        <div className="pt-2 text-center text-sm text-muted-foreground">
+        <Button variant="outline" className="w-full" asChild>
+          <Link
+            href="/"
+            className="inline-flex items-center justify-center gap-2"
+          >
+            <ArrowLeft className="h-4 w-4 shrink-0" />
+            Voltar ao início
+          </Link>
+        </Button>
+        <p className="text-center text-xs text-muted-foreground">
+          Não quer se cadastrar agora? Volte à página inicial ou faça login.
+        </p>
+        <div className="pt-1 text-center text-sm text-muted-foreground">
           Já tem uma conta?{" "}
           <Link
             href="/login"
@@ -1111,6 +1123,19 @@ export default function RegisterPage() {
   return (
     <div className="flex min-h-screen flex-col items-center p-4 pt-8 pb-8 bg-background">
       <div className="w-full max-w-2xl flex-1 flex flex-col animate-fade-in-up">
+        <div className="mb-4 w-full">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="-ml-2 h-9 px-2 text-muted-foreground hover:text-foreground"
+            asChild
+          >
+            <Link href="/" className="inline-flex items-center gap-2">
+              <ArrowLeft className="h-4 w-4 shrink-0" />
+              Voltar ao início
+            </Link>
+          </Button>
+        </div>
         <div className="mb-6 flex flex-col items-center">
           <Link
             href="/login"
@@ -1209,14 +1234,25 @@ export default function RegisterPage() {
               </form>
             </Form>
 
-            <div className="mt-6 text-center text-xs text-muted-foreground">
-              Já tem uma conta?{" "}
-              <Link
-                href="/login"
-                className="underline hover:text-primary transition-colors font-medium"
-              >
-                Faça login
-              </Link>
+            <div className="mt-6 flex flex-col items-center gap-3">
+              <Button variant="outline" className="w-full max-w-sm" asChild>
+                <Link
+                  href="/"
+                  className="inline-flex items-center justify-center gap-2"
+                >
+                  <ArrowLeft className="h-4 w-4 shrink-0" />
+                  Voltar ao início
+                </Link>
+              </Button>
+              <p className="text-center text-xs text-muted-foreground">
+                Já tem uma conta?{" "}
+                <Link
+                  href="/login"
+                  className="underline hover:text-primary transition-colors font-medium"
+                >
+                  Faça login
+                </Link>
+              </p>
             </div>
           </>
         )}
