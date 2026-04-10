@@ -46,6 +46,8 @@ O app lê o **role** do documento em:
 
 Salve. Na próxima vez que o usuário fizer login, o app usará esse role.
 
+**Cadastro (titular):** o documento pode incluir **`allowsCommercialContact`** (boolean), preenchido automaticamente no registo: `true` nos planos **gratuito** e **básico** após aceitar o contrato; nos planos superiores, só `true` se o utilizador marcar o opt-in de comunicação comercial no formulário. O titular pode alterar preferências nos termos da LGPD (revogação/oposição conforme política da empresa).
+
 ---
 
 ## 3. Assinatura anual da plataforma (titulares Cliente Gestão / Autônomo)

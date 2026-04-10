@@ -287,6 +287,7 @@ service cloud.firestore {
      */
     /**
      * @description Campos de assinatura anual da plataforma — só admin/supervisor ou criação inicial do próprio usuário.
+     * Nota: allowsCommercialContact (marketing) não está aqui; o próprio utilizador pode atualizar no perfil, salvo restrições futuras da app.
      */
     function userSubscriptionFieldKeys() {
       return [

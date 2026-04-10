@@ -16,7 +16,7 @@ AmbientaR (EcoGestão MG) é uma aplicação Next.js (PWA) de gestão ambiental 
 - **Lint:** `npm run lint`
 - **Typecheck:** `npm run typecheck`
 - **Genkit (IA):** `npm run genkit:dev` (opcional; requer `GOOGLE_GENAI_API_KEY`)
-- **Publicar regras Firestore:** `npm run deploy:rules` — faz deploy apenas das regras (exige `firebase.json` na raiz com `firestore.rules` apontando para o arquivo de regras)
+- **Publicar regras Firestore:** `npm run deploy:rules` — faz deploy apenas das regras (`firebase.json` → `src/firebase/rules/firestore.rules`)
 
 ### Observações
 
