@@ -45,14 +45,34 @@ import {
   MessageSquareMore,
   X,
   Compass,
+  Smartphone,
+  CreditCard,
+  Building2,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Checkbox } from "@/components/ui/checkbox";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import type { ClientPackage, ClientPackageInfo } from "@/lib/types";
+import type {
+  ClientPackage,
+  ClientPackageInfo,
+  PlatformPaymentMethod,
+} from "@/lib/types";
 import { createNotificationForUser } from "@/lib/notifications";
+import {
+  buildPlatformSubscriptionFieldsForNewTitular,
+  clientPackageRequiresAnnualPaymentStep,
+  getPublicPixCopyPaste,
+  isPlatformPaymentAutoApproveEnabled,
+  PACKAGE_ANNUAL_AMOUNT_LABEL,
+} from "@/lib/platform-access";
+import {
+  RegisterContractContent,
+  packageRequiresMarketingOptIn,
+} from "@/app/register/contract-content";
 
 const PACKAGES: ClientPackageInfo[] = [
   {
@@ -169,137 +189,26 @@ const formSchema = z
     contractAccepted: z.literal(true, {
       errorMap: () => ({ message: "Você deve aceitar os termos do contrato." }),
     }),
+    /** Obrigatório para planos acima de Básico: opt-in explícito para contato comercial. */
+    marketingContactConsent: z.boolean().optional(),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "As senhas não coincidem.",
     path: ["confirmPassword"],
-  });
+  })
+  .refine(
+    (data) => {
+      if (!packageRequiresMarketingOptIn(data.selectedPackage)) return true;
+      return data.marketingContactConsent === true;
+    },
+    {
+      message:
+        "Para este plano, é necessário autorizar o uso dos dados para contato comercial.",
+      path: ["marketingContactConsent"],
+    },
+  );
 
 type FormValues = z.infer<typeof formSchema>;
-
-function ContractContent({
-  packageId,
-}: {
-  packageId: ClientPackage | undefined;
-}) {
-  const clauseNum = (n: number) => {
-    const ordinals = ["", "1ª", "2ª", "3ª", "4ª", "5ª", "6ª", "7ª"];
-    return ordinals[n] || `${n}ª`;
-  };
-  let nextClause = 5;
-
-  return (
-    <div
-      className="font-sans text-xs leading-relaxed text-foreground/80"
-      style={{
-        paddingTop: "1.5cm",
-        paddingBottom: "1cm",
-        paddingLeft: "1.5cm",
-        paddingRight: "1cm",
-        textAlign: "justify",
-      }}
-    >
-      <h2 className="text-sm font-bold text-center mb-4 uppercase">
-        Termos de Uso e Contrato de Prestação de Serviços
-      </h2>
-
-      <p className="mb-3">
-        PIMENTA CONSULTORIA AMBIENTAL, pessoa jurídica de direito privado,
-        doravante denominada CONTRATADA, e o USUÁRIO, pessoa física ou jurídica
-        que realiza o cadastro nesta plataforma, doravante denominado
-        CONTRATANTE, celebram o presente contrato mediante as seguintes
-        cláusulas:
-      </p>
-
-      <h3 className="font-bold mt-4 mb-1">CLÁUSULA 1ª — DO OBJETO</h3>
-      <p className="mb-3">
-        O presente contrato tem por objeto a prestação de serviços de acesso à
-        plataforma AmbientaR — Gestão Ambiental Inteligente, conforme o plano
-        selecionado pelo CONTRATANTE.
-      </p>
-
-      <h3 className="font-bold mt-4 mb-1">
-        CLÁUSULA 2ª — DAS OBRIGAÇÕES DO CONTRATANTE
-      </h3>
-      <p className="mb-1">O CONTRATANTE se compromete a:</p>
-      <p className="pl-4 mb-0.5">
-        a) Fornecer informações verdadeiras e atualizadas;
-      </p>
-      <p className="pl-4 mb-0.5">
-        b) Manter a confidencialidade de suas credenciais de acesso;
-      </p>
-      <p className="pl-4 mb-3">
-        c) Utilizar a plataforma de acordo com a legislação vigente.
-      </p>
-
-      <h3 className="font-bold mt-4 mb-1">
-        CLÁUSULA 3ª — DAS OBRIGAÇÕES DA CONTRATADA
-      </h3>
-      <p className="mb-1">A CONTRATADA se compromete a:</p>
-      <p className="pl-4 mb-0.5">
-        a) Disponibilizar os serviços contratados conforme o plano escolhido;
-      </p>
-      <p className="pl-4 mb-0.5">
-        b) Manter a segurança e a integridade dos dados do CONTRATANTE;
-      </p>
-      <p className="pl-4 mb-3">
-        c) Prestar suporte técnico conforme o nível do plano contratado.
-      </p>
-
-      <h3 className="font-bold mt-4 mb-1">
-        CLÁUSULA 4ª — DA PRIVACIDADE E PROTEÇÃO DE DADOS
-      </h3>
-      <p className="mb-3">
-        Os dados pessoais do CONTRATANTE serão tratados em conformidade com a
-        Lei Geral de Proteção de Dados (LGPD — Lei nº 13.709/2018).
-      </p>
-
-      {packageId === "basico" && (
-        <>
-          <h3 className="font-bold mt-4 mb-1">
-            CLÁUSULA 5ª — DO CONSENTIMENTO PARA COMUNICAÇÃO COMERCIAL (PLANO
-            BÁSICO)
-          </h3>
-          <p className="mb-1">
-            Ao optar pelo plano Básico, o CONTRATANTE autoriza expressamente a
-            CONTRATADA a acessar seus dados cadastrais (nome, e-mail, telefone e
-            endereço) para fins de:
-          </p>
-          <p className="pl-4 mb-0.5">
-            a) Comunicação sobre serviços de consultoria e assessoria ambiental;
-          </p>
-          <p className="pl-4 mb-0.5">
-            b) Envio de propostas comerciais relacionadas à área ambiental;
-          </p>
-          <p className="pl-4 mb-1">
-            c) Contato para oferecimento de serviços complementares.
-          </p>
-          <p className="mb-3">
-            O CONTRATANTE pode revogar este consentimento a qualquer momento
-            mediante solicitação formal.
-          </p>
-          {(() => {
-            nextClause = 6;
-            return null;
-          })()}
-        </>
-      )}
-
-      <h3 className="font-bold mt-4 mb-1">
-        CLÁUSULA {clauseNum(nextClause)} — DO FORO
-      </h3>
-      <p className="mb-3">
-        Fica eleito o foro da comarca de Belo Horizonte — MG para dirimir
-        quaisquer dúvidas ou controvérsias decorrentes deste contrato.
-      </p>
-
-      <p className="mt-4 text-center italic">
-        Ao aceitar abaixo, o CONTRATANTE declara ter lido e concordado com todos
-        os termos deste contrato.
-      </p>
-    </div>
-  );
-}
 
 const PROFILE_CHOICE_TEXT = {
   intro: "Escolha seu perfil de cadastro para continuar:",
@@ -333,6 +242,10 @@ export default function RegisterPage() {
   const { toast } = useToast();
   const router = useRouter();
 
+  const [paymentMethod, setPaymentMethod] =
+    React.useState<PlatformPaymentMethod>("pix");
+  const [paymentAcknowledged, setPaymentAcknowledged] = React.useState(false);
+
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -345,6 +258,7 @@ export default function RegisterPage() {
       cpfCnpjTitular: "",
       selectedPackage: undefined,
       contractAccepted: undefined as any,
+      marketingContactConsent: false,
     },
     mode: "onChange",
   });
@@ -361,6 +275,7 @@ export default function RegisterPage() {
       cpfCnpjTitular: "",
       selectedPackage: undefined,
       contractAccepted: undefined as any,
+      marketingContactConsent: false,
     });
   }, [form]);
 
@@ -376,6 +291,16 @@ export default function RegisterPage() {
   }, [mode, form]);
 
   const selectedPackage = form.watch("selectedPackage");
+
+  React.useEffect(() => {
+    setPaymentAcknowledged(false);
+    setPaymentMethod("pix");
+  }, [mode, selectedPackage]);
+
+  React.useEffect(() => {
+    form.setValue("marketingContactConsent", false);
+  }, [selectedPackage, form]);
+
   const watchedStep1 = form.watch([
     "name",
     "email",
@@ -456,6 +381,29 @@ export default function RegisterPage() {
       }
     }
 
+    if (isTitularPlanMode) {
+      if (!paymentAcknowledged) {
+        toast({
+          variant: "destructive",
+          title: "Confirmação necessária",
+          description:
+            "Marque a confirmação na etapa de pagamento para concluir o cadastro.",
+        });
+        return;
+      }
+      if (
+        clientPackageRequiresAnnualPaymentStep(values.selectedPackage) &&
+        !paymentMethod
+      ) {
+        toast({
+          variant: "destructive",
+          title: "Forma de pagamento",
+          description: "Selecione PIX, cartão de crédito ou cartão de débito.",
+        });
+        return;
+      }
+    }
+
     setLoading(true);
     try {
       const cred = await createUserWithEmailAndPassword(
@@ -465,6 +413,25 @@ export default function RegisterPage() {
       );
       const uid = cred.user.uid;
       const cpfNormalized = normalizeCpf(values.cpf);
+
+      const subscriptionFields =
+        isTitularPlanMode && values.selectedPackage
+          ? buildPlatformSubscriptionFieldsForNewTitular(
+              values.selectedPackage,
+              clientPackageRequiresAnnualPaymentStep(values.selectedPackage)
+                ? paymentMethod
+                : null,
+            )
+          : {};
+
+      const extraVerified: Record<string, unknown> = {};
+      if (
+        isTitularPlanMode &&
+        isPlatformPaymentAutoApproveEnabled() &&
+        clientPackageRequiresAnnualPaymentStep(values.selectedPackage)
+      ) {
+        extraVerified.platformPaymentVerifiedAt = serverTimestamp();
+      }
 
       await setDoc(doc(firestore, "users", uid), {
         uid: uid,
@@ -488,7 +455,40 @@ export default function RegisterPage() {
         lastLogin: serverTimestamp(),
         isOnline: true,
         cadastroIncompleto: true,
+        ...(isTitularPlanMode
+          ? {
+              allowsCommercialContact:
+                values.selectedPackage === "gratuito" ||
+                values.selectedPackage === "basico"
+                  ? true
+                  : Boolean(values.marketingContactConsent),
+            }
+          : {}),
+        ...subscriptionFields,
+        ...extraVerified,
       });
+
+      if (
+        isTitularPlanMode &&
+        clientPackageRequiresAnnualPaymentStep(values.selectedPackage) &&
+        !isPlatformPaymentAutoApproveEnabled()
+      ) {
+        try {
+          await addDoc(collection(firestore, "platform_payment_requests"), {
+            userId: uid,
+            email: values.email,
+            name: values.name,
+            packageId: values.selectedPackage,
+            method: paymentMethod,
+            amountLabel:
+              PACKAGE_ANNUAL_AMOUNT_LABEL[values.selectedPackage] ?? "",
+            status: "pending_verification",
+            createdAt: serverTimestamp(),
+          });
+        } catch (e) {
+          console.warn("platform_payment_requests não gravado:", e);
+        }
+      }
 
       // Representante: criar pedido de acesso para o titular aprovar (não falha o cadastro se der erro de permissão/rede).
       if (mode === "representative") {
@@ -571,14 +571,21 @@ export default function RegisterPage() {
         }
       }
 
+      const pendingPay =
+        isTitularPlanMode &&
+        clientPackageRequiresAnnualPaymentStep(values.selectedPackage) &&
+        !isPlatformPaymentAutoApproveEnabled();
+
       toast({
         title: "Cadastro realizado com sucesso!",
         description:
           mode === "representative"
             ? "Sua conta de representante foi criada. Aguarde o titular conceder acesso aos dados."
-            : mode === "cliente_autonomo"
-              ? "Bem-vindo ao AmbientaR como Cliente Autônomo. Você será redirecionado."
-              : "Bem-vindo ao AmbientaR. Você será redirecionado.",
+            : pendingPay
+              ? "Sua conta foi criada. O acesso à plataforma será liberado após a confirmação do pagamento anual."
+              : mode === "cliente_autonomo"
+                ? "Bem-vindo ao AmbientaR como Cliente Autônomo. Você será redirecionado."
+                : "Bem-vindo ao AmbientaR. Você será redirecionado.",
       });
 
       router.push("/");
@@ -595,13 +602,15 @@ export default function RegisterPage() {
     }
   }
 
+  const titularStepCount = 4;
+
   const renderStepIndicator = () => (
-    <div className="flex items-center justify-center gap-2 mb-6">
-      {[1, 2, 3].map((s) => (
+    <div className="flex flex-wrap items-center justify-center gap-1 sm:gap-2 mb-6">
+      {Array.from({ length: titularStepCount }, (_, i) => i + 1).map((s) => (
         <React.Fragment key={s}>
           <div
             className={cn(
-              "flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold transition-all",
+              "flex h-8 w-8 items-center justify-center rounded-full text-sm font-semibold transition-all shrink-0",
               step === s
                 ? "bg-primary text-primary-foreground scale-110"
                 : step > s
@@ -611,10 +620,10 @@ export default function RegisterPage() {
           >
             {step > s ? <Check className="h-4 w-4" /> : s}
           </div>
-          {s < 3 && (
+          {s < titularStepCount && (
             <div
               className={cn(
-                "h-0.5 w-8 transition-all",
+                "h-0.5 w-4 sm:w-8 transition-all shrink",
                 step > s ? "bg-primary" : "bg-muted",
               )}
             />
@@ -940,27 +949,44 @@ export default function RegisterPage() {
 
   const renderStep3 = () => (
     <Card className="shadow-lg bg-card/80 backdrop-blur-sm border">
-      <CardHeader>
+        <CardHeader>
         <CardTitle className="text-xl">Contrato e Assinatura</CardTitle>
         <CardDescription>
-          Leia os termos e assine para concluir seu cadastro.
+          Leia os termos e assine para seguir para o pagamento anual da
+          plataforma.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="rounded-lg border bg-white dark:bg-muted/30 max-h-72 overflow-y-auto shadow-inner">
-          <ContractContent packageId={selectedPackage} />
+        <div className="rounded-lg border bg-white dark:bg-muted/30 max-h-[min(28rem,70vh)] overflow-y-auto shadow-inner">
+          <RegisterContractContent packageId={selectedPackage} />
         </div>
 
-        {selectedPackage === "basico" && (
-          <div className="rounded-lg border border-amber-300 bg-amber-50 dark:bg-amber-950/20 p-3">
-            <p className="text-xs text-amber-800 dark:text-amber-300 font-medium">
-              Atenção: No plano Básico, ao aceitar este contrato, você autoriza
-              a Pimenta Consultoria Ambiental a acessar seus dados cadastrais
-              para fins de comunicação comercial sobre serviços de consultoria e
-              assessoria ambiental. Você pode revogar este consentimento a
-              qualquer momento.
-            </p>
-          </div>
+        {packageRequiresMarketingOptIn(selectedPackage) && (
+          <FormField
+            control={form.control}
+            name="marketingContactConsent"
+            render={({ field }) => (
+              <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-lg border border-primary/25 bg-primary/5 p-3">
+                <FormControl>
+                  <Checkbox
+                    checked={field.value === true}
+                    onCheckedChange={(checked) =>
+                      field.onChange(checked === true)
+                    }
+                  />
+                </FormControl>
+                <div className="space-y-1 leading-none">
+                  <FormLabel className="text-sm cursor-pointer font-medium">
+                    Autorizo o uso dos meus dados de contato (e-mail, telefone e
+                    demais informações fornecidas) para receber comunicações
+                    comerciais, ofertas e novidades da CONTRATADA, nos termos da
+                    cláusula de privacidade e marketing deste contrato.
+                  </FormLabel>
+                  <FormMessage />
+                </div>
+              </FormItem>
+            )}
+          />
         )}
 
         <FormField
@@ -1002,26 +1028,275 @@ export default function RegisterPage() {
           >
             <ArrowLeft className="mr-2 h-4 w-4" /> Voltar
           </Button>
-          <Button type="submit" className="flex-1" disabled={loading}>
-            {loading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Cadastrando...
-              </>
-            ) : (
-              <>
-                <Check className="mr-2 h-4 w-4" />
-                Concluir Cadastro
-              </>
-            )}
+          <Button
+            type="button"
+            className="flex-1"
+            onClick={() => setStep(4)}
+            disabled={
+              !form.watch("contractAccepted") ||
+              (packageRequiresMarketingOptIn(selectedPackage) &&
+                !form.watch("marketingContactConsent"))
+            }
+          >
+            Próximo <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
         </div>
       </CardContent>
     </Card>
   );
 
+  const copyPix = async () => {
+    const t = getPublicPixCopyPaste();
+    if (!t) {
+      toast({
+        variant: "destructive",
+        title: "PIX não configurado",
+        description:
+          "Peça à equipe o código PIX ou configure NEXT_PUBLIC_AMBIENTAR_PIX_COPIA_E_COLA.",
+      });
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(t);
+      toast({ title: "Copiado", description: "Código PIX copiado." });
+    } catch {
+      toast({
+        variant: "destructive",
+        title: "Não foi possível copiar",
+        description: "Copie manualmente o código exibido.",
+      });
+    }
+  };
+
+  const renderStep4 = () => {
+    const pkg = selectedPackage;
+    const annual = clientPackageRequiresAnnualPaymentStep(pkg);
+    const amount =
+      (pkg && PACKAGE_ANNUAL_AMOUNT_LABEL[pkg]) ?? "Consulte a equipe";
+    const pixCode = getPublicPixCopyPaste();
+
+    return (
+      <Card className="shadow-lg bg-card/80 backdrop-blur-sm border">
+        <CardHeader>
+          <CardTitle className="text-xl">Pagamento anual</CardTitle>
+          <CardDescription>
+            Acesso à plataforma AmbientaR mediante{" "}
+            <strong>pagamento único anual</strong> por usuário titular. Após a
+            confirmação, o acesso fica liberado por 12 meses; ao vencer, será
+            necessário renovar.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="rounded-lg border bg-muted/40 p-4">
+            <p className="text-sm text-muted-foreground">Valor de referência</p>
+            <p className="text-2xl font-bold text-primary">{amount}</p>
+            {annual && (
+              <p className="text-xs text-muted-foreground mt-1">
+                Plano selecionado:{" "}
+                {PACKAGES.find((p) => p.id === pkg)?.name ?? pkg}
+              </p>
+            )}
+          </div>
+
+          {annual && (
+            <>
+              <div className="space-y-3">
+                <Label className="text-base">Forma de pagamento</Label>
+                <RadioGroup
+                  value={paymentMethod}
+                  onValueChange={(v) =>
+                    setPaymentMethod(v as PlatformPaymentMethod)
+                  }
+                  className="grid gap-3 sm:grid-cols-3"
+                >
+                  <div
+                    className={cn(
+                      "flex gap-3 rounded-lg border-2 p-4 transition-colors",
+                      paymentMethod === "pix"
+                        ? "border-primary bg-primary/5"
+                        : "border-border hover:border-primary/50",
+                    )}
+                  >
+                    <RadioGroupItem value="pix" id="pay-pix" className="mt-0.5" />
+                    <Label
+                      htmlFor="pay-pix"
+                      className="flex flex-1 cursor-pointer flex-col gap-1 font-normal"
+                    >
+                      <span className="flex items-center gap-2 font-semibold text-foreground">
+                        <Smartphone className="h-5 w-5 text-primary shrink-0" />
+                        PIX
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        Confirmação em até 1 dia útil
+                      </span>
+                    </Label>
+                  </div>
+                  <div
+                    className={cn(
+                      "flex gap-3 rounded-lg border-2 p-4 transition-colors",
+                      paymentMethod === "credit_card"
+                        ? "border-primary bg-primary/5"
+                        : "border-border hover:border-primary/50",
+                    )}
+                  >
+                    <RadioGroupItem
+                      value="credit_card"
+                      id="pay-credit"
+                      className="mt-0.5"
+                    />
+                    <Label
+                      htmlFor="pay-credit"
+                      className="flex flex-1 cursor-pointer flex-col gap-1 font-normal"
+                    >
+                      <span className="flex items-center gap-2 font-semibold text-foreground">
+                        <CreditCard className="h-5 w-5 text-primary shrink-0" />
+                        Cartão de crédito
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        Gateway em integração
+                      </span>
+                    </Label>
+                  </div>
+                  <div
+                    className={cn(
+                      "flex gap-3 rounded-lg border-2 p-4 transition-colors",
+                      paymentMethod === "debit_card"
+                        ? "border-primary bg-primary/5"
+                        : "border-border hover:border-primary/50",
+                    )}
+                  >
+                    <RadioGroupItem
+                      value="debit_card"
+                      id="pay-debit"
+                      className="mt-0.5"
+                    />
+                    <Label
+                      htmlFor="pay-debit"
+                      className="flex flex-1 cursor-pointer flex-col gap-1 font-normal"
+                    >
+                      <span className="flex items-center gap-2 font-semibold text-foreground">
+                        <Building2 className="h-5 w-5 text-primary shrink-0" />
+                        Cartão de débito
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        Gateway em integração
+                      </span>
+                    </Label>
+                  </div>
+                </RadioGroup>
+              </div>
+
+              {paymentMethod === "pix" && (
+                <div className="space-y-2 rounded-lg border p-4">
+                  <p className="text-sm font-medium">Pagamento via PIX</p>
+                  <p className="text-xs text-muted-foreground">
+                    Transfira o valor indicado usando a chave ou o código copia e
+                    cola. Envie o comprovante se solicitado pela equipe.
+                  </p>
+                  {pixCode ? (
+                    <>
+                      <div className="max-h-24 overflow-y-auto rounded bg-muted p-2 font-mono text-[11px] break-all">
+                        {pixCode}
+                      </div>
+                      <Button type="button" variant="secondary" onClick={copyPix}>
+                        Copiar código PIX
+                      </Button>
+                    </>
+                  ) : (
+                    <p className="text-sm text-amber-800 dark:text-amber-200">
+                      Configure{" "}
+                      <code className="rounded bg-muted px-1">
+                        NEXT_PUBLIC_AMBIENTAR_PIX_COPIA_E_COLA
+                      </code>{" "}
+                      ou utilize os dados bancários enviados por e-mail.
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {(paymentMethod === "credit_card" ||
+                paymentMethod === "debit_card") && (
+                <div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+                  O processamento de cartão será integrado a um gateway
+                  (ex.: Mercado Pago / Stripe). Por enquanto, conclua o cadastro e
+                  utilize o <strong>PIX</strong> ou aguarde contato da equipe para
+                  pagamento com cartão.
+                </div>
+              )}
+            </>
+          )}
+
+          {pkg === "gratuito" && (
+            <p className="text-sm text-muted-foreground">
+              Plano gratuito: sem cobrança neste momento. Seu acesso será
+              registrado com vigência anual para controle da plataforma.
+            </p>
+          )}
+
+          {pkg === "sob_consulta" && (
+            <p className="text-sm text-muted-foreground">
+              Plano sob consulta: nossa equipe combinará valor e forma de
+              pagamento. Você já poderá acessar a plataforma enquanto o contrato
+              comercial é alinhado.
+            </p>
+          )}
+
+          <div className="flex flex-row items-start space-x-3 space-y-0">
+            <Checkbox
+              id="pay-ack"
+              checked={paymentAcknowledged}
+              onCheckedChange={(c) => setPaymentAcknowledged(c === true)}
+            />
+            <Label htmlFor="pay-ack" className="text-sm leading-snug cursor-pointer">
+              {annual
+                ? isPlatformPaymentAutoApproveEnabled()
+                  ? "Confirmo que realizei o pagamento conforme as instruções acima e desejo concluir meu cadastro."
+                  : "Estou ciente de que o acesso à plataforma será liberado após a confirmação do pagamento pela equipe e desejo concluir meu cadastro."
+                : "Li as informações desta etapa e desejo concluir meu cadastro."}
+            </Label>
+          </div>
+
+          <div className="flex gap-3 flex-wrap">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleCancelRegistration}
+            >
+              <X className="mr-2 h-4 w-4" /> Cancelar
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="flex-1"
+              onClick={() => setStep(3)}
+            >
+              <ArrowLeft className="mr-2 h-4 w-4" /> Voltar
+            </Button>
+            <Button
+              type="submit"
+              className="flex-1"
+              disabled={loading || !paymentAcknowledged}
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Cadastrando...
+                </>
+              ) : (
+                <>
+                  <Check className="mr-2 h-4 w-4" />
+                  Concluir cadastro
+                </>
+              )}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  };
+
   const stepLabels = isTitularPlanMode
-    ? ["Dados Pessoais", "Pacote", "Contrato"]
+    ? ["Dados Pessoais", "Pacote", "Contrato", "Pagamento anual"]
     : ["Dados Pessoais"];
 
   const renderProfileChoice = () => (
@@ -1218,7 +1493,8 @@ export default function RegisterPage() {
             <p className="text-center text-sm font-medium text-muted-foreground mb-4">
               {isTitularPlanMode ? (
                 <>
-                  Etapa {step} de 3 — {stepLabels[step - 1]}
+                  Etapa {step} de {titularStepCount} —{" "}
+                  {stepLabels[step - 1] ?? ""}
                 </>
               ) : (
                 "Etapa única — Dados Pessoais"
@@ -1226,10 +1502,19 @@ export default function RegisterPage() {
             </p>
 
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)}>
+              <form
+                onSubmit={(e) => {
+                  if (isTitularPlanMode && step < titularStepCount) {
+                    e.preventDefault();
+                    return;
+                  }
+                  void form.handleSubmit(onSubmit)(e);
+                }}
+              >
                 {isTitularPlanMode && step === 1 && renderStep1()}
                 {isTitularPlanMode && step === 2 && renderStep2()}
                 {isTitularPlanMode && step === 3 && renderStep3()}
+                {isTitularPlanMode && step === 4 && renderStep4()}
                 {mode === "representative" && renderStep1()}
               </form>
             </Form>

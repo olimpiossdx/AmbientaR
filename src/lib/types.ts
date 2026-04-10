@@ -1212,6 +1212,31 @@ export type UserRole =
 
 export type ClientPackage = 'gratuito' | 'basico' | 'intermediario' | 'avancado' | 'completo' | 'sob_consulta';
 
+/** Pagamento anual único para acesso à plataforma (titulares). */
+export type PlatformPaymentMethod = 'pix' | 'credit_card' | 'debit_card';
+
+export type PlatformPaymentStatus =
+  | 'exempt'
+  | 'pending_verification'
+  | 'pending_contract'
+  | 'paid'
+  | 'expired';
+
+/** Registo de pedido de pagamento no cadastro (confirmação manual ou webhook futuro). */
+export type PlatformPaymentRequest = {
+  id: string;
+  userId: string;
+  email: string;
+  name: string;
+  packageId: ClientPackage;
+  method: PlatformPaymentMethod;
+  /** Valor exibido no cadastro (referência). */
+  amountLabel: string;
+  status: 'pending_verification' | 'confirmed' | 'rejected';
+  createdAt: any;
+  resolvedAt?: any;
+};
+
 export type ClientPackageInfo = {
   id: ClientPackage;
   name: string;
@@ -1260,6 +1285,13 @@ export type AppUser = {
   contractSignature?: string;
   /** true quando o usuário se cadastrou pelo "Cadastre-se" (login) e ainda não completou o cadastro no menu Cadastro. Usado para exibir alerta no sino. */
   cadastroIncompleto?: boolean;
+  /** Acesso anual à plataforma (Clientes Gestão / Autônomo). ISO 8601; ausente com perfis antigos = sem bloqueio. */
+  platformAccessValidUntil?: string | null;
+  platformPaymentStatus?: PlatformPaymentStatus;
+  platformPaymentMethod?: PlatformPaymentMethod;
+  platformPaymentVerifiedAt?: any;
+  /** Contato comercial: gratuito/básico via contrato; demais planos via opt-in no cadastro. */
+  allowsCommercialContact?: boolean;
 };
 
 /** Pedido de acesso: usuário (ex.: Renato) solicita acessar dados do titular (ex.: Célio). O titular aprova ou rejeita. */

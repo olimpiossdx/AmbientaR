@@ -285,10 +285,35 @@ service cloud.firestore {
      * @description Allows users to manage their own profile and notifications. Admins and Supervisors can manage any user.
      * Any authenticated user can list users (for chat functionality).
      */
+    /**
+     * @description Campos de assinatura anual da plataforma — só admin/supervisor ou criação inicial do próprio usuário.
+     */
+    function userSubscriptionFieldKeys() {
+      return [
+        'platformPaymentStatus',
+        'platformAccessValidUntil',
+        'platformPaymentMethod',
+        'platformPaymentVerifiedAt',
+      ];
+    }
+
+    function selfUserUpdateTouchesSubscription() {
+      return request.resource.data.diff(resource.data).affectedKeys()
+        .hasAny(userSubscriptionFieldKeys());
+    }
+
     match /users/{userId} {
       allow get: if isSignedIn();
       allow list: if isSignedIn();
-      allow write: if isAdmin() || isSupervisor() || request.auth.uid == userId;
+      allow create: if isSignedIn() && (
+        request.auth.uid == userId ||
+        isAdmin() ||
+        isSupervisor()
+      );
+      allow update: if isAdmin() || isSupervisor() || (
+        request.auth.uid == userId && !selfUserUpdateTouchesSubscription()
+      );
+      allow delete: if isAdmin() || isSupervisor() || request.auth.uid == userId;
 
       /**
        * @description A user can read their own notifications. Admins can read any notifications.
@@ -727,6 +752,22 @@ service cloud.firestore {
     
     match /dispensaPea/{dispensaId} {
         allow read, write: if isSignedIn();
+    }
+
+    /**
+     * @description Pagamento anual da plataforma (cadastro titular): o próprio usuário cria o pedido;
+     * leitura do próprio ou admin; atualização só admin (confirmação).
+     * @path /databases/{database}/documents/platform_payment_requests/{requestId}
+     */
+    match /platform_payment_requests/{requestId} {
+      allow create: if isSignedIn()
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.keys().hasAll(['userId', 'email', 'name', 'packageId', 'method', 'amountLabel', 'status', 'createdAt']);
+      allow read: if isSignedIn() && (
+        isAdmin() || isSupervisor() ||
+        resource.data.userId == request.auth.uid
+      );
+      allow update, delete: if isAdmin() || isSupervisor();
     }
 
     /**

@@ -48,6 +48,28 @@ Salve. Na próxima vez que o usuário fizer login, o app usará esse role.
 
 ---
 
+## 3. Assinatura anual da plataforma (titulares Cliente Gestão / Autônomo)
+
+Após o cadastro com plano pago, o documento **`users/{uid}`** pode ter:
+
+- `platformPaymentStatus`: `pending_verification` (aguardando confirmação), `paid`, `exempt`, `pending_contract`, `expired`
+- `platformAccessValidUntil`: data ISO (fim do período de 12 meses)
+- `platformPaymentMethod`: `pix` | `credit_card` | `debit_card`
+
+**Para liberar o acesso manualmente** (após conferir PIX/cartão): no Firestore, edite o usuário e defina, por exemplo:
+
+- `platformPaymentStatus`: `paid`
+- `platformAccessValidUntil`: data de validade em ISO (ex.: um ano à frente)
+- Opcional: `platformPaymentVerifiedAt` com timestamp
+
+Pedidos de cadastro ficam em **`platform_payment_requests`** (o titular cria; admin/supervisor podem atualizar).
+
+**Testes sem confirmação manual:** em `.env.local` use `NEXT_PUBLIC_AMBIENTAR_PLATFORM_PAYMENT_AUTO_APPROVE=true` (apenas desenvolvimento).
+
+**PIX no cadastro:** `NEXT_PUBLIC_AMBIENTAR_PIX_COPIA_E_COLA` (código copia e cola). Suporte no ecrã de bloqueio: `NEXT_PUBLIC_AMBIENTAR_SUPPORT_EMAIL`.
+
+---
+
 ## Resumo
 
 | Ação | Comando / local |

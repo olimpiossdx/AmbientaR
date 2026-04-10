@@ -72,6 +72,8 @@ import { CadastroMenuDebugPanel } from "@/lib/cadastro-menu-debug";
 import { isRoleAllowedForPath } from "@/lib/route-access";
 import { isClienteGestao, isClientePortalRole } from "@/lib/role-guards";
 import { getRoleLabelPt } from "@/lib/user-role-labels";
+import { shouldBlockPlatformAccess } from "@/lib/platform-access";
+import { PlatformAccessBlocked } from "@/components/platform-access-blocked";
 
 const LogoIcon = () => (
   <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-emerald-400 text-primary-foreground">
@@ -351,6 +353,10 @@ const AppLayoutClient = ({ children }: { children: React.ReactNode }) => {
         </div>
       </div>
     );
+  }
+
+  if (shouldBlockPlatformAccess(user)) {
+    return <PlatformAccessBlocked user={user} />;
   }
 
   return (
