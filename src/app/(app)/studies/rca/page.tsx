@@ -25,6 +25,7 @@ import { MoreHorizontal, PlusCircle, FileText, CheckCircle, Eye, Pencil, Trash2 
 import { useCollection, useFirebase, useUser, useMemoFirebase, errorEmitter } from '@/firebase';
 import { collection, doc, deleteDoc, updateDoc } from 'firebase/firestore';
 import type { RCA } from '@/lib/types';
+import { isAdminOrSupervisorRole } from '@/lib/role-guards';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   Dialog,
@@ -194,7 +195,7 @@ export default function RcaPage() {
   
   const canDelete = (item: RCA) => {
     if(!user) return false;
-    if (user.role === 'admin') return true;
+    if (isAdminOrSupervisorRole(user.role)) return true;
     if (item.status === 'Rascunho') return true;
     return false;
   }
@@ -310,7 +311,7 @@ export default function RcaPage() {
                            <div className="flex items-center justify-end gap-1">
                                 <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={() => handleView(item)}><Eye className="h-4 w-4" /></Button></TooltipTrigger><TooltipContent><p>Visualizar detalhes</p></TooltipContent></Tooltip>
                                 <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={() => handleOpenGenerateDialog(item)}><FileText className="h-4 w-4" /></Button></TooltipTrigger><TooltipContent><p>Gerar Documento</p></TooltipContent></Tooltip>
-                                {user?.role === 'admin' && (
+                                {isAdminOrSupervisorRole(user?.role) && (
                                     <Tooltip>
                                         <TooltipTrigger asChild>
                                             <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => openDeleteConfirm(item.id)}>

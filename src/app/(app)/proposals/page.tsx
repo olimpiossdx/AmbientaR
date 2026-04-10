@@ -38,6 +38,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { isAdminOrSupervisorRole } from "@/lib/role-guards";
 import {
   useCollection,
   useFirebase,
@@ -759,7 +760,7 @@ export default function ProposalsPage() {
                                   <p>Exportar PDF</p>
                                 </TooltipContent>
                               </Tooltip>
-                              {user?.role === "admin" && (
+                              {isAdminOrSupervisorRole(user?.role) && (
                                 <Tooltip>
                                   <TooltipTrigger asChild>
                                     <Button

@@ -287,6 +287,7 @@ const AppLayoutClient = ({ children }: { children: React.ReactNode }) => {
     diretor_fauna: "Diretor de Fauna",
     advogado: "Advogado",
     client: "Cliente",
+    representative: "Representante",
   };
   const getActorLabel = (actorRole?: string) =>
     actorRole ? roleLabel[actorRole] || actorRole : null;
@@ -400,6 +401,11 @@ const AppLayoutClient = ({ children }: { children: React.ReactNode }) => {
           {user?.role === "admin" && (
             <Badge variant="outline" className="hidden md:inline-flex">
               Acesso total (Administrador)
+            </Badge>
+          )}
+          {user?.role === "supervisor" && (
+            <Badge variant="outline" className="hidden md:inline-flex">
+              Supervisão
             </Badge>
           )}
           <ThemeToggle />

@@ -67,7 +67,16 @@ export default function CalendarPage() {
             const baseQuery = collection(firestore, 'appointments');
             let queriesToRun = [];
 
-            if (user.role === 'admin' || user.role === 'supervisor' || user.role === 'financial') {
+            if (
+                user.role === 'admin' ||
+                user.role === 'supervisor' ||
+                user.role === 'financial' ||
+                user.role === 'sales' ||
+                user.role === 'gestor' ||
+                user.role === 'technical' ||
+                user.role === 'diretor_fauna' ||
+                user.role === 'advogado'
+            ) {
                 queriesToRun.push(getDocs(baseQuery));
             } else {
                 // Fetch non-financial (public) events

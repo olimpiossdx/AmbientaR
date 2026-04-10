@@ -61,7 +61,6 @@ export default function DashboardRouterPage() {
     ),
     client: <ClientDashboard />,
     representative: <ClientDashboard />,
-    advogado: <ClientDashboard />,
     diretor_fauna: <FaunaDashboard />,
     gestor: (
       <div className="flex flex-col h-full">
@@ -81,6 +80,19 @@ export default function DashboardRouterPage() {
         <PageHeader title="Painel de Gestão Ambiental" />
         <main className="flex-1 overflow-auto p-4 md:p-6 space-y-8">
           <AuthorizationReportsHubCard role="technical" />
+          <AgendaWidget />
+          <BirthdayWidget />
+          <div className="mt-8">
+            <EnvironmentalDashboard />
+          </div>
+        </main>
+      </div>
+    ),
+    advogado: (
+      <div className="flex flex-col h-full">
+        <PageHeader title="Painel do Advogado" />
+        <main className="flex-1 overflow-auto p-4 md:p-6 space-y-8">
+          <AuthorizationReportsHubCard role="advogado" />
           <AgendaWidget />
           <BirthdayWidget />
           <div className="mt-8">

@@ -89,6 +89,7 @@ import {
 } from "@/components/ui/tooltip";
 import { backupAndDeleteSingleCondicionante } from "@/lib/deleted-data-backup";
 import { CardSearchInput } from "@/components/card-search-input";
+import { fetchEmpreendedorIdsForRepresentative } from "@/lib/representative-empreendedor-ids";
 
 /** Variantes de CPF/CNPJ (original + só dígitos) para match no Firestore, máx 10. */
 function documentVariants(
@@ -127,11 +128,23 @@ export default function CompliancePage() {
   const { firestore, user } = useFirebase();
   const { toast } = useToast();
 
+  const isClientLike = useMemo(
+    () => user?.role === "client" || user?.role === "representative",
+    [user?.role],
+  );
+
   const [empreendedorIdsForUser, setEmpreendedorIdsForUser] = useState<
     string[] | undefined
   >(undefined);
 
   useEffect(() => {
+    if (user?.role === "representative" && firestore) {
+      setEmpreendedorIdsForUser(undefined);
+      fetchEmpreendedorIdsForRepresentative(firestore, user)
+        .then(setEmpreendedorIdsForUser)
+        .catch(() => setEmpreendedorIdsForUser(["invalid-placeholder"]));
+      return;
+    }
     if (user?.role === "client" && firestore) {
       setEmpreendedorIdsForUser(undefined);
       const isSelfRegistered = !!(user as any).package;
@@ -215,7 +228,7 @@ export default function CompliancePage() {
 
   const projectsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
-    if (user?.role === "client") {
+    if (isClientLike) {
       if (empreendedorIdsForUser === undefined) return null;
       if (empreendedorIdsForUser.length === 0) return null;
       return query(
@@ -224,13 +237,13 @@ export default function CompliancePage() {
       );
     }
     return collection(firestore, "projects");
-  }, [firestore, user?.role, empreendedorIdsForUser]);
+  }, [firestore, isClientLike, empreendedorIdsForUser]);
   const { data: projects, isLoading: isLoadingProjects } =
     useCollection<Project>(projectsQuery);
 
   const licensesQuery = useMemoFirebase(() => {
     if (!firestore) return null;
-    if (user?.role === "client") {
+    if (isClientLike) {
       if (empreendedorIdsForUser === undefined) return null;
       if (empreendedorIdsForUser.length === 0) return null;
       return query(
@@ -239,7 +252,7 @@ export default function CompliancePage() {
       );
     }
     return collection(firestore, "licenses");
-  }, [firestore, user?.role, empreendedorIdsForUser]);
+  }, [firestore, isClientLike, empreendedorIdsForUser]);
   const { data: licenses, isLoading: isLoadingLicenses } =
     useCollection<License>(licensesQuery);
 
@@ -254,7 +267,7 @@ export default function CompliancePage() {
 
   const [licenseIdsByProject, setLicenseIdsByProject] = useState<string[]>([]);
   useEffect(() => {
-    if (user?.role !== "client" || !firestore || projectIds.length === 0) {
+    if (!isClientLike || !firestore || projectIds.length === 0) {
       setLicenseIdsByProject([]);
       return;
     }
@@ -277,7 +290,7 @@ export default function CompliancePage() {
         setLicenseIdsByProject(Array.from(ids));
       })
       .catch(() => setLicenseIdsByProject([]));
-  }, [user?.role, firestore, projectIds]);
+  }, [isClientLike, firestore, projectIds]);
 
   const CONDITIONANTES_CHUNK_SIZE = 10;
   const projectIdChunks = useMemo(() => {
@@ -319,7 +332,7 @@ export default function CompliancePage() {
 
   const condicionantesQuerySingle = useMemoFirebase(() => {
     if (!firestore) return null;
-    if (user?.role === "client") {
+    if (isClientLike) {
       if (referenceIdsForClient.length === 0) {
         if (empreendedorIdsForUser && empreendedorIdsForUser.length > 0)
           return null;
@@ -337,7 +350,7 @@ export default function CompliancePage() {
       return null;
     }
     return collection(firestore, "condicionantes");
-  }, [firestore, user?.role, referenceIdsForClient, empreendedorIdsForUser]);
+  }, [firestore, isClientLike, referenceIdsForClient, empreendedorIdsForUser]);
 
   const {
     data: condicionantesSingle,
@@ -348,7 +361,7 @@ export default function CompliancePage() {
   const condicionantesQueryChunk0 = useMemoFirebase(() => {
     if (
       !firestore ||
-      user?.role !== "client" ||
+      !isClientLike ||
       referenceIdChunks.length < 1 ||
       referenceIdChunks[0].length === 0
     )
@@ -357,11 +370,11 @@ export default function CompliancePage() {
       collection(firestore, "condicionantes"),
       where("referenceId", "in", referenceIdChunks[0]),
     );
-  }, [firestore, user?.role, referenceIdChunks]);
+  }, [firestore, isClientLike, referenceIdChunks]);
   const condicionantesQueryChunk1 = useMemoFirebase(() => {
     if (
       !firestore ||
-      user?.role !== "client" ||
+      !isClientLike ||
       referenceIdChunks.length < 2 ||
       referenceIdChunks[1].length === 0
     )
@@ -370,11 +383,11 @@ export default function CompliancePage() {
       collection(firestore, "condicionantes"),
       where("referenceId", "in", referenceIdChunks[1]),
     );
-  }, [firestore, user?.role, referenceIdChunks]);
+  }, [firestore, isClientLike, referenceIdChunks]);
   const condicionantesQueryChunk2 = useMemoFirebase(() => {
     if (
       !firestore ||
-      user?.role !== "client" ||
+      !isClientLike ||
       referenceIdChunks.length < 3 ||
       referenceIdChunks[2].length === 0
     )
@@ -383,11 +396,11 @@ export default function CompliancePage() {
       collection(firestore, "condicionantes"),
       where("referenceId", "in", referenceIdChunks[2]),
     );
-  }, [firestore, user?.role, referenceIdChunks]);
+  }, [firestore, isClientLike, referenceIdChunks]);
   const condicionantesQueryChunk3 = useMemoFirebase(() => {
     if (
       !firestore ||
-      user?.role !== "client" ||
+      !isClientLike ||
       referenceIdChunks.length < 4 ||
       referenceIdChunks[3].length === 0
     )
@@ -396,11 +409,11 @@ export default function CompliancePage() {
       collection(firestore, "condicionantes"),
       where("referenceId", "in", referenceIdChunks[3]),
     );
-  }, [firestore, user?.role, referenceIdChunks]);
+  }, [firestore, isClientLike, referenceIdChunks]);
   const condicionantesQueryChunk4 = useMemoFirebase(() => {
     if (
       !firestore ||
-      user?.role !== "client" ||
+      !isClientLike ||
       referenceIdChunks.length < 5 ||
       referenceIdChunks[4].length === 0
     )
@@ -409,7 +422,7 @@ export default function CompliancePage() {
       collection(firestore, "condicionantes"),
       where("referenceId", "in", referenceIdChunks[4]),
     );
-  }, [firestore, user?.role, referenceIdChunks]);
+  }, [firestore, isClientLike, referenceIdChunks]);
 
   const { data: condicionantesChunk0, isLoading: isLoadingChunk0 } =
     useCollection<Condicionante>(condicionantesQueryChunk0);
@@ -423,7 +436,7 @@ export default function CompliancePage() {
     useCollection<Condicionante>(condicionantesQueryChunk4);
 
   const condicionantesMerged = useMemo(() => {
-    if (user?.role === "client" && referenceIdChunks.length > 1) {
+    if (isClientLike && referenceIdChunks.length > 1) {
       const lists = [
         condicionantesChunk0,
         condicionantesChunk1,
@@ -446,7 +459,7 @@ export default function CompliancePage() {
     }
     return null;
   }, [
-    user?.role,
+    isClientLike,
     referenceIdChunks.length,
     condicionantesChunk0,
     condicionantesChunk1,
@@ -457,7 +470,7 @@ export default function CompliancePage() {
 
   const condicionantes = condicionantesMerged ?? condicionantesSingle ?? null;
   const isLoadingCondicionantes =
-    user?.role === "client" && referenceIdChunks.length > 1
+    isClientLike && referenceIdChunks.length > 1
       ? isLoadingChunk0 ||
         isLoadingChunk1 ||
         isLoadingChunk2 ||
@@ -467,7 +480,7 @@ export default function CompliancePage() {
 
   const outorgasQuery = useMemoFirebase(() => {
     if (!firestore) return null;
-    if (user?.role === "client") {
+    if (isClientLike) {
       if (!empreendedorIdsForUser || empreendedorIdsForUser.length === 0)
         return null;
       return query(
@@ -476,13 +489,13 @@ export default function CompliancePage() {
       );
     }
     return collection(firestore, "outorgas");
-  }, [firestore, user?.role, empreendedorIdsForUser]);
+  }, [firestore, isClientLike, empreendedorIdsForUser]);
   const { data: outorgas, isLoading: isLoadingOutorgas } =
     useCollection<WaterPermit>(outorgasQuery);
 
   const intervencoesQuery = useMemoFirebase(() => {
     if (!firestore) return null;
-    if (user?.role === "client") {
+    if (isClientLike) {
       if (!empreendedorIdsForUser || empreendedorIdsForUser.length === 0)
         return null;
       return query(
@@ -491,7 +504,7 @@ export default function CompliancePage() {
       );
     }
     return collection(firestore, "intervencoes");
-  }, [firestore, user?.role, empreendedorIdsForUser]);
+  }, [firestore, isClientLike, empreendedorIdsForUser]);
   const { data: intervencoes, isLoading: isLoadingIntervencoes } =
     useCollection<EnvironmentalIntervention>(intervencoesQuery);
 
@@ -518,7 +531,7 @@ export default function CompliancePage() {
     isLoadingLicenses ||
     isLoadingOutorgas ||
     isLoadingIntervencoes ||
-    (user?.role === "client" && empreendedorIdsForUser === undefined) ||
+    (isClientLike && empreendedorIdsForUser === undefined) ||
     (!user && !!firestore);
 
   const filteredCondicionantes = useMemo(() => {
@@ -1002,7 +1015,7 @@ export default function CompliancePage() {
           )}
         </PageHeader>
         <main className="flex-1 overflow-auto p-4 md:p-6">
-          {user?.role === "client" ? renderClientView() : renderManagerView()}
+          {isClientLike ? renderClientView() : renderManagerView()}
         </main>
       </div>
 

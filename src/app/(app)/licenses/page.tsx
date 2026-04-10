@@ -80,6 +80,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { backupAndDeleteParentWithCondicionantes } from "@/lib/deleted-data-backup";
 import { CardSearchInput } from "@/components/card-search-input";
+import { fetchEmpreendedorIdsForRepresentative } from "@/lib/representative-empreendedor-ids";
 
 const canPerformWriteActions = (user: AppUser | null): boolean => {
   if (!user) return false;
@@ -153,6 +154,11 @@ export default function LicensesPage() {
           );
         })
         .catch(() => setEmpreendedorIdsForUser(["invalid-placeholder"]));
+    } else if (user?.role === "representative" && firestore) {
+      setEmpreendedorIdsForUser(undefined);
+      fetchEmpreendedorIdsForRepresentative(firestore, user)
+        .then(setEmpreendedorIdsForUser)
+        .catch(() => setEmpreendedorIdsForUser(["invalid-placeholder"]));
     } else if (user) {
       setEmpreendedorIdsForUser([]);
     }
@@ -162,7 +168,7 @@ export default function LicensesPage() {
     if (!firestore || !user || empreendedorIdsForUser === undefined)
       return null;
 
-    if (user.role === "client") {
+    if (user.role === "client" || user.role === "representative") {
       if (empreendedorIdsForUser.length > 0) {
         return query(
           collection(firestore, "licenses"),
@@ -200,7 +206,8 @@ export default function LicensesPage() {
     isLoadingLicenses ||
     isLoadingEmpreendedores ||
     isLoadingProjects ||
-    (user?.role === "client" && empreendedorIdsForUser === undefined);
+    ((user?.role === "client" || user?.role === "representative") &&
+      empreendedorIdsForUser === undefined);
 
   const empreendedoresMap = useMemo(
     () => new Map(allEmpreendedores?.map((e) => [e.id, e.name])),

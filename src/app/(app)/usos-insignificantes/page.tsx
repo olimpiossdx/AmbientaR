@@ -81,6 +81,7 @@ import { useToast } from "@/hooks/use-toast";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { Label } from "@/components/ui/label";
 import { CardSearchInput } from "@/components/card-search-input";
+import { fetchEmpreendedorIdsForRepresentative } from "@/lib/representative-empreendedor-ids";
 
 const tiposDeUso: { type: InsignificantWaterUseType; label: string }[] = [
   { type: "Poço Tubular", label: "Poço Tubular" },
@@ -162,6 +163,11 @@ export default function UsosInsignificantesPage() {
       } else {
         setEmpreendedorIdsForUser(["invalid-placeholder"]);
       }
+    } else if (user?.role === "representative" && firestore) {
+      setEmpreendedorIdsForUser(undefined);
+      fetchEmpreendedorIdsForRepresentative(firestore, user)
+        .then(setEmpreendedorIdsForUser)
+        .catch(() => setEmpreendedorIdsForUser(["invalid-placeholder"]));
     } else if (user) {
       setEmpreendedorIdsForUser([]);
     }
@@ -171,7 +177,7 @@ export default function UsosInsignificantesPage() {
     if (!firestore || !user || empreendedorIdsForUser === undefined)
       return null;
 
-    if (user.role === "client") {
+    if (user.role === "client" || user.role === "representative") {
       if (empreendedorIdsForUser.length > 0) {
         return query(
           collection(firestore, "usosInsignificantes"),
@@ -243,7 +249,8 @@ export default function UsosInsignificantesPage() {
     isLoadingUsos ||
     isLoadingEmpreendedores ||
     isLoadingProjects ||
-    (user?.role === "client" && empreendedorIdsForUser === undefined);
+    ((user?.role === "client" || user?.role === "representative") &&
+      empreendedorIdsForUser === undefined);
 
   const handleAddNew = (type: InsignificantWaterUseType) => {
     setEditingItem(null);

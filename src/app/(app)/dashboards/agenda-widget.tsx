@@ -52,7 +52,16 @@ export default function AgendaWidget() {
         const baseQuery = collection(firestore, 'appointments');
         const queriesToRun: Promise<FirebaseFirestore.QuerySnapshot>[] = [];
 
-        if (user.role === 'admin' || user.role === 'supervisor' || user.role === 'financial') {
+        if (
+          user.role === 'admin' ||
+          user.role === 'supervisor' ||
+          user.role === 'financial' ||
+          user.role === 'sales' ||
+          user.role === 'gestor' ||
+          user.role === 'technical' ||
+          user.role === 'diretor_fauna' ||
+          user.role === 'advogado'
+        ) {
           queriesToRun.push(getDocs(baseQuery));
         } else {
           const publicQuery = query(baseQuery, where('ownerRole', '!=', 'financial'));

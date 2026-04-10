@@ -38,6 +38,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { isAdminOrSupervisorRole } from "@/lib/role-guards";
 import {
   useCollection,
   useFirebase,
@@ -1073,7 +1074,7 @@ export default function CommercialProposalsPage() {
                                         <Link2 className="h-4 w-4" />
                                       </Button>
                                     )}
-                                    {user?.role === "admin" && (
+                                    {isAdminOrSupervisorRole(user?.role) && (
                                       <>
                                         <Button
                                           variant="ghost"
@@ -1238,7 +1239,7 @@ export default function CommercialProposalsPage() {
                                           </TooltipContent>
                                         </Tooltip>
                                       )}
-                                      {user?.role === "admin" && (
+                                      {isAdminOrSupervisorRole(user?.role) && (
                                         <>
                                           <Tooltip>
                                             <TooltipTrigger asChild>
@@ -1392,7 +1393,7 @@ export default function CommercialProposalsPage() {
                                     <Link2 className="h-4 w-4" />
                                   </Button>
                                 )}
-                                {user?.role === "admin" && (
+                                {isAdminOrSupervisorRole(user?.role) && (
                                   <Button
                                     variant="ghost"
                                     size="icon"
@@ -1513,7 +1514,7 @@ export default function CommercialProposalsPage() {
                                       </TooltipContent>
                                     </Tooltip>
                                   )}
-                                  {user?.role === "admin" && (
+                                  {isAdminOrSupervisorRole(user?.role) && (
                                     <Tooltip>
                                       <TooltipTrigger asChild>
                                         <Button

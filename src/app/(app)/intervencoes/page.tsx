@@ -81,6 +81,7 @@ import {
 } from "@/components/ui/tooltip";
 import { backupAndDeleteParentWithCondicionantes } from "@/lib/deleted-data-backup";
 import { CardSearchInput } from "@/components/card-search-input";
+import { fetchEmpreendedorIdsForRepresentative } from "@/lib/representative-empreendedor-ids";
 
 const canPerformWriteActions = (user: AppUser | null): boolean => {
   if (!user) return false;
@@ -132,8 +133,12 @@ export default function IntervencoesPage() {
       } else {
         setEmpreendedorIdsForUser(["invalid-placeholder"]);
       }
+    } else if (user?.role === "representative" && firestore) {
+      setEmpreendedorIdsForUser(undefined);
+      fetchEmpreendedorIdsForRepresentative(firestore, user)
+        .then(setEmpreendedorIdsForUser)
+        .catch(() => setEmpreendedorIdsForUser(["invalid-placeholder"]));
     } else if (user) {
-      // For non-client users, we don't need to filter by empreendedor
       setEmpreendedorIdsForUser([]);
     }
   }, [user, firestore]);
@@ -141,14 +146,13 @@ export default function IntervencoesPage() {
   const intervencoesQuery = useMemoFirebase(() => {
     if (!firestore || !user || empreendedorIdsForUser === undefined)
       return null;
-    if (user.role === "client") {
+    if (user.role === "client" || user.role === "representative") {
       if (empreendedorIdsForUser.length > 0) {
         return query(
           collection(firestore, "intervencoes"),
           where("empreendedorId", "in", empreendedorIdsForUser),
         );
       }
-      // Return a query that will find no documents if no empreendedores are linked.
       return query(
         collection(firestore, "intervencoes"),
         where("empreendedorId", "in", ["invalid-placeholder"]),
@@ -200,7 +204,8 @@ export default function IntervencoesPage() {
   const isLoading =
     isLoadingIntervencoes ||
     isLoadingEmpreendedores ||
-    (user?.role === "client" && empreendedorIdsForUser === undefined);
+    ((user?.role === "client" || user?.role === "representative") &&
+      empreendedorIdsForUser === undefined);
 
   const handleAddNew = () => {
     setEditingItem(null);

@@ -113,7 +113,7 @@ service cloud.firestore {
       let role = getRole();
       return isAdmin() || isManager() ||
         role == 'technical' || role == 'diretor_fauna' ||
-        role == 'sales' || role == 'financial';
+        role == 'sales' || role == 'financial' || role == 'advogado';
     }
 
     /**
@@ -494,6 +494,26 @@ service cloud.firestore {
     match /commercialProposals/{proposalId} {
       allow read: if isSignedIn();
       allow write: if isAdmin() || isSales() || isSupervisor() || isFinancial();
+      allow update: if (isAdmin() || isFinancial()) || (
+        (isSales() || isSupervisor()) &&
+        !(
+          'status' in request.resource.data &&
+          (
+            request.resource.data.status == 'Accepted' ||
+            request.resource.data.status == 'Rejected'
+          ) &&
+          resource.data.status != request.resource.data.status
+        )
+      );
+    }
+
+    /**
+     * @description Orçamentos (coleção `proposals`). Evita depender só do catch-all admin.
+     * @path /databases/{database}/documents/proposals/{proposalId}
+     */
+    match /proposals/{proposalId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin() || isSales() || isSupervisor() || isFinancial();
     }
 
     /**
@@ -503,6 +523,14 @@ service cloud.firestore {
     match /contracts/{contractId} {
       allow read: if isSignedIn();
       allow write: if isAdmin() || isSales() || isSupervisor() || isFinancial();
+      allow update: if (isAdmin() || isFinancial()) || (
+        (isSales() || isSupervisor()) &&
+        !(
+          'status' in request.resource.data &&
+          request.resource.data.status == 'Aprovado' &&
+          resource.data.status != 'Aprovado'
+        )
+      );
     }
 
     /**

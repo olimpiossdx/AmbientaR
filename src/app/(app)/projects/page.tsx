@@ -232,11 +232,7 @@ function ProjectsPageContent() {
   const projectsQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
 
-    if (
-      user.role === "client" ||
-      user.role === "representative" ||
-      user.role === "technical"
-    ) {
+    if (user.role === "client" || user.role === "representative") {
       if (empreendedorIdsForUser === undefined) {
         return null;
       }

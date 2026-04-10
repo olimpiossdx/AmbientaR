@@ -37,6 +37,7 @@ import { MoreHorizontal, PlusCircle, Pencil, Trash2, Eye, CheckCircle } from 'lu
 import { useCollection, useFirebase, useMemoFirebase, errorEmitter } from '@/firebase';
 import { collection, doc, deleteDoc, updateDoc } from 'firebase/firestore';
 import type { EiaRima, AppUser, Empreendedor } from '@/lib/types';
+import { isAdminOrSupervisorRole } from '@/lib/role-guards';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { FirestorePermissionError } from '@/firebase/errors';
@@ -138,7 +139,7 @@ export default function EiaRimaPage() {
   
    const canDelete = (item: EiaRima) => {
     if(!user) return false;
-    if (user.role === 'admin') return true;
+    if (isAdminOrSupervisorRole(user.role)) return true;
     if (item.status === 'Rascunho') return true;
     return false;
   }
@@ -249,7 +250,7 @@ export default function EiaRimaPage() {
                         <TableCell className="text-right">
                            <div className="flex items-center justify-end gap-1">
                                 <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={() => handleView(item)}><Eye className="h-4 w-4" /></Button></TooltipTrigger><TooltipContent><p>Visualizar detalhes</p></TooltipContent></Tooltip>
-                                {user?.role === 'admin' && (
+                                {isAdminOrSupervisorRole(user?.role) && (
                                     <Tooltip>
                                         <TooltipTrigger asChild>
                                             <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => openDeleteConfirm(item.id)}>

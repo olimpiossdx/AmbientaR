@@ -80,6 +80,7 @@ import {
 } from "@/components/ui/tooltip";
 import { backupAndDeleteParentWithCondicionantes } from "@/lib/deleted-data-backup";
 import { CardSearchInput } from "@/components/card-search-input";
+import { fetchEmpreendedorIdsForRepresentative } from "@/lib/representative-empreendedor-ids";
 
 const canPerformWriteActions = (user: AppUser | null): boolean => {
   if (!user) return false;
@@ -148,8 +149,12 @@ export default function OutorgasPage() {
       } else {
         setEmpreendedorIdsForUser(["invalid-placeholder"]);
       }
+    } else if (user?.role === "representative" && firestore) {
+      setEmpreendedorIdsForUser(undefined);
+      fetchEmpreendedorIdsForRepresentative(firestore, user)
+        .then(setEmpreendedorIdsForUser)
+        .catch(() => setEmpreendedorIdsForUser(["invalid-placeholder"]));
     } else if (user) {
-      // For non-client users, we don't need to filter by empreendedor
       setEmpreendedorIdsForUser([]);
     }
   }, [user, firestore]);
@@ -158,14 +163,14 @@ export default function OutorgasPage() {
     if (!firestore || !user || empreendedorIdsForUser === undefined)
       return null;
 
-    if (user.role === "client") {
+    if (user.role === "client" || user.role === "representative") {
       if (empreendedorIdsForUser.length > 0) {
         return query(
           collection(firestore, "outorgas"),
           where("empreendedorId", "in", empreendedorIdsForUser),
         );
       }
-      return null; // Don't query if there are no empreendedorIds
+      return null;
     }
 
     return collection(firestore, "outorgas");
@@ -229,7 +234,8 @@ export default function OutorgasPage() {
     isLoadingOutorgas ||
     isLoadingEmpreendedores ||
     isLoadingProjects ||
-    (user?.role === "client" && empreendedorIdsForUser === undefined);
+    ((user?.role === "client" || user?.role === "representative") &&
+      empreendedorIdsForUser === undefined);
 
   // #region agent log — Etapa 6: Gestão Ambiental → Outorgas
   useEffect(() => {

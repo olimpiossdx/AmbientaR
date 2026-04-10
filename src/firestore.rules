@@ -39,6 +39,13 @@ service cloud.firestore {
     function isSales() {
         return isSignedIn() && getRole() == 'sales';
     }
+
+    function canReadTelemetryRole() {
+      let role = getRole();
+      return isAdmin() || isManager() ||
+        role == 'technical' || role == 'diretor_fauna' ||
+        role == 'sales' || role == 'financial' || role == 'advogado';
+    }
     
     function getUserProfile(userId) {
       return get(/databases/$(database)/documents/users/$(userId)).data;
@@ -149,8 +156,7 @@ service cloud.firestore {
     }
 
     match /licenses/{licenseId} {
-      allow get: if isSignedIn();
-      allow list: if isManager() || isAdmin();
+      allow read: if isSignedIn();
       allow write: if isManager() || isAdmin();
     }
 
@@ -166,6 +172,19 @@ service cloud.firestore {
     
     match /manualMonitoringLogs/{logId} {
       allow read, write: if isSignedIn();
+    }
+
+    match /telemetryReadings/{readingId} {
+      allow read: if isSignedIn() && (
+        canReadTelemetryRole() ||
+        ((getRole() == 'client' || getRole() == 'representative') &&
+          (
+            ('outorgaId' in resource.data && canViewOutorga(get(/databases/$(database)/documents/outorgas/$(resource.data.outorgaId)).data)) ||
+            ('usoInsignificanteId' in resource.data && canViewOutorga(get(/databases/$(database)/documents/usosInsignificantes/$(resource.data.usoInsignificanteId)).data))
+          ))
+      );
+      allow create: if isSignedIn() && (isAdmin() || isManager());
+      allow update, delete: if isAdmin() || isManager();
     }
 
     match /intervencoes/{intervencaoId} {
@@ -223,6 +242,11 @@ service cloud.firestore {
              resource.data.status != request.resource.data.status
           )
       );
+    }
+
+    match /proposals/{proposalId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin() || isSales() || isSupervisor() || isFinancial();
     }
 
     match /contracts/{contractId} {

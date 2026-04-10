@@ -57,5 +57,6 @@ firestore-debug.log
 .modified
 
 # Node.js portátil (usado para rodar sem instalação global)
+.tools/
 node-v*-win-x64/
 node-v*-win-x64.zip

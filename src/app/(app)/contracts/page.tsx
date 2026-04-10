@@ -66,6 +66,7 @@ import type {
   AppUser,
   CommercialProposal,
 } from "@/lib/types";
+import { isAdminOrSupervisorRole } from "@/lib/role-guards";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   AlertDialog,
@@ -632,7 +633,7 @@ export default function ContractsPage() {
                               >
                                 <FileText className="h-4 w-4" />
                               </Button>
-                              {user?.role === "admin" && (
+                              {isAdminOrSupervisorRole(user?.role) && (
                                 <Button
                                   variant="ghost"
                                   size="icon"
@@ -757,7 +758,7 @@ export default function ContractsPage() {
                                     <p>Gerar PDF</p>
                                   </TooltipContent>
                                 </Tooltip>
-                                {user?.role === "admin" && (
+                                {isAdminOrSupervisorRole(user?.role) && (
                                   <Tooltip>
                                     <TooltipTrigger asChild>
                                       <Button
