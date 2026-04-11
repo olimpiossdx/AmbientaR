@@ -1,8 +1,7 @@
-
-// Arquivo apenas para tipagem do Next 14 no TypeScript.
-// A configuração real está em `next.config.mjs`.
-import type { NextConfig } from 'next';
-
-const nextConfig: NextConfig = {};
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  output: 'standalone', // ESTA LINHA É A QUE FALTA
+  // ... outras configurações que você já tenha
+};
 
 export default nextConfig;
