@@ -21,8 +21,7 @@ jobs:
         uses: google-github-actions/setup-gcloud@v1
 
       - name: Configure Docker for GCR
-        run: |
-          gcloud auth configure-docker
+        run: gcloud auth configure-docker
 
       - name: Build Docker image
         run: |
@@ -41,6 +40,6 @@ jobs:
             --region southamerica-east1 \
             --platform managed \
             --allow-unauthenticated \
-            --port 9002 \
-            --memory 512Mi \
+            --port 3000 \
+            --memory 1Gi \
             --cpu 1
