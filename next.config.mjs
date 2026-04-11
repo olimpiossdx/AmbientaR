@@ -4,6 +4,7 @@
  */
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  output: 'standalone'
   experimental: {
     /** Evita empacotar pdf.js no bundle do servidor (DOMMatrix/canvas em build). */
     serverComponentsExternalPackages: [
