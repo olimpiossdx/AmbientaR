@@ -1,9 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { preencherRelatorio } from '@/ai/flows/preencher-relatorio-flow';
+import { isAiRoutesEnabled } from '@/lib/deploy-flags';
 
 export const maxDuration = 60;
 
 export async function POST(request: NextRequest) {
+  if (!isAiRoutesEnabled()) {
+    return NextResponse.json(
+      {
+        success: false,
+        error:
+          "Funcionalidade de IA desativada temporariamente para estabilização do deploy.",
+      },
+      { status: 503 },
+    );
+  }
+
   try {
     const body = await request.json();
     const {

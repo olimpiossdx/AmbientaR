@@ -1,9 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { analyseArea } from '@/ai/flows/analise-ambiental-flow';
+import { isAiRoutesEnabled } from '@/lib/deploy-flags';
 
 export const maxDuration = 90;
 
 export async function POST(request: NextRequest) {
+  if (!isAiRoutesEnabled()) {
+    return NextResponse.json(
+      {
+        success: false,
+        error:
+          "Funcionalidade de IA desativada temporariamente para estabilização do deploy.",
+      },
+      { status: 503 },
+    );
+  }
+
   try {
     const body = await request.json();
     const { dataType, data } = body;

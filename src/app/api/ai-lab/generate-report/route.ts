@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generateAbntReport } from "@/ai/flows/generate-abnt-report";
 import { formatAbntWebReference } from "@/lib/abnt";
+import { isAiRoutesEnabled } from "@/lib/deploy-flags";
 
 export const maxDuration = 90;
 const MAX_INTERNAL_SOURCES = 8;
@@ -64,6 +65,17 @@ async function fetchExternalSource(
 }
 
 export async function POST(request: NextRequest) {
+  if (!isAiRoutesEnabled()) {
+    return NextResponse.json(
+      {
+        success: false,
+        error:
+          "Geração de relatório por IA está desativada temporariamente para estabilização do deploy.",
+      },
+      { status: 503 },
+    );
+  }
+
   try {
     const body = (await request.json()) as Body;
     const reportTitle = (body.reportTitle || "").trim();

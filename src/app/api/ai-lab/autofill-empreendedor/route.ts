@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { suggestEmpreendedorAutofill } from "@/ai/flows/suggest-empreendedor-autofill";
+import { isAiRoutesEnabled } from "@/lib/deploy-flags";
 
 type Body = {
   cpf?: string;
@@ -8,6 +9,17 @@ type Body = {
 };
 
 export async function POST(request: NextRequest) {
+  if (!isAiRoutesEnabled()) {
+    return NextResponse.json(
+      {
+        success: false,
+        error:
+          "Autofill por IA está desativado temporariamente para estabilização do deploy.",
+      },
+      { status: 503 },
+    );
+  }
+
   try {
     const body = (await request.json()) as Body;
     const cpf = (body.cpf || "").trim();

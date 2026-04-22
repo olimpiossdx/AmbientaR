@@ -18,10 +18,18 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { isLaudoWebhookEnabled } from '@/lib/deploy-flags';
 
 const WEBHOOK_URL = process.env.N8N_LAUDO_PRONTO_WEBHOOK_URL;
 
 export async function POST(request: NextRequest) {
+  if (!isLaudoWebhookEnabled()) {
+    return NextResponse.json(
+      { error: 'Webhook de laudo desativado temporariamente para estabilização do deploy.' },
+      { status: 503 }
+    );
+  }
+
   if (!WEBHOOK_URL || WEBHOOK_URL.trim() === '') {
     return NextResponse.json(
       { error: 'Webhook não configurado. Defina N8N_LAUDO_PRONTO_WEBHOOK_URL.' },

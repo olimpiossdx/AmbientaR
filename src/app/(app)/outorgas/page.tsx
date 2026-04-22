@@ -82,6 +82,7 @@ import { backupAndDeleteParentWithCondicionantes } from "@/lib/deleted-data-back
 import { CardSearchInput } from "@/components/card-search-input";
 import { fetchEmpreendedorIdsForRepresentative } from "@/lib/representative-empreendedor-ids";
 import { isClientePortalRole } from "@/lib/role-guards";
+import { isDebugAgentIngestEnabled } from "@/lib/deploy-flags";
 
 const canPerformWriteActions = (user: AppUser | null): boolean => {
   if (!user) return false;
@@ -125,7 +126,7 @@ export default function OutorgasPage() {
   const router = useRouter();
 
   useEffect(() => {
-    if (isClientePortalRole(user?.role) && firestore) {
+    if (isClientePortalRole(user?.role) && firestore && user) {
       setEmpreendedorIdsForUser(undefined);
       const userDocuments = [
         user.cpf || user.userCpf,
@@ -240,7 +241,7 @@ export default function OutorgasPage() {
 
   // #region agent log — Etapa 6: Gestão Ambiental → Outorgas
   useEffect(() => {
-    if (!user || isLoading) return;
+    if (!user || isLoading || !isDebugAgentIngestEnabled()) return;
     fetch("http://127.0.0.1:7696/ingest/fb1ebcbd-0311-40d2-a3c0-dd5658623339", {
       method: "POST",
       headers: {
