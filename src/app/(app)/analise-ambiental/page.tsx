@@ -163,11 +163,11 @@ export default function AnaliseAmbientalPage() {
   };
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex h-full min-w-0 flex-col overflow-hidden">
       <PageHeader title="Análise Ambiental Geoespacial com IA" />
-      <main className="flex-1 overflow-auto p-4 md:p-6 flex flex-col gap-6 max-w-5xl mx-auto w-full">
+      <main className="mx-auto flex w-full max-w-5xl min-w-0 flex-1 flex-col gap-6 overflow-auto p-4 md:p-6">
         {/* 1. Geovizualizador - card maior */}
-        <Card className="flex flex-col">
+        <Card className="flex min-w-0 flex-col overflow-hidden">
           <CardHeader>
             <CardTitle>Geovizualizador IDE-SisemaNet</CardTitle>
             <CardDescription>
@@ -177,9 +177,9 @@ export default function AnaliseAmbientalPage() {
               enviados para a análise geoespacial com IA.
             </CardDescription>
           </CardHeader>
-          <CardContent className="flex-1 min-h-[65vh] p-0">
+          <CardContent className="min-h-[60dvh] flex-1 p-0">
             {iframeError ? (
-              <div className="flex flex-col items-center justify-center h-[62vh] px-6 text-center">
+              <div className="flex h-[60dvh] min-h-[420px] flex-col items-center justify-center px-6 text-center md:h-[62vh]">
                 <p className="text-sm font-medium text-destructive mb-2">
                   Não foi possível carregar o Geovizualizador.
                 </p>
@@ -200,7 +200,7 @@ export default function AnaliseAmbientalPage() {
                 </Button>
               </div>
             ) : (
-              <div className="relative w-full h-[62vh]">
+              <div className="relative h-[60dvh] min-h-[420px] w-full max-w-full md:h-[62vh]">
                 {iframeLoading && (
                   <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/70">
                     <div className="flex flex-col items-center gap-2 text-muted-foreground">
@@ -212,7 +212,7 @@ export default function AnaliseAmbientalPage() {
                 <iframe
                   key={iframeKey}
                   src="https://visualizador.idesisema.meioambiente.mg.gov.br/"
-                  className="w-full h-[62vh] border-0 rounded-b-lg"
+                  className="h-[60dvh] min-h-[420px] w-full max-w-full rounded-b-lg border-0 md:h-[62vh]"
                   title="IDE-SisemaNet Geoviewer"
                   onLoad={() => {
                     setIframeLoading(false);

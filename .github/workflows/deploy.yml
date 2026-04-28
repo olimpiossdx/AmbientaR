@@ -1,9 +1,30 @@
+# Deploy: GitHub Actions → Artifact Registry → Cloud Run
+#
+# Pré-requisitos no Google Cloud (uma vez):
+# 1. APIs: Artifact Registry, Cloud Run, Cloud Build (opcional)
+# 2. Artifact Registry → Criar repositório:
+#    - Formato: Docker
+#    - Nome (ID): cloud-run-images   (deve bater com AR_REPOSITORY abaixo)
+#    - Local: southamerica-east1
+# 3. Conta de serviço (JSON em GCP_SA_KEY) com pelo menos:
+#    - roles/artifactregistry.writer  (push de imagens)
+#    - roles/run.admin                (deploy Cloud Run)
+#    - roles/iam.serviceAccountUser   (se o serviço usar outra SA)
+#
+# Segredo: GCP_PROJECT_ID = ID numérico ou string do projeto (ex.: studio-xxx)
+
 name: Deploy to Google Cloud Run
 
 on:
   push:
     branches:
       - main
+
+env:
+  REGION: southamerica-east1
+  # ID do repositório Docker no Artifact Registry (criar no console)
+  AR_REPOSITORY: cloud-run-images
+  IMAGE_NAME: ambientar
 
 jobs:
   deploy:
@@ -18,28 +39,34 @@ jobs:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
 
       - name: Set up Cloud SDK
-        uses: google-github-actions/setup-gcloud@v1
+        uses: google-github-actions/setup-gcloud@v2
 
-      - name: Configure Docker for GCR
-        run: gcloud auth configure-docker
+      - name: Set GCP project
+        run: gcloud config set project "${{ secrets.GCP_PROJECT_ID }}"
+
+      - name: Configure Docker for Artifact Registry
+        run: |
+          gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
 
       - name: Build Docker image
         run: |
-          docker build -t gcr.io/${{ secrets.GCP_PROJECT_ID }}/ambientar:${{ github.sha }} .
-          docker tag gcr.io/${{ secrets.GCP_PROJECT_ID }}/ambientar:${{ github.sha }} gcr.io/${{ secrets.GCP_PROJECT_ID }}/ambientar:latest
+          IMAGE="${{ env.REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ env.AR_REPOSITORY }}/${{ env.IMAGE_NAME }}"
+          docker build -t "${IMAGE}:${{ github.sha }}" -t "${IMAGE}:latest" .
 
-      - name: Push Docker image to GCR
+      - name: Push Docker image
         run: |
-          docker push gcr.io/${{ secrets.GCP_PROJECT_ID }}/ambientar:${{ github.sha }}
-          docker push gcr.io/${{ secrets.GCP_PROJECT_ID }}/ambientar:latest
+          IMAGE="${{ env.REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ env.AR_REPOSITORY }}/${{ env.IMAGE_NAME }}"
+          docker push "${IMAGE}:${{ github.sha }}"
+          docker push "${IMAGE}:latest"
 
       - name: Deploy to Google Cloud Run
         run: |
+          IMAGE="${{ env.REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ env.AR_REPOSITORY }}/${{ env.IMAGE_NAME }}"
           gcloud run deploy ambientar \
-            --image gcr.io/${{ secrets.GCP_PROJECT_ID }}/ambientar:${{ github.sha }} \
-            --region southamerica-east1 \
+            --image "${IMAGE}:${{ github.sha }}" \
+            --region ${{ env.REGION }} \
             --platform managed \
             --allow-unauthenticated \
-            --port 3000 \
+            --port 9002 \
             --memory 1Gi \
             --cpu 1

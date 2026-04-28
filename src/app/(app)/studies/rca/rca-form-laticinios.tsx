@@ -64,7 +64,7 @@ export function RcaFormLaticinios({ form, clients, isLoadingClients, projects, i
                     </div>
                      <div className="space-y-4 p-4 border rounded-md">
                         <h3 className="font-semibold">13. REGIME DE OPERAÇÃO</h3>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-4">
                             <FormField control={form.control} name="regimeOperacao.horasDia" render={({ field }: any) => (<FormItem><FormLabel>Horas/dia</FormLabel><FormControl><Input type="number" {...field} /></FormControl></FormItem>)} />
                             <FormField control={form.control} name="regimeOperacao.diasSemana" render={({ field }: any) => (<FormItem><FormLabel>Dias/semana</FormLabel><FormControl><Input type="number" {...field} /></FormControl></FormItem>)} />
                             <FormField control={form.control} name="regimeOperacao.turnos" render={({ field }: any) => (<FormItem><FormLabel>Nº de Turnos</FormLabel><FormControl><Input type="number" {...field} /></FormControl></FormItem>)} />

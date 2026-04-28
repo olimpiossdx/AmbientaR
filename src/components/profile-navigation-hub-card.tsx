@@ -6,23 +6,41 @@ import { Button } from "@/components/ui/button";
 import { allNavItems } from "@/lib/navigation-config";
 import type { AppUser, NavItem, NavSubItem } from "@/lib/types";
 
-type HubLink = {
+type NavigationHubLink = {
   href: string;
   label: string;
   icon?: NavItem["icon"];
 };
 
+type ProfileNavigationHubCardProps = {
+  role: AppUser["role"];
+  excludeGroupLabels?: string[];
+};
+
+function isAllowedForRole(
+  item: NavItem | NavSubItem,
+  role: AppUser["role"],
+) {
+  return !item.roles || item.roles.includes(role);
+}
+
+function sortByLabel<T extends { label: string }>(items: T[]): T[] {
+  return [...items].sort((a, b) =>
+    a.label.localeCompare(b.label, "pt-BR", { sensitivity: "base" }),
+  );
+}
+
 function flattenLinks(
   items: (NavItem | NavSubItem)[],
   role: AppUser["role"],
   parentLabel?: string,
-): HubLink[] {
-  const links: HubLink[] = [];
+): NavigationHubLink[] {
+  const links: NavigationHubLink[] = [];
 
-  for (const item of items) {
-    if (!item.roles?.includes(role)) continue;
+  for (const item of sortByLabel(items)) {
+    if (!isAllowedForRole(item, role)) continue;
 
-    if (item.href) {
+    if (item.href && item.href !== "/") {
       links.push({
         href: item.href,
         label: parentLabel ? `${parentLabel} · ${item.label}` : item.label,
@@ -31,20 +49,25 @@ function flattenLinks(
     }
 
     if (item.subItems?.length) {
-      links.push(...flattenLinks(item.subItems, role, item.href ? undefined : item.label));
+      links.push(
+        ...flattenLinks(item.subItems, role, item.href ? undefined : item.label),
+      );
     }
   }
 
   return links;
 }
 
-export function AuthorizationReportsHubCard({ role }: { role: AppUser["role"] }) {
-  const authGroup = allNavItems.find((item) => item.label === "Autorizações/Relatórios");
-  if (!authGroup?.subItems) return null;
-
-  const links = flattenLinks(authGroup.subItems, role).sort((a, b) =>
-    a.label.localeCompare(b.label, "pt-BR", { sensitivity: "base" }),
+export function ProfileNavigationHubCard({
+  role,
+  excludeGroupLabels = [],
+}: ProfileNavigationHubCardProps) {
+  const excludedLabels = new Set(excludeGroupLabels);
+  const visibleItems = allNavItems.filter(
+    (item) => !excludedLabels.has(item.label) && isAllowedForRole(item, role),
   );
+  const links = flattenLinks(visibleItems, role);
+
   if (links.length === 0) return null;
 
   return (
@@ -55,14 +78,14 @@ export function AuthorizationReportsHubCard({ role }: { role: AppUser["role"] })
             const Icon = item.icon;
             return (
               <Button
-                key={item.href}
+                key={`${item.href}-${item.label}`}
                 asChild
                 variant="outline"
                 className="h-auto min-h-[96px] overflow-visible py-3 px-2 whitespace-normal rounded-lg border-2 border-border/90 shadow-sm"
               >
                 <Link
                   href={item.href}
-                  className="flex flex-col items-center justify-center gap-2 w-full overflow-visible text-center"
+                  className="flex w-full flex-col items-center justify-center gap-2 overflow-visible text-center"
                 >
                   {Icon ? (
                     <span className="flex h-11 w-11 shrink-0 items-center justify-center overflow-visible">
@@ -72,7 +95,7 @@ export function AuthorizationReportsHubCard({ role }: { role: AppUser["role"] })
                       />
                     </span>
                   ) : null}
-                  <span className="text-[13px] sm:text-sm leading-tight text-center line-clamp-3 text-foreground/90">
+                  <span className="line-clamp-3 text-center text-[13px] leading-tight text-foreground/90 sm:text-sm">
                     {item.label}
                   </span>
                 </Link>
@@ -84,4 +107,3 @@ export function AuthorizationReportsHubCard({ role }: { role: AppUser["role"] })
     </Card>
   );
 }
-

@@ -133,13 +133,13 @@ export default function LaudosPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Data</TableHead>
+                    <TableHead className="hidden sm:table-cell">Data</TableHead>
                     <TableHead>Tipo</TableHead>
-                    <TableHead>Empreendedor</TableHead>
-                    <TableHead>Empreendimento</TableHead>
-                    <TableHead>Consulta</TableHead>
+                    <TableHead className="hidden md:table-cell">Empreendedor</TableHead>
+                    <TableHead className="hidden lg:table-cell">Empreendimento</TableHead>
+                    <TableHead className="hidden lg:table-cell">Consulta</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead className="text-right w-24">Ações</TableHead>
+                    <TableHead className="w-20 text-right sm:w-24">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -154,13 +154,13 @@ export default function LaudosPage() {
                   {!isLoadingLaudos &&
                     filteredLaudos.map((item) => (
                       <TableRow key={item.id}>
-                        <TableCell className="text-muted-foreground">{formatDate(item.createdAt)}</TableCell>
+                        <TableCell className="hidden text-muted-foreground sm:table-cell">{formatDate(item.createdAt)}</TableCell>
                         <TableCell>{TIPO_ESTUDO_LABEL[item.tipoEstudo] ?? item.tipoEstudo}</TableCell>
-                        <TableCell>{empreendedoresMap.get(item.empreendedorId) ?? '—'}</TableCell>
-                        <TableCell>
+                        <TableCell className="hidden md:table-cell">{empreendedoresMap.get(item.empreendedorId) ?? '—'}</TableCell>
+                        <TableCell className="hidden lg:table-cell">
                           {item.empreendimentoId ? projectsMap.get(item.empreendimentoId) ?? '—' : '—'}
                         </TableCell>
-                        <TableCell className="text-sm">
+                        <TableCell className="hidden text-sm lg:table-cell">
                           {item.consultaId ? (
                             <Link href={`/consultas/${item.consultaId}`} className="text-primary hover:underline">
                               Ver consulta

@@ -471,8 +471,8 @@ export function RcaFormLavraSubterranea({ form, clients, isLoadingClients, proje
                 <AccordionContent className="space-y-6">
                     <div className="space-y-4 p-4 border rounded-md">
                         <h3 className="font-semibold">6. ATIVIDADES DO EMPREENDIMENTO CONFORME DN 74/04</h3>
-                        <div className="grid grid-cols-5 gap-4">
-                            <FormField control={form.control} name="atividades.0.principal" render={({ field }) => (<FormItem className='col-span-2'><FormLabel>Atividade Principal</FormLabel><FormControl><Input {...field} value="Lavra subterrânea com ou sem tratamento" disabled /></FormControl></FormItem>)} />
+                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+                            <FormField control={form.control} name="atividades.0.principal" render={({ field }) => (<FormItem className='sm:col-span-2'><FormLabel>Atividade Principal</FormLabel><FormControl><Input {...field} value="Lavra subterrânea com ou sem tratamento" disabled /></FormControl></FormItem>)} />
                             <FormField control={form.control} name="atividades.0.codigo" render={({ field }) => (<FormItem><FormLabel>Código</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
                             <FormField control={form.control} name="atividades.0.unidade" render={({ field }) => (<FormItem><FormLabel>Unidade</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
                             <FormField control={form.control} name="atividades.0.quantidade" render={({ field }) => (<FormItem><FormLabel>Quantidade</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
@@ -760,7 +760,7 @@ export function RcaFormLavraSubterranea({ form, clients, isLoadingClients, proje
                                 <FormField control={form.control} name={`zeeSocioeconomico.${index}.municipio`} render={({ field }) => (
                                     <FormItem className="flex-1"><FormLabel>Município</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>
                                 )} />
-                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-4">
                                      <FormField control={form.control} name={`zeeSocioeconomico.${index}.ips`} render={({ field }) => (<FormItem><FormLabel>IPS</FormLabel><FormControl><Input type="number" {...field} /></FormControl></FormItem>)} />
                                      <FormField control={form.control} name={`zeeSocioeconomico.${index}.populacao`} render={({ field }) => (<FormItem><FormLabel>População</FormLabel><FormControl><Input type="number" {...field} /></FormControl></FormItem>)} />
                                      <FormField control={form.control} name={`zeeSocioeconomico.${index}.renda`} render={({ field }) => (<FormItem><FormLabel>Renda</FormLabel><FormControl><Input type="number" {...field} /></FormControl></FormItem>)} />

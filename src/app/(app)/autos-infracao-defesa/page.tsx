@@ -717,10 +717,10 @@ export default function AutosInfracaoDefesaPage() {
                 <TableRow>
                   <TableHead>Nº Processo</TableHead>
                   <TableHead>Tipo</TableHead>
-                  <TableHead>Empreendedor</TableHead>
-                  <TableHead>Empreendimento</TableHead>
-                  <TableHead>Informações internas</TableHead>
-                  <TableHead>Checklist</TableHead>
+                  <TableHead className="hidden md:table-cell">Empreendedor</TableHead>
+                  <TableHead className="hidden lg:table-cell">Empreendimento</TableHead>
+                  <TableHead className="hidden lg:table-cell">Informações internas</TableHead>
+                  <TableHead className="hidden sm:table-cell">Checklist</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
@@ -741,10 +741,10 @@ export default function AutosInfracaoDefesaPage() {
                       <TableRow key={item.id}>
                         <TableCell className="font-medium">{item.processNumber}</TableCell>
                         <TableCell>{item.tipoDefesa}</TableCell>
-                        <TableCell>{empreendedorNameMap.get(item.empreendedorId) || "N/A"}</TableCell>
-                        <TableCell>{projectNameMap.get(item.projectId) || "N/A"}</TableCell>
-                        <TableCell className="max-w-[320px] truncate">{item.informacoesInternas || "Não informado"}</TableCell>
-                        <TableCell>
+                        <TableCell className="hidden md:table-cell">{empreendedorNameMap.get(item.empreendedorId) || "N/A"}</TableCell>
+                        <TableCell className="hidden lg:table-cell">{projectNameMap.get(item.projectId) || "N/A"}</TableCell>
+                        <TableCell className="hidden max-w-[320px] truncate lg:table-cell">{item.informacoesInternas || "Não informado"}</TableCell>
+                        <TableCell className="hidden sm:table-cell">
                           <Badge variant="outline">{checked}/{total}</Badge>
                         </TableCell>
                         <TableCell className="text-right">

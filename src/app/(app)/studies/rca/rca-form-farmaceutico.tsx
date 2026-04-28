@@ -63,7 +63,7 @@ export function RcaFormFarmaceutico({ form, clients, isLoadingClients, projects,
                         <h3 className="font-semibold">22. PROCESSO INDUSTRIAL</h3>
                          <div className="flex justify-between items-center"><h4 className='font-medium'>Matérias-Primas</h4><Button size="sm" type="button" onClick={() => appendMateriaPrima({})}><PlusCircle className="mr-2 h-4 w-4" /> Add</Button></div>
                         {materiasPrimasFields.map((item, index) => (
-                            <div key={item.id} className="grid grid-cols-4 gap-2 items-end">
+                            <div key={item.id} className="grid grid-cols-1 gap-2 items-end sm:grid-cols-2 lg:grid-cols-4">
                                 <FormField control={form.control} name={`materiasPrimas.${index}.identificacao`} render={({ field }: any) => (<FormItem><FormLabel>Identificação</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
                                 <FormField control={form.control} name={`materiasPrimas.${index}.fornecedor`} render={({ field }: any) => (<FormItem><FormLabel>Fornecedor</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
                                 <FormField control={form.control} name={`materiasPrimas.${index}.consumoMaximo`} render={({ field }: any) => (<FormItem><FormLabel>Consumo Máx.</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />

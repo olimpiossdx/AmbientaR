@@ -1295,7 +1295,7 @@ export default function InvoicesPage() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Fatura #</TableHead>
-                      <TableHead>Cliente</TableHead>
+                      <TableHead className="hidden lg:table-cell">Cliente</TableHead>
                       <TableHead className="hidden md:table-cell">
                         Data
                       </TableHead>
@@ -1311,7 +1311,7 @@ export default function InvoicesPage() {
                           <TableCell>
                             <Skeleton className="h-5 w-24" />
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="hidden lg:table-cell">
                             <Skeleton className="h-5 w-32" />
                           </TableCell>
                           <TableCell className="hidden md:table-cell">
@@ -1334,7 +1334,7 @@ export default function InvoicesPage() {
                           <TableCell className="font-medium">
                             {invoice.invoiceNumber}
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="hidden lg:table-cell">
                             {clientsMap.get(invoice.clientId)?.name ||
                               "Cliente não encontrado"}
                           </TableCell>

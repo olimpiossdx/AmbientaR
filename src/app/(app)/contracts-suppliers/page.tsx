@@ -269,7 +269,7 @@ export default function ContractsSuppliersPage() {
                   <TableRow>
                     <TableHead>Nº Contrato</TableHead>
                     <TableHead>Contratante</TableHead>
-                    <TableHead>Prestador</TableHead>
+                    <TableHead className="hidden lg:table-cell">Prestador</TableHead>
                     <TableHead className="hidden md:table-cell">Data</TableHead>
                     <TableHead className="hidden md:table-cell">Valor</TableHead>
                     <TableHead>Status</TableHead>
@@ -290,7 +290,7 @@ export default function ContractsSuppliersPage() {
                       <TableRow key={item.id}>
                         <TableCell className="font-medium">{item.contractNumber}</TableCell>
                         <TableCell>{item.contratante?.nome}</TableCell>
-                        <TableCell>{item.prestador?.nome}</TableCell>
+                        <TableCell className="hidden lg:table-cell">{item.prestador?.nome}</TableCell>
                         <TableCell className="hidden md:table-cell">
                           {new Date(item.dataContrato).toLocaleDateString("pt-BR")}
                         </TableCell>
@@ -372,7 +372,7 @@ export default function ContractsSuppliersPage() {
                   <TableRow>
                     <TableHead>Nº Contrato</TableHead>
                     <TableHead>Contratante</TableHead>
-                    <TableHead>Prestador</TableHead>
+                    <TableHead className="hidden lg:table-cell">Prestador</TableHead>
                     <TableHead className="hidden md:table-cell">Data</TableHead>
                     <TableHead className="hidden md:table-cell">Valor</TableHead>
                     <TableHead>Status</TableHead>
@@ -385,7 +385,7 @@ export default function ContractsSuppliersPage() {
                       <TableRow key={item.id}>
                         <TableCell className="font-medium">{item.contractNumber}</TableCell>
                         <TableCell>{item.contratante?.nome}</TableCell>
-                        <TableCell>{item.prestador?.nome}</TableCell>
+                        <TableCell className="hidden lg:table-cell">{item.prestador?.nome}</TableCell>
                         <TableCell className="hidden md:table-cell">
                           {new Date(item.dataContrato).toLocaleDateString("pt-BR")}
                         </TableCell>

@@ -45,8 +45,8 @@ export function RcaFormLigasFerrosas({ form, clients, isLoadingClients, projects
                     <div className="space-y-4 p-4 border rounded-md">
                         <div className="flex justify-between items-center"><h3 className="font-semibold">12. OUTRAS ATIVIDADES NÃO DESCRITAS</h3><Button size="sm" type="button" onClick={() => appendOutraAtividade({})}><PlusCircle className="mr-2 h-4 w-4" /> Add</Button></div>
                         {outrasAtividadesFields.map((item, index) => (
-                            <div key={item.id} className="grid grid-cols-5 gap-2 items-end">
-                                <FormField control={form.control} name={`outrasAtividades.${index}.especificacao`} render={({ field }: any) => (<FormItem className='col-span-2'><FormLabel>Especificação</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
+                            <div key={item.id} className="grid grid-cols-1 gap-2 items-end sm:grid-cols-2 lg:grid-cols-5">
+                                <FormField control={form.control} name={`outrasAtividades.${index}.especificacao`} render={({ field }: any) => (<FormItem className='sm:col-span-2'><FormLabel>Especificação</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
                                 <FormField control={form.control} name={`outrasAtividades.${index}.codigo`} render={({ field }: any) => (<FormItem><FormLabel>Código</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
                                 <FormField control={form.control} name={`outrasAtividades.${index}.unidade`} render={({ field }: any) => (<FormItem><FormLabel>Unidade</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
                                 <FormField control={form.control} name={`outrasAtividades.${index}.quantidade`} render={({ field }: any) => (<FormItem><FormLabel>Quantidade</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />

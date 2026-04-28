@@ -1563,7 +1563,9 @@ export default function UsersPage() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Nome</TableHead>
-                      <TableHead>Status Online</TableHead>
+                      <TableHead className="hidden sm:table-cell">
+                        Status Online
+                      </TableHead>
                       <TableHead className="hidden md:table-cell">
                         Email
                       </TableHead>
@@ -1571,8 +1573,10 @@ export default function UsersPage() {
                         CPF/CNPJ
                       </TableHead>
                       <TableHead>Nível</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="text-right min-w-[152px] w-[152px]">
+                      <TableHead className="hidden md:table-cell">
+                        Status
+                      </TableHead>
+                      <TableHead className="w-24 text-right sm:w-32">
                         Ações
                       </TableHead>
                     </TableRow>
@@ -1589,7 +1593,7 @@ export default function UsersPage() {
                           <TableCell>
                             <Skeleton className="h-5 w-32" />
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="hidden sm:table-cell">
                             <Skeleton className="h-5 w-24" />
                           </TableCell>
                           <TableCell className="hidden md:table-cell">
@@ -1601,10 +1605,10 @@ export default function UsersPage() {
                           <TableCell>
                             <Skeleton className="h-5 w-20" />
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="hidden md:table-cell">
                             <Skeleton className="h-6 w-20 rounded-full" />
                           </TableCell>
-                          <TableCell className="text-right min-w-[152px] w-[152px]">
+                          <TableCell className="w-24 text-right sm:w-32">
                             <Skeleton className="h-8 w-32" />
                           </TableCell>
                         </TableRow>
@@ -1614,7 +1618,7 @@ export default function UsersPage() {
                         <TableCell className="font-medium">
                           {appUser.name}
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="hidden sm:table-cell">
                           <div className="flex items-center gap-2">
                             <span
                               className={cn(
@@ -1636,7 +1640,7 @@ export default function UsersPage() {
                           ) || "N/A"}
                         </TableCell>
                         <TableCell>{getRoleText(appUser.role)}</TableCell>
-                        <TableCell>
+                        <TableCell className="hidden md:table-cell">
                           <Badge
                             variant={
                               appUser.status === "active"
@@ -1653,8 +1657,8 @@ export default function UsersPage() {
                             {appUser.status === "active" ? "Ativo" : "Inativo"}
                           </Badge>
                         </TableCell>
-                        <TableCell className="text-right min-w-[152px] w-[152px]">
-                          <div className="flex items-center justify-end gap-1 flex-nowrap">
+                        <TableCell className="w-24 text-right sm:w-32">
+                          <div className="flex flex-wrap items-center justify-end gap-1">
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <Button

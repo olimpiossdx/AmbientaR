@@ -81,7 +81,6 @@ import { Label } from "@/components/ui/label";
 import { backupAndDeleteParentWithCondicionantes } from "@/lib/deleted-data-backup";
 import { CardSearchInput } from "@/components/card-search-input";
 import { fetchEmpreendedorIdsForRepresentative } from "@/lib/representative-empreendedor-ids";
-import { isClientePortalRole } from "@/lib/role-guards";
 
 const canPerformWriteActions = (user: AppUser | null): boolean => {
   if (!user) return false;
@@ -123,7 +122,7 @@ export default function LicensesPage() {
   const router = useRouter();
 
   useEffect(() => {
-    if (isClientePortalRole(user?.role) && firestore) {
+    if (user?.role === "client" && firestore) {
       setEmpreendedorIdsForUser(undefined);
       const empreendedoresRef = collection(firestore, "empreendedores");
       const byUserId = query(empreendedoresRef, where("userId", "==", user.id));
@@ -169,7 +168,7 @@ export default function LicensesPage() {
     if (!firestore || !user || empreendedorIdsForUser === undefined)
       return null;
 
-    if (isClientePortalRole(user.role) || user.role === "representative") {
+    if (user.role === "client" || user.role === "representative") {
       if (empreendedorIdsForUser.length > 0) {
         return query(
           collection(firestore, "licenses"),
@@ -207,7 +206,7 @@ export default function LicensesPage() {
     isLoadingLicenses ||
     isLoadingEmpreendedores ||
     isLoadingProjects ||
-    ((isClientePortalRole(user?.role) || user?.role === "representative") &&
+    ((user?.role === "client" || user?.role === "representative") &&
       empreendedorIdsForUser === undefined);
 
   const empreendedoresMap = useMemo(
@@ -479,7 +478,9 @@ export default function LicensesPage() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Empreendedor</TableHead>
-                      <TableHead>Empreendimento</TableHead>
+                      <TableHead className="hidden lg:table-cell">
+                        Empreendimento
+                      </TableHead>
                       <TableHead>Nº da Licença</TableHead>
                       <TableHead className="hidden lg:table-cell">
                         Vencimento
@@ -492,7 +493,7 @@ export default function LicensesPage() {
                     {isLoading &&
                       Array.from({ length: 5 }).map((_, i) => (
                         <TableRow key={i}>
-                          <TableCell>
+                          <TableCell className="hidden lg:table-cell">
                             <Skeleton className="h-5 w-32" />
                           </TableCell>
                           <TableCell>
@@ -519,7 +520,7 @@ export default function LicensesPage() {
                             {empreendedoresMap.get(license.empreendedorId) ||
                               "N/A"}
                           </TableCell>
-                          <TableCell className="font-medium">
+                          <TableCell className="hidden font-medium lg:table-cell">
                             {projectsMap.get(license.projectId) || "N/A"}
                           </TableCell>
                           <TableCell className="font-medium">

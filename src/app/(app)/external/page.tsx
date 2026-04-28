@@ -26,10 +26,10 @@ function ExternalPageContent() {
 
   if (openInNewTab) {
       return (
-         <div className="flex flex-col h-full">
+         <div className="flex h-full min-w-0 flex-col overflow-hidden">
             <PageHeader title={title || 'Link Externo'} />
-            <main className="flex-1 overflow-auto p-4 md:p-6 flex items-center justify-center">
-                <div className="text-center">
+            <main className="flex min-w-0 flex-1 items-center justify-center overflow-auto p-4 md:p-6">
+                <div className="max-w-full text-center">
                     <h2 className="text-xl font-semibold">Redirecionando...</h2>
                     <p className="text-muted-foreground mt-2">
                         Esta página foi aberta em uma nova aba para garantir a funcionalidade.
@@ -45,9 +45,9 @@ function ExternalPageContent() {
 
   if (!url) {
     return (
-      <div className="flex flex-col h-full">
+      <div className="flex h-full min-w-0 flex-col overflow-hidden">
         <PageHeader title="Erro" />
-        <main className="flex-1 overflow-auto p-4 md:p-6">
+        <main className="min-w-0 flex-1 overflow-auto p-4 md:p-6">
           <p>URL não fornecida.</p>
         </main>
       </div>
@@ -55,12 +55,12 @@ function ExternalPageContent() {
   }
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex h-full min-w-0 flex-col overflow-hidden">
       <PageHeader title={title || 'Link Externo'} />
-      <main className="flex-1 overflow-hidden">
+      <main className="min-h-0 min-w-0 flex-1 overflow-hidden">
         <iframe
           src={url}
-          className="w-full h-full border-0"
+          className="h-[calc(100dvh-4rem)] min-h-[520px] w-full max-w-full border-0 md:h-full md:min-h-0"
           title={title || 'External Content'}
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
           allowFullScreen
@@ -76,9 +76,9 @@ function ExternalPageContent() {
 export default function ExternalPage() {
     return (
         <Suspense fallback={
-             <div className="flex flex-col h-full">
+             <div className="flex h-full min-w-0 flex-col overflow-hidden">
                 <PageHeader title="Carregando..." />
-                <main className="flex-1 overflow-auto p-4 md:p-6">
+                <main className="min-w-0 flex-1 overflow-auto p-4 md:p-6">
                    <Skeleton className="w-full h-full" />
                 </main>
             </div>

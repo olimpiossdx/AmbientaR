@@ -646,7 +646,7 @@ export default function CarPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Empreendimento</TableHead>
-                    <TableHead>Cliente</TableHead>
+                    <TableHead className="hidden md:table-cell">Cliente</TableHead>
                     <TableHead>Nº Recibo CAR</TableHead>
                     <TableHead className="text-right">Anexos</TableHead>
                   </TableRow>
@@ -658,7 +658,7 @@ export default function CarPage() {
                         <TableCell>
                           <Skeleton className="h-5 w-48" />
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="hidden md:table-cell">
                           <Skeleton className="h-5 w-40" />
                         </TableCell>
                         <TableCell>
@@ -681,7 +681,7 @@ export default function CarPage() {
                             {p.propertyName}{" "}
                             {p.municipio ? `— ${p.municipio}/${p.uf}` : ""}
                           </TableCell>
-                          <TableCell className="text-muted-foreground">
+                          <TableCell className="hidden text-muted-foreground md:table-cell">
                             {client
                               ? `${client.name} — ${client.cpfCnpj}`
                               : "Não vinculado"}

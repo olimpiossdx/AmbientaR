@@ -38,10 +38,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import {
-  isAdminOrSupervisorRole,
-  isClientePortalRole,
-} from "@/lib/role-guards";
+import { isAdminOrSupervisorRole } from "@/lib/role-guards";
 import {
   useCollection,
   useFirebase,
@@ -203,7 +200,7 @@ export default function CommercialProposalsPage() {
     if (!firestore || !user) return;
 
     // Cliente titular.
-    if (isClientePortalRole(user.role)) {
+    if (user.role === "client") {
       const isSelfRegistered = !!(user as any).package;
       const cRef = collection(firestore, "clients");
       const userCpf = user.cpf || user.userCpf;
@@ -262,7 +259,7 @@ export default function CommercialProposalsPage() {
     if (!firestore || !user) return null;
 
     // Cliente ou representante: apenas propostas dos seus clientes.
-    if (isClientePortalRole(user.role) || user.role === "representative") {
+    if (user.role === "client" || user.role === "representative") {
       if (!clientIdsForUser || clientIdsForUser.length === 0) return null;
       return query(
         collection(firestore, "commercialProposals"),
@@ -290,7 +287,7 @@ export default function CommercialProposalsPage() {
 
   const userClients = useMemo(() => {
     if (!user || !clients) return [];
-    if (!isClientePortalRole(user.role)) return [];
+    if (user.role !== "client") return [];
     const userCpf = user.cpf || user.userCpf;
     const userDocuments = documentVariants(userCpf, user.cnpjs);
     return clients
@@ -302,7 +299,7 @@ export default function CommercialProposalsPage() {
     if (!proposals) return [];
 
     // Cliente: apenas propostas dos seus próprios clientIds (via userClients).
-    if (isClientePortalRole(user?.role)) {
+    if (user?.role === "client") {
       return proposals.filter((p) => userClients.includes(p.clientId));
     }
 
@@ -336,10 +333,7 @@ export default function CommercialProposalsPage() {
     let proposalsToShow = filteredProposals;
 
     // Cliente e representante veem apenas propostas aprovadas (para consulta/download).
-    if (
-      isClientePortalRole(user?.role) ||
-      user?.role === "representative"
-    ) {
+    if (user?.role === "client" || user?.role === "representative") {
       proposalsToShow = proposalsToShow.filter((p) => p.status === "Accepted");
     }
 
@@ -815,7 +809,7 @@ export default function CommercialProposalsPage() {
     <>
       <div className="flex flex-col h-full">
         <PageHeader title="Propostas Comerciais">
-          {!isClientePortalRole(user?.role) && (
+          {user?.role !== "client" && (
             <Button size="sm" className="gap-1" onClick={handleAddNew}>
               <PlusCircle className="h-4 w-4" />
               Criar Proposta
@@ -950,7 +944,9 @@ export default function CommercialProposalsPage() {
                       <TableHeader>
                         <TableRow>
                           <TableHead>Proposta #</TableHead>
-                          <TableHead>Cliente</TableHead>
+                          <TableHead className="hidden lg:table-cell">
+                            Cliente
+                          </TableHead>
                           <TableHead className="hidden md:table-cell">
                             Data
                           </TableHead>
@@ -965,7 +961,7 @@ export default function CommercialProposalsPage() {
                             <TableCell>
                               <Skeleton className="h-5 w-24" />
                             </TableCell>
-                            <TableCell>
+                            <TableCell className="hidden lg:table-cell">
                               <Skeleton className="h-5 w-32" />
                             </TableCell>
                             <TableCell className="hidden md:table-cell">
@@ -989,8 +985,7 @@ export default function CommercialProposalsPage() {
               ) : (
                 <Tabs
                   defaultValue={
-                    isClientePortalRole(user?.role) ||
-                    user?.role === "representative"
+                    user?.role === "client" || user?.role === "representative"
                       ? "finalized"
                       : "active"
                   }
@@ -1052,7 +1047,7 @@ export default function CommercialProposalsPage() {
                                 >
                                   <Eye className="h-4 w-4" />
                                 </Button>
-                                {!isClientePortalRole(user?.role) && (
+                                {user?.role !== "client" && (
                                   <>
                                     <Button
                                       variant="ghost"
@@ -1136,7 +1131,9 @@ export default function CommercialProposalsPage() {
                         <TableHeader>
                           <TableRow>
                             <TableHead>Proposta #</TableHead>
-                            <TableHead>Cliente</TableHead>
+                            <TableHead className="hidden lg:table-cell">
+                              Cliente
+                            </TableHead>
                             <TableHead className="hidden md:table-cell">
                               Data
                             </TableHead>
@@ -1151,7 +1148,7 @@ export default function CommercialProposalsPage() {
                               <TableCell className="font-medium">
                                 {proposal.proposalNumber}
                               </TableCell>
-                              <TableCell>
+                              <TableCell className="hidden lg:table-cell">
                                 {clientsMap.get(proposal.clientId)?.name ||
                                   "Cliente não encontrado"}
                               </TableCell>
@@ -1194,7 +1191,7 @@ export default function CommercialProposalsPage() {
                                       <p>Visualizar</p>
                                     </TooltipContent>
                                   </Tooltip>
-                                  {!isClientePortalRole(user?.role) && (
+                                  {user?.role !== "client" && (
                                     <>
                                       <Tooltip>
                                         <TooltipTrigger asChild>
@@ -1427,7 +1424,9 @@ export default function CommercialProposalsPage() {
                         <TableHeader>
                           <TableRow>
                             <TableHead>Proposta #</TableHead>
-                            <TableHead>Cliente</TableHead>
+                            <TableHead className="hidden lg:table-cell">
+                              Cliente
+                            </TableHead>
                             <TableHead className="hidden md:table-cell">
                               Data
                             </TableHead>
@@ -1442,7 +1441,7 @@ export default function CommercialProposalsPage() {
                               <TableCell className="font-medium">
                                 {proposal.proposalNumber}
                               </TableCell>
-                              <TableCell>
+                              <TableCell className="hidden lg:table-cell">
                                 {clientsMap.get(proposal.clientId)?.name ||
                                   "Cliente não encontrado"}
                               </TableCell>

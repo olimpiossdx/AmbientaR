@@ -70,10 +70,6 @@ import { SidebarDebugger } from "@/components/sidebar-debugger";
 import { FinancialMenuDebugPanel } from "@/lib/financial-menu-debug";
 import { CadastroMenuDebugPanel } from "@/lib/cadastro-menu-debug";
 import { isRoleAllowedForPath } from "@/lib/route-access";
-import { isClienteGestao, isClientePortalRole } from "@/lib/role-guards";
-import { getRoleLabelPt } from "@/lib/user-role-labels";
-import { shouldBlockPlatformAccess } from "@/lib/platform-access";
-import { PlatformAccessBlocked } from "@/components/platform-access-blocked";
 
 const LogoIcon = () => (
   <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-emerald-400 text-primary-foreground">
@@ -133,7 +129,7 @@ const AppLayoutClient = ({ children }: { children: React.ReactNode }) => {
 
   // Consultas auxiliares para identificar todos os CPFs/CNPJs vinculados ao titular (mesma lógica da página de Meu Perfil).
   const accessRequestsQuery = useMemoFirebase(() => {
-    if (!firestore || !user || !isClienteGestao(user.role)) return null;
+    if (!firestore || !user || user.role !== "client") return null;
     // mesma forma que a página de Meu Perfil (UsersPage): apenas where por status
     return query(
       collection(firestore, "access_requests"),
@@ -142,7 +138,7 @@ const AppLayoutClient = ({ children }: { children: React.ReactNode }) => {
   }, [firestore, user]);
 
   const myClientsQuery = useMemoFirebase(() => {
-    if (!firestore || !user || !isClientePortalRole(user.role)) return null;
+    if (!firestore || !user || user.role !== "client") return null;
     return query(
       collection(firestore, "clients"),
       where("userId", "==", user.id),
@@ -150,7 +146,7 @@ const AppLayoutClient = ({ children }: { children: React.ReactNode }) => {
   }, [firestore, user]);
 
   const myEmpreendedoresQuery = useMemoFirebase(() => {
-    if (!firestore || !user || !isClientePortalRole(user.role)) return null;
+    if (!firestore || !user || user.role !== "client") return null;
     return query(
       collection(firestore, "empreendedores"),
       where("userId", "==", user.id),
@@ -158,12 +154,12 @@ const AppLayoutClient = ({ children }: { children: React.ReactNode }) => {
   }, [firestore, user]);
 
   const clientByIdRef = useMemoFirebase(() => {
-    if (!firestore || !user || !isClientePortalRole(user.role)) return null;
+    if (!firestore || !user || user.role !== "client") return null;
     return doc(firestore, "clients", user.id);
   }, [firestore, user]);
 
   const empreendedorByIdRef = useMemoFirebase(() => {
-    if (!firestore || !user || !isClientePortalRole(user.role)) return null;
+    if (!firestore || !user || user.role !== "client") return null;
     return doc(firestore, "empreendedores", user.id);
   }, [firestore, user]);
 
@@ -193,7 +189,7 @@ const AppLayoutClient = ({ children }: { children: React.ReactNode }) => {
     myEmpreendedores?.forEach((e) => add(e.cpfCnpj));
     if (clientById?.cpfCnpj) add(clientById.cpfCnpj);
     if (empreendedorById?.cpfCnpj) add(empreendedorById.cpfCnpj);
-    if (isClientePortalRole(user?.role)) {
+    if (user?.role === "client") {
       add(user.cpf);
       add(user.userCpf);
     }
@@ -249,7 +245,7 @@ const AppLayoutClient = ({ children }: { children: React.ReactNode }) => {
 
   const cadastroIncompleto = Boolean(
     user?.cadastroIncompleto &&
-    (isClientePortalRole(user?.role) || user?.role === "representative"),
+    (user?.role === "client" || user?.role === "representative"),
   );
 
   const unreadCount = React.useMemo(() => {
@@ -281,13 +277,20 @@ const AppLayoutClient = ({ children }: { children: React.ReactNode }) => {
     router.push("/users#access-requests-card");
   };
 
-  const roleLabelOverrides: Record<string, string> = {
+  const roleLabel: Record<string, string> = {
+    admin: "Administrador",
     gestor: "Autorizações/Relatórios",
+    supervisor: "Supervisor",
+    financial: "Financeiro",
+    sales: "Vendas",
+    technical: "Técnico",
+    diretor_fauna: "Diretor de Fauna",
+    advogado: "Advogado",
+    client: "Cliente",
+    representative: "Representante",
   };
   const getActorLabel = (actorRole?: string) =>
-    actorRole
-      ? roleLabelOverrides[actorRole] ?? getRoleLabelPt(actorRole)
-      : null;
+    actorRole ? roleLabel[actorRole] || actorRole : null;
 
   React.useEffect(() => {
     if (isInitialized && !user) {
@@ -327,7 +330,7 @@ const AppLayoutClient = ({ children }: { children: React.ReactNode }) => {
   }, [user]);
   const allowExternalChat = Boolean(featureFlagsData?.allowExternalChat);
   const canRenderChatWidget =
-    !isClientePortalRole(user?.role) && user?.role !== "representative"
+    user?.role !== "client" && user?.role !== "representative"
       ? true
       : allowExternalChat;
 
@@ -353,10 +356,6 @@ const AppLayoutClient = ({ children }: { children: React.ReactNode }) => {
         </div>
       </div>
     );
-  }
-
-  if (shouldBlockPlatformAccess(user)) {
-    return <PlatformAccessBlocked user={user} />;
   }
 
   return (
@@ -433,7 +432,7 @@ const AppLayoutClient = ({ children }: { children: React.ReactNode }) => {
                   onClick={() => {
                     const authUserId = user?.uid || user?.id;
                     router.push(
-                      isClientePortalRole(user?.role)
+                      user?.role === "client"
                         ? authUserId
                           ? `/empreendedores/${authUserId}/edit`
                           : "/empreendedores"
@@ -553,14 +552,17 @@ const AppLayoutClient = ({ children }: { children: React.ReactNode }) => {
         />
       )}
 
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex min-w-0 flex-1 overflow-hidden">
         <Sidebar>
           <SidebarContent>
             <NavContent />
           </SidebarContent>
         </Sidebar>
-        <main className="flex-1 overflow-auto">
-          <div key={pathname} className="animate-page-fade-in relative h-full">
+        <main className="min-w-0 flex-1 overflow-y-auto overflow-x-hidden">
+          <div
+            key={pathname}
+            className="animate-page-fade-in relative h-full min-w-0 max-w-full"
+          >
             {children}
           </div>
         </main>

@@ -671,10 +671,16 @@ export default function ManualMonitoringPage() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Data</TableHead>
-                      <TableHead>Horímetro Início</TableHead>
-                      <TableHead>Horímetro Fim</TableHead>
+                      <TableHead className="hidden md:table-cell">
+                        Horímetro Início
+                      </TableHead>
+                      <TableHead className="hidden md:table-cell">
+                        Horímetro Fim
+                      </TableHead>
                       <TableHead>Vazão (L/s)</TableHead>
-                      <TableHead>Vazão (m³/h)</TableHead>
+                      <TableHead className="hidden lg:table-cell">
+                        Vazão (m³/h)
+                      </TableHead>
                       {canPerformWriteActions(user) && (
                         <TableHead>
                           <span className="sr-only">Ações</span>
@@ -695,10 +701,16 @@ export default function ManualMonitoringPage() {
                       filteredLogs.map((log) => (
                         <TableRow key={log.id}>
                           <TableCell>{formatDate(log.logDate)}</TableCell>
-                          <TableCell>{log.horimeterStart}</TableCell>
-                          <TableCell>{log.horimeterEnd}</TableCell>
+                          <TableCell className="hidden md:table-cell">
+                            {log.horimeterStart}
+                          </TableCell>
+                          <TableCell className="hidden md:table-cell">
+                            {log.horimeterEnd}
+                          </TableCell>
                           <TableCell>{log.flowRateLps}</TableCell>
-                          <TableCell>{log.flowRateM3h}</TableCell>
+                          <TableCell className="hidden lg:table-cell">
+                            {log.flowRateM3h}
+                          </TableCell>
                           {canPerformWriteActions(user) && (
                             <TableCell>
                               <TooltipProvider>

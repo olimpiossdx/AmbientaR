@@ -106,11 +106,11 @@ export default function KnowledgeSourcesPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Número / Título</TableHead>
-                  <TableHead>Tipo</TableHead>
-                  <TableHead>Órgão</TableHead>
+                  <TableHead className="hidden sm:table-cell">Tipo</TableHead>
+                  <TableHead className="hidden md:table-cell">Órgão</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead>Inclusão</TableHead>
-                  <TableHead className="w-24">Ações</TableHead>
+                  <TableHead className="hidden lg:table-cell">Inclusão</TableHead>
+                  <TableHead className="w-20 sm:w-24">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -122,14 +122,14 @@ export default function KnowledgeSourcesPage() {
                 {!isLoading && filtered.map((s) => (
                   <TableRow key={s.id}>
                     <TableCell className="font-medium">{s.numero || s.titulo || s.id.slice(0, 8)}</TableCell>
-                    <TableCell>{KNOWLEDGE_SOURCE_TIPO_LABEL[s.tipo] ?? s.tipo}</TableCell>
-                    <TableCell>{s.orgao ?? '—'}</TableCell>
+                    <TableCell className="hidden sm:table-cell">{KNOWLEDGE_SOURCE_TIPO_LABEL[s.tipo] ?? s.tipo}</TableCell>
+                    <TableCell className="hidden md:table-cell">{s.orgao ?? '—'}</TableCell>
                     <TableCell>
                       <Badge variant={s.aprovado ? 'default' : 'secondary'}>
                         {s.aprovado ? 'Aprovado' : 'Pendente'}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
+                    <TableCell className="hidden text-sm text-muted-foreground lg:table-cell">
                       {s.modoInclusao === 'robo_sugeriu' ? 'Robô' : 'Manual'}
                     </TableCell>
                     <TableCell className="flex items-center gap-1">
