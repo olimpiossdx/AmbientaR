@@ -339,13 +339,6 @@ const AppLayoutClient = ({ children }: { children: React.ReactNode }) => {
       setOpenMobile(false);
     }
   };
-  const canUseMobileGestureZone = React.useMemo(() => {
-    if (!isMobile) return false;
-    if (typeof window === "undefined") return true;
-    const untilRaw = sessionStorage.getItem("suppressMobileSidebarGestureUntil");
-    const until = untilRaw ? Number(untilRaw) : 0;
-    return !Number.isFinite(until) || Date.now() > until;
-  }, [isMobile]);
 
   if (!isInitialized || !user) {
     return (
@@ -537,20 +530,6 @@ const AppLayoutClient = ({ children }: { children: React.ReactNode }) => {
           </DropdownMenu>
         </div>
       </header>
-
-      {/* Zona de gesto: puxar da esquerda para abrir o menu no celular */}
-      {isMobile && !openMobile && canUseMobileGestureZone && (
-        <div
-          className="fixed left-0 top-16 bottom-20 w-10 max-w-[80px] min-h-[120px] z-30 touch-manipulation md:hidden"
-          onClick={() => setOpenMobile(true)}
-          role="button"
-          tabIndex={0}
-          aria-label="Abrir menu"
-          onKeyDown={(e) => {
-            if (e.key === "Enter" || e.key === " ") setOpenMobile(true);
-          }}
-        />
-      )}
 
       <div className="flex min-w-0 flex-1 overflow-hidden">
         <Sidebar>

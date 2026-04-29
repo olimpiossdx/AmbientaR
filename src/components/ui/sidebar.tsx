@@ -5,6 +5,7 @@ import * as React from "react"
 import { Slot } from "@radix-ui/react-slot"
 import { VariantProps, cva } from "class-variance-authority"
 import { PanelLeft, ArrowLeft } from "lucide-react"
+import { useRouter } from "next/navigation"
 
 import { useIsMobile } from "@/hooks/use-mobile"
 import { cn } from "@/lib/utils"
@@ -188,6 +189,7 @@ const Sidebar = React.forwardRef<
     ref
   ) => {
     const { isMobile, state, openMobile, setOpenMobile } = useSidebar()
+    const router = useRouter()
     const touchStartX = React.useRef(0)
 
     if (collapsible === "none") {
@@ -236,8 +238,11 @@ const Sidebar = React.forwardRef<
                   variant="ghost"
                   size="icon"
                   className="h-9 w-9 -ml-1 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                  onClick={() => setOpenMobile(false)}
-                  aria-label="Fechar menu"
+                  onClick={() => {
+                    setOpenMobile(false)
+                    router.push("/")
+                  }}
+                  aria-label="Voltar para o início"
                 >
                   <ArrowLeft className="h-5 w-5" />
                 </Button>

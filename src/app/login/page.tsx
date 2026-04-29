@@ -8,8 +8,8 @@ import { Leaf } from 'lucide-react';
 
 /* Mesmo ícone da aplicação (layout): gradiente verde + folha */
 const LogoIcon = () => (
-  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-emerald-400 text-primary-foreground">
-    <Leaf className="h-5 w-5" />
+  <div className="flex h-[72px] w-[72px] shrink-0 items-center justify-center rounded-3xl bg-gradient-to-br from-primary to-emerald-400 text-primary-foreground shadow-sm">
+    <Leaf className="h-10 w-10" />
   </div>
 );
 
@@ -17,14 +17,14 @@ function LoginPageContent() {
   return (
     <div className="w-full max-w-[400px] animate-fade-in-up space-y-8">
       {/* Marca: igual ao restante da aplicação */}
-      <header className="text-center">
-        <Link href="/" className="inline-flex items-center justify-center gap-3">
+      <header>
+        <Link href="/" className="flex w-full items-center justify-center gap-5">
           <LogoIcon />
-          <div className="text-left">
-            <h1 className="text-2xl font-bold tracking-tight text-primary">
+          <div className="min-w-0 text-left">
+            <h1 className="text-[2.65rem] font-bold leading-none tracking-tight text-primary">
               AmbientaR
             </h1>
-            <p className="text-xs text-muted-foreground">
+            <p className="mt-1.5 text-base font-medium text-muted-foreground">
               Gestão Ambiental Inteligente
             </p>
           </div>

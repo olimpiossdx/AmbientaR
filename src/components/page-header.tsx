@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from 'react';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useSidebar } from '@/components/ui/sidebar';
@@ -24,6 +24,7 @@ export function PageHeader({
   showBackToDashboard,
 }: PageHeaderProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const { setOpenMobile } = useSidebar();
   const shouldShowBack = showBackToDashboard ?? (pathname !== '/');
 
@@ -35,18 +36,11 @@ export function PageHeader({
           variant="ghost"
           size="icon"
           className="shrink-0"
-          onClick={() => {
-            // Retorno "hard" para resetar estado de navegação mobile e evitar
-            // a sidebar abrindo junto ao voltar para o dashboard.
+          onClick={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
             setOpenMobile(false);
-            if (typeof window !== 'undefined') {
-              // Evita toque residual abrindo o gesto lateral no dashboard.
-              sessionStorage.setItem(
-                "suppressMobileSidebarGestureUntil",
-                String(Date.now() + 1800),
-              );
-              window.location.assign('/');
-            }
+            router.replace('/');
           }}
           aria-label="Voltar para o painel"
           title="Voltar para o painel"
