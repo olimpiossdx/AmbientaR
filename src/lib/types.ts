@@ -2,6 +2,8 @@
 
 import type { LucideIcon } from "lucide-react";
 
+export type EntityType = 'Pessoa Física' | 'Pessoa Jurídica' | 'Produtor Rural';
+
 export type AuditLog = {
     id: string;
     userId: string;
@@ -21,7 +23,7 @@ export type Empreendedor = {
   numero?: string;
   projectIds?: string[];
   cpfCnpj?: string;
-  entityType?: ('Pessoa Física' | 'Pessoa Jurídica' | 'Produtor Rural')[];
+  entityType?: EntityType | EntityType[];
   municipio?: string;
   bairro?: string;
   uf?: string;
@@ -87,7 +89,7 @@ export type Client = {
   userId?: string;
   /** IDs de usuários que o titular aprovou para acessar os dados (acesso com CPF diferente). */
   approvedUserIds?: string[];
-  entityType?: 'Pessoa Física' | 'Pessoa Jurídica' | 'Produtor Rural';
+  entityType?: EntityType;
   phone?: string;
   email?: string;
   identidade?: string;
@@ -266,6 +268,7 @@ export type License = {
   empreendedorId: string;
   projectId: string;
   permitType: PermitType;
+  licenseNumber?: string;
   processNumber: string;
   permitNumber: string;
   issuingBody: string;
@@ -466,6 +469,7 @@ export type WaterPermit = {
   empreendedorId: string;
   projectId?: string;
   permitNumber: string; // Portaria de Outorga
+  interventionType?: string;
   processNumber: string;
   issueDate: string;
   expirationDate: string;
@@ -693,7 +697,7 @@ export type Prada = {
 
 export type PTRF = {
   id: string;
-  status: 'Rascunho' | 'Aprovado';
+  status?: 'Rascunho' | 'Aprovado';
   requerente: {
     clientId?: string;
     nome: string;
@@ -710,7 +714,7 @@ export type PTRF = {
     formacao: string;
     registroConselho: string;
   };
-  objetivoDescricao: string;
+  objetivoDescricao?: string;
   referenciasBibliograficas?: string;
 };
 
@@ -1099,10 +1103,10 @@ export type TemplateField =
 
 
 export type CompanySettings = {
-    id: string; // Should be a singleton, e.g., 'branding'
-    headerImageUrl?: string;
-    footerImageUrl?: string;
-    watermarkImageUrl?: string;
+    id?: string; // Should be a singleton, e.g., 'branding'
+    headerImageUrl?: string | null;
+    footerImageUrl?: string | null;
+    watermarkImageUrl?: string | null;
     logoUsage?: 'pdf_only' | 'system_wide';
     systemLogoSource?: 'header' | 'watermark';
     templatesRcaListagemA?: { name: string; url: string; }[];
@@ -1267,6 +1271,7 @@ export type AppUser = {
   id: string; // Firestore document ID
   uid: string; // Firebase Auth UID
   name: string;
+  displayName?: string;
   email: string;
   role: UserRole;
   status: 'active' | 'inactive';
@@ -1468,8 +1473,8 @@ export type FaunaStudy = {
     consultoria?: any; // Substituir por tipo EnvironmentalCompany
     caracterizacaoEmpreendimento?: string;
     caracterizacaoAreaEstudo?: {
-        area: string;
-        clima: string;
+        area?: string;
+        clima?: string;
     };
     caracterizacaoAmbientalSecundaria?: string;
     listaEspeciesSecundaria?: string;
@@ -1608,6 +1613,208 @@ export type Service = {
   description?: string;
   cost?: number;
   price: number;
+};
+
+export type ProposalItem = CommercialProposalItem;
+export type Proposal = CommercialProposal;
+
+export type ConsultaStatus =
+  | 'nova'
+  | 'em_andamento'
+  | 'aguardando_dados'
+  | 'em_analise'
+  | 'concluida'
+  | 'cancelada';
+
+export type ConsultaCanal = 'web' | 'whatsapp' | 'instagram' | 'interno';
+
+export type ConsultaTipoServico =
+  | 'RCA'
+  | 'PIA'
+  | 'PCA'
+  | 'PRADA'
+  | 'InventarioFlorestal'
+  | 'Fauna'
+  | 'Outorgas'
+  | 'EducacaoAmbiental'
+  | 'RelatorioDiverso'
+  | 'Outro';
+
+export type Consulta = {
+  id: string;
+  canal: ConsultaCanal;
+  tipoServico: ConsultaTipoServico;
+  status: ConsultaStatus;
+  empreendedorId: string;
+  empreendimentoId?: string;
+  responsavelTecnicoUserId?: string;
+  solicitanteNome?: string;
+  solicitanteEmail?: string;
+  descricao?: string;
+  descricaoProblema?: string;
+  origemLead?: string;
+  slaPrevisto?: string;
+  observacoes?: string;
+  createdAt?: any;
+  updatedAt?: any;
+  [key: string]: any;
+};
+
+export type LaudoStatus =
+  | 'rascunho'
+  | 'coletando_dados'
+  | 'gerando'
+  | 'pronto'
+  | 'enviado'
+  | 'cancelado';
+
+export type Laudo = {
+  id: string;
+  consultaId?: string;
+  tipoEstudo: ConsultaTipoServico;
+  status: LaudoStatus;
+  empreendedorId: string;
+  empreendimentoId?: string;
+  titulo?: string;
+  conteudo?: string;
+  arquivoUrl?: string;
+  createdAt?: any;
+  updatedAt?: any;
+  [key: string]: any;
+};
+
+export type Oficio = {
+  id: string;
+  recipient: string;
+  subject: string;
+  body: string;
+  municipio: string;
+  estado: string;
+  assinanteId: string;
+  assinanteNome?: string;
+  assinanteCargo?: string;
+  assinaturaDigitalUrl?: string;
+  dataEmissao?: string;
+  status?: 'Rascunho' | 'Emitido' | 'Enviado' | 'Cancelado' | 'Concluído';
+  createdAt?: any;
+  updatedAt?: any;
+  [key: string]: any;
+};
+
+export type EiaRima = {
+  id: string;
+  status?: 'Rascunho' | 'Aprovado';
+  requerente: {
+    clientId?: string;
+    nome: string;
+  };
+  empreendimento: {
+    projectId?: string;
+    nome: string;
+  };
+  processo: string;
+  createdAt?: any;
+  updatedAt?: any;
+  [key: string]: any;
+};
+
+export type InventarioStatus = 'rascunho' | 'em_campo' | 'sincronizado';
+
+export type Inventario = {
+  id: string;
+  empreendimentoId: string;
+  dataInicio?: string | any;
+  dataFim?: string | any;
+  status?: InventarioStatus;
+  observacoes?: string;
+  createdAt?: any;
+  updatedAt?: any;
+  [key: string]: any;
+};
+
+export type InventarioParcela = {
+  id: string;
+  inventarioId: string;
+  codigo: string;
+  area?: number;
+  latitude?: number;
+  longitude?: number;
+  observacoes?: string;
+  createdAt?: any;
+  [key: string]: any;
+};
+
+export type InventarioIndividuo = {
+  id: string;
+  inventarioId: string;
+  parcelaId: string;
+  especie?: string;
+  nomePopular?: string;
+  dap?: number;
+  altura?: number;
+  observacoes?: string;
+  createdAt?: any;
+  [key: string]: any;
+};
+
+export type KnowledgeSourceTipo =
+  | 'lei'
+  | 'deliberacao'
+  | 'resolucao'
+  | 'portaria'
+  | 'termo_referencia'
+  | 'laudo_antigo'
+  | 'nota_interna'
+  | 'outro';
+
+export type KnowledgeSourceStatus = 'vigente' | 'revogada' | 'alterada';
+export type ModoInclusao = 'manual' | 'upload' | 'importacao' | 'crawler' | 'robo_sugeriu';
+
+export type KnowledgeSource = {
+  id: string;
+  tipo: KnowledgeSourceTipo;
+  status?: KnowledgeSourceStatus;
+  modoInclusao?: ModoInclusao;
+  uf?: string;
+  orgao?: string;
+  numero?: string;
+  titulo?: string;
+  dataPublicacao?: string;
+  assunto?: string;
+  urlOficial?: string;
+  aprovado?: boolean;
+  arquivado?: boolean;
+  createdAt?: any;
+  updatedAt?: any;
+};
+
+export type RagIndexEntry = {
+  id: string;
+  knowledgeSourceId?: string;
+  tipoDocumento: KnowledgeSourceTipo;
+  uf?: string;
+  orgao?: string;
+  numero?: string;
+  titulo?: string;
+  chunkText: string;
+  chunkIndex?: number;
+  createdAt?: any;
+};
+
+export type AmbientalContext = {
+  empreendedor?: Empreendedor | null;
+  empreendimento?: Project | null;
+  empresaAmbiental?: EnvironmentalCompany | null;
+  consulta?: Consulta | null;
+  laudo?: Laudo | null;
+  licencas: License[];
+  outorgas: WaterPermit[];
+  intervencoes: EnvironmentalIntervention[];
+  condicionantes?: Condicionante[];
+  faunaStudies: FaunaStudy[];
+  manualMonitoringLogs: ManualMonitoringLog[];
+  outrosProjetos: Project[];
+  [key: string]: any;
 };
 
 export type CharcoalProductionPerformance = {

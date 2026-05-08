@@ -20,7 +20,7 @@ export async function extractDocxStructure(filePath: string): Promise<DocxStruct
     return { placeholders: [], headings: [] };
   }
 
-  const xml = await documentXml.async('string');
+  const xml = await (documentXml as any).async('string');
   const fullText = getFullTextFromDocumentXml(xml);
   const placeholders = extractPlaceholdersFromText(fullText);
   const headings = extractHeadingsFromXml(xml);

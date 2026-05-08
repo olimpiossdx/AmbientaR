@@ -44,7 +44,7 @@ const formSchema = z.object({
   processNumber: z.string().min(1, 'O número do processo é obrigatório.'),
   issueDate: z.date({ required_error: 'A data de emissão é obrigatória.' }),
   expirationDate: z.date({ required_error: 'A data de vencimento é obrigatória.' }),
-  status: z.enum(['Válida', 'Vencida', 'Em Renovação', 'Suspensa', 'Cancelada'], { required_error: 'Selecione o status.'}),
+  status: z.enum(['Válida', 'Vencida', 'Em Renovação', 'Suspensa', 'Cancelada', 'Em Andamento'], { required_error: 'Selecione o status.'}),
   description: z.string().min(1, 'A finalidade é obrigatória.'),
 }).refine(data => data.expirationDate > data.issueDate, {
   message: 'A data de vencimento deve ser posterior à data de emissão.',
@@ -65,6 +65,7 @@ const permitStatuses: { value: PermitStatus, label: string }[] = [
     { value: 'Em Renovação', label: 'Em Renovação' },
     { value: 'Suspensa', label: 'Suspensa' },
     { value: 'Cancelada', label: 'Cancelada' },
+    { value: 'Em Andamento', label: 'Em Andamento' },
 ];
 
 export function OutorgaForm({ currentItem, onSuccess }: OutorgaFormProps) {

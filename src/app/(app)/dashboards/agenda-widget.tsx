@@ -4,7 +4,7 @@ import * as React from 'react';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useFirebase } from '@/firebase';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { collection, query, where, getDocs, type QuerySnapshot, type DocumentData } from 'firebase/firestore';
 import type { Appointment } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { CalendarClock, Briefcase, FileText, ClipboardCheck, ChevronRight } from 'lucide-react';
@@ -50,7 +50,7 @@ export default function AgendaWidget() {
     const fetchEvents = async () => {
       try {
         const baseQuery = collection(firestore, 'appointments');
-        const queriesToRun: Promise<FirebaseFirestore.QuerySnapshot>[] = [];
+        const queriesToRun: Promise<QuerySnapshot<DocumentData>>[] = [];
 
         if (
           user.role === 'admin' ||

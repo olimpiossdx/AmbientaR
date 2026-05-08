@@ -689,7 +689,7 @@ export default function InvoicesPage() {
       contract.objeto.itens.length > 0
     ) {
       contract.objeto.itens.forEach((item) => {
-        const splitDescription = doc.splitTextToSize(item.description, 130);
+        const splitDescription = doc.splitTextToSize(item.descricao, 130);
         doc.text(splitDescription, margins.left + 7, itemsY, {
           align: "justify",
         });

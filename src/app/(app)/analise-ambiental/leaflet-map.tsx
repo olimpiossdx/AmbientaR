@@ -35,7 +35,7 @@ const MapUpdater = ({ polygon }: { polygon: GeoJSONLike }) => {
   React.useEffect(() => {
     if (polygon) {
       try {
-        const bounds = L.geoJSON(polygon).getBounds();
+        const bounds = L.geoJSON(polygon as any).getBounds();
         if (bounds.isValid()) {
           map.fitBounds(bounds);
         }

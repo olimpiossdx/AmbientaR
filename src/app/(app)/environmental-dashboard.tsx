@@ -15,7 +15,7 @@ import { AlertTriangle, CheckCircle2, Clock, FolderKanban, ClipboardCheck, Dropl
 import { cn } from '@/lib/utils';
 import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
 import { collection, query, where, getDocs } from 'firebase/firestore';
-import type { Project as EnvironmentalPermit, Condicionante, WaterPermit, EnvironmentalIntervention, Project, Empreendedor } from '@/lib/types';
+import type { Project as EnvironmentalPermit, Condicionante, WaterPermit, EnvironmentalIntervention, Project, Empreendedor, License } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -26,13 +26,14 @@ type LicenseGroup = 'expiringIn30' | 'expiringIn60' | 'expiringIn180' | 'expirin
 
 interface EnvironmentalDashboardProps {
   initialPermits?: EnvironmentalPermit[] | null;
+  initialLicenses?: License[] | null;
   initialCondicionantes?: Condicionante[] | null;
   initialOutorgas?: WaterPermit[] | null;
   initialIntervencoes?: EnvironmentalIntervention[] | null;
   isLoading?: boolean;
 }
 
-export default function EnvironmentalDashboard({ initialPermits, initialCondicionantes, initialOutorgas, initialIntervencoes, isLoading: initialIsLoading }: EnvironmentalDashboardProps) {
+export default function EnvironmentalDashboard({ initialPermits, initialLicenses, initialCondicionantes, initialOutorgas, initialIntervencoes, isLoading: initialIsLoading }: EnvironmentalDashboardProps) {
   const firestore = useFirestore();
   const { user } = useUser();
   const [isLicenseDialogOpen, setIsLicenseDialogOpen] = useState(false);

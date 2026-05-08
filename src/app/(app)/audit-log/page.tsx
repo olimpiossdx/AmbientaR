@@ -22,6 +22,7 @@ import { Download, Calendar as CalendarIcon, ShieldAlert, MessageSquare } from '
 import { useCollection, useFirebase, useMemoFirebase, useAuth } from '@/firebase';
 import { collection, query, getDocs, orderBy, where } from 'firebase/firestore';
 import type { AppUser, AuditLog, ChatMessage, Chat } from '@/lib/types';
+import { getRoleLabelPt } from '@/lib/user-role-labels';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { logUserAction } from '@/lib/audit-log';
@@ -74,19 +75,7 @@ export default function AuditLogPage() {
   };
 
   const getRoleText = (role: AppUser['role']) => {
-    const roles: Record<AppUser["role"], string> = {
-      admin: 'Admin',
-      client: 'Cliente',
-      representative: 'Representante',
-      technical: 'Técnico',
-      sales: 'Vendas',
-      financial: 'Financeiro',
-      gestor: 'Gestor Ambiental',
-      supervisor: 'Supervisor',
-      diretor_fauna: 'Diretor de Fauna',
-      advogado: 'Advogado',
-    };
-    return roles[role] || role;
+    return getRoleLabelPt(role);
   };
   
     const handleExportLog = async (targetUser: AppUser) => {

@@ -17,7 +17,7 @@ import { Input } from "@/components/ui/input";
 import { MaskedInput } from "@/components/ui/masked-input";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import type { Empreendedor } from "@/lib/types";
+import type { Client, Empreendedor } from "@/lib/types";
 import { useFirebase, useAuth, errorEmitter } from "@/firebase";
 import { FirestorePermissionError } from "@/firebase/errors";
 import {
@@ -233,7 +233,11 @@ export function EmpreendedorForm({
     defaultValues: {
       name: currentItem?.name || "",
       cpfCnpj: currentItem?.cpfCnpj || "",
-      entityType: currentItem?.entityType || [],
+      entityType: Array.isArray(currentItem?.entityType)
+        ? currentItem.entityType
+        : currentItem?.entityType
+          ? [currentItem.entityType]
+          : [],
       phone: currentItem?.phone || "",
       email: currentItem?.email || "",
       dataNascimento: toDateInputValue(currentItem?.dataNascimento || ""),
@@ -489,13 +493,13 @@ export function EmpreendedorForm({
         ),
       ]);
 
-      const empreendedores = empreendedoresSnap.docs.map((d) => ({
+      const empreendedores: Array<Partial<Empreendedor> & { id: string }> = empreendedoresSnap.docs.map((d) => ({
         id: d.id,
-        ...(d.data() as Record<string, unknown>),
+        ...(d.data() as Partial<Empreendedor>),
       }));
-      const clients = clientsSnap.docs.map((d) => ({
+      const clients: Array<Partial<Client> & { id: string }> = clientsSnap.docs.map((d) => ({
         id: d.id,
-        ...(d.data() as Record<string, unknown>),
+        ...(d.data() as Partial<Client>),
       }));
       const normalizedTarget = normalizeDocument(cpfCnpj);
       const byDocMatch = (item: Record<string, unknown>) =>
@@ -767,7 +771,7 @@ export function EmpreendedorForm({
       userId:
         values.userId ||
         currentItem?.userId ||
-        (isClientePortalRole(user?.role) ? user.id : null),
+        (isClientePortalRole(user?.role) ? user?.id ?? null : null),
       approvedUserIds: safeRepresentativeUserIds,
     };
 

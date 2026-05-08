@@ -17,7 +17,7 @@ import { Input } from "@/components/ui/input";
 import { MaskedInput } from "@/components/ui/masked-input";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import type { Client } from "@/lib/types";
+import type { Client, Empreendedor } from "@/lib/types";
 import { useFirebase, useAuth, errorEmitter } from "@/firebase";
 import { FirestorePermissionError } from "@/firebase/errors";
 import {
@@ -390,13 +390,13 @@ export function ClientForm({
           ),
         ),
       ]);
-      const clients = clientsSnap.docs.map((d) => ({
+      const clients: Array<Partial<Client> & { id: string }> = clientsSnap.docs.map((d) => ({
         id: d.id,
-        ...(d.data() as Record<string, unknown>),
+        ...(d.data() as Partial<Client>),
       }));
-      const empreendedores = empreendedoresSnap.docs.map((d) => ({
+      const empreendedores: Array<Partial<Empreendedor> & { id: string }> = empreendedoresSnap.docs.map((d) => ({
         id: d.id,
-        ...(d.data() as Record<string, unknown>),
+        ...(d.data() as Partial<Empreendedor>),
       }));
       const normalizedTarget = normalizeDocument(cpfCnpj);
       const byDocMatch = (item: Record<string, unknown>) =>

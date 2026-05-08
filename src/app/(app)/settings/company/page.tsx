@@ -23,7 +23,7 @@ export default function SettingsCompanyPage() {
     () => (firestore ? doc(firestore, 'companySettings', 'companyProfile') : null),
     [firestore]
   );
-  const { data: companyProfile, isLoading, mutate } = useDoc<Omit<EnvironmentalCompany, 'id'>>(companyProfileDocRef);
+  const { data: companyProfile, isLoading } = useDoc<Omit<EnvironmentalCompany, 'id'>>(companyProfileDocRef);
 
   return (
     <>
@@ -80,9 +80,7 @@ export default function SettingsCompanyPage() {
             currentItem={companyProfile}
             onSuccess={() => {
               setIsDialogOpen(false);
-              mutate();
             }}
-            onCancel={() => setIsDialogOpen(false)}
           />
         </DialogContent>
       </Dialog>

@@ -221,7 +221,10 @@ const getInitialValues = (currentItem?: RCA | null): RcaFormValues => {
         const merged = _.merge({}, defaults, currentItem);
         
         if (currentItem.termoReferencia?.dataEmissao) {
-            merged.termoReferencia.dataEmissao = new Date(currentItem.termoReferencia.dataEmissao);
+            merged.termoReferencia = {
+              ...(merged.termoReferencia || {}),
+              dataEmissao: new Date(currentItem.termoReferencia.dataEmissao),
+            };
         }
         
         return merged as RcaFormValues;
@@ -265,7 +268,7 @@ export function RcaForm({ currentItem, onSuccess }: RcaFormProps) {
         return;
     }
     
-    const values = form.getValues();
+    const values = form.getValues() as RcaFormValues;
 
     if (!firestore) {
       toast({ variant: 'destructive', title: 'Firebase não inicializado.' });
@@ -273,12 +276,13 @@ export function RcaForm({ currentItem, onSuccess }: RcaFormProps) {
       return;
     }
     
+    const termoReferencia = values.termoReferencia as { dataEmissao?: string | Date } | undefined;
     const dataToSave = cleanEmptyValues({
       ...values,
       status: status,
       termoReferencia: {
-        ...(values.termoReferencia || {}),
-        dataEmissao: values.termoReferencia?.dataEmissao ? new Date(values.termoReferencia.dataEmissao).toISOString() : null,
+        ...(termoReferencia || {}),
+        dataEmissao: termoReferencia?.dataEmissao ? new Date(termoReferencia.dataEmissao).toISOString() : null,
       }
     });
 
@@ -426,7 +430,7 @@ export function RcaForm({ currentItem, onSuccess }: RcaFormProps) {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(() => handleSave(form.getValues('status') || 'Rascunho'))} className="flex flex-col h-full overflow-hidden">
+      <form onSubmit={form.handleSubmit(() => handleSave((form.getValues('status') as 'Rascunho' | 'Aprovado' | undefined) || 'Rascunho'))} className="flex flex-col h-full overflow-hidden">
         <div className="flex-1 pr-4 space-y-4 overflow-y-auto">
           <div className="p-4 border rounded-md space-y-4">
               <FormField

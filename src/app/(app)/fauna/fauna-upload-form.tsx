@@ -282,7 +282,7 @@ export function FaunaUploadForm({ onSuccess }: FaunaUploadFormProps) {
                   arquivo...
                 </p>
               )}
-              <FormMessage {...form.getFieldState("fileUrl")} />
+              <FormMessage>{form.formState.errors.fileUrl?.message}</FormMessage>
             </FormItem>
           </div>
           <DialogFooter>

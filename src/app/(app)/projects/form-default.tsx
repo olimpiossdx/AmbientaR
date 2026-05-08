@@ -21,7 +21,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { MapPin, PlusCircle, Trash2 } from 'lucide-react';
-import type { AnaliseSolo, AtividadeAgropecuaria, Biome, CoordinateFormat, Datum, Fuso, Irrigacao, Jurisdiction, ManagementCategory, OutraAtividade, OwnerCondition, PhysicalStructure, Project } from '@/lib/types';
+import type { AnaliseSolo, AtividadeAgropecuaria, Biome, CoordinateFormat, Datum, Empreendedor, Fuso, Irrigacao, Jurisdiction, ManagementCategory, OutraAtividade, OwnerCondition, PhysicalStructure } from '@/lib/types';
 import * as React from 'react';
 import { ibgeData } from '@/lib/ibge-data';
 import { Textarea } from '@/components/ui/textarea';
@@ -31,7 +31,7 @@ import { Label } from '@/components/ui/label';
 
 interface FormDefaultProps {
     form: any;
-    clients: Project['empreendedorId'][];
+    clients: Empreendedor[];
     isLoadingClients: boolean;
 }
 
@@ -512,7 +512,7 @@ export function FormDefault({ form, clients, isLoadingClients }: FormDefaultProp
                         <FormDescription>Apresentar em anexo o(s) atestado(s).</FormDescription>
                         {dn130Practices.map(item => (<FormField key={item.id} control={form.control} name="criteriosDN130.praticasDesenvolvidas"
                             render={({ field }) => (<FormItem className="flex flex-row items-start space-x-3 space-y-0"><FormControl>
-                                <Checkbox checked={field.value?.includes(item.id)} onCheckedChange={checked => checked ? field.onChange([...(field.value || []), item.id]) : field.onChange(field.value?.filter(v => v !== item.id))} />
+                                <Checkbox checked={field.value?.includes(item.id)} onCheckedChange={checked => checked ? field.onChange([...(field.value || []), item.id]) : field.onChange(field.value?.filter((v: string) => v !== item.id))} />
                             </FormControl><FormLabel className="font-normal">{item.label}</FormLabel></FormItem>
                             )}
                         />))}

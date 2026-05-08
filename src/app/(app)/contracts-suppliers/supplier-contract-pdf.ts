@@ -58,9 +58,9 @@ export async function generateSupplierContractPdf(
   const pageWidth = doc.internal.pageSize.getWidth();
   const contentWidth = pageWidth - ML - MR;
 
-  const headerBase64 = await fetchBrandingImageAsBase64(brandingData?.headerImageUrl);
-  const footerBase64 = await fetchBrandingImageAsBase64(brandingData?.footerImageUrl);
-  const watermarkBase64Raw = await fetchBrandingImageAsBase64(brandingData?.watermarkImageUrl);
+  const headerBase64 = await fetchBrandingImageAsBase64(brandingData?.headerImageUrl ?? undefined);
+  const footerBase64 = await fetchBrandingImageAsBase64(brandingData?.footerImageUrl ?? undefined);
+  const watermarkBase64Raw = await fetchBrandingImageAsBase64(brandingData?.watermarkImageUrl ?? undefined);
   const watermarkBase64 = watermarkBase64Raw
     ? await applyImageOpacity(watermarkBase64Raw, 0.15)
     : null;

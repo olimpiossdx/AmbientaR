@@ -148,19 +148,20 @@ export default function CompliancePage() {
     }
     if (isClientePortalRole(user?.role) && firestore) {
       setEmpreendedorIdsForUser(undefined);
-      const isSelfRegistered = !!(user as any).package;
+      const currentUser = user as AppUser;
+      const isSelfRegistered = !!currentUser.package;
 
       if (isSelfRegistered) {
         const empreendedoresRef = collection(firestore, "empreendedores");
         const qByUserId = query(
           empreendedoresRef,
-          where("userId", "==", user.id),
+          where("userId", "==", currentUser.id),
         );
         const qByApproved = query(
           empreendedoresRef,
-          where("approvedUserIds", "array-contains", user.id),
+          where("approvedUserIds", "array-contains", currentUser.id),
         );
-        const userDocs = documentVariants(user.cpf || user.userCpf, user.cnpjs);
+        const userDocs = documentVariants(currentUser.cpf || currentUser.userCpf, currentUser.cnpjs);
         const promiseCpf =
           userDocs.length > 0
             ? getDocs(
@@ -184,15 +185,15 @@ export default function CompliancePage() {
 
       const empreendedoresRef = collection(firestore, "empreendedores");
       const byUserId = getDocs(
-        query(empreendedoresRef, where("userId", "==", user.id)),
+        query(empreendedoresRef, where("userId", "==", currentUser.id)),
       );
       const byApproved = getDocs(
         query(
           empreendedoresRef,
-          where("approvedUserIds", "array-contains", user.id),
+          where("approvedUserIds", "array-contains", currentUser.id),
         ),
       );
-      const userDocs = documentVariants(user.cpf || user.userCpf, user.cnpjs);
+      const userDocs = documentVariants(currentUser.cpf || currentUser.userCpf, currentUser.cnpjs);
       if (userDocs.length > 0) {
         const qByDoc = query(
           empreendedoresRef,

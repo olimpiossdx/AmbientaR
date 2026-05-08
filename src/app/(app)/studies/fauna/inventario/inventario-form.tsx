@@ -499,7 +499,7 @@ export function InventarioFaunaForm({ currentItem, onSave }: InventarioFaunaForm
           <Button variant="secondary" onClick={() => handleSave('draft')} disabled={loading}>
              {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Salvando...</> : 'Salvar Rascunho'}
           </Button>
-           <Button onClick={() => form.trigger().then(valid => valid && handleSave('completed'))} disabled={loading}>
+           <Button onClick={() => form.trigger().then(async (valid) => { if (valid) await handleSave('completed'); })} disabled={loading}>
             {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Concluindo...</> : 'Concluir Projeto'}
           </Button>
         </div>

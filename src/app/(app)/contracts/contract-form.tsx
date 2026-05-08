@@ -220,14 +220,8 @@ export function ContractForm({ currentItem, onSuccess, sourceProposal }: Contrac
           dataContrato: new Date(currentItem.dataContrato)
             .toISOString()
             .split("T")[0],
-          contratante: {
-            clientId: currentItem.contratante.clientId,
-            ...currentItem.contratante,
-          },
-          responsavelTecnico: {
-            responsibleId: currentItem.responsavelTecnico.responsibleId,
-            ...currentItem.responsavelTecnico,
-          },
+          contratante: currentItem.contratante,
+          responsavelTecnico: currentItem.responsavelTecnico,
           contratado: currentItem.contratado,
         }
       : {

@@ -26,7 +26,7 @@ function NavContent() {
   const { user } = useAuth();
   const [navItems, setNavItems] = React.useState<NavItem[]>([]);
   const { isMobile, open, setOpenMobile, setDesktopSidebarWidth } = useSidebar();
-  const menuRef = React.useRef<HTMLDivElement | null>(null);
+  const menuRef = React.useRef<HTMLUListElement | null>(null);
 
   const handleLinkClick = () => {
     if (isMobile) {

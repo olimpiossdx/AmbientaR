@@ -141,9 +141,10 @@ export default function UsosInsignificantesPage() {
   useEffect(() => {
     if (isClientePortalRole(user?.role) && firestore) {
       setEmpreendedorIdsForUser(undefined);
+      const currentUser = user!;
       const userDocuments = [
-        user.cpf || user.userCpf,
-        ...(user.cnpjs || []),
+        currentUser.cpf || currentUser.userCpf,
+        ...(currentUser.cnpjs || []),
       ].filter(Boolean) as string[];
       if (userDocuments.length > 0) {
         const empreendedoresRef = collection(firestore, "empreendedores");

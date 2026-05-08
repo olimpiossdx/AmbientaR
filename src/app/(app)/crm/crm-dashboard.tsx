@@ -74,7 +74,11 @@ function getPeriodRange(
   preset: string,
   customStart: string,
   customEnd: string,
-): { startTs: number; endTs: number; label: string } {
+): {
+  startTs: number;
+  endTs: number;
+  label: string;
+} {
   const now = new Date();
   const end = now;
   const start = new Date(now);
@@ -209,7 +213,7 @@ export default function CrmDashboard({ onAddNew }: CrmDashboardProps) {
     return Array.from(set).sort();
   }, [clients]);
 
-  const { periodStart, periodEnd, periodLabel } = useMemo(() => {
+  const { startTs: periodStart, endTs: periodEnd, label: periodLabel } = useMemo(() => {
     return getPeriodRange(periodPreset, customStart, customEnd);
   }, [periodPreset, customStart, customEnd]);
 

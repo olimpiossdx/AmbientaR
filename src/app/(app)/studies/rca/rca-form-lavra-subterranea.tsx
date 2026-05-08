@@ -566,7 +566,7 @@ export function RcaFormLavraSubterranea({ form, clients, isLoadingClients, proje
                                                                     onCheckedChange={(checked) => {
                                                                         return checked
                                                                             ? field.onChange([...(field.value || []), item])
-                                                                            : field.onChange(field.value?.filter((value) => value !== item));
+                                                                            : field.onChange(field.value?.filter((value: string) => value !== item));
                                                                     }}
                                                                 /></FormControl>
                                                                 <FormLabel className="text-sm font-normal">{item}</FormLabel>
@@ -699,7 +699,7 @@ export function RcaFormLavraSubterranea({ form, clients, isLoadingClients, proje
                         <FormField control={form.control} name="impactosMeioFisico" render={() => (
                             <FormItem>{["Contaminação do solo.", "Contaminação do ar.", "Compactação do solo.", "Contaminação de águas superficiais.", "Erosão devido à exposição do solo às intempéries.", "Derramamento de óleo e combustíveis do maquinário utilizado na obra.", "Vazamento de combustíveis e óleos armazenados na obra.", "Impermeabilização do solo.", "Assoreamento de cursos d’água em virtude de carreamento de sólidos.", "Contaminação em virtude da geração de esgoto sanitário do canteiro de obras.", "Intervenção em nascentes e/ou afloramentos de água.", "Emissão de material particulado (poeira).", "Emissões atmosféricas provenientes dos equipamentos utilizados (tratores, caminhões, etc).", "Ruídos gerados por veículos e demais equipamentos.", "Alteração da paisagem local."].filter((v,i,a)=>a.indexOf(v)==i).map(item => (<FormField key={item} control={form.control} name="impactosMeioFisico"
                                 render={({ field }) => (<FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                                    <FormControl><Checkbox checked={field.value?.includes(item)} onCheckedChange={(checked) => (checked ? field.onChange([...(field.value || []), item]) : field.onChange(field.value?.filter(v => v !== item)))}/></FormControl>
+                                    <FormControl><Checkbox checked={field.value?.includes(item)} onCheckedChange={(checked) => (checked ? field.onChange([...(field.value || []), item]) : field.onChange(field.value?.filter((v: string) => v !== item)))}/></FormControl>
                                     <FormLabel className="font-normal">{item}</FormLabel>
                                 </FormItem>)}
                             />))} <FormMessage /></FormItem>
@@ -710,7 +710,7 @@ export function RcaFormLavraSubterranea({ form, clients, isLoadingClients, proje
                          <FormField control={form.control} name="impactosMeioBiotico" render={() => (
                             <FormItem>{["Destruição de habitat e afugentamento da fauna.", "Fragmentação de maciços florestais ou impedimento da comunicação entre maciços próximos.", "Aumento de população de vetores.", "Risco de eutrofização.", "Supressão de vegetação.", "Intervenção em APP."].map(item => (<FormField key={item} control={form.control} name="impactosMeioBiotico"
                                 render={({ field }) => (<FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                                    <FormControl><Checkbox checked={field.value?.includes(item)} onCheckedChange={(checked) => (checked ? field.onChange([...(field.value || []), item]) : field.onChange(field.value?.filter(v => v !== item)))}/></FormControl>
+                                    <FormControl><Checkbox checked={field.value?.includes(item)} onCheckedChange={(checked) => (checked ? field.onChange([...(field.value || []), item]) : field.onChange(field.value?.filter((v: string) => v !== item)))}/></FormControl>
                                     <FormLabel className="font-normal">{item}</FormLabel>
                                 </FormItem>)}
                             />))} <FormMessage /></FormItem>
@@ -721,7 +721,7 @@ export function RcaFormLavraSubterranea({ form, clients, isLoadingClients, proje
                         <FormField control={form.control} name="impactosMeioSocioeconomico" render={() => (
                             <FormItem>{["Dificuldade de relacionamento com a população do entorno", "Risco a saúde.", "Geração de empregos.", "Arrecadação de Impostos."].map(item => (<FormField key={item} control={form.control} name="impactosMeioSocioeconomico"
                                 render={({ field }) => (<FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                                    <FormControl><Checkbox checked={field.value?.includes(item)} onCheckedChange={(checked) => (checked ? field.onChange([...(field.value || []), item]) : field.onChange(field.value?.filter(v => v !== item)))}/></FormControl>
+                                    <FormControl><Checkbox checked={field.value?.includes(item)} onCheckedChange={(checked) => (checked ? field.onChange([...(field.value || []), item]) : field.onChange(field.value?.filter((v: string) => v !== item)))}/></FormControl>
                                     <FormLabel className="font-normal">{item}</FormLabel>
                                 </FormItem>)}
                             />))} <FormMessage /></FormItem>
@@ -781,7 +781,7 @@ export function RcaFormLavraSubterranea({ form, clients, isLoadingClients, proje
                     <FormField control={form.control} name="anexos" render={() => (
                         <FormItem>{anexoOptions.map(item => (<FormField key={item.id} control={form.control} name="anexos"
                             render={({ field }) => (<FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                                <FormControl><Checkbox checked={field.value?.includes(item.id)} onCheckedChange={(checked) => (checked ? field.onChange([...(field.value || []), item.id]) : field.onChange(field.value?.filter((v) => v !== item.id)))}/></FormControl>
+                                <FormControl><Checkbox checked={field.value?.includes(item.id)} onCheckedChange={(checked) => (checked ? field.onChange([...(field.value || []), item.id]) : field.onChange(field.value?.filter((v: string) => v !== item.id)))}/></FormControl>
                                 <FormLabel className="font-normal">{item.label}</FormLabel>
                             </FormItem>)}
                         />))} <FormMessage /></FormItem>

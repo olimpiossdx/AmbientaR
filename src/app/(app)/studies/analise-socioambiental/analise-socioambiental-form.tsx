@@ -25,12 +25,12 @@ const formSchema = z.object({
   // Propriedade
   municipio: z.string().optional(),
   uf: z.string().optional(),
-  areaInformadaHa: z.union([z.number(), z.nan]).optional(),
+  areaInformadaHa: z.union([z.number(), z.nan()]).optional(),
   statusCAR: z.string().optional(),
   bioma: z.string().optional(),
   baciaHidrografica: z.string().optional(),
-  appInformadaCarHa: z.union([z.number(), z.nan]).optional(),
-  rlInformadaCarHa: z.union([z.number(), z.nan]).optional(),
+  appInformadaCarHa: z.union([z.number(), z.nan()]).optional(),
+  rlInformadaCarHa: z.union([z.number(), z.nan()]).optional(),
   cardoc: z.string().optional(),
   nomePropriedade: z.string().optional(),
   // Agente principal
@@ -117,7 +117,7 @@ export function AnaliseSocioambientalForm({ currentItem, clients, onSuccess, onC
       criteriosResultados: currentItem?.criteriosResultados ?? [],
       detalhesAnalise: currentItem?.detalhesAnalise ?? [],
       updatedAt: new Date().toISOString(),
-      ...(currentItem ? {} : { createdAt: new Date().toISOString(), createdBy: auth.uid }),
+      ...(currentItem ? {} : { createdAt: new Date().toISOString(), createdBy: auth.currentUser?.uid }),
     };
 
     try {

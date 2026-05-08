@@ -45,6 +45,7 @@ import type {
   AccessRequest,
   Client,
   Empreendedor,
+  UserRole,
 } from "@/lib/types";
 import {
   useCollection,
@@ -705,7 +706,7 @@ export default function UsersPage() {
               query(collection(firestore, "users"), where("uid", "==", repId)),
             );
             snap.forEach((docSnap) => {
-              reps.push({ id: docSnap.id, ...(docSnap.data() as AppUser) });
+              reps.push({ ...(docSnap.data() as AppUser), id: docSnap.id });
             });
           } catch (e) {
             console.warn("Erro ao carregar representante aprovado", repId, e);
@@ -1890,14 +1891,14 @@ export default function UsersPage() {
             <AlertDialogTitle>
               {userToDelete?.id === user?.id &&
               (isClientePortalRole(user?.role) ||
-                user?.role === "representative")
+                (user?.role as UserRole | undefined) === "representative")
                 ? "Excluir seu usuário de acesso?"
                 : "Você tem certeza?"}
             </AlertDialogTitle>
             <AlertDialogDescription>
               {userToDelete?.id === user?.id &&
               (isClientePortalRole(user?.role) ||
-                user?.role === "representative") ? (
+                (user?.role as UserRole | undefined) === "representative") ? (
                 <>
                   Será removido apenas o seu <strong>usuário de acesso</strong>{" "}
                   (perfil de login). Você será deslogado. Os dados nos submenus{" "}
@@ -1922,7 +1923,7 @@ export default function UsersPage() {
             <AlertDialogAction onClick={handleDelete}>
               {userToDelete?.id === user?.id &&
               (isClientePortalRole(user?.role) ||
-                user?.role === "representative")
+                (user?.role as UserRole | undefined) === "representative")
                 ? "Sim, excluir meu usuário de acesso"
                 : "Deletar"}
             </AlertDialogAction>

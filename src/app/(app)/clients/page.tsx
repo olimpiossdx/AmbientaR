@@ -193,6 +193,7 @@ export default function ClientsPage() {
     }
     if (clientsRep === undefined) return;
 
+    const db = firestore;
     const repUid = user.id ?? (user as { uid?: string }).uid;
     if (!repUid) {
       setFallbackClientsForRep([]);
@@ -205,7 +206,7 @@ export default function ClientsPage() {
       const cpfs = new Set<string>();
       try {
         const qReq = query(
-          collection(firestore, "access_requests"),
+          collection(db, "access_requests"),
           where("status", "==", "approved"),
           where("requestedByUserId", "==", repUid),
         );
@@ -220,7 +221,7 @@ export default function ClientsPage() {
         });
 
         const qEmp = query(
-          collection(firestore, "empreendedores"),
+          collection(db, "empreendedores"),
           where("approvedUserIds", "array-contains", repUid),
         );
         const empSnap = await getDocs(qEmp);
@@ -243,7 +244,7 @@ export default function ClientsPage() {
         return;
       }
 
-      const clientsRef = collection(firestore, "clients");
+      const clientsRef = collection(db, "clients");
       const chunks: string[][] = [];
       for (let i = 0; i < cpfList.length; i += 10) {
         chunks.push(cpfList.slice(i, i + 10));

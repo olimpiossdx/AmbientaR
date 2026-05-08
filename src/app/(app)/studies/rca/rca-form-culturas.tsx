@@ -585,7 +585,7 @@ export function RcaFormCulturas({ form, clients, isLoadingClients, projects, isL
                                                                 onCheckedChange={(checked) => {
                                                                     return checked
                                                                         ? field.onChange([...(field.value || []), item])
-                                                                        : field.onChange(field.value?.filter((value) => value !== item));
+                                                                        : field.onChange(field.value?.filter((value: string) => value !== item));
                                                                 }}
                                                             /></FormControl>
                                                             <FormLabel className="text-sm font-normal">{item}</FormLabel>
@@ -701,7 +701,7 @@ export function RcaFormCulturas({ form, clients, isLoadingClients, projects, isL
                                 {dn130Commitments.map(item => (<FormField key={item.id} control={form.control} name="criteriosDN130.compromissos"
                                     render={({ field }) => (
                                     <FormItem className="flex flex-row items-center space-x-3 space-y-0"><FormControl>
-                                        <Checkbox checked={field.value?.includes(item.id)} onCheckedChange={checked => checked ? field.onChange([...(field.value || []), item.id]) : field.onChange(field.value?.filter(v => v !== item.id))} />
+                                        <Checkbox checked={field.value?.includes(item.id)} onCheckedChange={checked => checked ? field.onChange([...(field.value || []), item.id]) : field.onChange(field.value?.filter((v: string) => v !== item.id))} />
                                     </FormControl><FormLabel className="font-normal">{item.label}</FormLabel></FormItem>
                                     )}
                                 />))}
@@ -721,7 +721,7 @@ export function RcaFormCulturas({ form, clients, isLoadingClients, projects, isL
                                 {dn130Practices.map(item => (<FormField key={item.id} control={form.control} name="criteriosDN130.praticasDesenvolvidas"
                                     render={({ field }) => (
                                     <FormItem className="flex flex-row items-start space-x-3 space-y-0"><FormControl>
-                                        <Checkbox checked={field.value?.includes(item.id)} onCheckedChange={checked => checked ? field.onChange([...(field.value || []), item.id]) : field.onChange(field.value?.filter(v => v !== item.id))} />
+                                        <Checkbox checked={field.value?.includes(item.id)} onCheckedChange={checked => checked ? field.onChange([...(field.value || []), item.id]) : field.onChange(field.value?.filter((v: string) => v !== item.id))} />
                                     </FormControl><FormLabel className="font-normal">{item.label}</FormLabel></FormItem>
                                     )}
                                 />))}

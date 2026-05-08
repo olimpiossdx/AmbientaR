@@ -62,6 +62,7 @@ const formSchema = z.object({
       metodologias: z.string().min(1, "As metodologias são obrigatórias."),
       baseSalvamento: z.string().min(1, "A descrição da base é obrigatória."),
   }),
+  destinoMaterialBiologico: z.string().optional(),
   cursoCapacitacao: z.string().min(1, "O programa do curso é obrigatório."),
   planoSupressao: z.string().min(1, "O plano de supressão é obrigatório."),
   cronogramaExecucao: z.string().min(1, "O cronograma é obrigatório."),

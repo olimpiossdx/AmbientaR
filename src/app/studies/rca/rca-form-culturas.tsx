@@ -600,7 +600,7 @@ export function RcaFormCulturas({ form, clients, isLoadingClients, projects, isL
                                                                     onCheckedChange={(checked) => {
                                                                         return checked
                                                                             ? field.onChange([...(field.value || []), item])
-                                                                            : field.onChange(field.value?.filter((value) => value !== item));
+                                                                            : field.onChange(field.value?.filter((value: string) => value !== item));
                                                                     }}
                                                                 /></FormControl>
                                                                 <FormLabel className="text-sm font-normal">{item}</FormLabel>

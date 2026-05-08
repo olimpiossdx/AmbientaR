@@ -26,6 +26,7 @@ import { MoreHorizontal, PlusCircle, Pencil, Trash2, Eye } from 'lucide-react';
 import { useCollection, useFirestore, useUser, useMemoFirebase, errorEmitter } from '@/firebase';
 import { collection, doc, deleteDoc } from 'firebase/firestore';
 import type { TechnicalResponsible } from '@/lib/types';
+import { FirestorePermissionError } from '@/firebase/errors';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   Dialog,

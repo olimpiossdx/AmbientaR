@@ -934,7 +934,7 @@ export default function TelemetricMonitoringPage() {
                             <CardContent>
                               <div className="text-3xl font-bold">{compliance.activeDaysCount}</div>
                               <p className="text-xs text-muted-foreground">
-                                Limite cadastrado: {compliancePermit.maxDaysPerMonth ?? "Não informado"}
+                                Limite cadastrado: {compliancePermit?.maxDaysPerMonth ?? "Não informado"}
                               </p>
                             </CardContent>
                           </Card>

@@ -71,7 +71,6 @@ import {
 import { IntervencaoForm } from "./intervencao-form";
 import { useToast } from "@/hooks/use-toast";
 import { FirestorePermissionError } from "@/firebase/errors";
-import { useAuth } from "@/firebase";
 import { useRouter } from "next/navigation";
 import {
   Tooltip,
@@ -104,16 +103,18 @@ export default function IntervencoesPage() {
     string[] | undefined
   >(undefined);
 
-  const { firestore, user } = useAuth();
+  const firestore = useFirestore();
+  const { user } = useUser();
   const { toast } = useToast();
   const router = useRouter();
 
   useEffect(() => {
     if (isClientePortalRole(user?.role) && firestore) {
       setEmpreendedorIdsForUser(undefined);
+      const currentUser = user as AppUser;
       const userDocuments = [
-        user.cpf || user.userCpf,
-        ...(user.cnpjs || []),
+        currentUser.cpf || currentUser.userCpf,
+        ...(currentUser.cnpjs || []),
       ].filter(Boolean) as string[];
       if (userDocuments.length > 0) {
         const empreendedoresRef = collection(firestore, "empreendedores");

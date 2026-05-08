@@ -106,7 +106,7 @@ export const FirebaseProvider: React.FC<{ children: ReactNode; firebaseApp: Fire
                         ...userData,
                         uid: firebaseUser.uid,
                         isOnline: true,
-                        photoURL: userData.photoURL || firebaseUser.photoURL,
+                        photoURL: userData.photoURL || firebaseUser.photoURL || undefined,
                     };
                     setAppUser(currentUser);
                     await updateUserOnlineStatus(firebaseUser.uid, true);

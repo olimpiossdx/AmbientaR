@@ -87,7 +87,7 @@ const formSchema = z
       required_error: "A data de vencimento é obrigatória.",
     }),
     status: z.enum(
-      ["Válida", "Vencida", "Em Renovação", "Suspensa", "Cancelada"],
+      ["Válida", "Vencida", "Em Renovação", "Suspensa", "Cancelada", "Em Andamento"],
       { required_error: "Selecione o status." },
     ),
     description: z.string().min(1, "A finalidade é obrigatória."),
@@ -119,6 +119,7 @@ const permitStatuses: { value: PermitStatus; label: string }[] = [
   { value: "Em Renovação", label: "Em Renovação" },
   { value: "Suspensa", label: "Suspensa" },
   { value: "Cancelada", label: "Cancelada" },
+  { value: "Em Andamento", label: "Em Andamento" },
 ];
 
 export function OutorgaForm({ currentItem, onSuccess }: OutorgaFormProps) {
@@ -163,7 +164,7 @@ export function OutorgaForm({ currentItem, onSuccess }: OutorgaFormProps) {
 
   React.useEffect(() => {
     isHydratingFormRef.current = true;
-    const defaultValues: FormValues = {
+    const defaultValues: Partial<FormValues> = {
       empreendedorId: currentItem?.empreendedorId || "",
       projectId: currentItem?.projectId || "",
       permitNumber: currentItem?.permitNumber || "",

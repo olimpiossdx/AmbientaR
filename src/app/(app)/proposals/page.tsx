@@ -367,7 +367,7 @@ export default function ProposalsPage() {
       yPos += 6;
       doc.text(client.cpfCnpj || "", 14, yPos, { align: "justify" });
       yPos += 6;
-      doc.text(client.email, 14, yPos, { align: "justify" });
+      doc.text(client.email || "", 14, yPos, { align: "justify" });
       yPos += 10;
     }
 

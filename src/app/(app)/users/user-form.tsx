@@ -158,7 +158,7 @@ export function UserForm({ currentUser, onSuccess, representativeRequestedCpf, r
   const currentSchema = currentUser ? editFormSchema : createFormSchema;
 
   const form = useForm<UserFormValues>({
-    resolver: zodResolver(currentSchema),
+    resolver: zodResolver(currentSchema) as any,
     defaultValues: {
       name: currentUser?.name || '',
       email: currentUser?.email || '',

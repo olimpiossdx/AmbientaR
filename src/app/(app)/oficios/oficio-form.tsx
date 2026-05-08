@@ -26,6 +26,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Label } from '@/components/ui/label';
+import { getRoleLabelPt } from '@/lib/user-role-labels';
 
 const formSchema = z.object({
   recipient: z.string().min(3, 'O destinatário é obrigatório.'),
@@ -83,20 +84,7 @@ export function OficioForm({ currentItem, onSuccess, onCancel }: OficioFormProps
   const selectedAssinanteId = form.watch('assinanteId');
   
   const getRoleText = (role?: AppUser['role']) => {
-    if (!role) return '';
-    const roles: Record<AppUser["role"], string> = {
-      admin: 'Administrador',
-      client: 'Cliente',
-      representative: 'Representante',
-      technical: 'Técnico',
-      sales: 'Vendas',
-      financial: 'Financeiro',
-      gestor: 'Gestor Ambiental',
-      supervisor: 'Supervisor',
-      diretor_fauna: 'Diretor de Fauna',
-      advogado: 'Advogado',
-    };
-    return roles[role] || role;
+    return getRoleLabelPt(role);
   };
   
   const assinanteSelecionado = React.useMemo(() => {

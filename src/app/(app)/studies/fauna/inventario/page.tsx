@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { InventarioFaunaForm } from './inventario-form';
 import { useFirebase, errorEmitter } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
-import { collection, addDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, serverTimestamp, doc } from 'firebase/firestore';
 import type { FaunaStudy } from '@/lib/types';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { useRouter } from 'next/navigation';
@@ -14,7 +14,7 @@ export default function InventarioFaunaPage() {
     const { toast } = useToast();
     const router = useRouter();
 
-    const handleSave = async (data: Partial<FaunaStudy>, status: 'draft' | 'completed') => {
+    const handleSave = async (data: any, status: 'draft' | 'completed') => {
         if (!firestore) {
             toast({
                 variant: 'destructive',

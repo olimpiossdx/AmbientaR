@@ -120,8 +120,8 @@ export function DynamicStudyForm({
     if (clientId && clients?.length) {
       const c = clients.find((x) => x.id === clientId);
       if (c) {
-        form.setValue('requerente.nome', c.name);
-        form.setValue('requerente.cpfCnpj', c.cpfCnpj ?? '');
+        form.setValue('requerente.nome' as any, c.name);
+        form.setValue('requerente.cpfCnpj' as any, c.cpfCnpj ?? '');
       }
     }
   }, [clientId, clients, form]);
@@ -129,13 +129,13 @@ export function DynamicStudyForm({
     if (projectId && projects?.length) {
       const p = projects.find((x) => x.id === projectId);
       if (p) {
-        form.setValue('empreendimento.nome', (p.fantasyName || p.propertyName) ?? '');
-        form.setValue('empreendimento.denominacao', p.propertyName ?? '');
+        form.setValue('empreendimento.nome' as any, (p.fantasyName || p.propertyName) ?? '');
+        form.setValue('empreendimento.denominacao' as any, p.propertyName ?? '');
         const carVal = typeof p.car === 'object' && p.car && 'receiptNumber' in p.car
           ? (p.car as { receiptNumber: string }).receiptNumber
           : (p as Record<string, unknown>).car as string | undefined;
-        form.setValue('empreendimento.car', carVal ?? '');
-        form.setValue('empreendimento.matricula', p.matricula ?? '');
+        form.setValue('empreendimento.car' as any, carVal ?? '');
+        form.setValue('empreendimento.matricula' as any, p.matricula ?? '');
       }
     }
   }, [projectId, projects, form]);
@@ -431,9 +431,9 @@ function ArraySection({
   form: ReturnType<typeof useForm<DynamicFormValues>>;
 }) {
   const { control } = form;
-  const { fields, append, remove } = useFieldArray({
+  const { fields, append, remove } = useFieldArray<any>({
     control,
-    name,
+    name: name as any,
   });
 
   const defaultItem = React.useMemo(() => {

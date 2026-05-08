@@ -52,7 +52,7 @@ export function RelatorioInventarioForm({ studyId }: RelatorioInventarioFormProp
   const router = useRouter();
   const { firestore } = useFirebase();
 
-  const studyDocRef = useMemoFirebase(() => studyId ? doc(firestore, 'faunaStudies', studyId) : null, [firestore, studyId]);
+  const studyDocRef = useMemoFirebase(() => (firestore && studyId ? doc(firestore, 'faunaStudies', studyId) : null), [firestore, studyId]);
   const { data: study, isLoading: isLoadingStudy } = useDoc<FaunaStudy>(studyDocRef);
 
   const form = useForm<FormValues>({
