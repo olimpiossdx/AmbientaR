@@ -1,218 +1,286 @@
 'use client';
 
 import * as React from 'react';
+import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { useDoc, useFirebase } from '@/firebase';
-import { doc } from 'firebase/firestore';
-import type { InventoryProject } from '@/lib/types';
+import { useDoc, useFirebase, useCollection } from '@/firebase';
+import {
+  addDoc,
+  collection,
+  doc,
+  limit,
+  orderBy,
+  query,
+  serverTimestamp,
+} from 'firebase/firestore';
+import type { InventoryCalculationRun, InventoryProject } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { HelpCircle, Filter, X } from 'lucide-react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox';
-
+import { HelpCircle, Filter, ExternalLink, Loader2 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import {
+  AmostragemPanel,
+  EstDiametricaPanel,
+  EstruturasPanel,
+  GenericCalculoPanel,
+} from './calculation-panels';
+import { MATA_NATIVA_LINKS } from '../mata-nativa-links';
 
 const calculoOptions = [
-    "Amostragem", "Florística", "Diversidade", "Agregação", "Estruturas",
-    "ViAmpliado", "Est. Diamétrica", "An. Qualitativa",
-    "Valoração", "Experimentação", "Agrupamento"
-];
+  'Amostragem',
+  'Florística',
+  'Diversidade',
+  'Agregação',
+  'Estruturas',
+  'ViAmpliado',
+  'Est. Diamétrica',
+  'An. Qualitativa',
+  'Valoração',
+  'Experimentação',
+  'Agrupamento',
+] as const;
 
-function AmostragemCalculator({onClose}: {onClose: () => void}) {
-    return (
-        <div className="bg-background rounded-lg border h-full flex flex-col">
-             <div className="flex items-start justify-between p-4 border-b">
-                 <Tabs defaultValue="casual-simples" className="w-full">
-                    <TabsList>
-                        <TabsTrigger value="casual-simples">Casual Simples</TabsTrigger>
-                        <TabsTrigger value="curva-coletora">Curva Coletora</TabsTrigger>
-                    </TabsList>
-                    <div className="p-6 flex-1 overflow-auto">
-                        <TabsContent value="casual-simples" className="mt-0">
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                                <div className="space-y-6">
-                                    <div>
-                                        <Label htmlFor="casas-decimais">Casas decimais</Label>
-                                        <Input id="casas-decimais" type="number" defaultValue={5} className="mt-1 w-24" />
-                                    </div>
-                                    <div className="p-4 border rounded-md space-y-4">
-                                        <h3 className="font-medium">Parâmetros da Amostragem</h3>
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <div className="space-y-1">
-                                                <Label htmlFor="area-total">Área total do inventário (ha)</Label>
-                                                <Input id="area-total" type="number" />
-                                            </div>
-                                            <div className="space-y-1">
-                                                <Label htmlFor="erro">Erro (%)</Label>
-                                                <Input id="erro" type="number" />
-                                            </div>
-                                        </div>
-                                         <div className="grid grid-cols-2 gap-4">
-                                            <div className="space-y-1">
-                                                <Label htmlFor="probabilidade">Nível de Probabilidade (%)</Label>
-                                                <Input id="probabilidade" type="number" defaultValue={90} />
-                                            </div>
-                                            <div className="space-y-1">
-                                                <Label>Parâmetro</Label>
-                                                <Select defaultValue="N">
-                                                    <SelectTrigger><SelectValue /></SelectTrigger>
-                                                    <SelectContent>
-                                                        <SelectItem value="N">N</SelectItem>
-                                                    </SelectContent>
-                                                </Select>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="p-4 border rounded-md space-y-4">
-                                        <h3 className="font-medium">Volume</h3>
-                                         <div className="flex items-center space-x-2">
-                                            <Checkbox id="por-especie" />
-                                            <Label htmlFor="por-especie" className="font-normal">Por Espécie</Label>
-                                        </div>
-                                        <div>
-                                            <Label>Fórmula</Label>
-                                            <div className="p-2 bg-muted rounded-md text-sm mt-1">
-                                                PI * (D^2) * HT / 40000
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="space-y-4">
-                                    <div className="p-4 border rounded-md space-y-4">
-                                        <h3 className="font-medium">Apresentar árvores</h3>
-                                        <div className="flex items-center space-x-2">
-                                            <Checkbox id="considerar-fuste" />
-                                            <Label htmlFor="considerar-fuste" className="font-normal">Considerar cada fuste como um indivíduo</Label>
-                                        </div>
-                                        <div className="flex items-center space-x-2">
-                                            <Checkbox id="arvore-adulta" defaultChecked />
-                                            <Label htmlFor="arvore-adulta" className="font-normal">Árvore Adulta</Label>
-                                        </div>
-                                        <div className="flex items-center space-x-2">
-                                            <Checkbox id="arvore-regeneracao" />
-                                            <Label htmlFor="arvore-regeneracao" className="font-normal">Árvore de Regeneração</Label>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </TabsContent>
-                        <TabsContent value="curva-coletora" className="mt-0">
-                            <div className="space-y-6">
-                                <div className="flex justify-between items-start">
-                                    <div className="space-y-1">
-                                        <Label htmlFor="casas-decimais-curva">Casas decimais</Label>
-                                        <Input id="casas-decimais-curva" type="number" defaultValue={5} className="mt-1 w-24" />
-                                    </div>
-                                    <div className="flex items-center space-x-2 pt-2">
-                                        <Checkbox id="exibir-nome-simplificado" />
-                                        <Label htmlFor="exibir-nome-simplificado" className="font-normal">Exibir nome científico simplificado</Label>
-                                    </div>
-                                </div>
-
-                                <div className="p-4 border rounded-md space-y-2">
-                                    <Label>Apresentar árvores</Label>
-                                    <div className="flex flex-col space-y-2 pt-2">
-                                        <div className="flex items-center space-x-2">
-                                            <Checkbox id="arvore-adulta-curva" defaultChecked />
-                                            <Label htmlFor="arvore-adulta-curva" className="font-normal">Árvore Adulta</Label>
-                                        </div>
-                                        <div className="flex items-center space-x-2">
-                                            <Checkbox id="arvore-regeneracao-curva" />
-                                            <Label htmlFor="arvore-regeneracao-curva" className="font-normal">Árvore de Regeneração</Label>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <div className="space-y-1">
-                                    <Label>Método de ordenação</Label>
-                                    <Select defaultValue="parcelas">
-                                        <SelectTrigger>
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="parcelas">Parcelas</SelectItem>
-                                            <SelectItem value="aleatorio">Aleatório</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                            </div>
-                        </TabsContent>
-                    </div>
-                </Tabs>
-                <Button variant="ghost" size="icon" onClick={onClose} className="shrink-0">
-                    <X className="h-4 w-4" />
-                </Button>
-            </div>
-        </div>
-    )
+function formatRunDate(createdAt: unknown): string {
+  if (createdAt && typeof (createdAt as { toDate?: () => Date }).toDate === 'function') {
+    try {
+      return format((createdAt as { toDate: () => Date }).toDate(), 'dd/MM/yyyy HH:mm:ss', { locale: ptBR });
+    } catch {
+      /* ignore */
+    }
+  }
+  return '—';
 }
 
 export default function CalculadoraPage() {
   const params = useParams();
   const projectId = params.id as string;
   const { firestore } = useFirebase();
+  const { toast } = useToast();
   const [selectedCalculo, setSelectedCalculo] = React.useState<string | null>(null);
+  const [runSaving, setRunSaving] = React.useState(false);
+  const amostragemRunFnRef = React.useRef<(() => Record<string, unknown>) | null>(null);
 
   const projectDocRef = React.useMemo(() => {
     if (!firestore || !projectId) return null;
     return doc(firestore, 'inventories', projectId);
   }, [firestore, projectId]);
 
+  const runsQuery = React.useMemo(() => {
+    if (!firestore || !projectId) return null;
+    return query(
+      collection(firestore, 'inventories', projectId, 'calculationRuns'),
+      orderBy('createdAt', 'desc'),
+      limit(25),
+    );
+  }, [firestore, projectId]);
+
   const { data: project, isLoading } = useDoc<InventoryProject>(projectDocRef);
+  const { data: runs, isLoading: runsLoading } = useCollection<InventoryCalculationRun>(runsQuery);
+
+  const handleCalcular = async () => {
+    if (!firestore || !projectId) {
+      toast({ variant: 'destructive', title: 'Sessão', description: 'Firestore indisponível.' });
+      return;
+    }
+    if (selectedCalculo === 'Amostragem') {
+      const fn = amostragemRunFnRef.current;
+      if (!fn) {
+        toast({
+          variant: 'destructive',
+          title: 'Amostragem',
+          description: 'Aguarde o painel carregar ou selecione Amostragem novamente.',
+        });
+        return;
+      }
+      const parameters = fn();
+      setRunSaving(true);
+      try {
+        await addDoc(collection(firestore, 'inventories', projectId, 'calculationRuns'), {
+          module: (parameters.module as string) ?? 'Amostragem',
+          subModule: parameters.tab as string | undefined,
+          label: `Amostragem — ${String(parameters.tab ?? '').replace(/-/g, ' ')}`,
+          parameters,
+          result: {
+            message:
+              'Configuração registada. O motor estatístico será aplicado quando parcelas/árvores estiverem ligados.',
+          },
+          status: 'stub',
+          createdAt: serverTimestamp(),
+        });
+        toast({ title: 'Execução registada', description: 'Corrida guardada no histórico do projeto.' });
+      } catch (e) {
+        toast({
+          variant: 'destructive',
+          title: 'Erro ao gravar',
+          description: (e as Error).message,
+        });
+      } finally {
+        setRunSaving(false);
+      }
+      return;
+    }
+    toast({
+      title: 'Em breve',
+      description: `O módulo «${selectedCalculo}» ainda não grava execuções nesta versão.`,
+    });
+  };
+
+  const openHelp = () => {
+    window.open(MATA_NATIVA_LINKS.tutoriais, '_blank', 'noopener,noreferrer');
+  };
+
+  const openGuia = () => {
+    window.open(MATA_NATIVA_LINKS.guiaInventario, '_blank', 'noopener,noreferrer');
+  };
+
+  const openCurso = () => {
+    window.open(MATA_NATIVA_LINKS.cursoProcessamento, '_blank', 'noopener,noreferrer');
+  };
+
+  const openYoutube = () => {
+    window.open(MATA_NATIVA_LINKS.youtubeSearch, '_blank', 'noopener,noreferrer');
+  };
+
+  const renderPanel = () => {
+    if (!selectedCalculo) return null;
+    const onClose = () => setSelectedCalculo(null);
+    switch (selectedCalculo) {
+      case 'Amostragem':
+        return <AmostragemPanel onClose={onClose} className="h-full" runCollectorRef={amostragemRunFnRef} />;
+      case 'Est. Diamétrica':
+        return <EstDiametricaPanel onClose={onClose} className="h-full" />;
+      case 'Estruturas':
+        return <EstruturasPanel onClose={onClose} className="h-full" />;
+      default:
+        return <GenericCalculoPanel title={selectedCalculo} onClose={onClose} className="h-full" />;
+    }
+  };
 
   return (
     <>
-      <header className="flex h-16 items-center justify-between border-b bg-background px-6">
-        <div className="flex items-center gap-4">
-            {isLoading ? <Skeleton className="h-6 w-48" /> : <h1 className="text-xl font-semibold">{project?.nome || 'Carregando...'} &gt; Calculadora</h1>}
+      <header className="flex min-h-14 flex-wrap items-center justify-between gap-2 border-b bg-background px-4 py-2 md:px-6">
+        <div className="flex min-w-0 flex-1 flex-col gap-1">
+          {isLoading ? (
+            <Skeleton className="h-6 w-48" />
+          ) : (
+            <h1 className="truncate text-lg font-semibold md:text-xl">
+              {project?.nome ?? 'Carregando…'}
+              <span className="text-muted-foreground"> · Calculadora</span>
+            </h1>
+          )}
+          <p className="text-xs text-muted-foreground md:text-sm">
+            Seletor de cálculo inspirado no{' '}
+            <a
+              href={MATA_NATIVA_LINKS.guiaInventario}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline underline-offset-2"
+            >
+              Mata Nativa
+            </a>
+            . Amostragem: use «Calcular» para gravar a configuração no histórico (stub até o motor numérico).
+          </p>
+        </div>
+        <div className="flex shrink-0 flex-wrap gap-2">
+          <Button type="button" variant="outline" size="sm" onClick={openGuia}>
+            <ExternalLink className="mr-2 h-4 w-4" />
+            Guia inventário
+          </Button>
         </div>
       </header>
-      <main className="flex-1 overflow-hidden flex">
-        {/* Left Sidebar for Calculation Selection */}
-        <div className="w-64 bg-background p-4 flex flex-col border-r">
-            <h2 className="text-lg font-semibold mb-4 px-2">Seletor de cálculo</h2>
-            <div className="flex flex-col gap-1">
-                {calculoOptions.map(option => (
-                    <Button 
-                        key={option} 
-                        variant={selectedCalculo === option ? "secondary" : "ghost"}
-                        className="justify-start"
-                        onClick={() => setSelectedCalculo(option)}
+      <main className="flex min-h-0 flex-1 flex-col overflow-hidden md:flex-row">
+        <div className="flex w-full shrink-0 flex-col border-b bg-background md:w-72 md:border-b-0 md:border-r">
+          <h2 className="mb-2 px-3 pt-3 text-sm font-semibold text-muted-foreground">Seletor de cálculo</h2>
+          <div className="flex max-h-40 flex-row gap-1 overflow-x-auto px-2 pb-2 md:max-h-none md:flex-col md:overflow-visible">
+            {calculoOptions.map((option) => (
+              <Button
+                key={option}
+                variant={selectedCalculo === option ? 'secondary' : 'ghost'}
+                size="sm"
+                className="shrink-0 justify-start md:w-full"
+                onClick={() => setSelectedCalculo(option)}
+              >
+                {option}
+              </Button>
+            ))}
+          </div>
+          <div className="mt-1 border-t px-3 py-2">
+            <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Histórico</h3>
+            {runsLoading && <Skeleton className="h-16 w-full" />}
+            {!runsLoading && (!runs || runs.length === 0) && (
+              <p className="text-xs text-muted-foreground">Nenhuma execução registada.</p>
+            )}
+            {!runsLoading && runs && runs.length > 0 && (
+              <ul className="max-h-44 space-y-1 overflow-y-auto text-xs md:max-h-60">
+                {runs.map((r) => (
+                  <li key={r.id}>
+                    <Link
+                      href={`/studies/inventario/${projectId}/resultado/${r.id}`}
+                      className="block rounded-sm border bg-muted/20 px-2 py-1.5 transition-colors hover:bg-muted/50"
                     >
-                        {option}
-                    </Button>
+                      <div className="font-medium leading-tight">{r.label}</div>
+                      <div className="text-muted-foreground">{formatRunDate(r.createdAt)}</div>
+                    </Link>
+                  </li>
                 ))}
-            </div>
+              </ul>
+            )}
+          </div>
         </div>
 
-        {/* Main Content Area */}
-        <div className="flex-1 p-6 bg-muted/30">
-            {selectedCalculo === 'Amostragem' ? (
-               <AmostragemCalculator onClose={() => setSelectedCalculo(null)} />
-            ) : selectedCalculo ? (
-                <div className="flex items-center justify-center h-full border-2 border-dashed rounded-lg bg-background">
-                    <p className="text-muted-foreground">Interface para &quot;{selectedCalculo}&quot; em construção.</p>
-                </div>
-            ) : (
-                 <div className="flex items-start justify-start pt-2">
-                    <p className="text-muted-foreground">Selecione um cálculo na lista à esquerda.</p>
-                </div>
-            )}
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col bg-muted/30 p-3 md:p-6">
+          {selectedCalculo ? (
+            renderPanel()
+          ) : (
+            <div className="flex flex-col gap-3 rounded-lg border border-dashed bg-background/80 p-6 text-sm text-muted-foreground">
+              <p>Selecione um tipo de cálculo na lista à esquerda (amostragem, estrutura horizontal/vertical, est. diamétrica, etc.).</p>
+              <p>
+                Documentação de referência:{' '}
+                <button type="button" className="text-primary underline" onClick={() => window.open(MATA_NATIVA_LINKS.amostragem, '_blank')}>
+                  Amostragem no Mata Nativa
+                </button>
+                .
+              </p>
+            </div>
+          )}
         </div>
       </main>
-       <footer className="flex items-center justify-between p-4 border-t bg-background">
-            <div className="flex gap-2">
-                 <Button variant="outline"><HelpCircle className="mr-2 h-4 w-4" />Ajuda</Button>
-                 <Button variant="outline"><Filter className="mr-2 h-4 w-4" />Filtros</Button>
-            </div>
-            <div className="flex gap-2">
-                <Button variant="ghost" onClick={() => setSelectedCalculo(null)}>Cancelar</Button>
-                <Button>Calcular</Button>
-            </div>
-       </footer>
+      <footer className="flex flex-wrap items-center justify-between gap-2 border-t bg-background p-3 md:p-4">
+        <div className="flex flex-wrap gap-2">
+          <Button type="button" variant="outline" size="sm" onClick={openHelp}>
+            <HelpCircle className="mr-2 h-4 w-4" />
+            Tutoriais (Mata Nativa)
+          </Button>
+          <Button type="button" variant="outline" size="sm" onClick={openCurso}>
+            <ExternalLink className="mr-2 h-4 w-4" />
+            Curso em vídeo
+          </Button>
+          <Button type="button" variant="outline" size="sm" onClick={openYoutube}>
+            <ExternalLink className="mr-2 h-4 w-4" />
+            YouTube
+          </Button>
+          <Button type="button" variant="outline" size="sm" disabled title="Em breve">
+            <Filter className="mr-2 h-4 w-4" />
+            Filtros
+          </Button>
+        </div>
+        <div className="flex gap-2">
+          <Button type="button" variant="ghost" size="sm" onClick={() => setSelectedCalculo(null)}>
+            Cancelar
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            disabled={runSaving || !selectedCalculo}
+            onClick={() => void handleCalcular()}
+          >
+            {runSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Calcular
+          </Button>
+        </div>
+      </footer>
     </>
   );
 }

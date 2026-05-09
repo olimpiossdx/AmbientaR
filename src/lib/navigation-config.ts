@@ -491,10 +491,41 @@ export const allNavItems: NavItem[] = [
         roles: ["admin", "technical", "gestor", "supervisor", "diretor_fauna", "advogado"],
       },
       {
-        href: "/studies/assistant",
         label: "Assistente IA",
         icon: BrainCircuit,
         roles: ["admin", "technical", "gestor", "supervisor", "diretor_fauna", "advogado"],
+        subItems: [
+          {
+            href: "/studies/assistant?tipo=geral",
+            label: "Legislação e estudos",
+            icon: BookOpenCheck,
+            roles: ["admin", "technical", "gestor", "supervisor", "diretor_fauna", "advogado"],
+          },
+          {
+            href: "/studies/assistant?tipo=mira",
+            label: "Águas / MIRA-IGAM",
+            icon: Droplets,
+            roles: ["admin", "technical", "gestor", "supervisor", "diretor_fauna", "advogado"],
+          },
+          {
+            href: "/studies/assistant?tipo=financeiro",
+            label: "Custos e contratos",
+            icon: BarChart2,
+            roles: ["admin", "technical", "gestor", "supervisor", "diretor_fauna", "advogado"],
+          },
+          {
+            href: "/studies/assistant?tipo=rag",
+            label: "Síntese de texto",
+            icon: FileArchive,
+            roles: ["admin", "technical", "gestor", "supervisor", "diretor_fauna", "advogado"],
+          },
+          {
+            href: "/studies/assistant?tipo=mcp",
+            label: "Cruzamento de dados",
+            icon: Workflow,
+            roles: ["admin", "technical", "gestor", "supervisor", "diretor_fauna", "advogado"],
+          },
+        ],
       },
       {
         href: "/studies/prada",

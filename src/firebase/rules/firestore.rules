@@ -394,6 +394,9 @@ service cloud.firestore {
      */
     match /inventories/{inventoryId} {
       allow read, write: if isSignedIn();
+      match /calculationRuns/{runId} {
+        allow read, write: if isSignedIn();
+      }
     }
 
     /**

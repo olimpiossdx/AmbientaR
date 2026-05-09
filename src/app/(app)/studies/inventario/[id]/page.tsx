@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useDoc, useFirebase, errorEmitter } from '@/firebase';
-import { doc, addDoc, collection, serverTimestamp, updateDoc } from 'firebase/firestore';
+import { doc, addDoc, collection, serverTimestamp, updateDoc, deleteField } from 'firebase/firestore';
 import type { InventoryProject } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -19,19 +19,21 @@ import {
   AlertTriangle,
   Loader2,
 } from 'lucide-react';
-import Image from 'next/image';
 import { ImportDialog } from './import-dialog';
+import { ProjectPhotosDialog } from './project-photos-dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { FirestorePermissionError } from '@/firebase/errors';
-import { useForm, FormProvider } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
 import { format } from 'date-fns';
-
+import { cn } from '@/lib/utils';
+import { IpeAmareloDefaultCover } from '@/components/studies/inventory/IpeAmareloDefaultCover';
 
 const formSchema = z.object({
   nome: z.string().min(1, "O nome do projeto é obrigatório."),
@@ -43,10 +45,18 @@ const formSchema = z.object({
 type FormValues = z.infer<typeof formSchema>;
 
 
-const DetailItem = ({ label, value }: { label: string; value: React.ReactNode }) => (
-  <div className="flex flex-col gap-1">
-    <p className="text-sm font-medium text-muted-foreground">{label}</p>
-    <div className="text-base">{value || 'Não informado'}</div>
+const DetailItem = ({
+  label,
+  value,
+  className,
+}: {
+  label: string;
+  value: React.ReactNode;
+  className?: string;
+}) => (
+  <div className={cn('flex min-w-0 flex-col gap-1', className)}>
+    <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
+    <div className="break-words text-base font-medium leading-snug">{value ?? 'Não informado'}</div>
   </div>
 );
 
@@ -58,6 +68,9 @@ export default function InventarioProjectPage() {
   const [isDuplicateAlertOpen, setIsDuplicateAlertOpen] = React.useState(false);
   const [isDuplicating, setIsDuplicating] = React.useState(false);
   const [isEditing, setIsEditing] = React.useState(false);
+  const [isPhotosOpen, setIsPhotosOpen] = React.useState(false);
+  const [coverUploading, setCoverUploading] = React.useState(false);
+  const coverFileInputRef = React.useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
   const { firestore, user } = useFirebase();
@@ -71,11 +84,11 @@ export default function InventarioProjectPage() {
   
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: project ? {
-        nome: project.nome,
-        descricao: project.descricao,
-        data: new Date(project.data)
-    } : undefined
+    defaultValues: {
+      nome: '',
+      descricao: '',
+      data: new Date(),
+    },
   });
 
   React.useEffect(() => {
@@ -106,7 +119,7 @@ export default function InventarioProjectPage() {
     }
     setIsDuplicating(true);
 
-    const { id, nome, ...restOfProject } = project;
+    const { id, nome, coverImageUrl: _c, selectedPhotoIds: _s, photoOrder: _p, ...restOfProject } = project;
     
     const newProjectData = {
         ...restOfProject,
@@ -174,30 +187,98 @@ export default function InventarioProjectPage() {
     setIsEditing(false);
   }
 
-  if (isLoading) {
-    return (
-        <main className="flex-1 p-6">
-            <Skeleton className="h-10 w-1/4 mb-4" />
-            <Skeleton className="h-96 w-full" />
-        </main>
-    );
-  }
+  const customCoverSrc = project?.coverImageUrl?.trim() ?? '';
+  const hasCustomCover = Boolean(customCoverSrc);
+  const [customCoverFailed, setCustomCoverFailed] = React.useState(false);
 
-  if (!project) {
-    return (
-       <main className="flex-1 p-6">
-        <h1 className="text-2xl font-bold">Projeto não encontrado</h1>
-        <p>O projeto que você está procurando não existe ou foi movido.</p>
-        <Button onClick={() => router.back()} className="mt-4">Voltar</Button>
-      </main>
-    );
-  }
+  React.useEffect(() => {
+    setCustomCoverFailed(false);
+  }, [customCoverSrc]);
+
+  const showInlineDefault = !hasCustomCover || customCoverFailed;
+
+  const handleCoverFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file || !projectDocRef || !projectId) return;
+    setCoverUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append('projectId', projectId);
+      fd.append('files', file);
+      const res = await fetch('/api/inventory-project-photos', { method: 'POST', body: fd });
+      const data = (await res.json()) as { success?: boolean; uploaded?: { url: string }[]; error?: string };
+      if (!res.ok || !data.success || !data.uploaded?.[0]?.url) {
+        throw new Error(data.error || 'Falha no envio da imagem.');
+      }
+      await updateDoc(projectDocRef, {
+        coverImageUrl: data.uploaded[0].url,
+        updatedAt: serverTimestamp(),
+      });
+      toast({ title: 'Imagem atualizada', description: 'A capa do projeto foi guardada.' });
+    } catch (err) {
+      toast({
+        variant: 'destructive',
+        title: 'Erro ao enviar imagem',
+        description: (err as Error).message,
+      });
+    } finally {
+      setCoverUploading(false);
+    }
+  };
+
+  const handleRemoveCover = async () => {
+    if (!projectDocRef || !project) return;
+    if (!hasCustomCover) {
+      toast({ title: 'Capa', description: 'Já está a usar o modelo padrão (ipê-amarelo).' });
+      return;
+    }
+    const url = project.coverImageUrl!;
+    const parts = url.split('/').filter(Boolean);
+    const fileId = parts[parts.length - 1];
+    if (url.startsWith('/inventory-project-photos/') && fileId) {
+      try {
+        await fetch('/api/inventory-project-photos', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ projectId, fileId }),
+        });
+      } catch {
+        /* ficheiro pode já não existir */
+      }
+    }
+    try {
+      await updateDoc(projectDocRef, {
+        coverImageUrl: deleteField(),
+        updatedAt: serverTimestamp(),
+      });
+      toast({ title: 'Capa reposta', description: 'Voltou ao modelo padrão (ipê-amarelo).' });
+    } catch (error) {
+      console.error(error);
+      toast({ variant: 'destructive', title: 'Erro', description: 'Não foi possível remover a capa.' });
+    }
+  };
 
   return (
     <>
-        <header className="flex h-16 items-center justify-between border-b bg-background px-6">
-          <h1 className="text-xl font-semibold">{project.nome}</h1>
-          <div className="flex items-center gap-2">
+      {isLoading ? (
+        <main className="flex-1 p-6">
+          <Skeleton className="mb-4 h-10 w-1/4" />
+          <Skeleton className="h-96 w-full" />
+        </main>
+      ) : !project ? (
+        <main className="flex-1 p-6">
+          <h1 className="text-2xl font-bold">Projeto não encontrado</h1>
+          <p>O projeto que você está procurando não existe ou foi movido.</p>
+          <Button onClick={() => router.back()} className="mt-4">
+            Voltar
+          </Button>
+        </main>
+      ) : (
+        <>
+        <header className="flex min-h-14 flex-wrap items-center justify-between gap-2 border-b bg-background px-4 md:px-6 py-2">
+          <h1 className="text-lg font-semibold md:text-xl">{project.nome}</h1>
+          <div className="flex flex-wrap items-center gap-2">
             <Button variant="outline" size="sm" onClick={() => setIsImporting(true)}><Import className="mr-2 h-4 w-4"/>Importar Planilha</Button>
              <AlertDialog open={isDuplicateAlertOpen} onOpenChange={setIsDuplicateAlertOpen}>
                 <AlertDialogTrigger asChild>
@@ -228,7 +309,9 @@ export default function InventarioProjectPage() {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
-            <Button variant="outline" size="sm"><Camera className="mr-2 h-4 w-4"/>Fotos do Projeto</Button>
+            <Button variant="outline" size="sm" onClick={() => setIsPhotosOpen(true)}>
+              <Camera className="mr-2 h-4 w-4"/>Fotos do Projeto
+            </Button>
             <Separator orientation="vertical" className="h-6" />
             
             {isEditing ? (
@@ -245,33 +328,94 @@ export default function InventarioProjectPage() {
           </div>
         </header>
         
-        <main className="flex-1 p-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Informações do Projeto</CardTitle>
+        <main className="flex-1 px-4 py-6 md:px-8 md:py-8">
+          <Card className="mx-auto max-w-6xl overflow-hidden rounded-2xl border shadow-sm">
+            <CardHeader className="border-b bg-gradient-to-r from-emerald-50/50 via-background to-background px-5 py-5 md:px-8 dark:from-emerald-950/20">
+              <CardTitle className="text-lg font-semibold tracking-tight md:text-xl">Informações do Projeto</CardTitle>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Modelo padrão: ipê-amarelo. Com <strong className="font-medium text-foreground">Habilitar edição</strong> pode substituir a imagem de capa.
+              </p>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-0">
              <Form {...form}>
               <form onSubmit={form.handleSubmit(handleSaveChanges)}>
-                <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
-                  <div className="md:col-span-3 flex flex-col items-center justify-center">
-                      <Image src="/images/tree-logo.svg" alt="Tree Logo" width={150} height={150} />
-                      {isEditing && (
-                          <div className="flex gap-2 mt-4">
-                              <Button size="sm" variant="destructive">Remover Imagem</Button>
-                              <Button size="sm" variant="outline">Mudar Imagem</Button>
-                          </div>
+                <div className="flex flex-col lg:flex-row lg:items-stretch">
+                  <div className="relative flex flex-col items-center border-b bg-muted/15 px-6 py-8 lg:w-[min(100%,340px)] lg:shrink-0 lg:border-b-0 lg:border-r lg:px-8">
+                    <input
+                      ref={coverFileInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="sr-only"
+                      onChange={(e) => void handleCoverFileChange(e)}
+                      aria-label="Escolher imagem de capa do projeto"
+                      disabled={!isEditing || coverUploading}
+                    />
+                    <div className="relative aspect-[4/5] w-full max-w-[280px] overflow-hidden rounded-2xl shadow-md ring-1 ring-border/60 bg-muted/20">
+                      {showInlineDefault ? (
+                        <IpeAmareloDefaultCover className="block h-full w-full" />
+                      ) : (
+                        /* eslint-disable-next-line @next/next/no-img-element -- URL Firebase Storage */
+                        <img
+                          src={customCoverSrc}
+                          alt="Capa do projeto"
+                          className="absolute inset-0 h-full w-full object-cover object-center"
+                          onError={() => setCustomCoverFailed(true)}
+                        />
                       )}
+                      {coverUploading && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-background/70">
+                          <Loader2 className="h-10 w-10 animate-spin text-primary" />
+                        </div>
+                      )}
+                    </div>
+                    <p className="mt-3 max-w-[280px] text-center text-xs text-muted-foreground">
+                      {hasCustomCover ? 'Foto personalizada' : 'Ilustração modelo — ipê-amarelo'}
+                    </p>
+                    {isEditing && (
+                      <div className="mt-5 flex w-full max-w-[280px] flex-col gap-2 sm:flex-row sm:justify-center">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          className="flex-1"
+                          disabled={coverUploading}
+                          onClick={() => coverFileInputRef.current?.click()}
+                        >
+                          {coverUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                          Mudar imagem
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="secondary"
+                          className="flex-1 text-destructive hover:text-destructive"
+                          disabled={coverUploading}
+                          onClick={() => void handleRemoveCover()}
+                        >
+                          Repor padrão
+                        </Button>
+                      </div>
+                    )}
                   </div>
-                  <div className="md:col-span-9 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <div className="min-w-0 flex-1 space-y-6 p-5 sm:p-6 md:p-8">
+                    <div className="grid grid-cols-1 gap-x-8 gap-y-6 sm:grid-cols-2 xl:grid-cols-3">
                     {isEditing ? (
                         <>
                             <FormField control={form.control} name="nome" render={({ field }) => (<FormItem><FormLabel>Nome</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
-                            <FormItem><FormLabel>Tipo</FormLabel><p className="pt-2 text-base">{project.tipoProjeto.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</p></FormItem>
-                            <FormItem><FormLabel>Nome da Empresa</FormLabel><FormControl><Input placeholder="Não informado"/></FormControl></FormItem>
+                            <div className="space-y-2">
+                              <Label>Tipo</Label>
+                              <p className="text-base leading-snug pt-1">{project.tipoProjeto.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</p>
+                            </div>
+                            <div className="space-y-2">
+                              <Label>Nome da Empresa</Label>
+                              <Input placeholder="Não informado" readOnly className="bg-muted/50" />
+                            </div>
                              <FormField control={form.control} name="data" render={({ field }) => (<FormItem><FormLabel>Data</FormLabel><FormControl><Input type="date" value={format(field.value, 'yyyy-MM-dd')} onChange={(e) => field.onChange(new Date(e.target.value))}/></FormControl><FormMessage /></FormItem>)} />
-                            <FormItem><FormLabel>Área do Projeto (ha)</FormLabel><FormControl><Input type="number" placeholder="Não informado"/></FormControl></FormItem>
-                            <FormField control={form.control} name="descricao" render={({ field }) => (<FormItem className="sm:col-span-2 lg:col-span-3"><FormLabel>Descrição</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>)} />
+                            <div className="space-y-2">
+                              <Label>Área do Projeto (ha)</Label>
+                              <Input type="number" placeholder="Não informado" readOnly className="bg-muted/50" />
+                            </div>
+                            <FormField control={form.control} name="descricao" render={({ field }) => (<FormItem className="sm:col-span-2 xl:col-span-3"><FormLabel>Descrição</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>)} />
                         </>
                     ) : (
                         <>
@@ -280,17 +424,21 @@ export default function InventarioProjectPage() {
                           <DetailItem label="Nome da Empresa" value="Não informado" />
                           <DetailItem label="Data" value={formatDate(project.data)} />
                            <DetailItem label="Área do Projeto (ha)" value="Não informado" />
-                          <DetailItem label="Descrição" value={project.descricao} />
+                          <DetailItem label="Descrição" value={project.descricao} className="sm:col-span-2 xl:col-span-3" />
                         </>
                     )}
                     <DetailItem label="Casas Decimais" value={5} />
                     <DetailItem label="Identificação dos Fustes da Árvore" value="Número da Árvore Igual" />
                     <DetailItem label="Forma da Parcela" value="Retangular" />
                      {isEditing ? (
-                        <FormItem className="sm:col-span-2 lg:col-span-3"><FormLabel>Observações</FormLabel><FormControl><Textarea placeholder="Não informado"/></FormControl></FormItem>
+                        <div className="space-y-2 sm:col-span-2 xl:col-span-3">
+                          <Label>Observações</Label>
+                          <Textarea placeholder="Não informado" readOnly className="bg-muted/50 min-h-[80px]" />
+                        </div>
                     ) : (
-                         <DetailItem label="Observações" value={project.descricao || 'Não informado'} />
+                         <DetailItem label="Observações" value={project.descricao || 'Não informado'} className="sm:col-span-2 xl:col-span-3" />
                     )}
+                    </div>
                   </div>
                 </div>
               </form>
@@ -298,7 +446,24 @@ export default function InventarioProjectPage() {
             </CardContent>
           </Card>
         </main>
-        <ImportDialog isOpen={isImporting} onOpenChange={setIsImporting} />
+        </>
+      )}
+      <ImportDialog isOpen={isImporting} onOpenChange={setIsImporting} projectId={projectId} />
+      <ProjectPhotosDialog
+        open={isPhotosOpen && !!project}
+        onOpenChange={setIsPhotosOpen}
+        projectId={projectId}
+        initialSelectedPhotoIds={project?.selectedPhotoIds}
+        initialPhotoOrder={project?.photoOrder}
+        onSaveSelection={async ({ selectedPhotoIds, photoOrder }) => {
+          if (!projectDocRef) return;
+          await updateDoc(projectDocRef, {
+            selectedPhotoIds,
+            photoOrder,
+            updatedAt: serverTimestamp(),
+          });
+        }}
+      />
     </>
   );
 }

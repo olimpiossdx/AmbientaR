@@ -1419,6 +1419,56 @@ export type Contact = {
     status: 'New' | 'Contacted' | 'Qualified' | 'Unqualified';
 };
 
+/** Nível de inclusão (inventário multinível) — modal Grupos de Parcela. */
+export type InventoryInclusionLevel = {
+    id: string;
+    codNi: string;
+    descricao: string;
+    areaM2: number;
+};
+
+/** Estrato amostral — modal Grupos de Parcela. */
+export type InventoryStratum = {
+    id: string;
+    codigo: string;
+    descricao: string;
+    areaHa: number;
+};
+
+/** Unidade primária de amostragem — modal Grupos de Parcela. */
+export type InventoryPrimaryUnit = {
+    id: string;
+    unidade: string;
+    areaM2: number;
+    descricao: string;
+    largura: number;
+    comprimento: number;
+    lat1: string;
+    lon1: string;
+    lat2: string;
+    lon2: string;
+    declividade: string;
+    altitude: string;
+    /** Código do estrato associado (opcional). */
+    estratoCodigo?: string;
+};
+
+export type InventoryPlotGroups = {
+    inclusionLevels: InventoryInclusionLevel[];
+    strata: InventoryStratum[];
+    primaryUnits: InventoryPrimaryUnit[];
+};
+
+/** Fórmula de volume ou outro parâmetro cadastrado no projeto. */
+export type InventoryFormula = {
+    id: string;
+    descricao: string;
+    expressao: string;
+    /** Se a fórmula está ativa para cálculos. */
+    ativa?: boolean;
+    dadosDe?: string;
+};
+
 export type InventoryProject = {
     id: string;
     nome: string;
@@ -1427,7 +1477,63 @@ export type InventoryProject = {
     tipoProjeto: string;
     ownerId: string;
     createdAt: any;
+    /** IDs de fotos selecionadas para relatório (ver `ProjectPhotosDialog`). */
+    selectedPhotoIds?: string[];
+    /** Ordem de exibição das fotos no projeto. */
+    photoOrder?: string[];
+    /** URL pública da imagem de capa do cartão do projeto (ex.: `/inventory-project-photos/...`). Se ausente, usa o modelo ipê-amarelo padrão. */
+    coverImageUrl?: string;
+    updatedAt?: any;
+    /** Dados importados da planilha (ver `ImportDialog`). */
+    importedSpecies?: Array<{
+        id: string;
+        codigoEspecie: string;
+        nomeCientifico: string;
+        nomeComum: string;
+        familia: string;
+    }>;
+    importedParcels?: Array<{
+        id: string;
+        parcela: string;
+        areaM2: string;
+        up: string;
+        us: string;
+        ni: string;
+        regNatural: boolean;
+    }>;
+    importedTrees?: Array<{
+        id: string;
+        parcela: string;
+        numArvore: string;
+        nomeComum: string;
+        nomeCientifico: string;
+        cap: string;
+        altTotal: string;
+        dap: string;
+        areaParcela: string;
+    }>;
+    importSummary?: {
+        importedAt?: any;
+        totalSpecies?: number;
+        totalParcels?: number;
+        totalTrees?: number;
+    };
+    /** Grupos de parcela (níveis de inclusão, estratos, unidades primárias). */
+    plotGroups?: InventoryPlotGroups;
+    /** Fórmulas cadastradas neste inventário (volume, etc.). */
+    inventoryFormulas?: InventoryFormula[];
 }
+
+/** Execução registada na calculadora do inventário (subcoleção `calculationRuns`). */
+export type InventoryCalculationRun = {
+    module: string;
+    subModule?: string;
+    label: string;
+    parameters: Record<string, unknown>;
+    result: Record<string, unknown>;
+    status: 'stub' | 'completed' | 'error';
+    createdAt: any;
+};
 
 export type Notification = {
     id: string;
@@ -1988,6 +2094,8 @@ export type GenerateFinancialReportOutput = z.infer<typeof GenerateFinancialRepo
 
 export const AssistantInputSchema = z.object({
   prompt: z.string().describe('A pergunta do usuário para o assistente.'),
+  /** Modo DeepSeek (menu Elaboração de Estudos → Assistente IA). */
+  tipo: z.enum(['geral', 'mira', 'financeiro', 'rag', 'mcp']).optional(),
 });
 export type AssistantInput = z.infer<typeof AssistantInputSchema>;
 

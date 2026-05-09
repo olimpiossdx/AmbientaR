@@ -18,10 +18,7 @@ import {
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
-  Copy,
-  FileDown,
   Filter,
-  MoreHorizontal,
   Plus,
   Search,
   Trash,
@@ -32,11 +29,14 @@ import {
 import { useDoc, useFirebase } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import type { InventoryProject } from '@/lib/types';
+import { InventoryModuleHeader, inventoryActionButtonClass } from '../inventory-module-chrome';
+import { PlotGroupsDialog } from './plot-groups-dialog';
 
 export default function PlotsPage() {
   const params = useParams();
   const projectId = params.id as string;
   const { firestore } = useFirebase();
+  const [groupsOpen, setGroupsOpen] = React.useState(false);
 
   const projectDocRef = React.useMemo(() => {
     if (!firestore || !projectId) return null;
@@ -47,27 +47,29 @@ export default function PlotsPage() {
 
   return (
     <>
-      <header className="flex h-16 items-center justify-between border-b bg-background px-6">
-        <div className="flex items-center gap-4">
-            <h1 className="text-xl font-semibold">{project?.nome || 'Carregando...'} &gt; Parcelas</h1>
+      <InventoryModuleHeader projectName={project?.nome} section="Parcelas">
+        <div className="relative w-full min-w-[200px] max-w-xs sm:max-w-sm">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input placeholder="Buscar…" className="pl-9" aria-label="Buscar parcelas" />
         </div>
-        <div className="flex items-center gap-2">
-            <div className="relative w-64">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input placeholder="Buscar..." className="pl-9" />
-            </div>
-        </div>
-      </header>
-      <div className="border-b p-2">
-        <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm"><Plus className="mr-2 h-4 w-4"/>Inserir</Button>
-            <Button variant="outline" size="sm"><Trash className="mr-2 h-4 w-4"/>Excluir</Button>
-            <Button variant="outline" size="sm"><Split className="mr-2 h-4 w-4"/>Grupos</Button>
+      </InventoryModuleHeader>
+      <div className="border-b bg-muted/20 px-3 py-2 md:px-4">
+        <div className="flex flex-wrap items-center gap-2">
+            <Button size="sm" className={inventoryActionButtonClass('insert')}>
+              <Plus className="mr-2 h-4 w-4"/>Inserir
+            </Button>
+            <Button variant="outline" size="sm" className={inventoryActionButtonClass('delete')}>
+              <Trash className="mr-2 h-4 w-4"/>Excluir
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => setGroupsOpen(true)}>
+              <Split className="mr-2 h-4 w-4"/>Grupos
+            </Button>
             <Button variant="outline" size="sm"><Paperclip className="mr-2 h-4 w-4"/>Atributos</Button>
             <Button variant="outline" size="sm">Pré-encher <ChevronDown className="ml-2 h-4 w-4"/></Button>
             <Button variant="outline" size="sm"><Filter className="mr-2 h-4 w-4"/>Colunas</Button>
         </div>
       </div>
+      <PlotGroupsDialog open={groupsOpen} onOpenChange={setGroupsOpen} projectId={projectId} />
       <main className="flex-1 overflow-auto">
         <div className="relative">
             <Table>

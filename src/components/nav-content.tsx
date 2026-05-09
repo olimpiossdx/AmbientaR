@@ -2,7 +2,8 @@
 'use client';
 
 import * as React from 'react';
-import { usePathname } from 'next/navigation';
+import { Suspense } from 'react';
+import { usePathname, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {
   SidebarMenu,
@@ -21,8 +22,9 @@ import { getFinancialMenuForRole, isFinancialRoute } from '@/lib/financial-menu-
 import { getCadastroMenuForRole, isCadastroRoute } from '@/lib/cadastro-menu-debug';
 
 
-function NavContent() {
+function NavContentInner() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { user } = useAuth();
   const [navItems, setNavItems] = React.useState<NavItem[]>([]);
   const { isMobile, open, setOpenMobile, setDesktopSidebarWidth } = useSidebar();
@@ -88,9 +90,19 @@ function NavContent() {
       if (!href) return false;
       if (href.startsWith("/external")) return false;
       if (href === "/") return pathname === "/";
-      return pathname === href || pathname.startsWith(`${href}/`);
+
+      const [pathPart, queryPart] = href.split("?");
+      const pathMatches = pathname === pathPart || pathname.startsWith(`${pathPart}/`);
+      if (!pathMatches) return false;
+      if (!queryPart) return true;
+
+      const required = new URLSearchParams(queryPart);
+      for (const [k, v] of required.entries()) {
+        if (searchParams.get(k) !== v) return false;
+      }
+      return true;
     },
-    [pathname],
+    [pathname, searchParams],
   );
 
   const hasActiveDescendant = React.useCallback(
@@ -175,7 +187,7 @@ function NavContent() {
       cancelAnimationFrame(raf);
       resizeObserver.disconnect();
     };
-  }, [isMobile, open, navItems, pathname, setDesktopSidebarWidth]);
+  }, [isMobile, open, navItems, pathname, searchParams, setDesktopSidebarWidth]);
 
   return (
       <SidebarMenu ref={menuRef}>
@@ -214,7 +226,23 @@ function NavContent() {
           </SidebarMenuItem>
         ))}
       </SidebarMenu>
-  )
+  );
 }
 
-export default NavContent;
+export default function NavContent() {
+  return (
+    <Suspense
+      fallback={
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton disabled>
+              <span className="text-muted-foreground">Menu…</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      }
+    >
+      <NavContentInner />
+    </Suspense>
+  );
+}

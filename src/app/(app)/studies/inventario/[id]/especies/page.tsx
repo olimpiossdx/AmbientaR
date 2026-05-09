@@ -41,7 +41,6 @@ import {
   Copy,
   FileDown,
   Filter,
-  MoreHorizontal,
   Plus,
   Search,
   Trash,
@@ -56,6 +55,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { AtributosDialog } from './atributos-dialog';
 import { ImportDialog } from '../import-dialog';
 import { Alert, AlertTitle } from "@/components/ui/alert";
+import { InventoryModuleHeader, inventoryActionButtonClass } from '../inventory-module-chrome';
 
 
 type ColumnVisibility = {
@@ -96,22 +96,21 @@ export default function SpeciesPage() {
 
   return (
     <>
-      <header className="flex h-16 items-center justify-between border-b bg-background px-6">
-        <div className="flex items-center gap-4">
-            <h1 className="text-xl font-semibold">{project?.nome || 'Carregando...'} &gt; Espécies</h1>
+      <InventoryModuleHeader projectName={project?.nome} section="Espécies">
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="relative w-full min-w-[200px] max-w-xs sm:max-w-sm">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input placeholder="Buscar…" className="pl-9" aria-label="Buscar espécies" />
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-            <div className="relative w-64">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input placeholder="Buscar..." className="pl-9" />
-            </div>
-        </div>
-      </header>
-      <div className="border-b p-2">
-        <div className="flex items-center gap-2">
+      </InventoryModuleHeader>
+      <div className="border-b bg-muted/20 px-3 py-2 md:px-4">
+        <div className="flex flex-wrap items-center gap-2">
             <Dialog>
                 <DialogTrigger asChild>
-                    <Button variant="outline" size="sm"><Plus className="mr-2 h-4 w-4"/>Inserir</Button>
+                    <Button size="sm" className={inventoryActionButtonClass('insert')}>
+                      <Plus className="mr-2 h-4 w-4"/>Inserir
+                    </Button>
                 </DialogTrigger>
                 <DialogContent className="sm:max-w-[525px]">
                     <DialogHeader>
@@ -151,7 +150,9 @@ export default function SpeciesPage() {
             </Dialog>
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button variant="outline" size="sm"><Trash className="mr-2 h-4 w-4"/>Excluir</Button>
+                <Button variant="outline" size="sm" className={inventoryActionButtonClass('delete')}>
+                  <Trash className="mr-2 h-4 w-4"/>Excluir
+                </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
