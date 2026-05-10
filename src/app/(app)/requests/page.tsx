@@ -38,6 +38,7 @@ import { Separator } from '@/components/ui/separator';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/firebase';
 import { CardSearchInput } from '@/components/card-search-input';
+import { INTERVENTION_SERVICE_LABEL } from '@/lib/intervention-checklist';
 
 const DetailItem = ({ label, value }: { label: string, value?: string | string[] | null }) => (
     <div className="space-y-1">
@@ -65,6 +66,14 @@ const getStatusLabel = (status: Request['status']) => {
         'Completed': 'Concluído'
     };
     return statusMap[status] || status;
+};
+
+const STATUS_FLOW: Request['status'][] = ['Draft', 'Submitted', 'In Progress', 'Completed'];
+
+const getNextStatus = (status: Request['status']): Request['status'] | null => {
+  const idx = STATUS_FLOW.indexOf(status);
+  if (idx < 0 || idx === STATUS_FLOW.length - 1) return null;
+  return STATUS_FLOW[idx + 1];
 };
 
 export default function RequestsPage() {
@@ -160,8 +169,71 @@ export default function RequestsPage() {
     setIsViewOpen(true);
   };
   
-  const handleApprove = () => {
-      toast({ title: "Funcionalidade em desenvolvimento." });
+  const getChecklistProgress = (item: Request) => {
+    if (!item.interventionChecklist || item.interventionChecklist.length === 0) return null;
+    const requiredItems = item.interventionChecklist.filter((c) => c.required);
+    const requiredDone = requiredItems.filter((c) => c.status === 'completed').length;
+    return `${requiredDone}/${requiredItems.length || item.interventionChecklist.length}`;
+  };
+
+  const getRequiredPendingCount = (item: Request) => {
+    if (!item.interventionChecklist || item.interventionChecklist.length === 0) return 0;
+    return item.interventionChecklist.filter((c) => c.required && c.status !== 'completed').length;
+  };
+
+  const canAdvanceStatus = (item: Request): { allowed: boolean; reason?: string } => {
+    const next = getNextStatus(item.status);
+    if (!next) return { allowed: false, reason: 'Processo já está concluído.' };
+    if (!item.services.includes(INTERVENTION_SERVICE_LABEL)) return { allowed: true };
+
+    const checklist = item.interventionChecklist || [];
+    const completedCount = checklist.filter((c) => c.status === 'completed').length;
+    const requiredItems = checklist.filter((c) => c.required);
+    const requiredCompleted = requiredItems.filter((c) => c.status === 'completed').length;
+    const attachmentCount = checklist.reduce((acc, c) => acc + (c.attachments?.length || 0), 0);
+
+    if (next === 'Submitted' && attachmentCount === 0) {
+      return { allowed: false, reason: 'Anexe ao menos 1 documento no checklist para enviar.' };
+    }
+    if (next === 'In Progress' && completedCount === 0) {
+      return { allowed: false, reason: 'Marque pelo menos 1 item do checklist como concluído.' };
+    }
+    if (next === 'Completed' && requiredItems.length > 0 && requiredCompleted < requiredItems.length) {
+      return { allowed: false, reason: 'Conclua todos os itens obrigatórios do checklist antes de finalizar.' };
+    }
+    return { allowed: true };
+  };
+
+  const handleAdvanceStatus = (item: Request) => {
+      if (!firestore) return;
+      const nextStatus = getNextStatus(item.status);
+      if (!nextStatus) {
+        toast({ title: 'Sem avanço disponível', description: 'Este processo já está concluído.' });
+        return;
+      }
+
+      const gate = canAdvanceStatus(item);
+      if (!gate.allowed) {
+        toast({ variant: 'destructive', title: 'Não é possível avançar', description: gate.reason });
+        return;
+      }
+
+      const requestRef = doc(firestore, 'requests', item.id);
+      updateDoc(requestRef, { status: nextStatus })
+        .then(() => {
+          toast({
+            title: 'Status atualizado',
+            description: `Processo avançou para ${getStatusLabel(nextStatus)}.`,
+          });
+        })
+        .catch(async () => {
+          const permissionError = new FirestorePermissionError({
+            path: requestRef.path,
+            operation: 'update',
+            requestResourceData: { status: nextStatus },
+          });
+          errorEmitter.emit('permission-error', permissionError);
+        });
   }
   
   const handleExportPdf = () => {
@@ -233,6 +305,7 @@ export default function RequestsPage() {
                                 <TableHead>Empreendedor</TableHead>
                                 <TableHead>Empreendimento</TableHead>
                                 <TableHead>Status</TableHead>
+                                <TableHead>Checklist AIA</TableHead>
                                 <TableHead>Serviços Requeridos</TableHead>
                                 <TableHead className="text-right">Ações</TableHead>
                             </TableRow>
@@ -240,7 +313,7 @@ export default function RequestsPage() {
                         <TableBody>
                             {isLoading && Array.from({ length: 1 }).map((_, i) => (
                                 <TableRow key={i}>
-                                    <TableCell colSpan={7}><Skeleton className="h-10 w-full" /></TableCell>
+                                    <TableCell colSpan={8}><Skeleton className="h-10 w-full" /></TableCell>
                                 </TableRow>
                             ))}
                             {!isLoading && filteredDraftRequests.map((item) => (
@@ -250,6 +323,11 @@ export default function RequestsPage() {
                                     <TableCell>{empreendedoresMap.get(item.empreendedorId) || 'N/A'}</TableCell>
                                     <TableCell>{projectsMap.get(item.projectId) || 'N/A'}</TableCell>
                                     <TableCell><Badge variant="outline">{getStatusLabel(item.status)}</Badge></TableCell>
+                                    <TableCell className="text-muted-foreground">
+                                      {item.services.includes(INTERVENTION_SERVICE_LABEL)
+                                        ? (getChecklistProgress(item) || '0/0')
+                                        : '—'}
+                                    </TableCell>
                                     <TableCell className="text-sm text-muted-foreground">{item.services?.join(', ') || 'N/A'}</TableCell>
                                     <TableCell className="text-right">
                                         <div className="flex items-center justify-end gap-1">
@@ -257,7 +335,7 @@ export default function RequestsPage() {
                                             {canWrite(user) && (
                                             <>
                                                 <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={() => handleEdit(item)}><Pencil className="h-4 w-4" /></Button></TooltipTrigger><TooltipContent><p>Editar processo</p></TooltipContent></Tooltip>
-                                                <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={() => handleApprove()}><CheckCircle className="h-4 w-4 text-green-500" /></Button></TooltipTrigger><TooltipContent><p>Aprovar Processo</p></TooltipContent></Tooltip>
+                                                <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={() => handleAdvanceStatus(item)}><CheckCircle className="h-4 w-4 text-green-500" /></Button></TooltipTrigger><TooltipContent><p>Avançar status</p></TooltipContent></Tooltip>
                                                 <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={() => handleExportPdf()}><FileText className="h-4 w-4" /></Button></TooltipTrigger><TooltipContent><p>Exportar PDF</p></TooltipContent></Tooltip>
                                                 <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => openDeleteConfirm(item.id)}><Trash2 className="h-4 w-4" /></Button></TooltipTrigger><TooltipContent><p>Deletar processo</p></TooltipContent></Tooltip>
                                             </>
@@ -268,7 +346,7 @@ export default function RequestsPage() {
                             ))}
                             {!isLoading && filteredDraftRequests.length === 0 && (
                                 <TableRow>
-                                    <TableCell colSpan={7} className="h-24 text-center">Nenhuma solicitação em elaboração.</TableCell>
+                                    <TableCell colSpan={8} className="h-24 text-center">Nenhuma solicitação em elaboração.</TableCell>
                                 </TableRow>
                             )}
                         </TableBody>
@@ -297,6 +375,7 @@ export default function RequestsPage() {
                     <TableHead>Empreendedor</TableHead>
                     <TableHead>Empreendimento</TableHead>
                     <TableHead>Status</TableHead>
+                    <TableHead>Checklist AIA</TableHead>
                     <TableHead>Serviços Requeridos</TableHead>
                     <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
@@ -305,7 +384,7 @@ export default function RequestsPage() {
                    {isLoading ? (
                     Array.from({ length: 1 }).map((_, i) => (
                         <TableRow key={i}>
-                            <TableCell colSpan={7}><Skeleton className="h-10 w-full" /></TableCell>
+                            <TableCell colSpan={8}><Skeleton className="h-10 w-full" /></TableCell>
                         </TableRow>
                     ))
                    ) : filteredApprovedRequests.length > 0 ? (
@@ -316,6 +395,11 @@ export default function RequestsPage() {
                                 <TableCell>{empreendedoresMap.get(item.empreendedorId) || 'N/A'}</TableCell>
                                 <TableCell>{projectsMap.get(item.projectId) || 'N/A'}</TableCell>
                                 <TableCell><Badge variant="outline">{getStatusLabel(item.status)}</Badge></TableCell>
+                                <TableCell className="text-muted-foreground">
+                                  {item.services.includes(INTERVENTION_SERVICE_LABEL)
+                                    ? (getChecklistProgress(item) || '0/0')
+                                    : '—'}
+                                </TableCell>
                                 <TableCell className="text-sm text-muted-foreground">{item.services?.join(', ') || 'N/A'}</TableCell>
                                 <TableCell className="text-right">
                                     <div className="flex items-center justify-end gap-1">
@@ -327,7 +411,7 @@ export default function RequestsPage() {
                         ))
                    ) : (
                     <TableRow>
-                        <TableCell colSpan={7} className="h-24 text-center">
+                        <TableCell colSpan={8} className="h-24 text-center">
                             Nenhum processo concluído.
                         </TableCell>
                     </TableRow>
@@ -356,8 +440,35 @@ export default function RequestsPage() {
                     <DetailItem label="Empreendimento" value={projectsMap.get(viewingItem.projectId)} />
                     <Separator />
                     <DetailItem label="Serviços Solicitados" value={viewingItem.services} />
+                    {viewingItem.services.includes(INTERVENTION_SERVICE_LABEL) && (
+                      <DetailItem
+                        label="Progresso do checklist de intervenção"
+                        value={getChecklistProgress(viewingItem) || '0/0'}
+                      />
+                    )}
+                    {viewingItem.services.includes(INTERVENTION_SERVICE_LABEL) && (
+                      <DetailItem
+                        label="Pendências obrigatórias"
+                        value={String(getRequiredPendingCount(viewingItem))}
+                      />
+                    )}
                     <Separator />
                     <DetailItem label="Status" value={getStatusLabel(viewingItem.status)} />
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium">Linha do tempo</Label>
+                      <div className="flex flex-wrap gap-2">
+                        {STATUS_FLOW.map((s) => {
+                          const currentIdx = STATUS_FLOW.indexOf(viewingItem.status);
+                          const idx = STATUS_FLOW.indexOf(s);
+                          const done = idx <= currentIdx;
+                          return (
+                            <Badge key={s} variant={done ? 'default' : 'outline'}>
+                              {getStatusLabel(s)}
+                            </Badge>
+                          );
+                        })}
+                      </div>
+                    </div>
                     <DetailItem label="Data de Criação" value={formatDate(viewingItem.createdAt)} />
                 </div>
             )}

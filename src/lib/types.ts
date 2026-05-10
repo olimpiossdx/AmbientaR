@@ -1652,6 +1652,7 @@ export type Request = {
     status: 'Draft' | 'Submitted' | 'In Progress' | 'Completed';
     createdAt: any;
     solicitationNumber?: string;
+    interventionChecklist?: import("@/lib/intervention-checklist").InterventionChecklistItem[];
 }
 
 export type Fornecedor = {

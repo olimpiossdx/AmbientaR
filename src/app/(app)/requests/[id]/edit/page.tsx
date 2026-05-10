@@ -9,7 +9,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useCollection, useFirebase, useMemoFirebase, useDoc } from '@/firebase';
-import { collection, doc } from 'firebase/firestore';
+import { collection, doc, updateDoc } from 'firebase/firestore';
 import type { Empreendedor, Project, Request } from '@/lib/types';
 import * as React from 'react';
 import { useToast } from '@/hooks/use-toast';
@@ -17,11 +17,24 @@ import { Loader2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Separator } from '@/components/ui/separator';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { FirestorePermissionError } from '@/firebase/errors';
+import { errorEmitter } from '@/firebase';
+import {
+  createInterventionChecklist,
+  getChecklistStatusBadgeClass,
+  getChecklistStatusLabel,
+  IEF_INTERVENTION_REFERENCE_DOCS,
+  INTERVENTION_SERVICE_LABEL,
+  type InterventionChecklistItem,
+} from '@/lib/intervention-checklist';
+import { sanitizeStorageFileName, uploadFileToStorage } from '@/lib/storage-upload';
+import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
 
 const services = [
   "Licenciamento ambiental",
   "Outorga",
-  "Autorização para Intervenção Ambiental",
+  INTERVENTION_SERVICE_LABEL,
   "Reserva legal (Averbação, Compensação e/ou Relocação)",
   "Uso Insignificante"
 ];
@@ -260,6 +273,9 @@ function EditRequestPageContent() {
     const [selectedEmpreendedor, setSelectedEmpreendedor] = React.useState('');
     const [selectedEmpreendimento, setSelectedEmpreendimento] = React.useState('');
     const [selectedServices, setSelectedServices] = React.useState<string[]>([]);
+    const [selectedStatus, setSelectedStatus] = React.useState<Request['status']>('Draft');
+    const [interventionChecklist, setInterventionChecklist] = React.useState<InterventionChecklistItem[]>([]);
+    const [uploadingChecklistItemId, setUploadingChecklistItemId] = React.useState<string | null>(null);
     const [loading, setLoading] = React.useState(false);
 
     const empreendedoresQuery = useMemoFirebase(() => firestore ? collection(firestore, 'empreendedores') : null, [firestore]);
@@ -273,6 +289,16 @@ function EditRequestPageContent() {
             setSelectedEmpreendedor(request.empreendedorId);
             setSelectedEmpreendimento(request.projectId);
             setSelectedServices(request.services);
+            setSelectedStatus(request.status);
+            if (request.services.includes(INTERVENTION_SERVICE_LABEL)) {
+                setInterventionChecklist(
+                    request.interventionChecklist && request.interventionChecklist.length > 0
+                        ? request.interventionChecklist
+                        : createInterventionChecklist(),
+                );
+            } else {
+                setInterventionChecklist([]);
+            }
         }
     }, [request]);
 
@@ -289,16 +315,108 @@ function EditRequestPageContent() {
         );
     };
 
-    const isFormValid = selectedEmpreendedor && selectedEmpreendimento && selectedServices.length > 0;
+    React.useEffect(() => {
+        const hasInterventionService = selectedServices.includes(INTERVENTION_SERVICE_LABEL);
+        if (hasInterventionService && interventionChecklist.length === 0) {
+            setInterventionChecklist(createInterventionChecklist());
+            return;
+        }
+        if (!hasInterventionService && interventionChecklist.length > 0) {
+            setInterventionChecklist([]);
+        }
+    }, [selectedServices, interventionChecklist.length]);
+
+    const updateChecklistStatus = (
+        itemId: string,
+        status: InterventionChecklistItem['status'],
+    ) => {
+        setInterventionChecklist((prev) =>
+            prev.map((item) => (item.id === itemId ? { ...item, status } : item)),
+        );
+    };
+
+    const handleChecklistFileUpload = async (
+        itemId: string,
+        event: React.ChangeEvent<HTMLInputElement>,
+    ) => {
+        const inputEl = event.currentTarget;
+        const file = inputEl.files?.[0];
+        inputEl.value = '';
+        if (!file) return;
+        const allowedExtensions = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'jpg', 'jpeg', 'png', 'webp'];
+        const extension = file.name.split('.').pop()?.toLowerCase() || '';
+        if (!allowedExtensions.includes(extension)) {
+            toast({
+                variant: 'destructive',
+                title: 'Formato não permitido',
+                description: 'Use PDF, Word, Excel ou imagem (JPG/PNG/WEBP).',
+            });
+            return;
+        }
+
+        try {
+            setUploadingChecklistItemId(itemId);
+            const safeName = sanitizeStorageFileName(file.name);
+            const url = await uploadFileToStorage(
+                file,
+                `requests/intervencao/${requestId}/${Date.now()}-${itemId}-${safeName}`,
+            );
+
+            setInterventionChecklist((prev) =>
+                prev.map((item) =>
+                    item.id === itemId
+                        ? {
+                            ...item,
+                            attachments: [
+                                ...item.attachments,
+                                { name: file.name, url, uploadedAt: new Date().toISOString() },
+                            ],
+                          }
+                        : item,
+                ),
+            );
+            toast({ title: 'Arquivo anexado', description: 'Checklist atualizado com sucesso.' });
+        } catch {
+            toast({
+                variant: 'destructive',
+                title: 'Falha no upload',
+                description: 'Nao foi possivel anexar o arquivo deste item.',
+            });
+        } finally {
+            setUploadingChecklistItemId(null);
+        }
+    };
+
+    const isFormValid = selectedEmpreendedor && selectedEmpreendimento && selectedServices.length > 0 && selectedStatus;
 
     const handleUpdateProcess = async () => {
         if (!isFormValid || !firestore || !request) return;
         setLoading(true);
-        // Lógica para atualizar o processo no banco
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        toast({ title: "Processo Atualizado", description: "As alterações foram salvas."});
-        setLoading(false);
-        router.push('/requests');
+        const requestRef = doc(firestore, 'requests', request.id);
+        const dataToSave = {
+            empreendedorId: selectedEmpreendedor,
+            projectId: selectedEmpreendimento,
+            services: selectedServices,
+            status: selectedStatus,
+            ...(selectedServices.includes(INTERVENTION_SERVICE_LABEL)
+                ? { interventionChecklist }
+                : { interventionChecklist: [] }),
+        };
+
+        updateDoc(requestRef, dataToSave)
+            .then(() => {
+                toast({ title: "Processo Atualizado", description: "As alterações foram salvas."});
+                router.push('/requests');
+            })
+            .catch(async () => {
+                const permissionError = new FirestorePermissionError({
+                    path: requestRef.path,
+                    operation: 'update',
+                    requestResourceData: dataToSave,
+                });
+                errorEmitter.emit('permission-error', permissionError);
+            })
+            .finally(() => setLoading(false));
     };
     
     const serviceCardMap: Record<string, React.ComponentType> = {
@@ -385,6 +503,20 @@ function EditRequestPageContent() {
                                     ))}
                                 </div>
                             </div>
+                            <div className="space-y-2">
+                                <Label>Status do Processo</Label>
+                                <Select value={selectedStatus} onValueChange={(value) => setSelectedStatus(value as Request['status'])}>
+                                    <SelectTrigger>
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="Draft">Rascunho</SelectItem>
+                                        <SelectItem value="Submitted">Enviado</SelectItem>
+                                        <SelectItem value="In Progress">Em Andamento</SelectItem>
+                                        <SelectItem value="Completed">Concluído</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
                         </CardContent>
                     </Card>
 
@@ -392,6 +524,121 @@ function EditRequestPageContent() {
                         <div className="space-y-6">
                             <Separator />
                             <h2 className="text-2xl font-semibold tracking-tight">Detalhes dos Serviços</h2>
+                            {selectedServices.includes(INTERVENTION_SERVICE_LABEL) && (
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle>Checklist de Intervenção Ambiental (IEF-MG)</CardTitle>
+                                        <CardDescription>
+                                            Atualize o progresso por etapa e anexe os documentos já concluídos.
+                                        </CardDescription>
+                                    </CardHeader>
+                                    <CardContent className="space-y-4">
+                                        <div className="space-y-2">
+                                            <Label className="text-sm font-medium">Referências oficiais</Label>
+                                            <ul className="list-disc pl-5 text-sm text-muted-foreground space-y-1">
+                                                {IEF_INTERVENTION_REFERENCE_DOCS.map((doc) => (
+                                                    <li key={doc.url}>
+                                                        <a
+                                                            href={doc.url}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="underline"
+                                                        >
+                                                            {doc.title} ({doc.type})
+                                                        </a>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                        <Accordion type="multiple" className="w-full">
+                                            {Array.from(new Set(interventionChecklist.map((i) => i.phase))).map((phase) => (
+                                                <AccordionItem key={phase} value={phase}>
+                                                    <AccordionTrigger>{phase}</AccordionTrigger>
+                                                    <AccordionContent>
+                                                        <div className="space-y-3">
+                                                            {interventionChecklist
+                                                                .filter((item) => item.phase === phase)
+                                                                .map((item) => (
+                                                                    <div key={item.id} className="rounded-md border p-3 space-y-2">
+                                                                        <div className="flex items-start gap-3">
+                                                                            <div className="space-y-2 w-full">
+                                                                                <div className="flex items-center justify-between gap-2">
+                                                                                    <Label className="font-normal">
+                                                                                        {item.title}
+                                                                                    </Label>
+                                                                                    {!item.required && (
+                                                                                        <Badge variant="outline">Opcional</Badge>
+                                                                                    )}
+                                                                                </div>
+                                                                                <Select
+                                                                                    value={item.status}
+                                                                                    onValueChange={(value) =>
+                                                                                        updateChecklistStatus(
+                                                                                            item.id,
+                                                                                            value as InterventionChecklistItem['status'],
+                                                                                        )
+                                                                                    }
+                                                                                >
+                                                                                    <SelectTrigger className="max-w-xs">
+                                                                                        <SelectValue />
+                                                                                    </SelectTrigger>
+                                                                                    <SelectContent>
+                                                                                        <SelectItem value="not_started">Não iniciado</SelectItem>
+                                                                                        <SelectItem value="collecting">Juntando</SelectItem>
+                                                                                        <SelectItem value="not_applicable">Não se aplica</SelectItem>
+                                                                                        <SelectItem value="completed">Concluído</SelectItem>
+                                                                                    </SelectContent>
+                                                                                </Select>
+                                                                            </div>
+                                                                        </div>
+                                                                        <div className="flex flex-col gap-2 pl-7">
+                                                                            <div className="flex items-center gap-2">
+                                                                                <span className="text-xs text-muted-foreground">Status atual:</span>
+                                                                                <Badge
+                                                                                    variant="outline"
+                                                                                    className={cn(getChecklistStatusBadgeClass(item.status))}
+                                                                                >
+                                                                                    {getChecklistStatusLabel(item.status)}
+                                                                                </Badge>
+                                                                            </div>
+                                                                            <input
+                                                                                type="file"
+                                                                                accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.webp"
+                                                                                aria-label={`Anexar arquivo para ${item.title}`}
+                                                                                onChange={(event) => handleChecklistFileUpload(item.id, event)}
+                                                                                disabled={uploadingChecklistItemId === item.id}
+                                                                                className="text-sm"
+                                                                            />
+                                                                            {uploadingChecklistItemId === item.id && (
+                                                                                <p className="text-xs text-muted-foreground">Enviando anexo...</p>
+                                                                            )}
+                                                                            {item.attachments.length > 0 && (
+                                                                                <ul className="list-disc pl-5 text-xs text-muted-foreground">
+                                                                                    {item.attachments.map((att) => (
+                                                                                        <li key={`${item.id}-${att.url}`}>
+                                                                                            <a
+                                                                                                href={att.url}
+                                                                                                target="_blank"
+                                                                                                rel="noopener noreferrer"
+                                                                                                className="underline"
+                                                                                            >
+                                                                                                {att.name}
+                                                                                            </a>
+                                                                                        </li>
+                                                                                    ))}
+                                                                                </ul>
+                                                                            )}
+                                                                        </div>
+                                                                    </div>
+                                                                ))}
+                                                        </div>
+                                                    </AccordionContent>
+                                                </AccordionItem>
+                                            ))}
+                                        </Accordion>
+                                    </CardContent>
+                                </Card>
+                            )}
                             {selectedServices.map(service => {
                                 const ServiceCard = serviceCardMap[service];
                                 return ServiceCard ? <ServiceCard key={service} /> : null;
