@@ -66,7 +66,6 @@ const analisarSobreposicao = ai.defineTool(
 // Prompt Principal
 const prompt = ai.definePrompt({
   name: "analiseAmbientalPrompt",
-  model: aiModel,
   input: { schema: z.object({ input: AnaliseAmbientalInputSchema }) },
   output: { schema: AnaliseAmbientalOutputSchema },
   tools: [getDadosCAR, analisarSobreposicao],
@@ -99,6 +98,11 @@ const analiseAmbientalFlow = ai.defineFlow(
     outputSchema: AnaliseAmbientalOutputSchema,
   },
   async (input) => {
+    if (!aiModel) {
+      throw new Error(
+        "Configuração de IA ausente no servidor. Defina OPENAI_API_KEY/OPENAI_KEY ou GOOGLE_GENAI_API_KEY/GEMINI_API_KEY.",
+      );
+    }
     const factualOverlay = await runGeospatialOverlay(input.data);
     const { output } = await prompt({ input }, { model: aiModel });
     if (!output) {

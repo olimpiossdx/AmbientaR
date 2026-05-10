@@ -19,9 +19,20 @@ const useOpenAI =
 const googleModelId =
   process.env.GENKIT_GOOGLE_MODEL?.trim() || "gemini-2.0-flash";
 
-export const aiModel = useOpenAI
-  ? openAI.model("gpt-4o-mini")
-  : googleAI.model(googleModelId);
+const enabledPlugins = [];
+if (hasOpenAIKey || hasOpenAIAliasKey) {
+  enabledPlugins.push(openAI());
+}
+if (hasGoogleKey) {
+  enabledPlugins.push(googleAI());
+}
+
+export const aiModel =
+  useOpenAI && (hasOpenAIKey || hasOpenAIAliasKey)
+    ? openAI.model("gpt-4o-mini")
+    : hasGoogleKey
+      ? googleAI.model(googleModelId)
+      : null;
 
 /**
  * Estratégia de modelo padrão:
@@ -30,8 +41,8 @@ export const aiModel = useOpenAI
  * - GENKIT_GOOGLE_MODEL: id do modelo (padrão gemini-2.0-flash).
  */
 export const ai = genkit({
-  plugins: [openAI(), googleAI()],
-  defaultModel: aiModel,
+  plugins: enabledPlugins,
+  ...(aiModel ? { defaultModel: aiModel } : {}),
 });
 
 if (!useOpenAI && !hasGoogleKey) {
