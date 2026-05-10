@@ -25,6 +25,9 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=9002
+# Rotas /api (uploads, inventário, IA) ativas na imagem; sobrescreva no Cloud Run se precisar.
+ENV ENABLE_NEXT_API_ROUTES=true
+ENV ENABLE_AI_ROUTES=true
 
 RUN addgroup -S nodejs && adduser -S nextjs -G nodejs
 

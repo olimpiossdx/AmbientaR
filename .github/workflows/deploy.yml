@@ -69,4 +69,5 @@ jobs:
             --allow-unauthenticated \
             --port 9002 \
             --memory 1Gi \
-            --cpu 1
+            --cpu 1 \
+            --set-env-vars "ENABLE_NEXT_API_ROUTES=true,ENABLE_AI_ROUTES=true"

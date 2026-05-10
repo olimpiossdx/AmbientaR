@@ -12,9 +12,10 @@ function parseBooleanEnv(value: string | undefined, defaultValue: boolean): bool
  * - por padrão, bloqueia chamadas a /api/*
  * - habilite apenas quando precisar: ENABLE_NEXT_API_ROUTES=true
  */
+/** Por omissão ativo: uploads e APIs internas precisam de `/api/*`. Defina `false` para voltar ao modo de bloqueio total. */
 const ENABLE_NEXT_API_ROUTES = parseBooleanEnv(
   process.env.ENABLE_NEXT_API_ROUTES,
-  false,
+  true,
 );
 
 export function middleware(request: NextRequest) {

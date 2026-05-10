@@ -65,6 +65,7 @@ import {
   DatabaseZap,
   Workflow,
   Scale,
+  Sparkles,
 } from "lucide-react";
 
 export const allNavItems: NavItem[] = [
@@ -196,12 +197,6 @@ export const allNavItems: NavItem[] = [
         href: "/external?url=https%3A%2F%2Fwww.nfe-cidades.com.br%2Flanding-page&title=NFe-Eletr%C3%B4nica&newTab=true",
         label: "NFe-Eletrônica",
         icon: FileText,
-        roles: ["admin", "financial"],
-      },
-      {
-        href: "/reporting",
-        label: "Relatórios IA",
-        icon: Recycle,
         roles: ["admin", "financial"],
       },
     ],
@@ -474,24 +469,26 @@ export const allNavItems: NavItem[] = [
     roles: ["admin", "technical", "gestor", "supervisor", "advogado"],
   },
   {
-    label: "Elaboração de Estudos",
-    icon: BookText,
-    roles: ["admin", "technical", "gestor", "supervisor", "diretor_fauna", "advogado"],
+    label: "AmbientaR IA",
+    icon: Sparkles,
+    roles: [
+      "admin",
+      "financial",
+      "technical",
+      "gestor",
+      "supervisor",
+      "diretor_fauna",
+      "advogado",
+    ],
     subItems: [
       {
-        href: "/studies/analise-socioambiental",
-        label: "Análise Socioambiental",
-        icon: FileText,
-        roles: ["admin", "technical", "gestor", "supervisor", "diretor_fauna", "advogado"],
+        href: "/reporting",
+        label: "Relatórios de IA",
+        icon: Recycle,
+        roles: ["admin", "financial"],
       },
       {
-        href: "/analise-ambiental",
-        label: "Análise Geoespacial (IA)",
-        icon: Globe,
-        roles: ["admin", "technical", "gestor", "supervisor", "diretor_fauna", "advogado"],
-      },
-      {
-        label: "Assistente IA",
+        label: "Assistente de IA",
         icon: BrainCircuit,
         roles: ["admin", "technical", "gestor", "supervisor", "diretor_fauna", "advogado"],
         subItems: [
@@ -527,6 +524,25 @@ export const allNavItems: NavItem[] = [
           },
         ],
       },
+      {
+        href: "/analise-ambiental",
+        label: "Análise Geoespacial (IA)",
+        icon: Globe,
+        roles: ["admin", "technical", "gestor", "supervisor", "diretor_fauna", "advogado"],
+      },
+      {
+        href: "/studies/analise-socioambiental",
+        label: "Análise socioambiental",
+        icon: FileText,
+        roles: ["admin", "technical", "gestor", "supervisor", "diretor_fauna", "advogado"],
+      },
+    ],
+  },
+  {
+    label: "Elaboração de Estudos",
+    icon: BookText,
+    roles: ["admin", "technical", "gestor", "supervisor", "diretor_fauna", "advogado"],
+    subItems: [
       {
         href: "/studies/prada",
         label: "PRADA",

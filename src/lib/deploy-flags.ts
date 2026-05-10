@@ -1,6 +1,7 @@
 /**
- * Flags para estabilizar o deploy em produção.
- * Padrão: recursos sensíveis (IA/webhook/import local) desativados.
+ * Flags de funcionalidades sensíveis.
+ * IA em rotas `/api/ai*`: por omissão ativa (respostas só funcionam com chaves configuradas).
+ * Import local / webhook de laudo continuam desativados por omissão.
  */
 function parseBooleanEnv(value: string | undefined, defaultValue: boolean): boolean {
   if (value == null) return defaultValue;
@@ -9,7 +10,7 @@ function parseBooleanEnv(value: string | undefined, defaultValue: boolean): bool
 }
 
 export function isAiRoutesEnabled(): boolean {
-  return parseBooleanEnv(process.env.ENABLE_AI_ROUTES, false);
+  return parseBooleanEnv(process.env.ENABLE_AI_ROUTES, true);
 }
 
 export function isAiLocalImportEnabled(): boolean {

@@ -119,7 +119,7 @@ function AssistantPageInner() {
                     name="tipo"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Modo (menu Elaboração de Estudos)</FormLabel>
+                        <FormLabel>Modo (menu AmbientaR IA)</FormLabel>
                         <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
                             <SelectTrigger>
@@ -135,7 +135,8 @@ function AssistantPageInner() {
                           </SelectContent>
                         </Select>
                         <FormDescription>
-                          O menu lateral abre atalhos com o mesmo modo pré-selecionado.
+                          O menu lateral <strong className="font-medium text-foreground">AmbientaR IA</strong> abre
+                          atalhos com o mesmo modo pré-selecionado.
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
