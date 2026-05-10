@@ -30,19 +30,35 @@ import {
 import { Calendar } from '@/components/ui/calendar';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, CalendarIcon, PlusCircle, Trash2 } from 'lucide-react';
+import { Loader2, CalendarIcon, PlusCircle, Trash2, Paperclip, Image as ImageIcon, FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
 import { collection, addDoc, updateDoc, doc, serverTimestamp } from 'firebase/firestore';
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import type { Empreendedor, Project, Inspection } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { CardFooter } from '@/components/ui/card';
 import { SignaturePad } from '@/components/ui/signature-pad';
+import { Badge } from '@/components/ui/badge';
 
 
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+const MAX_FILE_SIZE = 15 * 1024 * 1024; // 15 MB (fotos + PDF)
+const MAX_LAUDO_ATTACHMENTS = 24;
+const MAX_INCONF_IMAGES = 12;
+
+const ALLOWED_INSPECTION_MIME = new Set([
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/gif',
+  'application/pdf',
+]);
+
+function sanitizeFileName(name: string) {
+  return name.replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 180) || 'anexo';
+}
 
 const inconformidadeSchema = z.object({
   description: z.string().min(10, 'A descrição da inconformidade é obrigatória.'),
@@ -55,6 +71,8 @@ const inspectionSchema = z.object({
   projectId: z.string().min(1, 'Selecione um empreendimento.'),
   inspectionDate: z.date({ required_error: 'A data da vistoria é obrigatória.' }),
   inconformidades: z.array(inconformidadeSchema).min(1, "Adicione pelo menos uma inconformidade ou observação."),
+  /** Documentos extra ao laudo (opcional), além dos anexos por inconformidade. */
+  laudoAttachmentUrls: z.array(z.string()).optional(),
   accompaniedBy: z.string().optional(),
   signatureUrl: z.string().optional(),
 });
@@ -68,9 +86,49 @@ interface InspectionFormProps {
 
 export function InspectionForm({ onSuccess, currentItem }: InspectionFormProps) {
   const [loading, setLoading] = React.useState(false);
+  const [uploadingLaudo, setUploadingLaudo] = React.useState(false);
+  const [uploadingIncIndex, setUploadingIncIndex] = React.useState<number | null>(null);
+  const laudoInputRef = React.useRef<HTMLInputElement>(null);
+  const incInputRefs = React.useRef<Record<number, HTMLInputElement | null>>({});
 
   const { toast } = useToast();
   const { firestore, user } = useFirebase();
+
+  const uploadToStorage = React.useCallback(
+    async (file: File, pathPrefix: string) => {
+      if (!user?.uid) throw new Error('Utilizador não autenticado.');
+      if (file.size > MAX_FILE_SIZE) {
+        throw new Error(`Ficheiro demasiado grande (máx. ${MAX_FILE_SIZE / 1024 / 1024} MB).`);
+      }
+      const mime = file.type || '';
+      const isPdfName = file.name.toLowerCase().endsWith('.pdf');
+      const ok =
+        ALLOWED_INSPECTION_MIME.has(mime) ||
+        (isPdfName &&
+          (mime === 'application/pdf' ||
+            mime === 'application/octet-stream' ||
+            mime === ''));
+      if (!ok) {
+        throw new Error('Tipo não permitido. Use imagem (JPEG, PNG, WebP, GIF) ou PDF.');
+      }
+      const storage = getStorage();
+      const safe = sanitizeFileName(file.name);
+      const storageRef = ref(
+        storage,
+        `inspections/${pathPrefix}/${user.uid}/${Date.now()}-${safe}`,
+      );
+      const contentType =
+        mime === 'image/jpeg' ||
+        mime === 'image/png' ||
+        mime === 'image/webp' ||
+        mime === 'image/gif'
+          ? mime
+          : 'application/pdf';
+      const snap = await uploadBytes(storageRef, file, { contentType });
+      return getDownloadURL(snap.ref);
+    },
+    [user?.uid],
+  );
 
   const empreendedoresQuery = useMemoFirebase(() => firestore ? collection(firestore, 'empreendedores') : null, [firestore]);
   const { data: empreendedores, isLoading: isLoadingEmpreendedores } = useCollection<Empreendedor>(empreendedoresQuery);
@@ -85,6 +143,7 @@ export function InspectionForm({ onSuccess, currentItem }: InspectionFormProps) 
       projectId: '',
       inspectionDate: new Date(),
       inconformidades: [],
+      laudoAttachmentUrls: [],
       accompaniedBy: '',
       signatureUrl: '',
     },
@@ -105,6 +164,9 @@ export function InspectionForm({ onSuccess, currentItem }: InspectionFormProps) 
         : [],
       accompaniedBy: currentItem.accompaniedBy ?? '',
       signatureUrl: currentItem.signatureUrl ?? '',
+      laudoAttachmentUrls: currentItem.laudoAttachmentUrls?.length
+        ? [...currentItem.laudoAttachmentUrls]
+        : [],
     });
   }, [currentItem, form]);
   
@@ -123,6 +185,99 @@ export function InspectionForm({ onSuccess, currentItem }: InspectionFormProps) 
   React.useEffect(() => {
     form.resetField('projectId');
   }, [selectedEmpreendedorId, form]);
+
+  const handleLaudoFiles = React.useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const files = e.target.files;
+      e.target.value = '';
+      if (!files?.length) return;
+      const current = form.getValues('laudoAttachmentUrls') ?? [];
+      if (current.length + files.length > MAX_LAUDO_ATTACHMENTS) {
+        toast({
+          variant: 'destructive',
+          title: 'Limite de anexos',
+          description: `No máximo ${MAX_LAUDO_ATTACHMENTS} ficheiros ao laudo.`,
+        });
+        return;
+      }
+      setUploadingLaudo(true);
+      try {
+        const prefix = currentItem?.id ? `laudo/${currentItem.id}` : 'laudo/rascunho';
+        const next = [...current];
+        for (const file of Array.from(files)) {
+          const url = await uploadToStorage(file, prefix);
+          next.push(url);
+        }
+        form.setValue('laudoAttachmentUrls', next, { shouldValidate: true });
+        toast({
+          title: 'Documentos adicionais enviados',
+          description: `${files.length} ficheiro(s) guardados no Storage.`,
+        });
+      } catch (err) {
+        console.error(err);
+        toast({
+          variant: 'destructive',
+          title: 'Erro no envio',
+          description: err instanceof Error ? err.message : 'Não foi possível enviar os ficheiros.',
+        });
+      } finally {
+        setUploadingLaudo(false);
+      }
+    },
+    [currentItem?.id, form, toast, uploadToStorage],
+  );
+
+  const handleInconformidadeFiles = React.useCallback(
+    async (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
+      const files = e.target.files;
+      e.target.value = '';
+      if (!files?.length) return;
+      const current = form.getValues(`inconformidades.${index}.imageUrls`) ?? [];
+      if (current.length + files.length > MAX_INCONF_IMAGES) {
+        toast({
+          variant: 'destructive',
+          title: 'Limite de anexos',
+          description: `No máximo ${MAX_INCONF_IMAGES} ficheiros por inconformidade.`,
+        });
+        return;
+      }
+      setUploadingIncIndex(index);
+      try {
+        const prefix = currentItem?.id
+          ? `inconformidades/${currentItem.id}/${index}`
+          : `inconformidades/rascunho/${index}`;
+        const next = [...current];
+        for (const file of Array.from(files)) {
+          const url = await uploadToStorage(file, prefix);
+          next.push(url);
+        }
+        form.setValue(`inconformidades.${index}.imageUrls`, next, { shouldValidate: true });
+        toast({ title: 'Anexos enviados', description: 'Ficheiros associados a esta inconformidade.' });
+      } catch (err) {
+        console.error(err);
+        toast({
+          variant: 'destructive',
+          title: 'Erro no envio',
+          description: err instanceof Error ? err.message : 'Falha no upload.',
+        });
+      } finally {
+        setUploadingIncIndex(null);
+      }
+    },
+    [currentItem?.id, form, toast, uploadToStorage],
+  );
+
+  const removeLaudoUrl = (idx: number) => {
+    const cur = [...(form.getValues('laudoAttachmentUrls') ?? [])];
+    cur.splice(idx, 1);
+    form.setValue('laudoAttachmentUrls', cur);
+  };
+
+  const removeIncUrl = (index: number, idx: number) => {
+    const cur = [...(form.getValues(`inconformidades.${index}.imageUrls`) ?? [])];
+    cur.splice(idx, 1);
+    form.setValue(`inconformidades.${index}.imageUrls`, cur);
+  };
 
   async function onSubmit(values: InspectionFormValues) {
     if (!firestore || !user) {
@@ -240,9 +395,14 @@ export function InspectionForm({ onSuccess, currentItem }: InspectionFormProps) 
             />
 
             <div className="space-y-4 rounded-md border p-4">
-                <div className="flex justify-between items-center">
-                    <h3 className="text-lg font-medium">Inconformidades</h3>
-                    <Button type="button" size="sm" onClick={() => append({ description: '', criticality: 'Baixa', imageUrls: [] })}>
+                <div className="flex flex-col gap-2 sm:flex-row sm:justify-between sm:items-start">
+                    <div>
+                        <h3 className="text-lg font-medium">Inconformidades</h3>
+                        <p className="text-sm text-muted-foreground mt-1 max-w-2xl">
+                            As fotos e evidências do laudo acompanham cada inconformidade: ao adicionar um item, use o campo de anexos desse bloco para imagens ou PDF relacionados ao ponto descrito.
+                        </p>
+                    </div>
+                    <Button type="button" size="sm" className="shrink-0" onClick={() => append({ description: '', criticality: 'Baixa', imageUrls: [] })}>
                         <PlusCircle className="h-4 w-4 mr-2" />
                         Adicionar Inconformidade
                     </Button>
@@ -270,35 +430,176 @@ export function InspectionForm({ onSuccess, currentItem }: InspectionFormProps) 
                                         </FormItem>
                                     )}
                                 />
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <FormField
-                                        control={form.control}
-                                        name={`inconformidades.${index}.criticality`}
-                                        render={({ field }) => (
-                                            <FormItem>
+                                <FormField
+                                    control={form.control}
+                                    name={`inconformidades.${index}.imageUrls`}
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel className="flex items-center gap-2">
+                                                <ImageIcon className="h-4 w-4" />
+                                                Fotos e anexos desta inconformidade
+                                            </FormLabel>
+                                            <FormDescription>
+                                                Evidências do laudo para este ponto — JPEG, PNG, WebP, GIF ou PDF; até {MAX_INCONF_IMAGES} ficheiros, máx. {MAX_FILE_SIZE / 1024 / 1024} MB cada.
+                                            </FormDescription>
+                                            <input
+                                                ref={(el) => {
+                                                    incInputRefs.current[index] = el;
+                                                }}
+                                                type="file"
+                                                multiple
+                                                className="hidden"
+                                                aria-label={`Anexar ficheiros à inconformidade ${index + 1}`}
+                                                accept="image/jpeg,image/png,image/webp,image/gif,application/pdf,.pdf"
+                                                onChange={(ev) => void handleInconformidadeFiles(index, ev)}
+                                            />
+                                            <div className="flex flex-wrap gap-2">
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    size="sm"
+                                                    disabled={uploadingIncIndex === index || (field.value?.length ?? 0) >= MAX_INCONF_IMAGES}
+                                                    onClick={() => incInputRefs.current[index]?.click()}
+                                                >
+                                                    {uploadingIncIndex === index ? (
+                                                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                                    ) : (
+                                                        <Paperclip className="h-4 w-4 mr-2" />
+                                                    )}
+                                                    Anexar
+                                                </Button>
+                                            </div>
+                                            {field.value && field.value.length > 0 && (
+                                                <ul className="flex flex-col gap-2 mt-2">
+                                                    {field.value.map((url, uidx) => (
+                                                        <li
+                                                            key={`${url}-${uidx}`}
+                                                            className="flex items-center gap-2 rounded-md border px-2 py-1.5 text-sm"
+                                                        >
+                                                            <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
+                                                            <a
+                                                                href={url}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="truncate text-primary underline min-w-0"
+                                                            >
+                                                                Anexo {uidx + 1}
+                                                            </a>
+                                                            <Button
+                                                                type="button"
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                className="shrink-0 ml-auto h-8"
+                                                                onClick={() => removeIncUrl(index, uidx)}
+                                                            >
+                                                                Remover
+                                                            </Button>
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            )}
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                    control={form.control}
+                                    name={`inconformidades.${index}.criticality`}
+                                    render={({ field }) => (
+                                        <FormItem className="max-w-md">
                                             <FormLabel>Criticidade</FormLabel>
-                                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                            <Select onValueChange={field.onChange} value={field.value}>
                                                 <FormControl>
-                                                <SelectTrigger>
-                                                    <SelectValue placeholder="Selecione o nível" />
-                                                </SelectTrigger>
+                                                    <SelectTrigger>
+                                                        <SelectValue placeholder="Selecione o nível" />
+                                                    </SelectTrigger>
                                                 </FormControl>
                                                 <SelectContent>
-                                                {['Baixa', 'Média', 'Alta', 'Urgente'].map(level => (
-                                                    <SelectItem key={level} value={level}>{level}</SelectItem>
-                                                ))}
+                                                    {['Baixa', 'Média', 'Alta', 'Urgente'].map((level) => (
+                                                        <SelectItem key={level} value={level}>
+                                                            {level}
+                                                        </SelectItem>
+                                                    ))}
                                                 </SelectContent>
                                             </Select>
                                             <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                </div>
+                                        </FormItem>
+                                    )}
+                                />
                             </div>
                         )
                     })}
                 </div>
                  <FormMessage>{form.formState.errors.inconformidades?.message}</FormMessage>
+            </div>
+
+            <div className="space-y-4 rounded-md border p-4 border-dashed bg-muted/30">
+                <div>
+                    <h3 className="text-lg font-medium">Outros documentos (opcional)</h3>
+                    <p className="text-sm text-muted-foreground mt-1 max-w-2xl">
+                        Campo independente para juntar qualquer outro ficheiro que considere pertinente ao registo (por exemplo mapa, ofício ou PDF geral), além dos anexos ligados a cada inconformidade acima.
+                    </p>
+                </div>
+                <FormField
+                    control={form.control}
+                    name="laudoAttachmentUrls"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormDescription>
+                                Até {MAX_LAUDO_ATTACHMENTS} ficheiros, {MAX_FILE_SIZE / 1024 / 1024} MB cada — imagens ou PDF. Armazenados no Firebase Storage.
+                            </FormDescription>
+                            <input
+                                ref={laudoInputRef}
+                                type="file"
+                                multiple
+                                className="hidden"
+                                aria-label="Anexar outros documentos pertinentes ao registo da vistoria"
+                                accept="image/jpeg,image/png,image/webp,image/gif,application/pdf,.pdf"
+                                onChange={(ev) => void handleLaudoFiles(ev)}
+                            />
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                disabled={uploadingLaudo || (field.value?.length ?? 0) >= MAX_LAUDO_ATTACHMENTS}
+                                onClick={() => laudoInputRef.current?.click()}
+                            >
+                                {uploadingLaudo ? (
+                                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                ) : (
+                                    <Paperclip className="h-4 w-4 mr-2" />
+                                )}
+                                Anexar documento extra
+                            </Button>
+                            {field.value && field.value.length > 0 && (
+                                <ul className="mt-3 flex flex-col gap-2">
+                                    {field.value.map((url, idx) => (
+                                        <li
+                                            key={`${url}-${idx}`}
+                                            className="flex items-center gap-2 flex-wrap rounded-md border px-3 py-2 text-sm"
+                                        >
+                                            <Badge variant="secondary" className="font-normal">
+                                                {idx + 1}
+                                            </Badge>
+                                            <a
+                                                href={url}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="text-primary underline truncate min-w-0 flex-1"
+                                            >
+                                                Abrir anexo
+                                            </a>
+                                            <Button type="button" variant="ghost" size="sm" onClick={() => removeLaudoUrl(idx)}>
+                                                Remover
+                                            </Button>
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
             </div>
             
              <div className="space-y-4 rounded-md border p-4">
@@ -335,7 +636,11 @@ export function InspectionForm({ onSuccess, currentItem }: InspectionFormProps) 
             </div>
             
             <CardFooter className="p-0 pt-6">
-                <Button type="submit" disabled={loading} className="w-full">
+                <Button
+                  type="submit"
+                  disabled={loading || uploadingLaudo || uploadingIncIndex !== null}
+                  className="w-full"
+                >
                 {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Salvando...</> : 
                 'Salvar Registro de Vistoria'}
                 </Button>

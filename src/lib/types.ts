@@ -1633,6 +1633,8 @@ export type Inspection = {
     inspectorId: string;
     inspectorName: string;
     inconformidades: Inconformidade[];
+    /** Documentos extra opcionais (mapas, ofícios, PDFs gerais) — além dos anexos por inconformidade. */
+    laudoAttachmentUrls?: string[];
     createdAt: any;
     status?: 'Em Aberto' | 'Aprovada';
     accompaniedBy?: string;
