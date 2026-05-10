@@ -71,6 +71,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { ComplianceForm } from "./compliance-form";
+import { RecordViewDialog } from "@/components/shared/record-view-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { Badge } from "@/components/ui/badge";
@@ -719,28 +720,70 @@ export default function CompliancePage() {
                 </Badge>
               </TableCell>
               <TableCell>
-                {item.fileUrl ? (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button asChild variant="ghost" size="icon">
-                        <a
-                          href={item.fileUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          download
+                <div className="flex items-center gap-1 flex-wrap">
+                  <RecordViewDialog
+                    title="Condicionante"
+                    description="Visualização sem edição."
+                    fileUrl={item.fileUrl}
+                    labels={{
+                      attachmentEmpty: "Sem anexo.",
+                      zoomTitle: "Anexo da condicionante",
+                    }}
+                    triggerLabel="Visualizar condicionante"
+                  >
+                    <div className="space-y-3">
+                      <div>
+                        <p className="text-xs text-muted-foreground">Descrição</p>
+                        <p className="font-medium whitespace-pre-wrap">
+                          {item.description}
+                        </p>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <div>
+                          <p className="text-xs text-muted-foreground">Vencimento</p>
+                          <p className="font-medium">
+                            {formatDate(item.dueDate ?? "")}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">Recorrência</p>
+                          <p className="font-medium">{item.recurrence ?? "—"}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground">Status</span>
+                        <Badge
+                          variant="outline"
+                          className={cn(getStatusVariant(item.status))}
                         >
-                          <Paperclip className="h-4 w-4" />
-                          <span className="sr-only">Fazer download</span>
-                        </a>
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Fazer download</p>
-                    </TooltipContent>
-                  </Tooltip>
-                ) : (
-                  <span className="text-muted-foreground text-xs">—</span>
-                )}
+                          {item.status ?? "—"}
+                        </Badge>
+                      </div>
+                    </div>
+                  </RecordViewDialog>
+                  {item.fileUrl ? (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button asChild variant="ghost" size="icon">
+                          <a
+                            href={item.fileUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            title="Abrir anexo em nova aba"
+                          >
+                            <Paperclip className="h-4 w-4" />
+                            <span className="sr-only">Abrir anexo em nova aba</span>
+                          </a>
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Abrir em nova aba</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  ) : (
+                    <span className="text-muted-foreground text-xs">—</span>
+                  )}
+                </div>
               </TableCell>
               {canPerformWriteActions(user) && (
                 <TableCell>

@@ -1,6 +1,8 @@
 "use client";
 
 import * as React from "react";
+import dynamic from "next/dynamic";
+import Link from "next/link";
 import { PageHeader } from "@/components/page-header";
 import {
   Card,
@@ -10,7 +12,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, Sparkles, Globe, FileDown } from "lucide-react";
+import { Loader2, Sparkles, Globe, FileDown, Database, Share2 } from "lucide-react";
 import { analyseArea } from "@/ai/flows/analise-ambiental-flow";
 import type {
   AnaliseAmbientalOutput,
@@ -19,6 +21,18 @@ import type {
 import { useToast } from "@/hooks/use-toast";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useFirebase } from "@/firebase";
+import { addDoc, collection, serverTimestamp } from "firebase/firestore";
+
+const LeafletMap = dynamic(() => import("./leaflet-map"), { ssr: false });
+
+type InputMode = "car" | "coordinates" | "polygon";
+type GeoJSONLike = {
+  type: string;
+  [key: string]: unknown;
+};
 
 /** Adiciona numeração de páginas no rodapé no formato página/total. */
 function addPageNumbers(doc: any, bottomMarginMm: number = 10) {
@@ -39,42 +53,107 @@ function addPageNumbers(doc: any, bottomMarginMm: number = 10) {
 }
 
 export default function AnaliseAmbientalPage() {
+  const { firestore, user } = useFirebase();
+  const [inputMode, setInputMode] = React.useState<InputMode>("car");
   const [isLoading, setIsLoading] = React.useState(false);
   const [isGeneratingPdf, setIsGeneratingPdf] = React.useState(false);
+  const [isExportingCsv, setIsExportingCsv] = React.useState(false);
+  const [isExportingGeojson, setIsExportingGeojson] = React.useState(false);
   const [analysisResult, setAnalysisResult] =
     React.useState<AnaliseAmbientalOutput | null>(null);
-  const [userInput, setUserInput] = React.useState("");
+  const [carNumber, setCarNumber] = React.useState("");
+  const [coordinateInput, setCoordinateInput] = React.useState("");
+  const [polygonInput, setPolygonInput] = React.useState("");
+  const [drawnPolygon, setDrawnPolygon] = React.useState<GeoJSONLike | null>(null);
+  const [lastPayload, setLastPayload] = React.useState("");
   const [iframeError, setIframeError] = React.useState(false);
   const [iframeLoading, setIframeLoading] = React.useState(true);
   const [iframeKey, setIframeKey] = React.useState(0);
   const { toast } = useToast();
 
-  const handleStartAnalysis = async () => {
-    setIsLoading(true);
-    setAnalysisResult(null);
+  const hasValidInput = React.useMemo(() => {
+    if (inputMode === "car") return carNumber.trim().length > 3;
+    if (inputMode === "coordinates") return coordinateInput.trim().length > 3;
+    return polygonInput.trim().length > 3 || !!drawnPolygon;
+  }, [carNumber, coordinateInput, drawnPolygon, inputMode, polygonInput]);
 
-    if (!userInput.trim()) {
+  const serializedPolygon = React.useMemo(() => {
+    if (drawnPolygon) return JSON.stringify(drawnPolygon);
+    return polygonInput.trim();
+  }, [drawnPolygon, polygonInput]);
+
+  const buildAnalysisInput = React.useCallback((): AnaliseAmbientalInput | null => {
+    if (inputMode === "car" && carNumber.trim()) {
+      return { dataType: "car", data: carNumber.trim() };
+    }
+    if (inputMode === "coordinates" && coordinateInput.trim()) {
+      return { dataType: "coordinates", data: coordinateInput.trim() };
+    }
+    if (inputMode === "polygon" && serializedPolygon.trim()) {
+      return { dataType: "polygon", data: serializedPolygon.trim() };
+    }
+    return null;
+  }, [carNumber, coordinateInput, inputMode, serializedPolygon]);
+
+  const buildFactsPrompt = React.useCallback(() => {
+    if (!analysisResult) return "";
+    const facts = analysisResult.factualData
+      .map(
+        (item, idx) =>
+          `${idx + 1}. Camada: ${item.camada} | Fonte: ${item.fonte} | Método: ${item.metodo} | Resultado: ${item.resultado}`,
+      )
+      .join("\n");
+    return [
+      "Use estes dados geoespaciais factuais para cruzamento e recomendações:",
+      facts,
+      "",
+      "Preciso de parecer técnico com riscos regulatórios, pendências e próximos passos para regularização em MG.",
+    ].join("\n");
+  }, [analysisResult]);
+
+  const saveAnalysisSnapshot = React.useCallback(
+    async (input: AnaliseAmbientalInput, output: AnaliseAmbientalOutput) => {
+      if (!firestore || !user?.uid) return;
+      try {
+        await addDoc(collection(firestore, "geo_analyses"), {
+          createdAt: serverTimestamp(),
+          createdBy: user.uid,
+          inputMode: input.dataType,
+          inputData: input.data,
+          summary: output.resumoIA,
+          factualData: output.factualData,
+          fontesConsultadas: output.fontesConsultadas,
+          generatedAtUtc: output.generatedAtUtc,
+        });
+      } catch (error) {
+        console.error("Falha ao persistir geo_analyses:", error);
+      }
+    },
+    [firestore, user?.uid],
+  );
+
+  const handleStartAnalysis = async () => {
+    const input = buildAnalysisInput();
+    if (!input) {
       toast({
         variant: "destructive",
         title: "Dados insuficientes",
-        description:
-          'Cole os dados do mapa (CAR, coordenadas, etc.) no campo "Iniciar Análise com IA" para a análise geoespacial.',
+        description: "Preencha CAR, coordenadas ou polígono para iniciar a análise.",
       });
-      setIsLoading(false);
       return;
     }
 
-    const input: AnaliseAmbientalInput = {
-      dataType: "car",
-      data: userInput.trim(),
-    };
+    setIsLoading(true);
+    setAnalysisResult(null);
+    setLastPayload(input.data);
 
     try {
       const result = await analyseArea(input);
       setAnalysisResult(result);
+      await saveAnalysisSnapshot(input, result);
       toast({
         title: "Análise concluída",
-        description: "O relatório está pronto para download em PDF.",
+        description: "Relatório pronto para exportação (PDF/CSV/GeoJSON).",
       });
     } catch (error) {
       console.error("Analysis failed:", error);
@@ -89,6 +168,47 @@ export default function AnaliseAmbientalPage() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleUseCurrentCoordinates = () => {
+    if (!navigator.geolocation) {
+      toast({
+        variant: "destructive",
+        title: "Geolocalização indisponível",
+        description: "Este navegador não suporta captura automática de coordenadas.",
+      });
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        setInputMode("coordinates");
+        setCoordinateInput(`${latitude.toFixed(6)}, ${longitude.toFixed(6)}`);
+        toast({
+          title: "Coordenadas capturadas",
+          description: "As coordenadas atuais foram preenchidas automaticamente.",
+        });
+      },
+      () => {
+        toast({
+          variant: "destructive",
+          title: "Falha na captura",
+          description: "Não foi possível capturar coordenadas automaticamente.",
+        });
+      },
+      { enableHighAccuracy: true, timeout: 12000 },
+    );
+  };
+
+  const downloadTextFile = (fileName: string, content: string, mimeType: string) => {
+    const blob = new Blob([content], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = fileName;
+    anchor.click();
+    URL.revokeObjectURL(url);
   };
 
   const handleDownloadPdf = async () => {
@@ -118,6 +238,26 @@ export default function AnaliseAmbientalPage() {
       );
       doc.text(resumoLines, margin, y);
       y += resumoLines.length * 6 + 8;
+
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "bold");
+      doc.text("Evidências factuais", margin, y);
+      y += 7;
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      analysisResult.factualData.forEach((item, index) => {
+        const line = `${index + 1}. ${item.camada} | ${item.fonte} | ${item.resultado}`;
+        const lines = doc.splitTextToSize(line, pageW - 2 * margin);
+        for (const l of lines) {
+          if (y > 270) {
+            doc.addPage();
+            y = margin;
+          }
+          doc.text(l, margin, y);
+          y += 5;
+        }
+      });
+      y += 6;
 
       const lineHeight = 5;
       const maxY = 280;
@@ -159,6 +299,65 @@ export default function AnaliseAmbientalPage() {
       });
     } finally {
       setIsGeneratingPdf(false);
+    }
+  };
+
+  const handleDownloadCsv = () => {
+    if (!analysisResult || isExportingCsv) return;
+    setIsExportingCsv(true);
+    try {
+      const header = "camada,fonte,metodo,resultado,areaHa";
+      const rows = analysisResult.factualData.map((item) =>
+        [
+          item.camada,
+          item.fonte,
+          item.metodo,
+          item.resultado,
+          item.areaHa ?? "",
+        ]
+          .map((value) => `"${String(value).replaceAll('"', '""')}"`)
+          .join(","),
+      );
+      const csv = [header, ...rows].join("\n");
+      downloadTextFile(
+        `relatorio-analise-geoespacial-${new Date().toISOString().slice(0, 10)}.csv`,
+        csv,
+        "text/csv;charset=utf-8;",
+      );
+      toast({ title: "CSV exportado", description: "Tabela factual baixada com sucesso." });
+    } finally {
+      setIsExportingCsv(false);
+    }
+  };
+
+  const handleDownloadGeoJson = () => {
+    if (!analysisResult || isExportingGeojson) return;
+    setIsExportingGeojson(true);
+    try {
+      const featureCollection = {
+        type: "FeatureCollection",
+        features: [
+          {
+            type: "Feature",
+            properties: {
+              generatedAtUtc: analysisResult.generatedAtUtc,
+              summary: analysisResult.resumoIA,
+              factualData: analysisResult.factualData,
+              fontesConsultadas: analysisResult.fontesConsultadas,
+              inputData: lastPayload,
+            },
+            geometry: drawnPolygon && drawnPolygon.type ? drawnPolygon : null,
+          },
+        ],
+      };
+      downloadTextFile(
+        `relatorio-analise-geoespacial-${new Date().toISOString().slice(0, 10)}.geojson`,
+        JSON.stringify(featureCollection, null, 2),
+        "application/geo+json;charset=utf-8;",
+      );
+      toast({ title: "GeoJSON exportado", description: "Pacote geoespacial baixado com sucesso." });
+    } finally {
+      setIsExportingGeojson(false);
     }
   };
 
@@ -228,32 +427,112 @@ export default function AnaliseAmbientalPage() {
           </CardContent>
         </Card>
 
-        {/* 2. Iniciar Análise com IA - integrado à análise geoespacial */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Captura por coordenada/polígono</CardTitle>
+            <CardDescription>
+              Desenhe um polígono para usar na análise ou capture coordenadas automáticas.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="h-[320px] overflow-hidden rounded-md border">
+              <LeafletMap polygon={drawnPolygon} onPolygonCreated={setDrawnPolygon} />
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button type="button" variant="outline" onClick={handleUseCurrentCoordinates}>
+                Capturar coordenada atual
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  if (!drawnPolygon) return;
+                  setInputMode("polygon");
+                  setPolygonInput(JSON.stringify(drawnPolygon));
+                }}
+              >
+                Usar polígono desenhado
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader>
             <CardTitle>Iniciar Análise com IA</CardTitle>
             <CardDescription>
-              Cole aqui os dados obtidos no mapa acima (CAR, coordenadas,
-              polígono). Eles serão usados pela análise ambiental geoespacial
-              com IA para gerar o relatório técnico.
+              Selecione o tipo de entrada e inicie a análise geoespacial com base em dados públicos.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="analysis-input">
-                Dados para análise geoespacial
+              <Label htmlFor="input-mode">Modo de entrada</Label>
+              <Select
+                value={inputMode}
+                onValueChange={(value) => setInputMode(value as InputMode)}
+              >
+                <SelectTrigger id="input-mode">
+                  <SelectValue placeholder="Selecione" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="car">Número do CAR</SelectItem>
+                  <SelectItem value="coordinates">Coordenadas</SelectItem>
+                  <SelectItem value="polygon">Polígono (WKT/GeoJSON)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {inputMode === "car" && (
+              <div className="space-y-2">
+                <Label htmlFor="car-input">Número do CAR</Label>
+                <Input
+                  id="car-input"
+                  placeholder="Ex: MG-3106200-1234.ABCD.EF12.3456.7890.ABCD.EF12.3456"
+                  value={carNumber}
+                  onChange={(e) => setCarNumber(e.target.value)}
+                />
+              </div>
+            )}
+
+            {inputMode === "coordinates" && (
+              <div className="space-y-2">
+                <Label htmlFor="coords-input">Coordenadas (lat, lng)</Label>
+                <Input
+                  id="coords-input"
+                  placeholder="Ex: -19.922731, -43.945095"
+                  value={coordinateInput}
+                  onChange={(e) => setCoordinateInput(e.target.value)}
+                />
+              </div>
+            )}
+
+            {inputMode === "polygon" && (
+              <div className="space-y-2">
+                <Label htmlFor="polygon-input">Polígono (WKT ou GeoJSON)</Label>
+                <Textarea
+                  id="polygon-input"
+                  placeholder='Ex: {"type":"Polygon","coordinates":[...]}'
+                  value={polygonInput}
+                  onChange={(e) => setPolygonInput(e.target.value)}
+                  className="min-h-[100px]"
+                />
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <Label htmlFor="analysis-preview">
+                Prévia do payload a analisar
               </Label>
               <Textarea
-                id="analysis-input"
-                placeholder="Ex: número do CAR (MG-3106200-...), coordenadas do polígono ou outros dados do mapa."
-                value={userInput}
-                onChange={(e) => setUserInput(e.target.value)}
-                className="min-h-[100px]"
+                id="analysis-preview"
+                value={buildAnalysisInput()?.data ?? ""}
+                readOnly
+                className="min-h-[80px]"
               />
             </div>
             <Button
               onClick={handleStartAnalysis}
-              disabled={isLoading || !userInput.trim()}
+              disabled={isLoading || !hasValidInput}
               className="w-full"
             >
               {isLoading ? (
@@ -293,23 +572,61 @@ export default function AnaliseAmbientalPage() {
                 <p className="text-sm text-muted-foreground line-clamp-2">
                   {analysisResult.resumoIA}
                 </p>
-                <Button
-                  onClick={handleDownloadPdf}
-                  disabled={!analysisResult || isGeneratingPdf}
-                  className="w-full sm:w-auto"
-                >
-                  {isGeneratingPdf ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Gerando PDF...
-                    </>
-                  ) : (
-                    <>
-                      <FileDown className="mr-2 h-4 w-4" />
-                      Baixar relatório em PDF
-                    </>
-                  )}
-                </Button>
+                <div className="rounded-md border p-3">
+                  <p className="mb-2 text-sm font-medium">Evidências factuais</p>
+                  <div className="space-y-2">
+                    {analysisResult.factualData.map((item, idx) => (
+                      <p key={`${item.camada}-${idx}`} className="text-xs text-muted-foreground">
+                        {idx + 1}. {item.camada} ({item.fonte}) - {item.resultado}
+                      </p>
+                    ))}
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    onClick={handleDownloadPdf}
+                    disabled={isGeneratingPdf}
+                    className="w-full sm:w-auto"
+                  >
+                    {isGeneratingPdf ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Gerando PDF...
+                      </>
+                    ) : (
+                      <>
+                        <FileDown className="mr-2 h-4 w-4" />
+                        Baixar PDF
+                      </>
+                    )}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={handleDownloadCsv}
+                    disabled={isExportingCsv}
+                    className="w-full sm:w-auto"
+                  >
+                    {isExportingCsv ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Database className="mr-2 h-4 w-4" />}
+                    Exportar CSV
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={handleDownloadGeoJson}
+                    disabled={isExportingGeojson}
+                    className="w-full sm:w-auto"
+                  >
+                    {isExportingGeojson ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Globe className="mr-2 h-4 w-4" />}
+                    Exportar GeoJSON
+                  </Button>
+                  <Button asChild variant="secondary" className="w-full sm:w-auto">
+                    <Link
+                      href={`/studies/assistant?tipo=mcp&prompt=${encodeURIComponent(buildFactsPrompt())}`}
+                    >
+                      <Share2 className="mr-2 h-4 w-4" />
+                      Enviar para Cruzamento de dados
+                    </Link>
+                  </Button>
+                </div>
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center py-10 text-center text-muted-foreground">

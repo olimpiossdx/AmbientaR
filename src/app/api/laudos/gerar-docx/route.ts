@@ -37,13 +37,30 @@ function getTemplatePath(slug: string): string {
   return path.join(process.cwd(), 'public', 'templates', slug, 'template.docx');
 }
 
+async function loadTemplateBuffer(
+  slug: string,
+  templateUrl: string | undefined,
+): Promise<Buffer> {
+  if (templateUrl && /^https?:\/\//i.test(templateUrl)) {
+    const res = await fetch(templateUrl);
+    if (!res.ok) {
+      throw new Error(`Falha ao baixar template (HTTP ${res.status}). Verifique o upload em Configurações.`);
+    }
+    const ab = await res.arrayBuffer();
+    return Buffer.from(ab);
+  }
+  return fs.readFile(getTemplatePath(slug));
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { laudoId, tipoEstudo, context } = body as {
+    const { laudoId, tipoEstudo, context, templateUrl } = body as {
       laudoId?: string;
       tipoEstudo?: string;
       context?: AmbientalContext;
+      /** URL HTTPS do DOCX no Firebase Storage (Configurações → Templates). */
+      templateUrl?: string;
     };
 
     if (!context || typeof tipoEstudo !== 'string') {
@@ -61,17 +78,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const templatePath = getTemplatePath(slug);
     let content: Buffer;
     try {
-      content = await fs.readFile(templatePath);
-    } catch {
+      content = await loadTemplateBuffer(slug, templateUrl);
+    } catch (err) {
+      const msg =
+        err instanceof Error ? err.message : 'Erro ao carregar template.';
       return NextResponse.json(
         {
           success: false,
-          error: `Template não encontrado para ${slug}. Faça upload em Configurações > Templates (${slug}) ou crie public/templates/${slug}/template.docx.`,
+          error: `${msg} Alternativa: envie o DOCX em Configurações > Templates (${slug}) ou adicione public/templates/${slug}/template.docx.`,
         },
-        { status: 404 }
+        { status: 404 },
       );
     }
 

@@ -48,7 +48,6 @@ import type {
   EnvironmentalIntervention,
   Empreendedor,
   AppUser,
-  Project,
 } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -57,6 +56,8 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogFooter,
+  DialogClose,
 } from "@/components/ui/dialog";
 import {
   AlertDialog,
@@ -69,9 +70,9 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { IntervencaoForm } from "./intervencao-form";
+import { AttachmentPreviewSection } from "@/components/shared/attachment-preview-section";
 import { useToast } from "@/hooks/use-toast";
 import { FirestorePermissionError } from "@/firebase/errors";
-import { useRouter } from "next/navigation";
 import {
   Tooltip,
   TooltipContent,
@@ -80,6 +81,8 @@ import {
 } from "@/components/ui/tooltip";
 import { backupAndDeleteParentWithCondicionantes } from "@/lib/deleted-data-backup";
 import { CardSearchInput } from "@/components/card-search-input";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
 import { fetchEmpreendedorIdsForRepresentative } from "@/lib/representative-empreendedor-ids";
 import { isClientePortalRole } from "@/lib/role-guards";
 
@@ -92,8 +95,26 @@ const canPerformWriteActions = (user: AppUser | null): boolean => {
   );
 };
 
+const DetailItem = ({
+  label,
+  value,
+}: {
+  label: string;
+  value?: string | null | number;
+}) => (
+  <div className="space-y-1">
+    <Label className="text-sm font-medium">{label}</Label>
+    <p className="text-sm text-muted-foreground">
+      {value != null && value !== "" ? String(value) : "Não informado"}
+    </p>
+  </div>
+);
+
 export default function IntervencoesPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isViewIntervencaoOpen, setIsViewIntervencaoOpen] = useState(false);
+  const [viewIntervencao, setViewIntervencao] =
+    useState<EnvironmentalIntervention | null>(null);
   const [isAlertOpen, setIsAlertOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
   const [editingItem, setEditingItem] =
@@ -106,7 +127,6 @@ export default function IntervencoesPage() {
   const firestore = useFirestore();
   const { user } = useUser();
   const { toast } = useToast();
-  const router = useRouter();
 
   useEffect(() => {
     if (isClientePortalRole(user?.role) && firestore) {
@@ -217,6 +237,11 @@ export default function IntervencoesPage() {
   const handleEdit = (item: EnvironmentalIntervention) => {
     setEditingItem(item);
     setIsDialogOpen(true);
+  };
+
+  const openViewIntervencao = (item: EnvironmentalIntervention) => {
+    setViewIntervencao(item);
+    setIsViewIntervencaoOpen(true);
   };
 
   const openDeleteConfirm = (itemId: string) => {
@@ -351,14 +376,32 @@ export default function IntervencoesPage() {
                             </p>
                           </div>
                           <div className="flex flex-wrap items-center gap-1">
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => openViewIntervencao(item)}
+                                >
+                                  <Eye className="h-4 w-4" />
+                                  <span className="sr-only">Visualizar</span>
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Visualizar sem editar</p>
+                              </TooltipContent>
+                            </Tooltip>
                             {item.fileUrl && (
                               <Button asChild variant="ghost" size="icon">
                                 <a
                                   href={item.fileUrl}
                                   target="_blank"
                                   rel="noopener noreferrer"
+                                  title="Abrir anexo em nova aba"
                                 >
                                   <Paperclip className="h-4 w-4" />
+                                  <span className="sr-only">Ver anexo</span>
                                 </a>
                               </Button>
                             )}
@@ -475,6 +518,22 @@ export default function IntervencoesPage() {
                             </Badge>
                           </TableCell>
                           <TableCell>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => openViewIntervencao(item)}
+                                >
+                                  <Eye className="h-4 w-4" />
+                                  <span className="sr-only">Visualizar</span>
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Visualizar sem editar</p>
+                              </TooltipContent>
+                            </Tooltip>
                             {item.fileUrl && (
                               <Tooltip>
                                 <TooltipTrigger asChild>
@@ -483,6 +542,7 @@ export default function IntervencoesPage() {
                                       href={item.fileUrl}
                                       target="_blank"
                                       rel="noopener noreferrer"
+                                      title="Abrir anexo em nova aba"
                                     >
                                       <Paperclip className="h-4 w-4" />
                                       <span className="sr-only">Ver anexo</span>
@@ -560,6 +620,74 @@ export default function IntervencoesPage() {
           </Card>
         </main>
       </div>
+
+      <Dialog open={isViewIntervencaoOpen} onOpenChange={setIsViewIntervencaoOpen}>
+        <DialogContent className="w-[95vw] max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Visualizar DAIA</DialogTitle>
+            <DialogDescription>
+              Somente leitura. Processo nº {viewIntervencao?.processNumber || "—"}
+            </DialogDescription>
+          </DialogHeader>
+          {viewIntervencao && (
+            <div className="space-y-4 text-sm">
+              <DetailItem
+                label="Empreendedor"
+                value={empreendedoresMap.get(viewIntervencao.empreendedorId)}
+              />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <DetailItem
+                  label="Nº do processo"
+                  value={viewIntervencao.processNumber}
+                />
+                <DetailItem
+                  label="Órgão emissor"
+                  value={viewIntervencao.issuingBody}
+                />
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <DetailItem
+                  label="Data de emissão"
+                  value={formatDate(viewIntervencao.issueDate)}
+                />
+                <DetailItem
+                  label="Vencimento"
+                  value={formatDate(viewIntervencao.expirationDate)}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label>Status</Label>
+                <Badge
+                  variant="outline"
+                  className={cn(getStatusVariant(viewIntervencao.status))}
+                >
+                  {viewIntervencao.status}
+                </Badge>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-sm font-medium">Tipo / descrição</Label>
+                <p className="text-muted-foreground whitespace-pre-wrap">
+                  {viewIntervencao.description || "N/A"}
+                </p>
+              </div>
+              <Separator />
+              <AttachmentPreviewSection
+                fileUrl={viewIntervencao.fileUrl}
+                sectionLabel="Anexo"
+                emptyLabel="Nenhum anexo."
+                zoomTitle="Anexo da DAIA"
+              />
+            </div>
+          )}
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button type="button" variant="outline">
+                Fechar
+              </Button>
+            </DialogClose>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="sm:max-w-2xl h-full max-h-[90dvh] flex flex-col">

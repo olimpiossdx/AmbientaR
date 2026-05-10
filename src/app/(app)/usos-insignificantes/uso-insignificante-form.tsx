@@ -56,6 +56,7 @@ import {
   useMemoFirebase,
 } from "@/firebase";
 import { FirestorePermissionError } from "@/firebase/errors";
+import { AttachmentPreviewSection } from "@/components/shared/attachment-preview-section";
 import {
   collection,
   doc,
@@ -77,7 +78,10 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import {
+  uploadFileToStorage,
+  sanitizeStorageFileName,
+} from "@/lib/storage-upload";
 import { Separator } from "@/components/ui/separator";
 
 const formSchema = z
@@ -233,38 +237,16 @@ export function UsoInsignificanteForm({
     setIsUploading(true);
     setUploadedFileUrl(null);
     try {
-      // Option B (local API) apenas em desenvolvimento para evitar travas de Storage.
-      if (process.env.NODE_ENV === "development") {
-        const formData = new FormData();
-        formData.append("file", file);
-        const res = await fetch("/api/uploads/usos-insignificantes", {
-          method: "POST",
-          body: formData,
-        });
-        const data = await res.json();
-        if (!res.ok || !data.url) {
-          throw new Error(data.error || "Falha ao salvar arquivo.");
-        }
-
-        setUploadedFileUrl(data.url as string);
-        toast({
-          title: "Anexo carregado",
-          description: "O arquivo está pronto para ser salvo.",
-        });
-      } else {
-        const storage = getStorage();
-        const storageRef = ref(
-          storage,
-          `usos-insignificantes/${Date.now()}-${file.name}`,
-        );
-        const uploadResult = await uploadBytes(storageRef, file);
-        const downloadURL = await getDownloadURL(uploadResult.ref);
-        setUploadedFileUrl(downloadURL);
-        toast({
-          title: "Anexo carregado",
-          description: "O arquivo está pronto para ser salvo.",
-        });
-      }
+      const safe = sanitizeStorageFileName(file.name);
+      const downloadURL = await uploadFileToStorage(
+        file,
+        `usos-insignificantes/${Date.now()}-${safe}`,
+      );
+      setUploadedFileUrl(downloadURL);
+      toast({
+        title: "Anexo carregado",
+        description: "O arquivo está pronto para ser salvo.",
+      });
     } catch (error) {
       console.error("File upload error:", error);
       toast({
@@ -926,33 +908,20 @@ export function UsoInsignificanteForm({
                   <FormDescription>
                     Anexe o documento do uso insignificante (PDF, JPG, PNG).
                     Máx 10MB.
-                    {currentItem?.fileUrl && !uploadedFileUrl && (
-                      <span className="block mt-2 text-xs">
-                        Arquivo atual:{" "}
-                        <a
-                          href={currentItem.fileUrl}
-                          target="_blank"
-                          className="underline"
-                          rel="noreferrer"
-                        >
-                          ver anexo
-                        </a>
-                      </span>
-                    )}
-                    {uploadedFileUrl && (
-                      <span className="block mt-2 text-xs text-green-600">
-                        Novo arquivo carregado:{" "}
-                        <a
-                          href={uploadedFileUrl}
-                          target="_blank"
-                          className="underline"
-                          rel="noreferrer"
-                        >
-                          ver anexo
-                        </a>
-                      </span>
-                    )}
                   </FormDescription>
+                  {(currentItem?.fileUrl || uploadedFileUrl) && (
+                    <div className="mt-3">
+                      <AttachmentPreviewSection
+                        fileUrl={uploadedFileUrl || currentItem?.fileUrl || null}
+                        sectionLabel={
+                          uploadedFileUrl
+                            ? "Pré-visualização do novo anexo"
+                            : "Anexo atual"
+                        }
+                        zoomTitle="Anexo"
+                      />
+                    </div>
+                  )}
                   <FormMessage />
                 </FormItem>
               )}

@@ -34,6 +34,7 @@ import { Label } from '@/components/ui/label';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { IpeAmareloDefaultCover } from '@/components/studies/inventory/IpeAmareloDefaultCover';
+import { uploadFileToStorage, deleteFileAtStoragePath, storagePathFromDownloadUrl, sanitizeStorageFileName } from '@/lib/storage-upload';
 
 const formSchema = z.object({
   nome: z.string().min(1, "O nome do projeto é obrigatório."),
@@ -73,7 +74,7 @@ export default function InventarioProjectPage() {
   const coverFileInputRef = React.useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
-  const { firestore, user } = useFirebase();
+  const { firestore, user, auth } = useFirebase();
 
   const projectDocRef = React.useMemo(() => {
     if (!firestore || !projectId) return null;
@@ -200,19 +201,14 @@ export default function InventarioProjectPage() {
   const handleCoverFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     e.target.value = '';
-    if (!file || !projectDocRef || !projectId) return;
+    if (!file || !projectDocRef || !projectId || !auth?.currentUser) return;
     setCoverUploading(true);
     try {
-      const fd = new FormData();
-      fd.append('projectId', projectId);
-      fd.append('files', file);
-      const res = await fetch('/api/inventory-project-photos', { method: 'POST', body: fd });
-      const data = (await res.json()) as { success?: boolean; uploaded?: { url: string }[]; error?: string };
-      if (!res.ok || !data.success || !data.uploaded?.[0]?.url) {
-        throw new Error(data.error || 'Falha no envio da imagem.');
-      }
+      const safe = sanitizeStorageFileName(file.name);
+      const storagePath = `inventory-project-photos/${projectId}/cover-${Date.now()}-${safe}`;
+      const url = await uploadFileToStorage(file, storagePath);
       await updateDoc(projectDocRef, {
-        coverImageUrl: data.uploaded[0].url,
+        coverImageUrl: url,
         updatedAt: serverTimestamp(),
       });
       toast({ title: 'Imagem atualizada', description: 'A capa do projeto foi guardada.' });
@@ -234,15 +230,10 @@ export default function InventarioProjectPage() {
       return;
     }
     const url = project.coverImageUrl!;
-    const parts = url.split('/').filter(Boolean);
-    const fileId = parts[parts.length - 1];
-    if (url.startsWith('/inventory-project-photos/') && fileId) {
+    const path = storagePathFromDownloadUrl(url);
+    if (path) {
       try {
-        await fetch('/api/inventory-project-photos', {
-          method: 'DELETE',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ projectId, fileId }),
-        });
+        await deleteFileAtStoragePath(path);
       } catch {
         /* ficheiro pode já não existir */
       }

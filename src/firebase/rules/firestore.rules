@@ -400,6 +400,14 @@ service cloud.firestore {
     }
 
     /**
+     * Fotos do inventário florestal (URLs no Storage + metadados). Substitui armazenamento em disco local.
+     * @path /inventoryProjectPhotos/{projectId}
+     */
+    match /inventoryProjectPhotos/{projectId} {
+      allow read, write: if isSignedIn();
+    }
+
+    /**
      * @description Allows any authenticated user to manage socio-environmental analyses.
      * Esses documentos são usados para estudos e formulários; controle fino é feito no front.
      * @path /databases/{database}/documents/analisesSocioambientais/{analysisId}

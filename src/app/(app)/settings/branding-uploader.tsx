@@ -9,6 +9,8 @@ import { Loader2, CloudUpload, Trash2 } from 'lucide-react';
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
 import { useUploadBrandingImage } from '@/hooks/use-branding-upload';
+import { useFirebase } from '@/firebase';
+import { doc, setDoc } from 'firebase/firestore';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -42,6 +44,7 @@ export function BrandingImageUploader({
   const [showDeleteConfirm, setShowDeleteConfirm] = React.useState(false);
   const { toast } = useToast();
   const { upload } = useUploadBrandingImage();
+  const { firestore } = useFirebase();
 
   React.useEffect(() => {
     if (!file && imageUrl) {
@@ -95,16 +98,11 @@ export function BrandingImageUploader({
     setIsDeleting(true);
     setShowDeleteConfirm(false);
     try {
-      const res = await fetch('/api/branding', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fieldName }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        toast({ variant: 'destructive', title: 'Erro ao excluir', description: data.error ?? 'Falha ao remover imagem.' });
+      if (!firestore) {
+        toast({ variant: 'destructive', title: 'Erro ao excluir', description: 'Firestore indisponível.' });
         return;
       }
+      await setDoc(doc(firestore, 'companySettings', 'branding'), { [fieldName]: null }, { merge: true });
       setPreviewUrl(null);
       setFile(null);
       onUploadComplete?.();

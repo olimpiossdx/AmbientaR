@@ -99,6 +99,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Search } from "lucide-react";
+import { AttachmentPreviewSection } from "@/components/shared/attachment-preview-section";
 
 const DetailItem = ({
   label,
@@ -1489,7 +1490,7 @@ export default function InvoicesPage() {
       </Dialog>
 
       <Dialog open={isViewOpen} onOpenChange={setIsViewOpen}>
-        <DialogContent className="sm:max-w-xl">
+        <DialogContent className="w-[95vw] max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               Detalhes da Fatura #{viewingItem?.invoiceNumber}
@@ -1527,19 +1528,13 @@ export default function InvoicesPage() {
                   value={formatCurrency(viewingItem.amount)}
                 />
               </div>
-              {viewingItem.fileUrl && viewingItem.status === "Paid" && (
-                <div className="pt-4">
-                  <a
-                    href={viewingItem.fileUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-primary underline flex items-center gap-2"
-                  >
-                    <FileText className="h-4 w-4" />
-                    Ver Boleto/Comprovante
-                  </a>
-                </div>
-              )}
+              <AttachmentPreviewSection
+                fileUrl={viewingItem.fileUrl}
+                sectionLabel="Boleto / comprovante"
+                emptyLabel="Nenhum anexo cadastrado para esta fatura."
+                zoomTitle="Anexo da fatura"
+                zoomDescription="Visualização ampliada do boleto ou comprovante."
+              />
             </div>
           )}
           <DialogFooter>

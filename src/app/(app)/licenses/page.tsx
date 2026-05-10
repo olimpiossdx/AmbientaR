@@ -43,6 +43,7 @@ import {
   useMemoFirebase,
   errorEmitter,
 } from "@/firebase";
+import { FirestorePermissionError } from "@/firebase/errors";
 import { collection, doc, query, where, getDocs } from "firebase/firestore";
 import type { License, Empreendedor, AppUser, Project } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -67,7 +68,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { LicenseForm } from "./license-form";
 import { useToast } from "@/hooks/use-toast";
-import { FirestorePermissionError } from "@/firebase/errors";
+import { AttachmentPreviewSection } from "@/components/shared/attachment-preview-section";
 import { useAuth } from "@/firebase";
 import { useRouter } from "next/navigation";
 import { Separator } from "@/components/ui/separator";
@@ -746,30 +747,12 @@ export default function LicensesPage() {
                   {viewingLicense.description || "N/A"}
                 </p>
               </div>
-              {viewingLicense.fileUrl && (
-                <div className="space-y-1">
-                  <Label>Anexo</Label>
-                  <p>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <a
-                          href={viewingLicense.fileUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          download
-                          className="text-primary underline flex items-center gap-2"
-                        >
-                          <Paperclip className="h-4 w-4" />
-                          Ver documento
-                        </a>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Fazer download</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </p>
-                </div>
-              )}
+              <AttachmentPreviewSection
+                fileUrl={viewingLicense.fileUrl}
+                sectionLabel="Anexo"
+                emptyLabel="Nenhum documento anexado."
+                zoomTitle="Anexo da licença"
+              />
             </div>
           )}
           <DialogFooter>

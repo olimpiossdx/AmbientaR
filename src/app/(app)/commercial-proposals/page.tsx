@@ -104,6 +104,7 @@ import {
   TooltipContent,
 } from "@/components/ui/tooltip";
 import { Separator } from "@/components/ui/separator";
+import { AttachmentPreviewSection } from "@/components/shared/attachment-preview-section";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -523,12 +524,19 @@ export default function CommercialProposalsPage() {
       watermarkImageUrl?: string | null;
     } | null = null;
 
+    const brandingDocRef = doc(firestore, "companySettings", "branding");
     try {
-      const [brandingRes, companySnap] = await Promise.all([
-        fetch("/api/branding"),
+      const [brandingSnap, companySnap] = await Promise.all([
+        getDoc(brandingDocRef),
         getDoc(companyProfileDocRef),
       ]);
-      if (brandingRes.ok) brandingData = await brandingRes.json();
+      if (brandingSnap.exists()) {
+        brandingData = brandingSnap.data() as {
+          headerImageUrl?: string | null;
+          footerImageUrl?: string | null;
+          watermarkImageUrl?: string | null;
+        };
+      }
       companyProfile = companySnap.exists()
         ? (companySnap.data() as Omit<EnvironmentalCompany, "id">)
         : null;
@@ -1577,7 +1585,7 @@ export default function CommercialProposalsPage() {
       </Dialog>
 
       <Dialog open={isViewOpen} onOpenChange={setIsViewOpen}>
-        <DialogContent className="sm:max-w-xl">
+        <DialogContent className="w-[95vw] max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               Detalhes da Proposta #{viewingItem?.proposalNumber}
@@ -1630,6 +1638,12 @@ export default function CommercialProposalsPage() {
                   value={formatCurrency(viewingItem.amount)}
                 />
               </div>
+              <AttachmentPreviewSection
+                fileUrl={viewingItem.fileUrl}
+                sectionLabel="PDF / anexo da proposta"
+                emptyLabel="Nenhum PDF ou anexo cadastrado."
+                zoomTitle="Anexo da proposta"
+              />
             </div>
           )}
           <DialogFooter>

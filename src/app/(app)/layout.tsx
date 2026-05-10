@@ -217,7 +217,9 @@ const AppLayoutClient = ({ children }: { children: React.ReactNode }) => {
 
         if (path) {
           try {
-            if (path.startsWith("https://")) {
+            if (path.startsWith("https://") || path.startsWith("http://")) {
+              setLogoUrl(path);
+            } else if (path.startsWith("/")) {
               setLogoUrl(path);
             } else {
               const storage = getStorage();

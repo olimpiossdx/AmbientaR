@@ -73,6 +73,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { OutorgaForm } from "./outorga-form";
 import { useToast } from "@/hooks/use-toast";
+import { AttachmentPreviewSection } from "@/components/shared/attachment-preview-section";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { useAuth } from "@/firebase";
 import { useRouter } from "next/navigation";
@@ -520,22 +521,12 @@ export default function OutorgasEstudosPage() {
                   {viewingItem.description || "N/A"}
                 </p>
               </div>
-              {viewingItem.fileUrl && (
-                <div className="space-y-1">
-                  <Label>Anexo</Label>
-                  <p>
-                    <a
-                      href={viewingItem.fileUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-primary underline flex items-center gap-2"
-                    >
-                      <Paperclip className="h-4 w-4" />
-                      Ver documento
-                    </a>
-                  </p>
-                </div>
-              )}
+              <AttachmentPreviewSection
+                fileUrl={viewingItem.fileUrl}
+                sectionLabel="Anexo"
+                emptyLabel="Nenhum documento anexado."
+                zoomTitle="Anexo da outorga"
+              />
             </div>
           )}
           <DialogFooter>

@@ -14,6 +14,8 @@ import { doc, collection, updateDoc, serverTimestamp, deleteField } from 'fireba
 import type { Laudo, Empreendedor, Project } from '@/lib/types';
 import { getAmbientalContextByEmpreendimentoId } from '@/lib/ambiental-context';
 import type { AmbientalContext } from '@/lib/types';
+import type { DocxTemplatesState } from '@/lib/docx-template-slugs';
+import { tipoEstudoToTemplateSlug } from '@/lib/docx-template-slugs';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { FileText, Database, Loader2, FileDown, Send } from 'lucide-react';
@@ -64,6 +66,12 @@ export default function LaudoDetailPage() {
     [firestore, id]
   );
   const { data: laudo, isLoading } = useDoc<Laudo>(laudoDocRef);
+
+  const docxTemplatesRef = useMemoFirebase(
+    () => (firestore ? doc(firestore, 'companySettings', 'docxTemplates') : null),
+    [firestore],
+  );
+  const { data: docxTemplates } = useDoc<DocxTemplatesState>(docxTemplatesRef);
 
   const empreendedoresQuery = useMemoFirebase(
     () => (firestore ? collection(firestore, 'empreendedores') : null),
@@ -190,6 +198,7 @@ export default function LaudoDetailPage() {
           laudoId: laudo.id,
           tipoEstudo: laudo.tipoEstudo,
           context: ctx,
+          templateUrl: docxTemplates?.[tipoEstudoToTemplateSlug(laudo.tipoEstudo) as keyof DocxTemplatesState]?.url,
         }),
       });
       if (!res.ok) {
@@ -210,7 +219,7 @@ export default function LaudoDetailPage() {
     } finally {
       setDocxLoading(false);
     }
-  }, [laudo, ambientalContext, firestore, toast]);
+  }, [laudo, ambientalContext, firestore, toast, docxTemplates]);
 
   const savePdfUrl = useCallback(async () => {
     if (!firestore || !id) return;

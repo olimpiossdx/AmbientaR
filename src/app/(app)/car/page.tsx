@@ -45,7 +45,10 @@ import {
 } from "firebase/firestore";
 import type { Client, Project } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
-import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import {
+  uploadFileToStorage,
+  sanitizeStorageFileName,
+} from "@/lib/storage-upload";
 import { FileText, Upload, Map as MapIcon } from "lucide-react";
 import {
   Tooltip,
@@ -307,35 +310,16 @@ export default function CarPage() {
       // Permite selecionar o mesmo arquivo novamente.
       inputEl.value = "";
 
-      if (process.env.NODE_ENV === "development") {
-        const formData = new FormData();
-        formData.append("file", file);
-
-        const res = await fetch("/api/uploads/car-pdf", {
-          method: "POST",
-          body: formData,
-        });
-        const data = await res.json();
-        if (!res.ok || !data.url) {
-          throw new Error(data.error || "Falha ao salvar PDF.");
-        }
-
-        setPdfUrl(data.url as string);
-        toast({
-          title: "Recibo enviado",
-          description: "O PDF foi carregado com sucesso.",
-        });
-      } else {
-        const storage = getStorage();
-        const storageRef = ref(storage, `car/${Date.now()}-${file.name}`);
-        const uploadResult = await uploadBytes(storageRef, file);
-        const url = await getDownloadURL(uploadResult.ref);
-        setPdfUrl(url);
-        toast({
-          title: "Recibo enviado",
-          description: "O PDF foi carregado com sucesso.",
-        });
-      }
+      const safe = sanitizeStorageFileName(file.name);
+      const url = await uploadFileToStorage(
+        file,
+        `car/${Date.now()}-${safe}`,
+      );
+      setPdfUrl(url);
+      toast({
+        title: "Recibo enviado",
+        description: "O PDF foi carregado com sucesso.",
+      });
     } catch (error) {
       console.error("Erro ao enviar PDF do CAR:", error);
       toast({
@@ -361,35 +345,16 @@ export default function CarPage() {
       // Permite selecionar o mesmo arquivo novamente.
       inputEl.value = "";
 
-      if (process.env.NODE_ENV === "development") {
-        const formData = new FormData();
-        formData.append("file", file);
-
-        const res = await fetch("/api/uploads/car-geometry", {
-          method: "POST",
-          body: formData,
-        });
-        const data = await res.json();
-        if (!res.ok || !data.url) {
-          throw new Error(data.error || "Falha ao salvar geometria.");
-        }
-
-        setShpUrl(data.url as string);
-        toast({
-          title: "Arquivo de geometria enviado",
-          description: "O arquivo SHP/ZIP foi carregado.",
-        });
-      } else {
-        const storage = getStorage();
-        const storageRef = ref(storage, `car-shp/${Date.now()}-${file.name}`);
-        const uploadResult = await uploadBytes(storageRef, file);
-        const url = await getDownloadURL(uploadResult.ref);
-        setShpUrl(url);
-        toast({
-          title: "Arquivo de geometria enviado",
-          description: "O arquivo SHP/ZIP foi carregado.",
-        });
-      }
+      const safe = sanitizeStorageFileName(file.name);
+      const url = await uploadFileToStorage(
+        file,
+        `car-shp/${Date.now()}-${safe}`,
+      );
+      setShpUrl(url);
+      toast({
+        title: "Arquivo de geometria enviado",
+        description: "O arquivo SHP/ZIP foi carregado.",
+      });
     } catch (error) {
       console.error("Erro ao enviar SHP do CAR:", error);
       toast({

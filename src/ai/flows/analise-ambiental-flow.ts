@@ -13,8 +13,8 @@ import {
   type AnaliseAmbientalInput,
   type AnaliseAmbientalOutput,
 } from "@/lib/types/analise-ambiental";
+import { fetchCarData, runGeospatialOverlay } from "@/lib/geospatial/geo-analysis-service";
 
-// Mock de Ferramentas (Simulando APIs externas)
 const getDadosCAR = ai.defineTool(
   {
     name: "getDadosCAR",
@@ -29,14 +29,7 @@ const getDadosCAR = ai.defineTool(
     }),
   },
   async ({ numeroCAR }) => {
-    console.log(`Buscando dados para o CAR: ${numeroCAR}`);
-    // Em um cenário real, isso faria uma chamada para a API do SICAR
-    return {
-      areaTotal: 50.45,
-      situacao: "Ativo",
-      appDeclarada: 5.2,
-      reservaLegalDeclarada: 10.1,
-    };
+    return await fetchCarData(numeroCAR);
   },
 );
 
@@ -61,16 +54,11 @@ const analisarSobreposicao = ai.defineTool(
     }),
   },
   async ({ poligono }) => {
-    console.log(`Analisando sobreposição para o polígono...`);
-    // Simula uma análise geoespacial
+    const result = await runGeospatialOverlay(poligono);
     return {
-      bioma: "Cerrado",
-      sobreposicaoUC: {
-        ocorreu: false,
-        nomeUC: "Parque Estadual da Serra do Cabral",
-        distanciaKm: 15,
-      },
-      hidrografia: [{ nome: "Córrego do Brejo", tipo: "Intermitente" }],
+      bioma: result.bioma,
+      sobreposicaoUC: result.sobreposicaoUC,
+      hidrografia: result.hidrografia,
     };
   },
 );
@@ -98,7 +86,9 @@ const prompt = ai.definePrompt({
       *   **Título: Recursos Hídricos e APP:** Liste os corpos d'água identificados pela ferramenta \`analisarSobreposicao\`. No campo 'relatorio', mencione a obrigatoriedade de respeitar a Faixa de Preservação Permanente (APP) conforme o Código Florestal (Lei nº 12.651/2012).
       *   **Título: Unidades de Conservação:** Informe se a ferramenta \`analisarSobreposicao\` detectou sobreposição com Unidades de Conservação (UCs). No 'relatorio', explique as restrições ou a distância para a UC mais próxima.
       *   **Título: Análise de Imagens (Simulação):** No 'relatorio', simule uma breve análise de imagens de satélite, descrevendo o uso aparente do solo (pastagem, agricultura, vegetação nativa, etc.).
-      *   **Título: Conclusão e Recomendações:** No campo 'relatorio', forneça uma conclusão técnica, apontando possíveis pontos de atenção, necessidade de estudos complementares ou próximos passos para a regularização.`,
+      *   **Título: Conclusão e Recomendações:** No campo 'relatorio', forneça uma conclusão técnica, apontando possíveis pontos de atenção, necessidade de estudos complementares ou próximos passos para a regularização.
+
+  Importante: seja transparente sobre limitações de conectividade dos serviços OGC/API e sempre apresente conclusão conservadora quando faltar confirmação de dado.`,
 });
 
 // Fluxo Principal
@@ -109,11 +99,17 @@ const analiseAmbientalFlow = ai.defineFlow(
     outputSchema: AnaliseAmbientalOutputSchema,
   },
   async (input) => {
+    const factualOverlay = await runGeospatialOverlay(input.data);
     const { output } = await prompt({ input }, { model: aiModel });
     if (!output) {
       throw new Error("A IA não conseguiu gerar uma análise.");
     }
-    return output;
+    return {
+      ...output,
+      generatedAtUtc: new Date().toISOString(),
+      factualData: factualOverlay.factualData,
+      fontesConsultadas: factualOverlay.fontesConsultadas,
+    };
   },
 );
 

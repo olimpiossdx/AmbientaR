@@ -49,8 +49,12 @@ import {
   query,
   where,
 } from "firebase/firestore";
-import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import {
+  uploadFileToStorage,
+  sanitizeStorageFileName,
+} from "@/lib/storage-upload";
 import { DialogFooter } from "@/components/ui/dialog";
+import { AttachmentPreviewSection } from "@/components/shared/attachment-preview-section";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
@@ -205,35 +209,16 @@ export function InvoiceForm({
       // Permite selecionar o mesmo arquivo novamente.
       inputEl.value = "";
 
-      if (process.env.NODE_ENV === "development") {
-        const formData = new FormData();
-        formData.append("file", file);
-
-        const res = await fetch("/api/uploads/invoices", {
-          method: "POST",
-          body: formData,
-        });
-        const data = await res.json();
-        if (!res.ok || !data.url) {
-          throw new Error(data.error || "Falha ao salvar arquivo.");
-        }
-
-        setUploadedFileUrl(data.url as string);
-        toast({
-          title: "Anexo carregado",
-          description: "O arquivo está pronto para ser salvo com a fatura.",
-        });
-      } else {
-        const storage = getStorage();
-        const storageRef = ref(storage, `invoices/${Date.now()}-${file.name}`);
-        const uploadResult = await uploadBytes(storageRef, file);
-        const downloadUrl = await getDownloadURL(uploadResult.ref);
-        setUploadedFileUrl(downloadUrl);
-        toast({
-          title: "Anexo carregado",
-          description: "O arquivo está pronto para ser salvo com a fatura.",
-        });
-      }
+      const safe = sanitizeStorageFileName(file.name);
+      const downloadUrl = await uploadFileToStorage(
+        file,
+        `invoices/${Date.now()}-${safe}`,
+      );
+      setUploadedFileUrl(downloadUrl);
+      toast({
+        title: "Anexo carregado",
+        description: "O arquivo está pronto para ser salvo com a fatura.",
+      });
     } catch (error) {
       console.error("File upload error:", error);
       toast({
@@ -541,33 +526,20 @@ export function InvoiceForm({
                 <FormDescription>
                   Anexe o boleto ou comprovante da fatura (PDF, JPG, PNG). Máx
                   5MB.
-                  {currentItem?.fileUrl && !uploadedFileUrl && (
-                    <span className="block mt-2 text-xs">
-                      Arquivo atual:{" "}
-                      <a
-                        href={currentItem.fileUrl}
-                        target="_blank"
-                        className="underline"
-                        rel="noreferrer"
-                      >
-                        ver anexo
-                      </a>
-                    </span>
-                  )}
-                  {uploadedFileUrl && (
-                    <span className="block mt-2 text-xs text-green-600">
-                      Novo arquivo carregado:{" "}
-                      <a
-                        href={uploadedFileUrl}
-                        target="_blank"
-                        className="underline"
-                        rel="noreferrer"
-                      >
-                        ver anexo
-                      </a>
-                    </span>
-                  )}
                 </FormDescription>
+                {(currentItem?.fileUrl || uploadedFileUrl) && (
+                  <div className="mt-3">
+                    <AttachmentPreviewSection
+                      fileUrl={uploadedFileUrl || currentItem?.fileUrl || null}
+                      sectionLabel={
+                        uploadedFileUrl
+                          ? "Pré-visualização do novo anexo"
+                          : "Anexo atual"
+                      }
+                      zoomTitle="Anexo da fatura"
+                    />
+                  </div>
+                )}
                 <FormMessage />
               </FormItem>
             )}

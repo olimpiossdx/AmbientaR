@@ -99,6 +99,7 @@ import {
 } from "@/components/ui/tooltip";
 import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
+import { AttachmentPreviewSection } from "@/components/shared/attachment-preview-section";
 
 /** Adiciona numeração de páginas no rodapé no formato página/total. */
 function addPageNumbers(doc: jsPDF, bottomMarginMm: number = 10) {
@@ -811,7 +812,7 @@ export default function ProposalsPage() {
       </Dialog>
 
       <Dialog open={isViewOpen} onOpenChange={setIsViewOpen}>
-        <DialogContent className="sm:max-w-xl">
+        <DialogContent className="w-[95vw] max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               Detalhes do Orçamento #{viewingItem?.proposalNumber}
@@ -864,6 +865,12 @@ export default function ProposalsPage() {
                   value={formatCurrency(viewingItem.amount)}
                 />
               </div>
+              <AttachmentPreviewSection
+                fileUrl={viewingItem.fileUrl}
+                sectionLabel="PDF / anexo"
+                emptyLabel="Nenhum documento anexado."
+                zoomTitle="Anexo do orçamento"
+              />
             </div>
           )}
           <DialogFooter>

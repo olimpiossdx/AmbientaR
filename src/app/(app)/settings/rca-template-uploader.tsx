@@ -6,6 +6,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Loader2, CloudUpload, FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useFirebase } from '@/firebase';
+import { doc, setDoc } from 'firebase/firestore';
+import { uploadFileToStorage, sanitizeStorageFileName } from '@/lib/storage-upload';
 
 interface RcaTemplateUploaderProps {
   fileName?: string | null;
@@ -16,6 +19,7 @@ export function RcaTemplateUploader({ fileName, onUploadComplete }: RcaTemplateU
   const [file, setFile] = React.useState<File | null>(null);
   const [isUploading, setIsUploading] = React.useState(false);
   const { toast } = useToast();
+  const { firestore, auth } = useFirebase();
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFile(e.target.files?.[0] ?? null);
@@ -31,25 +35,33 @@ export function RcaTemplateUploader({ fileName, onUploadComplete }: RcaTemplateU
       toast({ variant: 'destructive', title: 'Apenas arquivos .docx ou .doc são aceitos.' });
       return;
     }
+    if (!firestore || !auth?.currentUser) {
+      toast({ variant: 'destructive', title: 'Sessão inválida', description: 'Faça login novamente.' });
+      return;
+    }
 
     setIsUploading(true);
     try {
-      const formData = new FormData();
-      formData.set('file', file);
-      const res = await fetch('/api/templates/rca', { method: 'POST', body: formData });
-      const data = await res.json();
-      if (!res.ok) {
-        toast({ variant: 'destructive', title: 'Erro ao enviar', description: data.error ?? 'Falha no upload.' });
-        return;
-      }
+      const safe = sanitizeStorageFileName(file.name);
+      const storagePath = `templates/docx/rca/${Date.now()}-${safe}`;
+      const url = await uploadFileToStorage(file, storagePath);
+      await setDoc(
+        doc(firestore, 'companySettings', 'docxTemplates'),
+        { rca: { url, fileName: file.name } },
+        { merge: true },
+      );
       toast({
         title: 'Upload concluído',
         description: 'O template RCA será usado como base na exportação dos estudos RCA.',
       });
       setFile(null);
       onUploadComplete?.();
-    } catch {
-      toast({ variant: 'destructive', title: 'Erro ao enviar template.' });
+    } catch (e) {
+      toast({
+        variant: 'destructive',
+        title: 'Erro ao enviar template.',
+        description: e instanceof Error ? e.message : undefined,
+      });
     } finally {
       setIsUploading(false);
     }

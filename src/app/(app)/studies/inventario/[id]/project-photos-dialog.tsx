@@ -10,11 +10,21 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Loader2, Upload, ArrowUp, ArrowDown, Trash2, CheckSquare, Square } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useFirebase } from '@/firebase';
+import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import {
+  deleteFileAtStoragePath,
+  storagePathFromDownloadUrl,
+  uploadFileToStorage,
+  sanitizeStorageFileName,
+} from '@/lib/storage-upload';
 
 type StoredPhoto = {
   id: string;
   name: string;
   url: string;
+  /** Path no bucket; ausente em dados legados (URL local). */
+  storagePath?: string;
 };
 
 type DisplayPhoto = StoredPhoto & {
@@ -50,6 +60,9 @@ function applySavedOrderAndSelection(
   return [...fromOrder, ...rest];
 }
 
+const PHOTOS_DOC = (firestore: import('firebase/firestore').Firestore, projectId: string) =>
+  doc(firestore, 'inventoryProjectPhotos', projectId);
+
 export function ProjectPhotosDialog({
   open,
   onOpenChange,
@@ -59,6 +72,7 @@ export function ProjectPhotosDialog({
   onSaveSelection,
 }: ProjectPhotosDialogProps) {
   const { toast } = useToast();
+  const { firestore } = useFirebase();
   const [photos, setPhotos] = React.useState<DisplayPhoto[]>([]);
   const [activePhotoId, setActivePhotoId] = React.useState<string | null>(null);
   const [isLoading, setIsLoading] = React.useState(false);
@@ -78,15 +92,13 @@ export function ProjectPhotosDialog({
   );
 
   const loadPhotos = React.useCallback(async () => {
+    if (!firestore) return;
     setIsLoading(true);
     try {
-      const response = await fetch(`/api/inventory-project-photos?projectId=${encodeURIComponent(projectId)}`);
-      const data = await response.json();
-      if (!response.ok || !data.success) {
-        throw new Error(data.error || 'Falha ao carregar fotos.');
-      }
+      const snap = await getDoc(PHOTOS_DOC(firestore, projectId));
+      const list = (snap.data()?.photos as StoredPhoto[] | undefined) ?? [];
       const merged = applySavedOrderAndSelection(
-        data.files ?? [],
+        list,
         initialSelectedPhotoIds ?? [],
         initialPhotoOrder ?? []
       );
@@ -101,7 +113,7 @@ export function ProjectPhotosDialog({
     } finally {
       setIsLoading(false);
     }
-  }, [initialPhotoOrder, initialSelectedPhotoIds, projectId, toast]);
+  }, [initialPhotoOrder, initialSelectedPhotoIds, projectId, toast, firestore]);
 
   React.useEffect(() => {
     if (!open) return;
@@ -132,22 +144,29 @@ export function ProjectPhotosDialog({
 
   const handleUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files ?? []);
-    if (!files.length) return;
+    if (!files.length || !firestore) return;
 
     setIsUploading(true);
     try {
-      const formData = new FormData();
-      formData.set('projectId', projectId);
-      files.forEach((file) => formData.append('files', file));
+      const refDoc = PHOTOS_DOC(firestore, projectId);
+      const snap = await getDoc(refDoc);
+      const current: StoredPhoto[] = (snap.data()?.photos as StoredPhoto[] | undefined) ?? [];
+      const newItems: StoredPhoto[] = [];
 
-      const response = await fetch('/api/inventory-project-photos', {
-        method: 'POST',
-        body: formData,
-      });
-      const data = await response.json();
-      if (!response.ok || !data.success) {
-        throw new Error(data.error || 'Falha no upload de fotos.');
+      for (const file of files) {
+        const id = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+        const safe = sanitizeStorageFileName(file.name);
+        const storagePath = `inventory-project-photos/${projectId}/${id}-${safe}`;
+        const url = await uploadFileToStorage(file, storagePath);
+        newItems.push({ id, name: file.name, url, storagePath });
       }
+
+      const next = [...current, ...newItems];
+      await setDoc(
+        refDoc,
+        { photos: next, updatedAt: serverTimestamp() },
+        { merge: true }
+      );
 
       await loadPhotos();
       toast({
@@ -167,17 +186,23 @@ export function ProjectPhotosDialog({
   };
 
   const handleRemove = async (fileId: string) => {
+    if (!firestore) return;
     setRemovingId(fileId);
     try {
-      const response = await fetch('/api/inventory-project-photos', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ projectId, fileId }),
-      });
-      const data = await response.json();
-      if (!response.ok || !data.success) {
-        throw new Error(data.error || 'Falha ao remover foto.');
+      const refDoc = PHOTOS_DOC(firestore, projectId);
+      const snap = await getDoc(refDoc);
+      const list: StoredPhoto[] = (snap.data()?.photos as StoredPhoto[] | undefined) ?? [];
+      const target = list.find((p) => p.id === fileId);
+      const pathToDelete = target?.storagePath ?? (target?.url ? storagePathFromDownloadUrl(target.url) : null);
+      if (pathToDelete) {
+        try {
+          await deleteFileAtStoragePath(pathToDelete);
+        } catch {
+          /* objeto pode já ter sido apagado */
+        }
       }
+      const next = list.filter((p) => p.id !== fileId);
+      await setDoc(refDoc, { photos: next, updatedAt: serverTimestamp() }, { merge: true });
       setPhotos((prev) => prev.filter((photo) => photo.id !== fileId));
       setActivePhotoId((prev) => (prev === fileId ? null : prev));
     } catch (error) {
@@ -220,6 +245,7 @@ export function ProjectPhotosDialog({
           <DialogTitle>Fotos do Projeto</DialogTitle>
           <DialogDescription>
             Carregue imagens, visualize em miniatura e em tamanho maior, selecione as fotos e ajuste a sequência para compor o estudo.
+            Armazenamento na nuvem (Firebase Storage).
           </DialogDescription>
         </DialogHeader>
 
@@ -310,7 +336,7 @@ export function ProjectPhotosDialog({
                             variant="outline"
                             size="icon"
                             className="h-7 w-7 text-destructive"
-                            onClick={() => handleRemove(photo.id)}
+                            onClick={() => void handleRemove(photo.id)}
                             disabled={removingId === photo.id}
                           >
                             {removingId === photo.id ? (
@@ -332,7 +358,7 @@ export function ProjectPhotosDialog({
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSaving}>
             Fechar
           </Button>
-          <Button onClick={handleSave} disabled={isSaving}>
+          <Button onClick={() => void handleSave()} disabled={isSaving}>
             {isSaving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
             Salvar seleção e sequência
           </Button>

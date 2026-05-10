@@ -6,9 +6,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Loader2, CloudUpload, FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useFirebase } from '@/firebase';
+import { doc, setDoc } from 'firebase/firestore';
+import { uploadFileToStorage, sanitizeStorageFileName } from '@/lib/storage-upload';
+import type { DocxTemplateSlug } from '@/lib/docx-template-slugs';
 
 interface TemplateUploaderProps {
-  slug: string;
+  slug: DocxTemplateSlug;
   label: string;
   fileName?: string | null;
   onUploadComplete?: () => void;
@@ -18,6 +22,7 @@ export function TemplateUploader({ slug, label, fileName, onUploadComplete }: Te
   const [file, setFile] = React.useState<File | null>(null);
   const [isUploading, setIsUploading] = React.useState(false);
   const { toast } = useToast();
+  const { firestore, auth } = useFirebase();
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFile(e.target.files?.[0] ?? null);
@@ -33,22 +38,30 @@ export function TemplateUploader({ slug, label, fileName, onUploadComplete }: Te
       toast({ variant: 'destructive', title: 'Apenas arquivos .docx ou .doc são aceitos.' });
       return;
     }
+    if (!firestore || !auth?.currentUser) {
+      toast({ variant: 'destructive', title: 'Sessão inválida', description: 'Faça login novamente.' });
+      return;
+    }
 
     setIsUploading(true);
     try {
-      const formData = new FormData();
-      formData.set('file', file);
-      const res = await fetch(`/api/templates/${slug}`, { method: 'POST', body: formData });
-      const data = await res.json();
-      if (!res.ok) {
-        toast({ variant: 'destructive', title: 'Erro ao enviar', description: data.error ?? 'Falha no upload.' });
-        return;
-      }
-      toast({ title: 'Upload concluído', description: `Template ${label} salvo.` });
+      const safe = sanitizeStorageFileName(file.name);
+      const storagePath = `templates/docx/${slug}/${Date.now()}-${safe}`;
+      const url = await uploadFileToStorage(file, storagePath);
+      await setDoc(
+        doc(firestore, 'companySettings', 'docxTemplates'),
+        { [slug]: { url, fileName: file.name } },
+        { merge: true },
+      );
+      toast({ title: 'Upload concluído', description: `Template ${label} salvo no armazenamento na nuvem.` });
       setFile(null);
       onUploadComplete?.();
-    } catch {
-      toast({ variant: 'destructive', title: 'Erro ao enviar template.' });
+    } catch (e) {
+      toast({
+        variant: 'destructive',
+        title: 'Erro ao enviar',
+        description: e instanceof Error ? e.message : 'Falha no upload.',
+      });
     } finally {
       setIsUploading(false);
     }

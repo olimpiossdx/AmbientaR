@@ -33,8 +33,6 @@ import { CalendarIcon, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format, parse } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
-
 import { useToast } from "@/hooks/use-toast";
 import type {
   License,
@@ -50,6 +48,11 @@ import {
   useMemoFirebase,
 } from "@/firebase";
 import { FirestorePermissionError } from "@/firebase/errors";
+import { AttachmentPreviewSection } from "@/components/shared/attachment-preview-section";
+import {
+  uploadFileToStorage,
+  sanitizeStorageFileName,
+} from "@/lib/storage-upload";
 import { collection, doc, addDoc, updateDoc } from "firebase/firestore";
 import {
   DialogHeader,
@@ -227,36 +230,16 @@ export function LicenseForm({
     setIsUploading(true);
     setUploadedFileUrl(null);
     try {
-      // Option B (local API) apenas em desenvolvimento para evitar travas de Storage.
-      if (process.env.NODE_ENV === "development") {
-        const formData = new FormData();
-        formData.append("file", file);
-
-        const res = await fetch("/api/uploads/licenses", {
-          method: "POST",
-          body: formData,
-        });
-        const data = await res.json();
-        if (!res.ok || !data.url) {
-          throw new Error(data.error || "Falha ao salvar arquivo.");
-        }
-
-        setUploadedFileUrl(data.url as string);
-        toast({
-          title: "Anexo carregado",
-          description: "O arquivo está pronto para ser salvo.",
-        });
-      } else {
-        const storage = getStorage();
-        const storageRef = ref(storage, `licenses/${Date.now()}-${file.name}`);
-        const uploadResult = await uploadBytes(storageRef, file);
-        const downloadURL = await getDownloadURL(uploadResult.ref);
-        setUploadedFileUrl(downloadURL);
-        toast({
-          title: "Anexo carregado",
-          description: "O arquivo está pronto para ser salvo.",
-        });
-      }
+      const safe = sanitizeStorageFileName(file.name);
+      const downloadURL = await uploadFileToStorage(
+        file,
+        `licenses/${Date.now()}-${safe}`,
+      );
+      setUploadedFileUrl(downloadURL);
+      toast({
+        title: "Anexo carregado",
+        description: "O arquivo está pronto para ser salvo.",
+      });
     } catch (error) {
       console.error("File upload error:", error);
       toast({
@@ -647,33 +630,20 @@ export function LicenseForm({
                   <FormDescription>
                     Anexe a licença ou documento relacionado (PDF, JPG, PNG).
                     Máx 10MB.
-                    {currentLicense?.fileUrl && !uploadedFileUrl && (
-                      <span className="block mt-2 text-xs">
-                        Arquivo atual:{" "}
-                        <a
-                          href={currentLicense.fileUrl}
-                          target="_blank"
-                          className="underline"
-                          rel="noreferrer"
-                        >
-                          ver anexo
-                        </a>
-                      </span>
-                    )}
-                    {uploadedFileUrl && (
-                      <span className="block mt-2 text-xs text-green-600">
-                        Novo arquivo carregado:{" "}
-                        <a
-                          href={uploadedFileUrl}
-                          target="_blank"
-                          className="underline"
-                          rel="noreferrer"
-                        >
-                          ver anexo
-                        </a>
-                      </span>
-                    )}
                   </FormDescription>
+                  {(currentLicense?.fileUrl || uploadedFileUrl) && (
+                    <div className="mt-3">
+                      <AttachmentPreviewSection
+                        fileUrl={uploadedFileUrl || currentLicense?.fileUrl || null}
+                        sectionLabel={
+                          uploadedFileUrl
+                            ? "Pré-visualização do novo anexo"
+                            : "Anexo atual"
+                        }
+                        zoomTitle="Anexo da licença"
+                      />
+                    </div>
+                  )}
                   <FormMessage />
                 </FormItem>
               )}

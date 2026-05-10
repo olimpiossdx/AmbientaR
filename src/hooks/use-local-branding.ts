@@ -1,6 +1,8 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useMemo } from 'react';
+import { useFirebase, useDoc, useMemoFirebase } from '@/firebase';
+import { doc } from 'firebase/firestore';
 
 export type LocalBranding = {
   headerImageUrl: string | null;
@@ -19,31 +21,20 @@ const empty: LocalBranding = {
 };
 
 export function useLocalBranding() {
-  const [data, setData] = useState<LocalBranding>(empty);
-  const [isLoading, setIsLoading] = useState(true);
+  const { firestore } = useFirebase();
+  const brandingRef = useMemoFirebase(
+    () => (firestore ? doc(firestore, 'companySettings', 'branding') : null),
+    [firestore]
+  );
+  const { data: brandingData, isLoading } = useDoc<Partial<LocalBranding>>(brandingRef);
 
-  const refetch = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const res = await fetch('/api/branding');
-      const json = await res.json();
-      setData({
-        headerImageUrl: json.headerImageUrl ?? null,
-        footerImageUrl: json.footerImageUrl ?? null,
-        watermarkImageUrl: json.watermarkImageUrl ?? null,
-        logoUsage: json.logoUsage ?? 'pdf_only',
-        systemLogoSource: json.systemLogoSource ?? 'header',
-      });
-    } catch {
-      setData(empty);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+  const data = useMemo<LocalBranding>(() => ({
+    headerImageUrl: brandingData?.headerImageUrl ?? null,
+    footerImageUrl: brandingData?.footerImageUrl ?? null,
+    watermarkImageUrl: brandingData?.watermarkImageUrl ?? null,
+    logoUsage: brandingData?.logoUsage ?? 'pdf_only',
+    systemLogoSource: brandingData?.systemLogoSource ?? 'header',
+  }), [brandingData]);
 
-  useEffect(() => {
-    refetch();
-  }, [refetch]);
-
-  return { data, isLoading, refetch };
+  return { data: data ?? empty, isLoading, refetch: () => {} };
 }

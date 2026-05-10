@@ -78,6 +78,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { UsoInsignificanteForm } from "./uso-insignificante-form";
 import { useToast } from "@/hooks/use-toast";
+import { AttachmentPreviewSection } from "@/components/shared/attachment-preview-section";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { Label } from "@/components/ui/label";
 import { CardSearchInput } from "@/components/card-search-input";
@@ -667,16 +668,12 @@ export default function UsosInsignificantesPage() {
               />
               <DetailItem label="Status" value={viewingItem.status} />
               <DetailItem label="Finalidade" value={viewingItem.description} />
-              {viewingItem.fileUrl && (
-                <a
-                  href={viewingItem.fileUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-primary underline text-sm"
-                >
-                  Abrir anexo
-                </a>
-              )}
+              <AttachmentPreviewSection
+                fileUrl={viewingItem.fileUrl}
+                sectionLabel="Anexo"
+                emptyLabel="Nenhum anexo."
+                zoomTitle="Anexo"
+              />
             </div>
           )}
         </DialogContent>

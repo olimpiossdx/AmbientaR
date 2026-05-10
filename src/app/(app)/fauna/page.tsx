@@ -17,6 +17,7 @@ import { cn } from '@/lib/utils';
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { FaunaUploadForm } from './fauna-upload-form';
+import { RecordViewDialog } from '@/components/shared/record-view-dialog';
 
 const studyTypeMap: Record<string, string> = {
   inventario_projeto: "Projeto de Inventário",
@@ -154,6 +155,36 @@ export default function FaunaManagementPage() {
                           <span className="text-muted-foreground">Data:</span> {formatCreatedAt(study.createdAt)}
                         </p>
                         <div className="flex items-center gap-1">
+                          <RecordViewDialog
+                            title="Documento de fauna"
+                            description="Visualização sem edição."
+                            fileUrl={study.fileUrl}
+                            labels={{
+                              attachmentEmpty: 'Sem arquivo PDF.',
+                              zoomTitle: 'Anexo de fauna',
+                            }}
+                            triggerLabel="Visualizar documento"
+                            contentClassName="w-[95vw] max-w-3xl max-h-[90vh] overflow-y-auto"
+                          >
+                            <div>
+                              <p className="text-muted-foreground text-xs">Empreendedor</p>
+                              <p className="font-medium">{empreendedorMap.get(study.empreendedorId) || '—'}</p>
+                            </div>
+                            <div>
+                              <p className="text-muted-foreground text-xs">Documento</p>
+                              <p className="font-medium">{getStudyOrDocumentName(study)}</p>
+                            </div>
+                            <div>
+                              <p className="text-muted-foreground text-xs">Data</p>
+                              <p className="font-medium">{formatCreatedAt(study.createdAt)}</p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-muted-foreground text-xs">Status</span>
+                              <Badge variant={'outline'} className={cn(getStatusVariant(study.status))}>
+                                {getStatusLabel(study.status)}
+                              </Badge>
+                            </div>
+                          </RecordViewDialog>
                           {study.fileUrl ? (
                             <Button asChild variant="ghost" size="icon">
                               <a href={study.fileUrl} target="_blank" rel="noopener noreferrer" aria-label="Ver anexo">
@@ -206,6 +237,36 @@ export default function FaunaManagementPage() {
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-1">
+                            <RecordViewDialog
+                              title="Documento de fauna"
+                              description="Visualização sem edição."
+                              fileUrl={study.fileUrl}
+                              labels={{
+                                attachmentEmpty: 'Sem arquivo PDF.',
+                                zoomTitle: 'Anexo de fauna',
+                              }}
+                              triggerLabel="Visualizar documento"
+                              contentClassName="w-[95vw] max-w-3xl max-h-[90vh] overflow-y-auto"
+                            >
+                              <div>
+                                <p className="text-muted-foreground text-xs">Empreendedor</p>
+                                <p className="font-medium">{empreendedorMap.get(study.empreendedorId) || '—'}</p>
+                              </div>
+                              <div>
+                                <p className="text-muted-foreground text-xs">Documento</p>
+                                <p className="font-medium">{getStudyOrDocumentName(study)}</p>
+                              </div>
+                              <div>
+                                <p className="text-muted-foreground text-xs">Data</p>
+                                <p className="font-medium">{formatCreatedAt(study.createdAt)}</p>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-muted-foreground text-xs">Status</span>
+                                <Badge variant={'outline'} className={cn(getStatusVariant(study.status))}>
+                                  {getStatusLabel(study.status)}
+                                </Badge>
+                              </div>
+                            </RecordViewDialog>
                             {study.fileUrl ? (
                                 <Tooltip>
                                     <TooltipTrigger asChild>

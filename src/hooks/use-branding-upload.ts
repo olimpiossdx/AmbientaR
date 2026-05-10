@@ -2,6 +2,9 @@
 
 import { useCallback } from 'react';
 import { useToast } from './use-toast';
+import { useFirebase } from '@/firebase';
+import { doc, setDoc } from 'firebase/firestore';
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 interface UploadResult {
   success: boolean;
@@ -13,40 +16,35 @@ type BrandingField = 'headerImageUrl' | 'footerImageUrl' | 'watermarkImageUrl';
 
 export function useUploadBrandingImage() {
   const { toast } = useToast();
+  const { firestore, auth } = useFirebase();
 
   const upload = useCallback(
     async (file: File, fieldName: BrandingField): Promise<UploadResult> => {
       try {
-        const formData = new FormData();
-        formData.set('fieldName', fieldName);
-        formData.set('file', file);
-
-        const res = await fetch('/api/branding', {
-          method: 'POST',
-          body: formData,
-        });
-
-        const json = await res.json();
-
-        if (!res.ok) {
+        if (!firestore || !auth?.currentUser) {
+          const msg = 'Sessão inválida para upload de branding.';
           toast({
             variant: 'destructive',
             title: 'Erro no upload',
-            description: json.error || 'Falha ao salvar imagem.',
+            description: msg,
           });
-          return { success: false, error: json.error };
+          return { success: false, error: msg };
         }
 
-        if (!json.success || !json.url) {
-          toast({
-            variant: 'destructive',
-            title: 'Erro no upload',
-            description: 'Resposta inválida do servidor.',
-          });
-          return { success: false, error: 'Resposta inválida' };
-        }
+        const storage = getStorage();
+        const safeName = file.name.replace(/[^\w.\-]/g, '_');
+        const filePath = `branding/${fieldName}/${auth.currentUser.uid}/${Date.now()}-${safeName}`;
+        const storageRef = ref(storage, filePath);
+        await uploadBytes(storageRef, file);
+        const url = await getDownloadURL(storageRef);
 
-        return { success: true, url: json.url };
+        await setDoc(
+          doc(firestore, 'companySettings', 'branding'),
+          { [fieldName]: url },
+          { merge: true }
+        );
+
+        return { success: true, url };
       } catch (error: any) {
         const message = error?.message || 'Falha ao enviar arquivo.';
         toast({
@@ -57,7 +55,7 @@ export function useUploadBrandingImage() {
         return { success: false, error: message };
       }
     },
-    [toast]
+    [toast, firestore, auth]
   );
 
   return { upload };

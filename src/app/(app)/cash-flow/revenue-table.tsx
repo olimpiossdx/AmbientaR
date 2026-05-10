@@ -13,14 +13,11 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, PlusCircle, Paperclip, Eye, Pencil, Trash2 } from 'lucide-react';
+  PlusCircle,
+  Paperclip,
+  Pencil,
+  Trash2,
+} from 'lucide-react';
 import { useCollection, useFirestore, useUser, useMemoFirebase, errorEmitter } from '@/firebase';
 import { collection, doc, deleteDoc } from 'firebase/firestore';
 import type { Revenue, Client } from '@/lib/types';
@@ -38,6 +35,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
+import { TransactionViewDialog } from './transaction-view-dialog';
 
 type RevenueTableProps = {
   revenues?: Revenue[] | null;
@@ -157,10 +155,16 @@ export function RevenueTable({ revenues: revenuesProp, isLoadingRevenues: isLoad
                     </p>
                   </div>
                   <div className="flex items-center gap-1">
+                    <TransactionViewDialog
+                      item={item}
+                      type="Receita"
+                      clientName={item.clientId ? clientsMap.get(item.clientId) || 'N/A' : undefined}
+                    />
                     {item.fileUrl && (
                       <Button asChild variant="ghost" size="icon">
-                        <a href={item.fileUrl} target="_blank" rel="noopener noreferrer">
+                        <a href={item.fileUrl} target="_blank" rel="noopener noreferrer" title="Ver anexo">
                           <Paperclip className="h-4 w-4" />
+                          <span className="sr-only">Ver anexo</span>
                         </a>
                       </Button>
                     )}
@@ -219,8 +223,9 @@ export function RevenueTable({ revenues: revenuesProp, isLoadingRevenues: isLoad
                     <Tooltip>
                         <TooltipTrigger asChild>
                             <Button asChild variant="ghost" size="icon">
-                                <a href={item.fileUrl} target="_blank" rel="noopener noreferrer">
+                                <a href={item.fileUrl} target="_blank" rel="noopener noreferrer" title="Ver anexo">
                                 <Paperclip className="h-4 w-4" />
+                                <span className="sr-only">Ver anexo</span>
                                 </a>
                             </Button>
                         </TooltipTrigger>
@@ -233,6 +238,11 @@ export function RevenueTable({ revenues: revenuesProp, isLoadingRevenues: isLoad
                 </TableCell>
                 <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-1">
+                        <TransactionViewDialog
+                          item={item}
+                          type="Receita"
+                          clientName={item.clientId ? clientsMap.get(item.clientId) || 'N/A' : undefined}
+                        />
                         <Tooltip>
                             <TooltipTrigger asChild>
                                 <Button variant="ghost" size="icon" onClick={() => handleEdit(item)}>

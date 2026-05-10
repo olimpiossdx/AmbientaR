@@ -48,6 +48,7 @@ import {
   useMemoFirebase,
 } from "@/firebase";
 import { FirestorePermissionError } from "@/firebase/errors";
+import { AttachmentPreviewSection } from "@/components/shared/attachment-preview-section";
 import { collection, doc, addDoc, updateDoc } from "firebase/firestore";
 import {
   createNotificationForUser,
@@ -59,7 +60,10 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import {
+  uploadFileToStorage,
+  sanitizeStorageFileName,
+} from "@/lib/storage-upload";
 import {
   Tooltip,
   TooltipContent,
@@ -215,39 +219,16 @@ export function ComplianceForm({
     setIsUploading(true);
     setUploadedFileUrl(null);
     try {
-      // Option B (local API) apenas em desenvolvimento.
-      if (process.env.NODE_ENV === "development") {
-        const formData = new FormData();
-        formData.append("file", file);
-
-        const res = await fetch("/api/uploads/compliance", {
-          method: "POST",
-          body: formData,
-        });
-        const data = await res.json();
-        if (!res.ok || !data.url) {
-          throw new Error(data.error || "Falha ao salvar arquivo.");
-        }
-
-        setUploadedFileUrl(data.url as string);
-        toast({
-          title: "Anexo carregado",
-          description: "O arquivo está pronto para ser salvo.",
-        });
-      } else {
-        const storage = getStorage();
-        const storageRef = ref(
-          storage,
-          `condicionantes/${Date.now()}-${file.name}`,
-        );
-        await uploadBytes(storageRef, file);
-        const downloadURL = await getDownloadURL(storageRef);
-        setUploadedFileUrl(downloadURL);
-        toast({
-          title: "Anexo carregado",
-          description: "O arquivo está pronto para ser salvo.",
-        });
-      }
+      const safe = sanitizeStorageFileName(file.name);
+      const downloadURL = await uploadFileToStorage(
+        file,
+        `condicionantes/${Date.now()}-${safe}`,
+      );
+      setUploadedFileUrl(downloadURL);
+      toast({
+        title: "Anexo carregado",
+        description: "O arquivo está pronto para ser salvo.",
+      });
     } catch (error) {
       toast({
         variant: "destructive",
@@ -622,33 +603,20 @@ export function ComplianceForm({
               <FormDescription>
                 Anexe comprovante ou documento relacionado à condicionante (PDF,
                 JPG, PNG). Máx 10MB.
-                {currentItem?.fileUrl && !uploadedFileUrl && (
-                  <span className="block mt-2 text-xs">
-                    Arquivo atual:{" "}
-                    <a
-                      href={currentItem.fileUrl}
-                      target="_blank"
-                      className="underline"
-                      rel="noreferrer"
-                    >
-                      Fazer download
-                    </a>
-                  </span>
-                )}
-                {uploadedFileUrl && (
-                  <span className="block mt-2 text-xs text-green-600">
-                    Novo arquivo carregado:{" "}
-                    <a
-                      href={uploadedFileUrl}
-                      target="_blank"
-                      className="underline"
-                      rel="noreferrer"
-                    >
-                      Fazer download
-                    </a>
-                  </span>
-                )}
               </FormDescription>
+              {(currentItem?.fileUrl || uploadedFileUrl) && (
+                <div className="mt-3">
+                  <AttachmentPreviewSection
+                    fileUrl={uploadedFileUrl || currentItem?.fileUrl || null}
+                    sectionLabel={
+                      uploadedFileUrl
+                        ? "Pré-visualização do novo anexo"
+                        : "Anexo atual"
+                    }
+                    zoomTitle="Anexo da condicionante"
+                  />
+                </div>
+              )}
             </div>
           </div>
 

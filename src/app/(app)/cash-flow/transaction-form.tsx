@@ -35,8 +35,10 @@ import {
 } from "@/firebase";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { collection, doc, addDoc, updateDoc } from "firebase/firestore";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { logUserAction } from "@/lib/audit-log";
 import { Label } from "@/components/ui/label";
+import { AttachmentPreviewSection } from "@/components/shared/attachment-preview-section";
 import {
   Select,
   SelectContent,
@@ -232,22 +234,20 @@ export function TransactionForm({
     setIsUploading(true);
     setUploadedFileUrl(null);
     try {
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append(
-        "folder",
-        transactionType === "revenue" ? "revenues" : "expenses",
-      );
-
-      const res = await fetch("/api/uploads/transactions", {
-        method: "POST",
-        body: formData,
-      });
-      const data = await res.json();
-      if (!res.ok || !data.url) {
-        throw new Error(data.error || "Falha ao salvar arquivo.");
+      const uid = auth?.currentUser?.uid;
+      if (!uid) {
+        throw new Error("Sessão inválida. Faça login novamente.");
       }
-      setUploadedFileUrl(data.url as string);
+
+      const storage = getStorage();
+      const safeFileName = file.name.replace(/[^\w.\-]/g, "_");
+      const folder = transactionType === "revenue" ? "revenues" : "expenses";
+      const filePath = `transactions/${folder}/${uid}/${Date.now()}-${safeFileName}`;
+      const storageRef = ref(storage, filePath);
+
+      await uploadBytes(storageRef, file);
+      const downloadUrl = await getDownloadURL(storageRef);
+      setUploadedFileUrl(downloadUrl);
       toast({
         title: "Anexo carregado",
         description: "O arquivo está pronto para ser salvo.",
@@ -480,33 +480,20 @@ export function TransactionForm({
                 </FormControl>
                 <FormDescription>
                   Anexe o comprovante (PDF, JPG, PNG). Máx 5MB.
-                  {currentItem?.fileUrl && !uploadedFileUrl && (
-                    <span className="block mt-2 text-xs">
-                      Arquivo atual:{" "}
-                      <a
-                        href={currentItem.fileUrl}
-                        target="_blank"
-                        className="underline"
-                        rel="noreferrer"
-                      >
-                        ver anexo
-                      </a>
-                    </span>
-                  )}
-                  {uploadedFileUrl && (
-                    <span className="block mt-2 text-xs text-green-600">
-                      Novo arquivo carregado:{" "}
-                      <a
-                        href={uploadedFileUrl}
-                        target="_blank"
-                        className="underline"
-                        rel="noreferrer"
-                      >
-                        ver anexo
-                      </a>
-                    </span>
-                  )}
                 </FormDescription>
+                {(currentItem?.fileUrl || uploadedFileUrl) && (
+                  <div className="mt-3">
+                    <AttachmentPreviewSection
+                      fileUrl={uploadedFileUrl || currentItem?.fileUrl || null}
+                      sectionLabel={
+                        uploadedFileUrl
+                          ? "Pré-visualização do novo anexo"
+                          : "Anexo atual"
+                      }
+                      zoomTitle="Anexo do lançamento"
+                    />
+                  </div>
+                )}
                 <FormMessage />
               </FormItem>
             )}

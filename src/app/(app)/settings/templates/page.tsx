@@ -7,48 +7,26 @@ import { FileText } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { TemplateUploader } from '../template-uploader';
 import { TEMPLATE_CARDS } from './template-config';
+import { useDoc, useFirebase, useMemoFirebase } from '@/firebase';
+import { doc } from 'firebase/firestore';
+import type { DocxTemplateSlug, DocxTemplatesState } from '@/lib/docx-template-slugs';
 
 export default function TemplatesPage() {
-  const [fileNames, setFileNames] = React.useState<Record<string, string | null>>({});
-  const [loadingSlugs, setLoadingSlugs] = React.useState<Set<string>>(new Set(TEMPLATE_CARDS.map((c) => c.slug)));
+  const { firestore } = useFirebase();
+  const docxTemplatesRef = useMemoFirebase(
+    () => (firestore ? doc(firestore, 'companySettings', 'docxTemplates') : null),
+    [firestore],
+  );
+  const { data: docxTemplates, isLoading } = useDoc<DocxTemplatesState>(docxTemplatesRef);
 
-  const refetchOne = React.useCallback(async (slug: string) => {
-    setLoadingSlugs((prev) => new Set(prev).add(slug));
-    try {
-      const res = await fetch(`/api/templates/${slug}`);
-      const data = await res.json();
-      setFileNames((prev) => ({ ...prev, [slug]: data.fileName ?? null }));
-    } catch {
-      setFileNames((prev) => ({ ...prev, [slug]: null }));
-    } finally {
-      setLoadingSlugs((prev) => {
-        const next = new Set(prev);
-        next.delete(slug);
-        return next;
-      });
+  const fileNames = React.useMemo(() => {
+    const out: Record<string, string | null> = {};
+    for (const c of TEMPLATE_CARDS) {
+      const entry = docxTemplates?.[c.slug as DocxTemplateSlug];
+      out[c.slug] = entry?.fileName ?? null;
     }
-  }, []);
-
-  const refetchAll = React.useCallback(async () => {
-    setLoadingSlugs(new Set(TEMPLATE_CARDS.map((c) => c.slug)));
-    const entries = await Promise.all(
-      TEMPLATE_CARDS.map(async (c) => {
-        try {
-          const res = await fetch(`/api/templates/${c.slug}`);
-          const data = await res.json();
-          return [c.slug, data.fileName ?? null] as const;
-        } catch {
-          return [c.slug, null] as const;
-        }
-      })
-    );
-    setFileNames(Object.fromEntries(entries));
-    setLoadingSlugs(new Set());
-  }, []);
-
-  React.useEffect(() => {
-    refetchAll();
-  }, [refetchAll]);
+    return out;
+  }, [docxTemplates]);
 
   return (
     <div className="flex flex-col h-full">
@@ -63,20 +41,20 @@ export default function TemplatesPage() {
                   {title}
                 </CardTitle>
                 <CardDescription>
-                  {description}
-                  {' '}
+                  {description}{' '}
                   Recomendado: use placeholders no DOCX (ex.: {'{{nome_empreendimento}}'}) para preenchimento na exportação.
+                  Os arquivos ficam no Firebase Storage (persistente em produção).
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                {loadingSlugs.has(slug) ? (
+                {isLoading ? (
                   <Skeleton className="h-32 w-full" />
                 ) : (
                   <TemplateUploader
-                    slug={slug}
+                    slug={slug as DocxTemplateSlug}
                     label={title}
                     fileName={fileNames[slug] ?? null}
-                    onUploadComplete={() => refetchOne(slug)}
+                    onUploadComplete={() => {}}
                   />
                 )}
               </CardContent>

@@ -48,6 +48,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
+import { AttachmentPreviewSection } from '@/components/shared/attachment-preview-section';
 
 
 const formSchema = z.object({
@@ -455,6 +456,15 @@ export function ProposalForm({ currentItem, onSuccess, onCancel }: ProposalFormP
                   render={({ field }) => <DateInput field={field} label="Válido Até" />}
               />
           </div>
+          {fileUrl ? (
+            <div className="rounded-lg border p-3 bg-muted/20">
+              <AttachmentPreviewSection
+                fileUrl={fileUrl}
+                sectionLabel="PDF / anexo da proposta"
+                zoomTitle="Anexo da proposta"
+              />
+            </div>
+          ) : null}
           <FormField
             control={form.control}
             name="status"

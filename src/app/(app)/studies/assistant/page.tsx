@@ -57,6 +57,7 @@ function parseTipoFromSearch(raw: string | null): TipoAssistente {
 function AssistantPageInner() {
   const searchParams = useSearchParams();
   const initialTipo = parseTipoFromSearch(searchParams.get('tipo'));
+  const initialPrompt = searchParams.get('prompt') ?? '';
 
   const [loading, setLoading] = React.useState(false);
   const [response, setResponse] = React.useState<string | null>(null);
@@ -65,7 +66,7 @@ function AssistantPageInner() {
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      prompt: '',
+      prompt: initialPrompt,
       tipo: initialTipo,
     },
   });
@@ -73,6 +74,10 @@ function AssistantPageInner() {
   React.useEffect(() => {
     const t = parseTipoFromSearch(searchParams.get('tipo'));
     form.setValue('tipo', t);
+    const prefillPrompt = searchParams.get('prompt');
+    if (prefillPrompt && !form.getValues('prompt')) {
+      form.setValue('prompt', prefillPrompt);
+    }
   }, [searchParams, form]);
 
   async function onSubmit(values: FormValues) {

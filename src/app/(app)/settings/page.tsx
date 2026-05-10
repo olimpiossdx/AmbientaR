@@ -314,13 +314,9 @@ export default function SettingsPage() {
     field: "logoUsage" | "systemLogoSource",
     value: "pdf_only" | "system_wide" | "header" | "watermark",
   ) => {
+    if (!brandingDocRef) return;
     try {
-      const res = await fetch("/api/branding", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ [field]: value }),
-      });
-      if (!res.ok) throw new Error("Falha ao salvar");
+      await setDoc(brandingDocRef, { [field]: value }, { merge: true });
       await refetchBranding();
       toast({ title: "Configuração salva!" });
     } catch (error) {

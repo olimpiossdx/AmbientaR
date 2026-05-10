@@ -52,6 +52,7 @@ import type { SupplierContract, AppUser } from "@/lib/types";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { CheckCircle, Download, Eye, Loader2, Pencil, PlusCircle, Trash2, Upload } from "lucide-react";
 import { SupplierContractForm } from "./supplier-contract-form";
+import { AttachmentPreviewSection } from "@/components/shared/attachment-preview-section";
 import { generateSupplierContractPdf } from "./supplier-contract-pdf";
 import { useLocalBranding } from "@/hooks/use-local-branding";
 import { fetchBrandingImageAsBase64 } from "@/lib/branding-pdf";
@@ -490,6 +491,12 @@ export default function ContractsSuppliersPage() {
               <DetailItem
                 label="Data do Contrato"
                 value={new Date(viewingItem.dataContrato).toLocaleDateString("pt-BR")}
+              />
+              <AttachmentPreviewSection
+                fileUrl={viewingItem.fileUrl}
+                sectionLabel="Contrato assinado (PDF)"
+                emptyLabel="Nenhum arquivo anexado."
+                zoomTitle="Anexo do contrato"
               />
             </div>
           )}

@@ -56,7 +56,10 @@ import {
   getDocs,
 } from "firebase/firestore";
 import * as React from "react";
-import { getStorage, ref, getDownloadURL, uploadBytes } from "firebase/storage";
+import {
+  uploadFileToStorage,
+  sanitizeStorageFileName,
+} from "@/lib/storage-upload";
 import { fetchBrandingImageAsBase64 } from "@/lib/branding-pdf";
 import { useLocalBranding } from "@/hooks/use-local-branding";
 import type {
@@ -95,6 +98,7 @@ import {
 } from "@/components/ui/tooltip";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { AttachmentPreviewSection } from "@/components/shared/attachment-preview-section";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
@@ -282,32 +286,11 @@ export default function ContractsPage() {
     setIsUploading(true);
 
     try {
-      let downloadUrl: string;
-
-      if (process.env.NODE_ENV === "development") {
-        const formData = new FormData();
-        formData.append("file", fileToUpload);
-        formData.append("folder", uploadingItem.id);
-
-        const res = await fetch("/api/uploads/signed-contracts", {
-          method: "POST",
-          body: formData,
-        });
-        const data = await res.json();
-        if (!res.ok || !data.url) {
-          throw new Error(data.error || "Falha ao salvar contrato.");
-        }
-
-        downloadUrl = data.url as string;
-      } else {
-        const storage = getStorage();
-        const storageRef = ref(
-          storage,
-          `signed-contracts/${uploadingItem.id}/${fileToUpload.name}`,
-        );
-        await uploadBytes(storageRef, fileToUpload);
-        downloadUrl = await getDownloadURL(storageRef);
-      }
+      const safe = sanitizeStorageFileName(fileToUpload.name);
+      const downloadUrl = await uploadFileToStorage(
+        fileToUpload,
+        `signed-contracts/${uploadingItem.id}/${Date.now()}-${safe}`,
+      );
 
       const docRef = doc(firestore, "contracts", uploadingItem.id);
       await updateDoc(docRef, { fileUrl: downloadUrl });
@@ -1253,6 +1236,13 @@ export default function ContractsPage() {
               <DetailItem
                 label="Forma de Pagamento"
                 value={viewingItem.pagamento.forma}
+              />
+              <AttachmentPreviewSection
+                fileUrl={viewingItem.fileUrl}
+                sectionLabel="Contrato assinado (PDF)"
+                emptyLabel="Nenhum arquivo anexado."
+                zoomTitle="Anexo do contrato"
+                zoomDescription="Visualização ampliada do PDF."
               />
             </div>
           )}
