@@ -81,7 +81,7 @@ export default function EditInspectionPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <InspectionForm currentItem={inspection} onSuccess={handleSuccess} />
+                <InspectionForm key={inspection.id} currentItem={inspection} onSuccess={handleSuccess} />
               </CardContent>
             </Card>
           )}

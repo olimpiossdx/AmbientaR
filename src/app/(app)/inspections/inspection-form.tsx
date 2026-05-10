@@ -2,6 +2,7 @@
 'use client';
 
 import * as React from 'react';
+import { useRouter } from 'next/navigation';
 import { z } from 'zod';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -33,7 +34,14 @@ import { Textarea } from '@/components/ui/textarea';
 import { Loader2, CalendarIcon, PlusCircle, Trash2, Paperclip, Image as ImageIcon, FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
-import { collection, addDoc, updateDoc, doc, serverTimestamp } from 'firebase/firestore';
+import {
+  collection,
+  addDoc,
+  updateDoc,
+  doc,
+  serverTimestamp,
+  DocumentReference,
+} from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import type { Empreendedor, Project, Inspection } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -58,6 +66,19 @@ const ALLOWED_INSPECTION_MIME = new Set([
 
 function sanitizeFileName(name: string) {
   return name.replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 180) || 'anexo';
+}
+
+/** Firestore pode devolver string ou DocumentReference; o Select precisa de string. */
+function normalizeFirestoreId(raw: unknown): string {
+  if (raw == null || raw === '') return '';
+  if (typeof raw === 'string') return raw.trim();
+  if (typeof raw === 'number' || typeof raw === 'bigint') return String(raw);
+  if (typeof raw === 'object') {
+    if (raw instanceof DocumentReference) return raw.id;
+    const id = (raw as { id?: unknown }).id;
+    if (typeof id === 'string' && id) return id;
+  }
+  return '';
 }
 
 const inconformidadeSchema = z.object({
@@ -85,6 +106,7 @@ interface InspectionFormProps {
 }
 
 export function InspectionForm({ onSuccess, currentItem }: InspectionFormProps) {
+  const router = useRouter();
   const [loading, setLoading] = React.useState(false);
   const [uploadingLaudo, setUploadingLaudo] = React.useState(false);
   const [uploadingIncIndex, setUploadingIncIndex] = React.useState<number | null>(null);
@@ -149,26 +171,48 @@ export function InspectionForm({ onSuccess, currentItem }: InspectionFormProps) 
     },
   });
 
-  React.useEffect(() => {
-    if (!currentItem) return;
+  const inspectionRef = React.useRef(currentItem);
+  inspectionRef.current = currentItem;
+  const allProjectsRef = React.useRef(allProjects);
+  allProjectsRef.current = allProjects;
+
+  /** Re-hidratar quando o id OU os ids de empresa mudarem (ex.: 2.º snapshot do Firestore) ou quando a lista de projetos ficar disponível (derivar empreendedor). */
+  const inspectionHydrateKey = currentItem?.id
+    ? [
+        currentItem.id,
+        normalizeFirestoreId(currentItem.empreendedorId),
+        normalizeFirestoreId(currentItem.projectId),
+        String(currentItem.inspectionDate ?? ''),
+      ].join('\0')
+    : 'new';
+  const projectsListReady = allProjects != null;
+
+  React.useLayoutEffect(() => {
+    const c = inspectionRef.current;
+    if (!c?.id) return;
+    const projects = allProjectsRef.current;
+    let empreendedorId = normalizeFirestoreId(c.empreendedorId);
+    const projectId = normalizeFirestoreId(c.projectId);
+    if (!empreendedorId && projectId && projects?.length) {
+      const p = projects.find((x) => x.id === projectId);
+      if (p?.empreendedorId) empreendedorId = normalizeFirestoreId(p.empreendedorId);
+    }
     form.reset({
-      empreendedorId: currentItem.empreendedorId,
-      projectId: currentItem.projectId,
-      inspectionDate: currentItem.inspectionDate ? new Date(currentItem.inspectionDate) : new Date(),
-      inconformidades: currentItem.inconformidades?.length
-        ? currentItem.inconformidades.map((i) => ({
+      empreendedorId: empreendedorId,
+      projectId,
+      inspectionDate: c.inspectionDate ? new Date(c.inspectionDate) : new Date(),
+      inconformidades: c.inconformidades?.length
+        ? c.inconformidades.map((i) => ({
             description: i.description,
             criticality: i.criticality,
             imageUrls: i.imageUrls ?? [],
           }))
         : [],
-      accompaniedBy: currentItem.accompaniedBy ?? '',
-      signatureUrl: currentItem.signatureUrl ?? '',
-      laudoAttachmentUrls: currentItem.laudoAttachmentUrls?.length
-        ? [...currentItem.laudoAttachmentUrls]
-        : [],
+      accompaniedBy: c.accompaniedBy ?? '',
+      signatureUrl: c.signatureUrl ?? '',
+      laudoAttachmentUrls: c.laudoAttachmentUrls?.length ? [...c.laudoAttachmentUrls] : [],
     });
-  }, [currentItem, form]);
+  }, [inspectionHydrateKey, projectsListReady, form]);
   
   const { fields, append, remove } = useFieldArray({
     control: form.control,
@@ -179,12 +223,21 @@ export function InspectionForm({ onSuccess, currentItem }: InspectionFormProps) 
 
   const filteredProjects = React.useMemo(() => {
     if (!allProjects || !selectedEmpreendedorId) return [];
-    return allProjects.filter(p => p.empreendedorId === selectedEmpreendedorId);
+    return allProjects.filter(
+      (p) => normalizeFirestoreId(p.empreendedorId) === selectedEmpreendedorId,
+    );
   }, [allProjects, selectedEmpreendedorId]);
   
+  /** Só limpa o empreendimento se deixar de pertencer ao empreendedor (evita apagar após hidratar o formulário). */
   React.useEffect(() => {
-    form.resetField('projectId');
-  }, [selectedEmpreendedorId, form]);
+    if (!selectedEmpreendedorId || !allProjects?.length) return;
+    const pid = form.getValues('projectId');
+    if (!pid) return;
+    const proj = allProjects.find((p) => p.id === pid);
+    if (proj && normalizeFirestoreId(proj.empreendedorId) !== selectedEmpreendedorId) {
+      form.resetField('projectId');
+    }
+  }, [selectedEmpreendedorId, allProjects, form]);
 
   const handleLaudoFiles = React.useCallback(
     async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -278,6 +331,27 @@ export function InspectionForm({ onSuccess, currentItem }: InspectionFormProps) 
     cur.splice(idx, 1);
     form.setValue(`inconformidades.${index}.imageUrls`, cur);
   };
+
+  const handleCancelNew = React.useCallback(() => {
+    if (uploadingLaudo || uploadingIncIndex !== null) {
+      toast({
+        variant: 'destructive',
+        title: 'Aguarde',
+        description: 'Há um envio de ficheiros em curso. Espere que termine ou tente novamente.',
+      });
+      return;
+    }
+    const dirty = form.formState.isDirty;
+    if (
+      dirty &&
+      !window.confirm(
+        'Cancelar este lançamento? Os dados ainda não guardados serão descartados.',
+      )
+    ) {
+      return;
+    }
+    router.push('/inspections');
+  }, [form, router, toast, uploadingIncIndex, uploadingLaudo]);
 
   async function onSubmit(values: InspectionFormValues) {
     if (!firestore || !user) {
@@ -635,11 +709,22 @@ export function InspectionForm({ onSuccess, currentItem }: InspectionFormProps) 
                 />
             </div>
             
-            <CardFooter className="p-0 pt-6">
+            <CardFooter className="p-0 pt-6 flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
+                {!currentItem && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={loading}
+                    className="w-full sm:w-auto shrink-0"
+                    onClick={handleCancelNew}
+                  >
+                    Cancelar
+                  </Button>
+                )}
                 <Button
                   type="submit"
                   disabled={loading || uploadingLaudo || uploadingIncIndex !== null}
-                  className="w-full"
+                  className={cn('w-full', !currentItem && 'sm:max-w-md sm:ml-auto')}
                 >
                 {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Salvando...</> : 
                 'Salvar Registro de Vistoria'}
