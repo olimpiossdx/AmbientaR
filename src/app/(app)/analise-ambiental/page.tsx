@@ -13,7 +13,6 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Loader2, Sparkles, Globe, FileDown, Database, Share2 } from "lucide-react";
-import { analyseArea } from "@/ai/flows/analise-ambiental-flow";
 import type {
   AnaliseAmbientalOutput,
   AnaliseAmbientalInput,
@@ -25,6 +24,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useFirebase } from "@/firebase";
 import { addDoc, collection, serverTimestamp } from "firebase/firestore";
+import { handleAnalyseArea } from "./actions";
 
 const LeafletMap = dynamic(() => import("./leaflet-map"), { ssr: false });
 
@@ -148,7 +148,11 @@ export default function AnaliseAmbientalPage() {
     setLastPayload(input.data);
 
     try {
-      const result = await analyseArea(input);
+      const actionResult = await handleAnalyseArea(input);
+      if (!actionResult.success) {
+        throw new Error(actionResult.error);
+      }
+      const result = actionResult.result;
       setAnalysisResult(result);
       await saveAnalysisSnapshot(input, result);
       toast({
