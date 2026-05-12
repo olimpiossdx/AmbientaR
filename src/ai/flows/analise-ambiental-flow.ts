@@ -5,7 +5,7 @@
  * - analyseArea - Função que recebe dados geoespaciais e retorna um relatório de análise.
  */
 
-import { ai, aiModel } from "@/ai/genkit";
+import { ai, aiModel, hasAiProvider } from "@/ai/genkit";
 import { z } from "genkit";
 import {
   AnaliseAmbientalInputSchema,
@@ -98,7 +98,7 @@ const analiseAmbientalFlow = ai.defineFlow(
     outputSchema: AnaliseAmbientalOutputSchema,
   },
   async (input) => {
-    if (!aiModel) {
+    if (!hasAiProvider) {
       throw new Error(
         "Configuração de IA ausente no servidor. Defina OPENAI_API_KEY/OPENAI_KEY ou GOOGLE_GENAI_API_KEY/GEMINI_API_KEY.",
       );

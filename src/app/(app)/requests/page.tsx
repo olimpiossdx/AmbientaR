@@ -38,7 +38,13 @@ import { Separator } from '@/components/ui/separator';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/firebase';
 import { CardSearchInput } from '@/components/card-search-input';
-import { INTERVENTION_SERVICE_LABEL } from '@/lib/intervention-checklist';
+import {
+  INTERVENTION_SERVICE_LABEL,
+  getChecklistStatusBadgeClass,
+  getChecklistStatusLabel,
+  type InterventionChecklistItem,
+} from '@/lib/intervention-checklist';
+import { cn } from '@/lib/utils';
 
 const DetailItem = ({ label, value }: { label: string, value?: string | string[] | null }) => (
     <div className="space-y-1">
@@ -52,6 +58,29 @@ const DetailItem = ({ label, value }: { label: string, value?: string | string[]
         </div>
     </div>
 );
+
+function formatCriterioLocacionalLabel(c: '0' | '1' | '2'): string {
+  switch (c) {
+    case '0':
+      return '0 - Sem critério';
+    case '1':
+      return '1 - Médio';
+    case '2':
+      return '2 - Alto';
+    default:
+      return String(c);
+  }
+}
+
+function locationalInputModeLabel(mode: string): string {
+  const map: Record<string, string> = {
+    car: 'CAR',
+    polygon: 'GeoJSON',
+    coordinates: 'Coordenadas',
+    draw: 'Desenho no mapa',
+  };
+  return map[mode] ?? mode;
+}
 
 const canWrite = (user: AppUser | null): boolean => {
     if (!user) return false;
@@ -181,6 +210,20 @@ export default function RequestsPage() {
     return item.interventionChecklist.filter((c) => c.required && c.status !== 'completed').length;
   };
 
+  const getStatusBreakdown = (item: Request) => {
+    const checklist = item.interventionChecklist || [];
+    const counters: Record<InterventionChecklistItem['status'], number> = {
+      not_started: 0,
+      collecting: 0,
+      not_applicable: 0,
+      completed: 0,
+    };
+    checklist.forEach((c) => {
+      counters[c.status] += 1;
+    });
+    return counters;
+  };
+
   const canAdvanceStatus = (item: Request): { allowed: boolean; reason?: string } => {
     const next = getNextStatus(item.status);
     if (!next) return { allowed: false, reason: 'Processo já está concluído.' };
@@ -305,6 +348,7 @@ export default function RequestsPage() {
                                 <TableHead>Empreendedor</TableHead>
                                 <TableHead>Empreendimento</TableHead>
                                 <TableHead>Status</TableHead>
+                                <TableHead>Licenciamento</TableHead>
                                 <TableHead>Checklist AIA</TableHead>
                                 <TableHead>Serviços Requeridos</TableHead>
                                 <TableHead className="text-right">Ações</TableHead>
@@ -323,6 +367,11 @@ export default function RequestsPage() {
                                     <TableCell>{empreendedoresMap.get(item.empreendedorId) || 'N/A'}</TableCell>
                                     <TableCell>{projectsMap.get(item.projectId) || 'N/A'}</TableCell>
                                     <TableCell><Badge variant="outline">{getStatusLabel(item.status)}</Badge></TableCell>
+                                    <TableCell className="text-muted-foreground text-xs">
+                                      {item.services.includes('Licenciamento ambiental') && item.licensingData
+                                        ? `C${item.licensingData.grading.classeSugerida} · ${item.licensingData.grading.modalidadeSugerida}`
+                                        : '—'}
+                                    </TableCell>
                                     <TableCell className="text-muted-foreground">
                                       {item.services.includes(INTERVENTION_SERVICE_LABEL)
                                         ? (getChecklistProgress(item) || '0/0')
@@ -346,7 +395,7 @@ export default function RequestsPage() {
                             ))}
                             {!isLoading && filteredDraftRequests.length === 0 && (
                                 <TableRow>
-                                    <TableCell colSpan={8} className="h-24 text-center">Nenhuma solicitação em elaboração.</TableCell>
+                                    <TableCell colSpan={9} className="h-24 text-center">Nenhuma solicitação em elaboração.</TableCell>
                                 </TableRow>
                             )}
                         </TableBody>
@@ -375,6 +424,7 @@ export default function RequestsPage() {
                     <TableHead>Empreendedor</TableHead>
                     <TableHead>Empreendimento</TableHead>
                     <TableHead>Status</TableHead>
+                    <TableHead>Licenciamento</TableHead>
                     <TableHead>Checklist AIA</TableHead>
                     <TableHead>Serviços Requeridos</TableHead>
                     <TableHead className="text-right">Ações</TableHead>
@@ -395,6 +445,11 @@ export default function RequestsPage() {
                                 <TableCell>{empreendedoresMap.get(item.empreendedorId) || 'N/A'}</TableCell>
                                 <TableCell>{projectsMap.get(item.projectId) || 'N/A'}</TableCell>
                                 <TableCell><Badge variant="outline">{getStatusLabel(item.status)}</Badge></TableCell>
+                                <TableCell className="text-muted-foreground text-xs">
+                                  {item.services.includes('Licenciamento ambiental') && item.licensingData
+                                    ? `C${item.licensingData.grading.classeSugerida} · ${item.licensingData.grading.modalidadeSugerida}`
+                                    : '—'}
+                                </TableCell>
                                 <TableCell className="text-muted-foreground">
                                   {item.services.includes(INTERVENTION_SERVICE_LABEL)
                                     ? (getChecklistProgress(item) || '0/0')
@@ -411,7 +466,7 @@ export default function RequestsPage() {
                         ))
                    ) : (
                     <TableRow>
-                        <TableCell colSpan={8} className="h-24 text-center">
+                        <TableCell colSpan={9} className="h-24 text-center">
                             Nenhum processo concluído.
                         </TableCell>
                     </TableRow>
@@ -440,6 +495,72 @@ export default function RequestsPage() {
                     <DetailItem label="Empreendimento" value={projectsMap.get(viewingItem.projectId)} />
                     <Separator />
                     <DetailItem label="Serviços Solicitados" value={viewingItem.services} />
+                    {viewingItem.services.includes('Licenciamento ambiental') && viewingItem.licensingData && (
+                      <>
+                        <DetailItem
+                          label="Licenciamento - Atividades"
+                          value={viewingItem.licensingData.activities?.map((a) =>
+                            `${a.codeGroup}/${a.subItem}${a.enterpriseSize ? ` · ${a.enterpriseSize}${a.sizeUnit || 'ha'}` : ''}${a.autoPorte ? ` · Porte ${a.autoPorte}` : ''}${a.autoPotencial ? ` · Potencial ${a.autoPotencial}` : ''}${a.description ? ` - ${a.description}` : ''}`,
+                          ) || ['Não informado']}
+                        />
+                        <DetailItem
+                          label="Licenciamento - Classe sugerida"
+                          value={String(viewingItem.licensingData.grading.classeSugerida)}
+                        />
+                        <DetailItem
+                          label="Licenciamento - Modalidade sugerida"
+                          value={viewingItem.licensingData.grading.modalidadeSugerida}
+                        />
+                        <DetailItem
+                          label="Licenciamento - Documentos marcados"
+                          value={String(viewingItem.licensingData.documents.filter((d) => d.checked).length)}
+                        />
+                        <DetailItem
+                          label="Licenciamento - Critério locacional"
+                          value={formatCriterioLocacionalLabel(
+                            viewingItem.licensingData.grading.criterioLocacional,
+                          )}
+                        />
+                        {viewingItem.licensingData.criterioLocacionalManual ? (
+                          <DetailItem
+                            label="Critério locacional"
+                            value="Travado manualmente (não sobrescreve ao reanalisar)"
+                          />
+                        ) : null}
+                        {viewingItem.licensingData.locationalAnalysis ? (
+                          <>
+                            <DetailItem
+                              label="Análise locacional — modo de entrada"
+                              value={locationalInputModeLabel(
+                                viewingItem.licensingData.locationalAnalysis.inputMode,
+                              )}
+                            />
+                            <DetailItem
+                              label="Análise locacional — pré-visualização"
+                              value={viewingItem.licensingData.locationalAnalysis.inputPreview}
+                            />
+                            <DetailItem
+                              label="Análise locacional — sugestão automática"
+                              value={formatCriterioLocacionalLabel(
+                                viewingItem.licensingData.locationalAnalysis.suggestedCriterio,
+                              )}
+                            />
+                            <DetailItem
+                              label="Análise locacional — motivos"
+                              value={
+                                viewingItem.licensingData.locationalAnalysis.reasons?.length
+                                  ? viewingItem.licensingData.locationalAnalysis.reasons
+                                  : ['Nenhum motivo registado']
+                              }
+                            />
+                            <DetailItem
+                              label="Análise locacional — data"
+                              value={formatDate(viewingItem.licensingData.locationalAnalysis.analyzedAt)}
+                            />
+                          </>
+                        ) : null}
+                      </>
+                    )}
                     {viewingItem.services.includes(INTERVENTION_SERVICE_LABEL) && (
                       <DetailItem
                         label="Progresso do checklist de intervenção"
@@ -452,6 +573,35 @@ export default function RequestsPage() {
                         value={String(getRequiredPendingCount(viewingItem))}
                       />
                     )}
+                    {viewingItem.services.includes(INTERVENTION_SERVICE_LABEL) &&
+                      viewingItem.interventionChecklist &&
+                      viewingItem.interventionChecklist.length > 0 && (
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium">Resumo dos status do checklist</Label>
+                          <div className="flex flex-wrap gap-2">
+                            {(
+                              [
+                                'not_started',
+                                'collecting',
+                                'not_applicable',
+                                'completed',
+                              ] as InterventionChecklistItem['status'][]
+                            ).map((statusKey) => {
+                              const counters = getStatusBreakdown(viewingItem);
+                              if (counters[statusKey] === 0) return null;
+                              return (
+                                <Badge
+                                  key={statusKey}
+                                  variant="outline"
+                                  className={cn(getChecklistStatusBadgeClass(statusKey))}
+                                >
+                                  {getChecklistStatusLabel(statusKey)}: {counters[statusKey]}
+                                </Badge>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
                     <Separator />
                     <DetailItem label="Status" value={getStatusLabel(viewingItem.status)} />
                     <div className="space-y-2">

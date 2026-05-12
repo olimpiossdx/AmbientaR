@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import { useState, useMemo, useEffect } from "react";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -76,6 +76,7 @@ import { useToast } from "@/hooks/use-toast";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { condicionanteStatusBadgeClass } from "@/lib/status-display-classes";
 import {
   Accordion,
   AccordionContent,
@@ -93,7 +94,7 @@ import { CardSearchInput } from "@/components/card-search-input";
 import { fetchEmpreendedorIdsForRepresentative } from "@/lib/representative-empreendedor-ids";
 import { isClientePortalRole } from "@/lib/role-guards";
 
-/** Variantes de CPF/CNPJ (original + só dígitos) para match no Firestore, máx 10. */
+/** Variantes de CPF/CNPJ (original + sÃ³ dÃ­gitos) para match no Firestore, mÃ¡x 10. */
 function documentVariants(
   cpf: string | undefined,
   cnpjs: string[] | undefined,
@@ -113,7 +114,8 @@ const canPerformWriteActions = (user: AppUser | null): boolean => {
   return (
     user.role === "admin" ||
     user.role === "gestor" ||
-    user.role === "supervisor"
+    user.role === "supervisor" ||
+    user.role === "cliente_autonomo"
   );
 };
 
@@ -639,12 +641,12 @@ export default function CompliancePage() {
       firestore,
       condicionanteId: itemToDelete,
       user,
-      reason: "Exclusão manual na tela de condicionantes",
+      reason: "ExclusÃ£o manual na tela de condicionantes",
     })
       .then(() => {
         toast({
           title: "Condicionante deletada",
-          description: "A condicionante foi removida com backup de segurança.",
+          description: "A condicionante foi removida com backup de seguranÃ§a.",
         });
       })
       .catch(async (serverError) => {
@@ -667,34 +669,22 @@ export default function CompliancePage() {
     });
   };
 
-  const getStatusVariant = (status: Condicionante["status"]) => {
-    switch (status) {
-      case "Pendente":
-        return "bg-yellow-500/20 text-yellow-700 border-yellow-500/30";
-      case "Em execução":
-        return "bg-blue-500/20 text-blue-700 border-blue-500/30";
-      case "Cumprida":
-        return "bg-emerald-500/20 text-emerald-700 border-emerald-500/30";
-      case "Atrasada":
-        return "bg-red-500/20 text-red-700 border-red-500/30";
-      default:
-        return "bg-slate-500/20 text-slate-700 border-slate-500/30";
-    }
-  };
+  const getStatusVariant = (status: Condicionante["status"]) =>
+    condicionanteStatusBadgeClass[status];
 
   const renderConditionantesTable = (items: Condicionante[]) => (
     <TooltipProvider>
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="w-2/5">Descrição</TableHead>
+            <TableHead className="w-2/5">DescriÃ§Ã£o</TableHead>
             <TableHead>Vencimento</TableHead>
-            <TableHead>Recorrência</TableHead>
+            <TableHead>RecorrÃªncia</TableHead>
             <TableHead>Status</TableHead>
             <TableHead className="w-12">Anexo</TableHead>
             {canPerformWriteActions(user) && (
               <TableHead>
-                <span className="sr-only">Ações</span>
+                <span className="sr-only">AÃ§Ãµes</span>
               </TableHead>
             )}
           </TableRow>
@@ -709,21 +699,21 @@ export default function CompliancePage() {
                 {formatDate(item.dueDate ?? "")}
               </TableCell>
               <TableCell className="text-muted-foreground">
-                {item.recurrence ?? "—"}
+                {item.recurrence ?? "â€”"}
               </TableCell>
               <TableCell>
                 <Badge
                   variant={"outline"}
                   className={cn(getStatusVariant(item.status))}
                 >
-                  {item.status ?? "—"}
+                  {item.status ?? "â€”"}
                 </Badge>
               </TableCell>
               <TableCell>
                 <div className="flex items-center gap-1 flex-wrap">
                   <RecordViewDialog
                     title="Condicionante"
-                    description="Visualização sem edição."
+                    description="VisualizaÃ§Ã£o sem ediÃ§Ã£o."
                     fileUrl={item.fileUrl}
                     labels={{
                       attachmentEmpty: "Sem anexo.",
@@ -733,7 +723,7 @@ export default function CompliancePage() {
                   >
                     <div className="space-y-3">
                       <div>
-                        <p className="text-xs text-muted-foreground">Descrição</p>
+                        <p className="text-xs text-muted-foreground">DescriÃ§Ã£o</p>
                         <p className="font-medium whitespace-pre-wrap">
                           {item.description}
                         </p>
@@ -746,8 +736,8 @@ export default function CompliancePage() {
                           </p>
                         </div>
                         <div>
-                          <p className="text-xs text-muted-foreground">Recorrência</p>
-                          <p className="font-medium">{item.recurrence ?? "—"}</p>
+                          <p className="text-xs text-muted-foreground">RecorrÃªncia</p>
+                          <p className="font-medium">{item.recurrence ?? "â€”"}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
@@ -756,7 +746,7 @@ export default function CompliancePage() {
                           variant="outline"
                           className={cn(getStatusVariant(item.status))}
                         >
-                          {item.status ?? "—"}
+                          {item.status ?? "â€”"}
                         </Badge>
                       </div>
                     </div>
@@ -781,7 +771,7 @@ export default function CompliancePage() {
                       </TooltipContent>
                     </Tooltip>
                   ) : (
-                    <span className="text-muted-foreground text-xs">—</span>
+                    <span className="text-muted-foreground text-xs">â€”</span>
                   )}
                 </div>
               </TableCell>
@@ -839,7 +829,7 @@ export default function CompliancePage() {
         <CardSearchInput
           value={searchTerm}
           onChange={setSearchTerm}
-          placeholder="Buscar descrição, status, recorrência..."
+          placeholder="Buscar descriÃ§Ã£o, status, recorrÃªncia..."
         />
       </CardHeader>
       <CardContent>
@@ -863,23 +853,23 @@ export default function CompliancePage() {
     <div className="flex flex-col gap-6">
       {condicionantesError && (
         <div className="rounded-md bg-destructive/10 border border-destructive/30 p-4 text-sm text-destructive">
-          Não foi possível carregar a lista de condicionantes. Verifique as
-          regras de acesso no Firestore ou faça deploy das regras atualizadas.
+          NÃ£o foi possÃ­vel carregar a lista de condicionantes. Verifique as
+          regras de acesso no Firestore ou faÃ§a deploy das regras atualizadas.
         </div>
       )}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <FileCheck2 className="w-5 h-5" />
-            Condicionantes de Licenças
+            Condicionantes de LicenÃ§as
           </CardTitle>
           <CardDescription>
-            Condicionantes vinculadas a licenças ambientais.
+            Condicionantes vinculadas a licenÃ§as ambientais.
           </CardDescription>
           <CardSearchInput
             value={searchTerm}
             onChange={setSearchTerm}
-            placeholder="Buscar descrição, status, recorrência..."
+            placeholder="Buscar descriÃ§Ã£o, status, recorrÃªncia..."
           />
         </CardHeader>
         <CardContent>
@@ -891,17 +881,17 @@ export default function CompliancePage() {
                 const license = licensesMap.get(refId);
                 const project = projectsMap.get(refId);
                 const title = license
-                  ? `${license.processNumber || license.permitNumber} — ${projectsMap.get(license.projectId)?.propertyName ?? "Fazenda"}`
+                  ? `${license.processNumber || license.permitNumber} â€” ${projectsMap.get(license.projectId)?.propertyName ?? "Fazenda"}`
                   : project
                     ? `${project.propertyName}${project.processNumber ? ` (${project.processNumber})` : ""}`
-                    : `Referência ${refId}`;
+                    : `ReferÃªncia ${refId}`;
                 const subtitle = license
                   ? [
                       license.permitNumber,
                       projectsMap.get(license.projectId)?.propertyName,
                     ]
                       .filter(Boolean)
-                      .join(" · ")
+                      .join(" Â· ")
                   : (project?.processNumber ?? refId);
                 return (
                   <AccordionItem value={refId} key={refId}>
@@ -922,7 +912,7 @@ export default function CompliancePage() {
               {licencaGroups.size === 0 && (
                 <div className="h-24 text-center flex items-center justify-center border-2 border-dashed rounded-md">
                   <p className="text-muted-foreground">
-                    Nenhuma condicionante de licença encontrada.
+                    Nenhuma condicionante de licenÃ§a encontrada.
                   </p>
                 </div>
               )}
@@ -937,7 +927,7 @@ export default function CompliancePage() {
             Condicionantes de Outorgas
           </CardTitle>
           <CardDescription>
-            Condicionantes vinculadas a outorgas de uso de água.
+            Condicionantes vinculadas a outorgas de uso de Ã¡gua.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -952,7 +942,7 @@ export default function CompliancePage() {
                     <AccordionTrigger>
                       <div className="flex flex-col items-start text-left">
                         <span className="font-semibold">
-                          {outorga?.description || "Outorga não encontrada"}
+                          {outorga?.description || "Outorga nÃ£o encontrada"}
                         </span>
                         <span className="text-xs text-muted-foreground">
                           {outorga?.permitNumber || outorgaId}
@@ -980,10 +970,10 @@ export default function CompliancePage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Trees className="w-5 h-5" />
-            Condicionantes de Intervenção
+            Condicionantes de IntervenÃ§Ã£o
           </CardTitle>
           <CardDescription>
-            Condicionantes vinculadas a intervenções ambientais.
+            Condicionantes vinculadas a intervenÃ§Ãµes ambientais.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -1000,7 +990,7 @@ export default function CompliancePage() {
                         <div className="flex flex-col items-start text-left">
                           <span className="font-semibold">
                             {intervencao?.description ||
-                              "Intervenção não encontrada"}
+                              "IntervenÃ§Ã£o nÃ£o encontrada"}
                           </span>
                           <span className="text-xs text-muted-foreground">
                             {intervencao?.processNumber || intervencaoId}
@@ -1017,7 +1007,7 @@ export default function CompliancePage() {
               {intervencaoGroups.size === 0 && (
                 <div className="h-24 text-center flex items-center justify-center border-2 border-dashed rounded-md">
                   <p className="text-muted-foreground">
-                    Nenhuma condicionante de intervenção encontrada.
+                    Nenhuma condicionante de intervenÃ§Ã£o encontrada.
                   </p>
                 </div>
               )}
@@ -1043,17 +1033,17 @@ export default function CompliancePage() {
               </DropdownMenuTrigger>
               <DropdownMenuContent>
                 <DropdownMenuLabel>
-                  Selecione o tipo de referência
+                  Selecione o tipo de referÃªncia
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => handleAddNew("licenca")}>
-                  Licença
+                  LicenÃ§a
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => handleAddNew("outorga")}>
                   Outorga
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => handleAddNew("intervencao")}>
-                  Intervenção Ambiental
+                  IntervenÃ§Ã£o Ambiental
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -1077,9 +1067,9 @@ export default function CompliancePage() {
       <AlertDialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+            <AlertDialogTitle>VocÃª tem certeza?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta ação não pode ser desfeita. Isso irá deletar permanentemente
+              Esta aÃ§Ã£o nÃ£o pode ser desfeita. Isso irÃ¡ deletar permanentemente
               a condicionante.
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -1094,3 +1084,7 @@ export default function CompliancePage() {
     </>
   );
 }
+
+
+
+

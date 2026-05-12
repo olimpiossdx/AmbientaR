@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import { useState, useMemo, useEffect } from "react";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -49,6 +49,7 @@ import type {
   Empreendedor,
   AppUser,
 } from "@/lib/types";
+import { permitStatusBadgeClassRich } from "@/lib/status-display-classes";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Dialog,
@@ -91,7 +92,8 @@ const canPerformWriteActions = (user: AppUser | null): boolean => {
   return (
     user.role === "admin" ||
     user.role === "gestor" ||
-    user.role === "supervisor"
+    user.role === "supervisor" ||
+    user.role === "cliente_autonomo"
   );
 };
 
@@ -105,7 +107,7 @@ const DetailItem = ({
   <div className="space-y-1">
     <Label className="text-sm font-medium">{label}</Label>
     <p className="text-sm text-muted-foreground">
-      {value != null && value !== "" ? String(value) : "Não informado"}
+      {value != null && value !== "" ? String(value) : "NÃ£o informado"}
     </p>
   </div>
 );
@@ -257,13 +259,13 @@ export default function IntervencoesPage() {
       collectionName: "intervencoes",
       documentId: itemToDelete,
       user,
-      reason: "Exclusão manual na tela de intervenções",
+      reason: "ExclusÃ£o manual na tela de intervenÃ§Ãµes",
     })
       .then(() => {
         toast({
           title: "DAIA deletada",
           description:
-            "A DAIA e suas condicionantes relacionadas foram removidas com backup de segurança.",
+            "A DAIA e suas condicionantes relacionadas foram removidas com backup de seguranÃ§a.",
         });
       })
       .catch(async (serverError) => {
@@ -286,26 +288,13 @@ export default function IntervencoesPage() {
     });
   };
 
-  const getStatusVariant = (status: EnvironmentalIntervention["status"]) => {
-    switch (status) {
-      case "Válida":
-        return "bg-emerald-500/20 text-emerald-700 border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20";
-      case "Em Renovação":
-        return "bg-blue-500/20 text-blue-700 border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-400 dark:border-blue-500/20";
-      case "Vencida":
-        return "bg-red-500/20 text-red-700 border-red-500/30 dark:bg-red-500/10 dark:text-red-400 dark:border-red-500/20";
-      case "Suspensa":
-      case "Cancelada":
-        return "bg-yellow-500/20 text-yellow-700 border-yellow-500/30 dark:bg-yellow-500/10 dark:text-yellow-400 dark:border-yellow-500/20";
-      default:
-        return "bg-slate-500/20 text-slate-700 border-slate-500/30 dark:bg-slate-500/10 dark:text-slate-400 dark:border-slate-500/20";
-    }
-  };
+  const getStatusVariant = (status: EnvironmentalIntervention["status"]) =>
+    permitStatusBadgeClassRich[status];
 
   return (
     <>
       <div className="flex flex-col h-full">
-        <PageHeader title="Documentos de Autorização para Intervenção Ambiental (DAIA)">
+        <PageHeader title="Documentos de AutorizaÃ§Ã£o para IntervenÃ§Ã£o Ambiental (DAIA)">
           {canPerformWriteActions(user) && (
             <Button size="sm" className="gap-1" onClick={handleAddNew}>
               <PlusCircle className="h-4 w-4" />
@@ -318,7 +307,7 @@ export default function IntervencoesPage() {
             <CardHeader>
               <CardTitle>Gerenciamento de DAIAs</CardTitle>
               <CardDescription>
-                Acompanhe todas as autorizações para intervenção ambiental.
+                Acompanhe todas as autorizaÃ§Ãµes para intervenÃ§Ã£o ambiental.
               </CardDescription>
               <CardSearchInput
                 value={searchTerm}
@@ -346,7 +335,7 @@ export default function IntervencoesPage() {
                           <div className="flex items-start justify-between gap-3">
                             <p className="font-medium min-w-0 truncate">
                               {empreendedoresMap.get(item.empreendedorId) ||
-                                "Empreendedor não encontrado"}
+                                "Empreendedor nÃ£o encontrado"}
                             </p>
                             <Badge
                               variant={"outline"}
@@ -439,7 +428,7 @@ export default function IntervencoesPage() {
                     ))}
                   {!isLoading && filteredIntervencoes.length === 0 && (
                     <div className="h-24 flex items-center justify-center text-sm text-muted-foreground">
-                      Nenhuma intervenção encontrada.
+                      Nenhuma intervenÃ§Ã£o encontrada.
                     </div>
                   )}
                 </div>
@@ -449,10 +438,10 @@ export default function IntervencoesPage() {
                     <TableRow>
                       <TableHead>Empreendedor</TableHead>
                       <TableHead className="hidden md:table-cell">
-                        Nº do Processo
+                        NÂº do Processo
                       </TableHead>
                       <TableHead className="hidden lg:table-cell">
-                        Tipo de Intervenção
+                        Tipo de IntervenÃ§Ã£o
                       </TableHead>
                       <TableHead className="hidden lg:table-cell">
                         Vencimento
@@ -461,7 +450,7 @@ export default function IntervencoesPage() {
                       <TableHead>Anexo</TableHead>
                       {canPerformWriteActions(user) && (
                         <TableHead>
-                          <span className="sr-only">Ações</span>
+                          <span className="sr-only">AÃ§Ãµes</span>
                         </TableHead>
                       )}
                     </TableRow>
@@ -498,7 +487,7 @@ export default function IntervencoesPage() {
                         <TableRow key={item.id}>
                           <TableCell className="font-medium">
                             {empreendedoresMap.get(item.empreendedorId) ||
-                              "Empreendedor não encontrado"}
+                              "Empreendedor nÃ£o encontrado"}
                           </TableCell>
                           <TableCell className="hidden md:table-cell text-muted-foreground">
                             {item.processNumber}
@@ -586,7 +575,7 @@ export default function IntervencoesPage() {
                                   </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
-                                  <DropdownMenuLabel>Ações</DropdownMenuLabel>
+                                  <DropdownMenuLabel>AÃ§Ãµes</DropdownMenuLabel>
                                   <DropdownMenuItem
                                     onClick={() => handleEdit(item)}
                                   >
@@ -608,7 +597,7 @@ export default function IntervencoesPage() {
                     {!isLoading && filteredIntervencoes.length === 0 && (
                       <TableRow>
                         <TableCell colSpan={7} className="h-24 text-center">
-                          Nenhuma intervenção encontrada.
+                          Nenhuma intervenÃ§Ã£o encontrada.
                         </TableCell>
                       </TableRow>
                     )}
@@ -626,7 +615,7 @@ export default function IntervencoesPage() {
           <DialogHeader>
             <DialogTitle>Visualizar DAIA</DialogTitle>
             <DialogDescription>
-              Somente leitura. Processo nº {viewIntervencao?.processNumber || "—"}
+              Somente leitura. Processo nÂº {viewIntervencao?.processNumber || "â€”"}
             </DialogDescription>
           </DialogHeader>
           {viewIntervencao && (
@@ -637,17 +626,17 @@ export default function IntervencoesPage() {
               />
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <DetailItem
-                  label="Nº do processo"
+                  label="NÂº do processo"
                   value={viewIntervencao.processNumber}
                 />
                 <DetailItem
-                  label="Órgão emissor"
+                  label="Ã“rgÃ£o emissor"
                   value={viewIntervencao.issuingBody}
                 />
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <DetailItem
-                  label="Data de emissão"
+                  label="Data de emissÃ£o"
                   value={formatDate(viewIntervencao.issueDate)}
                 />
                 <DetailItem
@@ -665,7 +654,7 @@ export default function IntervencoesPage() {
                 </Badge>
               </div>
               <div className="space-y-1">
-                <Label className="text-sm font-medium">Tipo / descrição</Label>
+                <Label className="text-sm font-medium">Tipo / descriÃ§Ã£o</Label>
                 <p className="text-muted-foreground whitespace-pre-wrap">
                   {viewIntervencao.description || "N/A"}
                 </p>
@@ -697,8 +686,8 @@ export default function IntervencoesPage() {
             </DialogTitle>
             <DialogDescription>
               {editingItem
-                ? "Atualize os detalhes da autorização abaixo."
-                : "Preencha os detalhes para criar uma nova autorização."}
+                ? "Atualize os detalhes da autorizaÃ§Ã£o abaixo."
+                : "Preencha os detalhes para criar uma nova autorizaÃ§Ã£o."}
             </DialogDescription>
           </DialogHeader>
           <IntervencaoForm
@@ -711,10 +700,10 @@ export default function IntervencoesPage() {
       <AlertDialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+            <AlertDialogTitle>VocÃª tem certeza?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta ação não pode ser desfeita. Isso irá deletar permanentemente
-              a autorização.
+              Esta aÃ§Ã£o nÃ£o pode ser desfeita. Isso irÃ¡ deletar permanentemente
+              a autorizaÃ§Ã£o.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -728,3 +717,7 @@ export default function IntervencoesPage() {
     </>
   );
 }
+
+
+
+

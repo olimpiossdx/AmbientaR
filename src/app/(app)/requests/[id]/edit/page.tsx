@@ -28,6 +28,10 @@ import {
   type InterventionChecklistItem,
 } from '@/lib/intervention-checklist';
 import { sanitizeStorageFileName, uploadFileToStorage } from '@/lib/storage-upload';
+import {
+  LicensingLocationalBlock,
+  type LocationalAnalysisPayload,
+} from '@/components/licensing/licensing-locational-block';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 
@@ -39,51 +43,321 @@ const services = [
   "Uso Insignificante"
 ];
 
-// Placeholder components for each service card
-const LicenciamentoCard = () => (
-  <Card>
-    <CardHeader>
-      <CardTitle>Detalhes do Licenciamento Ambiental</CardTitle>
-      <CardDescription>Preencha as informações específicas para o licenciamento.</CardDescription>
-    </CardHeader>
-    <CardContent>
-        <Accordion type="multiple" className="w-full">
+type LicensingDoc = { id: string; label: string; checked: boolean; fileName?: string; fileUrl?: string };
+type LicensingGrading = { porte: 'P' | 'M' | 'G'; potencial: 'P' | 'M' | 'G'; criterioLocacional: '0' | '1' | '2' };
+type LicensingActivity = {
+  id: string;
+  codeGroup: 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | 'H';
+  subItem: string;
+  description?: string;
+  enterpriseSize?: number;
+  sizeUnit?: 'ha' | 'm2' | 'un';
+  autoPorte?: 'P' | 'M' | 'G';
+  autoPotencial?: 'P' | 'M' | 'G';
+};
+
+const LICENSING_DOCS_TEMPLATE: Omit<LicensingDoc, 'checked' | 'fileName' | 'fileUrl'>[] = [
+  { id: 'lic_req', label: 'Requerimento e FCE/FCEI' },
+  { id: 'lic_doc_emp', label: 'Documentos do empreendedor (CPF/CNPJ e endereço)' },
+  { id: 'lic_caract', label: 'Caracterização do empreendimento e atividade' },
+  { id: 'lic_uso_solo', label: 'Comprovação de uso/ocupação do solo e zoneamento' },
+  { id: 'lic_car_ambiental', label: 'CAR/regularidade ambiental da área (quando aplicável)' },
+  { id: 'lic_art', label: 'ART e responsável técnico' },
+  { id: 'lic_taxas', label: 'Comprovantes de taxas/emolumentos' },
+  { id: 'lic_estudos', label: 'Estudos exigidos (RAS/PCA/RCA/EIA, conforme enquadramento)' },
+];
+
+const createLicensingDocs = (): LicensingDoc[] =>
+  LICENSING_DOCS_TEMPLATE.map((doc) => ({ ...doc, checked: false }));
+
+const LISTAGEM_CODES = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'] as const;
+const buildSubItems = (codeGroup: LicensingActivity['codeGroup']) =>
+  Array.from({ length: 12 }, (_, idx) => `${codeGroup}-${String(idx + 1).padStart(2, '0')}`);
+const createLicensingActivity = (): LicensingActivity => ({
+  id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+  codeGroup: 'A',
+  subItem: 'A-01',
+  description: '',
+  enterpriseSize: 0,
+  sizeUnit: 'ha',
+  autoPorte: 'P',
+  autoPotencial: 'M',
+});
+
+const getAutoPorteFromSize = (size?: number): 'P' | 'M' | 'G' => {
+  const value = Number(size || 0);
+  if (value >= 1000) return 'G';
+  if (value >= 100) return 'M';
+  return 'P';
+};
+
+const getAutoPotencialFromCode = (codeGroup: LicensingActivity['codeGroup']): 'P' | 'M' | 'G' => {
+  if (codeGroup === 'A' || codeGroup === 'B' || codeGroup === 'C') return 'G';
+  if (codeGroup === 'D' || codeGroup === 'E' || codeGroup === 'F') return 'M';
+  return 'P';
+};
+
+const classByMatrix: Record<'P' | 'M' | 'G', Record<'P' | 'M' | 'G', 1 | 3 | 4 | 5 | 6>> = {
+  P: { P: 1, M: 1, G: 1 },
+  M: { P: 1, M: 3, G: 5 },
+  G: { P: 4, M: 5, G: 6 },
+};
+
+const getHighestRank = (value: 'P' | 'M' | 'G'): number => ({ P: 1, M: 2, G: 3 })[value];
+
+const LicenciamentoCard = ({
+  grading,
+  activities,
+  documents,
+  uploadingDocId,
+  onGradingChange,
+  onActivityAdd,
+  onActivityRemove,
+  onActivityChange,
+  onToggleDoc,
+  onFileUpload,
+  locationalSavedAnalysis,
+  locationalManualLock,
+  onLocationalManualLockChange,
+  onLocationalSuggested,
+}: {
+  grading: LicensingGrading;
+  activities: LicensingActivity[];
+  documents: LicensingDoc[];
+  uploadingDocId: string | null;
+  onGradingChange: (next: Partial<LicensingGrading>) => void;
+  onActivityAdd: () => void;
+  onActivityRemove: (id: string) => void;
+  onActivityChange: (id: string, next: Partial<LicensingActivity>) => void;
+  onToggleDoc: (id: string, checked: boolean) => void;
+  onFileUpload: (id: string, event: React.ChangeEvent<HTMLInputElement>) => void;
+  locationalSavedAnalysis: LocationalAnalysisPayload | null;
+  locationalManualLock: boolean;
+  onLocationalManualLockChange: (locked: boolean) => void;
+  onLocationalSuggested: (payload: LocationalAnalysisPayload) => void;
+}) => {
+    const classe = classByMatrix[grading.porte][grading.potencial];
+    const modalidade =
+      classe <= 2
+        ? 'LAS (Cadastro/RAS)'
+        : classe <= 4
+          ? grading.criterioLocacional === '2'
+            ? 'LAC ou LAT (avaliar critério locacional)'
+            : 'LAC'
+          : 'LAT ou LAC2 (maior complexidade)';
+
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Detalhes do Licenciamento Ambiental</CardTitle>
+          <CardDescription>
+            Fluxo organizado em Gradação do licenciamento (fase 1) e documentação (fase 2), considerando DN COPAM 217 e atualização da DN 258.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Accordion type="multiple" className="w-full" defaultValue={['item-1', 'item-2']}>
             <AccordionItem value="item-1">
-                <AccordionTrigger>Fase 1 - Reunir Documentos</AccordionTrigger>
-                <AccordionContent>
-                    <div className="flex items-center justify-center h-24 border-2 border-dashed rounded-lg">
-                        <p className="text-muted-foreground text-sm">Campos para documentos aqui.</p>
+              <AccordionTrigger>Fase 1 - Gradar Licenciamento</AccordionTrigger>
+              <AccordionContent>
+                <div className="space-y-3 mb-4">
+                  <div className="flex items-center justify-between">
+                    <Label>Atividades da listagem (A-H)</Label>
+                    <Button type="button" variant="outline" size="sm" onClick={onActivityAdd}>
+                      Adicionar atividade
+                    </Button>
+                  </div>
+                  {activities.map((activity, index) => (
+                    <div key={activity.id} className="rounded-md border p-2 space-y-2">
+                      <div className="text-xs text-muted-foreground">Atividade {index + 1}</div>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                        <Select
+                          value={activity.codeGroup}
+                          onValueChange={(value) =>
+                            onActivityChange(activity.id, {
+                              codeGroup: value as LicensingActivity['codeGroup'],
+                              subItem: `${value}-01`,
+                            })
+                          }
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Código (A-H)" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {LISTAGEM_CODES.map((code) => (
+                              <SelectItem key={code} value={code}>
+                                Listagem {code}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Select
+                          value={activity.subItem}
+                          onValueChange={(value) => onActivityChange(activity.id, { subItem: value })}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Subitem" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {buildSubItems(activity.codeGroup).map((sub) => (
+                              <SelectItem key={sub} value={sub}>
+                                {sub}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => onActivityRemove(activity.id)}
+                          disabled={activities.length <= 1}
+                        >
+                          Remover
+                        </Button>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                        <input
+                          type="number"
+                          min={0}
+                          step="0.01"
+                          value={activity.enterpriseSize ?? 0}
+                          onChange={(event) =>
+                            onActivityChange(activity.id, {
+                              enterpriseSize: Number(event.target.value || 0),
+                            })
+                          }
+                          className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+                          placeholder="Tamanho do empreendimento"
+                        />
+                        <Select
+                          value={activity.sizeUnit || 'ha'}
+                          onValueChange={(value) => onActivityChange(activity.id, { sizeUnit: value as 'ha' | 'm2' | 'un' })}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Unidade" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="ha">ha</SelectItem>
+                            <SelectItem value="m2">m²</SelectItem>
+                            <SelectItem value="un">unidade</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <div className="flex items-center gap-2 text-xs">
+                          <Badge variant="outline">Porte: {activity.autoPorte || 'P'}</Badge>
+                          <Badge variant="outline">Potencial: {activity.autoPotencial || 'P'}</Badge>
+                        </div>
+                      </div>
+                      <input
+                        type="text"
+                        value={activity.description || ''}
+                        onChange={(event) => onActivityChange(activity.id, { description: event.target.value })}
+                        className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+                        placeholder="Descrição da atividade (opcional)"
+                      />
                     </div>
-                </AccordionContent>
+                  ))}
+                </div>
+                <LicensingLocationalBlock
+                  manualLock={locationalManualLock}
+                  onManualLockChange={onLocationalManualLockChange}
+                  savedAnalysis={locationalSavedAnalysis}
+                  onSuggestedCriterio={onLocationalSuggested}
+                />
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <div className="space-y-2">
+                    <Label>Porte (automático)</Label>
+                    <div className="rounded-md border px-3 py-2 text-sm bg-muted/20">{grading.porte}</div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Potencial Poluidor (automático)</Label>
+                    <div className="rounded-md border px-3 py-2 text-sm bg-muted/20">{grading.potencial}</div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="lic-criterio-locacional-edit">Critério Locacional</Label>
+                    <Select value={grading.criterioLocacional} onValueChange={(value) => onGradingChange({ criterioLocacional: value as '0' | '1' | '2' })}>
+                      <SelectTrigger id="lic-criterio-locacional-edit">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="0">0 - Sem critério</SelectItem>
+                        <SelectItem value="1">1 - Médio</SelectItem>
+                        <SelectItem value="2">2 - Alto</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="mt-3 rounded-md border p-3 bg-muted/20">
+                  <p className="text-sm">
+                    Classe sugerida: <strong>{classe}</strong>
+                  </p>
+                  <p className="text-sm">
+                    Modalidade sugerida: <strong>{modalidade}</strong>
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Referência prática para triagem inicial. A confirmação final depende do enquadramento completo da atividade e critérios locacionais vigentes no SLA.
+                  </p>
+                </div>
+              </AccordionContent>
             </AccordionItem>
             <AccordionItem value="item-2">
-                <AccordionTrigger>Fase 2 - Gradar Licenciamento</AccordionTrigger>
-                <AccordionContent>
-                    <div className="flex items-center justify-center h-24 border-2 border-dashed rounded-lg">
-                        <p className="text-muted-foreground text-sm">Campos para gradar o licenciamento aqui.</p>
+              <AccordionTrigger>Fase 2 - Reunir Documentos</AccordionTrigger>
+              <AccordionContent>
+                <div className="space-y-2">
+                  {documents.map((doc) => (
+                    <div key={doc.id} className="rounded-md border p-2">
+                      <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                        <div className="flex items-start space-x-2">
+                          <Checkbox
+                            id={doc.id}
+                            checked={doc.checked}
+                            onCheckedChange={(checked) => onToggleDoc(doc.id, !!checked)}
+                          />
+                          <Label htmlFor={doc.id} className="font-normal">
+                            {doc.label}
+                          </Label>
+                        </div>
+                        <input
+                          type="file"
+                          className="text-sm md:max-w-[320px]"
+                          aria-label={`Carregar arquivo para ${doc.label}`}
+                          onChange={(event) => onFileUpload(doc.id, event)}
+                          disabled={uploadingDocId === doc.id}
+                        />
+                      </div>
+                      {uploadingDocId === doc.id && <p className="text-xs text-muted-foreground mt-1">Enviando...</p>}
+                      {doc.fileName && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Arquivo: {doc.fileName}
+                        </p>
+                      )}
                     </div>
-                </AccordionContent>
+                  ))}
+                </div>
+              </AccordionContent>
             </AccordionItem>
             <AccordionItem value="item-3">
-                <AccordionTrigger>Fase 3 - Estudos Ambientais</AccordionTrigger>
-                <AccordionContent>
-                    <div className="flex items-center justify-center h-24 border-2 border-dashed rounded-lg">
-                        <p className="text-muted-foreground text-sm">Campos para estudos ambientais aqui.</p>
-                    </div>
-                </AccordionContent>
+              <AccordionTrigger>Fase 3 - Estudos Ambientais</AccordionTrigger>
+              <AccordionContent>
+                <div className="flex items-center justify-center h-24 border-2 border-dashed rounded-lg">
+                  <p className="text-muted-foreground text-sm">
+                    Detalhar estudos por modalidade (RAS/PCA/RCA/EIA-RIMA).
+                  </p>
+                </div>
+              </AccordionContent>
             </AccordionItem>
             <AccordionItem value="item-4">
-                <AccordionTrigger>Fase 4 - Outros</AccordionTrigger>
-                <AccordionContent>
-                    <div className="flex items-center justify-center h-24 border-2 border-dashed rounded-lg">
-                        <p className="text-muted-foreground text-sm">Outros campos e observações here.</p>
-                    </div>
-                </AccordionContent>
+              <AccordionTrigger>Fase 4 - Outros</AccordionTrigger>
+              <AccordionContent>
+                <div className="flex items-center justify-center h-24 border-2 border-dashed rounded-lg">
+                  <p className="text-muted-foreground text-sm">Outros campos e observações.</p>
+                </div>
+              </AccordionContent>
             </AccordionItem>
-        </Accordion>
-    </CardContent>
-  </Card>
-);
+          </Accordion>
+        </CardContent>
+      </Card>
+    );
+};
 
 const OutorgaCard = () => (
   <Card>
@@ -98,137 +372,6 @@ const OutorgaCard = () => (
     </CardContent>
   </Card>
 );
-
-const IntervencaoCard = () => {
-    const renderCheckboxList = (items: { id: string; label: string; obs?: string }[]) => (
-        <div className="space-y-2">
-            {items.map(item => (
-                <div key={item.id} className="flex items-start space-x-2">
-                    <Checkbox id={item.id} />
-                    <div className="grid gap-1.5 leading-none">
-                        <label htmlFor={item.id} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                            {item.label}
-                        </label>
-                        {item.obs && <p className="text-xs text-muted-foreground">{item.obs}</p>}
-                    </div>
-                </div>
-            ))}
-        </div>
-    );
-
-    return (
-        <Card>
-            <CardHeader>
-                <CardTitle>Detalhes da Intervenção Ambiental (AIA)</CardTitle>
-                <CardDescription>Checklist de fases e documentos para o processo de AIA.</CardDescription>
-            </CardHeader>
-            <CardContent>
-                <Accordion type="multiple" className="w-full" defaultValue={['fase1']}>
-                    <AccordionItem value="fase1">
-                        <AccordionTrigger>Fase 1: Reunir Documentos</AccordionTrigger>
-                        <AccordionContent>
-                            {renderCheckboxList([
-                                { id: 'f1_multa', label: 'Comp. de pagamento (1ª parcela da multa)' },
-                                { id: 'f1_liminar', label: 'Liminar' },
-                                { id: 'f1_auto', label: 'Auto de infração' },
-                                { id: 'f1_art', label: "ART's" },
-                                { id: 'f1_doc_emp', label: 'Doc. pessoais do empreendedor' },
-                                { id: 'f1_doc_proc', label: 'Doc. pessoais do procurador' },
-                                { id: 'f1_end_emp', label: 'Comp. de endereço do empreendedor' },
-                                { id: 'f1_end_proc', label: 'Comp. de endereço do procurador' },
-                                { id: 'f1_procuracao', label: 'Procuração' },
-                                { id: 'f1_anuencia', label: 'Carta de anuência', obs: 'Caso o empreendimento tenha mais de um proprietário' },
-                                { id: 'f1_matriculas', label: 'Matrículas' },
-                                { id: 'f1_termo_rl', label: 'Termo de averbação da RL + Croqui da Reserva Legal' },
-                                { id: 'f1_car', label: 'Cadastro Ambiental Rural (CAR)' },
-                            ])}
-                        </AccordionContent>
-                    </AccordionItem>
-                    <AccordionItem value="fase2">
-                        <AccordionTrigger>Fase 2: Mapa de Uso e Ocupação do Solo</AccordionTrigger>
-                        <AccordionContent>
-                             {renderCheckboxList([
-                                { id: 'f2_perimetro', label: 'Definir o perímetro' },
-                                { id: 'f2_feicoes', label: 'Desenhar as feições', obs: 'Verificar se será feita realocação de Reserva Legal' },
-                                { id: 'f2_hachuras', label: 'Colocar as hachuras' },
-                                { id: 'f2_areas', label: 'Colocar as áreas (POL_PROP, POL_APP, POL_RL, POL_IA, POL_HIDRO, etc.)', obs: 'Para áreas acima de 100 hectares, incluir POL_COMP (2%)' },
-                                { id: 'f2_ptosede', label: 'PTO_SEDE' },
-                                { id: 'f2_confrontantes', label: 'Confrontantes' },
-                                { id: 'f2_escala', label: 'Escala e rosa dos ventos' },
-                                { id: 'f2_info', label: 'Informações do empreendedor e do empreendimento' },
-                                { id: 'f2_quadro_areas', label: 'Quadro de áreas' },
-                                { id: 'f2_legendas', label: 'Legendas' },
-                                { id: 'f2_quadro_reservas', label: 'Quadro de reservas' },
-                            ])}
-                        </AccordionContent>
-                    </AccordionItem>
-                     <AccordionItem value="fase3">
-                        <AccordionTrigger>Fase 3: Inventário Florestal</AccordionTrigger>
-                        <AccordionContent>
-                            {renderCheckboxList([
-                                { id: 'f3_campo', label: 'Ir a campo' },
-                                { id: 'f3_resultados', label: 'Pegar os resultados do inventário' },
-                                { id: 'f3_projeto_mapa', label: 'Gerar o projeto no mapa nativa' },
-                                { id: 'f3_erro_amostragem', label: 'Verificar o erro de amostragem' },
-                                { id: 'f3_planilhas_pia', label: 'Gerar as planilhas para o PIA' },
-                                { id: 'f3_volumes_taxas', label: 'Calcular os volumes para as taxas' },
-                                { id: 'f3_gerar_taxas', label: 'Gerar as taxas' },
-                            ])}
-                        </AccordionContent>
-                    </AccordionItem>
-                     <AccordionItem value="fase4">
-                        <AccordionTrigger>Fase 4: Mapas do QGis</AccordionTrigger>
-                        <AccordionContent>
-                             {renderCheckboxList([
-                                { id: 'f4_bioma', label: 'Mapa de bioma' },
-                                { id: 'f4_declividade', label: 'Mapa de declividade' },
-                                { id: 'f4_hidrografico', label: 'Mapa de hidrográfico' },
-                                { id: 'f4_hipsometrico', label: 'Mapa de hipsométrico' },
-                                { id: 'f4_solos', label: 'Mapa de solos' },
-                                { id: 'f4_roteiro', label: 'Roteiro de acesso' },
-                                { id: 'f4_ada', label: 'Mapa da ADA' },
-                            ])}
-                        </AccordionContent>
-                    </AccordionItem>
-                    <AccordionItem value="fase5">
-                        <AccordionTrigger>Fase 5: Estudos</AccordionTrigger>
-                        <AccordionContent>
-                            {renderCheckboxList([
-                                { id: 'f5_pia', label: 'Projeto de Intervenção Ambiental (PIA)', obs: '2% em áreas acima de 100 hectares' },
-                                { id: 'f5_preservacao', label: 'Projeto de preservação da vegetação nativa' },
-                                { id: 'f5_plantio', label: 'Projeto de plantio para reposição florestal' },
-                                { id: 'f5_alternativa', label: 'Alternativa locacional para corte de espécies ameaçadas de extinção' },
-                                { id: 'f5_ptrf', label: 'Proposta de compensação por intervenção ambiental (PTRF)' },
-                                { id: 'f5_prada', label: 'Projeto de Reposição de Áreas Degradadas e Alteradas (PRADA)' },
-                                { id: 'f5_compensacao_especies', label: 'Projeto de compensação de espécies protegidas/ameaçadas' },
-                                { id: 'f5_relatorio_fauna', label: 'Relatório de fauna' },
-                                { id: 'f5_monitoramento_fauna', label: 'Programa de monitoramento e afugentamento de fauna' },
-                            ])}
-                        </AccordionContent>
-                    </AccordionItem>
-                     <AccordionItem value="fase6">
-                        <AccordionTrigger>Fase 6: Outros</AccordionTrigger>
-                        <AccordionContent>
-                            {renderCheckboxList([
-                                { id: 'f6_sinaflor', label: 'SINAFLOR' },
-                                { id: 'f6_comp_taxas', label: 'Comp. de pagamento das taxas' },
-                                { id: 'f6_requerimento', label: 'Requerimento' },
-                            ])}
-                        </AccordionContent>
-                    </AccordionItem>
-                    <AccordionItem value="fase7">
-                        <AccordionTrigger>Fase 7: Protocolo</AccordionTrigger>
-                         <AccordionContent>
-                             <div className="flex items-center justify-center h-24 border-2 border-dashed rounded-lg">
-                                <p className="text-muted-foreground text-sm">Ações de protocolo aqui.</p>
-                            </div>
-                        </AccordionContent>
-                    </AccordionItem>
-                </Accordion>
-            </CardContent>
-        </Card>
-    )
-};
 
 const ReservaLegalCard = () => (
     <Card>
@@ -276,6 +419,18 @@ function EditRequestPageContent() {
     const [selectedStatus, setSelectedStatus] = React.useState<Request['status']>('Draft');
     const [interventionChecklist, setInterventionChecklist] = React.useState<InterventionChecklistItem[]>([]);
     const [uploadingChecklistItemId, setUploadingChecklistItemId] = React.useState<string | null>(null);
+    const [licensingGrading, setLicensingGrading] = React.useState<LicensingGrading>({
+        porte: 'P',
+        potencial: 'P',
+        criterioLocacional: '0',
+    });
+    const [licensingDocuments, setLicensingDocuments] = React.useState<LicensingDoc[]>(createLicensingDocs());
+    const [licensingActivities, setLicensingActivities] = React.useState<LicensingActivity[]>([
+        createLicensingActivity(),
+    ]);
+    const [uploadingLicensingDocId, setUploadingLicensingDocId] = React.useState<string | null>(null);
+    const [licLocManual, setLicLocManual] = React.useState(false);
+    const [licLocAnalysis, setLicLocAnalysis] = React.useState<LocationalAnalysisPayload | null>(null);
     const [loading, setLoading] = React.useState(false);
 
     const empreendedoresQuery = useMemoFirebase(() => firestore ? collection(firestore, 'empreendedores') : null, [firestore]);
@@ -299,6 +454,34 @@ function EditRequestPageContent() {
             } else {
                 setInterventionChecklist([]);
             }
+            if (request.licensingData) {
+                setLicensingGrading({
+                    porte: request.licensingData.grading.porte,
+                    potencial: request.licensingData.grading.potencial,
+                    criterioLocacional: request.licensingData.grading.criterioLocacional,
+                });
+                setLicensingDocuments(
+                    request.licensingData.documents?.length
+                        ? request.licensingData.documents
+                        : createLicensingDocs(),
+                );
+                setLicensingActivities(
+                    request.licensingData.activities && request.licensingData.activities.length > 0
+                        ? request.licensingData.activities.map((activity) => ({
+                            ...activity,
+                            enterpriseSize: Number(activity.enterpriseSize || 0),
+                            sizeUnit: activity.sizeUnit || 'ha',
+                            autoPorte: getAutoPorteFromSize(activity.enterpriseSize),
+                            autoPotencial: getAutoPotencialFromCode(activity.codeGroup),
+                          }))
+                        : [createLicensingActivity()],
+                );
+                setLicLocManual(request.licensingData.criterioLocacionalManual ?? false);
+                setLicLocAnalysis(request.licensingData.locationalAnalysis ?? null);
+            } else {
+                setLicLocManual(false);
+                setLicLocAnalysis(null);
+            }
         }
     }, [request]);
 
@@ -313,6 +496,82 @@ function EditRequestPageContent() {
             ? prev.filter(s => s !== service) 
             : [...prev, service]
         );
+    };
+
+    const handleLicensingDocToggle = (id: string, checked: boolean) => {
+        setLicensingDocuments((prev) => prev.map((doc) => (doc.id === id ? { ...doc, checked } : doc)));
+    };
+    const recomputeLicensingGrading = (activities: LicensingActivity[]) => {
+        const porte = activities.reduce<'P' | 'M' | 'G'>((acc, activity) => {
+            const next = getAutoPorteFromSize(activity.enterpriseSize);
+            return getHighestRank(next) > getHighestRank(acc) ? next : acc;
+        }, 'P');
+        const potencial = activities.reduce<'P' | 'M' | 'G'>((acc, activity) => {
+            const next = getAutoPotencialFromCode(activity.codeGroup);
+            return getHighestRank(next) > getHighestRank(acc) ? next : acc;
+        }, 'P');
+        setLicensingGrading((prev) => ({ ...prev, porte, potencial }));
+    };
+    const handleLicensingActivityAdd = () => {
+        setLicensingActivities((prev) => {
+            const next = [...prev, createLicensingActivity()];
+            recomputeLicensingGrading(next);
+            return next;
+        });
+    };
+    const handleLicensingActivityRemove = (id: string) => {
+        setLicensingActivities((prev) => {
+            const next = prev.length <= 1 ? prev : prev.filter((activity) => activity.id !== id);
+            recomputeLicensingGrading(next);
+            return next;
+        });
+    };
+    const handleLocationalSuggested = React.useCallback(
+        (payload: LocationalAnalysisPayload) => {
+            setLicLocAnalysis(payload);
+            if (!licLocManual) {
+                setLicensingGrading((prev) => ({
+                    ...prev,
+                    criterioLocacional: payload.suggestedCriterio,
+                }));
+            }
+        },
+        [licLocManual],
+    );
+    const handleLicensingActivityChange = (id: string, next: Partial<LicensingActivity>) => {
+        setLicensingActivities((prev) => {
+            const updated = prev.map((activity) => {
+                if (activity.id !== id) return activity;
+                const merged = { ...activity, ...next };
+                return {
+                    ...merged,
+                    autoPorte: getAutoPorteFromSize(merged.enterpriseSize),
+                    autoPotencial: getAutoPotencialFromCode(merged.codeGroup),
+                };
+            });
+            recomputeLicensingGrading(updated);
+            return updated;
+        });
+    };
+
+    const handleLicensingDocUpload = async (id: string, event: React.ChangeEvent<HTMLInputElement>) => {
+        const inputEl = event.currentTarget;
+        const file = inputEl.files?.[0];
+        inputEl.value = '';
+        if (!file) return;
+        try {
+            setUploadingLicensingDocId(id);
+            const safeName = sanitizeStorageFileName(file.name);
+            const url = await uploadFileToStorage(file, `requests/licenciamento/${requestId}/${Date.now()}-${id}-${safeName}`);
+            setLicensingDocuments((prev) =>
+                prev.map((doc) => (doc.id === id ? { ...doc, fileName: file.name, fileUrl: url } : doc)),
+            );
+            toast({ title: 'Arquivo anexado', description: 'Documento de licenciamento atualizado.' });
+        } catch {
+            toast({ variant: 'destructive', title: 'Falha no upload', description: 'Não foi possível enviar o arquivo.' });
+        } finally {
+            setUploadingLicensingDocId(null);
+        }
     };
 
     React.useEffect(() => {
@@ -390,7 +649,18 @@ function EditRequestPageContent() {
     const isFormValid = selectedEmpreendedor && selectedEmpreendimento && selectedServices.length > 0 && selectedStatus;
 
     const handleUpdateProcess = async () => {
-        if (!isFormValid || !firestore || !request) return;
+        if (!firestore || !request) return;
+
+        if (!isFormValid) {
+            toast({
+                variant: 'destructive',
+                title: 'Formulário incompleto',
+                description:
+                    'Verifique empreendedor, empreendimento, serviços e situação do processo antes de salvar.',
+            });
+            return;
+        }
+
         setLoading(true);
         const requestRef = doc(firestore, 'requests', request.id);
         const dataToSave = {
@@ -401,6 +671,33 @@ function EditRequestPageContent() {
             ...(selectedServices.includes(INTERVENTION_SERVICE_LABEL)
                 ? { interventionChecklist }
                 : { interventionChecklist: [] }),
+            ...(selectedServices.includes('Licenciamento ambiental')
+                ? {
+                    licensingData: {
+                        activities: licensingActivities.map((activity) => ({
+                            ...activity,
+                            autoPorte: getAutoPorteFromSize(activity.enterpriseSize),
+                            autoPotencial: getAutoPotencialFromCode(activity.codeGroup),
+                        })),
+                        grading: {
+                            ...licensingGrading,
+                            classeSugerida:
+                                classByMatrix[licensingGrading.porte][licensingGrading.potencial],
+                            modalidadeSugerida:
+                                (classByMatrix[licensingGrading.porte][licensingGrading.potencial] <= 2)
+                                    ? 'LAS (Cadastro/RAS)'
+                                    : (classByMatrix[licensingGrading.porte][licensingGrading.potencial] <= 4)
+                                        ? (licensingGrading.criterioLocacional === '2'
+                                            ? 'LAC ou LAT (avaliar critério locacional)'
+                                            : 'LAC')
+                                        : 'LAT ou LAC2 (maior complexidade)',
+                        },
+                        documents: licensingDocuments,
+                        ...(licLocAnalysis ? { locationalAnalysis: licLocAnalysis } : {}),
+                        criterioLocacionalManual: licLocManual,
+                    },
+                  }
+                : { licensingData: null }),
         };
 
         updateDoc(requestRef, dataToSave)
@@ -408,21 +705,32 @@ function EditRequestPageContent() {
                 toast({ title: "Processo Atualizado", description: "As alterações foram salvas."});
                 router.push('/requests');
             })
-            .catch(async () => {
-                const permissionError = new FirestorePermissionError({
-                    path: requestRef.path,
-                    operation: 'update',
-                    requestResourceData: dataToSave,
+            .catch((err: unknown) => {
+                console.error("Error updating request:", err);
+                const message = err instanceof Error ? err.message : String(err);
+                toast({
+                    variant: "destructive",
+                    title: "Não foi possível salvar",
+                    description: message,
                 });
-                errorEmitter.emit('permission-error', permissionError);
+                const code =
+                    err && typeof err === "object" && "code" in err
+                        ? String((err as { code?: string }).code)
+                        : "";
+                if (code === "permission-denied") {
+                    const permissionError = new FirestorePermissionError({
+                        path: requestRef.path,
+                        operation: "update",
+                        requestResourceData: dataToSave,
+                    });
+                    errorEmitter.emit("permission-error", permissionError);
+                }
             })
             .finally(() => setLoading(false));
     };
     
     const serviceCardMap: Record<string, React.ComponentType> = {
-        "Licenciamento ambiental": LicenciamentoCard,
         "Outorga": OutorgaCard,
-        "Autorização para Intervenção Ambiental": IntervencaoCard,
         "Reserva legal (Averbação, Compensação e/ou Relocação)": ReservaLegalCard,
         "Uso Insignificante": UsoInsignificanteCard
     };
@@ -527,12 +835,88 @@ function EditRequestPageContent() {
                             {selectedServices.includes(INTERVENTION_SERVICE_LABEL) && (
                                 <Card>
                                     <CardHeader>
-                                        <CardTitle>Checklist de Intervenção Ambiental (IEF-MG)</CardTitle>
+                                        <CardTitle>Detalhes da Intervenção Ambiental (AIA)</CardTitle>
                                         <CardDescription>
-                                            Atualize o progresso por etapa e anexe os documentos já concluídos.
+                                            Checklist de fases e documentos para o processo de AIA.
                                         </CardDescription>
                                     </CardHeader>
                                     <CardContent className="space-y-4">
+                                        <Accordion type="multiple" className="w-full">
+                                            {Array.from(new Set(interventionChecklist.map((i) => i.phase))).map((phase) => (
+                                                <AccordionItem key={phase} value={phase}>
+                                                    <AccordionTrigger>{phase}</AccordionTrigger>
+                                                    <AccordionContent>
+                                                        <div className="space-y-2">
+                                                            {interventionChecklist
+                                                                .filter((item) => item.phase === phase)
+                                                                .map((item) => (
+                                                                    <div key={item.id} className="rounded-md border p-2">
+                                                                        <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
+                                                                            <div className="flex items-start space-x-2">
+                                                                                <Checkbox
+                                                                                    id={item.id}
+                                                                                    checked={item.status === 'completed'}
+                                                                                    onCheckedChange={(checked) =>
+                                                                                        updateChecklistStatus(
+                                                                                            item.id,
+                                                                                            checked ? 'completed' : 'not_started',
+                                                                                        )
+                                                                                    }
+                                                                                />
+                                                                                <div className="grid gap-1.5 leading-none">
+                                                                                    <Label htmlFor={item.id} className="font-normal">
+                                                                                        {item.title}
+                                                                                    </Label>
+                                                                                    <div className="flex items-center gap-2">
+                                                                                        {!item.required && (
+                                                                                            <Badge variant="outline">Opcional</Badge>
+                                                                                        )}
+                                                                                        <Badge
+                                                                                            variant="outline"
+                                                                                            className={cn(getChecklistStatusBadgeClass(item.status))}
+                                                                                        >
+                                                                                            {getChecklistStatusLabel(item.status)}
+                                                                                        </Badge>
+                                                                                    </div>
+                                                                                </div>
+                                                                            </div>
+                                                                            <div className="md:min-w-[250px]">
+                                                                                <input
+                                                                                    type="file"
+                                                                                    accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.webp"
+                                                                                    aria-label={`Carregar arquivo para ${item.title}`}
+                                                                                    onChange={(event) => handleChecklistFileUpload(item.id, event)}
+                                                                                    disabled={uploadingChecklistItemId === item.id}
+                                                                                    className="text-sm w-full"
+                                                                                />
+                                                                            </div>
+                                                                        </div>
+                                                                        {uploadingChecklistItemId === item.id && (
+                                                                            <p className="text-xs text-muted-foreground mt-2">Enviando anexo...</p>
+                                                                        )}
+                                                                        {item.attachments.length > 0 && (
+                                                                            <ul className="list-disc pl-5 text-xs text-muted-foreground mt-2">
+                                                                                {item.attachments.map((att) => (
+                                                                                    <li key={`${item.id}-${att.url}`}>
+                                                                                        <a
+                                                                                            href={att.url}
+                                                                                            target="_blank"
+                                                                                            rel="noopener noreferrer"
+                                                                                            className="underline"
+                                                                                        >
+                                                                                            {att.name}
+                                                                                        </a>
+                                                                                    </li>
+                                                                                ))}
+                                                                            </ul>
+                                                                        )}
+                                                                    </div>
+                                                                ))}
+                                                        </div>
+                                                    </AccordionContent>
+                                                </AccordionItem>
+                                            ))}
+                                        </Accordion>
                                         <div className="space-y-2">
                                             <Label className="text-sm font-medium">Referências oficiais</Label>
                                             <ul className="list-disc pl-5 text-sm text-muted-foreground space-y-1">
@@ -550,96 +934,30 @@ function EditRequestPageContent() {
                                                 ))}
                                             </ul>
                                         </div>
-                                        <Accordion type="multiple" className="w-full">
-                                            {Array.from(new Set(interventionChecklist.map((i) => i.phase))).map((phase) => (
-                                                <AccordionItem key={phase} value={phase}>
-                                                    <AccordionTrigger>{phase}</AccordionTrigger>
-                                                    <AccordionContent>
-                                                        <div className="space-y-3">
-                                                            {interventionChecklist
-                                                                .filter((item) => item.phase === phase)
-                                                                .map((item) => (
-                                                                    <div key={item.id} className="rounded-md border p-3 space-y-2">
-                                                                        <div className="flex items-start gap-3">
-                                                                            <div className="space-y-2 w-full">
-                                                                                <div className="flex items-center justify-between gap-2">
-                                                                                    <Label className="font-normal">
-                                                                                        {item.title}
-                                                                                    </Label>
-                                                                                    {!item.required && (
-                                                                                        <Badge variant="outline">Opcional</Badge>
-                                                                                    )}
-                                                                                </div>
-                                                                                <Select
-                                                                                    value={item.status}
-                                                                                    onValueChange={(value) =>
-                                                                                        updateChecklistStatus(
-                                                                                            item.id,
-                                                                                            value as InterventionChecklistItem['status'],
-                                                                                        )
-                                                                                    }
-                                                                                >
-                                                                                    <SelectTrigger className="max-w-xs">
-                                                                                        <SelectValue />
-                                                                                    </SelectTrigger>
-                                                                                    <SelectContent>
-                                                                                        <SelectItem value="not_started">Não iniciado</SelectItem>
-                                                                                        <SelectItem value="collecting">Juntando</SelectItem>
-                                                                                        <SelectItem value="not_applicable">Não se aplica</SelectItem>
-                                                                                        <SelectItem value="completed">Concluído</SelectItem>
-                                                                                    </SelectContent>
-                                                                                </Select>
-                                                                            </div>
-                                                                        </div>
-                                                                        <div className="flex flex-col gap-2 pl-7">
-                                                                            <div className="flex items-center gap-2">
-                                                                                <span className="text-xs text-muted-foreground">Status atual:</span>
-                                                                                <Badge
-                                                                                    variant="outline"
-                                                                                    className={cn(getChecklistStatusBadgeClass(item.status))}
-                                                                                >
-                                                                                    {getChecklistStatusLabel(item.status)}
-                                                                                </Badge>
-                                                                            </div>
-                                                                            <input
-                                                                                type="file"
-                                                                                accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.webp"
-                                                                                aria-label={`Anexar arquivo para ${item.title}`}
-                                                                                onChange={(event) => handleChecklistFileUpload(item.id, event)}
-                                                                                disabled={uploadingChecklistItemId === item.id}
-                                                                                className="text-sm"
-                                                                            />
-                                                                            {uploadingChecklistItemId === item.id && (
-                                                                                <p className="text-xs text-muted-foreground">Enviando anexo...</p>
-                                                                            )}
-                                                                            {item.attachments.length > 0 && (
-                                                                                <ul className="list-disc pl-5 text-xs text-muted-foreground">
-                                                                                    {item.attachments.map((att) => (
-                                                                                        <li key={`${item.id}-${att.url}`}>
-                                                                                            <a
-                                                                                                href={att.url}
-                                                                                                target="_blank"
-                                                                                                rel="noopener noreferrer"
-                                                                                                className="underline"
-                                                                                            >
-                                                                                                {att.name}
-                                                                                            </a>
-                                                                                        </li>
-                                                                                    ))}
-                                                                                </ul>
-                                                                            )}
-                                                                        </div>
-                                                                    </div>
-                                                                ))}
-                                                        </div>
-                                                    </AccordionContent>
-                                                </AccordionItem>
-                                            ))}
-                                        </Accordion>
                                     </CardContent>
                                 </Card>
                             )}
-                            {selectedServices.map(service => {
+                            {selectedServices.includes('Licenciamento ambiental') && (
+                                <LicenciamentoCard
+                                    grading={licensingGrading}
+                                    activities={licensingActivities}
+                                    documents={licensingDocuments}
+                                    uploadingDocId={uploadingLicensingDocId}
+                                    onGradingChange={(next) => setLicensingGrading((prev) => ({ ...prev, ...next }))}
+                                    onActivityAdd={handleLicensingActivityAdd}
+                                    onActivityRemove={handleLicensingActivityRemove}
+                                    onActivityChange={handleLicensingActivityChange}
+                                    onToggleDoc={handleLicensingDocToggle}
+                                    onFileUpload={handleLicensingDocUpload}
+                                    locationalSavedAnalysis={licLocAnalysis}
+                                    locationalManualLock={licLocManual}
+                                    onLocationalManualLockChange={setLicLocManual}
+                                    onLocationalSuggested={handleLocationalSuggested}
+                                />
+                            )}
+                            {selectedServices
+                              .filter((service) => service !== INTERVENTION_SERVICE_LABEL && service !== 'Licenciamento ambiental')
+                              .map(service => {
                                 const ServiceCard = serviceCardMap[service];
                                 return ServiceCard ? <ServiceCard key={service} /> : null;
                             })}

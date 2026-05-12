@@ -27,12 +27,12 @@ if (hasGoogleKey) {
   enabledPlugins.push(googleAI());
 }
 
-export const aiModel =
-  useOpenAI && (hasOpenAIKey || hasOpenAIAliasKey)
-    ? openAI.model("gpt-4o-mini")
-    : hasGoogleKey
-      ? googleAI.model(googleModelId)
-      : null;
+export const hasAiProvider =
+  hasGoogleKey || hasOpenAIKey || hasOpenAIAliasKey;
+
+export const aiModel = useOpenAI
+  ? openAI.model("gpt-4o-mini")
+  : googleAI.model(googleModelId);
 
 /**
  * Estratégia de modelo padrão:
@@ -42,7 +42,7 @@ export const aiModel =
  */
 export const ai = genkit({
   plugins: enabledPlugins,
-  ...(aiModel ? { defaultModel: aiModel } : {}),
+  ...(hasAiProvider ? { defaultModel: aiModel } : {}),
 });
 
 if (!useOpenAI && !hasGoogleKey) {

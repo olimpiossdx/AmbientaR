@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import { useMemo, useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { PageHeader } from "@/components/page-header";
@@ -87,7 +87,7 @@ const DetailItem = ({
 }) => (
   <div className="space-y-1">
     <Label className="text-sm font-medium">{label}</Label>
-    <p className="text-sm text-muted-foreground">{value || "Não informado"}</p>
+    <p className="text-sm text-muted-foreground">{value || "NÃ£o informado"}</p>
   </div>
 );
 
@@ -110,7 +110,8 @@ function ProjectsPageContent() {
     user &&
     (user.role === "admin" ||
       user.role === "supervisor" ||
-      user.role === "gestor");
+      user.role === "gestor" ||
+      user.role === "cliente_autonomo");
 
   const [empreendedorIdsForUser, setEmpreendedorIdsForUser] = useState<
     string[] | undefined
@@ -119,7 +120,7 @@ function ProjectsPageContent() {
   useEffect(() => {
     if (!firestore || !user) return;
 
-    // Cliente titular: filtra empreendimentos pelos seus próprios documentos (CPF/CNPJs).
+    // Cliente titular: filtra empreendimentos pelos seus prÃ³prios documentos (CPF/CNPJs).
     if (isClientePortalRole(user.role)) {
       setEmpreendedorIdsForUser(undefined);
       const userDocuments = [
@@ -393,13 +394,13 @@ function ProjectsPageContent() {
               <CardTitle>Gerenciamento de Empreendimentos</CardTitle>
               <CardDescription>
                 {user?.role === "representative"
-                  ? "Empreendimentos dos titulares (clientes) que você representa — mesmos dados visíveis no perfil do cliente."
+                  ? "Empreendimentos dos titulares (clientes) que vocÃª representa â€” mesmos dados visÃ­veis no perfil do cliente."
                   : "Cadastre, edite e visualize os empreendimentos."}
               </CardDescription>
               <CardSearchInput
                 value={searchTerm}
                 onChange={setSearchTerm}
-                placeholder="Buscar empreendimento, município, atividade..."
+                placeholder="Buscar empreendimento, municÃ­pio, atividade..."
               />
             </CardHeader>
             <CardContent>
@@ -408,8 +409,8 @@ function ProjectsPageContent() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Empreendimento</TableHead>
-                      <TableHead>Município</TableHead>
-                      <TableHead className="text-right">Ações</TableHead>
+                      <TableHead>MunicÃ­pio</TableHead>
+                      <TableHead className="text-right">AÃ§Ãµes</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -532,21 +533,21 @@ function ProjectsPageContent() {
               />
               <Separator />
               <div className="grid grid-cols-2 gap-4">
-                <DetailItem label="Matrícula" value={itemToView.matricula} />
+                <DetailItem label="MatrÃ­cula" value={itemToView.matricula} />
                 <DetailItem label="Comarca" value={itemToView.comarca} />
               </div>
               <div className="grid grid-cols-2 gap-4">
-                <DetailItem label="Código INCRA" value={itemToView.incraCode} />
+                <DetailItem label="CÃ³digo INCRA" value={itemToView.incraCode} />
                 <DetailItem label="CNPJ" value={itemToView.cnpj} />
               </div>
               <Separator />
-              <h4 className="font-semibold text-foreground">Endereço</h4>
+              <h4 className="font-semibold text-foreground">EndereÃ§o</h4>
               <DetailItem
-                label="Endereço"
+                label="EndereÃ§o"
                 value={`${itemToView.address || ""}, ${itemToView.numero || ""}`}
               />
               <div className="grid grid-cols-3 gap-4">
-                <DetailItem label="Município" value={itemToView.municipio} />
+                <DetailItem label="MunicÃ­pio" value={itemToView.municipio} />
                 <DetailItem label="UF" value={itemToView.uf} />
                 <DetailItem label="CEP" value={itemToView.cep} />
               </div>
@@ -565,9 +566,9 @@ function ProjectsPageContent() {
       <AlertDialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+            <AlertDialogTitle>VocÃª tem certeza?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta ação não pode ser desfeita. Isso irá deletar permanentemente
+              Esta aÃ§Ã£o nÃ£o pode ser desfeita. Isso irÃ¡ deletar permanentemente
               o empreendimento.
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -590,3 +591,5 @@ export default function ProjectsPage() {
     </Suspense>
   );
 }
+
+

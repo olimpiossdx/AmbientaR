@@ -1653,6 +1653,42 @@ export type Request = {
     createdAt: any;
     solicitationNumber?: string;
     interventionChecklist?: import("@/lib/intervention-checklist").InterventionChecklistItem[];
+    licensingData?: {
+        activities?: {
+            id: string;
+            codeGroup: 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | 'H';
+            subItem: string;
+            description?: string;
+            enterpriseSize?: number;
+            sizeUnit?: 'ha' | 'm2' | 'un';
+            autoPorte?: 'P' | 'M' | 'G';
+            autoPotencial?: 'P' | 'M' | 'G';
+        }[];
+        grading: {
+            porte: 'P' | 'M' | 'G';
+            potencial: 'P' | 'M' | 'G';
+            criterioLocacional: '0' | '1' | '2';
+            classeSugerida: 1 | 3 | 4 | 5 | 6;
+            modalidadeSugerida: string;
+        };
+        documents: {
+            id: string;
+            label: string;
+            checked: boolean;
+            fileName?: string;
+            fileUrl?: string;
+        }[];
+        /** Última análise geoespacial para sugestão do critério locacional (DN 217). */
+        locationalAnalysis?: {
+            inputMode: 'car' | 'polygon' | 'coordinates' | 'draw';
+            inputPreview: string;
+            suggestedCriterio: '0' | '1' | '2';
+            reasons: string[];
+            analyzedAt: string;
+        };
+        /** Se true, não sobrescreve o critério locacional ao rodar nova análise. */
+        criterioLocacionalManual?: boolean;
+    };
 }
 
 export type Fornecedor = {

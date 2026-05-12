@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import { useState, useMemo, useEffect } from "react";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -46,6 +46,7 @@ import {
 import { FirestorePermissionError } from "@/firebase/errors";
 import { collection, doc, query, where, getDocs } from "firebase/firestore";
 import type { License, Empreendedor, AppUser, Project } from "@/lib/types";
+import { permitStatusBadgeClassRich } from "@/lib/status-display-classes";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Dialog,
@@ -88,7 +89,8 @@ const canPerformWriteActions = (user: AppUser | null): boolean => {
   return (
     user.role === "admin" ||
     user.role === "gestor" ||
-    user.role === "supervisor"
+    user.role === "supervisor" ||
+    user.role === "cliente_autonomo"
   );
 };
 
@@ -101,7 +103,7 @@ const DetailItem = ({
 }) => (
   <div className="space-y-1">
     <Label className="text-sm font-medium">{label}</Label>
-    <p className="text-sm text-muted-foreground">{value ?? "Não informado"}</p>
+    <p className="text-sm text-muted-foreground">{value ?? "NÃ£o informado"}</p>
   </div>
 );
 
@@ -123,7 +125,7 @@ export default function LicensesPage() {
   const router = useRouter();
 
   useEffect(() => {
-    if (user?.role === "client" && firestore) {
+    if ((user?.role === "client" || user?.role === "cliente_autonomo") && firestore) {
       setEmpreendedorIdsForUser(undefined);
       const empreendedoresRef = collection(firestore, "empreendedores");
       const byUserId = query(empreendedoresRef, where("userId", "==", user.id));
@@ -169,7 +171,7 @@ export default function LicensesPage() {
     if (!firestore || !user || empreendedorIdsForUser === undefined)
       return null;
 
-    if (user.role === "client" || user.role === "representative") {
+    if (user.role === "client" || user.role === "cliente_autonomo" || user.role === "representative") {
       if (empreendedorIdsForUser.length > 0) {
         return query(
           collection(firestore, "licenses"),
@@ -207,7 +209,7 @@ export default function LicensesPage() {
     isLoadingLicenses ||
     isLoadingEmpreendedores ||
     isLoadingProjects ||
-    ((user?.role === "client" || user?.role === "representative") &&
+    ((user?.role === "client" || user?.role === "cliente_autonomo" || user?.role === "representative") &&
       empreendedorIdsForUser === undefined);
 
   const empreendedoresMap = useMemo(
@@ -278,13 +280,13 @@ export default function LicensesPage() {
       collectionName: "licenses",
       documentId: itemToDelete,
       user,
-      reason: "Exclusão manual na tela de licenças",
+      reason: "ExclusÃ£o manual na tela de licenÃ§as",
     })
       .then(() => {
         toast({
-          title: "Licença deletada",
+          title: "LicenÃ§a deletada",
           description:
-            "A licença e suas condicionantes relacionadas foram removidas com backup de segurança.",
+            "A licenÃ§a e suas condicionantes relacionadas foram removidas com backup de seguranÃ§a.",
         });
         setIsAlertOpen(false);
         setItemToDelete(null);
@@ -309,30 +311,16 @@ export default function LicensesPage() {
     });
   };
 
-  const getStatusVariant = (status: License["status"]) => {
-    switch (status) {
-      case "Válida":
-        return "bg-emerald-500/20 text-emerald-700 border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20";
-      case "Em Renovação":
-        return "bg-blue-500/20 text-blue-700 border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-400 dark:border-blue-500/20";
-      case "Vencida":
-        return "bg-red-500/20 text-red-700 border-red-500/30 dark:bg-red-500/10 dark:text-red-400 dark:border-red-500/20";
-      case "Suspensa":
-      case "Cancelada":
-      case "Em Andamento":
-        return "bg-yellow-500/20 text-yellow-700 border-yellow-500/30 dark:bg-yellow-500/10 dark:text-yellow-400 dark:border-yellow-500/20";
-      default:
-        return "bg-slate-500/20 text-slate-700 border-slate-500/30 dark:bg-slate-500/10 dark:text-slate-400 dark:border-slate-500/20";
-    }
-  };
+  const getStatusVariant = (status: License["status"]) =>
+    permitStatusBadgeClassRich[status];
 
   const getPermitTypeLabel = (type: License["permitType"]) => {
     const types = {
-      LP: "LP - Licença Prévia",
-      LI: "LI - Licença de Instalação",
-      LO: "LO - Licença de Operação",
-      LAS: "LAS - Licença Ambiental Simplificada",
-      AAF: "AAF - Autorização Ambiental de Funcionamento",
+      LP: "LP - LicenÃ§a PrÃ©via",
+      LI: "LI - LicenÃ§a de InstalaÃ§Ã£o",
+      LO: "LO - LicenÃ§a de OperaÃ§Ã£o",
+      LAS: "LAS - LicenÃ§a Ambiental Simplificada",
+      AAF: "AAF - AutorizaÃ§Ã£o Ambiental de Funcionamento",
       Outra: "Outra",
     };
     return types[type] || type;
@@ -341,26 +329,26 @@ export default function LicensesPage() {
   return (
     <>
       <div className="flex flex-col h-full">
-        <PageHeader title="Licenças Ambientais">
+        <PageHeader title="LicenÃ§as Ambientais">
           {canPerformWriteActions(user) && (
             <Button size="sm" className="gap-1" onClick={handleAddNew}>
               <PlusCircle className="h-4 w-4" />
-              Adicionar Licença
+              Adicionar LicenÃ§a
             </Button>
           )}
         </PageHeader>
         <main className="flex-1 overflow-auto p-4 md:p-6">
           <Card>
             <CardHeader>
-              <CardTitle>Gerenciamento de Licenças</CardTitle>
+              <CardTitle>Gerenciamento de LicenÃ§as</CardTitle>
               <CardDescription>
-                Acompanhe e gerencie todas as licenças ambientais dos seus
+                Acompanhe e gerencie todas as licenÃ§as ambientais dos seus
                 clientes.
               </CardDescription>
               <CardSearchInput
                 value={searchTerm}
                 onChange={setSearchTerm}
-                placeholder="Buscar nº licença, processo, empreendedor..."
+                placeholder="Buscar nÂº licenÃ§a, processo, empreendedor..."
               />
             </CardHeader>
             <CardContent>
@@ -399,7 +387,7 @@ export default function LicensesPage() {
                           <div className="text-sm">
                             <p>
                               <span className="text-muted-foreground">
-                                Nº Licença:
+                                NÂº LicenÃ§a:
                               </span>{" "}
                               {license.permitNumber || "N/A"}
                             </p>
@@ -470,7 +458,7 @@ export default function LicensesPage() {
                     ))}
                   {!isLoading && filteredLicenses.length === 0 && (
                     <div className="h-24 flex items-center justify-center text-sm text-muted-foreground">
-                      Nenhuma licença encontrada.
+                      Nenhuma licenÃ§a encontrada.
                     </div>
                   )}
                 </div>
@@ -482,12 +470,12 @@ export default function LicensesPage() {
                       <TableHead className="hidden lg:table-cell">
                         Empreendimento
                       </TableHead>
-                      <TableHead>Nº da Licença</TableHead>
+                      <TableHead>NÂº da LicenÃ§a</TableHead>
                       <TableHead className="hidden lg:table-cell">
                         Vencimento
                       </TableHead>
                       <TableHead>Status</TableHead>
-                      <TableHead className="text-right">Ações</TableHead>
+                      <TableHead className="text-right">AÃ§Ãµes</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -624,7 +612,7 @@ export default function LicensesPage() {
                                       </Button>
                                     </TooltipTrigger>
                                     <TooltipContent>
-                                      <p>Editar licença</p>
+                                      <p>Editar licenÃ§a</p>
                                     </TooltipContent>
                                   </Tooltip>
                                   <Tooltip>
@@ -642,7 +630,7 @@ export default function LicensesPage() {
                                       </Button>
                                     </TooltipTrigger>
                                     <TooltipContent>
-                                      <p>Deletar licença</p>
+                                      <p>Deletar licenÃ§a</p>
                                     </TooltipContent>
                                   </Tooltip>
                                 </>
@@ -654,7 +642,7 @@ export default function LicensesPage() {
                     {!isLoading && filteredLicenses.length === 0 && (
                       <TableRow>
                         <TableCell colSpan={7} className="h-24 text-center">
-                          Nenhuma licença encontrada.
+                          Nenhuma licenÃ§a encontrada.
                         </TableCell>
                       </TableRow>
                     )}
@@ -679,9 +667,9 @@ export default function LicensesPage() {
       <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
         <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Detalhes da Licença</DialogTitle>
+            <DialogTitle>Detalhes da LicenÃ§a</DialogTitle>
             <DialogDescription>
-              Visualização dos dados cadastrados para a licença #
+              VisualizaÃ§Ã£o dos dados cadastrados para a licenÃ§a #
               {viewingLicense?.permitNumber}.
             </DialogDescription>
           </DialogHeader>
@@ -700,11 +688,11 @@ export default function LicensesPage() {
               <Separator />
               <div className="grid grid-cols-2 gap-4">
                 <DetailItem
-                  label="Nº da Licença"
+                  label="NÂº da LicenÃ§a"
                   value={viewingLicense.permitNumber}
                 />
                 <DetailItem
-                  label="Nº do Processo"
+                  label="NÂº do Processo"
                   value={viewingLicense.processNumber}
                 />
               </div>
@@ -714,14 +702,14 @@ export default function LicensesPage() {
                   value={getPermitTypeLabel(viewingLicense.permitType)}
                 />
                 <DetailItem
-                  label="Órgão Emissor"
+                  label="Ã“rgÃ£o Emissor"
                   value={viewingLicense.issuingBody}
                 />
               </div>
               <Separator />
               <div className="grid grid-cols-2 gap-4">
                 <DetailItem
-                  label="Data de Emissão"
+                  label="Data de EmissÃ£o"
                   value={formatDate(viewingLicense.issueDate)}
                 />
                 <DetailItem
@@ -742,7 +730,7 @@ export default function LicensesPage() {
               </div>
               <Separator />
               <div className="space-y-1">
-                <Label>Descrição / Objeto</Label>
+                <Label>DescriÃ§Ã£o / Objeto</Label>
                 <p className="text-muted-foreground whitespace-pre-wrap">
                   {viewingLicense.description || "N/A"}
                 </p>
@@ -751,7 +739,7 @@ export default function LicensesPage() {
                 fileUrl={viewingLicense.fileUrl}
                 sectionLabel="Anexo"
                 emptyLabel="Nenhum documento anexado."
-                zoomTitle="Anexo da licença"
+                zoomTitle="Anexo da licenÃ§a"
               />
             </div>
           )}
@@ -766,10 +754,10 @@ export default function LicensesPage() {
       <AlertDialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+            <AlertDialogTitle>VocÃª tem certeza?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta ação não pode ser desfeita. Isso irá deletar permanentemente
-              a licença.
+              Esta aÃ§Ã£o nÃ£o pode ser desfeita. Isso irÃ¡ deletar permanentemente
+              a licenÃ§a.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -785,3 +773,7 @@ export default function LicensesPage() {
     </>
   );
 }
+
+
+
+

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useMemo, useEffect } from "react";
 import { PageHeader } from "@/components/page-header";
@@ -84,22 +84,15 @@ import { Label } from "@/components/ui/label";
 import { CardSearchInput } from "@/components/card-search-input";
 import { fetchEmpreendedorIdsForRepresentative } from "@/lib/representative-empreendedor-ids";
 import { isClientePortalRole } from "@/lib/role-guards";
-
-const tiposDeUso: { type: InsignificantWaterUseType; label: string }[] = [
-  { type: "Poço Tubular", label: "Poço Tubular" },
-  { type: "Captação Superficial", label: "Captação Superficial" },
-  { type: "Captação Em Barramento", label: "Captação Em Barramento" },
-  { type: "Barramento Sem Captação", label: "Barramento Sem Captação" },
-  { type: "Captação em Nascente", label: "Captação em Nascente" },
-  { type: "Captação em Cisterna", label: "Captação em Cisterna" },
-];
+import { insignificantWaterUseOptions, permitStatusBadgeClassSimple } from "@/lib/status-display-classes";
 
 const canPerformWriteActions = (user: AppUser | null): boolean => {
   if (!user) return false;
   return (
     user.role === "admin" ||
     user.role === "gestor" ||
-    user.role === "supervisor"
+    user.role === "supervisor" ||
+    user.role === "cliente_autonomo"
   );
 };
 
@@ -112,7 +105,7 @@ const DetailItem = ({
 }) => (
   <div className="space-y-1">
     <Label className="text-sm font-medium">{label}</Label>
-    <p className="text-sm text-muted-foreground">{value || "Não informado"}</p>
+    <p className="text-sm text-muted-foreground">{value || "NÃ£o informado"}</p>
   </div>
 );
 
@@ -284,7 +277,7 @@ export default function UsosInsignificantesPage() {
       .then(() => {
         toast({
           title: "Registro removido",
-          description: "O uso insignificante foi excluído.",
+          description: "O uso insignificante foi excluÃ­do.",
         });
       })
       .catch(() => {
@@ -307,21 +300,8 @@ export default function UsosInsignificantesPage() {
     });
   };
 
-  const getStatusVariant = (status: InsignificantWaterUse["status"]) => {
-    switch (status) {
-      case "Válida":
-        return "bg-emerald-500/20 text-emerald-700 border-emerald-500/30";
-      case "Em Renovação":
-        return "bg-blue-500/20 text-blue-700 border-blue-500/30";
-      case "Vencida":
-        return "bg-red-500/20 text-red-700 border-red-500/30";
-      case "Suspensa":
-      case "Cancelada":
-        return "bg-yellow-500/20 text-yellow-700 border-yellow-500/30";
-      default:
-        return "bg-slate-500/20 text-slate-700 border-slate-500/30";
-    }
-  };
+  const getStatusVariant = (status: InsignificantWaterUse["status"]) =>
+    permitStatusBadgeClassSimple[status];
 
   const closeFormDialog = (open: boolean) => {
     setIsFormDialogOpen(open);
@@ -334,7 +314,7 @@ export default function UsosInsignificantesPage() {
   return (
     <>
       <div className="flex flex-col h-full">
-        <PageHeader title="Usos Insignificantes de Água">
+        <PageHeader title="Usos Insignificantes de Ãgua">
           <div className="flex items-center gap-2">
             <TooltipProvider>
               <Tooltip>
@@ -355,7 +335,7 @@ export default function UsosInsignificantesPage() {
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>Carregar arquivo (referência)</p>
+                  <p>Carregar arquivo (referÃªncia)</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
@@ -378,7 +358,7 @@ export default function UsosInsignificantesPage() {
                 <DropdownMenuContent align="end">
                   <DropdownMenuLabel>Selecione o tipo de uso</DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  {tiposDeUso.map(({ type, label }) => (
+                  {insignificantWaterUseOptions.map(({ type, label }) => (
                     <DropdownMenuItem key={type} onClick={() => handleAddNew(type)}>
                       {label}
                     </DropdownMenuItem>
@@ -393,8 +373,8 @@ export default function UsosInsignificantesPage() {
             <CardHeader>
               <CardTitle>Gerenciamento de Usos Insignificantes</CardTitle>
               <CardDescription>
-                Cadastro no mesmo padrão das outorgas: empreendedor, empreendimento,
-                prazos, finalidade e anexo. Os registros são salvos neste menu.
+                Cadastro no mesmo padrÃ£o das outorgas: empreendedor, empreendimento,
+                prazos, finalidade e anexo. Os registros sÃ£o salvos neste menu.
               </CardDescription>
               <CardSearchInput
                 value={searchTerm}
@@ -428,7 +408,7 @@ export default function UsosInsignificantesPage() {
                               </p>
                               <p className="text-sm text-muted-foreground truncate">
                                 {empreendedoresMap.get(item.empreendedorId) ||
-                                  "—"}
+                                  "â€”"}
                               </p>
                             </div>
                             <Badge
@@ -496,7 +476,7 @@ export default function UsosInsignificantesPage() {
                     ))}
                   {!isLoading && filteredUsos.length === 0 && (
                     <div className="h-48 flex items-center justify-center border-2 border-dashed rounded-lg text-sm text-muted-foreground text-center px-4">
-                      Nenhum registro encontrado. Adicione um novo uso para começar.
+                      Nenhum registro encontrado. Adicione um novo uso para comeÃ§ar.
                     </div>
                   )}
                 </div>
@@ -509,13 +489,13 @@ export default function UsosInsignificantesPage() {
                         <TableHead>Empreendedor</TableHead>
                         <TableHead>Empreendimento</TableHead>
                         <TableHead className="hidden lg:table-cell">
-                          Nº doc.
+                          NÂº doc.
                         </TableHead>
                         <TableHead className="hidden lg:table-cell">
                           Vencimento
                         </TableHead>
                         <TableHead>Status</TableHead>
-                        <TableHead className="text-right">Ações</TableHead>
+                        <TableHead className="text-right">AÃ§Ãµes</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -535,10 +515,10 @@ export default function UsosInsignificantesPage() {
                             </TableCell>
                             <TableCell>
                               {empreendedoresMap.get(item.empreendedorId) ||
-                                "—"}
+                                "â€”"}
                             </TableCell>
                             <TableCell>
-                              {projectsMap.get(item.projectId || "") || "—"}
+                              {projectsMap.get(item.projectId || "") || "â€”"}
                             </TableCell>
                             <TableCell className="hidden lg:table-cell">
                               {item.permitNumber}
@@ -635,7 +615,7 @@ export default function UsosInsignificantesPage() {
           <DialogHeader>
             <DialogTitle>Uso insignificante</DialogTitle>
             <DialogDescription>
-              {viewingItem?.usoType} — {viewingItem?.permitNumber}
+              {viewingItem?.usoType} â€” {viewingItem?.permitNumber}
             </DialogDescription>
           </DialogHeader>
           {viewingItem && (
@@ -653,13 +633,13 @@ export default function UsosInsignificantesPage() {
                   projectsMap.get(viewingItem.projectId || "") ?? undefined
                 }
               />
-              <DetailItem label="Nº documento" value={viewingItem.permitNumber} />
+              <DetailItem label="NÂº documento" value={viewingItem.permitNumber} />
               <DetailItem
-                label="Nº processo"
+                label="NÂº processo"
                 value={viewingItem.processNumber}
               />
               <DetailItem
-                label="Emissão"
+                label="EmissÃ£o"
                 value={formatDate(viewingItem.issueDate)}
               />
               <DetailItem
@@ -684,7 +664,7 @@ export default function UsosInsignificantesPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Excluir registro?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta ação não pode ser desfeita. O documento será removido do
+              Esta aÃ§Ã£o nÃ£o pode ser desfeita. O documento serÃ¡ removido do
               sistema.
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -697,3 +677,7 @@ export default function UsosInsignificantesPage() {
     </>
   );
 }
+
+
+
+

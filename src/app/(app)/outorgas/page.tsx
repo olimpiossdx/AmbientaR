@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import { useState, useMemo, useEffect } from "react";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -45,6 +45,7 @@ import {
 } from "@/firebase";
 import { collection, doc, query, where, getDocs } from "firebase/firestore";
 import type { WaterPermit, Empreendedor, AppUser, Project } from "@/lib/types";
+import { permitStatusBadgeClassSimple } from "@/lib/status-display-classes";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Dialog,
@@ -90,7 +91,8 @@ const canPerformWriteActions = (user: AppUser | null): boolean => {
   return (
     user.role === "admin" ||
     user.role === "gestor" ||
-    user.role === "supervisor"
+    user.role === "supervisor" ||
+    user.role === "cliente_autonomo"
   );
 };
 
@@ -104,7 +106,7 @@ const DetailItem = ({
   <div className="space-y-1">
     <Label className="text-sm font-medium">{label}</Label>
     <p className="text-sm text-muted-foreground">
-      {Array.isArray(value) ? value.join(", ") : value || "Não informado"}
+      {Array.isArray(value) ? value.join(", ") : value || "NÃ£o informado"}
     </p>
   </div>
 );
@@ -240,7 +242,7 @@ export default function OutorgasPage() {
     ((isClientePortalRole(user?.role) || user?.role === "representative") &&
       empreendedorIdsForUser === undefined);
 
-  // #region agent log — Etapa 6: Gestão Ambiental → Outorgas
+  // #region agent log â€” Etapa 6: GestÃ£o Ambiental â†’ Outorgas
   useEffect(() => {
     if (!user || isLoading || !isDebugAgentIngestEnabled()) return;
     fetch("http://127.0.0.1:7696/ingest/fb1ebcbd-0311-40d2-a3c0-dd5658623339", {
@@ -252,7 +254,7 @@ export default function OutorgasPage() {
       body: JSON.stringify({
         sessionId: "79ee00",
         location: "outorgas/page.tsx:etapa6",
-        message: "Gestão Ambiental → Outorgas carregado",
+        message: "GestÃ£o Ambiental â†’ Outorgas carregado",
         data: {
           role: user.role,
           count: outorgas?.length ?? 0,
@@ -292,13 +294,13 @@ export default function OutorgasPage() {
       collectionName: "outorgas",
       documentId: itemToDelete,
       user,
-      reason: "Exclusão manual na tela de outorgas",
+      reason: "ExclusÃ£o manual na tela de outorgas",
     })
       .then(() => {
         toast({
           title: "Outorga deletada",
           description:
-            "A outorga e suas condicionantes relacionadas foram removidas com backup de segurança.",
+            "A outorga e suas condicionantes relacionadas foram removidas com backup de seguranÃ§a.",
         });
       })
       .catch(async (serverError) => {
@@ -321,26 +323,13 @@ export default function OutorgasPage() {
     });
   };
 
-  const getStatusVariant = (status: WaterPermit["status"]) => {
-    switch (status) {
-      case "Válida":
-        return "bg-emerald-500/20 text-emerald-700 border-emerald-500/30";
-      case "Em Renovação":
-        return "bg-blue-500/20 text-blue-700 border-blue-500/30";
-      case "Vencida":
-        return "bg-red-500/20 text-red-700 border-red-500/30";
-      case "Suspensa":
-      case "Cancelada":
-        return "bg-yellow-500/20 text-yellow-700 border-yellow-500/30";
-      default:
-        return "bg-slate-500/20 text-slate-700 border-slate-500/30";
-    }
-  };
+  const getStatusVariant = (status: WaterPermit["status"]) =>
+    permitStatusBadgeClassSimple[status];
 
   return (
     <>
       <div className="flex flex-col h-full">
-        <PageHeader title="Outorgas de Uso de Água">
+        <PageHeader title="Outorgas de Uso de Ãgua">
           {canPerformWriteActions(user) && (
             <Button size="sm" className="gap-1" onClick={handleAddNew}>
               <PlusCircle className="h-4 w-4" />
@@ -353,7 +342,7 @@ export default function OutorgasPage() {
             <CardHeader>
               <CardTitle>Gerenciamento de Outorgas</CardTitle>
               <CardDescription>
-                Acompanhe e gerencie todas as outorgas de uso de água dos seus
+                Acompanhe e gerencie todas as outorgas de uso de Ã¡gua dos seus
                 clientes.
               </CardDescription>
               <CardSearchInput
@@ -383,7 +372,7 @@ export default function OutorgasPage() {
                             <div className="min-w-0">
                               <p className="font-medium truncate">
                                 {empreendedoresMap.get(item.empreendedorId) ||
-                                  "Não encontrado"}
+                                  "NÃ£o encontrado"}
                               </p>
                               <p className="text-sm text-muted-foreground truncate">
                                 {projectsMap.get(item.projectId || "") || "N/A"}
@@ -399,7 +388,7 @@ export default function OutorgasPage() {
                           <div className="text-sm">
                             <p>
                               <span className="text-muted-foreground">
-                                Nº Portaria:
+                                NÂº Portaria:
                               </span>{" "}
                               {item.permitNumber || "N/A"}
                             </p>
@@ -474,13 +463,13 @@ export default function OutorgasPage() {
                       <TableHead>Empreendedor</TableHead>
                       <TableHead>Empreendimento</TableHead>
                       <TableHead className="hidden md:table-cell">
-                        Nº da Portaria
+                        NÂº da Portaria
                       </TableHead>
                       <TableHead className="hidden lg:table-cell">
                         Vencimento
                       </TableHead>
                       <TableHead>Status</TableHead>
-                      <TableHead className="text-right">Ações</TableHead>
+                      <TableHead className="text-right">AÃ§Ãµes</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -512,7 +501,7 @@ export default function OutorgasPage() {
                         <TableRow key={item.id}>
                           <TableCell className="font-medium">
                             {empreendedoresMap.get(item.empreendedorId) ||
-                              "Não encontrado"}
+                              "NÃ£o encontrado"}
                           </TableCell>
                           <TableCell className="font-medium">
                             {projectsMap.get(item.projectId || "") || "N/A"}
@@ -657,7 +646,7 @@ export default function OutorgasPage() {
           <DialogHeader>
             <DialogTitle>Detalhes da Outorga</DialogTitle>
             <DialogDescription>
-              Visualização dos dados para a outorga #{viewingItem?.permitNumber}
+              VisualizaÃ§Ã£o dos dados para a outorga #{viewingItem?.permitNumber}
               .
             </DialogDescription>
           </DialogHeader>
@@ -676,18 +665,18 @@ export default function OutorgasPage() {
               <Separator />
               <div className="grid grid-cols-2 gap-4">
                 <DetailItem
-                  label="Nº da Portaria"
+                  label="NÂº da Portaria"
                   value={viewingItem.permitNumber}
                 />
                 <DetailItem
-                  label="Nº do Processo"
+                  label="NÂº do Processo"
                   value={viewingItem.processNumber}
                 />
               </div>
               <Separator />
               <div className="grid grid-cols-2 gap-4">
                 <DetailItem
-                  label="Data de Emissão"
+                  label="Data de EmissÃ£o"
                   value={formatDate(viewingItem.issueDate)}
                 />
                 <DetailItem
@@ -734,9 +723,9 @@ export default function OutorgasPage() {
       <AlertDialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+            <AlertDialogTitle>VocÃª tem certeza?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta ação não pode ser desfeita. Isso irá deletar permanentemente
+              Esta aÃ§Ã£o nÃ£o pode ser desfeita. Isso irÃ¡ deletar permanentemente
               o pedido de outorga.
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -751,3 +740,7 @@ export default function OutorgasPage() {
     </>
   );
 }
+
+
+
+
