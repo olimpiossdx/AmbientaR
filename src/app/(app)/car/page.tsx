@@ -57,7 +57,11 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { FirestorePermissionError } from "@/firebase/errors";
-import { canManageCarUploadsOnProject } from "@/lib/role-guards";
+import {
+  canManageCarUploadsOnProject,
+  isClienteAutonomo,
+  isClientePortalRole,
+} from "@/lib/role-guards";
 
 export default function CarPage() {
   const { firestore } = useFirebase();
@@ -82,6 +86,9 @@ export default function CarPage() {
   const [empreendedoresForRep, setEmpreendedoresForRep] = React.useState<
     Array<{ id: string; cpfCnpj?: string }>
   >([]);
+  const [empreendedorIdsForTitular, setEmpreendedorIdsForTitular] = React.useState<
+    string[] | undefined
+  >(undefined);
 
   const clientsQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
@@ -89,6 +96,12 @@ export default function CarPage() {
       return query(
         collection(firestore, "clients"),
         where("approvedUserIds", "array-contains", user.id),
+      );
+    }
+    if (isClienteAutonomo(user.role)) {
+      return query(
+        collection(firestore, "clients"),
+        where("userId", "==", user.id),
       );
     }
     return collection(firestore, "clients");
@@ -144,6 +157,32 @@ export default function CarPage() {
       })
       .catch(() => setFallbackClients([]));
   }, [firestore, user, loadingClients, clients]);
+
+  React.useEffect(() => {
+    if (!firestore || !user || !isClientePortalRole(user.role)) return;
+    setEmpreendedorIdsForTitular(undefined);
+    const userDocuments = [
+      user.cpf || user.userCpf,
+      ...(user.cnpjs || []),
+    ].filter(Boolean) as string[];
+    if (userDocuments.length === 0) {
+      setEmpreendedorIdsForTitular(["invalid-placeholder-for-empty-query"]);
+      return;
+    }
+    const empreendedoresRef = collection(firestore, "empreendedores");
+    const q = query(empreendedoresRef, where("cpfCnpj", "in", userDocuments));
+    getDocs(q)
+      .then((snapshot) => {
+        const ids = snapshot.docs.map((d) => d.id);
+        setEmpreendedorIdsForTitular(
+          ids.length > 0 ? ids : ["invalid-placeholder-for-empty-query"],
+        );
+      })
+      .catch((err) => {
+        console.error("Erro ao carregar empreendedores do titular (CAR):", err);
+        setEmpreendedorIdsForTitular(["invalid-placeholder-for-empty-query"]);
+      });
+  }, [firestore, user]);
 
   const displayedClients = React.useMemo(
     () => (clients && clients.length > 0 ? clients : (fallbackClients ?? [])),
@@ -231,6 +270,23 @@ export default function CarPage() {
 
   const projectsQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
+    if (isClientePortalRole(user.role)) {
+      if (empreendedorIdsForTitular === undefined) return null;
+      if (empreendedorIdsForTitular.length === 0) {
+        return query(
+          collection(firestore, "projects"),
+          where("empreendedorId", "in", ["invalid-placeholder"]),
+        );
+      }
+      return query(
+        collection(firestore, "projects"),
+        where(
+          "empreendedorId",
+          "in",
+          empreendedorIdsForTitular.slice(0, 10),
+        ),
+      );
+    }
     if (user.role === "representative") {
       if (empreendedorIdsForRep === undefined) return null;
       if (empreendedorIdsForRep.length === 0) {
@@ -245,7 +301,7 @@ export default function CarPage() {
       );
     }
     return collection(firestore, "projects");
-  }, [firestore, user, empreendedorIdsForRep]);
+  }, [firestore, user, empreendedorIdsForRep, empreendedorIdsForTitular]);
 
   const { data: projects, isLoading: loadingProjects } =
     useCollection<Project>(projectsQuery);
@@ -373,7 +429,7 @@ export default function CarPage() {
         variant: "destructive",
         title: "Sem permissão",
         description:
-          "Perfis titular e representante apenas consultam os registros de CAR.",
+          "Cliente gestão e representante apenas consultam os registros de CAR.",
       });
       return;
     }
@@ -402,6 +458,19 @@ export default function CarPage() {
         description: "O recibo em PDF é obrigatório para salvar o registro.",
       });
       return;
+    }
+
+    if (isClienteAutonomo(user.role)) {
+      const allowed = (projects ?? []).some((p) => p.id === projectId);
+      if (!allowed) {
+        toast({
+          variant: "destructive",
+          title: "Empreendimento inválido",
+          description:
+            "Selecione um empreendimento vinculado aos seus empreendedores.",
+        });
+        return;
+      }
     }
 
     setSaving(true);
@@ -446,7 +515,9 @@ export default function CarPage() {
   const isLoading =
     loadingClients ||
     loadingProjects ||
-    (user?.role === "representative" && empreendedorIdsForRep === undefined);
+    (user?.role === "representative" && empreendedorIdsForRep === undefined) ||
+    (isClientePortalRole(user?.role) &&
+      empreendedorIdsForTitular === undefined);
 
   return (
     <div className="flex flex-col h-full">
@@ -463,8 +534,8 @@ export default function CarPage() {
           <CardHeader>
             <CardTitle>Vincular CAR a Empreendimento</CardTitle>
             <CardDescription>
-              {user?.role === "representative"
-                ? "Você só visualiza clientes e empreendimentos que representa (titulares que aprovaram seu acesso). Suba o recibo em PDF e o arquivo de geometria (SHP/ZIP)."
+              {isClienteAutonomo(user?.role)
+                ? "Nos seus empreendimentos, informe o número do recibo, envie o PDF do CAR e, se quiser, o arquivo de geometria (SHP/ZIP). A lista abaixo mostra os registros já vinculados."
                 : "Suba o recibo do CAR em PDF e o arquivo de geometria (SHP/ZIP), vinculando ao cliente e à fazenda."}
             </CardDescription>
           </CardHeader>
@@ -602,7 +673,7 @@ export default function CarPage() {
             <CardDescription>
               {canManageCar
                 ? "Consulte rapidamente quais fazendas já possuem CAR vinculado, com acesso aos arquivos enviados."
-                : "Visualize quais empreendimentos já possuem CAR vinculado e abra os anexos disponibilizados pela consultoria. O envio e a alteração de arquivos são feitos apenas pela equipe AmbientaR."}
+                : "Visualize quais empreendimentos já possuem CAR vinculado e abra os anexos. No plano Cliente Autônomo, o titular envia o recibo e os arquivos na área de cadastro acima; no plano Cliente Gestão e para representantes, o envio e a alteração ficam a cargo da equipe AmbientaR."}
             </CardDescription>
           </CardHeader>
           <CardContent>

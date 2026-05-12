@@ -448,8 +448,8 @@ service cloud.firestore {
     }
 
     /**
-     * @description Projects — leitura ampla; escrita geral exceto campo `car` para cliente/representante
-     * (CAR só é gerido por perfis internos; titular/representante consultam na UI).
+     * @description Projects — leitura ampla. Escrita: internos livres; titular/representante não alteram `car`.
+     * Cliente autônomo pode atualizar só `car` em empreendimentos dos seus empreendedores (recibo/upload na app).
      * @path /databases/{database}/documents/projects/{projectId}
      */
     match /projects/{projectId} {
@@ -459,8 +459,17 @@ service cloud.firestore {
         !('car' in request.resource.data)
       );
       allow update: if isSignedIn() && (
-        !(getRole() == 'client' || getRole() == 'cliente_autonomo' || getRole() == 'representative') ||
         !request.resource.data.diff(resource.data).affectedKeys().hasAny(['car'])
+        || (
+          !(getRole() == 'client' || getRole() == 'representative')
+          && (
+            getRole() != 'cliente_autonomo'
+            || (
+              canClienteAutonomoManageEmpreendedor(resource.data.empreendedorId)
+              && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['car'])
+            )
+          )
+        )
       );
       allow delete: if canDeleteProject();
     }

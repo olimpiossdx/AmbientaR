@@ -3,12 +3,11 @@ import { allNavItems } from '@/lib/navigation-config';
 
 type FlatNavEntry = { href: string; roles?: UserRole[] };
 
-/** Prefixos que o perfil `cliente_autonomo` não pode aceder (IA + processos). */
+/** Prefixos que o perfil `cliente_autonomo` não pode aceder (IA, elaboração de estudos, processos). */
 const PATH_PREFIXES_DENIED_FOR_CLIENTE_AUTONOMO: readonly string[] = [
   '/ai-lab',
-  '/studies/assistant',
+  '/studies',
   '/analise-ambiental',
-  '/studies/analise-socioambiental',
   '/requests',
 ];
 

@@ -83,10 +83,14 @@ export function canWriteProcessosInternal(
   );
 }
 
-/** Titular e representante: apenas consultam registros de CAR, sem anexar nem salvar no projeto. */
+/**
+ * Quem pode vincular CAR no projeto (recibo PDF, geometria, nº recibo).
+ * Cliente Autônomo: nos próprios empreendimentos. Cliente Gestão e representante: só consulta na UI.
+ */
 export function canManageCarUploadsOnProject(
   role: UserRole | undefined | null,
 ): boolean {
+  if (isClienteAutonomo(role)) return true;
   return !isClientePortalRole(role) && role !== "representative";
 }
 
