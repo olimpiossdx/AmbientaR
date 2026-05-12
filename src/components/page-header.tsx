@@ -29,32 +29,38 @@ export function PageHeader({
   const shouldShowBack = showBackToDashboard ?? (pathname !== '/');
 
   return (
-    <header className="flex items-center gap-4 border-b bg-muted/20 px-4 md:px-6 min-h-16 py-3">
-      {shouldShowBack && (
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          className="shrink-0"
-          onClick={(event) => {
-            event.preventDefault();
-            event.stopPropagation();
-            setOpenMobile(false);
-            router.replace('/');
-          }}
-          aria-label="Voltar para o painel"
-          title="Voltar para o painel"
-        >
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
-      )}
-      <div className="flex-1 min-w-0">
-        <h1 className="text-lg font-semibold md:text-xl">{title}</h1>
-        {description && (
-          <p className="text-sm text-muted-foreground mt-0.5">{description}</p>
+    <header className="flex min-w-0 flex-col gap-3 border-b bg-muted/20 px-4 py-3 min-h-16 md:px-6 sm:flex-row sm:items-center sm:gap-4">
+      <div className="flex min-w-0 flex-1 items-center gap-3 sm:gap-4">
+        {shouldShowBack && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="shrink-0"
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              setOpenMobile(false);
+              router.replace('/');
+            }}
+            aria-label="Voltar para o painel"
+            title="Voltar para o painel"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
         )}
+        <div className="min-w-0 flex-1">
+          <h1 className="text-balance text-lg font-semibold md:text-xl">{title}</h1>
+          {description && (
+            <p className="mt-0.5 text-sm text-muted-foreground">{description}</p>
+          )}
+        </div>
       </div>
-      {children && <div className="flex items-center gap-2 shrink-0">{children}</div>}
+      {children && (
+        <div className="flex w-full min-w-0 flex-wrap items-center gap-2 sm:w-auto sm:shrink-0 sm:justify-end">
+          {children}
+        </div>
+      )}
     </header>
   );
 }

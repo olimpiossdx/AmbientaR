@@ -133,7 +133,7 @@ function NavContentInner() {
                       <SidebarMenuButton>
                           {subItem.icon && <subItem.icon />}
                           <span>{subItem.label}</span>
-                          <ChevronDown className="ml-auto h-4 w-4 transition-transform group-data-[state=open]:rotate-180" />
+                          <ChevronDown className="ml-auto h-4 w-4 shrink-0 transition-transform group-data-[state=open]:rotate-180" />
                       </SidebarMenuButton>
                   </CollapsibleTrigger>
                   <CollapsibleContent>
@@ -199,7 +199,7 @@ function NavContentInner() {
                   <SidebarMenuButton>
                     <item.icon />
                     <span>{item.label}</span>
-                    <ChevronDown className="ml-auto h-4 w-4 transition-transform group-data-[state=open]:rotate-180" />
+                    <ChevronDown className="ml-auto h-4 w-4 shrink-0 transition-transform group-data-[state=open]:rotate-180" />
                   </SidebarMenuButton>
                 </CollapsibleTrigger>
                 <CollapsibleContent>

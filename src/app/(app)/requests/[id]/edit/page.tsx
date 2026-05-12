@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useCollection, useFirebase, useMemoFirebase, useDoc } from '@/firebase';
+import { useCollection, useFirebase, useMemoFirebase, useDoc, useAuth } from '@/firebase';
 import { collection, doc, updateDoc } from 'firebase/firestore';
 import type { Empreendedor, Project, Request } from '@/lib/types';
 import * as React from 'react';
@@ -34,6 +34,8 @@ import {
 } from '@/components/licensing/licensing-locational-block';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { isProcessosPortalReadOnlyRole } from '@/lib/role-guards';
+import { fetchEmpreendedorIdsForProcessosPortal } from '@/lib/requests-portal-empreendedor-ids';
 
 const services = [
   "Licenciamento ambiental",
@@ -406,12 +408,30 @@ function EditRequestPageContent() {
     const router = useRouter();
     const params = useParams();
     const { firestore } = useFirebase();
+    const { user } = useAuth();
     const { toast } = useToast();
+    const readOnly = isProcessosPortalReadOnlyRole(user?.role);
 
     const requestId = params.id as string;
 
     const requestDocRef = useMemoFirebase(() => (firestore && requestId ? doc(firestore, 'requests', requestId) : null), [firestore, requestId]);
     const { data: request, isLoading: isLoadingRequest } = useDoc<Request>(requestDocRef);
+
+    const [portalEmpreendedorIds, setPortalEmpreendedorIds] = React.useState<
+        string[] | undefined
+    >(undefined);
+
+    React.useEffect(() => {
+        if (!user || !firestore) return;
+        if (!isProcessosPortalReadOnlyRole(user.role)) {
+            setPortalEmpreendedorIds([]);
+            return;
+        }
+        setPortalEmpreendedorIds(undefined);
+        fetchEmpreendedorIdsForProcessosPortal(firestore, user)
+            .then(setPortalEmpreendedorIds)
+            .catch(() => setPortalEmpreendedorIds(['invalid-placeholder']));
+    }, [user, firestore]);
 
     const [selectedEmpreendedor, setSelectedEmpreendedor] = React.useState('');
     const [selectedEmpreendimento, setSelectedEmpreendimento] = React.useState('');
@@ -485,9 +505,23 @@ function EditRequestPageContent() {
         }
     }, [request]);
 
+    const empreendedoresForSelect = React.useMemo(() => {
+        if (!empreendedores) return [];
+        if (readOnly && request) {
+            return empreendedores.filter((e) => e.id === request.empreendedorId);
+        }
+        return empreendedores;
+    }, [empreendedores, readOnly, request]);
+
+    const accessDeniedPortal =
+        readOnly &&
+        portalEmpreendedorIds !== undefined &&
+        request &&
+        !portalEmpreendedorIds.includes(request.empreendedorId);
+
     const filteredProjects = React.useMemo(() => {
         if (!selectedEmpreendedor || !allProjects) return [];
-        return allProjects.filter(p => p.empreendedorId === selectedEmpreendedor);
+        return allProjects.filter((p) => p.empreendedorId === selectedEmpreendedor);
     }, [selectedEmpreendedor, allProjects]);
 
     const handleServiceChange = (service: string) => {
@@ -649,6 +683,7 @@ function EditRequestPageContent() {
     const isFormValid = selectedEmpreendedor && selectedEmpreendimento && selectedServices.length > 0 && selectedStatus;
 
     const handleUpdateProcess = async () => {
+        if (readOnly) return;
         if (!firestore || !request) return;
 
         if (!isFormValid) {
@@ -735,7 +770,11 @@ function EditRequestPageContent() {
         "Uso Insignificante": UsoInsignificanteCard
     };
 
-    const isLoading = isLoadingRequest || isLoadingEmpreendedores || isLoadingProjects;
+    const isLoading =
+        isLoadingRequest ||
+        isLoadingEmpreendedores ||
+        isLoadingProjects ||
+        (readOnly && portalEmpreendedorIds === undefined);
     
     if (isLoading) {
         return (
@@ -757,26 +796,63 @@ function EditRequestPageContent() {
         )
     }
 
-    return (
-        <div className="flex flex-col h-full">
-            <PageHeader title={`Editando Processo #${request?.solicitationNumber || request?.id.substring(0,8).toUpperCase()}`} />
-            <main className="flex-1 overflow-auto p-4 md:p-6">
-                <div className="max-w-4xl mx-auto space-y-8">
+    if (accessDeniedPortal) {
+        return (
+            <div className="flex flex-col h-full">
+                <PageHeader title="Acesso restrito" />
+                <main className="flex-1 overflow-auto p-4 md:p-6">
                     <Card>
                         <CardHeader>
-                            <CardTitle>Editar Processo</CardTitle>
-                            <CardDescription>Altere as informações do processo conforme necessário.</CardDescription>
+                            <CardTitle>Processo não disponível</CardTitle>
+                            <CardDescription>
+                                Este processo não está entre os empreendedores aos quais o seu perfil tem acesso.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <Button type="button" variant="outline" onClick={() => router.push('/requests')}>
+                                Voltar aos processos
+                            </Button>
+                        </CardContent>
+                    </Card>
+                </main>
+            </div>
+        );
+    }
+
+    return (
+        <div className="flex flex-col h-full">
+            <PageHeader
+                title={
+                    readOnly
+                        ? `Processo #${request?.solicitationNumber || request?.id.substring(0, 8).toUpperCase()}`
+                        : `Editando Processo #${request?.solicitationNumber || request?.id.substring(0, 8).toUpperCase()}`
+                }
+            />
+            <main className="flex-1 overflow-auto p-4 md:p-6">
+                <div className="max-w-4xl mx-auto space-y-8">
+                    <fieldset
+                        disabled={readOnly}
+                        className="min-w-0 space-y-8 border-0 p-0 m-0 disabled:opacity-95"
+                    >
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>{readOnly ? 'Visualização do processo' : 'Editar Processo'}</CardTitle>
+                            <CardDescription>
+                                {readOnly
+                                    ? 'Consulte serviços, checklist, anexos e tramitação. Alterações são feitas pela consultoria.'
+                                    : 'Altere as informações do processo conforme necessário.'}
+                            </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-6">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <Label htmlFor="empreendedor">Empreendedor</Label>
-                                    <Select value={selectedEmpreendedor} onValueChange={setSelectedEmpreendedor} disabled={isLoadingEmpreendedores}>
+                                    <Select value={selectedEmpreendedor} onValueChange={setSelectedEmpreendedor} disabled={readOnly || isLoadingEmpreendedores}>
                                         <SelectTrigger id="empreendedor">
                                             <SelectValue placeholder={isLoadingEmpreendedores ? "Carregando..." : "Selecione o empreendedor"} />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            {empreendedores?.map(emp => (
+                                            {empreendedoresForSelect.map((emp) => (
                                                 <SelectItem key={emp.id} value={emp.id}>{emp.name}</SelectItem>
                                             ))}
                                         </SelectContent>
@@ -784,7 +860,7 @@ function EditRequestPageContent() {
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="empreendimento">Empreendimento</Label>
-                                    <Select value={selectedEmpreendimento} onValueChange={setSelectedEmpreendimento} disabled={!selectedEmpreendedor || isLoadingProjects}>
+                                    <Select value={selectedEmpreendimento} onValueChange={setSelectedEmpreendimento} disabled={readOnly || !selectedEmpreendedor || isLoadingProjects}>
                                         <SelectTrigger id="empreendimento">
                                             <SelectValue placeholder={!selectedEmpreendedor ? "Selecione um empreendedor primeiro" : "Selecione o empreendimento"} />
                                         </SelectTrigger>
@@ -804,6 +880,7 @@ function EditRequestPageContent() {
                                             <Checkbox 
                                                 id={service} 
                                                 checked={selectedServices.includes(service)}
+                                                disabled={readOnly}
                                                 onCheckedChange={() => handleServiceChange(service)}
                                             />
                                             <Label htmlFor={service} className="font-normal cursor-pointer">{service}</Label>
@@ -813,7 +890,7 @@ function EditRequestPageContent() {
                             </div>
                             <div className="space-y-2">
                                 <Label>Status do Processo</Label>
-                                <Select value={selectedStatus} onValueChange={(value) => setSelectedStatus(value as Request['status'])}>
+                                <Select value={selectedStatus} onValueChange={(value) => setSelectedStatus(value as Request['status'])} disabled={readOnly}>
                                     <SelectTrigger>
                                         <SelectValue />
                                     </SelectTrigger>
@@ -856,6 +933,7 @@ function EditRequestPageContent() {
                                                                                 <Checkbox
                                                                                     id={item.id}
                                                                                     checked={item.status === 'completed'}
+                                                                                    disabled={readOnly}
                                                                                     onCheckedChange={(checked) =>
                                                                                         updateChecklistStatus(
                                                                                             item.id,
@@ -886,7 +964,7 @@ function EditRequestPageContent() {
                                                                                     accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.webp"
                                                                                     aria-label={`Carregar arquivo para ${item.title}`}
                                                                                     onChange={(event) => handleChecklistFileUpload(item.id, event)}
-                                                                                    disabled={uploadingChecklistItemId === item.id}
+                                                                                    disabled={readOnly || uploadingChecklistItemId === item.id}
                                                                                     className="text-sm w-full"
                                                                                 />
                                                                             </div>
@@ -963,13 +1041,22 @@ function EditRequestPageContent() {
                             })}
                         </div>
                     )}
-                    
+                    </fieldset>
+
                     <div className="flex justify-end gap-4 mt-6">
-                        <Button variant="outline" onClick={() => router.push('/requests')}>Cancelar</Button>
-                        <Button onClick={handleUpdateProcess} disabled={!isFormValid || loading}>
-                            {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                            Salvar Alterações
-                        </Button>
+                        {readOnly ? (
+                            <Button type="button" variant="outline" onClick={() => router.push('/requests')}>
+                                Voltar à lista
+                            </Button>
+                        ) : (
+                            <>
+                                <Button variant="outline" onClick={() => router.push('/requests')}>Cancelar</Button>
+                                <Button onClick={handleUpdateProcess} disabled={!isFormValid || loading}>
+                                    {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                                    Salvar Alterações
+                                </Button>
+                            </>
+                        )}
                     </div>
                 </div>
             </main>

@@ -15,6 +15,11 @@
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "deploy:rules": "npx firebase deploy --only firestore:rules",
+    "cap:sync": "npx cap sync",
+    "cap:sync:deploy": "node scripts/cap-sync-deploy.cjs",
+    "cap:open:android": "npx cap open android",
+    "cap:open:ios": "npx cap open ios",
+    "cap:copy": "npx cap copy",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "prepare": "husky"
@@ -25,6 +30,13 @@
     "react-dom": "18.3.1"
   },
   "dependencies": {
+    "@capacitor/android": "^8.3.3",
+    "@capacitor/cli": "^8.3.3",
+    "@capacitor/core": "^8.3.3",
+    "@capacitor/ios": "^8.3.3",
+    "@capacitor/splash-screen": "^8.0.1",
+    "@capacitor/status-bar": "^8.0.2",
+    "@ducanh2912/next-pwa": "^10.2.9",
     "@e965/xlsx": "^0.20.3",
     "@genkit-ai/compat-oai": "^1.29.0",
     "@genkit-ai/google-genai": "^1.20.0",
@@ -57,6 +69,7 @@
     "clsx": "^2.1.1",
     "cmdk": "^1.0.0",
     "date-fns": "^3.6.0",
+    "dexie": "^4.4.2",
     "docxtemplater": "^3.50.0",
     "dotenv": "^16.5.0",
     "embla-carousel-react": "^8.6.0",

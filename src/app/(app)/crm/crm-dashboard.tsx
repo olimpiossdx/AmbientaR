@@ -19,6 +19,8 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
 import {
   Target,
   Handshake,
@@ -404,84 +406,128 @@ export default function CrmDashboard({ onAddNew }: CrmDashboardProps) {
     !isLoading && (!opportunities || opportunities.length === 0);
 
   return (
-    <div className="space-y-6">
-      {/* Filtros e ações */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-sm text-muted-foreground">Período:</span>
-          {PERIOD_PRESETS.map((p) => (
-            <Button
-              key={p.id}
-              variant={periodPreset === p.id ? "default" : "outline"}
-              size="sm"
-              onClick={() => setPeriodPreset(p.id)}
-            >
-              {p.label}
-            </Button>
-          ))}
-          <span className="text-xs text-muted-foreground ml-1">
-            ({periodLabel})
-          </span>
-
-          {periodPreset === "custom" && (
-            <div className="flex items-center gap-2 ml-2">
-              <input
-                type="date"
-                className="h-9 w-40 rounded-md border border-input bg-background px-3 text-sm"
-                value={customStart}
-                onChange={(e) => setCustomStart(e.target.value)}
-              />
-              <input
-                type="date"
-                className="h-9 w-40 rounded-md border border-input bg-background px-3 text-sm"
-                value={customEnd}
-                onChange={(e) => setCustomEnd(e.target.value)}
-              />
+    <div className="min-w-0 space-y-6">
+      <Card className="min-w-0 overflow-hidden border bg-card/60 shadow-sm">
+        <CardHeader className="space-y-1 border-b bg-muted/25 px-4 py-3 sm:px-6">
+          <CardTitle className="text-base font-semibold">
+            Filtros e exportação
+          </CardTitle>
+          <CardDescription>
+            Período, vendedor e UF; em seguida atualize ou exporte o recorte atual.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6 p-4 sm:p-6">
+          <div className="space-y-3">
+            <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+              <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Período
+              </span>
+              <p className="text-xs text-muted-foreground">
+                <span className="font-medium text-foreground">Ativo:</span>{" "}
+                <span className="break-words">{periodLabel}</span>
+              </p>
             </div>
-          )}
-        </div>
+            <div className="grid min-w-0 grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
+              {PERIOD_PRESETS.map((p) => (
+                <Button
+                  key={p.id}
+                  variant={periodPreset === p.id ? "default" : "outline"}
+                  size="sm"
+                  className="h-9 w-full justify-center px-2 text-center text-xs sm:text-sm"
+                  onClick={() => setPeriodPreset(p.id)}
+                >
+                  {p.label}
+                </Button>
+              ))}
+            </div>
 
-        <div className="flex items-center gap-2">
-          <select
-            value={sellerFilter}
-            onChange={(e) => setSellerFilter(e.target.value)}
-            className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-          >
-            <option value="">Vendedor (todos)</option>
-            {sellers.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name}
-              </option>
-            ))}
-          </select>
+            {periodPreset === "custom" && (
+              <div className="grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="crm-period-start" className="text-xs">
+                    Data inicial
+                  </Label>
+                  <input
+                    id="crm-period-start"
+                    type="date"
+                    className="h-9 w-full min-w-0 rounded-md border border-input bg-background px-3 text-sm"
+                    value={customStart}
+                    onChange={(e) => setCustomStart(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="crm-period-end" className="text-xs">
+                    Data final
+                  </Label>
+                  <input
+                    id="crm-period-end"
+                    type="date"
+                    className="h-9 w-full min-w-0 rounded-md border border-input bg-background px-3 text-sm"
+                    value={customEnd}
+                    onChange={(e) => setCustomEnd(e.target.value)}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
 
-          <select
-            value={ufFilter}
-            onChange={(e) => setUfFilter(e.target.value)}
-            className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-          >
-            <option value="">Região (UF - todas)</option>
-            {ufOptions.map((uf) => (
-              <option key={uf} value={uf}>
-                {uf}
-              </option>
-            ))}
-          </select>
+          <Separator />
 
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => window.location.reload()}
-            className="gap-1"
-          >
-            <RefreshCw className="h-4 w-4" />
-            Atualizar dados
-          </Button>
+          <div className="grid min-w-0 gap-4 lg:grid-cols-12 lg:items-end">
+            <div className="space-y-2 lg:col-span-5">
+              <Label htmlFor="crm-seller" className="text-sm">
+                Vendedor
+              </Label>
+              <select
+                id="crm-seller"
+                value={sellerFilter}
+                onChange={(e) => setSellerFilter(e.target.value)}
+                className="h-9 w-full min-w-0 rounded-md border border-input bg-background px-3 text-sm"
+              >
+                <option value="">Todos os vendedores</option>
+                {sellers.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
+            <div className="space-y-2 lg:col-span-4">
+              <Label htmlFor="crm-uf" className="text-sm">
+                Região (UF)
+              </Label>
+              <select
+                id="crm-uf"
+                value={ufFilter}
+                onChange={(e) => setUfFilter(e.target.value)}
+                className="h-9 w-full min-w-0 rounded-md border border-input bg-background px-3 text-sm"
+              >
+                <option value="">Todas as UFs</option>
+                {ufOptions.map((uf) => (
+                  <option key={uf} value={uf}>
+                    {uf}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap sm:justify-end lg:col-span-3">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => window.location.reload()}
+                className="h-9 w-full justify-center gap-1 whitespace-normal sm:w-auto sm:min-w-[10rem]"
+              >
+                <RefreshCw className="h-4 w-4 shrink-0" />
+                Atualizar dados
+              </Button>
+
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-9 w-full justify-center sm:w-auto sm:min-w-[9rem]"
+                onClick={() => {
               const list = opportunitiesFiltered ?? [];
               const csvEscape = (v: unknown) => {
                 const s = String(v ?? "");
@@ -534,6 +580,7 @@ export default function CrmDashboard({ onAddNew }: CrmDashboardProps) {
           <Button
             variant="outline"
             size="sm"
+            className="h-9 w-full justify-center sm:w-auto sm:min-w-[9rem]"
             onClick={() => {
               const list = opportunitiesFiltered ?? [];
               const doc = new jsPDF({ unit: "mm", format: "a4" });
@@ -613,8 +660,10 @@ export default function CrmDashboard({ onAddNew }: CrmDashboardProps) {
           >
             Exportar PDF
           </Button>
-        </div>
-      </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Empty state quando não há oportunidades */}
       {hasNoData && (
@@ -641,118 +690,118 @@ export default function CrmDashboard({ onAddNew }: CrmDashboardProps) {
       {!hasNoData && (
         <>
           {/* Linha de KPIs principais */}
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
+          <div className="grid min-w-0 gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
+            <Card className="min-w-0">
+              <CardHeader className="flex min-w-0 flex-row items-start justify-between gap-2 space-y-0 pb-2">
+                <CardTitle className="min-w-0 flex-1 pr-1 text-sm font-medium leading-snug break-words">
                   Receita no período
                 </CardTitle>
-                <TrendingUp className="h-4 w-4 text-emerald-500" />
+                <TrendingUp className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
               </CardHeader>
-              <CardContent>
+              <CardContent className="min-w-0">
                 {isLoading ? (
                   <Skeleton className="h-8 w-2/3" />
                 ) : (
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-2xl font-bold">
+                  <div className="flex min-w-0 items-baseline gap-2">
+                    <span className="break-words text-xl font-bold tabular-nums sm:text-2xl">
                       {formatCurrency(crmStats.totalClosedWonValueInPeriod)}
                     </span>
                   </div>
                 )}
-                <p className="mt-1 text-xs text-muted-foreground">
+                <p className="mt-1 break-words text-xs leading-snug text-muted-foreground">
                   Valor fechado ganho no período selecionado.
                 </p>
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
+            <Card className="min-w-0">
+              <CardHeader className="flex min-w-0 flex-row items-start justify-between gap-2 space-y-0 pb-2">
+                <CardTitle className="min-w-0 flex-1 pr-1 text-sm font-medium leading-snug break-words">
                   Em negociação
                 </CardTitle>
-                <DollarSign className="h-4 w-4 text-amber-500" />
+                <DollarSign className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
               </CardHeader>
-              <CardContent>
+              <CardContent className="min-w-0">
                 {isLoading ? (
                   <Skeleton className="h-8 w-2/3" />
                 ) : (
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-2xl font-bold">
+                  <div className="flex min-w-0 items-baseline gap-2">
+                    <span className="break-words text-xl font-bold tabular-nums sm:text-2xl">
                       {formatCurrency(crmStats.totalValue)}
                     </span>
                   </div>
                 )}
-                <p className="mt-1 text-xs text-muted-foreground">
+                <p className="mt-1 break-words text-xs leading-snug text-muted-foreground">
                   Valor total das oportunidades em negociação.
                 </p>
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
+            <Card className="min-w-0">
+              <CardHeader className="flex min-w-0 flex-row items-start justify-between gap-2 space-y-0 pb-2">
+                <CardTitle className="min-w-0 flex-1 pr-1 text-sm font-medium leading-snug break-words">
                   Oportunidades ativas
                 </CardTitle>
-                <Target className="h-4 w-4 text-blue-500" />
+                <Target className="mt-0.5 h-4 w-4 shrink-0 text-blue-500" />
               </CardHeader>
-              <CardContent>
+              <CardContent className="min-w-0">
                 {isLoading ? (
                   <Skeleton className="h-8 w-1/2" />
                 ) : (
-                  <div className="text-2xl font-bold">
+                  <div className="text-xl font-bold tabular-nums sm:text-2xl">
                     {crmStats.qualificacao +
                       crmStats.proposta +
                       crmStats.negociacao}
                   </div>
                 )}
-                <p className="mt-1 text-xs text-muted-foreground">
+                <p className="mt-1 break-words text-xs leading-snug text-muted-foreground">
                   Soma de leads em qualificação, propostas e negociações.
                 </p>
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
+            <Card className="min-w-0">
+              <CardHeader className="flex min-w-0 flex-row items-start justify-between gap-2 space-y-0 pb-2">
+                <CardTitle className="min-w-0 flex-1 pr-1 text-sm font-medium leading-snug break-words">
                   Taxa de conversão
                 </CardTitle>
                 {crmStats.conversionRate >= 30 ? (
-                  <ArrowUpRight className="h-4 w-4 text-emerald-500" />
+                  <ArrowUpRight className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
                 ) : (
-                  <ArrowDownRight className="h-4 w-4 text-red-500" />
+                  <ArrowDownRight className="mt-0.5 h-4 w-4 shrink-0 text-red-500" />
                 )}
               </CardHeader>
-              <CardContent>
+              <CardContent className="min-w-0">
                 {isLoading ? (
                   <Skeleton className="h-8 w-1/3" />
                 ) : (
-                  <div className="text-2xl font-bold">
+                  <div className="text-xl font-bold tabular-nums sm:text-2xl">
                     {crmStats.conversionRate}%
                   </div>
                 )}
-                <p className="mt-1 text-xs text-muted-foreground">
+                <p className="mt-1 break-words text-xs leading-snug text-muted-foreground">
                   Proporção de oportunidades fechadas como ganho em relação ao
                   total criado.
                 </p>
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
+            <Card className="min-w-0 sm:col-span-2 lg:col-span-1">
+              <CardHeader className="flex min-w-0 flex-row items-start justify-between gap-2 space-y-0 pb-2">
+                <CardTitle className="min-w-0 flex-1 pr-1 text-sm font-medium leading-snug break-words">
                   Ticket médio (fechadas ganho)
                 </CardTitle>
-                <Handshake className="h-4 w-4 text-yellow-500" />
+                <Handshake className="mt-0.5 h-4 w-4 shrink-0 text-yellow-500" />
               </CardHeader>
-              <CardContent>
+              <CardContent className="min-w-0">
                 {isLoading ? (
                   <Skeleton className="h-8 w-2/3" />
                 ) : (
-                  <div className="text-2xl font-bold">
+                  <div className="text-xl font-bold tabular-nums sm:text-2xl">
                     {formatCurrency(crmStats.avgTicket)}
                   </div>
                 )}
-                <p className="mt-1 text-xs text-muted-foreground">
+                <p className="mt-1 break-words text-xs leading-snug text-muted-foreground">
                   Valor médio das oportunidades fechadas como ganho.
                 </p>
               </CardContent>
@@ -760,22 +809,25 @@ export default function CrmDashboard({ onAddNew }: CrmDashboardProps) {
           </div>
 
           {/* Gráficos */}
-          <div className="grid gap-4 md:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <BarChart3 className="h-5 w-5" />
-                  Valor por fase do pipeline
+          <div className="grid min-w-0 gap-4 md:grid-cols-2">
+            <Card className="min-w-0">
+              <CardHeader className="min-w-0 space-y-1.5">
+                <CardTitle className="flex min-w-0 items-start gap-2 text-base font-semibold">
+                  <BarChart3 className="mt-0.5 h-5 w-5 shrink-0" />
+                  <span className="min-w-0 flex-1 leading-snug break-words">
+                    Valor por fase do pipeline
+                  </span>
                 </CardTitle>
-                <CardDescription>
+                <CardDescription className="break-words">
                   Valor total das oportunidades em cada fase ativa.
                 </CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="min-w-0">
                 {isLoading ? (
                   <Skeleton className="h-[280px] w-full" />
                 ) : (
-                  <ResponsiveContainer width="100%" height={280}>
+                  <div className="h-[280px] min-h-[240px] w-full min-w-0">
+                  <ResponsiveContainer width="100%" height="100%">
                     <BarChart
                       data={pipelineChartData}
                       layout="vertical"
@@ -804,20 +856,23 @@ export default function CrmDashboard({ onAddNew }: CrmDashboardProps) {
                       />
                     </BarChart>
                   </ResponsiveContainer>
+                  </div>
                 )}
               </CardContent>
             </Card>
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <DollarSign className="h-5 w-5" />
-                  Receita por vendedor (período)
+            <Card className="min-w-0">
+              <CardHeader className="min-w-0 space-y-1.5">
+                <CardTitle className="flex min-w-0 items-start gap-2 text-base font-semibold">
+                  <DollarSign className="mt-0.5 h-5 w-5 shrink-0" />
+                  <span className="min-w-0 flex-1 leading-snug break-words">
+                    Receita por vendedor (período)
+                  </span>
                 </CardTitle>
-                <CardDescription>
+                <CardDescription className="break-words">
                   Valor fechado ganho no período selecionado, por responsável.
                 </CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="min-w-0">
                 {isLoading ? (
                   <Skeleton className="h-[280px] w-full" />
                 ) : revenueBySellerData.length === 0 ? (
@@ -825,7 +880,8 @@ export default function CrmDashboard({ onAddNew }: CrmDashboardProps) {
                     Nenhuma venda fechada no período.
                   </div>
                 ) : (
-                  <ResponsiveContainer width="100%" height={280}>
+                  <div className="h-[280px] min-h-[240px] w-full min-w-0">
+                  <ResponsiveContainer width="100%" height="100%">
                     <BarChart
                       data={revenueBySellerData}
                       margin={{ left: 8, right: 8 }}
@@ -851,21 +907,22 @@ export default function CrmDashboard({ onAddNew }: CrmDashboardProps) {
                       />
                     </BarChart>
                   </ResponsiveContainer>
+                  </div>
                 )}
               </CardContent>
             </Card>
           </div>
 
           {/* Tabela de oportunidades recentes */}
-          <Card>
+          <Card className="min-w-0">
             <CardHeader>
               <CardTitle>Oportunidades Recentes</CardTitle>
-              <CardDescription>
+              <CardDescription className="break-words">
                 As últimas oportunidades ativas no pipeline. Clique em uma linha
                 para editar.
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="min-w-0 overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -902,10 +959,10 @@ export default function CrmDashboard({ onAddNew }: CrmDashboardProps) {
                         className="cursor-pointer hover:bg-muted/50 transition-colors"
                         onClick={() => router.push(`/crm/${opp.id}/edit`)}
                       >
-                        <TableCell className="font-medium">
+                        <TableCell className="max-w-[min(100%,14rem)] break-words font-medium sm:max-w-none">
                           {opp.name}
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="max-w-[min(100%,12rem)] break-words sm:max-w-none">
                           {clientsMap.get(opp.clientId) || "N/A"}
                         </TableCell>
                         <TableCell className="hidden md:table-cell">

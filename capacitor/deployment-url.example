@@ -1,0 +1,4 @@
+# Copie para deployment-url (sem .example) ou edite deployment-url localmente.
+# Linhas com # são ignoradas. URL HTTPS sem barra no fim.
+
+https://www.ambientar.ia.br

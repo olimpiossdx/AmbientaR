@@ -9,10 +9,12 @@ import { useDoc, useFirebase, useMemoFirebase } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import type { EnvironmentalCompany } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useCadastroGestaoWriteGuard } from '@/hooks/use-cadastro-gestao-write-guard';
 
 function EditCompanyPageContent() {
     const router = useRouter();
     const params = useParams();
+    const { blocked, isInitialized } = useCadastroGestaoWriteGuard('/responsible-company');
     const itemId = params.id as string;
     
     const { firestore } = useFirebase();
@@ -27,6 +29,18 @@ function EditCompanyPageContent() {
     const handleSuccess = () => {
       router.push('/responsible-company');
     };
+
+    if (!isInitialized) {
+        return (
+             <div className="flex flex-col h-full">
+                <PageHeader title="Carregando..." />
+                <main className="flex-1 overflow-auto p-4 md:p-6">
+                    <Skeleton className="mx-auto h-96 max-w-3xl" />
+                </main>
+            </div>
+        );
+    }
+    if (blocked) return null;
 
     if (isLoading) {
         return (

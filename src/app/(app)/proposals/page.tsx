@@ -1,5 +1,5 @@
 "use client";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -41,6 +41,7 @@ import { cn } from "@/lib/utils";
 import {
   isAdminOrSupervisorRole,
   isClientePortalRole,
+  canManageProposalsAndCommercialQuotes,
 } from "@/lib/role-guards";
 import {
   useCollection,
@@ -65,7 +66,7 @@ import {
   applyImageOpacity,
 } from "@/lib/branding-pdf";
 import { useLocalBranding } from "@/hooks/use-local-branding";
-import type { Proposal, Client, CompanySettings, Contract } from "@/lib/types";
+import type { Proposal, Client, CompanySettings, Contract, AppUser } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Dialog,
@@ -100,6 +101,10 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
 import { AttachmentPreviewSection } from "@/components/shared/attachment-preview-section";
+import {
+  fetchClientIdsForTitularPortalUser,
+  fetchClientIdsForRepresentativeUser,
+} from "@/lib/portal-titular-client-ids";
 
 /** Adiciona numeração de páginas no rodapé no formato página/total. */
 function addPageNumbers(doc: jsPDF, bottomMarginMm: number = 10) {
@@ -144,10 +149,47 @@ export default function ProposalsPage() {
   const { firestore, auth, user } = useFirebase();
   const { toast } = useToast();
 
+  const [clientIdsForUser, setClientIdsForUser] = useState<string[] | null>(
+    null,
+  );
+
+  useEffect(() => {
+    if (!firestore || !user) return;
+    if (user.role === "client" || user.role === "cliente_autonomo") {
+      fetchClientIdsForTitularPortalUser(firestore, user as AppUser)
+        .then(setClientIdsForUser)
+        .catch(() => setClientIdsForUser([]));
+      return;
+    }
+    if (user.role === "representative") {
+      const repUid = user.id || (user as { uid?: string }).uid;
+      if (!repUid) {
+        setClientIdsForUser([]);
+        return;
+      }
+      fetchClientIdsForRepresentativeUser(firestore, repUid)
+        .then(setClientIdsForUser)
+        .catch(() => setClientIdsForUser([]));
+      return;
+    }
+    setClientIdsForUser(null);
+  }, [firestore, user]);
+
   const proposalsQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
+    if (
+      user.role === "client" ||
+      user.role === "cliente_autonomo" ||
+      user.role === "representative"
+    ) {
+      if (!clientIdsForUser || clientIdsForUser.length === 0) return null;
+      return query(
+        collection(firestore, "proposals"),
+        where("clientId", "in", clientIdsForUser),
+      );
+    }
     return collection(firestore, "proposals");
-  }, [firestore, user]);
+  }, [firestore, user, clientIdsForUser]);
 
   const { data: proposals, isLoading: isLoadingProposals } =
     useCollection<Proposal>(proposalsQuery);
@@ -469,10 +511,12 @@ export default function ProposalsPage() {
     <>
       <div className="flex flex-col h-full">
         <PageHeader title="Orçamentos">
-          <Button size="sm" className="gap-1" onClick={handleAddNew}>
-            <PlusCircle className="h-4 w-4" />
-            Criar Orçamento
-          </Button>
+          {canManageProposalsAndCommercialQuotes(user?.role) && (
+            <Button size="sm" className="gap-1" onClick={handleAddNew}>
+              <PlusCircle className="h-4 w-4" />
+              Criar Orçamento
+            </Button>
+          )}
         </PageHeader>
         <main className="flex-1 overflow-auto p-4 md:p-6 space-y-8">
           <Card>
@@ -564,6 +608,9 @@ export default function ProposalsPage() {
                                   <p>Visualizar</p>
                                 </TooltipContent>
                               </Tooltip>
+                              {user?.role !== "client" &&
+                                user?.role !== "cliente_autonomo" && (
+                                <>
                               <Tooltip>
                                 <TooltipTrigger asChild>
                                   <Button
@@ -643,6 +690,8 @@ export default function ProposalsPage() {
                                   </DropdownMenuItem>
                                 </DropdownMenuContent>
                               </DropdownMenu>
+                                </>
+                              )}
                             </div>
                           </TableCell>
                         </TableRow>

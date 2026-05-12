@@ -38,7 +38,7 @@ export default function DashboardRouterPage() {
           <BirthdayWidget />
           <FinancialDashboard />
           <div className="mt-8">
-            <h2 className="text-2xl font-bold tracking-tight mb-4">
+            <h2 className="mb-4 break-words text-2xl font-bold tracking-tight">
               Visão Geral de Vendas (CRM)
             </h2>
             <CrmDashboard />

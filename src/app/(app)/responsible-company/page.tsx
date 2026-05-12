@@ -22,7 +22,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { MoreHorizontal, PlusCircle, Pencil, Trash2, Eye } from 'lucide-react';
-import { useCollection, useFirestore, useUser, useMemoFirebase, errorEmitter } from '@/firebase';
+import { useCollection, useFirestore, useUser, useMemoFirebase, errorEmitter, useAuth } from '@/firebase';
 import { collection, doc, deleteDoc } from 'firebase/firestore';
 import type { EnvironmentalCompany } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -47,7 +47,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { FirestorePermissionError } from '@/firebase/errors';
-import { useAuth } from '@/firebase';
+import { isClienteAutonomo, isClienteGestao } from '@/lib/role-guards';
 import { useCadastroMenuDebug } from '@/lib/cadastro-menu-debug';
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { Separator } from '@/components/ui/separator';
@@ -70,7 +70,7 @@ export default function ResponsibleCompanyPage() {
   const firestore = useFirestore();
   const { toast } = useToast();
   
-  const canWrite = user && (user.role === 'admin' || user.role === 'supervisor' || user.role === 'gestor');
+  const canWrite = user && (user.role === 'admin' || user.role === 'supervisor' || user.role === 'gestor' || isClienteAutonomo(user.role));
 
   const companiesQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
@@ -140,7 +140,13 @@ export default function ResponsibleCompanyPage() {
           <Card>
             <CardHeader>
               <CardTitle>Gerenciamento de Empresas Responsáveis</CardTitle>
-              <CardDescription>Adicione, edite e visualize as empresas parceiras.</CardDescription>
+              <CardDescription>
+                {isClienteAutonomo(user?.role)
+                  ? 'Adicione, edite ou exclua empresas parceiras que deseja usar nos seus cadastros.'
+                  : isClienteGestao(user?.role)
+                    ? 'Visualize as empresas responsáveis disponibilizadas na plataforma. Alterações de cadastro são feitas pela consultoria.'
+                    : 'Adicione, edite e visualize as empresas parceiras.'}
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <TooltipProvider>

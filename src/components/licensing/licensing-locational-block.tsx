@@ -20,6 +20,7 @@ import {
   inferCriterioLocacionalFromOverlay,
   type GeospatialOverlayForLocational,
 } from "@/lib/licensing-locational";
+import { fetchApiWithRetry } from "@/lib/safe-fetch-api";
 
 const LeafletMap = dynamic(() => import("@/app/(app)/analise-ambiental/leaflet-map"), {
   ssr: false,
@@ -119,9 +120,19 @@ export function LicensingLocationalBlock({
       return;
     }
 
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      toast({
+        variant: "destructive",
+        title: "Sem ligação",
+        description:
+          "A análise geoespacial precisa de internet. Ligue a rede e tente novamente.",
+      });
+      return;
+    }
+
     setLoading(true);
     try {
-      const res = await fetch("/api/geospatial/analyze", {
+      const res = await fetchApiWithRetry("/api/geospatial/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(built),

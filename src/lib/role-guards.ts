@@ -22,9 +22,80 @@ export function isClientePortalRole(role: UserRole | undefined | null): boolean 
   return isClienteGestao(role) || isClienteAutonomo(role);
 }
 
+/**
+ * Cadastro (Empreendedores, Empreendimentos, Empresa responsável):
+ * perfil Cliente Gestão vê dados mas não altera na UI (assessoria da consultoria).
+ */
+export function isCadastroReadOnlyClienteGestao(
+  role: UserRole | undefined | null,
+): boolean {
+  return isClienteGestao(role);
+}
+
+/**
+ * Cliente Autônomo pode criar/editar/excluir cadastros ligados ao seu uso pago.
+ */
+export function canWriteCadastroClienteAutonomo(
+  role: UserRole | undefined | null,
+): boolean {
+  return isClienteAutonomo(role);
+}
+
+/**
+ * Importar empreendedores a partir da coleção `clients`:
+ * apenas equipa interna de administração e finanças (não cliente autônomo, portal ou vendas).
+ */
+export function canImportEmpreendedoresFromClients(
+  role: UserRole | undefined | null,
+): boolean {
+  return (
+    role === "admin" ||
+    role === "supervisor" ||
+    role === "gestor" ||
+    role === "financial"
+  );
+}
+
+/** Cliente gestão e representante: menu Processos só para consulta (sem criar/editar). */
+export function isProcessosPortalReadOnlyRole(
+  role: UserRole | undefined | null,
+): boolean {
+  return role === "client" || role === "representative";
+}
+
+/** Quem vê a lista de processos filtrada por empreendedores do portal (gestão + representante). */
+export function isProcessosPortalScopeRole(
+  role: UserRole | undefined | null,
+): boolean {
+  return isProcessosPortalReadOnlyRole(role);
+}
+
+/** Criar/editar/apagar processos e avançar status: equipa interna. */
+export function canWriteProcessosInternal(
+  role: UserRole | undefined | null,
+): boolean {
+  return (
+    role === "admin" ||
+    role === "supervisor" ||
+    role === "gestor" ||
+    role === "technical" ||
+    role === "advogado"
+  );
+}
+
 /** Titular e representante: apenas consultam registros de CAR, sem anexar nem salvar no projeto. */
 export function canManageCarUploadsOnProject(
   role: UserRole | undefined | null,
 ): boolean {
   return !isClientePortalRole(role) && role !== "representative";
+}
+
+/**
+ * Orçamentos (`proposals`) e propostas comerciais (`commercialProposals`):
+ * criação e gestão na UI restritas a admin e financeiro (não vendas/autônomo).
+ */
+export function canManageProposalsAndCommercialQuotes(
+  role: UserRole | undefined | null,
+): boolean {
+  return role === "admin" || role === "financial";
 }

@@ -84,7 +84,12 @@ import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
 import { formatCpfCnpjDisplay } from "@/lib/masks";
 import { CardSearchInput } from "@/components/card-search-input";
-import { isClientePortalRole } from "@/lib/role-guards";
+import {
+  isClientePortalRole,
+  canWriteCadastroClienteAutonomo,
+  isCadastroReadOnlyClienteGestao,
+  canImportEmpreendedoresFromClients,
+} from "@/lib/role-guards";
 
 const DetailItem = ({
   label,
@@ -122,7 +127,11 @@ export default function EmpreendedoresPage() {
     user &&
     (user.role === "admin" ||
       user.role === "supervisor" ||
-      user.role === "gestor");
+      user.role === "gestor" ||
+      canWriteCadastroClienteAutonomo(user.role));
+
+  const canImportFromClients =
+    Boolean(user) && canImportEmpreendedoresFromClients(user?.role);
 
   const [fallbackEmpreendedores, setFallbackEmpreendedores] = useState<
     Empreendedor[] | null
@@ -299,23 +308,27 @@ export default function EmpreendedoresPage() {
     <>
       <div className="flex flex-col h-full">
         <PageHeader title="Empreendedores">
-          <div className="flex gap-2">
+          <div className="flex w-full min-w-0 max-w-full flex-col gap-2 sm:flex-row sm:flex-wrap sm:justify-end">
+            {canImportFromClients && (
+              <Button
+                size="sm"
+                className="gap-1 sm:shrink-0"
+                variant="outline"
+                onClick={() => setIsImportOpen(true)}
+              >
+                <Import className="h-4 w-4 shrink-0" />
+                Importar de Clientes
+              </Button>
+            )}
             {canWrite && (
-              <>
-                <Button
-                  size="sm"
-                  className="gap-1"
-                  variant="outline"
-                  onClick={() => setIsImportOpen(true)}
-                >
-                  <Import className="h-4 w-4" />
-                  Importar de Clientes
-                </Button>
-                <Button size="sm" className="gap-1" onClick={handleAddNew}>
-                  <PlusCircle className="h-4 w-4" />
-                  Adicionar Empreendedor
-                </Button>
-              </>
+              <Button
+                size="sm"
+                className="gap-1 sm:shrink-0"
+                onClick={handleAddNew}
+              >
+                <PlusCircle className="h-4 w-4 shrink-0" />
+                Adicionar Empreendedor
+              </Button>
             )}
           </div>
         </PageHeader>
@@ -326,7 +339,11 @@ export default function EmpreendedoresPage() {
               <CardDescription>
                 {user?.role === "representative"
                   ? "Empreendedores dos titulares (clientes) que você representa — após aprovação de acesso em Configurações → Usuários."
-                  : "Adicione, edite e visualize todos os seus empreendedores (clientes técnicos)."}
+                  : canWriteCadastroClienteAutonomo(user?.role)
+                    ? "Adicione, edite e exclua os empreendedores ligados ao seu cadastro autônomo."
+                    : isCadastroReadOnlyClienteGestao(user?.role)
+                      ? "Visualize os empreendedores vinculados ao seu perfil Cliente Gestão. Alterações de cadastro são feitas pela consultoria."
+                      : "Adicione, edite e visualize os empreendedores (clientes técnicos)."}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -508,7 +525,7 @@ export default function EmpreendedoresPage() {
         </DialogContent>
       </Dialog>
 
-      {canWrite && (
+      {canImportFromClients && (
         <ClientImportDialog
           isOpen={isImportOpen}
           onOpenChange={setIsImportOpen}

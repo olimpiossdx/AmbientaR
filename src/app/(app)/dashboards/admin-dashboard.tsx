@@ -33,7 +33,9 @@ export default function AdminDashboard() {
             <FinancialDashboard />
         </div>
         <div>
-            <h2 className="text-2xl font-bold tracking-tight mb-4">Visão Geral de Vendas (CRM)</h2>
+            <h2 className="mb-4 break-words text-2xl font-bold tracking-tight">
+              Visão Geral de Vendas (CRM)
+            </h2>
             <CrmDashboard />
         </div>
         <div>

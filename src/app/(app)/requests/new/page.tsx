@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useCollection, useFirebase, useMemoFirebase, errorEmitter } from '@/firebase';
+import { useCollection, useFirebase, useMemoFirebase, errorEmitter, useAuth } from '@/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import type { Empreendedor, Project } from '@/lib/types';
 import * as React from 'react';
@@ -27,6 +27,7 @@ import {
 } from '@/lib/intervention-checklist';
 import { cleanEmptyValues, cn } from '@/lib/utils';
 import { sanitizeStorageFileName, uploadFileToStorage } from '@/lib/storage-upload';
+import { canWriteProcessosInternal } from '@/lib/role-guards';
 import {
   LicensingLocationalBlock,
   type LocationalAnalysisPayload,
@@ -402,7 +403,15 @@ const UsoInsignificanteCard = () => (
 function NewRequestPageContent() {
     const router = useRouter();
     const { firestore } = useFirebase();
+    const { user } = useAuth();
     const { toast } = useToast();
+
+    React.useEffect(() => {
+        if (!user) return;
+        if (!canWriteProcessosInternal(user.role)) {
+            router.replace('/requests');
+        }
+    }, [user, router]);
 
     const [selectedEmpreendedor, setSelectedEmpreendedor] = React.useState('');
     const [selectedEmpreendimento, setSelectedEmpreendimento] = React.useState('');
@@ -428,6 +437,8 @@ function NewRequestPageContent() {
 
     const projectsQuery = useMemoFirebase(() => firestore ? collection(firestore, 'projects') : null, [firestore]);
     const { data: allProjects, isLoading: isLoadingProjects } = useCollection<Project>(projectsQuery);
+
+    const empreendedoresOptions = React.useMemo(() => empreendedores ?? [], [empreendedores]);
 
     const filteredProjects = React.useMemo(() => {
         if (!selectedEmpreendedor || !allProjects) return [];
@@ -711,7 +722,7 @@ function NewRequestPageContent() {
                                             <SelectValue placeholder={isLoadingEmpreendedores ? "Carregando..." : "Selecione o empreendedor"} />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            {empreendedores?.map(emp => (
+                                            {empreendedoresOptions.map((emp) => (
                                                 <SelectItem key={emp.id} value={emp.id}>{emp.name}</SelectItem>
                                             ))}
                                         </SelectContent>

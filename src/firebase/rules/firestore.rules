@@ -5,6 +5,12 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
+     * Offline-first (plano): documentos editados no cliente podem usar metadados
+     * opcionais (ex.: pendingSync, localRev) para reconciliação. Ao ativar por coleção,
+     * alinhar validação aqui e no app — por omissão as regras atuais não dependem destes campos.
+     */
+
+    /**
      * @description Helper function to get the user's role from their profile in the 'users' collection.
      * Returns null if the user document does not exist (avoids denying access when doc is missing).
      */

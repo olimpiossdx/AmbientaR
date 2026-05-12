@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import { useState, useMemo, useEffect } from "react";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -103,7 +103,7 @@ const DetailItem = ({
 }) => (
   <div className="space-y-1">
     <Label className="text-sm font-medium">{label}</Label>
-    <p className="text-sm text-muted-foreground">{value ?? "NÃ£o informado"}</p>
+    <p className="text-sm text-muted-foreground">{value ?? "Não informado"}</p>
   </div>
 );
 
@@ -280,13 +280,13 @@ export default function LicensesPage() {
       collectionName: "licenses",
       documentId: itemToDelete,
       user,
-      reason: "ExclusÃ£o manual na tela de licenÃ§as",
+      reason: "Exclusão manual na tela de licenças",
     })
       .then(() => {
         toast({
-          title: "LicenÃ§a deletada",
+          title: "Licença deletada",
           description:
-            "A licenÃ§a e suas condicionantes relacionadas foram removidas com backup de seguranÃ§a.",
+            "A licença e suas condicionantes relacionadas foram removidas com backup de segurança.",
         });
         setIsAlertOpen(false);
         setItemToDelete(null);
@@ -316,11 +316,11 @@ export default function LicensesPage() {
 
   const getPermitTypeLabel = (type: License["permitType"]) => {
     const types = {
-      LP: "LP - LicenÃ§a PrÃ©via",
-      LI: "LI - LicenÃ§a de InstalaÃ§Ã£o",
-      LO: "LO - LicenÃ§a de OperaÃ§Ã£o",
-      LAS: "LAS - LicenÃ§a Ambiental Simplificada",
-      AAF: "AAF - AutorizaÃ§Ã£o Ambiental de Funcionamento",
+      LP: "LP - Licença Prévia",
+      LI: "LI - Licença de Instalação",
+      LO: "LO - Licença de Operação",
+      LAS: "LAS - Licença Ambiental Simplificada",
+      AAF: "AAF - Autorização Ambiental de Funcionamento",
       Outra: "Outra",
     };
     return types[type] || type;
@@ -329,26 +329,26 @@ export default function LicensesPage() {
   return (
     <>
       <div className="flex flex-col h-full">
-        <PageHeader title="LicenÃ§as Ambientais">
+        <PageHeader title="Licenças Ambientais">
           {canPerformWriteActions(user) && (
             <Button size="sm" className="gap-1" onClick={handleAddNew}>
               <PlusCircle className="h-4 w-4" />
-              Adicionar LicenÃ§a
+              Adicionar Licença
             </Button>
           )}
         </PageHeader>
         <main className="flex-1 overflow-auto p-4 md:p-6">
           <Card>
             <CardHeader>
-              <CardTitle>Gerenciamento de LicenÃ§as</CardTitle>
+              <CardTitle>Gerenciamento de Licenças</CardTitle>
               <CardDescription>
-                Acompanhe e gerencie todas as licenÃ§as ambientais dos seus
+                Acompanhe e gerencie todas as licenças ambientais dos seus
                 clientes.
               </CardDescription>
               <CardSearchInput
                 value={searchTerm}
                 onChange={setSearchTerm}
-                placeholder="Buscar nÂº licenÃ§a, processo, empreendedor..."
+                placeholder="Buscar nº licença, processo, empreendedor..."
               />
             </CardHeader>
             <CardContent>
@@ -387,7 +387,7 @@ export default function LicensesPage() {
                           <div className="text-sm">
                             <p>
                               <span className="text-muted-foreground">
-                                NÂº LicenÃ§a:
+                                Nº Licença:
                               </span>{" "}
                               {license.permitNumber || "N/A"}
                             </p>
@@ -458,7 +458,7 @@ export default function LicensesPage() {
                     ))}
                   {!isLoading && filteredLicenses.length === 0 && (
                     <div className="h-24 flex items-center justify-center text-sm text-muted-foreground">
-                      Nenhuma licenÃ§a encontrada.
+                      Nenhuma licença encontrada.
                     </div>
                   )}
                 </div>
@@ -470,12 +470,12 @@ export default function LicensesPage() {
                       <TableHead className="hidden lg:table-cell">
                         Empreendimento
                       </TableHead>
-                      <TableHead>NÂº da LicenÃ§a</TableHead>
+                      <TableHead>Nº da Licença</TableHead>
                       <TableHead className="hidden lg:table-cell">
                         Vencimento
                       </TableHead>
                       <TableHead>Status</TableHead>
-                      <TableHead className="text-right">AÃ§Ãµes</TableHead>
+                      <TableHead className="text-right">Ações</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -612,7 +612,7 @@ export default function LicensesPage() {
                                       </Button>
                                     </TooltipTrigger>
                                     <TooltipContent>
-                                      <p>Editar licenÃ§a</p>
+                                      <p>Editar licença</p>
                                     </TooltipContent>
                                   </Tooltip>
                                   <Tooltip>
@@ -630,7 +630,7 @@ export default function LicensesPage() {
                                       </Button>
                                     </TooltipTrigger>
                                     <TooltipContent>
-                                      <p>Deletar licenÃ§a</p>
+                                      <p>Deletar licença</p>
                                     </TooltipContent>
                                   </Tooltip>
                                 </>
@@ -642,7 +642,7 @@ export default function LicensesPage() {
                     {!isLoading && filteredLicenses.length === 0 && (
                       <TableRow>
                         <TableCell colSpan={7} className="h-24 text-center">
-                          Nenhuma licenÃ§a encontrada.
+                          Nenhuma licença encontrada.
                         </TableCell>
                       </TableRow>
                     )}
@@ -667,9 +667,9 @@ export default function LicensesPage() {
       <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
         <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Detalhes da LicenÃ§a</DialogTitle>
+            <DialogTitle>Detalhes da Licença</DialogTitle>
             <DialogDescription>
-              VisualizaÃ§Ã£o dos dados cadastrados para a licenÃ§a #
+              Visualização dos dados cadastrados para a licença #
               {viewingLicense?.permitNumber}.
             </DialogDescription>
           </DialogHeader>
@@ -688,11 +688,11 @@ export default function LicensesPage() {
               <Separator />
               <div className="grid grid-cols-2 gap-4">
                 <DetailItem
-                  label="NÂº da LicenÃ§a"
+                  label="Nº da Licença"
                   value={viewingLicense.permitNumber}
                 />
                 <DetailItem
-                  label="NÂº do Processo"
+                  label="Nº do Processo"
                   value={viewingLicense.processNumber}
                 />
               </div>
@@ -702,14 +702,14 @@ export default function LicensesPage() {
                   value={getPermitTypeLabel(viewingLicense.permitType)}
                 />
                 <DetailItem
-                  label="Ã“rgÃ£o Emissor"
+                  label="Órgão Emissor"
                   value={viewingLicense.issuingBody}
                 />
               </div>
               <Separator />
               <div className="grid grid-cols-2 gap-4">
                 <DetailItem
-                  label="Data de EmissÃ£o"
+                  label="Data de Emissão"
                   value={formatDate(viewingLicense.issueDate)}
                 />
                 <DetailItem
@@ -730,7 +730,7 @@ export default function LicensesPage() {
               </div>
               <Separator />
               <div className="space-y-1">
-                <Label>DescriÃ§Ã£o / Objeto</Label>
+                <Label>Descrição / Objeto</Label>
                 <p className="text-muted-foreground whitespace-pre-wrap">
                   {viewingLicense.description || "N/A"}
                 </p>
@@ -739,7 +739,7 @@ export default function LicensesPage() {
                 fileUrl={viewingLicense.fileUrl}
                 sectionLabel="Anexo"
                 emptyLabel="Nenhum documento anexado."
-                zoomTitle="Anexo da licenÃ§a"
+                zoomTitle="Anexo da licença"
               />
             </div>
           )}
@@ -754,10 +754,10 @@ export default function LicensesPage() {
       <AlertDialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>VocÃª tem certeza?</AlertDialogTitle>
+            <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta aÃ§Ã£o nÃ£o pode ser desfeita. Isso irÃ¡ deletar permanentemente
-              a licenÃ§a.
+              Esta ação não pode ser desfeita. Isso irá deletar permanentemente
+              a licença.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

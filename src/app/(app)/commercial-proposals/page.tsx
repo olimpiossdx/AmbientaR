@@ -38,7 +38,17 @@ import {
   XCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { isAdminOrSupervisorRole } from "@/lib/role-guards";
+import {
+  canManageProposalsAndCommercialQuotes,
+  isAdminOrSupervisorRole,
+  isClientePortalRole,
+} from "@/lib/role-guards";
+import {
+  fetchClientIdsForTitularPortalUser,
+  titularClientDocumentVariants,
+  fetchClientIdsForRepresentativeUser,
+} from "@/lib/portal-titular-client-ids";
+import type { AppUser } from "@/lib/types";
 import {
   useCollection,
   useFirebase,
@@ -123,21 +133,6 @@ import {
   Link2,
 } from "lucide-react";
 
-/** Variantes de CPF/CNPJ (original + só dígitos) para match no Firestore, máx 10. */
-function documentVariants(
-  cpf: string | undefined,
-  cnpjs: string[] | undefined,
-): string[] {
-  const raw = [cpf, ...(cnpjs || [])].filter(Boolean) as string[];
-  const set = new Set<string>();
-  for (const v of raw) {
-    set.add(v);
-    const digits = v.replace(/\D/g, "");
-    if (digits.length >= 11) set.add(digits);
-  }
-  return Array.from(set).slice(0, 10);
-}
-
 /** Adiciona numeração de páginas no rodapé no formato página/total. */
 function addPageNumbers(doc: jsPDF, bottomMarginMm: number = 10) {
   const pageCount = doc.getNumberOfPages();
@@ -196,59 +191,26 @@ export default function CommercialProposalsPage() {
     null,
   );
 
-  // Resolve os clientIds que o usuário (cliente ou representante) pode ver.
+  // Resolve os clientIds que o titular (Cliente Gestão / Autônomo) ou representante pode ver.
   React.useEffect(() => {
     if (!firestore || !user) return;
 
-    // Cliente titular.
-    if (user.role === "client") {
-      const isSelfRegistered = !!(user as any).package;
-      const cRef = collection(firestore, "clients");
-      const userCpf = user.cpf || user.userCpf;
-      const userDocs = documentVariants(userCpf, user.cnpjs);
-
-      if (isSelfRegistered) {
-        const q = query(cRef, where("userId", "==", user.id));
-        // Fallback: se `userId` não casar, tenta resolver também via CPF/CNPJ.
-        const qByDoc =
-          userDocs.length > 0
-            ? query(cRef, where("cpfCnpj", "in", userDocs))
-            : null;
-
-        const snapsPromises = qByDoc
-          ? [getDocs(q), getDocs(qByDoc)]
-          : [getDocs(q)];
-        Promise.all(snapsPromises)
-          .then((snaps) => {
-            const ids = new Set<string>();
-            snaps.forEach((snap) => snap.docs.forEach((d) => ids.add(d.id)));
-            setClientIdsForUser(Array.from(ids));
-          })
-          .catch(() => setClientIdsForUser([]));
-      } else {
-        if (userDocs.length > 0) {
-          const q = query(cRef, where("cpfCnpj", "in", userDocs));
-          getDocs(q)
-            .then((snap) => setClientIdsForUser(snap.docs.map((d) => d.id)))
-            .catch(() => setClientIdsForUser([]));
-        } else {
-          setClientIdsForUser([]);
-        }
-      }
+    if (user.role === "client" || user.role === "cliente_autonomo") {
+      fetchClientIdsForTitularPortalUser(firestore, user as AppUser)
+        .then(setClientIdsForUser)
+        .catch(() => setClientIdsForUser([]));
       return;
     }
 
     // Representante: clientes que o titular aprovou para ele.
     if (user.role === "representative") {
-      const repUid = user.id || (user as any).uid;
+      const repUid = user.id || (user as { uid?: string }).uid;
       if (!repUid) {
         setClientIdsForUser([]);
         return;
       }
-      const cRef = collection(firestore, "clients");
-      const q = query(cRef, where("approvedUserIds", "array-contains", repUid));
-      getDocs(q)
-        .then((snap) => setClientIdsForUser(snap.docs.map((d) => d.id)))
+      fetchClientIdsForRepresentativeUser(firestore, repUid)
+        .then(setClientIdsForUser)
         .catch(() => setClientIdsForUser([]));
       return;
     }
@@ -259,8 +221,12 @@ export default function CommercialProposalsPage() {
   const proposalsQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
 
-    // Cliente ou representante: apenas propostas dos seus clientes.
-    if (user.role === "client" || user.role === "representative") {
+    // Titular (gestão ou autônomo) ou representante: apenas propostas dos seus clientes.
+    if (
+      user.role === "client" ||
+      user.role === "cliente_autonomo" ||
+      user.role === "representative"
+    ) {
       if (!clientIdsForUser || clientIdsForUser.length === 0) return null;
       return query(
         collection(firestore, "commercialProposals"),
@@ -288,9 +254,9 @@ export default function CommercialProposalsPage() {
 
   const userClients = useMemo(() => {
     if (!user || !clients) return [];
-    if (user.role !== "client") return [];
+    if (!isClientePortalRole(user.role)) return [];
     const userCpf = user.cpf || user.userCpf;
-    const userDocuments = documentVariants(userCpf, user.cnpjs);
+    const userDocuments = titularClientDocumentVariants(userCpf, user.cnpjs);
     return clients
       .filter((c) => userDocuments.includes(c.cpfCnpj))
       .map((c) => c.id);
@@ -299,8 +265,8 @@ export default function CommercialProposalsPage() {
   const filteredProposals = useMemo(() => {
     if (!proposals) return [];
 
-    // Cliente: apenas propostas dos seus próprios clientIds (via userClients).
-    if (user?.role === "client") {
+    // Titular (gestão ou autônomo): apenas propostas dos próprios clientIds.
+    if (isClientePortalRole(user?.role)) {
       return proposals.filter((p) => userClients.includes(p.clientId));
     }
 
@@ -333,8 +299,8 @@ export default function CommercialProposalsPage() {
 
     let proposalsToShow = filteredProposals;
 
-    // Cliente e representante veem apenas propostas aprovadas (para consulta/download).
-    if (user?.role === "client" || user?.role === "representative") {
+    // Titular (gestão ou autônomo) e representante veem apenas propostas aprovadas (consulta/download).
+    if (isClientePortalRole(user?.role) || user?.role === "representative") {
       proposalsToShow = proposalsToShow.filter((p) => p.status === "Accepted");
     }
 
@@ -817,7 +783,7 @@ export default function CommercialProposalsPage() {
     <>
       <div className="flex flex-col h-full">
         <PageHeader title="Propostas Comerciais">
-          {user?.role !== "client" && (
+          {canManageProposalsAndCommercialQuotes(user?.role) && (
             <Button size="sm" className="gap-1" onClick={handleAddNew}>
               <PlusCircle className="h-4 w-4" />
               Criar Proposta
@@ -993,7 +959,8 @@ export default function CommercialProposalsPage() {
               ) : (
                 <Tabs
                   defaultValue={
-                    user?.role === "client" || user?.role === "representative"
+                    isClientePortalRole(user?.role) ||
+                    user?.role === "representative"
                       ? "finalized"
                       : "active"
                   }
@@ -1055,7 +1022,8 @@ export default function CommercialProposalsPage() {
                                 >
                                   <Eye className="h-4 w-4" />
                                 </Button>
-                                {user?.role !== "client" && (
+                                {user?.role !== "client" &&
+                                  user?.role !== "cliente_autonomo" && (
                                   <>
                                     <Button
                                       variant="ghost"
@@ -1199,7 +1167,8 @@ export default function CommercialProposalsPage() {
                                       <p>Visualizar</p>
                                     </TooltipContent>
                                   </Tooltip>
-                                  {user?.role !== "client" && (
+                                  {user?.role !== "client" &&
+                                  user?.role !== "cliente_autonomo" && (
                                     <>
                                       <Tooltip>
                                         <TooltipTrigger asChild>

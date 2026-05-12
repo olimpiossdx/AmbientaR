@@ -22,7 +22,7 @@ AmbientaR (EcoGestão MG) é uma aplicação Next.js (PWA) de gestão ambiental 
 
 - **Firebase em nuvem.** Não há emuladores. É necessário usuário Firebase válido para acessar as páginas autenticadas.
 - **Next.js 14.** O projeto usa Next 14.2.35 (patch atual da linha 14) com React 18.3.1 (overrides no `package.json`).
-- **PWA:** Em desenvolvimento o service worker pode estar desativado; ícone 404 no manifest é conhecido e não afeta uso.
+- **PWA:** Em **desenvolvimento** o service worker do PWA (`@ducanh2912/next-pwa`) fica **desativado**; `UnregisterServiceWorkerDev` remove SW antigos para evitar ChunkLoadError. Em **produção** (`npm run build`) gera-se `public/sw.js` (ver `.gitignore`). Estratégia offline-first: `src/lib/offline/`, `OfflineProvider` em `(app)/layout`, documentação em `docs/OFFLINE-*.md`.
 - **GOOGLE_GENAI_API_KEY** é opcional; sem ela, fluxos de IA não funcionam mas o restante do app sim.
 - **Regras Firestore:** ficheiro único para deploy: `src/firebase/rules/firestore.rules` (definido no `firebase.json`). Admin tem acesso total via regra catch-all; commercialProposals/contracts têm restrições de update de status (espelho do projeto GitHub AmbientaR). *Não* uses ficheiros espelho extra — evita divergência entre GitHub e o que se publica com `npm run deploy:rules`.
 - **Componentes de estabilidade:** `SuppressExtensionErrors` no layout (evita overlay de erros de extensões); `(app)/loading.tsx` para feedback ao navegar.

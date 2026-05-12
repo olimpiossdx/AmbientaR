@@ -26,7 +26,7 @@ export const viewport: Viewport = {
 };
 
 const inter = Inter({
-  subsets: ["latin"],
+  subsets: ["latin", "latin-ext"],
   display: "swap",
   variable: "--font-inter",
 });
@@ -39,6 +39,7 @@ export default function RootLayout({
   return (
     <html lang="pt-BR" suppressHydrationWarning>
       <head>
+        <meta charSet="utf-8" />
         <meta name="mobile-web-app-capable" content="yes" />
       </head>
       <body

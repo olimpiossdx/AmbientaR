@@ -37,7 +37,7 @@ import {
   ArrowUp,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { isClienteGestao, isClientePortalRole } from "@/lib/role-guards";
+import { isClientePortalRole } from "@/lib/role-guards";
 import type {
   AppUser,
   AuditLog,
@@ -689,7 +689,7 @@ export default function UsersPage() {
   // Carrega detalhes dos representantes aprovados para exibir na UI.
   useEffect(() => {
     const loadRepresentatives = async () => {
-      if (!firestore || !user || !isClienteGestao(user.role)) {
+      if (!firestore || !user || !isClientePortalRole(user.role)) {
         setApprovedRepresentatives([]);
         return;
       }
@@ -728,7 +728,7 @@ export default function UsersPage() {
     status: string;
     representativeCpf?: string;
   }[] => {
-    if (isClienteGestao(user?.role))
+    if (isClientePortalRole(user?.role))
       return (pendingRequestsForMe || []).map((r) => ({
         id: r.id,
         requestedByName: r.requestedByName,
@@ -780,7 +780,7 @@ export default function UsersPage() {
     requestId: string,
     approve: boolean,
   ) => {
-    if (!firestore || !auth || !user || !isClienteGestao(user.role)) return;
+    if (!firestore || !auth || !user || !isClientePortalRole(user.role)) return;
     setResolvingRequestId(requestId);
     try {
       const request = pendingRequestsForMe.find((r) => r.id === requestId);
@@ -835,7 +835,7 @@ export default function UsersPage() {
   const handleRevokeRepresentativeAccess = async (
     representativeUserId: string,
   ) => {
-    if (!firestore || !user || !isClienteGestao(user.role)) return;
+    if (!firestore || !user || !isClientePortalRole(user.role)) return;
     setRevokingRepresentativeId(representativeUserId);
     try {
       const cpfNormsToMatch = new Set<string>();
@@ -1004,7 +1004,7 @@ export default function UsersPage() {
                     </CardContent>
                   </Card>
 
-                  {isClienteGestao(user?.role) ? (
+                  {isClientePortalRole(user?.role) ? (
                   <Card id="access-requests-card">
                     <CardHeader>
                       <CardTitle>
@@ -1032,7 +1032,7 @@ export default function UsersPage() {
                                 E-mail: {req.requestedByEmail}
                               </p>
                               <p className="text-xs text-muted-foreground">
-                                Solicitou acesso ao CPF (titular):{" "}
+                                Solicitou acesso ao CPF/CNPJ (titular):{" "}
                                 {formatCpfCnpjDisplay(req.cpfOfInterested)}
                               </p>
                             </div>
@@ -1090,11 +1090,11 @@ export default function UsersPage() {
                           </p>
                           <p className="text-xs text-muted-foreground border-t pt-2">
                             Se um representante já se cadastrou pedindo acesso
-                            ao seu CPF e não aparece aqui: confira se seu{" "}
-                            <strong>CPF está salvo</strong> no seu perfil (botão
+                            ao seu CPF/CNPJ e não aparece aqui: confira se seu{" "}
+                            <strong>CPF/CNPJ está salvo</strong> no seu perfil (botão
                             &quot;Atualizar / Editar Cadastro&quot; acima) e se
                             o representante informou{" "}
-                            <strong>exatamente esse CPF</strong> (com ou sem
+                            <strong>exatamente esse documento</strong> (com ou sem
                             pontuação) no cadastro dele.
                           </p>
                         </div>
@@ -1161,7 +1161,7 @@ export default function UsersPage() {
                   </Card>
                   ) : null}
 
-                  {isClienteGestao(user?.role) && accessRequestsError && (
+                  {isClientePortalRole(user?.role) && accessRequestsError && (
                     <Card className="border-amber-200 bg-amber-50/50 dark:bg-amber-950/20 dark:border-amber-800">
                       <CardContent className="pt-4 space-y-2">
                         <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
@@ -1388,10 +1388,8 @@ export default function UsersPage() {
                     />
                   </div>
                   <DetailItem
-                    label="CPF"
-                    value={formatCpfDisplay(
-                      repUser?.cpf || (repUser as any)?.userCpf,
-                    )}
+                    label="CPF pessoal"
+                    value={formatCpfDisplay((repUser as any)?.userCpf)}
                   />
                   <Separator />
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

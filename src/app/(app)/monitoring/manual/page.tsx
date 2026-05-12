@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import { useState, useMemo, useEffect } from "react";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -377,7 +377,7 @@ export default function ManualMonitoringPage() {
     deleteDoc(docRef)
       .then(() => {
         toast({
-          title: "LanÃ§amento deletado",
+          title: "Lançamento deletado",
           description: "O registro foi removido com sucesso.",
         });
       })
@@ -448,11 +448,11 @@ export default function ManualMonitoringPage() {
   return (
     <>
       <div className="flex flex-col h-full">
-        <PageHeader title="LanÃ§amento Manual" />
+        <PageHeader title="Lançamento Manual" />
         <main className="flex-1 overflow-auto p-4 md:p-6 space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>SeleÃ§Ã£o do Ponto de Monitoramento</CardTitle>
+              <CardTitle>Seleção do Ponto de Monitoramento</CardTitle>
               <CardDescription>
                 Selecione a outorga e o ponto de monitoramento para ver ou
                 adicionar registros.
@@ -513,16 +513,16 @@ export default function ManualMonitoringPage() {
               <CardHeader>
                 <div className="flex justify-between items-center">
                   <div>
-                    <CardTitle>LanÃ§amentos de Monitoramento</CardTitle>
+                    <CardTitle>Lançamentos de Monitoramento</CardTitle>
                     <CardDescription>
-                      Visualize e gerencie os registros diÃ¡rios para o ponto
+                      Visualize e gerencie os registros diários para o ponto
                       selecionado.
                     </CardDescription>
                   </div>
                   {canPerformWriteActions(user) && (
                     <Button size="sm" className="gap-1" onClick={handleAddNew}>
                       <PlusCircle className="h-4 w-4" />
-                      Adicionar LanÃ§amento
+                      Adicionar Lançamento
                     </Button>
                   )}
                 </div>
@@ -530,7 +530,7 @@ export default function ManualMonitoringPage() {
               <CardContent>
                 <div className="mb-4 space-y-4">
                   <div className="flex flex-wrap items-center gap-3">
-                    <p className="text-sm text-muted-foreground">Ano de referÃªncia:</p>
+                    <p className="text-sm text-muted-foreground">Ano de referência:</p>
                     <Select value={yearFilter} onValueChange={setYearFilter}>
                       <SelectTrigger className="w-[130px]">
                         <SelectValue />
@@ -552,7 +552,7 @@ export default function ManualMonitoringPage() {
                           ))}
                       </SelectContent>
                     </Select>
-                    <p className="text-sm text-muted-foreground">MÃªs:</p>
+                    <p className="text-sm text-muted-foreground">Mês:</p>
                     <Select value={monthFilter} onValueChange={setMonthFilter}>
                       <SelectTrigger className="w-[170px]">
                         <SelectValue />
@@ -561,7 +561,7 @@ export default function ManualMonitoringPage() {
                         <SelectItem value="ano_todo">Ano todo</SelectItem>
                         <SelectItem value="0">Janeiro</SelectItem>
                         <SelectItem value="1">Fevereiro</SelectItem>
-                        <SelectItem value="2">MarÃ§o</SelectItem>
+                        <SelectItem value="2">Março</SelectItem>
                         <SelectItem value="3">Abril</SelectItem>
                         <SelectItem value="4">Maio</SelectItem>
                         <SelectItem value="5">Junho</SelectItem>
@@ -575,7 +575,7 @@ export default function ManualMonitoringPage() {
                     </Select>
                     <Button variant="outline" size="sm" onClick={handleExportCompliancePdf}>
                       <FileText className="h-4 w-4 mr-2" />
-                      Gerar PDF do RelatÃ³rio
+                      Gerar PDF do Relatório
                     </Button>
                   </div>
 
@@ -583,12 +583,12 @@ export default function ManualMonitoringPage() {
                     <Card>
                       <CardContent className="pt-5">
                         <p className="text-sm text-muted-foreground">Volume captado (ano)</p>
-                        <p className="text-2xl font-bold">{dashboardTotals.totalVolume.toLocaleString("pt-BR")} mÂ³</p>
+                        <p className="text-2xl font-bold">{dashboardTotals.totalVolume.toLocaleString("pt-BR")} m³</p>
                       </CardContent>
                     </Card>
                     <Card>
                       <CardContent className="pt-5">
-                        <p className="text-sm text-muted-foreground">Horas de captaÃ§Ã£o</p>
+                        <p className="text-sm text-muted-foreground">Horas de captação</p>
                         <p className="text-2xl font-bold">{dashboardTotals.totalHours.toLocaleString("pt-BR")} h</p>
                       </CardContent>
                     </Card>
@@ -600,11 +600,11 @@ export default function ManualMonitoringPage() {
                     </Card>
                     <Card>
                       <CardContent className="pt-5">
-                        <p className="text-sm text-muted-foreground">Status de restriÃ§Ãµes</p>
+                        <p className="text-sm text-muted-foreground">Status de restrições</p>
                         {compliance && compliance.alerts.length === 0 ? (
                           <p className="text-sm font-semibold text-green-600 flex items-center gap-2">
                             <CheckCircle2 className="h-4 w-4" />
-                            OperaÃ§Ã£o normal
+                            Operação normal
                           </p>
                         ) : (
                           <p className="text-sm font-semibold text-red-600 flex items-center gap-2">
@@ -619,7 +619,7 @@ export default function ManualMonitoringPage() {
                   <div className="grid gap-4 md:grid-cols-2">
                     <Card>
                       <CardHeader className="pb-2">
-                        <CardTitle className="text-base">Volume por mÃªs (mÂ³)</CardTitle>
+                        <CardTitle className="text-base">Volume por mês (m³)</CardTitle>
                       </CardHeader>
                       <CardContent className="h-64">
                         <ResponsiveContainer width="100%" height="100%">
@@ -628,14 +628,14 @@ export default function ManualMonitoringPage() {
                             <XAxis dataKey="month" />
                             <YAxis />
                             <Legend />
-                            <Bar dataKey="volume" name="Volume (mÂ³)" fill="hsl(var(--primary))" />
+                            <Bar dataKey="volume" name="Volume (m³)" fill="hsl(var(--primary))" />
                           </BarChart>
                         </ResponsiveContainer>
                       </CardContent>
                     </Card>
                     <Card>
                       <CardHeader className="pb-2">
-                        <CardTitle className="text-base">Horas e dias por mÃªs</CardTitle>
+                        <CardTitle className="text-base">Horas e dias por mês</CardTitle>
                       </CardHeader>
                       <CardContent className="h-64">
                         <ResponsiveContainer width="100%" height="100%">
@@ -655,7 +655,7 @@ export default function ManualMonitoringPage() {
                   {compliance && compliance.alerts.length > 0 && (
                     <Card>
                       <CardHeader className="pb-2">
-                        <CardTitle className="text-base">Mensagens de atenÃ§Ã£o (filtros do relatÃ³rio)</CardTitle>
+                        <CardTitle className="text-base">Mensagens de atenção (filtros do relatório)</CardTitle>
                       </CardHeader>
                       <CardContent className="space-y-2">
                         {compliance.alerts.map((a, idx) => (
@@ -672,18 +672,18 @@ export default function ManualMonitoringPage() {
                     <TableRow>
                       <TableHead>Data</TableHead>
                       <TableHead className="hidden md:table-cell">
-                        HorÃ­metro InÃ­cio
+                        Horímetro Início
                       </TableHead>
                       <TableHead className="hidden md:table-cell">
-                        HorÃ­metro Fim
+                        Horímetro Fim
                       </TableHead>
-                      <TableHead>VazÃ£o (L/s)</TableHead>
+                      <TableHead>Vazão (L/s)</TableHead>
                       <TableHead className="hidden lg:table-cell">
-                        VazÃ£o (mÂ³/h)
+                        Vazão (m³/h)
                       </TableHead>
                       {canPerformWriteActions(user) && (
                         <TableHead>
-                          <span className="sr-only">AÃ§Ãµes</span>
+                          <span className="sr-only">Ações</span>
                         </TableHead>
                       )}
                     </TableRow>
@@ -726,7 +726,7 @@ export default function ManualMonitoringPage() {
                                         <span className="sr-only">Editar</span>
                                       </Button>
                                     </TooltipTrigger>
-                                    <TooltipContent>Editar lanÃ§amento</TooltipContent>
+                                    <TooltipContent>Editar lançamento</TooltipContent>
                                   </Tooltip>
                                   <Tooltip>
                                     <TooltipTrigger asChild>
@@ -740,7 +740,7 @@ export default function ManualMonitoringPage() {
                                         <span className="sr-only">Deletar</span>
                                       </Button>
                                     </TooltipTrigger>
-                                    <TooltipContent>Deletar lanÃ§amento</TooltipContent>
+                                    <TooltipContent>Deletar lançamento</TooltipContent>
                                   </Tooltip>
                                 </div>
                               </TooltipProvider>
@@ -751,7 +751,7 @@ export default function ManualMonitoringPage() {
                     {!isLoadingLogs && filteredLogs.length === 0 && (
                       <TableRow>
                         <TableCell colSpan={6} className="h-24 text-center">
-                          Nenhum lanÃ§amento encontrado para este ponto.
+                          Nenhum lançamento encontrado para este ponto.
                         </TableCell>
                       </TableRow>
                     )}
@@ -779,9 +779,9 @@ export default function ManualMonitoringPage() {
       <AlertDialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>VocÃª tem certeza?</AlertDialogTitle>
+            <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta aÃ§Ã£o nÃ£o pode ser desfeita e irÃ¡ deletar o registro
+              Esta ação não pode ser desfeita e irá deletar o registro
               permanentemente.
             </AlertDialogDescription>
           </AlertDialogHeader>

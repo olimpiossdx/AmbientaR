@@ -1306,7 +1306,7 @@ export type AccessRequest = {
   requestedByUserId: string;
   requestedByEmail: string;
   requestedByName: string;
-  /** CPF do titular dos dados (interessado) cujo cadastro o solicitante quer acessar. */
+  /** CPF ou CNPJ do titular dos dados (interessado) cujo cadastro o solicitante quer acessar. */
   cpfOfInterested: string;
   status: 'pending' | 'approved' | 'rejected';
   createdAt: any;

@@ -1,6 +1,6 @@
 'use client';
 import * as React from 'react';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
@@ -27,7 +27,14 @@ import {
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { MoreHorizontal, PlusCircle, Eye, Pencil, Trash2, FileText, CheckCircle, FolderOpen } from 'lucide-react';
 import { useCollection, useFirebase, useMemoFirebase, errorEmitter } from '@/firebase';
-import { collection, doc, deleteDoc, updateDoc } from 'firebase/firestore';
+import {
+  collection,
+  doc,
+  deleteDoc,
+  updateDoc,
+  query,
+  where,
+} from 'firebase/firestore';
 import type { Request, Empreendedor, Project, AppUser } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
@@ -45,6 +52,12 @@ import {
   type InterventionChecklistItem,
 } from '@/lib/intervention-checklist';
 import { cn } from '@/lib/utils';
+import { fetchEmpreendedorIdsForProcessosPortal } from '@/lib/requests-portal-empreendedor-ids';
+import {
+  canWriteProcessosInternal,
+  isProcessosPortalReadOnlyRole,
+  isProcessosPortalScopeRole,
+} from '@/lib/role-guards';
 
 const DetailItem = ({ label, value }: { label: string, value?: string | string[] | null }) => (
     <div className="space-y-1">
@@ -83,8 +96,12 @@ function locationalInputModeLabel(mode: string): string {
 }
 
 const canWrite = (user: AppUser | null): boolean => {
-    if (!user) return false;
-    return user.role === 'admin' || user.role === 'supervisor' || user.role === 'gestor' || user.role === 'technical' || user.role === 'advogado';
+  if (!user) return false;
+  return canWriteProcessosInternal(user.role);
+};
+
+function isPortalRequestsScopeRole(role: AppUser['role']): boolean {
+  return isProcessosPortalScopeRole(role);
 }
 
 const getStatusLabel = (status: Request['status']) => {
@@ -112,17 +129,43 @@ export default function RequestsPage() {
   const [viewingItem, setViewingItem] = useState<Request | null>(null);
   const [searchDraft, setSearchDraft] = useState('');
   const [searchApproved, setSearchApproved] = useState('');
+  const [empreendedorIdsForUser, setEmpreendedorIdsForUser] = useState<
+    string[] | undefined
+  >(undefined);
   const router = useRouter();
 
   const { user } = useAuth();
   const { firestore } = useFirebase();
   const { toast } = useToast();
 
+  useEffect(() => {
+    if (!firestore || !user) return;
+    if (!isProcessosPortalScopeRole(user.role)) {
+      setEmpreendedorIdsForUser([]);
+      return;
+    }
+    setEmpreendedorIdsForUser(undefined);
+    fetchEmpreendedorIdsForProcessosPortal(firestore, user)
+      .then(setEmpreendedorIdsForUser)
+      .catch(() => setEmpreendedorIdsForUser(['invalid-placeholder']));
+  }, [user, firestore]);
+
   const requestsQuery = useMemoFirebase(() => {
-    if (!firestore || !user) return null;
-    // Client-side filtering will handle role access for now
+    if (!firestore || !user || empreendedorIdsForUser === undefined) return null;
+    if (isPortalRequestsScopeRole(user.role)) {
+      if (empreendedorIdsForUser.length > 0) {
+        return query(
+          collection(firestore, 'requests'),
+          where('empreendedorId', 'in', empreendedorIdsForUser),
+        );
+      }
+      return query(
+        collection(firestore, 'requests'),
+        where('empreendedorId', 'in', ['invalid-placeholder']),
+      );
+    }
     return collection(firestore, 'requests');
-  }, [firestore, user]);
+  }, [firestore, user, empreendedorIdsForUser]);
 
   const { data: requests, isLoading: isLoadingRequests } = useCollection<Request>(requestsQuery);
 
@@ -134,7 +177,11 @@ export default function RequestsPage() {
   const { data: projects, isLoading: isLoadingProjects } = useCollection<Project>(projectsQuery);
   const projectsMap = React.useMemo(() => new Map(projects?.map(p => [p.id, p.propertyName])), [projects]);
 
-  const isLoading = isLoadingRequests || isLoadingEmpreendedores || isLoadingProjects;
+  const isLoading =
+    isLoadingRequests ||
+    isLoadingEmpreendedores ||
+    isLoadingProjects ||
+    (user && isPortalRequestsScopeRole(user.role) && empreendedorIdsForUser === undefined);
 
   const { draftRequests, approvedRequests } = useMemo(() => {
     if (!requests) return { draftRequests: [], approvedRequests: [] };
@@ -322,16 +369,22 @@ export default function RequestsPage() {
     <>
       <div className="flex flex-col h-full">
         <PageHeader title="Processos">
-          <Button size="sm" className="gap-1" onClick={handleAddNew}>
-            <PlusCircle className="h-4 w-4" />
-            Novo Processo
-          </Button>
+          {canWrite(user) ? (
+            <Button size="sm" className="gap-1" onClick={handleAddNew}>
+              <PlusCircle className="h-4 w-4" />
+              Novo Processo
+            </Button>
+          ) : null}
         </PageHeader>
         <main className="flex-1 overflow-auto p-4 md:p-6 space-y-8">
           <Card>
             <CardHeader>
               <CardTitle>Gerenciamento de Processos - Elaboração</CardTitle>
-              <CardDescription>Visualize e gerencie todas as solicitações de novos processos ambientais que estão em andamento.</CardDescription>
+              <CardDescription>
+                {user && isProcessosPortalReadOnlyRole(user.role)
+                  ? 'Processos em andamento vinculados aos empreendedores do seu acesso. Apenas visualização: abra o processo para ver detalhes, anexos e tramitação.'
+                  : 'Visualize e gerencie todas as solicitações de novos processos ambientais que estão em andamento.'}
+              </CardDescription>
               <CardSearchInput
                 value={searchDraft}
                 onChange={setSearchDraft}
@@ -379,8 +432,25 @@ export default function RequestsPage() {
                                     </TableCell>
                                     <TableCell className="text-sm text-muted-foreground">{item.services?.join(', ') || 'N/A'}</TableCell>
                                     <TableCell className="text-right">
-                                        <div className="flex items-center justify-end gap-1">
-                                            <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={() => handleView(item)}><Eye className="h-4 w-4" /></Button></TooltipTrigger><TooltipContent><p>Visualizar detalhes</p></TooltipContent></Tooltip>
+                                        <div className="flex flex-wrap items-center justify-end gap-1">
+                                            <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={() => handleView(item)}><Eye className="h-4 w-4" /></Button></TooltipTrigger><TooltipContent><p>Resumo rápido</p></TooltipContent></Tooltip>
+                                            {user && isProcessosPortalReadOnlyRole(user.role) && (
+                                              <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                  <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    size="sm"
+                                                    className="h-8 gap-1 px-2"
+                                                    onClick={() => router.push(`/requests/${item.id}/edit`)}
+                                                  >
+                                                    <FolderOpen className="h-4 w-4" />
+                                                    <span className="hidden sm:inline">Abrir</span>
+                                                  </Button>
+                                                </TooltipTrigger>
+                                                <TooltipContent><p>Ver processo, anexos e tramitação</p></TooltipContent>
+                                              </Tooltip>
+                                            )}
                                             {canWrite(user) && (
                                             <>
                                                 <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={() => handleEdit(item)}><Pencil className="h-4 w-4" /></Button></TooltipTrigger><TooltipContent><p>Editar processo</p></TooltipContent></Tooltip>
@@ -407,7 +477,11 @@ export default function RequestsPage() {
            <Card>
             <CardHeader>
               <CardTitle>Processos Aprovados/Conclusos</CardTitle>
-              <CardDescription>Histórico de processos que já foram finalizados.</CardDescription>
+              <CardDescription>
+                {user && isProcessosPortalReadOnlyRole(user.role)
+                  ? 'Histórico de processos finalizados. Pode consultar e descarregar anexos; não é possível alterar dados.'
+                  : 'Histórico de processos que já foram finalizados.'}
+              </CardDescription>
               <CardSearchInput
                 value={searchApproved}
                 onChange={setSearchApproved}
@@ -457,8 +531,25 @@ export default function RequestsPage() {
                                 </TableCell>
                                 <TableCell className="text-sm text-muted-foreground">{item.services?.join(', ') || 'N/A'}</TableCell>
                                 <TableCell className="text-right">
-                                    <div className="flex items-center justify-end gap-1">
-                                    <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={() => handleView(item)}><Eye className="h-4 w-4" /></Button></TooltipTrigger><TooltipContent><p>Visualizar detalhes</p></TooltipContent></Tooltip>
+                                    <div className="flex flex-wrap items-center justify-end gap-1">
+                                    <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={() => handleView(item)}><Eye className="h-4 w-4" /></Button></TooltipTrigger><TooltipContent><p>Resumo rápido</p></TooltipContent></Tooltip>
+                                    {user && isProcessosPortalReadOnlyRole(user.role) && (
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <Button
+                                            type="button"
+                                            variant="outline"
+                                            size="sm"
+                                            className="h-8 gap-1 px-2"
+                                            onClick={() => router.push(`/requests/${item.id}/edit`)}
+                                          >
+                                            <FolderOpen className="h-4 w-4" />
+                                            <span className="hidden sm:inline">Abrir</span>
+                                          </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent><p>Ver processo, anexos e tramitação</p></TooltipContent>
+                                      </Tooltip>
+                                    )}
                                     <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={() => handleExportPdf()}><FileText className="h-4 w-4" /></Button></TooltipTrigger><TooltipContent><p>Exportar PDF</p></TooltipContent></Tooltip>
                                     </div>
                                 </TableCell>

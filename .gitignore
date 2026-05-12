@@ -18,6 +18,11 @@ functions/node_modules
 /.next/
 /out/
 
+# next-pwa / Workbox (gerados em `npm run build` em produção)
+/public/sw.js
+/public/workbox-*.js
+/public/fallback-*.js
+
 # production
 /build
 
@@ -40,6 +45,9 @@ next-env.d.ts
 
 .genkit/*
 .env*
+
+# URL HTTPS da app empacotada no Capacitor (não versionar)
+/capacitor/deployment-url
 
 # firebase
 firebase-debug.log

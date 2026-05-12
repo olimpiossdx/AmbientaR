@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import { useState, useMemo, useEffect } from "react";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -106,7 +106,7 @@ const DetailItem = ({
   <div className="space-y-1">
     <Label className="text-sm font-medium">{label}</Label>
     <p className="text-sm text-muted-foreground">
-      {Array.isArray(value) ? value.join(", ") : value || "NÃ£o informado"}
+      {Array.isArray(value) ? value.join(", ") : value || "Não informado"}
     </p>
   </div>
 );
@@ -242,7 +242,7 @@ export default function OutorgasPage() {
     ((isClientePortalRole(user?.role) || user?.role === "representative") &&
       empreendedorIdsForUser === undefined);
 
-  // #region agent log â€” Etapa 6: GestÃ£o Ambiental â†’ Outorgas
+  // #region agent log — Etapa 6: Gestão Ambiental → Outorgas
   useEffect(() => {
     if (!user || isLoading || !isDebugAgentIngestEnabled()) return;
     fetch("http://127.0.0.1:7696/ingest/fb1ebcbd-0311-40d2-a3c0-dd5658623339", {
@@ -254,7 +254,7 @@ export default function OutorgasPage() {
       body: JSON.stringify({
         sessionId: "79ee00",
         location: "outorgas/page.tsx:etapa6",
-        message: "GestÃ£o Ambiental â†’ Outorgas carregado",
+        message: "Gestão Ambiental → Outorgas carregado",
         data: {
           role: user.role,
           count: outorgas?.length ?? 0,
@@ -294,13 +294,13 @@ export default function OutorgasPage() {
       collectionName: "outorgas",
       documentId: itemToDelete,
       user,
-      reason: "ExclusÃ£o manual na tela de outorgas",
+      reason: "Exclusão manual na tela de outorgas",
     })
       .then(() => {
         toast({
           title: "Outorga deletada",
           description:
-            "A outorga e suas condicionantes relacionadas foram removidas com backup de seguranÃ§a.",
+            "A outorga e suas condicionantes relacionadas foram removidas com backup de segurança.",
         });
       })
       .catch(async (serverError) => {
@@ -329,7 +329,7 @@ export default function OutorgasPage() {
   return (
     <>
       <div className="flex flex-col h-full">
-        <PageHeader title="Outorgas de Uso de Ãgua">
+        <PageHeader title="Outorgas de Uso de Água">
           {canPerformWriteActions(user) && (
             <Button size="sm" className="gap-1" onClick={handleAddNew}>
               <PlusCircle className="h-4 w-4" />
@@ -342,7 +342,7 @@ export default function OutorgasPage() {
             <CardHeader>
               <CardTitle>Gerenciamento de Outorgas</CardTitle>
               <CardDescription>
-                Acompanhe e gerencie todas as outorgas de uso de Ã¡gua dos seus
+                Acompanhe e gerencie todas as outorgas de uso de água dos seus
                 clientes.
               </CardDescription>
               <CardSearchInput
@@ -372,7 +372,7 @@ export default function OutorgasPage() {
                             <div className="min-w-0">
                               <p className="font-medium truncate">
                                 {empreendedoresMap.get(item.empreendedorId) ||
-                                  "NÃ£o encontrado"}
+                                  "Não encontrado"}
                               </p>
                               <p className="text-sm text-muted-foreground truncate">
                                 {projectsMap.get(item.projectId || "") || "N/A"}
@@ -388,7 +388,7 @@ export default function OutorgasPage() {
                           <div className="text-sm">
                             <p>
                               <span className="text-muted-foreground">
-                                NÂº Portaria:
+                                Nº Portaria:
                               </span>{" "}
                               {item.permitNumber || "N/A"}
                             </p>
@@ -463,13 +463,13 @@ export default function OutorgasPage() {
                       <TableHead>Empreendedor</TableHead>
                       <TableHead>Empreendimento</TableHead>
                       <TableHead className="hidden md:table-cell">
-                        NÂº da Portaria
+                        Nº da Portaria
                       </TableHead>
                       <TableHead className="hidden lg:table-cell">
                         Vencimento
                       </TableHead>
                       <TableHead>Status</TableHead>
-                      <TableHead className="text-right">AÃ§Ãµes</TableHead>
+                      <TableHead className="text-right">Ações</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -501,7 +501,7 @@ export default function OutorgasPage() {
                         <TableRow key={item.id}>
                           <TableCell className="font-medium">
                             {empreendedoresMap.get(item.empreendedorId) ||
-                              "NÃ£o encontrado"}
+                              "Não encontrado"}
                           </TableCell>
                           <TableCell className="font-medium">
                             {projectsMap.get(item.projectId || "") || "N/A"}
@@ -646,7 +646,7 @@ export default function OutorgasPage() {
           <DialogHeader>
             <DialogTitle>Detalhes da Outorga</DialogTitle>
             <DialogDescription>
-              VisualizaÃ§Ã£o dos dados para a outorga #{viewingItem?.permitNumber}
+              Visualização dos dados para a outorga #{viewingItem?.permitNumber}
               .
             </DialogDescription>
           </DialogHeader>
@@ -665,18 +665,18 @@ export default function OutorgasPage() {
               <Separator />
               <div className="grid grid-cols-2 gap-4">
                 <DetailItem
-                  label="NÂº da Portaria"
+                  label="Nº da Portaria"
                   value={viewingItem.permitNumber}
                 />
                 <DetailItem
-                  label="NÂº do Processo"
+                  label="Nº do Processo"
                   value={viewingItem.processNumber}
                 />
               </div>
               <Separator />
               <div className="grid grid-cols-2 gap-4">
                 <DetailItem
-                  label="Data de EmissÃ£o"
+                  label="Data de Emissão"
                   value={formatDate(viewingItem.issueDate)}
                 />
                 <DetailItem
@@ -723,9 +723,9 @@ export default function OutorgasPage() {
       <AlertDialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>VocÃª tem certeza?</AlertDialogTitle>
+            <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta aÃ§Ã£o nÃ£o pode ser desfeita. Isso irÃ¡ deletar permanentemente
+              Esta ação não pode ser desfeita. Isso irá deletar permanentemente
               o pedido de outorga.
             </AlertDialogDescription>
           </AlertDialogHeader>

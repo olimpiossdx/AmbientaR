@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, useMemo, useEffect } from "react";
 import { PageHeader } from "@/components/page-header";
@@ -105,7 +105,7 @@ const DetailItem = ({
 }) => (
   <div className="space-y-1">
     <Label className="text-sm font-medium">{label}</Label>
-    <p className="text-sm text-muted-foreground">{value || "NÃ£o informado"}</p>
+    <p className="text-sm text-muted-foreground">{value || "Não informado"}</p>
   </div>
 );
 
@@ -277,7 +277,7 @@ export default function UsosInsignificantesPage() {
       .then(() => {
         toast({
           title: "Registro removido",
-          description: "O uso insignificante foi excluÃ­do.",
+          description: "O uso insignificante foi excluído.",
         });
       })
       .catch(() => {
@@ -314,7 +314,7 @@ export default function UsosInsignificantesPage() {
   return (
     <>
       <div className="flex flex-col h-full">
-        <PageHeader title="Usos Insignificantes de Ãgua">
+        <PageHeader title="Usos Insignificantes de Água">
           <div className="flex items-center gap-2">
             <TooltipProvider>
               <Tooltip>
@@ -335,7 +335,7 @@ export default function UsosInsignificantesPage() {
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>Carregar arquivo (referÃªncia)</p>
+                  <p>Carregar arquivo (referência)</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
@@ -373,8 +373,8 @@ export default function UsosInsignificantesPage() {
             <CardHeader>
               <CardTitle>Gerenciamento de Usos Insignificantes</CardTitle>
               <CardDescription>
-                Cadastro no mesmo padrÃ£o das outorgas: empreendedor, empreendimento,
-                prazos, finalidade e anexo. Os registros sÃ£o salvos neste menu.
+                Cadastro no mesmo padrão das outorgas: empreendedor, empreendimento,
+                prazos, finalidade e anexo. Os registros são salvos neste menu.
               </CardDescription>
               <CardSearchInput
                 value={searchTerm}
@@ -408,7 +408,7 @@ export default function UsosInsignificantesPage() {
                               </p>
                               <p className="text-sm text-muted-foreground truncate">
                                 {empreendedoresMap.get(item.empreendedorId) ||
-                                  "â€”"}
+                                  "—"}
                               </p>
                             </div>
                             <Badge
@@ -476,7 +476,7 @@ export default function UsosInsignificantesPage() {
                     ))}
                   {!isLoading && filteredUsos.length === 0 && (
                     <div className="h-48 flex items-center justify-center border-2 border-dashed rounded-lg text-sm text-muted-foreground text-center px-4">
-                      Nenhum registro encontrado. Adicione um novo uso para comeÃ§ar.
+                      Nenhum registro encontrado. Adicione um novo uso para começar.
                     </div>
                   )}
                 </div>
@@ -489,13 +489,13 @@ export default function UsosInsignificantesPage() {
                         <TableHead>Empreendedor</TableHead>
                         <TableHead>Empreendimento</TableHead>
                         <TableHead className="hidden lg:table-cell">
-                          NÂº doc.
+                          Nº doc.
                         </TableHead>
                         <TableHead className="hidden lg:table-cell">
                           Vencimento
                         </TableHead>
                         <TableHead>Status</TableHead>
-                        <TableHead className="text-right">AÃ§Ãµes</TableHead>
+                        <TableHead className="text-right">Ações</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -515,10 +515,10 @@ export default function UsosInsignificantesPage() {
                             </TableCell>
                             <TableCell>
                               {empreendedoresMap.get(item.empreendedorId) ||
-                                "â€”"}
+                                "—"}
                             </TableCell>
                             <TableCell>
-                              {projectsMap.get(item.projectId || "") || "â€”"}
+                              {projectsMap.get(item.projectId || "") || "—"}
                             </TableCell>
                             <TableCell className="hidden lg:table-cell">
                               {item.permitNumber}
@@ -615,7 +615,7 @@ export default function UsosInsignificantesPage() {
           <DialogHeader>
             <DialogTitle>Uso insignificante</DialogTitle>
             <DialogDescription>
-              {viewingItem?.usoType} â€” {viewingItem?.permitNumber}
+              {viewingItem?.usoType} — {viewingItem?.permitNumber}
             </DialogDescription>
           </DialogHeader>
           {viewingItem && (
@@ -633,13 +633,13 @@ export default function UsosInsignificantesPage() {
                   projectsMap.get(viewingItem.projectId || "") ?? undefined
                 }
               />
-              <DetailItem label="NÂº documento" value={viewingItem.permitNumber} />
+              <DetailItem label="Nº documento" value={viewingItem.permitNumber} />
               <DetailItem
-                label="NÂº processo"
+                label="Nº processo"
                 value={viewingItem.processNumber}
               />
               <DetailItem
-                label="EmissÃ£o"
+                label="Emissão"
                 value={formatDate(viewingItem.issueDate)}
               />
               <DetailItem
@@ -664,7 +664,7 @@ export default function UsosInsignificantesPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Excluir registro?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta aÃ§Ã£o nÃ£o pode ser desfeita. O documento serÃ¡ removido do
+              Esta ação não pode ser desfeita. O documento será removido do
               sistema.
             </AlertDialogDescription>
           </AlertDialogHeader>

@@ -49,6 +49,7 @@ import {
 } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AttachmentPreviewSection } from '@/components/shared/attachment-preview-section';
+import { useOfflineOptional } from '@/lib/offline';
 
 
 const formSchema = z.object({
@@ -127,6 +128,7 @@ export function ProposalForm({ currentItem, onSuccess, onCancel }: ProposalFormP
 
   const { toast } = useToast();
   const { firestore, auth } = useFirebase();
+  const offline = useOfflineOptional();
 
   const clientsQuery = useMemoFirebase(() => firestore ? collection(firestore, 'clients') : null, [firestore]);
   const { data: clients, isLoading: isLoadingClients } = useCollection<Client>(clientsQuery);
@@ -201,7 +203,15 @@ export function ProposalForm({ currentItem, onSuccess, onCancel }: ProposalFormP
       setLoading(false);
       return;
     }
-    
+
+    if (offline && !offline.isOnline) {
+      toast({
+        title: 'Sem rede',
+        description:
+          'A gravação usa o Firestore offline: os dados serão sincronizados quando a ligação voltar.',
+      });
+    }
+
     const dataToSave = {
       ...values,
       proposalDate: values.proposalDate.toISOString(),

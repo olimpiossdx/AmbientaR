@@ -70,6 +70,8 @@ import { SidebarDebugger } from "@/components/sidebar-debugger";
 import { FinancialMenuDebugPanel } from "@/lib/financial-menu-debug";
 import { CadastroMenuDebugPanel } from "@/lib/cadastro-menu-debug";
 import { isRoleAllowedForPath } from "@/lib/route-access";
+import { OfflineProvider } from "@/lib/offline";
+import { OfflineQueueBadge } from "@/components/offline-queue-badge";
 
 const LogoIcon = () => (
   <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-emerald-400 text-primary-foreground">
@@ -404,6 +406,7 @@ const AppLayoutClient = ({ children }: { children: React.ReactNode }) => {
             </Badge>
           )}
           <ThemeToggle />
+          <OfflineQueueBadge />
           <UpgradeButton />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -618,7 +621,9 @@ const AppLayoutClient = ({ children }: { children: React.ReactNode }) => {
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <SidebarProvider>
-      <AppLayoutClient>{children}</AppLayoutClient>
+      <OfflineProvider>
+        <AppLayoutClient>{children}</AppLayoutClient>
+      </OfflineProvider>
     </SidebarProvider>
   );
 }

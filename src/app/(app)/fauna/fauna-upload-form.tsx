@@ -112,6 +112,16 @@ export function FaunaUploadForm({ onSuccess }: FaunaUploadFormProps) {
       return;
     }
 
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      toast({
+        variant: "destructive",
+        title: "Sem ligação",
+        description:
+          "O envio do PDF para o Storage precisa de internet. Tente novamente quando estiver online.",
+      });
+      return;
+    }
+
     setIsUploading(true);
     form.setValue("fileUrl", "");
 

@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import { useState, useMemo, useEffect } from "react";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -107,7 +107,7 @@ const DetailItem = ({
   <div className="space-y-1">
     <Label className="text-sm font-medium">{label}</Label>
     <p className="text-sm text-muted-foreground">
-      {value != null && value !== "" ? String(value) : "NÃ£o informado"}
+      {value != null && value !== "" ? String(value) : "Não informado"}
     </p>
   </div>
 );
@@ -259,13 +259,13 @@ export default function IntervencoesPage() {
       collectionName: "intervencoes",
       documentId: itemToDelete,
       user,
-      reason: "ExclusÃ£o manual na tela de intervenÃ§Ãµes",
+      reason: "Exclusão manual na tela de intervenções",
     })
       .then(() => {
         toast({
           title: "DAIA deletada",
           description:
-            "A DAIA e suas condicionantes relacionadas foram removidas com backup de seguranÃ§a.",
+            "A DAIA e suas condicionantes relacionadas foram removidas com backup de segurança.",
         });
       })
       .catch(async (serverError) => {
@@ -294,7 +294,7 @@ export default function IntervencoesPage() {
   return (
     <>
       <div className="flex flex-col h-full">
-        <PageHeader title="Documentos de AutorizaÃ§Ã£o para IntervenÃ§Ã£o Ambiental (DAIA)">
+        <PageHeader title="Documentos de Autorização para Intervenção Ambiental (DAIA)">
           {canPerformWriteActions(user) && (
             <Button size="sm" className="gap-1" onClick={handleAddNew}>
               <PlusCircle className="h-4 w-4" />
@@ -307,7 +307,7 @@ export default function IntervencoesPage() {
             <CardHeader>
               <CardTitle>Gerenciamento de DAIAs</CardTitle>
               <CardDescription>
-                Acompanhe todas as autorizaÃ§Ãµes para intervenÃ§Ã£o ambiental.
+                Acompanhe todas as autorizações para intervenção ambiental.
               </CardDescription>
               <CardSearchInput
                 value={searchTerm}
@@ -335,7 +335,7 @@ export default function IntervencoesPage() {
                           <div className="flex items-start justify-between gap-3">
                             <p className="font-medium min-w-0 truncate">
                               {empreendedoresMap.get(item.empreendedorId) ||
-                                "Empreendedor nÃ£o encontrado"}
+                                "Empreendedor não encontrado"}
                             </p>
                             <Badge
                               variant={"outline"}
@@ -428,7 +428,7 @@ export default function IntervencoesPage() {
                     ))}
                   {!isLoading && filteredIntervencoes.length === 0 && (
                     <div className="h-24 flex items-center justify-center text-sm text-muted-foreground">
-                      Nenhuma intervenÃ§Ã£o encontrada.
+                      Nenhuma intervenção encontrada.
                     </div>
                   )}
                 </div>
@@ -438,10 +438,10 @@ export default function IntervencoesPage() {
                     <TableRow>
                       <TableHead>Empreendedor</TableHead>
                       <TableHead className="hidden md:table-cell">
-                        NÂº do Processo
+                        Nº do Processo
                       </TableHead>
                       <TableHead className="hidden lg:table-cell">
-                        Tipo de IntervenÃ§Ã£o
+                        Tipo de Intervenção
                       </TableHead>
                       <TableHead className="hidden lg:table-cell">
                         Vencimento
@@ -450,7 +450,7 @@ export default function IntervencoesPage() {
                       <TableHead>Anexo</TableHead>
                       {canPerformWriteActions(user) && (
                         <TableHead>
-                          <span className="sr-only">AÃ§Ãµes</span>
+                          <span className="sr-only">Ações</span>
                         </TableHead>
                       )}
                     </TableRow>
@@ -487,7 +487,7 @@ export default function IntervencoesPage() {
                         <TableRow key={item.id}>
                           <TableCell className="font-medium">
                             {empreendedoresMap.get(item.empreendedorId) ||
-                              "Empreendedor nÃ£o encontrado"}
+                              "Empreendedor não encontrado"}
                           </TableCell>
                           <TableCell className="hidden md:table-cell text-muted-foreground">
                             {item.processNumber}
@@ -575,7 +575,7 @@ export default function IntervencoesPage() {
                                   </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
-                                  <DropdownMenuLabel>AÃ§Ãµes</DropdownMenuLabel>
+                                  <DropdownMenuLabel>Ações</DropdownMenuLabel>
                                   <DropdownMenuItem
                                     onClick={() => handleEdit(item)}
                                   >
@@ -597,7 +597,7 @@ export default function IntervencoesPage() {
                     {!isLoading && filteredIntervencoes.length === 0 && (
                       <TableRow>
                         <TableCell colSpan={7} className="h-24 text-center">
-                          Nenhuma intervenÃ§Ã£o encontrada.
+                          Nenhuma intervenção encontrada.
                         </TableCell>
                       </TableRow>
                     )}
@@ -615,7 +615,7 @@ export default function IntervencoesPage() {
           <DialogHeader>
             <DialogTitle>Visualizar DAIA</DialogTitle>
             <DialogDescription>
-              Somente leitura. Processo nÂº {viewIntervencao?.processNumber || "â€”"}
+              Somente leitura. Processo nº {viewIntervencao?.processNumber || "—"}
             </DialogDescription>
           </DialogHeader>
           {viewIntervencao && (
@@ -626,17 +626,17 @@ export default function IntervencoesPage() {
               />
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <DetailItem
-                  label="NÂº do processo"
+                  label="Nº do processo"
                   value={viewIntervencao.processNumber}
                 />
                 <DetailItem
-                  label="Ã“rgÃ£o emissor"
+                  label="Órgão emissor"
                   value={viewIntervencao.issuingBody}
                 />
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <DetailItem
-                  label="Data de emissÃ£o"
+                  label="Data de emissão"
                   value={formatDate(viewIntervencao.issueDate)}
                 />
                 <DetailItem
@@ -654,7 +654,7 @@ export default function IntervencoesPage() {
                 </Badge>
               </div>
               <div className="space-y-1">
-                <Label className="text-sm font-medium">Tipo / descriÃ§Ã£o</Label>
+                <Label className="text-sm font-medium">Tipo / descrição</Label>
                 <p className="text-muted-foreground whitespace-pre-wrap">
                   {viewIntervencao.description || "N/A"}
                 </p>
@@ -686,8 +686,8 @@ export default function IntervencoesPage() {
             </DialogTitle>
             <DialogDescription>
               {editingItem
-                ? "Atualize os detalhes da autorizaÃ§Ã£o abaixo."
-                : "Preencha os detalhes para criar uma nova autorizaÃ§Ã£o."}
+                ? "Atualize os detalhes da autorização abaixo."
+                : "Preencha os detalhes para criar uma nova autorização."}
             </DialogDescription>
           </DialogHeader>
           <IntervencaoForm
@@ -700,10 +700,10 @@ export default function IntervencoesPage() {
       <AlertDialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>VocÃª tem certeza?</AlertDialogTitle>
+            <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta aÃ§Ã£o nÃ£o pode ser desfeita. Isso irÃ¡ deletar permanentemente
-              a autorizaÃ§Ã£o.
+              Esta ação não pode ser desfeita. Isso irá deletar permanentemente
+              a autorização.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

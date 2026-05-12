@@ -340,7 +340,7 @@ const SidebarInset = React.forwardRef<
     <main
       ref={ref}
       className={cn(
-        "relative flex min-h-full flex-1 flex-col bg-background",
+        "relative flex min-h-full min-w-0 max-w-full flex-1 flex-col bg-background",
         "peer-data-[variant=inset]:min-h-[calc(100vh-theme(spacing.4))] md:peer-data-[variant=inset]:m-2 md:peer-data-[state=collapsed]:peer-data-[variant=inset]:ml-2 md:peer-data-[variant=inset]:ml-0 md:peer-data-[variant=inset]:rounded-xl md:peer-data-[variant=inset]:shadow",
         className
       )}
@@ -550,7 +550,7 @@ const SidebarMenuItem = React.forwardRef<
 SidebarMenuItem.displayName = "SidebarMenuItem"
 
 const sidebarMenuButtonVariants = cva(
-  "peer/menu-button flex w-full items-center gap-2 overflow-hidden rounded-md p-2.5 text-left text-sm outline-none ring-sidebar-ring transition-[width,height,padding,colors] duration-200 ease-out bg-sidebar-accent/50 text-sidebar-accent-foreground hover:bg-sidebar-accent focus-visible:ring-2 active:bg-sidebar-accent disabled:pointer-events-none disabled:opacity-50 group-has-[[data-sidebar=menu-action]]/menu-item:pr-8 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:bg-sidebar-accent data-[active=true]:font-medium data-[state=open]:bg-sidebar-accent/70 data-[state=open]:hover:bg-sidebar-accent group-data-[collapsible=icon]:!size-8 group-data-[collapsible=icon]:!p-2 [&>span:last-child]:whitespace-nowrap [&>svg]:size-4 [&>svg]:shrink-0",
+  "peer/menu-button flex w-full min-w-0 items-start gap-2 overflow-x-hidden rounded-md p-2.5 text-left text-sm outline-none ring-sidebar-ring transition-[width,height,padding,colors] duration-200 ease-out bg-sidebar-accent/50 text-sidebar-accent-foreground hover:bg-sidebar-accent focus-visible:ring-2 active:bg-sidebar-accent disabled:pointer-events-none disabled:opacity-50 group-has-[[data-sidebar=menu-action]]/menu-item:pr-8 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:bg-sidebar-accent data-[active=true]:font-medium data-[state=open]:bg-sidebar-accent/70 data-[state=open]:hover:bg-sidebar-accent group-data-[collapsible=icon]:!size-8 group-data-[collapsible=icon]:!p-2 group-data-[collapsible=icon]:items-center md:items-center md:overflow-hidden [&>span]:min-w-0 [&>span]:flex-1 [&>span]:break-words [&>span]:whitespace-normal md:[&>span]:whitespace-nowrap md:[&>span]:break-normal [&>svg]:size-4 [&>svg]:shrink-0",
   {
     variants: {
       variant: {
@@ -559,9 +559,9 @@ const sidebarMenuButtonVariants = cva(
           "bg-sidebar-accent/40 shadow-[0_0_0_1px_hsl(var(--sidebar-border))] hover:bg-sidebar-accent hover:shadow-[0_0_0_1px_hsl(var(--sidebar-accent))]",
       },
       size: {
-        default: "h-8 text-sm",
-        sm: "h-7 text-xs",
-        lg: "h-12 text-sm group-data-[collapsible=icon]:!p-0",
+        default: "min-h-8 h-auto py-2 md:h-8 md:py-2.5 text-sm",
+        sm: "min-h-7 h-auto py-1.5 md:h-7 md:py-2 text-xs",
+        lg: "min-h-12 h-auto py-2.5 md:h-12 md:py-2.5 text-sm group-data-[collapsible=icon]:!p-0",
       },
     },
     defaultVariants: {
@@ -760,7 +760,7 @@ const SidebarMenuSubButton = React.forwardRef<
       data-size={size}
       data-active={isActive}
       className={cn(
-        "flex h-8 min-w-0 -translate-x-px items-center gap-2 overflow-hidden rounded-md px-2.5 text-sidebar-accent-foreground outline-none ring-sidebar-ring transition-colors duration-200 ease-out bg-sidebar-accent/45 hover:bg-sidebar-accent focus-visible:ring-2 active:bg-sidebar-accent disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 [&>span:last-child]:whitespace-nowrap [&>svg]:size-4 [&>svg]:shrink-0 [&>svg]:text-sidebar-accent-foreground",
+        "flex min-h-8 h-auto min-w-0 -translate-x-px items-start gap-2 overflow-x-hidden rounded-md px-2.5 py-1.5 text-sidebar-accent-foreground outline-none ring-sidebar-ring transition-colors duration-200 ease-out bg-sidebar-accent/45 hover:bg-sidebar-accent focus-visible:ring-2 active:bg-sidebar-accent disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 group-data-[collapsible=icon]:items-center md:h-8 md:items-center md:overflow-hidden md:py-0 [&>span]:min-w-0 [&>span]:flex-1 [&>span]:break-words [&>span]:whitespace-normal md:[&>span]:whitespace-nowrap md:[&>span]:break-normal [&>svg]:size-4 [&>svg]:shrink-0 [&>svg]:text-sidebar-accent-foreground",
         "data-[active=true]:bg-sidebar-accent",
         size === "sm" && "text-xs",
         size === "md" && "text-sm",

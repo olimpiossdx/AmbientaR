@@ -4,14 +4,28 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { EmpreendedorForm } from '../empreendedor-form';
 import { useRouter } from 'next/navigation';
 import { Suspense } from 'react';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useCadastroGestaoWriteGuard } from '@/hooks/use-cadastro-gestao-write-guard';
 
 function NewEmpreendedorPageContent() {
     const router = useRouter();
+    const { blocked, isInitialized } = useCadastroGestaoWriteGuard('/empreendedores');
 
     const handleSuccess = () => {
       router.push('/empreendedores');
     };
-  
+
+    if (!isInitialized) {
+      return (
+        <div className="flex flex-col h-full">
+          <PageHeader title="Novo Empreendedor" />
+          <main className="flex-1 overflow-auto p-4 md:p-6">
+            <Skeleton className="mx-auto h-96 max-w-4xl" />
+          </main>
+        </div>
+      );
+    }
+    if (blocked) return null;
     return (
       <div className="flex flex-col h-full">
         <PageHeader title="Novo Empreendedor" />

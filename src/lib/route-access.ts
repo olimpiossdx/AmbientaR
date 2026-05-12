@@ -3,6 +3,20 @@ import { allNavItems } from '@/lib/navigation-config';
 
 type FlatNavEntry = { href: string; roles?: UserRole[] };
 
+/** Prefixos que o perfil `cliente_autonomo` não pode aceder (IA + processos). */
+const PATH_PREFIXES_DENIED_FOR_CLIENTE_AUTONOMO: readonly string[] = [
+  '/ai-lab',
+  '/studies/assistant',
+  '/analise-ambiental',
+  '/studies/analise-socioambiental',
+  '/requests',
+];
+
+function pathMatchesIaDeniedPrefix(path: string, prefix: string): boolean {
+  if (path === prefix) return true;
+  return path.startsWith(`${prefix}/`);
+}
+
 function flattenNav(items: (NavItem | NavSubItem)[], out: FlatNavEntry[] = []): FlatNavEntry[] {
   for (const item of items) {
     if (item.href) out.push({ href: item.href, roles: item.roles });
@@ -49,6 +63,12 @@ export function getAllowedRolesForPath(pathname: string): UserRole[] | null {
 
 export function isRoleAllowedForPath(role: UserRole, pathname: string): boolean {
   if (role === 'admin') return true;
+  const path = normalizePathname(pathname);
+  if (role === 'cliente_autonomo') {
+    for (const prefix of PATH_PREFIXES_DENIED_FOR_CLIENTE_AUTONOMO) {
+      if (pathMatchesIaDeniedPrefix(path, prefix)) return false;
+    }
+  }
   const allowed = getAllowedRolesForPath(pathname);
   if (!allowed) return true;
   return allowed.includes(role);
