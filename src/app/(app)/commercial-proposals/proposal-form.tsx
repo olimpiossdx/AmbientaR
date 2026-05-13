@@ -50,7 +50,13 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { AttachmentPreviewSection } from '@/components/shared/attachment-preview-section';
 import { useOfflineOptional } from '@/lib/offline';
+import {
+  uploadFileToStorage,
+  sanitizeStorageFileName,
+} from '@/lib/storage-upload';
+import { isImageOrPdfForTransaction } from '@/lib/file-mime';
 
+const MAX_PROPOSAL_FILE_BYTES = 10 * 1024 * 1024;
 
 const formSchema = z.object({
   clientId: z.string().min(1, 'Selecione um cliente.'),
@@ -124,6 +130,7 @@ CurrencyInput.displayName = "CurrencyInput";
 export function ProposalForm({ currentItem, onSuccess, onCancel }: ProposalFormProps) {
   const [loading, setLoading] = React.useState(false);
   const [fileUrl, setFileUrl] = React.useState<string | null>(currentItem?.fileUrl || null);
+  const [isUploadingFile, setIsUploadingFile] = React.useState(false);
   const [isServiceModalOpen, setIsServiceModalOpen] = React.useState(false);
 
   const { toast } = useToast();
@@ -142,12 +149,12 @@ export function ProposalForm({ currentItem, onSuccess, onCancel }: ProposalFormP
       ...currentItem,
       proposalDate: new Date(currentItem.proposalDate),
       validUntilDate: new Date(currentItem.validUntilDate),
-      items: currentItem.items || [{ description: '', value: 0 }],
+      items: currentItem.items?.length ? currentItem.items : [],
     } : {
       clientId: '',
       empreendimento: '',
       proposalNumber: '',
-      items: [{ description: '', value: 0 }],
+      items: [],
       paymentTerms: '50% de entrada e 50% na entrega do relatório final.',
       amount: 0,
       status: 'Draft',
@@ -162,11 +169,70 @@ export function ProposalForm({ currentItem, onSuccess, onCancel }: ProposalFormP
         ...currentItem,
         proposalDate: new Date(currentItem.proposalDate),
         validUntilDate: new Date(currentItem.validUntilDate),
-        items: currentItem.items || [{ description: '', value: 0 }],
+        items: currentItem.items?.length ? currentItem.items : [],
       });
       setFileUrl(currentItem.fileUrl || null);
     }
   }, [currentItem, form]);
+
+  const handleProposalFileChange = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const inputEl = event.currentTarget;
+    const file = inputEl.files?.[0];
+    if (!file) return;
+
+    if (file.size > MAX_PROPOSAL_FILE_BYTES) {
+      toast({
+        variant: 'destructive',
+        title: 'Arquivo muito grande',
+        description: `O arquivo não pode exceder ${MAX_PROPOSAL_FILE_BYTES / 1024 / 1024}MB.`,
+      });
+      inputEl.value = '';
+      return;
+    }
+    if (!isImageOrPdfForTransaction(file)) {
+      toast({
+        variant: 'destructive',
+        title: 'Tipo de arquivo inválido',
+        description: 'Envie apenas PDF, JPG ou PNG.',
+      });
+      inputEl.value = '';
+      return;
+    }
+
+    inputEl.value = '';
+    setIsUploadingFile(true);
+    setFileUrl(null);
+    try {
+      const uid = auth?.currentUser?.uid;
+      if (!uid) {
+        throw new Error('Sessão inválida. Faça login novamente.');
+      }
+      const safe = sanitizeStorageFileName(file.name);
+      const downloadUrl = await uploadFileToStorage(
+        file,
+        `commercial-proposals/${uid}/${Date.now()}-${safe}`,
+      );
+      setFileUrl(downloadUrl);
+      toast({
+        title: 'Anexo carregado',
+        description: 'O arquivo está pronto para ser salvo com a proposta.',
+      });
+    } catch (error) {
+      console.error('File upload error:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Erro no upload',
+        description:
+          error instanceof Error
+            ? error.message
+            : 'Não foi possível enviar o arquivo.',
+      });
+    } finally {
+      setIsUploadingFile(false);
+    }
+  };
 
   const { fields, append, remove } = useFieldArray({
     control: form.control,
@@ -325,8 +391,11 @@ export function ProposalForm({ currentItem, onSuccess, onCancel }: ProposalFormP
         </DialogDescription>
       </DialogHeader>
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="h-full flex flex-col overflow-hidden">
-          <div className="flex-1 overflow-y-auto pr-6 pl-1 -mr-6 -ml-1 space-y-4">
+        <form
+          onSubmit={form.handleSubmit(onSubmit)}
+          className="flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-hidden"
+        >
+          <div className="min-h-0 min-w-0 flex-1 space-y-4 overflow-y-auto py-1 pr-2 sm:pr-1">
           <FormField
             control={form.control}
             name="clientId"
@@ -377,29 +446,57 @@ export function ProposalForm({ currentItem, onSuccess, onCancel }: ProposalFormP
             )}
           />
 
-          <div className="space-y-4 rounded-md border p-4">
-              <div className="flex justify-between items-center">
-                <h3 className="text-base font-semibold">Itens da Proposta</h3>
-                <div className='flex gap-2'>
-                    <Button size="sm" type="button" variant="outline" onClick={() => setIsServiceModalOpen(true)}>
-                        <List className="mr-2 h-4 w-4" /> Adicionar da Tabela
+          <div className="min-w-0 space-y-4 rounded-lg border border-border/80 bg-muted/15 p-4 sm:p-5">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+                <h3 className="shrink-0 text-base font-semibold leading-snug text-foreground">
+                  Itens da Proposta
+                </h3>
+                <div className="grid w-full min-w-0 grid-cols-2 gap-2 sm:w-auto sm:min-w-[min(100%,20rem)] lg:min-w-[22rem]">
+                    <Button
+                      size="sm"
+                      type="button"
+                      variant="outline"
+                      className="h-10 min-h-10 min-w-0 gap-1.5 px-2 text-xs sm:gap-2 sm:px-3 sm:text-sm"
+                      onClick={() => setIsServiceModalOpen(true)}
+                    >
+                        <List className="h-4 w-4 shrink-0" aria-hidden />
+                        <span className="min-w-0 text-balance leading-tight">Adicionar da Tabela</span>
                     </Button>
-                    <Button size="sm" type="button" onClick={() => append({ description: '', value: 0 })}>
-                        <PlusCircle className="mr-2 h-4 w-4" /> Adicionar Manual
+                    <Button
+                      size="sm"
+                      type="button"
+                      className="h-10 min-h-10 min-w-0 gap-1.5 px-2 text-xs sm:gap-2 sm:px-3 sm:text-sm"
+                      onClick={() => append({ description: '', value: 0 })}
+                    >
+                        <PlusCircle className="h-4 w-4 shrink-0" aria-hidden />
+                        <span className="min-w-0 text-balance leading-tight">Adicionar Manual</span>
                     </Button>
                 </div>
               </div>
-              <div className="space-y-4">
+              {fields.length === 0 ? (
+                <p className="rounded-md border border-dashed border-muted-foreground/30 bg-muted/25 px-3 py-3.5 text-center text-sm leading-snug text-muted-foreground">
+                  Nenhum item ainda. Use <strong className="font-medium text-foreground/90">Adicionar da Tabela</strong> ou{' '}
+                  <strong className="font-medium text-foreground/90">Adicionar Manual</strong> para incluir serviços.
+                </p>
+              ) : null}
+              <div className="space-y-3">
                 {fields.map((field, index) => (
-                    <div key={field.id} className="flex items-end gap-2 border p-2 rounded-md">
+                    <div
+                      key={field.id}
+                      className="grid grid-cols-1 gap-3 rounded-md border border-border/70 bg-background p-3 sm:grid-cols-[minmax(0,1fr)_10.5rem_auto] sm:items-end sm:gap-x-3 sm:gap-y-2"
+                    >
                         <FormField
                             control={form.control}
                             name={`items.${index}.description`}
                             render={({ field }) => (
-                                <FormItem className="flex-1">
-                                    <FormLabel className="text-xs">Descrição do Serviço</FormLabel>
+                                <FormItem className="min-w-0 space-y-1.5">
+                                    <FormLabel className="text-sm font-medium">Descrição do Serviço</FormLabel>
                                     <FormControl>
-                                        <Textarea placeholder="Ex: Elaboração de RCA" {...field} className="min-h-[40px]" />
+                                        <Textarea
+                                          placeholder="Ex: Elaboração de RCA"
+                                          {...field}
+                                          className="min-h-[4.5rem] w-full resize-y"
+                                        />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
@@ -409,11 +506,11 @@ export function ProposalForm({ currentItem, onSuccess, onCancel }: ProposalFormP
                             control={form.control}
                             name={`items.${index}.value`}
                             render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel className="text-xs">Valor (R$)</FormLabel>
+                                <FormItem className="min-w-0 space-y-1.5 sm:max-w-none">
+                                    <FormLabel className="text-sm font-medium">Valor (R$)</FormLabel>
                                     <FormControl>
                                         <CurrencyInput
-                                            className="w-40 text-right"
+                                            className="w-full text-right tabular-nums sm:min-w-[9.5rem]"
                                             value={field.value}
                                             onChange={field.onChange}
                                         />
@@ -422,19 +519,21 @@ export function ProposalForm({ currentItem, onSuccess, onCancel }: ProposalFormP
                                 </FormItem>
                             )}
                         />
-                        <Button type="button" variant="destructive" size="icon" className="h-9 w-9" onClick={() => remove(index)}>
+                        <div className="flex items-center justify-start pb-0.5 sm:items-end sm:justify-end">
+                          <Button type="button" variant="destructive" size="icon" className="h-10 w-10 shrink-0" onClick={() => remove(index)} aria-label="Remover item">
                             <Trash2 className="h-4 w-4" />
-                        </Button>
+                          </Button>
+                        </div>
                     </div>
                 ))}
                 {form.formState.errors.items?.root && (
                      <p className="text-sm font-medium text-destructive">{form.formState.errors.items.root.message}</p>
                 )}
               </div>
-              <Separator />
-               <div className="flex justify-end items-center gap-4">
-                    <span className="font-semibold">Valor Total:</span>
-                    <span className="text-xl font-bold">{formatCurrencyBRL(totalAmount)}</span>
+              <Separator className="my-1" />
+               <div className="flex flex-wrap items-baseline justify-end gap-x-4 gap-y-1 pt-1">
+                    <span className="text-sm font-semibold text-muted-foreground sm:text-base">Valor Total:</span>
+                    <span className="text-lg font-bold tabular-nums sm:text-xl">{formatCurrencyBRL(totalAmount)}</span>
                 </div>
           </div>
            <FormField
@@ -465,6 +564,23 @@ export function ProposalForm({ currentItem, onSuccess, onCancel }: ProposalFormP
                   name="validUntilDate"
                   render={({ field }) => <DateInput field={field} label="Válido Até" />}
               />
+          </div>
+          <div className="space-y-2 rounded-lg border border-border/60 p-3">
+            <FormLabel className="text-sm font-medium">
+              PDF ou imagem da proposta (opcional)
+            </FormLabel>
+            <Input
+              type="file"
+              accept="application/pdf,image/jpeg,image/png"
+              onChange={handleProposalFileChange}
+              disabled={isUploadingFile || loading}
+              className="cursor-pointer"
+            />
+            {isUploadingFile ? (
+              <p className="text-sm text-muted-foreground flex items-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin" /> Enviando arquivo…
+              </p>
+            ) : null}
           </div>
           {fileUrl ? (
             <div className="rounded-lg border p-3 bg-muted/20">
@@ -498,9 +614,9 @@ export function ProposalForm({ currentItem, onSuccess, onCancel }: ProposalFormP
             )}
           />
           </div>
-          <DialogFooter>
+          <DialogFooter className="mt-4 shrink-0 border-t border-border/60 bg-background pt-4 sm:mt-6">
             <Button type="button" variant="outline" onClick={onCancel} disabled={loading}>Cancelar</Button>
-            <Button type="submit" disabled={loading}>
+            <Button type="submit" disabled={loading || isUploadingFile}>
               {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Salvando...</> : 'Salvar Proposta'}
             </Button>
           </DialogFooter>

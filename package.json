@@ -14,6 +14,7 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
+    "check:uploads": "node scripts/check-upload-patterns.cjs",
     "deploy:rules": "npx firebase deploy --only firestore:rules",
     "cap:sync": "npx cap sync",
     "cap:sync:deploy": "node scripts/cap-sync-deploy.cjs",

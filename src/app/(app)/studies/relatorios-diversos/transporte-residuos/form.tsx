@@ -25,6 +25,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { Empreendedor, EnvironmentalCompany, Project, TechnicalResponsible, TransporteResiduosPerigosos } from '@/lib/types';
 import { Textarea } from '@/components/ui/textarea';
+import {
+  uploadFileToStorage,
+  sanitizeStorageFileName,
+} from '@/lib/storage-upload';
+import { isImageOrPdfForTransaction } from '@/lib/file-mime';
+
+const MAX_ANEXO_ART_BYTES = 10 * 1024 * 1024;
 
 const formSchema = z.object({
     empreendedor: z.object({
@@ -116,8 +123,9 @@ interface TransporteResiduosFormProps {
 
 export function TransporteResiduosForm({ onSuccess, onCancel }: TransporteResiduosFormProps) {
   const [loading, setLoading] = React.useState(false);
+  const [isUploadingArt, setIsUploadingArt] = React.useState(false);
   const { toast } = useToast();
-  const { firestore } = useFirebase();
+  const { firestore, auth } = useFirebase();
 
   const empreendedoresQuery = useMemoFirebase(() => firestore ? collection(firestore, 'empreendedores') : null, [firestore]);
   const { data: empreendedores, isLoading: isLoadingEmpreendedores } = useCollection<Empreendedor>(empreendedoresQuery);
@@ -145,6 +153,7 @@ export function TransporteResiduosForm({ onSuccess, onCancel }: TransporteResidu
         classificacaoResiduos: [],
         origemDestinoProdutos: [],
         origemDestinoResiduos: [],
+        anexoART: '',
     },
   });
 
@@ -206,6 +215,66 @@ export function TransporteResiduosForm({ onSuccess, onCancel }: TransporteResidu
         form.setValue('responsavelTecnico.art', responsavel.art);
     }
   }, [selectedResponsavelId, responsaveis, form]);
+
+  const handleAnexoArtFileChange = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+    onUrlChange: (url: string) => void,
+  ) => {
+    const inputEl = event.currentTarget;
+    const file = inputEl.files?.[0];
+    if (!file) return;
+
+    if (file.size > MAX_ANEXO_ART_BYTES) {
+      toast({
+        variant: 'destructive',
+        title: 'Arquivo muito grande',
+        description: `Máximo ${MAX_ANEXO_ART_BYTES / 1024 / 1024}MB.`,
+      });
+      inputEl.value = '';
+      return;
+    }
+    if (!isImageOrPdfForTransaction(file)) {
+      toast({
+        variant: 'destructive',
+        title: 'Tipo inválido',
+        description: 'Envie PDF, JPG ou PNG.',
+      });
+      inputEl.value = '';
+      return;
+    }
+
+    const uid = auth?.currentUser?.uid;
+    if (!uid) {
+      toast({
+        variant: 'destructive',
+        title: 'Sessão inválida',
+        description: 'Faça login para anexar ficheiros.',
+      });
+      inputEl.value = '';
+      return;
+    }
+
+    inputEl.value = '';
+    setIsUploadingArt(true);
+    try {
+      const safe = sanitizeStorageFileName(file.name);
+      const url = await uploadFileToStorage(
+        file,
+        `transporte-residuos-reports/${uid}/${Date.now()}-${safe}`,
+      );
+      onUrlChange(url);
+      toast({ title: 'Anexo enviado', description: 'A cópia da ART foi guardada no Storage.' });
+    } catch (e) {
+      console.error(e);
+      toast({
+        variant: 'destructive',
+        title: 'Erro no upload',
+        description: e instanceof Error ? e.message : 'Não foi possível enviar o ficheiro.',
+      });
+    } finally {
+      setIsUploadingArt(false);
+    }
+  };
 
   async function onSubmit(values: FormValues) {
     setLoading(true);
@@ -492,7 +561,41 @@ export function TransporteResiduosForm({ onSuccess, onCancel }: TransporteResidu
         </Card>
 
         <h2 className="text-xl font-bold pt-4">6. ANEXOS</h2>
-        <FormField control={form.control} name="anexoART" render={({ field }) => (<FormItem><FormLabel>Anexar cópia da ART ou documento equivalente</FormLabel><FormControl><Input type="file" /></FormControl><FormMessage /></FormItem>)} />
+        <FormField
+          control={form.control}
+          name="anexoART"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Anexar cópia da ART ou documento equivalente</FormLabel>
+              <FormControl>
+                <Input
+                  type="file"
+                  accept="application/pdf,image/jpeg,image/png"
+                  disabled={isUploadingArt || loading}
+                  onChange={(e) => handleAnexoArtFileChange(e, field.onChange)}
+                />
+              </FormControl>
+              {isUploadingArt ? (
+                <p className="text-sm text-muted-foreground flex items-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin" /> A enviar…
+                </p>
+              ) : null}
+              {field.value ? (
+                <p className="text-sm">
+                  <a
+                    href={field.value}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary underline"
+                  >
+                    Abrir anexo carregado
+                  </a>
+                </p>
+              ) : null}
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
         <div className="flex justify-end space-x-2">
           <Button type="button" variant="outline" onClick={onCancel} disabled={loading}>
