@@ -10,6 +10,8 @@ import {
   SidebarProvider,
   Sidebar,
   SidebarContent,
+  SidebarInset,
+  SidebarResizeHandle,
   SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar";
@@ -359,6 +361,9 @@ const AppLayoutClient = ({ children }: { children: React.ReactNode }) => {
     <div className="flex h-screen w-full flex-col">
       <header className="sticky top-0 z-40 flex h-16 shrink-0 items-center justify-between border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6">
         <div className="flex items-center gap-2">
+          <div className="hidden md:block">
+            <SidebarTrigger className="-ml-0.5" />
+          </div>
           <div className="md:hidden">
             <Button
               variant="ghost"
@@ -537,19 +542,20 @@ const AppLayoutClient = ({ children }: { children: React.ReactNode }) => {
       </header>
 
       <div className="flex min-w-0 flex-1 overflow-hidden">
-        <Sidebar>
+        <Sidebar collapsible="icon">
           <SidebarContent>
             <NavContent />
           </SidebarContent>
         </Sidebar>
-        <main className="min-w-0 flex-1 overflow-y-auto overflow-x-hidden">
+        <SidebarResizeHandle />
+        <SidebarInset className="min-w-0 flex-1 overflow-y-auto overflow-x-hidden">
           <div
             key={pathname}
             className="animate-page-fade-in relative h-full min-w-0 max-w-full"
           >
             {children}
           </div>
-        </main>
+        </SidebarInset>
       </div>
 
       {canRenderChatWidget && <ChatWidget />}
@@ -558,7 +564,7 @@ const AppLayoutClient = ({ children }: { children: React.ReactNode }) => {
       <div className="md:hidden fixed bottom-0 left-0 right-0 h-[72px] bg-background/95 backdrop-blur border-t z-40">
         <div className="flex justify-around items-center h-full px-1">
           {filteredMobileNavItems.map((item) => (
-            <Link key={item.href} href={item.href} passHref>
+            <Link key={item.href} href={item.href}>
               <div
                 className={cn(
                   "flex flex-col items-center justify-center gap-1 h-full text-muted-foreground transition-all duration-200 ease-out active:scale-95",

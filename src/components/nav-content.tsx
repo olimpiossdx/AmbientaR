@@ -11,7 +11,8 @@ import {
   SidebarMenuButton,
   SidebarMenuSub,
   SidebarMenuSubButton,
-  useSidebar
+  SIDEBAR_WIDTH_USER_DRAG_KEY,
+  useSidebar,
 } from '@/components/ui/sidebar';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { ChevronDown } from 'lucide-react';
@@ -193,33 +194,28 @@ function NavContentInner() {
 
     const measureAndApply = () => {
       if (cancelled) return;
-      const root = menuRef.current;
-      if (!root) return;
+      try {
+        if (localStorage.getItem(SIDEBAR_WIDTH_USER_DRAG_KEY) === "1") return;
+      } catch {
+        /* ignore */
+      }
+      if (!menuRef.current) return;
 
       const horizontalPad = 32;
       const subMenuSlack = 48;
-
-      let maxRow = 0;
-      root.querySelectorAll<HTMLElement>('[data-sidebar="menu-button"]').forEach((el) => {
-        maxRow = Math.max(maxRow, el.scrollWidth);
-      });
-      root.querySelectorAll<HTMLElement>('[data-sidebar="menu-sub-button"]').forEach((el) => {
-        maxRow = Math.max(maxRow, el.scrollWidth + subMenuSlack);
-      });
+      const minW = 220;
 
       const fromTree =
         navItems.length && user
-          ? estimateMenuLabelsWidthPx(navItems, user.role)
-          : 0;
-      const merged = Math.max(maxRow, fromTree);
-
-      const cap =
-        typeof window !== 'undefined'
-          ? Math.min(960, Math.floor(window.innerWidth * 0.92))
-          : 960;
+          ? estimateMenuLabelsWidthPx(navItems, user.role) + subMenuSlack
+          : minW;
+      const vwCap =
+        typeof window !== "undefined"
+          ? Math.min(400, Math.floor(window.innerWidth * 0.36))
+          : 400;
       const nextWidth = Math.min(
-        Math.max(merged + horizontalPad, 220),
-        cap,
+        Math.max(fromTree + horizontalPad, minW),
+        vwCap,
       );
       setDesktopSidebarWidth(nextWidth);
     };

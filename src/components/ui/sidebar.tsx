@@ -34,6 +34,20 @@ const SIDEBAR_WIDTH_MOBILE = "18rem"
 const SIDEBAR_WIDTH_ICON = "3rem"
 const SIDEBAR_KEYBOARD_SHORTCUT = "b"
 const SIDEBAR_WIDTH_DESKTOP_DEFAULT_PX = 256
+/** Largura da barra em desktop persistida entre sessões. */
+const SIDEBAR_WIDTH_STORAGE_KEY = "sidebar_width_px"
+/** Quando definido, o ajuste automático por texto do menu deixa de sobrescrever a largura (ex.: após arrastar). */
+export const SIDEBAR_WIDTH_USER_DRAG_KEY = "sidebar_width_user_drag"
+
+const SIDEBAR_DESKTOP_MIN_PX = 220
+const SIDEBAR_DESKTOP_MAX_PX = 520
+
+function clampDesktopSidebarWidthPx(n: number): number {
+  return Math.min(
+    Math.max(Math.round(n), SIDEBAR_DESKTOP_MIN_PX),
+    SIDEBAR_DESKTOP_MAX_PX,
+  )
+}
 
 type SidebarContext = {
   state: "expanded" | "collapsed"
@@ -43,6 +57,8 @@ type SidebarContext = {
   setOpenMobile: (open: boolean) => void
   isMobile: boolean
   toggleSidebar: () => void
+  /** Largura efetiva em px no desktop (null = usar default do tema). */
+  desktopSidebarWidthPx: number | null
   setDesktopSidebarWidth: (widthPx: number | null) => void
 }
 
@@ -79,7 +95,41 @@ const SidebarProvider = React.forwardRef<
   ) => {
     const isMobile = useIsMobile()
     const [openMobile, setOpenMobile] = React.useState(false)
-    const [desktopSidebarWidthPx, setDesktopSidebarWidthPx] = React.useState<number | null>(null)
+    const [desktopSidebarWidthPx, setDesktopSidebarWidthPx] =
+      React.useState<number | null>(() => {
+        if (typeof window === "undefined") return null
+        try {
+          const raw = localStorage.getItem(SIDEBAR_WIDTH_STORAGE_KEY)
+          if (!raw) return null
+          const n = parseInt(raw, 10)
+          if (!Number.isFinite(n)) return null
+          return clampDesktopSidebarWidthPx(n)
+        } catch {
+          return null
+        }
+      })
+
+    const setDesktopSidebarWidth = React.useCallback(
+      (widthPx: number | null) => {
+        setDesktopSidebarWidthPx(
+          widthPx == null ? null : clampDesktopSidebarWidthPx(widthPx),
+        )
+        if (typeof window === "undefined") return
+        try {
+          if (widthPx == null) {
+            localStorage.removeItem(SIDEBAR_WIDTH_STORAGE_KEY)
+          } else {
+            localStorage.setItem(
+              SIDEBAR_WIDTH_STORAGE_KEY,
+              String(clampDesktopSidebarWidthPx(widthPx)),
+            )
+          }
+        } catch {
+          /* ignore quota / private mode */
+        }
+      },
+      [],
+    )
 
     // This is the internal state of the sidebar.
     // We use openProp and setOpenProp for control from outside the component.
@@ -136,9 +186,20 @@ const SidebarProvider = React.forwardRef<
         openMobile,
         setOpenMobile,
         toggleSidebar,
-        setDesktopSidebarWidth: setDesktopSidebarWidthPx,
+        desktopSidebarWidthPx,
+        setDesktopSidebarWidth,
       }),
-      [state, open, setOpen, isMobile, openMobile, setOpenMobile, toggleSidebar]
+      [
+        state,
+        open,
+        setOpen,
+        isMobile,
+        openMobile,
+        setOpenMobile,
+        toggleSidebar,
+        desktopSidebarWidthPx,
+        setDesktopSidebarWidth,
+      ],
     )
 
     return (
@@ -259,7 +320,7 @@ const Sidebar = React.forwardRef<
       <div
         ref={ref}
         className={cn(
-          "hidden shrink-0 md:block text-sidebar-foreground",
+          "group relative hidden shrink-0 text-sidebar-foreground md:block",
           className,
         )}
         data-state={state}
@@ -274,6 +335,7 @@ const Sidebar = React.forwardRef<
         >
           {children}
         </div>
+        <SidebarRail />
       </div>
     )
   }
@@ -723,6 +785,81 @@ const SidebarMenuSkeleton = React.forwardRef<
 })
 SidebarMenuSkeleton.displayName = "SidebarMenuSkeleton"
 
+const SidebarResizeHandle = React.forwardRef<
+  HTMLDivElement,
+  React.ComponentProps<"div">
+>(({ className, ...props }, ref) => {
+  const { isMobile, open, desktopSidebarWidthPx, setDesktopSidebarWidth } =
+    useSidebar()
+
+  if (isMobile || !open) return null
+
+  return (
+    <div
+      ref={ref}
+      role="separator"
+      aria-orientation="vertical"
+      aria-label="Redimensionar menu lateral"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return
+        e.preventDefault()
+        const base =
+          desktopSidebarWidthPx ?? SIDEBAR_WIDTH_DESKTOP_DEFAULT_PX
+        const delta = e.key === "ArrowRight" ? 12 : -12
+        const maxW = Math.min(
+          SIDEBAR_DESKTOP_MAX_PX,
+          typeof window !== "undefined"
+            ? Math.floor(window.innerWidth * 0.45)
+            : SIDEBAR_DESKTOP_MAX_PX,
+        )
+        setDesktopSidebarWidth(
+          Math.min(maxW, clampDesktopSidebarWidthPx(base + delta)),
+        )
+        try {
+          localStorage.setItem(SIDEBAR_WIDTH_USER_DRAG_KEY, "1")
+        } catch {
+          /* ignore */
+        }
+      }}
+      onMouseDown={(e) => {
+        e.preventDefault()
+        const startX = e.clientX
+        const startW = desktopSidebarWidthPx ?? SIDEBAR_WIDTH_DESKTOP_DEFAULT_PX
+        const onMove = (ev: MouseEvent) => {
+          const maxW = Math.min(
+            SIDEBAR_DESKTOP_MAX_PX,
+            Math.floor(window.innerWidth * 0.45),
+          )
+          const next = clampDesktopSidebarWidthPx(
+            startW + (ev.clientX - startX),
+          )
+          setDesktopSidebarWidth(Math.min(next, maxW))
+        }
+        const onUp = () => {
+          try {
+            localStorage.setItem(SIDEBAR_WIDTH_USER_DRAG_KEY, "1")
+          } catch {
+            /* ignore */
+          }
+          document.body.style.cursor = ""
+          document.removeEventListener("mousemove", onMove)
+          document.removeEventListener("mouseup", onUp)
+        }
+        document.body.style.cursor = "col-resize"
+        document.addEventListener("mousemove", onMove)
+        document.addEventListener("mouseup", onUp)
+      }}
+      className={cn(
+        "hidden shrink-0 md:block w-1.5 cursor-col-resize select-none border-r border-transparent hover:border-border hover:bg-accent/40 active:bg-accent/60 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+        className,
+      )}
+      {...props}
+    />
+  )
+})
+SidebarResizeHandle.displayName = "SidebarResizeHandle"
+
 const SidebarMenuSub = React.forwardRef<
   HTMLUListElement,
   React.ComponentProps<"ul">
@@ -798,6 +935,7 @@ export {
   SidebarMenuSubItem,
   SidebarProvider,
   SidebarRail,
+  SidebarResizeHandle,
   SidebarSeparator,
   SidebarTrigger,
   useSidebar,
