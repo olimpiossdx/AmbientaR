@@ -88,70 +88,172 @@ export function CashFlowView(props: CashFlowViewProps) {
         </Tabs>
       </PageHeader>
       <main className="flex-1 overflow-auto p-4 md:p-6">
-        <div className="flex flex-wrap items-end gap-2 p-3 rounded-lg bg-muted/50 mb-3">
-          <Search className="h-4 w-4 text-muted-foreground" />
-          <div className="flex flex-wrap items-end gap-2">
-            <div>
-              <Label className="text-xs">Cliente</Label>
-              <Input placeholder="Nome (receitas)" className="h-8 w-36" value={filterCliente} onChange={(e) => setFilterCliente(e.target.value)} />
+        <Card className="mb-4 border-border/60 bg-muted/30 shadow-sm">
+          <CardHeader className="space-y-1 pb-2 pt-4">
+            <div className="flex items-center gap-2">
+              <Search className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+              <CardTitle className="text-base font-semibold">Filtrar lançamentos</CardTitle>
             </div>
-            <div>
-              <Label className="text-xs">Descrição</Label>
-              <Input placeholder="Descrição" className="h-8 w-40" value={filterDescricao} onChange={(e) => setFilterDescricao(e.target.value)} />
+            <CardDescription className="text-xs sm:text-sm">
+              Refine a lista por cliente (receitas), texto, datas e faixa de valores.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="cf-filter-cliente" className="text-xs font-medium text-muted-foreground">
+                  Cliente
+                </Label>
+                <Input
+                  id="cf-filter-cliente"
+                  placeholder="Nome (receitas)"
+                  className="h-10 min-w-0"
+                  value={filterCliente}
+                  onChange={(e) => setFilterCliente(e.target.value)}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="cf-filter-desc" className="text-xs font-medium text-muted-foreground">
+                  Descrição
+                </Label>
+                <Input
+                  id="cf-filter-desc"
+                  placeholder="Descrição"
+                  className="h-10 min-w-0"
+                  value={filterDescricao}
+                  onChange={(e) => setFilterDescricao(e.target.value)}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="cf-filter-start" className="text-xs font-medium text-muted-foreground">
+                  Data início
+                </Label>
+                <Input
+                  id="cf-filter-start"
+                  type="date"
+                  className="h-10 min-w-0 pr-2 [color-scheme:light] dark:[color-scheme:dark]"
+                  value={filterDataInicio}
+                  onChange={(e) => setFilterDataInicio(e.target.value)}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="cf-filter-end" className="text-xs font-medium text-muted-foreground">
+                  Data fim
+                </Label>
+                <Input
+                  id="cf-filter-end"
+                  type="date"
+                  className="h-10 min-w-0 pr-2 [color-scheme:light] dark:[color-scheme:dark]"
+                  value={filterDataFim}
+                  onChange={(e) => setFilterDataFim(e.target.value)}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="cf-filter-vmin" className="text-xs font-medium text-muted-foreground">
+                  Valor mín.
+                </Label>
+                <Input
+                  id="cf-filter-vmin"
+                  type="number"
+                  placeholder="0"
+                  className="h-10 min-w-0"
+                  value={filterValorMin}
+                  onChange={(e) => setFilterValorMin(e.target.value)}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="cf-filter-vmax" className="text-xs font-medium text-muted-foreground">
+                  Valor máx.
+                </Label>
+                <Input
+                  id="cf-filter-vmax"
+                  type="number"
+                  placeholder="0"
+                  className="h-10 min-w-0"
+                  value={filterValorMax}
+                  onChange={(e) => setFilterValorMax(e.target.value)}
+                />
+              </div>
             </div>
-            <div>
-              <Label className="text-xs">Data início</Label>
-              <Input type="date" className="h-8 w-36" value={filterDataInicio} onChange={(e) => setFilterDataInicio(e.target.value)} />
+          </CardContent>
+        </Card>
+
+        <Card className="mb-6 border-border/60 bg-muted/30 shadow-sm">
+          <CardHeader className="space-y-1 pb-2 pt-4">
+            <CardTitle className="text-base font-semibold">Relatório por período</CardTitle>
+            <CardDescription className="text-xs sm:text-sm">
+              O período abaixo define o conteúdo do PDF e da impressão (receitas e despesas nesse intervalo).
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between lg:gap-6">
+              <div className="grid w-full min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 lg:max-w-xl lg:flex-1">
+                <div className="space-y-1.5">
+                  <Label htmlFor="cf-period-type" className="text-xs font-medium text-muted-foreground">
+                    Tipo de período
+                  </Label>
+                  <Select value={periodType} onValueChange={(v) => setPeriodType(v as PeriodType)}>
+                    <SelectTrigger id="cf-period-type" className="h-10 w-full sm:max-w-[200px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="day">Dia</SelectItem>
+                      <SelectItem value="month">Mês</SelectItem>
+                      <SelectItem value="year">Ano</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="cf-period-value" className="text-xs font-medium text-muted-foreground">
+                    {periodType === 'day' ? 'Data' : periodType === 'month' ? 'Mês' : 'Ano'}
+                  </Label>
+                  {periodType === 'day' && (
+                    <Input
+                      id="cf-period-value"
+                      type="date"
+                      className="h-10 min-w-0 pr-2 [color-scheme:light] dark:[color-scheme:dark]"
+                      value={periodDay}
+                      onChange={(e) => setPeriodDay(e.target.value)}
+                    />
+                  )}
+                  {periodType === 'month' && (
+                    <Input
+                      id="cf-period-value"
+                      type="month"
+                      className="h-10 min-w-0 pr-2 [color-scheme:light] dark:[color-scheme:dark]"
+                      value={periodMonth}
+                      onChange={(e) => setPeriodMonth(e.target.value)}
+                    />
+                  )}
+                  {periodType === 'year' && (
+                    <Select value={periodYear} onValueChange={setPeriodYear}>
+                      <SelectTrigger id="cf-period-value" className="h-10 w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Array.from({ length: 6 }, (_, i) => new Date().getFullYear() - i).map((y) => (
+                          <SelectItem key={y} value={String(y)}>
+                            {y}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                </div>
+              </div>
+              <div className="flex w-full flex-col gap-2 sm:flex-row sm:justify-end lg:w-auto lg:shrink-0">
+                <Button type="button" variant="outline" className="h-10 w-full gap-2 sm:min-w-[160px] sm:flex-1 lg:flex-initial" onClick={onExportPdf}>
+                  <FileDown className="h-4 w-4 shrink-0" aria-hidden />
+                  Exportar PDF
+                </Button>
+                <Button type="button" variant="outline" className="h-10 w-full gap-2 sm:min-w-[160px] sm:flex-1 lg:flex-initial" onClick={onPrint}>
+                  <Printer className="h-4 w-4 shrink-0" aria-hidden />
+                  Imprimir
+                </Button>
+              </div>
             </div>
-            <div>
-              <Label className="text-xs">Data fim</Label>
-              <Input type="date" className="h-8 w-36" value={filterDataFim} onChange={(e) => setFilterDataFim(e.target.value)} />
-            </div>
-            <div>
-              <Label className="text-xs">Valor mín.</Label>
-              <Input type="number" placeholder="0" className="h-8 w-24" value={filterValorMin} onChange={(e) => setFilterValorMin(e.target.value)} />
-            </div>
-            <div>
-              <Label className="text-xs">Valor máx.</Label>
-              <Input type="number" placeholder="0" className="h-8 w-24" value={filterValorMax} onChange={(e) => setFilterValorMax(e.target.value)} />
-            </div>
-          </div>
-        </div>
-        <div className="flex flex-wrap items-end gap-2 p-3 rounded-lg bg-muted/50 mb-4">
-          <Label className="text-sm">Exportar por período:</Label>
-          <Select value={periodType} onValueChange={(v) => setPeriodType(v as PeriodType)}>
-            <SelectTrigger className="w-[100px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="day">Dia</SelectItem>
-              <SelectItem value="month">Mês</SelectItem>
-              <SelectItem value="year">Ano</SelectItem>
-            </SelectContent>
-          </Select>
-          {periodType === 'day' && <Input type="date" className="w-[140px]" value={periodDay} onChange={(e) => setPeriodDay(e.target.value)} />}
-          {periodType === 'month' && <Input type="month" className="w-[140px]" value={periodMonth} onChange={(e) => setPeriodMonth(e.target.value)} />}
-          {periodType === 'year' && (
-            <Select value={periodYear} onValueChange={setPeriodYear}>
-              <SelectTrigger className="w-[100px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {Array.from({ length: 6 }, (_, i) => new Date().getFullYear() - i).map((y) => (
-                  <SelectItem key={y} value={String(y)}>{y}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
-          <Button variant="outline" size="sm" onClick={onExportPdf}>
-            <FileDown className="h-4 w-4 mr-2" />
-            Exportar PDF
-          </Button>
-          <Button variant="outline" size="sm" onClick={onPrint}>
-            <Printer className="h-4 w-4 mr-2" />
-            Imprimir
-          </Button>
-        </div>
+          </CardContent>
+        </Card>
         <Tabs defaultValue="overview" className="space-y-4">
           <TabsList>
             <TabsTrigger value="overview">Visão Geral</TabsTrigger>

@@ -231,31 +231,35 @@ export default function DreContabilPage() {
   return (
     <div className="flex flex-col h-full">
       <PageHeader title="DRE Contábil">
-        <div className="flex flex-wrap items-center gap-2">
-          <Label className="text-sm text-muted-foreground">Exercício:</Label>
-          <Select value={selectedYear} onValueChange={setSelectedYear}>
-            <SelectTrigger className="w-[120px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {years.map((y) => (
-                <SelectItem key={y} value={String(y)}>
-                  {y}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        <div className="flex flex-nowrap items-center gap-2 sm:gap-3">
+          <div className="flex shrink-0 items-center gap-2">
+            <Label htmlFor="dre-exercicio" className="shrink-0 text-sm text-muted-foreground whitespace-nowrap">
+              Exercício:
+            </Label>
+            <Select value={selectedYear} onValueChange={setSelectedYear}>
+              <SelectTrigger id="dre-exercicio" className="h-9 w-[92px] shrink-0 sm:w-[120px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {years.map((y) => (
+                  <SelectItem key={y} value={String(y)}>
+                    {y}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
           {dre && (
-            <>
-              <Button variant="outline" size="sm" onClick={handleExportPdf}>
-                <FileDown className="h-4 w-4 mr-2" />
-                Exportar PDF
+            <div className="flex shrink-0 items-center gap-2">
+              <Button type="button" variant="outline" size="sm" className="h-9 shrink-0 gap-1.5 px-2.5 sm:px-3" onClick={handleExportPdf}>
+                <FileDown className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                <span className="whitespace-nowrap">Exportar PDF</span>
               </Button>
-              <Button variant="outline" size="sm" onClick={handlePrint}>
-                <Printer className="h-4 w-4 mr-2" />
-                Imprimir
+              <Button type="button" variant="outline" size="sm" className="h-9 shrink-0 gap-1.5 px-2.5 sm:px-3" onClick={handlePrint}>
+                <Printer className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                <span className="whitespace-nowrap">Imprimir</span>
               </Button>
-            </>
+            </div>
           )}
         </div>
       </PageHeader>
