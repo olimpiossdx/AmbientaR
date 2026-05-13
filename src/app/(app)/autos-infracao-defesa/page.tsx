@@ -18,7 +18,11 @@ import { CardSearchInput } from "@/components/card-search-input";
 import { useCollection, useFirebase, useMemoFirebase } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { collection, addDoc, doc, serverTimestamp, updateDoc } from "firebase/firestore";
-import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { effectiveMimeType } from "@/lib/file-mime";
+import {
+  uploadFileToStorage,
+  sanitizeStorageFileName,
+} from "@/lib/storage-upload";
 import type { Empreendedor, Project } from "@/lib/types";
 
 type TipoDefesa = "Defesa em 1º Instância / Administrativa" | "Defesa em 2º Instância / Administrativa";
@@ -93,10 +97,6 @@ const CHECKLIST_DECRETO_47383: ChecklistItem[] = [
 ];
 
 const ACCEPTED_EXTENSIONS = [".pdf", ".docx", ".jpg", ".jpeg", ".png"];
-
-function sanitizeFileName(name: string): string {
-  return name.replace(/[^\w.\-]/g, "_");
-}
 
 function getExt(name: string): string {
   const idx = name.lastIndexOf(".");
@@ -270,7 +270,7 @@ function formatDefesaDocContent(defesa: AutoInfracaoDefesa, empreendedorNome: st
 }
 
 export default function AutosInfracaoDefesaPage() {
-  const { firestore, firebaseApp, user } = useFirebase();
+  const { firestore, user } = useFirebase();
   const { toast } = useToast();
 
   const [open, setOpen] = React.useState(false);
@@ -386,7 +386,7 @@ export default function AutosInfracaoDefesaPage() {
   };
 
   const saveDefesa = async () => {
-    if (!firestore || !firebaseApp || !user) return;
+    if (!firestore || !user) return;
     if (!empreendedorId || !projectId || !tipoDefesa) {
       toast({ variant: "destructive", title: "Preencha os campos obrigatórios." });
       return;
@@ -406,33 +406,30 @@ export default function AutosInfracaoDefesaPage() {
     try {
       const year = new Date().getFullYear();
       const { sequence, processNumber } = getNextProcessNumber(defesas || [], year);
-      const storage = getStorage(firebaseApp);
-
       const anexos: DefesaAnexo[] = [];
       for (const item of CHECKLIST_DECRETO_47383) {
         const file = checklistFiles[item.id];
         if (!file) continue;
-        const filePath = `autos-infracao-defesa/${year}/${Date.now()}-${sanitizeFileName(file.name)}`;
-        const storageRef = ref(storage, filePath);
-        await uploadBytes(storageRef, file);
-        const url = await getDownloadURL(storageRef);
+        const filePath = `autos-infracao-defesa/${year}/checklist-${item.id}-${Date.now()}-${sanitizeStorageFileName(file.name)}`;
+        const url = await uploadFileToStorage(file, filePath);
         anexos.push({
           name: file.name,
           url,
-          contentType: file.type || "application/octet-stream",
+          contentType:
+            effectiveMimeType(file) || "application/octet-stream",
           checklistItemId: item.id,
         });
       }
 
+      let geralIdx = 0;
       for (const file of generalFiles) {
-        const filePath = `autos-infracao-defesa/${year}/${Date.now()}-${sanitizeFileName(file.name)}`;
-        const storageRef = ref(storage, filePath);
-        await uploadBytes(storageRef, file);
-        const url = await getDownloadURL(storageRef);
+        const filePath = `autos-infracao-defesa/${year}/geral-${Date.now()}-${geralIdx++}-${sanitizeStorageFileName(file.name)}`;
+        const url = await uploadFileToStorage(file, filePath);
         anexos.push({
           name: file.name,
           url,
-          contentType: file.type || "application/octet-stream",
+          contentType:
+            effectiveMimeType(file) || "application/octet-stream",
         });
       }
 
@@ -565,20 +562,19 @@ export default function AutosInfracaoDefesaPage() {
   };
 
   const saveProcess = async () => {
-    if (!firestore || !firebaseApp || !selectedDefesa) return;
+    if (!firestore || !selectedDefesa) return;
     setSavingProcess(true);
     try {
-      const storage = getStorage(firebaseApp);
       const newAnexos: DefesaAnexo[] = [];
+      let procIdx = 0;
       for (const file of processGeneralFiles) {
-        const filePath = `autos-infracao-defesa/${selectedDefesa.processYear}/${Date.now()}-${sanitizeFileName(file.name)}`;
-        const storageRef = ref(storage, filePath);
-        await uploadBytes(storageRef, file);
-        const url = await getDownloadURL(storageRef);
+        const filePath = `autos-infracao-defesa/${selectedDefesa.processYear}/processo-${Date.now()}-${procIdx++}-${sanitizeStorageFileName(file.name)}`;
+        const url = await uploadFileToStorage(file, filePath);
         newAnexos.push({
           name: file.name,
           url,
-          contentType: file.type || "application/octet-stream",
+          contentType:
+            effectiveMimeType(file) || "application/octet-stream",
         });
       }
 

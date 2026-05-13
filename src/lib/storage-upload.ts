@@ -1,3 +1,4 @@
+import { getApp, getApps } from "firebase/app";
 import {
   deleteObject,
   getDownloadURL,
@@ -5,6 +6,14 @@ import {
   ref,
   uploadBytes,
 } from "firebase/storage";
+import { inferMimeTypeFromFileName } from "@/lib/file-mime";
+
+function getFirebaseAppOrThrow() {
+  if (typeof getApps === "function" && getApps().length === 0) {
+    throw new Error("Firebase não inicializado. Recarregue a página.");
+  }
+  return getApp();
+}
 
 /** Sanitiza nome para usar em paths do Storage. */
 export function sanitizeStorageFileName(name: string): string {
@@ -18,9 +27,13 @@ export async function uploadFileToStorage(
   file: File,
   storagePath: string,
 ): Promise<string> {
-  const storage = getStorage();
+  const storage = getStorage(getFirebaseAppOrThrow());
   const storageRef = ref(storage, storagePath);
-  await uploadBytes(storageRef, file);
+  const contentType =
+    (file.type && file.type.trim()) ||
+    inferMimeTypeFromFileName(file.name) ||
+    "application/octet-stream";
+  await uploadBytes(storageRef, file, { contentType });
   return getDownloadURL(storageRef);
 }
 
@@ -30,7 +43,7 @@ export async function uploadFileToStorage(
 export async function deleteFileAtStoragePath(
   storagePath: string,
 ): Promise<void> {
-  const storage = getStorage();
+  const storage = getStorage(getFirebaseAppOrThrow());
   await deleteObject(ref(storage, storagePath));
 }
 

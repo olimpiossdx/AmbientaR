@@ -36,6 +36,10 @@ import type { License, PermitType, PermitStatus, Empreendedor, Project } from '@
 import { useFirebase, errorEmitter, useCollection, useMemoFirebase } from '@/firebase';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { collection, doc, addDoc, updateDoc } from 'firebase/firestore';
+import {
+  uploadFileToStorage,
+  sanitizeStorageFileName,
+} from '@/lib/storage-upload';
 import { DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -141,33 +145,48 @@ export function LicenseForm({ currentLicense, onSuccess }: LicenseFormProps) {
   }, [selectedEmpreendedorId, form]);
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
+    const inputEl = event.currentTarget;
+    const file = inputEl.files?.[0];
     if (!file) return;
 
-     if (file.size > MAX_FILE_SIZE) {
-        toast({ variant: 'destructive', title: 'Arquivo muito grande', description: `O arquivo não pode exceder ${MAX_FILE_SIZE / 1024 / 1024}MB.` });
-        return;
+    if (file.size > MAX_FILE_SIZE) {
+      toast({
+        variant: 'destructive',
+        title: 'Arquivo muito grande',
+        description: `O arquivo não pode exceder ${MAX_FILE_SIZE / 1024 / 1024}MB.`,
+      });
+      return;
     }
+
+    inputEl.value = '';
 
     setIsUploading(true);
     setUploadedFileUrl(null);
     try {
-        const formData = new FormData();
-        formData.append('file', file);
-        const res = await fetch('/api/uploads/licenses', { method: 'POST', body: formData });
-        const data = await res.json();
-        if (!res.ok || !data.url) {
-          throw new Error(data.error || 'Falha no upload');
-        }
-        setUploadedFileUrl(data.url);
-        toast({ title: "Anexo carregado", description: "O arquivo está pronto para ser salvo." });
+      const safe = sanitizeStorageFileName(file.name);
+      const downloadURL = await uploadFileToStorage(
+        file,
+        `licenses/${Date.now()}-${safe}`,
+      );
+      setUploadedFileUrl(downloadURL);
+      toast({
+        title: 'Anexo carregado',
+        description: 'O arquivo está pronto para ser salvo.',
+      });
     } catch (error) {
-        console.error("File upload error:", error);
-        toast({ variant: 'destructive', title: 'Erro no Upload', description: (error instanceof Error ? error.message : 'Não foi possível enviar o arquivo.') });
+      console.error('File upload error:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Erro no Upload',
+        description:
+          error instanceof Error
+            ? error.message
+            : 'Não foi possível enviar o arquivo.',
+      });
     } finally {
-        setIsUploading(false);
+      setIsUploading(false);
     }
-  }
+  };
 
 
   async function onSubmit(values: LicenseFormValues) {

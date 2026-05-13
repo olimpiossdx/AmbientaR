@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { promises as fs } from "fs";
 import path from "path";
+import { effectiveMimeType } from "@/lib/file-mime";
 
 const UPLOAD_DIR = path.join(
   process.cwd(),
@@ -38,8 +39,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const type = file.type?.toLowerCase() || "";
-    if (type && !ALLOWED_TYPES.includes(type)) {
+    const type = effectiveMimeType(file).toLowerCase();
+    if (!ALLOWED_TYPES.includes(type)) {
       return NextResponse.json(
         { success: false, error: "Tipo de arquivo inválido. Envie um PDF." },
         { status: 400 },

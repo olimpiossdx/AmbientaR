@@ -49,6 +49,7 @@ import {
   uploadFileToStorage,
   sanitizeStorageFileName,
 } from "@/lib/storage-upload";
+import { isPdfLikeFile } from "@/lib/file-mime";
 import { FileText, Upload, Map as MapIcon } from "lucide-react";
 import {
   Tooltip,
@@ -352,7 +353,7 @@ export default function CarPage() {
     const file = inputEl.files?.[0];
     if (!file || !firestore) return;
 
-    if (file.type !== "application/pdf") {
+    if (!isPdfLikeFile(file)) {
       toast({
         variant: "destructive",
         title: "Tipo de arquivo inválido",

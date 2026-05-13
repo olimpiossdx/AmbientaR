@@ -1,12 +1,26 @@
 /**
- * Detecção best-effort do tipo de anexo pela URL (Firebase Storage costuma terminar em token query).
+ * Detecção best-effort do tipo de anexo pela URL (Firebase Storage usa path codificado e query).
  */
 export function isImageAttachmentUrl(url: string | undefined | null): boolean {
   if (!url) return false;
-  return /\.(jpg|jpeg|png|webp|gif)(\?|#|$)/i.test(url);
+  if (/^data:image\//i.test(url)) return true;
+  try {
+    const u = new URL(url);
+    const haystack = decodeURIComponent(u.pathname + u.search);
+    return /\.(jpg|jpeg|png|webp|gif)(\?|&|#|$)/i.test(haystack);
+  } catch {
+    return /\.(jpg|jpeg|png|webp|gif)(\?|#|$)/i.test(url);
+  }
 }
 
 export function isPdfAttachmentUrl(url: string | undefined | null): boolean {
   if (!url) return false;
-  return /\.pdf(\?|#|$)/i.test(url) || /application\/pdf/i.test(url);
+  if (/application\/pdf/i.test(url)) return true;
+  try {
+    const u = new URL(url);
+    const haystack = decodeURIComponent(u.href);
+    return /\.pdf(\?|&|#|$)/i.test(haystack);
+  } catch {
+    return /\.pdf(\?|#|$)/i.test(url);
+  }
 }

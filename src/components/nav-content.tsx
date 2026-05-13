@@ -14,13 +14,35 @@ import {
   useSidebar
 } from '@/components/ui/sidebar';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { ChevronDown, Leaf } from 'lucide-react';
+import { ChevronDown } from 'lucide-react';
 import { useAuth } from '@/firebase';
 import type { NavItem, NavSubItem, UserRole } from '@/lib/types';
 import { allNavItems } from '@/lib/navigation-config';
 import { getFinancialMenuForRole, isFinancialRoute } from '@/lib/financial-menu-debug';
 import { getCadastroMenuForRole, isCadastroRoute } from '@/lib/cadastro-menu-debug';
 
+/** Largura aproximada dos rótulos (incl. subitens fechados no DOM) para não subestimar a sidebar. */
+function estimateMenuLabelsWidthPx(items: NavItem[], userRole: UserRole): number {
+  if (typeof document === 'undefined') return 0;
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return 0;
+  ctx.font = '14px system-ui, -apple-system, "Segoe UI", sans-serif';
+  let max = 0;
+  const walk = (list: (NavItem | NavSubItem)[], depth: number) => {
+    for (const item of list) {
+      if ('roles' in item && item.roles && !item.roles.includes(userRole)) continue;
+      const indent = Math.min(depth * 28, 84);
+      const chrome = 56;
+      max = Math.max(max, ctx.measureText(item.label).width + indent + chrome);
+      if ('subItems' in item && item.subItems?.length) {
+        walk(item.subItems, depth + 1);
+      }
+    }
+  };
+  walk(items, 0);
+  return Math.ceil(max);
+}
 
 function NavContentInner() {
   const pathname = usePathname();
@@ -164,30 +186,88 @@ function NavContentInner() {
   React.useEffect(() => {
     if (isMobile || !open) return;
 
-    const calculateWidth = () => {
+    let cancelled = false;
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const measureAndApply = () => {
+      if (cancelled) return;
       const root = menuRef.current;
       if (!root) return;
-      const labels = root.querySelectorAll<HTMLElement>(
-        '[data-sidebar="menu-button"] span:last-child, [data-sidebar="menu-sub-button"] span:last-child',
-      );
-      if (labels.length === 0) return;
-      let maxLabelWidth = 0;
-      labels.forEach((el) => {
-        maxLabelWidth = Math.max(maxLabelWidth, el.scrollWidth);
+
+      const horizontalPad = 32;
+      const subMenuSlack = 48;
+
+      let maxRow = 0;
+      root.querySelectorAll<HTMLElement>('[data-sidebar="menu-button"]').forEach((el) => {
+        maxRow = Math.max(maxRow, el.scrollWidth);
       });
-      const nextWidth = Math.min(Math.max(maxLabelWidth + 120, 256), 560);
+      root.querySelectorAll<HTMLElement>('[data-sidebar="menu-sub-button"]').forEach((el) => {
+        maxRow = Math.max(maxRow, el.scrollWidth + subMenuSlack);
+      });
+
+      const fromTree =
+        navItems.length && user
+          ? estimateMenuLabelsWidthPx(navItems, user.role)
+          : 0;
+      const merged = Math.max(maxRow, fromTree);
+
+      const cap =
+        typeof window !== 'undefined'
+          ? Math.min(960, Math.floor(window.innerWidth * 0.92))
+          : 960;
+      const nextWidth = Math.min(
+        Math.max(merged + horizontalPad, 220),
+        cap,
+      );
       setDesktopSidebarWidth(nextWidth);
     };
 
-    const raf = requestAnimationFrame(calculateWidth);
-    const resizeObserver = new ResizeObserver(() => calculateWidth());
+    const schedule = () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = window.setTimeout(() => {
+        debounceTimer = null;
+        requestAnimationFrame(() => {
+          requestAnimationFrame(measureAndApply);
+        });
+      }, 40);
+    };
+
+    schedule();
+    const delayed = window.setTimeout(schedule, 280);
+
+    const resizeObserver = new ResizeObserver(() => schedule());
     if (menuRef.current) resizeObserver.observe(menuRef.current);
 
+    const mutationObserver = new MutationObserver(() => schedule());
+    if (menuRef.current) {
+      mutationObserver.observe(menuRef.current, {
+        subtree: true,
+        childList: true,
+        attributes: true,
+        attributeFilter: ['data-state', 'hidden', 'aria-hidden'],
+      });
+    }
+
+    const onWinResize = () => schedule();
+    window.addEventListener('resize', onWinResize);
+
     return () => {
-      cancelAnimationFrame(raf);
+      cancelled = true;
+      clearTimeout(delayed);
+      if (debounceTimer) clearTimeout(debounceTimer);
       resizeObserver.disconnect();
+      mutationObserver.disconnect();
+      window.removeEventListener('resize', onWinResize);
     };
-  }, [isMobile, open, navItems, pathname, searchParams, setDesktopSidebarWidth]);
+  }, [
+    isMobile,
+    open,
+    navItems,
+    pathname,
+    searchParams,
+    setDesktopSidebarWidth,
+    user,
+  ]);
 
   return (
       <SidebarMenu ref={menuRef}>

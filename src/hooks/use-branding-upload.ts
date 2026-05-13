@@ -5,6 +5,7 @@ import { useToast } from './use-toast';
 import { useFirebase } from '@/firebase';
 import { doc, setDoc } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { inferMimeTypeFromFileName } from '@/lib/file-mime';
 
 interface UploadResult {
   success: boolean;
@@ -33,9 +34,14 @@ export function useUploadBrandingImage() {
 
         const storage = getStorage();
         const safeName = file.name.replace(/[^\w.\-]/g, '_');
-        const filePath = `branding/${fieldName}/${auth.currentUser.uid}/${Date.now()}-${safeName}`;
+        // storage.rules: match /branding/{userId}/{allPaths=**} — o 1.º segmento após branding tem de ser o uid.
+        const filePath = `branding/${auth.currentUser.uid}/${fieldName}/${Date.now()}-${safeName}`;
         const storageRef = ref(storage, filePath);
-        await uploadBytes(storageRef, file);
+        const contentType =
+          (file.type && file.type.trim()) ||
+          inferMimeTypeFromFileName(file.name) ||
+          "application/octet-stream";
+        await uploadBytes(storageRef, file, { contentType });
         const url = await getDownloadURL(storageRef);
 
         await setDoc(

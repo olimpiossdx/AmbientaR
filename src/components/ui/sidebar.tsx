@@ -258,7 +258,10 @@ const Sidebar = React.forwardRef<
     return (
       <div
         ref={ref}
-        className={cn("hidden md:block text-sidebar-foreground", className)}
+        className={cn(
+          "hidden shrink-0 md:block text-sidebar-foreground",
+          className,
+        )}
         data-state={state}
         data-collapsible={state === "collapsed" ? collapsible : ""}
         data-variant={variant}
@@ -267,7 +270,7 @@ const Sidebar = React.forwardRef<
       >
         <div
           data-sidebar="sidebar"
-          className="flex h-full w-[--sidebar-width-dynamic] flex-col bg-sidebar shadow-[2px_0_12px_rgba(0,0,0,0.06)] dark:shadow-[2px_0_12px_rgba(0,0,0,0.2)] group-data-[collapsible=icon]:w-[var(--sidebar-width-icon)] group-data-[collapsible=offcanvas]:w-0 transition-[width,box-shadow] duration-200"
+          className="flex h-full w-[var(--sidebar-width-dynamic)] min-w-[var(--sidebar-width-dynamic)] flex-col bg-sidebar shadow-[2px_0_12px_rgba(0,0,0,0.06)] dark:shadow-[2px_0_12px_rgba(0,0,0,0.2)] group-data-[collapsible=icon]:min-w-[var(--sidebar-width-icon)] group-data-[collapsible=icon]:w-[var(--sidebar-width-icon)] group-data-[collapsible=offcanvas]:min-w-0 group-data-[collapsible=offcanvas]:w-0 group-data-[collapsible=offcanvas]:overflow-hidden transition-[width,min-width,box-shadow] duration-200"
         >
           {children}
         </div>

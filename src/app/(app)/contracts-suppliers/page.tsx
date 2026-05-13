@@ -58,7 +58,10 @@ import { useLocalBranding } from "@/hooks/use-local-branding";
 import { fetchBrandingImageAsBase64 } from "@/lib/branding-pdf";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { getDownloadURL, getStorage, ref, uploadBytes } from "firebase/storage";
+import {
+  uploadFileToStorage,
+  sanitizeStorageFileName,
+} from "@/lib/storage-upload";
 
 const DetailItem = ({ label, value }: { label: string; value?: string | number | null }) => (
   <div className="space-y-1">
@@ -191,13 +194,11 @@ export default function ContractsSuppliersPage() {
     if (!fileToUpload || !uploadingItem || !firestore) return;
     setIsUploading(true);
     try {
-      const storage = getStorage();
-      const storageRef = ref(
-        storage,
-        `supplier-contracts/signed/${uploadingItem.id}/${fileToUpload.name}`,
+      const safe = sanitizeStorageFileName(fileToUpload.name);
+      const downloadUrl = await uploadFileToStorage(
+        fileToUpload,
+        `supplier-contracts/signed/${uploadingItem.id}/${Date.now()}-${safe}`,
       );
-      await uploadBytes(storageRef, fileToUpload);
-      const downloadUrl = await getDownloadURL(storageRef);
       await updateDoc(doc(firestore, "supplierContracts", uploadingItem.id), {
         fileUrl: downloadUrl,
       });

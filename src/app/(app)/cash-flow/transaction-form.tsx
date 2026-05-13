@@ -35,7 +35,11 @@ import {
 } from "@/firebase";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { collection, doc, addDoc, updateDoc } from "firebase/firestore";
-import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { isImageOrPdfForTransaction } from "@/lib/file-mime";
+import {
+  uploadFileToStorage,
+  sanitizeStorageFileName,
+} from "@/lib/storage-upload";
 import { logUserAction } from "@/lib/audit-log";
 import { Label } from "@/components/ui/label";
 import { AttachmentPreviewSection } from "@/components/shared/attachment-preview-section";
@@ -217,8 +221,7 @@ export function TransactionForm({
       return;
     }
 
-    const allowedTypes = ["application/pdf", "image/jpeg", "image/png"];
-    if (!allowedTypes.includes(file.type)) {
+    if (!isImageOrPdfForTransaction(file)) {
       toast({
         variant: "destructive",
         title: "Tipo de arquivo inválido",
@@ -239,14 +242,10 @@ export function TransactionForm({
         throw new Error("Sessão inválida. Faça login novamente.");
       }
 
-      const storage = getStorage();
-      const safeFileName = file.name.replace(/[^\w.\-]/g, "_");
       const folder = transactionType === "revenue" ? "revenues" : "expenses";
+      const safeFileName = sanitizeStorageFileName(file.name);
       const filePath = `transactions/${folder}/${uid}/${Date.now()}-${safeFileName}`;
-      const storageRef = ref(storage, filePath);
-
-      await uploadBytes(storageRef, file);
-      const downloadUrl = await getDownloadURL(storageRef);
+      const downloadUrl = await uploadFileToStorage(file, filePath);
       setUploadedFileUrl(downloadUrl);
       toast({
         title: "Anexo carregado",

@@ -38,6 +38,7 @@ import {
   uploadFileToStorage,
   sanitizeStorageFileName,
 } from "@/lib/storage-upload";
+import { isPdfLikeFile } from "@/lib/file-mime";
 import {
   DialogFooter,
   DialogHeader,
@@ -103,7 +104,7 @@ export function FaunaUploadForm({ onSuccess }: FaunaUploadFormProps) {
       });
       return;
     }
-    if (file.type !== "application/pdf") {
+    if (!isPdfLikeFile(file)) {
       toast({
         variant: "destructive",
         title: "Tipo de arquivo inválido",
