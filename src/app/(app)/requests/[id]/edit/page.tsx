@@ -412,7 +412,7 @@ function EditRequestPageContent() {
     const { toast } = useToast();
     const readOnly = isProcessosPortalReadOnlyRole(user?.role);
 
-    const requestId = params.id as string;
+    const requestId = (params?.id as string | undefined) ?? '';
 
     const requestDocRef = useMemoFirebase(() => (firestore && requestId ? doc(firestore, 'requests', requestId) : null), [firestore, requestId]);
     const { data: request, isLoading: isLoadingRequest } = useDoc<Request>(requestDocRef);

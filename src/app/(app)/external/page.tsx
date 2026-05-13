@@ -9,11 +9,11 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 function ExternalPageContent() {
   const searchParams = useSearchParams();
-  const url = searchParams.get('url');
-  const title = searchParams.get('title');
+  const url = searchParams?.get('url');
+  const title = searchParams?.get('title');
 
   // If the link is for a site that blocks iframing, this will be true
-  const openInNewTab = searchParams.get('newTab') === 'true';
+  const openInNewTab = searchParams?.get('newTab') === 'true';
 
   React.useEffect(() => {
     if (openInNewTab && url) {

@@ -1,28 +1,12 @@
 
 'use client';
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, PlusCircle, Pencil, Trash2, Eye } from 'lucide-react';
-import { useCollection, useFirestore, useUser, useMemoFirebase, errorEmitter, useAuth } from '@/firebase';
+import { PlusCircle, Pencil, Trash2, Eye } from 'lucide-react';
+import { useCollection, useFirestore, useMemoFirebase, errorEmitter, useAuth } from '@/firebase';
 import { collection, doc, deleteDoc } from 'firebase/firestore';
 import type { EnvironmentalCompany } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -150,78 +134,101 @@ export default function ResponsibleCompanyPage() {
             </CardHeader>
             <CardContent>
               <TooltipProvider>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Razão Social</TableHead>
-                    <TableHead>CNPJ</TableHead>
-                    <TableHead className="hidden md:table-cell">Email</TableHead>
-                    <TableHead className="text-right">Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
+                <div className="space-y-4">
                   {isLoading &&
                     Array.from({ length: 3 }).map((_, i) => (
-                      <TableRow key={i}>
-                        <TableCell><Skeleton className="h-5 w-40" /></TableCell>
-                        <TableCell><Skeleton className="h-5 w-32" /></TableCell>
-                        <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-48" /></TableCell>
-                        <TableCell className="text-right"><Skeleton className="h-8 w-24" /></TableCell>
-                      </TableRow>
+                      <Skeleton key={i} className="h-28 w-full rounded-lg" />
                     ))}
-                  {!isLoading && companies?.map((item) => (
-                    <TableRow key={item.id}>
-                      <TableCell className="font-medium">{item.name}</TableCell>
-                      <TableCell>{item.cnpj}</TableCell>
-                      <TableCell className="hidden md:table-cell text-muted-foreground">{item.email}</TableCell>
-                      <TableCell className="text-right">
-                         <div className="flex items-center justify-end gap-1">
-                            <Tooltip>
+
+                  {!isLoading &&
+                    companies?.map((item) => (
+                      <Card
+                        key={item.id}
+                        className="overflow-hidden border-border/80 shadow-sm transition-shadow hover:shadow-md"
+                      >
+                        <CardContent className="p-4 sm:p-5">
+                          <div className="flex flex-col gap-4">
+                            <div className="min-w-0 space-y-1.5">
+                              <h3 className="text-balance text-base font-semibold leading-snug text-foreground sm:text-lg">
+                                {item.name}
+                              </h3>
+                              <p className="font-mono text-sm tabular-nums text-muted-foreground">
+                                {item.cnpj}
+                              </p>
+                              {item.email ? (
+                                <p className="truncate text-xs text-muted-foreground sm:text-sm">
+                                  {item.email}
+                                </p>
+                              ) : null}
+                            </div>
+                            <Separator className="bg-border/60" />
+                            <div className="flex flex-wrap items-center gap-1">
+                              <Tooltip>
                                 <TooltipTrigger asChild>
-                                    <Button variant="ghost" size="icon" onClick={() => handleView(item)}>
-                                        <Eye className="h-4 w-4" />
-                                        <span className="sr-only">Visualizar</span>
-                                    </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-9 w-9 shrink-0"
+                                    onClick={() => handleView(item)}
+                                  >
+                                    <Eye className="h-4 w-4" />
+                                    <span className="sr-only">Visualizar</span>
+                                  </Button>
                                 </TooltipTrigger>
-                                <TooltipContent><p>Visualizar detalhes</p></TooltipContent>
-                            </Tooltip>
-                            {canWrite && (
+                                <TooltipContent>
+                                  <p>Visualizar detalhes</p>
+                                </TooltipContent>
+                              </Tooltip>
+                              {canWrite ? (
                                 <>
-                                <Tooltip>
+                                  <Tooltip>
                                     <TooltipTrigger asChild>
-                                        <Button variant="ghost" size="icon" asChild>
-                                            <Link href={`/responsible-company/${item.id}/edit`}>
-                                                <Pencil className="h-4 w-4" />
-                                                <span className="sr-only">Editar</span>
-                                            </Link>
-                                        </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-9 w-9 shrink-0"
+                                        asChild
+                                      >
+                                        <Link href={`/responsible-company/${item.id}/edit`}>
+                                          <Pencil className="h-4 w-4" />
+                                          <span className="sr-only">Editar</span>
+                                        </Link>
+                                      </Button>
                                     </TooltipTrigger>
-                                    <TooltipContent><p>Editar empresa</p></TooltipContent>
-                                </Tooltip>
-                                <Tooltip>
+                                    <TooltipContent>
+                                      <p>Editar empresa</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                  <Tooltip>
                                     <TooltipTrigger asChild>
-                                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => openDeleteConfirm(item.id)}>
-                                            <Trash2 className="h-4 w-4" />
-                                            <span className="sr-only">Deletar</span>
-                                        </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-9 w-9 shrink-0 text-destructive hover:text-destructive"
+                                        onClick={() => openDeleteConfirm(item.id)}
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                        <span className="sr-only">Deletar</span>
+                                      </Button>
                                     </TooltipTrigger>
-                                    <TooltipContent><p>Deletar empresa</p></TooltipContent>
-                                </Tooltip>
+                                    <TooltipContent>
+                                      <p>Deletar empresa</p>
+                                    </TooltipContent>
+                                  </Tooltip>
                                 </>
-                            )}
-                         </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                              ) : null}
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+
                   {!isLoading && companies?.length === 0 && (
-                    <TableRow>
-                      <TableCell colSpan={4} className="h-24 text-center">
-                        Nenhuma empresa encontrada.
-                      </TableCell>
-                    </TableRow>
+                    <div className="flex h-24 items-center justify-center rounded-md border-2 border-dashed border-muted-foreground/25 text-sm text-muted-foreground">
+                      Nenhuma empresa encontrada.
+                    </div>
                   )}
-                </TableBody>
-              </Table>
+                </div>
               </TooltipProvider>
             </CardContent>
           </Card>

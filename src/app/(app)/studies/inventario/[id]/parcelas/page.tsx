@@ -34,7 +34,7 @@ import { PlotGroupsDialog } from './plot-groups-dialog';
 
 export default function PlotsPage() {
   const params = useParams();
-  const projectId = params.id as string;
+  const projectId = (params?.id as string | undefined) ?? '';
   const { firestore } = useFirebase();
   const [groupsOpen, setGroupsOpen] = React.useState(false);
 

@@ -13,7 +13,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 function EditRcaPageContent() {
     const router = useRouter();
     const params = useParams();
-    const rcaId = params.id as string;
+    const rcaId = (params?.id as string | undefined) ?? '';
     
     const { firestore } = useFirebase();
 

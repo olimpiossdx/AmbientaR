@@ -14,7 +14,7 @@ function EditEmpreendedorPageContent() {
     const router = useRouter();
     const params = useParams();
     const { blocked, isInitialized } = useCadastroGestaoWriteGuard('/empreendedores');
-    const itemId = params.id as string;
+    const itemId = (params?.id as string | undefined) ?? '';
     
     const { firestore } = useFirebase();
 

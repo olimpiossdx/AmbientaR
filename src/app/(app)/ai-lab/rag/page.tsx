@@ -25,6 +25,7 @@ import {
   query,
   serverTimestamp,
 } from "firebase/firestore";
+import { DEFAULT_AI_LOCAL_SOURCE_PATH } from "@/lib/ai-local-source-defaults";
 
 type RagSource = {
   id: string;
@@ -42,8 +43,6 @@ const AI_LOCAL_SOURCE_INCREMENTAL_KEY = "ai_lab_local_source_incremental_v1";
 const AI_LOCAL_SOURCE_MODIFIED_AFTER_KEY =
   "ai_lab_local_source_modified_after_v1";
 const AI_LOCAL_SOURCE_LAST_SYNC_AT_KEY = "ai_lab_local_source_last_sync_at_v1";
-const DEFAULT_AI_LOCAL_SOURCE_PATH =
-  "F:\\SERVIDOR\\OneDrive\\Projects\\AmbientaR\\Termos de Referencia";
 const DEFAULT_AI_LOCAL_SOURCE_EXTENSIONS = [
   ".pdf",
   ".doc",

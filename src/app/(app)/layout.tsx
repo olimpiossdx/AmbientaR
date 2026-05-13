@@ -315,7 +315,7 @@ const AppLayoutClient = ({ children }: { children: React.ReactNode }) => {
   // Guard simples por role para evitar “furar” o menu digitando URL.
   React.useEffect(() => {
     if (!user) return;
-    if (isRoleAllowedForPath(user.role, pathname)) return;
+    if (!pathname || isRoleAllowedForPath(user.role, pathname)) return;
     router.replace("/");
   }, [pathname, router, user]);
 
@@ -622,7 +622,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <SidebarProvider>
       <OfflineProvider>
-        <AppLayoutClient>{children}</AppLayoutClient>
+        <Suspense fallback={null}>
+          <AppLayoutClient>{children}</AppLayoutClient>
+        </Suspense>
       </OfflineProvider>
     </SidebarProvider>
   );

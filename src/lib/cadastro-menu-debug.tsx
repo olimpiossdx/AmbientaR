@@ -76,7 +76,7 @@ export type CadastroMenuDebugState = {
 export function useCadastroMenuDebug(): CadastroMenuDebugState {
   const pathname = usePathname();
   const { user } = useAuth();
-  const navDebug = React.useMemo(() => getNavDebugInfo(pathname), [pathname]);
+  const navDebug = React.useMemo(() => getNavDebugInfo(pathname ?? ''), [pathname]);
   const isCadastro = isCadastroRoute(pathname ?? '');
   const { visibleSubItems } = getCadastroMenuForRole((user?.role ?? 'client') as UserRole);
 

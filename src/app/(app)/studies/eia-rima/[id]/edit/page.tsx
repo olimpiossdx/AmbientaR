@@ -13,7 +13,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 function EditEiaRimaPageContent() {
     const router = useRouter();
     const params = useParams();
-    const eiaRimaId = params.id as string;
+    const eiaRimaId = (params?.id as string | undefined) ?? '';
     
     const { firestore } = useFirebase();
 

@@ -24,10 +24,10 @@ function NewClientPageContent() {
     const [existingClient, setExistingClient] = useState<Client | null>(null);
 
     const prefilledFromAnalise = (): Partial<Client> | null => {
-      const name = searchParams.get('name');
-      const cpfCnpj = searchParams.get('cpfCnpj');
-      const municipio = searchParams.get('municipio');
-      const uf = searchParams.get('uf');
+      const name = searchParams?.get('name');
+      const cpfCnpj = searchParams?.get('cpfCnpj');
+      const municipio = searchParams?.get('municipio');
+      const uf = searchParams?.get('uf');
       if (!name && !cpfCnpj && !municipio && !uf) return null;
       return { name: name ?? '', cpfCnpj: cpfCnpj ?? '', municipio: municipio ?? '', uf: uf ?? '' };
     };

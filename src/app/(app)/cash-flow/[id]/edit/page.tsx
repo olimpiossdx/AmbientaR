@@ -14,8 +14,8 @@ function EditTransactionPageContent() {
     const router = useRouter();
     const params = useParams();
     const searchParams = useSearchParams();
-    const itemId = params.id as string;
-    const transactionType = searchParams.get('type') as 'revenue' | 'expense' | null;
+    const itemId = (params?.id as string | undefined) ?? '';
+    const transactionType = searchParams?.get('type') as 'revenue' | 'expense' | null;
 
     const collectionName = transactionType === 'revenue' ? 'revenues' : 'expenses';
     

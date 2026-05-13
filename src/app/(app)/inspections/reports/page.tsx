@@ -10,14 +10,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Separator } from "@/components/ui/separator";
 import { Download, AlertTriangle, CheckCircle, Eye } from "lucide-react";
 import {
   AlertDialog,
@@ -35,7 +28,6 @@ import {
   useCollection,
   useFirebase,
   useMemoFirebase,
-  useDoc,
 } from "@/firebase";
 import type {
   Inspection,
@@ -475,146 +467,140 @@ export default function InspectionReportsListPage() {
             </CardHeader>
             <CardContent>
               <TooltipProvider>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Empreendimento</TableHead>
-                      <TableHead className="hidden md:table-cell">
-                        Data da Vistoria
-                      </TableHead>
-                      <TableHead className="hidden lg:table-cell">
-                        Responsável
-                      </TableHead>
-                      <TableHead>Leitura</TableHead>
-                      <TableHead className="text-right">Ações</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {isLoading ? (
-                      Array.from({ length: 3 }).map((_, i) => (
-                        <TableRow key={i}>
-                          <TableCell>
-                            <Skeleton className="h-5 w-40" />
-                          </TableCell>
-                          <TableCell className="hidden md:table-cell">
-                            <Skeleton className="h-5 w-24" />
-                          </TableCell>
-                          <TableCell className="hidden lg:table-cell">
-                            <Skeleton className="h-5 w-32" />
-                          </TableCell>
-                          <TableCell>
-                            <Skeleton className="h-5 w-28" />
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <Skeleton className="h-9 w-32 ml-auto" />
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    ) : filteredInspections.length > 0 ? (
-                      filteredInspections.map((report) => {
-                        const readTimestamp =
-                          user && report.readBy
-                            ? report.readBy[user.uid]
-                            : null;
-                        const isRead = !!readTimestamp;
-                        const needsReadConfirmation =
-                          isClientePortalRole(user?.role) ||
-                          user?.role === "representative";
-                        const canAccessDocument =
-                          !needsReadConfirmation || isRead;
-                        return (
-                          <TableRow key={report.id}>
-                            <TableCell className="font-medium">
-                              {projectsMap.get(report.projectId) ||
-                                "Não encontrado"}
-                            </TableCell>
-                            <TableCell className="hidden md:table-cell text-muted-foreground">
-                              {new Date(
-                                report.inspectionDate,
-                              ).toLocaleDateString("pt-BR")}
-                            </TableCell>
-                            <TableCell className="hidden lg:table-cell text-muted-foreground">
-                              {report.inspectorName}
-                            </TableCell>
-                            <TableCell className="text-muted-foreground text-xs">
-                              {isRead ? (
-                                <>
-                                  <div className="flex items-center text-green-600">
-                                    <CheckCircle className="mr-1 h-3 w-3" />
-                                    Confirmada
-                                  </div>
-                                  {new Date(readTimestamp!).toLocaleString(
-                                    "pt-BR",
+                <div className="space-y-4">
+                  {isLoading ? (
+                    Array.from({ length: 3 }).map((_, i) => (
+                      <Skeleton
+                        key={i}
+                        className="h-28 w-full rounded-lg"
+                      />
+                    ))
+                  ) : filteredInspections.length > 0 ? (
+                    filteredInspections.map((report) => {
+                      const readTimestamp =
+                        user && report.readBy
+                          ? report.readBy[user.uid]
+                          : null;
+                      const isRead = !!readTimestamp;
+                      const needsReadConfirmation =
+                        isClientePortalRole(user?.role) ||
+                        user?.role === "representative";
+                      const canAccessDocument =
+                        !needsReadConfirmation || isRead;
+                      return (
+                        <Card
+                          key={report.id}
+                          className="overflow-hidden border-border/80 shadow-sm transition-shadow hover:shadow-md"
+                        >
+                          <CardContent className="p-4 sm:p-5">
+                            <div className="flex flex-col gap-4">
+                              <div className="min-w-0 space-y-2">
+                                <h3 className="text-balance text-base font-semibold leading-snug text-foreground sm:text-lg">
+                                  {projectsMap.get(report.projectId) ||
+                                    "Não encontrado"}
+                                </h3>
+                                <p className="text-sm text-muted-foreground">
+                                  Data:{" "}
+                                  {new Date(
+                                    report.inspectionDate,
+                                  ).toLocaleDateString("pt-BR")}{" "}
+                                  · Responsável: {report.inspectorName}
+                                </p>
+                                <div className="text-sm">
+                                  {isRead ? (
+                                    <div className="flex flex-col gap-0.5 text-green-600">
+                                      <span className="inline-flex items-center gap-1 font-medium">
+                                        <CheckCircle className="h-3.5 w-3.5" />
+                                        Leitura confirmada
+                                      </span>
+                                      <span className="text-xs text-muted-foreground">
+                                        {new Date(readTimestamp!).toLocaleString(
+                                          "pt-BR",
+                                        )}
+                                      </span>
+                                    </div>
+                                  ) : (
+                                    <span className="text-muted-foreground">
+                                      Leitura pendente
+                                    </span>
                                   )}
-                                </>
-                              ) : (
-                                "Pendente"
-                              )}
-                            </TableCell>
-                            <TableCell className="text-right flex items-center justify-end gap-2">
-                              <Tooltip>
-                                <TooltipTrigger asChild>
+                                </div>
+                              </div>
+                              <Separator className="bg-border/60" />
+                              <div className="flex flex-wrap items-center gap-2">
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-9 w-9 shrink-0"
+                                      type="button"
+                                      onClick={() => handleViewPdf(report)}
+                                      disabled={!canAccessDocument}
+                                    >
+                                      <Eye className="h-4 w-4" />
+                                      <span className="sr-only">
+                                        Visualizar documento
+                                      </span>
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>
+                                      {canAccessDocument
+                                        ? "Visualizar documento (sem imprimir)"
+                                        : "Confirme a leitura para visualizar"}
+                                    </p>
+                                  </TooltipContent>
+                                </Tooltip>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-9 w-9 shrink-0"
+                                      type="button"
+                                      onClick={() => handleGeneratePdf(report)}
+                                      disabled={!canAccessDocument}
+                                    >
+                                      <Download className="h-4 w-4" />
+                                      <span className="sr-only">
+                                        Baixar PDF
+                                      </span>
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>
+                                      {canAccessDocument
+                                        ? "Baixar PDF"
+                                        : "Confirme a leitura para baixar"}
+                                    </p>
+                                  </TooltipContent>
+                                </Tooltip>
+                                {!isRead && (
                                   <Button
-                                    variant="outline"
+                                    variant="default"
                                     size="sm"
-                                    onClick={() => handleViewPdf(report)}
-                                    disabled={!canAccessDocument}
+                                    type="button"
+                                    className="shrink-0"
+                                    onClick={() =>
+                                      handleReadConfirmation(report)
+                                    }
                                   >
-                                    <Eye className="mr-2 h-4 w-4" />
-                                    Visualizar
+                                    Confirmar leitura
                                   </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  <p>
-                                    {canAccessDocument
-                                      ? "Visualizar documento (sem imprimir)"
-                                      : "Confirme a leitura para visualizar"}
-                                  </p>
-                                </TooltipContent>
-                              </Tooltip>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => handleGeneratePdf(report)}
-                                    disabled={!canAccessDocument}
-                                  >
-                                    <Download className="mr-2 h-4 w-4" />
-                                    PDF
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  <p>
-                                    {canAccessDocument
-                                      ? "Baixar PDF"
-                                      : "Confirme a leitura para baixar"}
-                                  </p>
-                                </TooltipContent>
-                              </Tooltip>
-                              <Button
-                                variant={isRead ? "secondary" : "default"}
-                                size="sm"
-                                onClick={() => handleReadConfirmation(report)}
-                                disabled={isRead}
-                              >
-                                {isRead
-                                  ? "Leitura Confirmada"
-                                  : "Confirmar Leitura"}
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })
-                    ) : (
-                      <TableRow>
-                        <TableCell colSpan={5} className="h-24 text-center">
-                          Nenhum relatório encontrado para o filtro atual.
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
+                                )}
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      );
+                    })
+                  ) : (
+                    <div className="flex h-24 items-center justify-center rounded-md border-2 border-dashed border-muted-foreground/25 text-center text-sm text-muted-foreground">
+                      Nenhum relatório encontrado para o filtro atual.
+                    </div>
+                  )}
+                </div>
               </TooltipProvider>
             </CardContent>
           </Card>

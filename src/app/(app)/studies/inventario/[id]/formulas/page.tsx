@@ -45,7 +45,7 @@ function newId() {
 
 export default function FormulasPage() {
   const params = useParams();
-  const projectId = params.id as string;
+  const projectId = (params?.id as string | undefined) ?? '';
   const { firestore } = useFirebase();
   const { toast } = useToast();
   const [importOpen, setImportOpen] = React.useState(false);

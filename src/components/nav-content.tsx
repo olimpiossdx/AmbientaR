@@ -111,16 +111,18 @@ function NavContentInner() {
     (href?: string) => {
       if (!href) return false;
       if (href.startsWith("/external")) return false;
-      if (href === "/") return pathname === "/";
+      if (href === "/") return (pathname ?? "") === "/";
 
       const [pathPart, queryPart] = href.split("?");
-      const pathMatches = pathname === pathPart || pathname.startsWith(`${pathPart}/`);
+      const pathMatches =
+        (pathname ?? "") === pathPart ||
+        (pathname ?? "").startsWith(`${pathPart}/`);
       if (!pathMatches) return false;
       if (!queryPart) return true;
 
       const required = new URLSearchParams(queryPart);
       for (const [k, v] of required.entries()) {
-        if (searchParams.get(k) !== v) return false;
+        if (searchParams?.get(k) !== v) return false;
       }
       return true;
     },
@@ -187,7 +189,7 @@ function NavContentInner() {
     if (isMobile || !open) return;
 
     let cancelled = false;
-    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+    let debounceTimer: number | null = null;
 
     const measureAndApply = () => {
       if (cancelled) return;
@@ -284,7 +286,7 @@ function NavContentInner() {
                 </CollapsibleTrigger>
                 <CollapsibleContent>
                   <SidebarMenuSub>
-                    {user && renderSubItems(item.subItems, pathname, user.role)}
+                    {user && renderSubItems(item.subItems, pathname ?? "", user.role)}
                   </SidebarMenuSub>
                 </CollapsibleContent>
               </Collapsible>

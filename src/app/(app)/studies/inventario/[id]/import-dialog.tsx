@@ -960,7 +960,8 @@ export function ImportDialog({ isOpen, onOpenChange, projectId }: ImportDialogPr
                   <AlertTitle>Atenção</AlertTitle>
                   <AlertDescription>
                     Você pode mudar os limites abaixo para encontrar possíveis Outliers nos seus dados de campo.
-                    O sistema mostrará as informações em <strong>"Erros encontrados"</strong>.
+                    O sistema mostrará as informações em{' '}
+                    <strong>&ldquo;Erros encontrados&rdquo;</strong>.
                   </AlertDescription>
                 </Alert>
 

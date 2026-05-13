@@ -77,8 +77,8 @@ function flattenParams(obj: unknown, prefix = ''): { key: string; value: string 
 export default function CalculationResultPage() {
   const params = useParams();
   const router = useRouter();
-  const projectId = params.id as string;
-  const runId = params.runId as string;
+  const projectId = (params?.id as string | undefined) ?? '';
+  const runId = (params?.runId as string | undefined) ?? '';
   const { firestore } = useFirebase();
   const { toast } = useToast();
   const [busy, setBusy] = React.useState(false);

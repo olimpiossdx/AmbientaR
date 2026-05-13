@@ -10,25 +10,8 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  MoreHorizontal,
   PlusCircle,
   Pencil,
   Trash2,
@@ -48,7 +31,6 @@ import {
   useFirebase,
   useMemoFirebase,
   errorEmitter,
-  useDoc,
   useAuth,
 } from "@/firebase";
 import {
@@ -507,6 +489,21 @@ export default function ProposalsPage() {
     }
   };
 
+  const getStatusLabel = (status: Proposal["status"]) => {
+    switch (status) {
+      case "Draft":
+        return "Rascunho";
+      case "Sent":
+        return "Enviado";
+      case "Accepted":
+        return "Aceito";
+      case "Rejected":
+        return "Rejeitado";
+      default:
+        return status;
+    }
+  };
+
   return (
     <>
       <div className="flex flex-col h-full">
@@ -529,79 +526,69 @@ export default function ProposalsPage() {
             </CardHeader>
             <CardContent>
               <TooltipProvider>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Orçamento #</TableHead>
-                      <TableHead>Cliente</TableHead>
-                      <TableHead className="hidden md:table-cell">
-                        Data
-                      </TableHead>
-                      <TableHead className="text-right">Valor</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="text-right">Ações</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {isLoading &&
-                      Array.from({ length: 3 }).map((_, i) => (
-                        <TableRow key={i}>
-                          <TableCell>
-                            <Skeleton className="h-5 w-24" />
-                          </TableCell>
-                          <TableCell>
-                            <Skeleton className="h-5 w-32" />
-                          </TableCell>
-                          <TableCell className="hidden md:table-cell">
-                            <Skeleton className="h-5 w-20" />
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <Skeleton className="h-5 w-16 ml-auto" />
-                          </TableCell>
-                          <TableCell>
-                            <Skeleton className="h-6 w-20 rounded-full" />
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <Skeleton className="h-8 w-40 ml-auto" />
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    {!isLoading &&
-                      displayActiveProposals?.map((proposal) => (
-                        <TableRow key={proposal.id}>
-                          <TableCell className="font-medium">
-                            {proposal.proposalNumber}
-                          </TableCell>
-                          <TableCell>
-                            {clientsMap.get(proposal.clientId)?.name ||
-                              "Cliente não encontrado"}
-                          </TableCell>
-                          <TableCell className="hidden md:table-cell text-muted-foreground">
-                            {new Date(proposal.proposalDate).toLocaleDateString(
-                              "pt-BR",
-                            )}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            {formatCurrency(proposal.amount)}
-                          </TableCell>
-                          <TableCell>
-                            <Badge
-                              variant={"outline"}
-                              className={cn(getStatusVariant(proposal.status))}
-                            >
-                              {proposal.status}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center justify-end gap-1">
+                <div className="space-y-4">
+                  {isLoading &&
+                    Array.from({ length: 3 }).map((_, i) => (
+                      <Skeleton
+                        key={i}
+                        className="h-28 w-full rounded-lg"
+                      />
+                    ))}
+                  {!isLoading &&
+                    displayActiveProposals?.map((proposal) => (
+                      <Card
+                        key={proposal.id}
+                        className="overflow-hidden border-border/80 shadow-sm transition-shadow hover:shadow-md"
+                      >
+                        <CardContent className="p-4 sm:p-5">
+                          <div className="flex flex-col gap-4">
+                            <div className="min-w-0 space-y-2">
+                              <h3 className="text-balance text-base font-semibold leading-snug text-foreground sm:text-lg">
+                                Orçamento #{proposal.proposalNumber}
+                              </h3>
+                              <p className="text-sm text-muted-foreground">
+                                {clientsMap.get(proposal.clientId)?.name ||
+                                  "Cliente não encontrado"}
+                              </p>
+                              <div className="flex flex-wrap items-center gap-2">
+                                <Badge
+                                  variant="outline"
+                                  className={cn(
+                                    "w-fit",
+                                    getStatusVariant(proposal.status),
+                                  )}
+                                >
+                                  {getStatusLabel(proposal.status)}
+                                </Badge>
+                                {proposal.contractId ? (
+                                  <Badge variant="secondary">
+                                    Vinculado a contrato
+                                  </Badge>
+                                ) : null}
+                              </div>
+                              <p className="text-sm text-muted-foreground">
+                                Data:{" "}
+                                {new Date(
+                                  proposal.proposalDate,
+                                ).toLocaleDateString("pt-BR")}{" "}
+                                · Valor: {formatCurrency(proposal.amount)}
+                              </p>
+                            </div>
+                            <Separator className="bg-border/60" />
+                            <div className="flex flex-wrap items-center gap-1">
                               <Tooltip>
                                 <TooltipTrigger asChild>
                                   <Button
                                     variant="ghost"
                                     size="icon"
+                                    className="h-9 w-9 shrink-0"
+                                    type="button"
                                     onClick={() => handleView(proposal)}
                                   >
                                     <Eye className="h-4 w-4" />
+                                    <span className="sr-only">
+                                      Visualizar
+                                    </span>
                                   </Button>
                                 </TooltipTrigger>
                                 <TooltipContent>
@@ -610,101 +597,129 @@ export default function ProposalsPage() {
                               </Tooltip>
                               {user?.role !== "client" &&
                                 user?.role !== "cliente_autonomo" && (
-                                <>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => handleEdit(proposal)}
-                                  >
-                                    <Pencil className="h-4 w-4" />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  <p>Editar</p>
-                                </TooltipContent>
-                              </Tooltip>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => handleExportPdf(proposal)}
-                                  >
-                                    <FileText className="h-4 w-4" />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  <p>Exportar PDF</p>
-                                </TooltipContent>
-                              </Tooltip>
-                              <DropdownMenu>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <DropdownMenuTrigger asChild>
-                                      <Button variant="ghost" size="icon">
-                                        <MoreHorizontal className="h-4 w-4" />
-                                      </Button>
-                                    </DropdownMenuTrigger>
-                                  </TooltipTrigger>
-                                  <TooltipContent>
-                                    <p>Mais Ações</p>
-                                  </TooltipContent>
-                                </Tooltip>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuLabel>
-                                    Marcar Como
-                                  </DropdownMenuLabel>
-                                  <DropdownMenuSeparator />
-                                  <DropdownMenuItem
-                                    onClick={() =>
-                                      handleUpdateStatus(
-                                        proposal.id,
-                                        "Accepted",
-                                      )
-                                    }
-                                  >
-                                    <CheckCircle className="mr-2 h-4 w-4 text-green-500" />
-                                    Aceito
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem
-                                    onClick={() =>
-                                      handleUpdateStatus(
-                                        proposal.id,
-                                        "Rejected",
-                                      )
-                                    }
-                                  >
-                                    <XCircle className="mr-2 h-4 w-4 text-red-500" />
-                                    Rejeitado
-                                  </DropdownMenuItem>
-                                  <DropdownMenuSeparator />
-                                  <DropdownMenuItem
-                                    className="text-destructive"
-                                    onClick={() =>
-                                      openDeleteConfirm(proposal.id)
-                                    }
-                                  >
-                                    Deletar
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                                </>
-                              )}
+                                  <>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          className="h-9 w-9 shrink-0"
+                                          type="button"
+                                          onClick={() => handleEdit(proposal)}
+                                        >
+                                          <Pencil className="h-4 w-4" />
+                                          <span className="sr-only">
+                                            Editar
+                                          </span>
+                                        </Button>
+                                      </TooltipTrigger>
+                                      <TooltipContent>
+                                        <p>Editar</p>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          className="h-9 w-9 shrink-0"
+                                          type="button"
+                                          onClick={() =>
+                                            handleExportPdf(proposal)
+                                          }
+                                        >
+                                          <FileText className="h-4 w-4" />
+                                          <span className="sr-only">
+                                            Exportar PDF
+                                          </span>
+                                        </Button>
+                                      </TooltipTrigger>
+                                      <TooltipContent>
+                                        <p>Exportar PDF</p>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          className="h-9 w-9 shrink-0"
+                                          type="button"
+                                          onClick={() =>
+                                            handleUpdateStatus(
+                                              proposal.id,
+                                              "Accepted",
+                                            )
+                                          }
+                                        >
+                                          <CheckCircle className="h-4 w-4 text-green-500" />
+                                          <span className="sr-only">
+                                            Marcar como aceito
+                                          </span>
+                                        </Button>
+                                      </TooltipTrigger>
+                                      <TooltipContent>
+                                        <p>Marcar como aceito</p>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          className="h-9 w-9 shrink-0"
+                                          type="button"
+                                          onClick={() =>
+                                            handleUpdateStatus(
+                                              proposal.id,
+                                              "Rejected",
+                                            )
+                                          }
+                                        >
+                                          <XCircle className="h-4 w-4 text-red-500" />
+                                          <span className="sr-only">
+                                            Marcar como rejeitado
+                                          </span>
+                                        </Button>
+                                      </TooltipTrigger>
+                                      <TooltipContent>
+                                        <p>Marcar como rejeitado</p>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          className="h-9 w-9 shrink-0 text-destructive hover:text-destructive"
+                                          type="button"
+                                          onClick={() =>
+                                            openDeleteConfirm(proposal.id)
+                                          }
+                                        >
+                                          <Trash2 className="h-4 w-4" />
+                                          <span className="sr-only">
+                                            Deletar
+                                          </span>
+                                        </Button>
+                                      </TooltipTrigger>
+                                      <TooltipContent>
+                                        <p>Deletar</p>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </>
+                                )}
                             </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    {!isLoading && displayActiveProposals?.length === 0 && (
-                      <TableRow>
-                        <TableCell colSpan={6} className="h-24 text-center">
-                          Nenhum orçamento em andamento.
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  {!isLoading && displayActiveProposals?.length === 0 && (
+                    <div className="flex h-24 items-center justify-center rounded-md border-2 border-dashed border-muted-foreground/25 text-center text-sm text-muted-foreground">
+                      Nenhum orçamento em andamento.
+                    </div>
+                  )}
+                </div>
               </TooltipProvider>
             </CardContent>
           </Card>
@@ -718,84 +733,73 @@ export default function ProposalsPage() {
             </CardHeader>
             <CardContent>
               <TooltipProvider>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Orçamento #</TableHead>
-                      <TableHead>Cliente</TableHead>
-                      <TableHead className="hidden md:table-cell">
-                        Data
-                      </TableHead>
-                      <TableHead className="text-right">Valor</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="text-right">Ações</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {isLoading &&
-                      Array.from({ length: 2 }).map((_, i) => (
-                        <TableRow key={i}>
-                          <TableCell>
-                            <Skeleton className="h-5 w-24" />
-                          </TableCell>
-                          <TableCell>
-                            <Skeleton className="h-5 w-32" />
-                          </TableCell>
-                          <TableCell className="hidden md:table-cell">
-                            <Skeleton className="h-5 w-20" />
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <Skeleton className="h-5 w-16 ml-auto" />
-                          </TableCell>
-                          <TableCell>
-                            <Skeleton className="h-6 w-20 rounded-full" />
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <Skeleton className="h-8 w-20 ml-auto" />
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    {!isLoading &&
-                      displayFinalizedProposals?.map((proposal) => (
-                        <TableRow key={proposal.id}>
-                          <TableCell className="font-medium">
-                            {proposal.proposalNumber}
-                          </TableCell>
-                          <TableCell>
-                            {clientsMap.get(proposal.clientId)?.name ||
-                              "Cliente não encontrado"}
-                          </TableCell>
-                          <TableCell className="hidden md:table-cell text-muted-foreground">
-                            {new Date(proposal.proposalDate).toLocaleDateString(
-                              "pt-BR",
-                            )}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            {formatCurrency(proposal.amount)}
-                          </TableCell>
-                          <TableCell>
-                            <Badge
-                              variant={"outline"}
-                              className={cn(getStatusVariant(proposal.status))}
-                            >
-                              {proposal.status}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center justify-end gap-1">
+                <div className="space-y-4">
+                  {isLoading &&
+                    Array.from({ length: 2 }).map((_, i) => (
+                      <Skeleton
+                        key={i}
+                        className="h-28 w-full rounded-lg"
+                      />
+                    ))}
+                  {!isLoading &&
+                    displayFinalizedProposals?.map((proposal) => (
+                      <Card
+                        key={proposal.id}
+                        className="overflow-hidden border-border/80 shadow-sm transition-shadow hover:shadow-md"
+                      >
+                        <CardContent className="p-4 sm:p-5">
+                          <div className="flex flex-col gap-4">
+                            <div className="min-w-0 space-y-2">
+                              <h3 className="text-balance text-base font-semibold leading-snug text-foreground sm:text-lg">
+                                Orçamento #{proposal.proposalNumber}
+                              </h3>
+                              <p className="text-sm text-muted-foreground">
+                                {clientsMap.get(proposal.clientId)?.name ||
+                                  "Cliente não encontrado"}
+                              </p>
+                              <div className="flex flex-wrap items-center gap-2">
+                                <Badge
+                                  variant="outline"
+                                  className={cn(
+                                    "w-fit",
+                                    getStatusVariant(proposal.status),
+                                  )}
+                                >
+                                  {getStatusLabel(proposal.status)}
+                                </Badge>
+                                {proposal.contractId ? (
+                                  <Badge variant="secondary">
+                                    Vinculado a contrato
+                                  </Badge>
+                                ) : null}
+                              </div>
+                              <p className="text-sm text-muted-foreground">
+                                Data:{" "}
+                                {new Date(
+                                  proposal.proposalDate,
+                                ).toLocaleDateString("pt-BR")}{" "}
+                                · Valor: {formatCurrency(proposal.amount)}
+                              </p>
+                            </div>
+                            <Separator className="bg-border/60" />
+                            <div className="flex flex-wrap items-center gap-1">
                               <Tooltip>
                                 <TooltipTrigger asChild>
                                   <Button
                                     variant="ghost"
                                     size="icon"
+                                    className="h-9 w-9 shrink-0"
+                                    type="button"
                                     onClick={() => handleView(proposal)}
                                   >
                                     <Eye className="h-4 w-4" />
-                                    <span className="sr-only">Visualizar</span>
+                                    <span className="sr-only">
+                                      Visualizar
+                                    </span>
                                   </Button>
                                 </TooltipTrigger>
                                 <TooltipContent>
-                                  <p>Visualizar Detalhes</p>
+                                  <p>Visualizar detalhes</p>
                                 </TooltipContent>
                               </Tooltip>
                               <Tooltip>
@@ -803,10 +807,14 @@ export default function ProposalsPage() {
                                   <Button
                                     variant="ghost"
                                     size="icon"
+                                    className="h-9 w-9 shrink-0"
+                                    type="button"
                                     onClick={() => handleExportPdf(proposal)}
                                   >
                                     <FileText className="h-4 w-4" />
-                                    <span className="sr-only">Exportar</span>
+                                    <span className="sr-only">
+                                      Exportar PDF
+                                    </span>
                                   </Button>
                                 </TooltipTrigger>
                                 <TooltipContent>
@@ -819,32 +827,34 @@ export default function ProposalsPage() {
                                     <Button
                                       variant="ghost"
                                       size="icon"
-                                      className="text-destructive hover:text-destructive"
+                                      className="h-9 w-9 shrink-0 text-destructive hover:text-destructive"
+                                      type="button"
                                       onClick={() =>
                                         openDeleteConfirm(proposal.id)
                                       }
                                     >
                                       <Trash2 className="h-4 w-4" />
+                                      <span className="sr-only">
+                                        Deletar orçamento
+                                      </span>
                                     </Button>
                                   </TooltipTrigger>
                                   <TooltipContent>
-                                    <p>Deletar Orçamento</p>
+                                    <p>Deletar orçamento</p>
                                   </TooltipContent>
                                 </Tooltip>
                               )}
                             </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    {!isLoading && displayFinalizedProposals?.length === 0 && (
-                      <TableRow>
-                        <TableCell colSpan={6} className="h-24 text-center">
-                          Nenhum orçamento finalizado.
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  {!isLoading && displayFinalizedProposals?.length === 0 && (
+                    <div className="flex h-24 items-center justify-center rounded-md border-2 border-dashed border-muted-foreground/25 text-center text-sm text-muted-foreground">
+                      Nenhum orçamento finalizado.
+                    </div>
+                  )}
+                </div>
               </TooltipProvider>
             </CardContent>
           </Card>

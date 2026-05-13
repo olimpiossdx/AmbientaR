@@ -10,14 +10,7 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -679,57 +672,52 @@ export default function CarPage() {
           </CardHeader>
           <CardContent>
             <TooltipProvider>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Empreendimento</TableHead>
-                    <TableHead className="hidden md:table-cell">Cliente</TableHead>
-                    <TableHead>Nº Recibo CAR</TableHead>
-                    <TableHead className="text-right">Anexos</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {loadingProjects &&
-                    Array.from({ length: 3 }).map((_, i) => (
-                      <TableRow key={i}>
-                        <TableCell>
-                          <Skeleton className="h-5 w-48" />
-                        </TableCell>
-                        <TableCell className="hidden md:table-cell">
-                          <Skeleton className="h-5 w-40" />
-                        </TableCell>
-                        <TableCell>
-                          <Skeleton className="h-5 w-32" />
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Skeleton className="h-8 w-24 ml-auto" />
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  {!loadingProjects &&
-                    projectsWithCar.map((p) => {
-                      const car = p.car!;
-                      const client = car.clientId
-                        ? clientsMap.get(car.clientId)
-                        : undefined;
-                      return (
-                        <TableRow key={p.id}>
-                          <TableCell className="font-medium">
-                            {p.propertyName}{" "}
-                            {p.municipio ? `— ${p.municipio}/${p.uf}` : ""}
-                          </TableCell>
-                          <TableCell className="hidden text-muted-foreground md:table-cell">
-                            {client
-                              ? `${client.name} — ${client.cpfCnpj}`
-                              : "Não vinculado"}
-                          </TableCell>
-                          <TableCell>{car.receiptNumber}</TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex items-center justify-end gap-1">
+              <div className="space-y-4">
+                {loadingProjects &&
+                  Array.from({ length: 3 }).map((_, i) => (
+                    <Skeleton
+                      key={i}
+                      className="h-28 w-full rounded-lg"
+                    />
+                  ))}
+                {!loadingProjects &&
+                  projectsWithCar.map((p) => {
+                    const car = p.car!;
+                    const client = car.clientId
+                      ? clientsMap.get(car.clientId)
+                      : undefined;
+                    return (
+                      <Card
+                        key={p.id}
+                        className="overflow-hidden border-border/80 shadow-sm transition-shadow hover:shadow-md"
+                      >
+                        <CardContent className="p-4 sm:p-5">
+                          <div className="flex flex-col gap-4">
+                            <div className="min-w-0 space-y-2">
+                              <h3 className="text-balance text-base font-semibold leading-snug text-foreground sm:text-lg">
+                                {p.propertyName}
+                                {p.municipio ? ` — ${p.municipio}/${p.uf}` : ""}
+                              </h3>
+                              <p className="text-sm text-muted-foreground">
+                                {client
+                                  ? `${client.name} — ${client.cpfCnpj}`
+                                  : "Cliente não vinculado"}
+                              </p>
+                              <p className="text-sm text-muted-foreground">
+                                Nº recibo CAR: {car.receiptNumber}
+                              </p>
+                            </div>
+                            <Separator className="bg-border/60" />
+                            <div className="flex flex-wrap items-center gap-1">
                               {car.pdfUrl && (
                                 <Tooltip>
                                   <TooltipTrigger asChild>
-                                    <Button asChild variant="ghost" size="icon">
+                                    <Button
+                                      asChild
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-9 w-9 shrink-0"
+                                    >
                                       <a
                                         href={car.pdfUrl}
                                         target="_blank"
@@ -750,7 +738,12 @@ export default function CarPage() {
                               {car.shpUrl && (
                                 <Tooltip>
                                   <TooltipTrigger asChild>
-                                    <Button asChild variant="ghost" size="icon">
+                                    <Button
+                                      asChild
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-9 w-9 shrink-0"
+                                    >
                                       <a
                                         href={car.shpUrl}
                                         target="_blank"
@@ -769,19 +762,17 @@ export default function CarPage() {
                                 </Tooltip>
                               )}
                             </div>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  {!loadingProjects && projectsWithCar.length === 0 && (
-                    <TableRow>
-                      <TableCell colSpan={4} className="h-24 text-center">
-                        Nenhum empreendimento possui CAR vinculado ainda.
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                {!loadingProjects && projectsWithCar.length === 0 && (
+                  <div className="flex h-24 items-center justify-center rounded-md border-2 border-dashed border-muted-foreground/25 text-center text-sm text-muted-foreground">
+                    Nenhum empreendimento possui CAR vinculado ainda.
+                  </div>
+                )}
+              </div>
             </TooltipProvider>
           </CardContent>
         </Card>

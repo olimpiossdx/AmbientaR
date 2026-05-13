@@ -26,7 +26,7 @@ function logPormenorizado(info: NavDebugInfo) {
 export function SidebarDebugger() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const showDebug = searchParams.get('debug') === '1' || searchParams.get('debug') === 'true';
+  const showDebug = searchParams?.get('debug') === '1' || searchParams?.get('debug') === 'true';
   const [open, setOpen] = React.useState(false);
   const [listagemCompleta, setListagemCompleta] = React.useState(false);
 

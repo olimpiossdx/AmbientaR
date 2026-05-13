@@ -14,20 +14,19 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
+import { DEFAULT_AI_LOCAL_SOURCE_PATH } from "@/lib/ai-local-source-defaults";
 
 const AI_LOCAL_SOURCE_PATH_KEY = "ai_lab_local_source_path_v1";
 const AI_LOCAL_SOURCE_EXTENSIONS_KEY = "ai_lab_local_source_extensions_v1";
 const AI_LOCAL_SOURCE_INCREMENTAL_KEY = "ai_lab_local_source_incremental_v1";
 const AI_LOCAL_SOURCE_MODIFIED_AFTER_KEY =
   "ai_lab_local_source_modified_after_v1";
-const DEFAULT_PATH =
-  "F:\\SERVIDOR\\OneDrive\\Projects\\AmbientaR\\Termos de Referencia";
 const DEFAULT_EXTENSIONS = ".pdf,.doc,.docx,.txt,.md,.csv";
 
 export default function AiLocalSourceSettingsPage() {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [path, setPath] = React.useState(DEFAULT_PATH);
+  const [path, setPath] = React.useState(DEFAULT_AI_LOCAL_SOURCE_PATH);
   const [extensions, setExtensions] = React.useState(DEFAULT_EXTENSIONS);
   const [modifiedAfter, setModifiedAfter] = React.useState("");
   const [incrementalOnly, setIncrementalOnly] = React.useState(true);
@@ -153,7 +152,7 @@ export default function AiLocalSourceSettingsPage() {
               <Input
                 value={path}
                 onChange={(e) => setPath(e.target.value)}
-                placeholder={DEFAULT_PATH}
+                placeholder={DEFAULT_AI_LOCAL_SOURCE_PATH || "C:\\caminho\\para\\Termos de Referencia"}
               />
             </div>
             <div className="space-y-1">

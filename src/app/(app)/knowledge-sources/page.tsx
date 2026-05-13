@@ -6,8 +6,7 @@ import { useRouter } from 'next/navigation';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { PlusCircle, Eye, FileText, CheckCircle, Archive } from 'lucide-react';
+import { PlusCircle, Eye, CheckCircle, Archive } from 'lucide-react';
 import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
 import { collection, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import type { KnowledgeSource } from '@/lib/types';
@@ -22,6 +21,21 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
+import { Separator } from '@/components/ui/separator';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { useToast } from '@/hooks/use-toast';
 
 export default function KnowledgeSourcesPage() {
@@ -102,62 +116,111 @@ export default function KnowledgeSourcesPage() {
             </div>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Número / Título</TableHead>
-                  <TableHead className="hidden sm:table-cell">Tipo</TableHead>
-                  <TableHead className="hidden md:table-cell">Órgão</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="hidden lg:table-cell">Inclusão</TableHead>
-                  <TableHead className="w-20 sm:w-24">Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+            <TooltipProvider>
+              <div className="space-y-4">
                 {isLoading && (
-                  <TableRow>
-                    <TableCell colSpan={6}><Skeleton className="h-10 w-full" /></TableCell>
-                  </TableRow>
+                  <Skeleton className="h-28 w-full rounded-lg" />
                 )}
-                {!isLoading && filtered.map((s) => (
-                  <TableRow key={s.id}>
-                    <TableCell className="font-medium">{s.numero || s.titulo || s.id.slice(0, 8)}</TableCell>
-                    <TableCell className="hidden sm:table-cell">{KNOWLEDGE_SOURCE_TIPO_LABEL[s.tipo] ?? s.tipo}</TableCell>
-                    <TableCell className="hidden md:table-cell">{s.orgao ?? '—'}</TableCell>
-                    <TableCell>
-                      <Badge variant={s.aprovado ? 'default' : 'secondary'}>
-                        {s.aprovado ? 'Aprovado' : 'Pendente'}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="hidden text-sm text-muted-foreground lg:table-cell">
-                      {s.modoInclusao === 'robo_sugeriu' ? 'Robô' : 'Manual'}
-                    </TableCell>
-                    <TableCell className="flex items-center gap-1">
-                      {s.modoInclusao === 'robo_sugeriu' && !s.aprovado && !s.arquivado && (
-                        <>
-                          <Button variant="ghost" size="icon" onClick={() => handleAprovar(s.id)} title="Aprovar (disponível para a IA)">
-                            <CheckCircle className="h-4 w-4 text-green-600" />
-                          </Button>
-                          <Button variant="ghost" size="icon" onClick={() => handleArquivar(s.id)} title="Arquivar sugestão">
-                            <Archive className="h-4 w-4" />
-                          </Button>
-                        </>
-                      )}
-                      <Button variant="ghost" size="icon" onClick={() => router.push(`/knowledge-sources/${s.id}`)}>
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {!isLoading &&
+                  filtered.map((s) => (
+                    <Card
+                      key={s.id}
+                      className="overflow-hidden border-border/80 shadow-sm transition-shadow hover:shadow-md"
+                    >
+                      <CardContent className="p-4 sm:p-5">
+                        <div className="flex flex-col gap-4">
+                          <div className="min-w-0 space-y-2">
+                            <h3 className="text-balance text-base font-semibold leading-snug text-foreground sm:text-lg">
+                              {s.numero || s.titulo || s.id.slice(0, 8)}
+                            </h3>
+                            <p className="text-sm text-muted-foreground">
+                              {(KNOWLEDGE_SOURCE_TIPO_LABEL[s.tipo] ?? s.tipo) +
+                                (s.orgao ? ` · ${s.orgao}` : '')}
+                            </p>
+                            <div className="flex flex-wrap items-center gap-2">
+                              <Badge variant={s.aprovado ? 'default' : 'secondary'}>
+                                {s.aprovado ? 'Aprovado' : 'Pendente'}
+                              </Badge>
+                              {s.arquivado ? (
+                                <Badge variant="outline">Arquivado</Badge>
+                              ) : null}
+                              <span className="text-xs text-muted-foreground">
+                                {s.modoInclusao === 'robo_sugeriu' ? 'Inclusão: Robô' : 'Inclusão: Manual'}
+                              </span>
+                            </div>
+                            <p className="line-clamp-2 text-xs text-muted-foreground sm:text-sm">
+                              {formatKnowledgeSourceSummary(s)}
+                            </p>
+                          </div>
+                          <Separator className="bg-border/60" />
+                          <div className="flex flex-wrap items-center gap-1">
+                            {s.modoInclusao === 'robo_sugeriu' && !s.aprovado && !s.arquivado && (
+                              <>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-9 w-9 shrink-0"
+                                      type="button"
+                                      onClick={() => handleAprovar(s.id)}
+                                    >
+                                      <CheckCircle className="h-4 w-4 text-green-600" />
+                                      <span className="sr-only">Aprovar</span>
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Aprovar (disponível para a IA)</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-9 w-9 shrink-0"
+                                      type="button"
+                                      onClick={() => handleArquivar(s.id)}
+                                    >
+                                      <Archive className="h-4 w-4" />
+                                      <span className="sr-only">Arquivar</span>
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Arquivar sugestão</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </>
+                            )}
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-9 w-9 shrink-0"
+                                  type="button"
+                                  onClick={() => router.push(`/knowledge-sources/${s.id}`)}
+                                >
+                                  <Eye className="h-4 w-4" />
+                                  <span className="sr-only">Ver detalhes</span>
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Ver detalhes</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
                 {!isLoading && filtered.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
-                      Nenhuma fonte cadastrada. Adicione manualmente ou aguarde sugestões do pipeline.
-                    </TableCell>
-                  </TableRow>
+                  <div className="flex h-24 items-center justify-center rounded-md border-2 border-dashed border-muted-foreground/25 text-center text-sm text-muted-foreground">
+                    Nenhuma fonte cadastrada. Adicione manualmente ou aguarde sugestões do pipeline.
+                  </div>
                 )}
-              </TableBody>
-            </Table>
+              </div>
+            </TooltipProvider>
           </CardContent>
         </Card>
       </main>

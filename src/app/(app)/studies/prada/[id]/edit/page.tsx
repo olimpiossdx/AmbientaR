@@ -12,7 +12,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 function EditPradaPageContent() {
     const router = useRouter();
     const params = useParams();
-    const pradaId = params.id as string;
+    const pradaId = (params?.id as string | undefined) ?? '';
     
     const { firestore } = useFirebase();
 

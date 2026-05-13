@@ -234,7 +234,7 @@ const PROFILE_CHOICE_TEXT = {
 
 type RegisterProfileMode = "client" | "cliente_autonomo" | "representative";
 
-function parseRegisterProfileFromTipo(tipo: string | null): RegisterProfileMode {
+function parseRegisterProfileFromTipo(tipo: string | null | undefined): RegisterProfileMode {
   if (tipo === "representante") return "representative";
   if (tipo === "cliente_autonomo" || tipo === "autonomo") return "cliente_autonomo";
   return "client";
@@ -242,7 +242,7 @@ function parseRegisterProfileFromTipo(tipo: string | null): RegisterProfileMode 
 
 export default function RegisterPage() {
   const searchParams = useSearchParams();
-  const initialTipo = searchParams.get("tipo");
+  const initialTipo = searchParams?.get("tipo");
   const [mode, setMode] = React.useState<RegisterProfileMode>(() =>
     parseRegisterProfileFromTipo(initialTipo),
   );

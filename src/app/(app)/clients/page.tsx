@@ -11,23 +11,6 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  MoreHorizontal,
   PlusCircle,
   Eye,
   Pencil,
@@ -508,164 +491,99 @@ export default function ClientsPage() {
                       className="w-full"
                     />
                   </div>
-                  <div className="space-y-3 md:hidden">
+                  <div className="space-y-4">
                     {isLoading &&
                       Array.from({ length: 5 }).map((_, i) => (
-                        <Card key={i}>
-                          <CardContent className="p-4 space-y-2">
-                            <Skeleton className="h-5 w-40" />
-                            <Skeleton className="h-4 w-36" />
-                          </CardContent>
-                        </Card>
+                        <Skeleton
+                          key={i}
+                          className="h-28 w-full rounded-lg"
+                        />
                       ))}
                     {!isLoading &&
                       filteredClients.map((client) => (
-                      <Card key={client.id} className="rounded-xl border-border/70 shadow-sm">
-                        <CardContent className="p-4 space-y-3">
-                            <div className="min-w-0">
-                              <p className="font-medium truncate">{client.name}</p>
-                              <p className="text-sm text-muted-foreground">
-                                {formatCpfCnpjDisplay(client.cpfCnpj)}
-                              </p>
-                              <p className="text-sm text-muted-foreground truncate">
-                                {client.email || "Sem e-mail"}
-                              </p>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleView(client)}
-                              >
-                                <Eye className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleEdit(client)}
-                              >
-                                <Pencil className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="text-destructive hover:text-destructive"
-                                onClick={() => openDeleteConfirm(client.id)}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
+                        <Card
+                          key={client.id}
+                          className="overflow-hidden border-border/80 shadow-sm transition-shadow hover:shadow-md"
+                        >
+                          <CardContent className="p-4 sm:p-5">
+                            <div className="flex flex-col gap-4">
+                              <div className="min-w-0 space-y-1.5">
+                                <h3 className="text-balance text-base font-semibold leading-snug text-foreground sm:text-lg">
+                                  {client.name}
+                                </h3>
+                                <p className="font-mono text-sm tabular-nums text-muted-foreground">
+                                  {formatCpfCnpjDisplay(client.cpfCnpj)}
+                                </p>
+                                <p className="truncate text-xs text-muted-foreground sm:text-sm">
+                                  {client.email?.trim()
+                                    ? client.email
+                                    : "Sem e-mail"}
+                                </p>
+                              </div>
+                              <Separator className="bg-border/60" />
+                              <div className="flex flex-wrap items-center gap-1">
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-9 w-9 shrink-0"
+                                      onClick={() => handleView(client)}
+                                    >
+                                      <Eye className="h-4 w-4" />
+                                      <span className="sr-only">
+                                        Visualizar
+                                      </span>
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Visualizar detalhes</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-9 w-9 shrink-0"
+                                      onClick={() => handleEdit(client)}
+                                    >
+                                      <Pencil className="h-4 w-4" />
+                                      <span className="sr-only">Editar</span>
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Editar cliente</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-9 w-9 shrink-0 text-destructive hover:text-destructive"
+                                      onClick={() =>
+                                        openDeleteConfirm(client.id)
+                                      }
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                      <span className="sr-only">Deletar</span>
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Deletar cliente</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </div>
                             </div>
                           </CardContent>
                         </Card>
                       ))}
                     {!isLoading && filteredClients.length === 0 && (
-                      <div className="h-24 flex items-center justify-center text-sm text-muted-foreground">
+                      <div className="flex h-24 items-center justify-center rounded-md border-2 border-dashed border-muted-foreground/25 text-sm text-muted-foreground">
                         Nenhum cliente encontrado para o filtro atual.
                       </div>
                     )}
-                  </div>
-                  <div className="hidden md:block">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Nome</TableHead>
-                        <TableHead>CPF/CNPJ</TableHead>
-                        <TableHead className="hidden md:table-cell">
-                          Email
-                        </TableHead>
-                        <TableHead className="text-right">Ações</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {isLoading &&
-                        Array.from({ length: 5 }).map((_, i) => (
-                          <TableRow key={i}>
-                            <TableCell>
-                              <Skeleton className="h-5 w-32" />
-                            </TableCell>
-                            <TableCell>
-                              <Skeleton className="h-5 w-32" />
-                            </TableCell>
-                            <TableCell className="hidden md:table-cell">
-                              <Skeleton className="h-5 w-48" />
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <Skeleton className="h-8 w-24" />
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      {filteredClients.map((client) => (
-                        <TableRow key={client.id}>
-                          <TableCell className="font-medium">
-                            {client.name}
-                          </TableCell>
-                          <TableCell className="text-muted-foreground">
-                            {formatCpfCnpjDisplay(client.cpfCnpj)}
-                          </TableCell>
-                          <TableCell className="hidden md:table-cell text-muted-foreground">
-                            {client.email}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex items-center justify-end gap-1">
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => handleView(client)}
-                                  >
-                                    <Eye className="h-4 w-4" />
-                                    <span className="sr-only">Visualizar</span>
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  <p>Visualizar detalhes</p>
-                                </TooltipContent>
-                              </Tooltip>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => handleEdit(client)}
-                                  >
-                                    <Pencil className="h-4 w-4" />
-                                    <span className="sr-only">Editar</span>
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  <p>Editar cliente</p>
-                                </TooltipContent>
-                              </Tooltip>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="text-destructive hover:text-destructive"
-                                    onClick={() => openDeleteConfirm(client.id)}
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                    <span className="sr-only">Deletar</span>
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  <p>Deletar cliente</p>
-                                </TooltipContent>
-                              </Tooltip>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                      {!isLoading && filteredClients.length === 0 && (
-                        <TableRow>
-                          <TableCell colSpan={4} className="h-24 text-center">
-                            Nenhum cliente encontrado para o filtro atual.
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
                   </div>
                 </div>
               </TooltipProvider>

@@ -10,8 +10,9 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { PlusCircle, Upload, Eye, Lock, LockOpen, Save, FileDown } from "lucide-react";
 import { CardSearchInput } from "@/components/card-search-input";
@@ -708,59 +709,81 @@ export default function AutosInfracaoDefesaPage() {
           </CardHeader>
           <CardContent>
             <TooltipProvider>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Nº Processo</TableHead>
-                  <TableHead>Tipo</TableHead>
-                  <TableHead className="hidden md:table-cell">Empreendedor</TableHead>
-                  <TableHead className="hidden lg:table-cell">Empreendimento</TableHead>
-                  <TableHead className="hidden lg:table-cell">Informações internas</TableHead>
-                  <TableHead className="hidden sm:table-cell">Checklist</TableHead>
-                  <TableHead className="text-right">Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isLoading ? (
-                  <TableRow>
-                    <TableCell colSpan={7}>Carregando...</TableCell>
-                  </TableRow>
-                ) : filteredDefesas.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={7}>Nenhuma defesa cadastrada.</TableCell>
-                  </TableRow>
-                ) : (
+              <div className="space-y-4">
+                {isLoading &&
+                  Array.from({ length: 5 }).map((_, i) => (
+                    <Skeleton
+                      key={i}
+                      className="h-28 w-full rounded-lg"
+                    />
+                  ))}
+                {!isLoading && filteredDefesas.length === 0 && (
+                  <div className="flex h-24 items-center justify-center rounded-md border-2 border-dashed border-muted-foreground/25 text-center text-sm text-muted-foreground">
+                    Nenhuma defesa cadastrada.
+                  </div>
+                )}
+                {!isLoading &&
                   filteredDefesas.map((item) => {
-                    const checked = (item.checklist || []).filter((c) => c.checked).length;
+                    const checked = (item.checklist || []).filter(
+                      (c) => c.checked,
+                    ).length;
                     const total = (item.checklist || []).length;
                     return (
-                      <TableRow key={item.id}>
-                        <TableCell className="font-medium">{item.processNumber}</TableCell>
-                        <TableCell>{item.tipoDefesa}</TableCell>
-                        <TableCell className="hidden md:table-cell">{empreendedorNameMap.get(item.empreendedorId) || "N/A"}</TableCell>
-                        <TableCell className="hidden lg:table-cell">{projectNameMap.get(item.projectId) || "N/A"}</TableCell>
-                        <TableCell className="hidden max-w-[320px] truncate lg:table-cell">{item.informacoesInternas || "Não informado"}</TableCell>
-                        <TableCell className="hidden sm:table-cell">
-                          <Badge variant="outline">{checked}/{total}</Badge>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button variant="ghost" size="icon" onClick={() => openDefesaProcess(item)}>
-                                <Eye className="h-4 w-4" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>Abrir processo de defesa</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TableCell>
-                      </TableRow>
+                      <Card
+                        key={item.id}
+                        className="overflow-hidden border-border/80 shadow-sm transition-shadow hover:shadow-md"
+                      >
+                        <CardContent className="p-4 sm:p-5">
+                          <div className="flex flex-col gap-4">
+                            <div className="min-w-0 space-y-2">
+                              <h3 className="text-balance text-base font-semibold leading-snug text-foreground sm:text-lg">
+                                {item.processNumber}
+                              </h3>
+                              <p className="text-sm text-muted-foreground">
+                                {item.tipoDefesa}
+                              </p>
+                              <p className="text-sm text-muted-foreground">
+                                {empreendedorNameMap.get(item.empreendedorId) ||
+                                  "Empreendedor N/A"}{" "}
+                                ·{" "}
+                                {projectNameMap.get(item.projectId) ||
+                                  "Empreendimento N/A"}
+                              </p>
+                              <p className="line-clamp-2 text-sm text-muted-foreground">
+                                {item.informacoesInternas || "Sem resumo interno"}
+                              </p>
+                              <Badge variant="outline" className="w-fit">
+                                Checklist {checked}/{total}
+                              </Badge>
+                            </div>
+                            <Separator className="bg-border/60" />
+                            <div className="flex flex-wrap items-center gap-1">
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-9 w-9 shrink-0"
+                                    type="button"
+                                    onClick={() => openDefesaProcess(item)}
+                                  >
+                                    <Eye className="h-4 w-4" />
+                                    <span className="sr-only">
+                                      Abrir processo de defesa
+                                    </span>
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Abrir processo de defesa</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
                     );
-                  })
-                )}
-              </TableBody>
-            </Table>
+                  })}
+              </div>
             </TooltipProvider>
           </CardContent>
         </Card>

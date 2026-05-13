@@ -67,6 +67,14 @@ firestore-debug.log
 # Temporários locais (instaladores, cache, etc.)
 .tmp/
 
+# Python (venv local — não versionar)
+venv/
+.venv/
+**/__pycache__/
+
+# Cache Firebase CLI (evita ruído em git status)
+.firebase/
+
 # Node.js portátil (usado para rodar sem instalação global)
 .tools/
 node-v*-win-x64/

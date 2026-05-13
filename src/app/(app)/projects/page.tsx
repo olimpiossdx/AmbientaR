@@ -10,23 +10,7 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, PlusCircle, Pencil, Trash2, Eye } from "lucide-react";
+import { PlusCircle, Pencil, Trash2, Eye } from "lucide-react";
 import {
   useCollection,
   useFirestore,
@@ -94,7 +78,7 @@ const DetailItem = ({
 function ProjectsPageContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const statusFilter = searchParams.get("status");
+  const statusFilter = searchParams?.get("status");
 
   const [isAlertOpen, setIsAlertOpen] = useState(false);
   const [isViewOpen, setIsViewOpen] = useState(false);
@@ -409,45 +393,42 @@ function ProjectsPageContent() {
             </CardHeader>
             <CardContent>
               <TooltipProvider>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Empreendimento</TableHead>
-                      <TableHead>Município</TableHead>
-                      <TableHead className="text-right">Ações</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {isLoading &&
-                      Array.from({ length: 5 }).map((_, i) => (
-                        <TableRow key={i}>
-                          <TableCell>
-                            <Skeleton className="h-5 w-48" />
-                          </TableCell>
-                          <TableCell>
-                            <Skeleton className="h-5 w-32" />
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <Skeleton className="h-8 w-24" />
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    {!isLoading &&
-                      filteredProjects?.map((item) => (
-                        <TableRow key={item.id}>
-                          <TableCell className="font-medium">
-                            {item.propertyName}
-                          </TableCell>
-                          <TableCell className="text-muted-foreground">
-                            {item.municipio || "N/A"}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex items-center justify-end gap-1">
+                <div className="space-y-4">
+                  {isLoading &&
+                    Array.from({ length: 5 }).map((_, i) => (
+                      <Skeleton key={i} className="h-28 w-full rounded-lg" />
+                    ))}
+                  {!isLoading &&
+                    filteredProjects?.map((item) => (
+                      <Card
+                        key={item.id}
+                        className="overflow-hidden border-border/80 shadow-sm transition-shadow hover:shadow-md"
+                      >
+                        <CardContent className="p-4 sm:p-5">
+                          <div className="flex flex-col gap-4">
+                            <div className="min-w-0 space-y-1.5">
+                              <h3 className="text-balance text-base font-semibold leading-snug text-foreground sm:text-lg">
+                                {item.propertyName}
+                              </h3>
+                              <p className="text-sm text-muted-foreground">
+                                {item.municipio?.trim()
+                                  ? item.municipio
+                                  : "Município não informado"}
+                              </p>
+                              {item.activity?.trim() ? (
+                                <p className="line-clamp-2 text-xs text-muted-foreground sm:text-sm">
+                                  {item.activity}
+                                </p>
+                              ) : null}
+                            </div>
+                            <Separator className="bg-border/60" />
+                            <div className="flex flex-wrap items-center gap-1">
                               <Tooltip>
                                 <TooltipTrigger asChild>
                                   <Button
                                     variant="ghost"
                                     size="icon"
+                                    className="h-9 w-9 shrink-0"
                                     onClick={() => handleView(item)}
                                   >
                                     <Eye className="h-4 w-4" />
@@ -458,13 +439,14 @@ function ProjectsPageContent() {
                                   <p>Visualizar detalhes</p>
                                 </TooltipContent>
                               </Tooltip>
-                              {canWrite && (
+                              {canWrite ? (
                                 <>
                                   <Tooltip>
                                     <TooltipTrigger asChild>
                                       <Button
                                         variant="ghost"
                                         size="icon"
+                                        className="h-9 w-9 shrink-0"
                                         onClick={() => handleEdit(item)}
                                       >
                                         <Pencil className="h-4 w-4" />
@@ -480,7 +462,7 @@ function ProjectsPageContent() {
                                       <Button
                                         variant="ghost"
                                         size="icon"
-                                        className="text-destructive hover:text-destructive"
+                                        className="h-9 w-9 shrink-0 text-destructive hover:text-destructive"
                                         onClick={() =>
                                           openDeleteConfirm(item.id)
                                         }
@@ -494,20 +476,18 @@ function ProjectsPageContent() {
                                     </TooltipContent>
                                   </Tooltip>
                                 </>
-                              )}
+                              ) : null}
                             </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    {!isLoading && filteredProjects?.length === 0 && (
-                      <TableRow>
-                        <TableCell colSpan={3} className="h-24 text-center">
-                          Nenhum empreendimento encontrado.
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  {!isLoading && filteredProjects?.length === 0 && (
+                    <div className="flex h-24 items-center justify-center rounded-md border-2 border-dashed border-muted-foreground/25 text-sm text-muted-foreground">
+                      Nenhum empreendimento encontrado.
+                    </div>
+                  )}
+                </div>
               </TooltipProvider>
             </CardContent>
           </Card>

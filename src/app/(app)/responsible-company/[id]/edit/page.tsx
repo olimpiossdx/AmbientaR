@@ -15,7 +15,7 @@ function EditCompanyPageContent() {
     const router = useRouter();
     const params = useParams();
     const { blocked, isInitialized } = useCadastroGestaoWriteGuard('/responsible-company');
-    const itemId = params.id as string;
+    const itemId = (params?.id as string | undefined) ?? '';
     
     const { firestore } = useFirebase();
 

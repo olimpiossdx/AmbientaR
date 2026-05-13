@@ -3,6 +3,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import mammoth from "mammoth";
 import { isAiLocalImportEnabled } from "@/lib/deploy-flags";
+import { getDefaultAiReferenceImportBasePath } from "@/lib/ai-reference-import-base-path";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -15,8 +16,6 @@ type ImportedFile = {
   modifiedAt: string;
 };
 
-const DEFAULT_BASE_PATH =
-  "F:\\SERVIDOR\\OneDrive\\Projects\\AmbientaR\\Termos de Referencia";
 const MAX_FILES = 40;
 const MAX_CHARS_PER_FILE = 9000;
 const MAX_CANDIDATES_TO_SCAN = 1200;
@@ -103,7 +102,9 @@ export async function POST(request: NextRequest) {
       modifiedAfter?: string;
       cpfCnpj?: string;
     };
-    const basePath = (body.basePath || DEFAULT_BASE_PATH).trim();
+    const basePath = (
+      body.basePath || getDefaultAiReferenceImportBasePath()
+    ).trim();
     const allowedExtensions =
       Array.isArray(body.extensions) && body.extensions.length > 0
         ? body.extensions

@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 function EditPcaModalContent() {
     const router = useRouter();
     const params = useParams();
-    const pcaId = params.id as string;
+    const pcaId = (params?.id as string | undefined) ?? '';
     
     const { firestore } = useFirebase();
 

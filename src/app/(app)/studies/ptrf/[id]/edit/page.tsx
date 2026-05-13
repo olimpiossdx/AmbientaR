@@ -13,7 +13,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 function EditPtrfPageContent() {
     const router = useRouter();
     const params = useParams();
-    const ptrfId = params.id as string;
+    const ptrfId = (params?.id as string | undefined) ?? '';
     
     const { firestore } = useFirebase();
 

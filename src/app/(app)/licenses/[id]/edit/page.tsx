@@ -13,7 +13,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 function EditLicensePageContent() {
     const router = useRouter();
     const params = useParams();
-    const itemId = params.id as string;
+    const itemId = (params?.id as string | undefined) ?? '';
     
     const { firestore } = useFirebase();
 

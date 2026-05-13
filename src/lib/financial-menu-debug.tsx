@@ -81,8 +81,8 @@ export type FinancialMenuDebugState = {
 export function useFinancialMenuDebug(): FinancialMenuDebugState {
   const pathname = usePathname();
   const { user } = useAuth();
-  const navDebug = React.useMemo(() => getNavDebugInfo(pathname), [pathname]);
-  const isFinancial = isFinancialRoute(pathname);
+  const navDebug = React.useMemo(() => getNavDebugInfo(pathname ?? ''), [pathname]);
+  const isFinancial = isFinancialRoute(pathname ?? '');
   const { visibleSubItems } = getFinancialMenuForRole((user?.role ?? 'client') as UserRole);
 
   const state: FinancialMenuDebugState = {

@@ -10,31 +10,15 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  MoreHorizontal,
   PlusCircle,
-  History,
   Pencil,
   Trash2,
   Eye,
   ArrowUp,
+  FileText,
+  FileDown,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { isClientePortalRole } from "@/lib/role-guards";
@@ -1558,111 +1542,85 @@ export default function UsersPage() {
             </CardHeader>
             <CardContent>
               <TooltipProvider>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Nome</TableHead>
-                      <TableHead className="hidden sm:table-cell">
-                        Status Online
-                      </TableHead>
-                      <TableHead className="hidden md:table-cell">
-                        Email
-                      </TableHead>
-                      <TableHead className="hidden lg:table-cell">
-                        CPF/CNPJ
-                      </TableHead>
-                      <TableHead>Nível</TableHead>
-                      <TableHead className="hidden md:table-cell">
-                        Status
-                      </TableHead>
-                      <TableHead className="w-24 text-right sm:w-32">
-                        Ações
-                      </TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {isLoading &&
-                      Array.from({
-                        length:
-                          user?.role === "admin" || user?.role === "supervisor"
-                            ? 5
-                            : 1,
-                      }).map((_, i) => (
-                        <TableRow key={i}>
-                          <TableCell>
-                            <Skeleton className="h-5 w-32" />
-                          </TableCell>
-                          <TableCell className="hidden sm:table-cell">
-                            <Skeleton className="h-5 w-24" />
-                          </TableCell>
-                          <TableCell className="hidden md:table-cell">
-                            <Skeleton className="h-5 w-48" />
-                          </TableCell>
-                          <TableCell className="hidden lg:table-cell">
-                            <Skeleton className="h-5 w-32" />
-                          </TableCell>
-                          <TableCell>
-                            <Skeleton className="h-5 w-20" />
-                          </TableCell>
-                          <TableCell className="hidden md:table-cell">
-                            <Skeleton className="h-6 w-20 rounded-full" />
-                          </TableCell>
-                          <TableCell className="w-24 text-right sm:w-32">
-                            <Skeleton className="h-8 w-32" />
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    {appUsers?.map((appUser) => (
-                      <TableRow key={appUser.id}>
-                        <TableCell className="font-medium">
-                          {appUser.name}
-                        </TableCell>
-                        <TableCell className="hidden sm:table-cell">
-                          <div className="flex items-center gap-2">
-                            <span
-                              className={cn(
-                                "h-3 w-3 rounded-full",
-                                appUser.isOnline
-                                  ? "bg-green-500"
-                                  : "bg-red-500",
-                              )}
-                            />
-                            {appUser.isOnline ? "Online" : "Offline"}
+                <div className="space-y-4">
+                  {isLoading &&
+                    Array.from({
+                      length:
+                        user?.role === "admin" || user?.role === "supervisor"
+                          ? 5
+                          : 1,
+                    }).map((_, i) => (
+                      <Skeleton
+                        key={i}
+                        className="h-28 w-full rounded-lg"
+                      />
+                    ))}
+                  {appUsers?.map((appUser) => (
+                    <Card
+                      key={appUser.id}
+                      className="overflow-hidden border-border/80 shadow-sm transition-shadow hover:shadow-md"
+                    >
+                      <CardContent className="p-4 sm:p-5">
+                        <div className="flex flex-col gap-4">
+                          <div className="min-w-0 space-y-2">
+                            <h3 className="text-balance text-base font-semibold leading-snug text-foreground sm:text-lg">
+                              {appUser.name}
+                            </h3>
+                            <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+                              <span className="inline-flex items-center gap-1.5">
+                                <span
+                                  className={cn(
+                                    "h-2.5 w-2.5 shrink-0 rounded-full",
+                                    appUser.isOnline
+                                      ? "bg-green-500"
+                                      : "bg-red-500",
+                                  )}
+                                />
+                                {appUser.isOnline ? "Online" : "Offline"}
+                              </span>
+                              <span className="hidden sm:inline">·</span>
+                              <span className="hidden sm:inline break-all">
+                                {appUser.email}
+                              </span>
+                            </div>
+                            <p className="hidden text-sm text-muted-foreground lg:block">
+                              {formatCpfCnpjDisplay(
+                                appUser.cpf ||
+                                  (appUser.cnpjs && appUser.cnpjs[0]),
+                              ) || "CPF/CNPJ não informado"}
+                            </p>
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="text-sm font-medium text-foreground">
+                                {getRoleText(appUser.role)}
+                              </span>
+                              <Badge
+                                variant={
+                                  appUser.status === "active"
+                                    ? "default"
+                                    : "secondary"
+                                }
+                                className={cn(
+                                  appUser.status === "active" &&
+                                    "bg-emerald-500/20 text-emerald-700 border-emerald-500/30 hover:bg-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20",
+                                  appUser.status === "inactive" &&
+                                    "bg-slate-500/20 text-slate-700 border-slate-500/30 hover:bg-slate-500/30 dark:bg-slate-500/10 dark:text-slate-400 dark:border-slate-500/20",
+                                )}
+                              >
+                                {appUser.status === "active"
+                                  ? "Ativo"
+                                  : "Inativo"}
+                              </Badge>
+                            </div>
                           </div>
-                        </TableCell>
-                        <TableCell className="hidden md:table-cell text-muted-foreground">
-                          {appUser.email}
-                        </TableCell>
-                        <TableCell className="hidden lg:table-cell text-muted-foreground">
-                          {formatCpfCnpjDisplay(
-                            appUser.cpf || (appUser.cnpjs && appUser.cnpjs[0]),
-                          ) || "N/A"}
-                        </TableCell>
-                        <TableCell>{getRoleText(appUser.role)}</TableCell>
-                        <TableCell className="hidden md:table-cell">
-                          <Badge
-                            variant={
-                              appUser.status === "active"
-                                ? "default"
-                                : "secondary"
-                            }
-                            className={cn(
-                              appUser.status === "active" &&
-                                "bg-emerald-500/20 text-emerald-700 border-emerald-500/30 hover:bg-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20",
-                              appUser.status === "inactive" &&
-                                "bg-slate-500/20 text-slate-700 border-slate-500/30 hover:bg-slate-500/30 dark:bg-slate-500/10 dark:text-slate-400 dark:border-slate-500/20",
-                            )}
-                          >
-                            {appUser.status === "active" ? "Ativo" : "Inativo"}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="w-24 text-right sm:w-32">
-                          <div className="flex flex-wrap items-center justify-end gap-1">
+                          <Separator className="bg-border/60" />
+                          <div className="flex flex-wrap items-center gap-1">
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <Button
                                   variant="ghost"
                                   size="icon"
+                                  className="h-9 w-9 shrink-0"
+                                  type="button"
                                   onClick={() => handleView(appUser)}
                                 >
                                   <Eye className="h-4 w-4" />
@@ -1681,6 +1639,8 @@ export default function UsersPage() {
                                   <Button
                                     variant="ghost"
                                     size="icon"
+                                    className="h-9 w-9 shrink-0"
+                                    type="button"
                                     onClick={() => handleEdit(appUser)}
                                   >
                                     <Pencil className="h-4 w-4" />
@@ -1703,7 +1663,8 @@ export default function UsersPage() {
                                   <Button
                                     variant="ghost"
                                     size="icon"
-                                    className="text-destructive hover:text-destructive"
+                                    className="h-9 w-9 shrink-0 text-destructive hover:text-destructive"
+                                    type="button"
                                     onClick={() => openDeleteConfirm(appUser)}
                                   >
                                     <Trash2 className="h-4 w-4" />
@@ -1723,57 +1684,62 @@ export default function UsersPage() {
                             )}
                             {(user?.role === "admin" ||
                               user?.role === "supervisor") && (
-                              <DropdownMenu>
+                              <>
                                 <Tooltip>
                                   <TooltipTrigger asChild>
-                                    <DropdownMenuTrigger asChild>
-                                      <Button variant="ghost" size="icon">
-                                        <History className="h-4 w-4" />
-                                        <span className="sr-only">
-                                          Gerar Log
-                                        </span>
-                                      </Button>
-                                    </DropdownMenuTrigger>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-9 w-9 shrink-0"
+                                      type="button"
+                                      onClick={() =>
+                                        handleGenerateLog(appUser, "txt")
+                                      }
+                                    >
+                                      <FileText className="h-4 w-4" />
+                                      <span className="sr-only">
+                                        Exportar log como .txt
+                                      </span>
+                                    </Button>
                                   </TooltipTrigger>
                                   <TooltipContent>
-                                    <p>Gerar log de atividades</p>
+                                    <p>Exportar log como .txt</p>
                                   </TooltipContent>
                                 </Tooltip>
-                                <DropdownMenuContent>
-                                  <DropdownMenuLabel>
-                                    Formato do Log
-                                  </DropdownMenuLabel>
-                                  <DropdownMenuSeparator />
-                                  <DropdownMenuItem
-                                    onClick={() =>
-                                      handleGenerateLog(appUser, "txt")
-                                    }
-                                  >
-                                    Exportar como .txt
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem
-                                    onClick={() =>
-                                      handleGenerateLog(appUser, "pdf")
-                                    }
-                                  >
-                                    Exportar como .pdf
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-9 w-9 shrink-0"
+                                      type="button"
+                                      onClick={() =>
+                                        handleGenerateLog(appUser, "pdf")
+                                      }
+                                    >
+                                      <FileDown className="h-4 w-4" />
+                                      <span className="sr-only">
+                                        Exportar log como .pdf
+                                      </span>
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Exportar log como .pdf</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </>
                             )}
                           </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                    {!isLoading && (!appUsers || appUsers.length === 0) && (
-                      <TableRow>
-                        <TableCell colSpan={7} className="h-24 text-center">
-                          Nenhum usuário encontrado.
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                  {!isLoading && (!appUsers || appUsers.length === 0) && (
+                    <div className="flex h-24 items-center justify-center rounded-md border-2 border-dashed border-muted-foreground/25 text-center text-sm text-muted-foreground">
+                      Nenhum usuário encontrado.
+                    </div>
+                  )}
+                </div>
               </TooltipProvider>
             </CardContent>
           </Card>

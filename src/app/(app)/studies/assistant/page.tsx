@@ -49,15 +49,15 @@ const LABEL_TIPO: Record<TipoAssistente, string> = {
   mcp: 'Cruzamento de dados',
 };
 
-function parseTipoFromSearch(raw: string | null): TipoAssistente {
+function parseTipoFromSearch(raw: string | null | undefined): TipoAssistente {
   if (raw && TIPOS.includes(raw as TipoAssistente)) return raw as TipoAssistente;
   return 'geral';
 }
 
 function AssistantPageInner() {
   const searchParams = useSearchParams();
-  const initialTipo = parseTipoFromSearch(searchParams.get('tipo'));
-  const initialPrompt = searchParams.get('prompt') ?? '';
+  const initialTipo = parseTipoFromSearch(searchParams?.get('tipo'));
+  const initialPrompt = searchParams?.get('prompt') ?? '';
 
   const [loading, setLoading] = React.useState(false);
   const [response, setResponse] = React.useState<string | null>(null);
@@ -72,9 +72,9 @@ function AssistantPageInner() {
   });
 
   React.useEffect(() => {
-    const t = parseTipoFromSearch(searchParams.get('tipo'));
+    const t = parseTipoFromSearch(searchParams?.get('tipo'));
     form.setValue('tipo', t);
-    const prefillPrompt = searchParams.get('prompt');
+    const prefillPrompt = searchParams?.get('prompt');
     if (prefillPrompt && !form.getValues('prompt')) {
       form.setValue('prompt', prefillPrompt);
     }

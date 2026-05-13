@@ -10,7 +10,7 @@ import type { PiaType } from '@/lib/types';
 function NewPiaModalContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
-    const piaType = searchParams.get('type') as PiaType | null;
+    const piaType = searchParams?.get('type') as PiaType | null;
 
     const handleSuccess = () => {
       router.back();

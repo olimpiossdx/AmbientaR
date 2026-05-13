@@ -9,25 +9,8 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  MoreHorizontal,
   PlusCircle,
   Paperclip,
   Eye,
@@ -38,7 +21,6 @@ import { cn } from "@/lib/utils";
 import {
   useCollection,
   useFirestore,
-  useUser,
   useMemoFirebase,
   errorEmitter,
 } from "@/firebase";
@@ -283,75 +265,55 @@ export default function OutorgasEstudosPage() {
             </CardHeader>
             <CardContent>
               <TooltipProvider>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Empreendedor</TableHead>
-                      <TableHead>Empreendimento</TableHead>
-                      <TableHead className="hidden md:table-cell">
-                        Nº da Portaria
-                      </TableHead>
-                      <TableHead className="hidden lg:table-cell">
-                        Vencimento
-                      </TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="text-right">Ações</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {isLoading &&
-                      Array.from({ length: 5 }).map((_, i) => (
-                        <TableRow key={i}>
-                          <TableCell>
-                            <Skeleton className="h-5 w-32" />
-                          </TableCell>
-                          <TableCell>
-                            <Skeleton className="h-5 w-32" />
-                          </TableCell>
-                          <TableCell className="hidden md:table-cell">
-                            <Skeleton className="h-5 w-24" />
-                          </TableCell>
-                          <TableCell className="hidden lg:table-cell">
-                            <Skeleton className="h-5 w-24" />
-                          </TableCell>
-                          <TableCell>
-                            <Skeleton className="h-6 w-24 rounded-full" />
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <Skeleton className="h-8 w-24" />
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    {!isLoading &&
-                      outorgas?.map((item) => (
-                        <TableRow key={item.id}>
-                          <TableCell className="font-medium">
-                            {empreendedoresMap.get(item.empreendedorId) ||
-                              "Não encontrado"}
-                          </TableCell>
-                          <TableCell className="font-medium">
-                            {projectsMap.get(item.projectId || "") || "N/A"}
-                          </TableCell>
-                          <TableCell className="hidden md:table-cell text-muted-foreground">
-                            {item.permitNumber}
-                          </TableCell>
-                          <TableCell className="hidden lg:table-cell text-muted-foreground">
-                            {formatDate(item.expirationDate)}
-                          </TableCell>
-                          <TableCell>
-                            <Badge
-                              variant={"outline"}
-                              className={cn(getStatusVariant(item.status))}
-                            >
-                              {item.status}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex items-center justify-end gap-1">
+                <div className="space-y-4">
+                  {isLoading &&
+                    Array.from({ length: 5 }).map((_, i) => (
+                      <Skeleton
+                        key={i}
+                        className="h-28 w-full rounded-lg"
+                      />
+                    ))}
+                  {!isLoading &&
+                    (outorgas || []).map((item) => (
+                      <Card
+                        key={item.id}
+                        className="overflow-hidden border-border/80 shadow-sm transition-shadow hover:shadow-md"
+                      >
+                        <CardContent className="p-4 sm:p-5">
+                          <div className="flex flex-col gap-4">
+                            <div className="min-w-0 space-y-2">
+                              <h3 className="text-balance text-base font-semibold leading-snug text-foreground sm:text-lg">
+                                {empreendedoresMap.get(item.empreendedorId) ||
+                                  "Não encontrado"}
+                              </h3>
+                              <p className="text-sm text-muted-foreground">
+                                {projectsMap.get(item.projectId || "") || "N/A"}
+                              </p>
+                              <p className="text-sm text-muted-foreground">
+                                Portaria {item.permitNumber || "N/A"} · Venc.:{" "}
+                                {formatDate(item.expirationDate)}
+                              </p>
+                              <Badge
+                                variant="outline"
+                                className={cn(
+                                  "w-fit",
+                                  getStatusVariant(item.status),
+                                )}
+                              >
+                                {item.status}
+                              </Badge>
+                            </div>
+                            <Separator className="bg-border/60" />
+                            <div className="flex flex-wrap items-center gap-1">
                               {item.fileUrl && (
                                 <Tooltip>
                                   <TooltipTrigger asChild>
-                                    <Button asChild variant="ghost" size="icon">
+                                    <Button
+                                      asChild
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-9 w-9 shrink-0"
+                                    >
                                       <a
                                         href={item.fileUrl}
                                         target="_blank"
@@ -374,6 +336,8 @@ export default function OutorgasEstudosPage() {
                                   <Button
                                     variant="ghost"
                                     size="icon"
+                                    className="h-9 w-9 shrink-0"
+                                    type="button"
                                     onClick={() => handleView(item)}
                                   >
                                     <Eye className="h-4 w-4" />
@@ -391,6 +355,8 @@ export default function OutorgasEstudosPage() {
                                       <Button
                                         variant="ghost"
                                         size="icon"
+                                        className="h-9 w-9 shrink-0"
+                                        type="button"
                                         onClick={() => handleEdit(item)}
                                       >
                                         <Pencil className="h-4 w-4" />
@@ -406,7 +372,8 @@ export default function OutorgasEstudosPage() {
                                       <Button
                                         variant="ghost"
                                         size="icon"
-                                        className="text-destructive hover:text-destructive"
+                                        className="h-9 w-9 shrink-0 text-destructive hover:text-destructive"
+                                        type="button"
                                         onClick={() =>
                                           openDeleteConfirm(item.id)
                                         }
@@ -422,18 +389,16 @@ export default function OutorgasEstudosPage() {
                                 </>
                               )}
                             </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    {!isLoading && outorgas?.length === 0 && (
-                      <TableRow>
-                        <TableCell colSpan={6} className="h-24 text-center">
-                          Nenhum pedido de outorga encontrado.
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  {!isLoading && (outorgas?.length ?? 0) === 0 && (
+                    <div className="flex h-24 items-center justify-center rounded-md border-2 border-dashed border-muted-foreground/25 text-center text-sm text-muted-foreground">
+                      Nenhum pedido de outorga encontrado.
+                    </div>
+                  )}
+                </div>
               </TooltipProvider>
             </CardContent>
           </Card>

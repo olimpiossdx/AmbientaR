@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 function EditResponsibleModalContent() {
     const router = useRouter();
     const params = useParams();
-    const itemId = params.id as string;
+    const itemId = (params?.id as string | undefined) ?? '';
     
     const { firestore } = useFirebase();
 

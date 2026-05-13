@@ -55,14 +55,6 @@ import { FirestorePermissionError } from "@/firebase/errors";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/page-header";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
   Tooltip,
   TooltipContent,
   TooltipProvider,

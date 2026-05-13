@@ -43,6 +43,7 @@ import { logUserAction } from "@/lib/audit-log";
 import { ibgeData } from "@/lib/ibge-data";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
+import { DEFAULT_AI_LOCAL_SOURCE_PATH } from "@/lib/ai-local-source-defaults";
 
 const formSchema = z.object({
   name: z.string().min(2, "O nome é obrigatório."),
@@ -94,8 +95,6 @@ const AI_LOCAL_SOURCE_PATH_KEY = "ai_lab_local_source_path_v1";
 const AI_LOCAL_SOURCE_EXTENSIONS_KEY = "ai_lab_local_source_extensions_v1";
 const AI_LOCAL_SOURCE_MODIFIED_AFTER_KEY =
   "ai_lab_local_source_modified_after_v1";
-const DEFAULT_AI_LOCAL_SOURCE_PATH =
-  "F:\\SERVIDOR\\OneDrive\\Projects\\AmbientaR\\Termos de Referencia";
 const DEFAULT_AI_LOCAL_SOURCE_EXTENSIONS = [
   ".pdf",
   ".doc",

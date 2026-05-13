@@ -67,7 +67,7 @@ type ColumnVisibility = {
 
 export default function SpeciesPage() {
   const params = useParams();
-  const projectId = params.id as string;
+  const projectId = (params?.id as string | undefined) ?? '';
   const { firestore } = useFirebase();
   const [isImporting, setIsImporting] = React.useState(false);
 

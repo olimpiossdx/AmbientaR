@@ -9,7 +9,7 @@ import { Suspense } from 'react';
 function NewTransactionPageContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
-    const transactionType = searchParams.get('type') as 'revenue' | 'expense' | null;
+    const transactionType = searchParams?.get('type') as 'revenue' | 'expense' | null;
 
     const handleSuccess = () => {
       router.push('/cash-flow');

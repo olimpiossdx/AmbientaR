@@ -1,27 +1,10 @@
 
 'use client';
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, PlusCircle } from 'lucide-react';
+import { PlusCircle, Pencil, Trash2 } from 'lucide-react';
 import { useCollection, useFirestore, useUser, useMemoFirebase, errorEmitter } from '@/firebase';
 import { collection, doc, deleteDoc } from 'firebase/firestore';
 import type { EnvironmentalCompany } from '@/lib/types';
@@ -46,6 +29,14 @@ import {
 import { CompanyForm } from './company-form';
 import { useToast } from '@/hooks/use-toast';
 import { FirestorePermissionError } from '@/firebase/errors';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import { Separator } from '@/components/ui/separator';
+import { formatCpfCnpjDisplay } from '@/lib/masks';
 
 export default function EnvironmentalCompanyPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -53,7 +44,6 @@ export default function EnvironmentalCompanyPage() {
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
   const [editingItem, setEditingItem] = useState<EnvironmentalCompany | null>(null);
 
-  const router = useRouter();
   const firestore = useFirestore();
   const { user } = useUser();
   const { toast } = useToast();
@@ -119,64 +109,81 @@ export default function EnvironmentalCompanyPage() {
               <CardDescription>Adicione, edite e visualize as empresas parceiras.</CardDescription>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Razão Social</TableHead>
-                    <TableHead>CNPJ</TableHead>
-                    <TableHead className="hidden md:table-cell">Email</TableHead>
-                    <TableHead>
-                      <span className="sr-only">Ações</span>
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
+              <TooltipProvider>
+                <div className="space-y-4">
                   {isLoading &&
                     Array.from({ length: 3 }).map((_, i) => (
-                      <TableRow key={i}>
-                        <TableCell><Skeleton className="h-5 w-40" /></TableCell>
-                        <TableCell><Skeleton className="h-5 w-32" /></TableCell>
-                        <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-48" /></TableCell>
-                        <TableCell><Skeleton className="h-8 w-8" /></TableCell>
-                      </TableRow>
+                      <Skeleton key={i} className="h-28 w-full rounded-lg" />
                     ))}
-                  {!isLoading && companies?.map((item) => (
-                    <TableRow key={item.id}>
-                      <TableCell className="font-medium">{item.name}</TableCell>
-                      <TableCell>{item.cnpj}</TableCell>
-                      <TableCell className="hidden md:table-cell text-muted-foreground">{item.email}</TableCell>
-                      <TableCell>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button aria-haspopup="true" size="icon" variant="ghost">
-                              <MoreHorizontal className="h-4 w-4" />
-                              <span className="sr-only">Toggle menu</span>
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                            <DropdownMenuItem onClick={() => handleEdit(item)}>Editar</DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                              className="text-destructive"
-                              onClick={() => openDeleteConfirm(item.id)}
-                            >
-                              Deletar
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {!isLoading &&
+                    companies?.map((item) => (
+                      <Card
+                        key={item.id}
+                        className="overflow-hidden border-border/80 shadow-sm transition-shadow hover:shadow-md"
+                      >
+                        <CardContent className="p-4 sm:p-5">
+                          <div className="flex flex-col gap-4">
+                            <div className="min-w-0 space-y-1.5">
+                              <h3 className="text-balance text-base font-semibold leading-snug text-foreground sm:text-lg">
+                                {item.name}
+                              </h3>
+                              <p className="font-mono text-sm tabular-nums text-muted-foreground">
+                                {formatCpfCnpjDisplay(item.cnpj)}
+                              </p>
+                              {item.email?.trim() ? (
+                                <p className="truncate text-xs text-muted-foreground sm:text-sm">
+                                  {item.email}
+                                </p>
+                              ) : null}
+                            </div>
+                            <Separator className="bg-border/60" />
+                            <div className="flex flex-wrap items-center gap-1">
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-9 w-9 shrink-0"
+                                    type="button"
+                                    onClick={() => handleEdit(item)}
+                                  >
+                                    <Pencil className="h-4 w-4" />
+                                    <span className="sr-only">Editar</span>
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Editar empresa</p>
+                                </TooltipContent>
+                              </Tooltip>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-9 w-9 shrink-0 text-destructive hover:text-destructive"
+                                    type="button"
+                                    onClick={() => openDeleteConfirm(item.id)}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                    <span className="sr-only">Deletar</span>
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Deletar empresa</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
                   {!isLoading && companies?.length === 0 && (
-                    <TableRow>
-                      <TableCell colSpan={4} className="h-24 text-center">
-                        Nenhuma empresa encontrada.
-                      </TableCell>
-                    </TableRow>
+                    <div className="flex h-24 items-center justify-center rounded-md border-2 border-dashed border-muted-foreground/25 text-sm text-muted-foreground">
+                      Nenhuma empresa encontrada.
+                    </div>
                   )}
-                </TableBody>
-              </Table>
+                </div>
+              </TooltipProvider>
             </CardContent>
           </Card>
         </main>

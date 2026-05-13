@@ -13,7 +13,14 @@ import { Skeleton } from '@/components/ui/skeleton';
 export default function EditInspectionPage() {
   const params = useParams();
   const router = useRouter();
-  const id = typeof params.id === 'string' ? params.id : '';
+  const id =
+    params?.id == null
+      ? ''
+      : typeof params.id === 'string'
+        ? params.id
+        : Array.isArray(params.id)
+          ? params.id[0] ?? ''
+          : '';
   const { firestore } = useFirebase();
 
   const docRef = React.useMemo(() => (firestore && id ? doc(firestore, 'inspections', id) : null), [firestore, id]);

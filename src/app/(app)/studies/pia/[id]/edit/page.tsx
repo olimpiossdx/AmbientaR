@@ -13,7 +13,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 function EditPiaPageContent() {
     const router = useRouter();
     const params = useParams();
-    const piaId = params.id as string;
+    const piaId = (params?.id as string | undefined) ?? '';
     
     const { firestore } = useFirebase();
 

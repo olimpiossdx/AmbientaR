@@ -13,15 +13,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  MoreHorizontal,
   PlusCircle,
   AlertCircle,
   Eye,
@@ -36,7 +27,6 @@ import {
   useFirebase,
   useMemoFirebase,
   errorEmitter,
-  useDoc,
 } from "@/firebase";
 import {
   collection,
@@ -428,87 +418,71 @@ export default function InspectionsListPage() {
             </CardHeader>
             <CardContent>
               <TooltipProvider>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Empreendimento</TableHead>
-                      <TableHead className="hidden md:table-cell">
-                        Data
-                      </TableHead>
-                      <TableHead>Criticidade Máxima</TableHead>
-                      <TableHead>Nº de Inconformidades</TableHead>
-                      <TableHead className="hidden lg:table-cell">
-                        Responsável
-                      </TableHead>
-                      <TableHead className="text-right">Ações</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {isLoading ? (
-                      Array.from({ length: 3 }).map((_, i) => (
-                        <TableRow key={i}>
-                          <TableCell>
-                            <Skeleton className="h-5 w-40" />
-                          </TableCell>
-                          <TableCell className="hidden md:table-cell">
-                            <Skeleton className="h-5 w-24" />
-                          </TableCell>
-                          <TableCell>
-                            <Skeleton className="h-6 w-20 rounded-full" />
-                          </TableCell>
-                          <TableCell>
-                            <Skeleton className="h-5 w-8" />
-                          </TableCell>
-                          <TableCell className="hidden lg:table-cell">
-                            <Skeleton className="h-5 w-32" />
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <Skeleton className="h-8 w-40 ml-auto" />
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    ) : draftInspections && draftInspections.length > 0 ? (
-                      draftInspections.map((inspection) => {
-                        const highestCriticality =
-                          getHighestCriticality(inspection);
-                        return (
-                          <TableRow key={inspection.id}>
-                            <TableCell className="font-medium">
-                              {projectsMap.get(inspection.projectId)?.name ||
-                                "Projeto não encontrado"}
-                            </TableCell>
-                            <TableCell className="hidden md:table-cell text-muted-foreground">
-                              {new Date(
-                                inspection.inspectionDate,
-                              ).toLocaleDateString("pt-BR")}
-                            </TableCell>
-                            <TableCell>
-                              <Badge
-                                variant="outline"
-                                className={cn(
-                                  getCriticalityVariant(highestCriticality),
-                                )}
-                              >
-                                <AlertCircle className="mr-1 h-3 w-3" />
-                                {highestCriticality}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="text-center">
-                              {inspection.inconformidades?.length || 0}
-                            </TableCell>
-                            <TableCell className="hidden lg:table-cell text-muted-foreground">
-                              {inspection.inspectorName}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <div className="flex items-center justify-end gap-1">
+                <div className="space-y-4">
+                  {isLoading ? (
+                    Array.from({ length: 3 }).map((_, i) => (
+                      <Skeleton
+                        key={i}
+                        className="h-28 w-full rounded-lg"
+                      />
+                    ))
+                  ) : draftInspections && draftInspections.length > 0 ? (
+                    draftInspections.map((inspection) => {
+                      const highestCriticality =
+                        getHighestCriticality(inspection);
+                      return (
+                        <Card
+                          key={inspection.id}
+                          className="overflow-hidden border-border/80 shadow-sm transition-shadow hover:shadow-md"
+                        >
+                          <CardContent className="p-4 sm:p-5">
+                            <div className="flex flex-col gap-4">
+                              <div className="min-w-0 space-y-2">
+                                <h3 className="text-balance text-base font-semibold leading-snug text-foreground sm:text-lg">
+                                  {projectsMap.get(inspection.projectId)?.name ||
+                                    "Projeto não encontrado"}
+                                </h3>
+                                <p className="text-sm text-muted-foreground">
+                                  Data:{" "}
+                                  {new Date(
+                                    inspection.inspectionDate,
+                                  ).toLocaleDateString("pt-BR")}{" "}
+                                  · Responsável: {inspection.inspectorName}
+                                </p>
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <Badge
+                                    variant="outline"
+                                    className={cn(
+                                      "w-fit",
+                                      getCriticalityVariant(
+                                        highestCriticality,
+                                      ),
+                                    )}
+                                  >
+                                    <AlertCircle className="mr-1 h-3 w-3" />
+                                    Criticidade: {highestCriticality}
+                                  </Badge>
+                                  <span className="text-sm text-muted-foreground">
+                                    Inconformidades:{" "}
+                                    {inspection.inconformidades?.length || 0}
+                                  </span>
+                                </div>
+                              </div>
+                              <Separator className="bg-border/60" />
+                              <div className="flex flex-wrap items-center gap-1">
                                 <Tooltip>
                                   <TooltipTrigger asChild>
                                     <Button
                                       variant="ghost"
                                       size="icon"
+                                      className="h-9 w-9 shrink-0"
+                                      type="button"
                                       onClick={() => handleView(inspection)}
                                     >
                                       <Eye className="h-4 w-4" />
+                                      <span className="sr-only">
+                                        Visualizar detalhes
+                                      </span>
                                     </Button>
                                   </TooltipTrigger>
                                   <TooltipContent>
@@ -520,9 +494,14 @@ export default function InspectionsListPage() {
                                     <Button
                                       variant="ghost"
                                       size="icon"
+                                      className="h-9 w-9 shrink-0"
+                                      type="button"
                                       onClick={() => handleEdit(inspection)}
                                     >
                                       <Pencil className="h-4 w-4" />
+                                      <span className="sr-only">
+                                        Editar vistoria
+                                      </span>
                                     </Button>
                                   </TooltipTrigger>
                                   <TooltipContent>
@@ -534,11 +513,16 @@ export default function InspectionsListPage() {
                                     <Button
                                       variant="ghost"
                                       size="icon"
+                                      className="h-9 w-9 shrink-0"
+                                      type="button"
                                       onClick={() =>
                                         handleGeneratePdf(inspection)
                                       }
                                     >
                                       <FileText className="h-4 w-4" />
+                                      <span className="sr-only">
+                                        Exportar PDF
+                                      </span>
                                     </Button>
                                   </TooltipTrigger>
                                   <TooltipContent>
@@ -550,15 +534,20 @@ export default function InspectionsListPage() {
                                     <Button
                                       variant="ghost"
                                       size="icon"
+                                      className="h-9 w-9 shrink-0"
+                                      type="button"
                                       onClick={() =>
                                         handleApprove(inspection.id)
                                       }
                                     >
                                       <CheckCircle className="h-4 w-4 text-green-500" />
+                                      <span className="sr-only">
+                                        Aprovar vistoria
+                                      </span>
                                     </Button>
                                   </TooltipTrigger>
                                   <TooltipContent>
-                                    <p>Aprovar Vistoria</p>
+                                    <p>Aprovar vistoria</p>
                                   </TooltipContent>
                                 </Tooltip>
                                 <Tooltip>
@@ -566,12 +555,16 @@ export default function InspectionsListPage() {
                                     <Button
                                       variant="ghost"
                                       size="icon"
-                                      className="text-destructive hover:text-destructive"
+                                      className="h-9 w-9 shrink-0 text-destructive hover:text-destructive"
+                                      type="button"
                                       onClick={() =>
                                         openDeleteConfirm(inspection.id)
                                       }
                                     >
                                       <Trash2 className="h-4 w-4" />
+                                      <span className="sr-only">
+                                        Deletar vistoria
+                                      </span>
                                     </Button>
                                   </TooltipTrigger>
                                   <TooltipContent>
@@ -579,19 +572,17 @@ export default function InspectionsListPage() {
                                   </TooltipContent>
                                 </Tooltip>
                               </div>
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })
-                    ) : (
-                      <TableRow>
-                        <TableCell colSpan={6} className="h-24 text-center">
-                          Nenhum registro de vistoria em aberto.
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      );
+                    })
+                  ) : (
+                    <div className="flex h-24 items-center justify-center rounded-md border-2 border-dashed border-muted-foreground/25 text-center text-sm text-muted-foreground">
+                      Nenhum registro de vistoria em aberto.
+                    </div>
+                  )}
+                </div>
               </TooltipProvider>
             </CardContent>
           </Card>
@@ -605,50 +596,46 @@ export default function InspectionsListPage() {
             </CardHeader>
             <CardContent>
               <TooltipProvider>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Empreendimento</TableHead>
-                      <TableHead className="hidden md:table-cell">
-                        Data
-                      </TableHead>
-                      <TableHead>Responsável</TableHead>
-                      <TableHead className="text-right">Ações</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {isLoading ? (
-                      <TableRow>
-                        <TableCell colSpan={4}>
-                          <Skeleton className="h-10 w-full" />
-                        </TableCell>
-                      </TableRow>
-                    ) : approvedInspections &&
-                      approvedInspections.length > 0 ? (
-                      approvedInspections.map((inspection) => (
-                        <TableRow key={inspection.id}>
-                          <TableCell className="font-medium">
-                            {projectsMap.get(inspection.projectId)?.name ||
-                              "Projeto não encontrado"}
-                          </TableCell>
-                          <TableCell className="hidden md:table-cell text-muted-foreground">
-                            {new Date(
-                              inspection.inspectionDate,
-                            ).toLocaleDateString("pt-BR")}
-                          </TableCell>
-                          <TableCell className="text-muted-foreground">
-                            {inspection.inspectorName}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex items-center justify-end gap-1">
+                <div className="space-y-4">
+                  {isLoading ? (
+                    <Skeleton className="h-28 w-full rounded-lg" />
+                  ) : approvedInspections &&
+                    approvedInspections.length > 0 ? (
+                    approvedInspections.map((inspection) => (
+                      <Card
+                        key={inspection.id}
+                        className="overflow-hidden border-border/80 shadow-sm transition-shadow hover:shadow-md"
+                      >
+                        <CardContent className="p-4 sm:p-5">
+                          <div className="flex flex-col gap-4">
+                            <div className="min-w-0 space-y-2">
+                              <h3 className="text-balance text-base font-semibold leading-snug text-foreground sm:text-lg">
+                                {projectsMap.get(inspection.projectId)?.name ||
+                                  "Projeto não encontrado"}
+                              </h3>
+                              <p className="text-sm text-muted-foreground">
+                                Data:{" "}
+                                {new Date(
+                                  inspection.inspectionDate,
+                                ).toLocaleDateString("pt-BR")}{" "}
+                                · Responsável: {inspection.inspectorName}
+                              </p>
+                            </div>
+                            <Separator className="bg-border/60" />
+                            <div className="flex flex-wrap items-center gap-1">
                               <Tooltip>
                                 <TooltipTrigger asChild>
                                   <Button
                                     variant="ghost"
                                     size="icon"
+                                    className="h-9 w-9 shrink-0"
+                                    type="button"
                                     onClick={() => handleView(inspection)}
                                   >
                                     <Eye className="h-4 w-4" />
+                                    <span className="sr-only">
+                                      Visualizar detalhes
+                                    </span>
                                   </Button>
                                 </TooltipTrigger>
                                 <TooltipContent>
@@ -660,11 +647,16 @@ export default function InspectionsListPage() {
                                   <Button
                                     variant="ghost"
                                     size="icon"
+                                    className="h-9 w-9 shrink-0"
+                                    type="button"
                                     onClick={() =>
                                       handleGeneratePdf(inspection)
                                     }
                                   >
                                     <FileText className="h-4 w-4" />
+                                    <span className="sr-only">
+                                      Exportar PDF
+                                    </span>
                                   </Button>
                                 </TooltipTrigger>
                                 <TooltipContent>
@@ -677,12 +669,16 @@ export default function InspectionsListPage() {
                                     <Button
                                       variant="ghost"
                                       size="icon"
-                                      className="text-destructive hover:text-destructive"
+                                      className="h-9 w-9 shrink-0 text-destructive hover:text-destructive"
+                                      type="button"
                                       onClick={() =>
                                         openDeleteConfirm(inspection.id)
                                       }
                                     >
                                       <Trash2 className="h-4 w-4" />
+                                      <span className="sr-only">
+                                        Deletar vistoria
+                                      </span>
                                     </Button>
                                   </TooltipTrigger>
                                   <TooltipContent>
@@ -691,18 +687,16 @@ export default function InspectionsListPage() {
                                 </Tooltip>
                               )}
                             </div>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    ) : (
-                      <TableRow>
-                        <TableCell colSpan={4} className="h-24 text-center">
-                          Nenhuma vistoria aprovada.
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))
+                  ) : (
+                    <div className="flex h-24 items-center justify-center rounded-md border-2 border-dashed border-muted-foreground/25 text-center text-sm text-muted-foreground">
+                      Nenhuma vistoria aprovada.
+                    </div>
+                  )}
+                </div>
               </TooltipProvider>
             </CardContent>
           </Card>

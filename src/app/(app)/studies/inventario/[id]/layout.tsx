@@ -36,7 +36,7 @@ export default function InventoryProjectLayout({
   const params = useParams();
   const pathname = usePathname();
   const router = useRouter();
-  const projectId = params.id as string;
+  const projectId = (params?.id as string | undefined) ?? '';
   const { firestore } = useFirebase();
 
   const projectDocRef = React.useMemo(() => {
@@ -57,7 +57,7 @@ export default function InventoryProjectLayout({
 
   const renderNavButton = (compact: boolean) =>
     menuItems.map((item) => {
-      const active = isNavActive(pathname, item.href);
+      const active = isNavActive(pathname ?? '', item.href);
       const Icon = item.icon;
       return (
         <Button

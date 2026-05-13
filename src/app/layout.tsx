@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { Suspense } from "react";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 import { FirebaseClientProvider } from "@/firebase";
@@ -55,7 +56,9 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <UnregisterServiceWorkerDev />
-          <AuthThemeEnforcer />
+          <Suspense fallback={null}>
+            <AuthThemeEnforcer />
+          </Suspense>
           <SuppressExtensionErrors />
           <IframeRedirectBanner />
           <FirebaseClientProvider>{children}</FirebaseClientProvider>

@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 function EditPradaModalContent() {
     const router = useRouter();
     const params = useParams();
-    const pradaId = params.id as string;
+    const pradaId = (params?.id as string | undefined) ?? '';
     
     const { firestore } = useFirebase();
 

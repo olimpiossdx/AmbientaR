@@ -55,7 +55,7 @@ function formatRunDate(createdAt: unknown): string {
 
 export default function CalculadoraPage() {
   const params = useParams();
-  const projectId = params.id as string;
+  const projectId = (params?.id as string | undefined) ?? '';
   const { firestore } = useFirebase();
   const { toast } = useToast();
   const [selectedCalculo, setSelectedCalculo] = React.useState<string | null>(null);

@@ -12,7 +12,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 function EditPcaPageContent() {
     const router = useRouter();
     const params = useParams();
-    const pcaId = params.id as string;
+    const pcaId = (params?.id as string | undefined) ?? '';
     
     const { firestore } = useFirebase();
 

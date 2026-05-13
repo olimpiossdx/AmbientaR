@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 function EditPiaModalContent() {
     const router = useRouter();
     const params = useParams();
-    const piaId = params.id as string;
+    const piaId = (params?.id as string | undefined) ?? '';
     
     const { firestore } = useFirebase();
 

@@ -14,7 +14,7 @@ function EditProjectPageContent() {
     const router = useRouter();
     const params = useParams();
     const { blocked, isInitialized } = useCadastroGestaoWriteGuard('/projects');
-    const itemId = params.id as string;
+    const itemId = (params?.id as string | undefined) ?? '';
     
     const { firestore } = useFirebase();
 

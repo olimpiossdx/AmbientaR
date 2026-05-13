@@ -64,7 +64,7 @@ const DetailItem = ({
 export default function InventarioProjectPage() {
   const params = useParams();
   const router = useRouter();
-  const projectId = params.id as string;
+  const projectId = (params?.id as string | undefined) ?? '';
   const [isImporting, setIsImporting] = React.useState(false);
   const [isDuplicateAlertOpen, setIsDuplicateAlertOpen] = React.useState(false);
   const [isDuplicating, setIsDuplicating] = React.useState(false);

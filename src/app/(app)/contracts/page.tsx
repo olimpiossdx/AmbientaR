@@ -11,14 +11,6 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -28,7 +20,6 @@ import {
   DialogClose,
 } from "@/components/ui/dialog";
 import {
-  MoreHorizontal,
   PlusCircle,
   FileText,
   Pencil,
@@ -43,7 +34,6 @@ import {
   useFirebase,
   useMemoFirebase,
   errorEmitter,
-  useDoc,
   useAuth,
 } from "@/firebase";
 import {
@@ -573,144 +563,46 @@ export default function ContractsPage() {
               </CardHeader>
               <CardContent>
                 <TooltipProvider>
-                  <div className="space-y-3 md:hidden">
+                  <div className="space-y-4">
                     {isLoadingContracts &&
                       Array.from({ length: 3 }).map((_, i) => (
-                        <Card key={i}>
-                          <CardContent className="p-4 space-y-2">
-                            <Skeleton className="h-5 w-40" />
-                            <Skeleton className="h-4 w-36" />
-                          </CardContent>
-                        </Card>
+                        <Skeleton key={i} className="h-28 w-full rounded-lg" />
                       ))}
                     {!isLoadingContracts &&
                       filteredDraftContracts?.map((item) => (
-                        <Card key={item.id} className="rounded-xl border-border/70 shadow-sm">
-                          <CardContent className="p-4 space-y-3">
-                            <div className="min-w-0">
-                              <p className="font-medium truncate">
-                                {item.contratante?.nome}
-                              </p>
-                              <p className="text-sm text-muted-foreground">
-                                {formatDate(item.dataContrato)}
-                              </p>
-                              <p className="text-sm text-muted-foreground line-clamp-2">
-                                {item.objeto.servicos}
-                              </p>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleView(item)}
-                              >
-                                <Eye className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleEdit(item)}
-                              >
-                                <Pencil className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleGeneratePdf(item)}
-                              >
-                                <FileText className="h-4 w-4" />
-                              </Button>
-                              {isAdminOrSupervisorRole(user?.role) && (
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => handleApprove(item.id)}
-                                >
-                                  <CheckCircle className="h-4 w-4 text-green-500" />
-                                </Button>
-                              )}
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="text-destructive hover:text-destructive"
-                                onClick={() => openDeleteConfirm(item.id)}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
-                    {!isLoadingContracts &&
-                      filteredDraftContracts?.length === 0 && (
-                        <div className="h-24 flex items-center justify-center text-sm text-muted-foreground">
-                          {draftContracts?.length === 0
-                            ? "Nenhum contrato em gerenciamento."
-                            : "Nenhum contrato corresponde aos filtros."}
-                        </div>
-                      )}
-                  </div>
-                  <div className="hidden md:block">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Contratante</TableHead>
-                        <TableHead className="hidden md:table-cell">
-                          Objeto
-                        </TableHead>
-                        <TableHead>Data</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead className="text-right">Ações</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {isLoadingContracts &&
-                        Array.from({ length: 3 }).map((_, i) => (
-                          <TableRow key={i}>
-                            <TableCell>
-                              <Skeleton className="h-5 w-32" />
-                            </TableCell>
-                            <TableCell className="hidden md:table-cell">
-                              <Skeleton className="h-5 w-48" />
-                            </TableCell>
-                            <TableCell>
-                              <Skeleton className="h-5 w-24" />
-                            </TableCell>
-                            <TableCell>
-                              <Skeleton className="h-6 w-24 rounded-full" />
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <Skeleton className="h-8 w-32" />
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      {!isLoadingContracts &&
-                        filteredDraftContracts?.map((item) => (
-                          <TableRow key={item.id}>
-                            <TableCell className="font-medium">
-                              {item.contratante?.nome}
-                            </TableCell>
-                            <TableCell className="hidden md:table-cell text-muted-foreground max-w-xs truncate">
-                              {item.objeto.servicos}
-                            </TableCell>
-                            <TableCell className="text-muted-foreground">
-                              {formatDate(item.dataContrato)}
-                            </TableCell>
-                            <TableCell>
-                              <Badge variant="outline">
-                                {item.status || "Rascunho"}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <div className="flex items-center justify-end gap-1">
+                        <Card
+                          key={item.id}
+                          className="overflow-hidden border-border/80 shadow-sm transition-shadow hover:shadow-md"
+                        >
+                          <CardContent className="p-4 sm:p-5">
+                            <div className="flex flex-col gap-4">
+                              <div className="min-w-0 space-y-2">
+                                <h3 className="text-balance text-base font-semibold leading-snug text-foreground sm:text-lg">
+                                  {item.contratante?.nome}
+                                </h3>
+                                <p className="text-sm text-muted-foreground">
+                                  {formatDate(item.dataContrato)}
+                                </p>
+                                <p className="line-clamp-2 text-sm text-muted-foreground">
+                                  {item.objeto.servicos}
+                                </p>
+                                <Badge variant="outline" className="w-fit">
+                                  {item.status || "Rascunho"}
+                                </Badge>
+                              </div>
+                              <Separator className="bg-border/60" />
+                              <div className="flex flex-wrap items-center gap-1">
                                 <Tooltip>
                                   <TooltipTrigger asChild>
                                     <Button
                                       variant="ghost"
                                       size="icon"
+                                      className="h-9 w-9 shrink-0"
+                                      type="button"
                                       onClick={() => handleView(item)}
                                     >
                                       <Eye className="h-4 w-4" />
+                                      <span className="sr-only">Ver</span>
                                     </Button>
                                   </TooltipTrigger>
                                   <TooltipContent>
@@ -722,9 +614,12 @@ export default function ContractsPage() {
                                     <Button
                                       variant="ghost"
                                       size="icon"
+                                      className="h-9 w-9 shrink-0"
+                                      type="button"
                                       onClick={() => handleEdit(item)}
                                     >
                                       <Pencil className="h-4 w-4" />
+                                      <span className="sr-only">Editar</span>
                                     </Button>
                                   </TooltipTrigger>
                                   <TooltipContent>
@@ -736,9 +631,12 @@ export default function ContractsPage() {
                                     <Button
                                       variant="ghost"
                                       size="icon"
+                                      className="h-9 w-9 shrink-0"
+                                      type="button"
                                       onClick={() => handleGeneratePdf(item)}
                                     >
                                       <FileText className="h-4 w-4" />
+                                      <span className="sr-only">PDF</span>
                                     </Button>
                                   </TooltipTrigger>
                                   <TooltipContent>
@@ -751,13 +649,16 @@ export default function ContractsPage() {
                                       <Button
                                         variant="ghost"
                                         size="icon"
+                                        className="h-9 w-9 shrink-0"
+                                        type="button"
                                         onClick={() => handleApprove(item.id)}
                                       >
                                         <CheckCircle className="h-4 w-4 text-green-500" />
+                                        <span className="sr-only">Aprovar</span>
                                       </Button>
                                     </TooltipTrigger>
                                     <TooltipContent>
-                                      <p>Aprovar Contrato</p>
+                                      <p>Aprovar contrato</p>
                                     </TooltipContent>
                                   </Tooltip>
                                 )}
@@ -766,10 +667,12 @@ export default function ContractsPage() {
                                     <Button
                                       variant="ghost"
                                       size="icon"
-                                      className="text-destructive hover:text-destructive"
+                                      className="h-9 w-9 shrink-0 text-destructive hover:text-destructive"
+                                      type="button"
                                       onClick={() => openDeleteConfirm(item.id)}
                                     >
                                       <Trash2 className="h-4 w-4" />
+                                      <span className="sr-only">Apagar</span>
                                     </Button>
                                   </TooltipTrigger>
                                   <TooltipContent>
@@ -777,21 +680,17 @@ export default function ContractsPage() {
                                   </TooltipContent>
                                 </Tooltip>
                               </div>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      {!isLoadingContracts &&
-                        filteredDraftContracts?.length === 0 && (
-                          <TableRow>
-                            <TableCell colSpan={5} className="h-24 text-center">
-                              {draftContracts?.length === 0
-                                ? "Nenhum contrato em gerenciamento."
-                                : "Nenhum contrato corresponde aos filtros."}
-                            </TableCell>
-                          </TableRow>
-                        )}
-                    </TableBody>
-                  </Table>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    {!isLoadingContracts && filteredDraftContracts?.length === 0 && (
+                      <div className="flex h-24 items-center justify-center rounded-md border-2 border-dashed border-muted-foreground/25 text-center text-sm text-muted-foreground">
+                        {draftContracts?.length === 0
+                          ? "Nenhum contrato em gerenciamento."
+                          : "Nenhum contrato corresponde aos filtros."}
+                      </div>
+                    )}
                   </div>
                 </TooltipProvider>
               </CardContent>
@@ -807,141 +706,46 @@ export default function ContractsPage() {
             </CardHeader>
             <CardContent>
               <TooltipProvider>
-                <div className="space-y-3 md:hidden">
+                <div className="space-y-4">
                   {isLoadingContracts &&
-                    Array.from({ length: 1 }).map((_, i) => (
-                      <Card key={i}>
-                        <CardContent className="p-4 space-y-2">
-                          <Skeleton className="h-5 w-40" />
-                          <Skeleton className="h-4 w-36" />
-                        </CardContent>
-                      </Card>
+                    Array.from({ length: 3 }).map((_, i) => (
+                      <Skeleton key={i} className="h-28 w-full rounded-lg" />
                     ))}
                   {!isLoadingContracts &&
                     filteredApprovedContracts?.map((item) => (
-                      <Card key={item.id} className="rounded-xl border-border/70 shadow-sm">
-                        <CardContent className="p-4 space-y-3">
-                          <div className="min-w-0">
-                            <p className="font-medium truncate">
-                              {item.contratante?.nome}
-                            </p>
-                            <p className="text-sm text-muted-foreground">
-                              {formatDate(item.dataContrato)}
-                            </p>
-                            <p className="text-sm text-muted-foreground line-clamp-2">
-                              {item.objeto.servicos}
-                            </p>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleView(item)}
-                            >
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleGeneratePdf(item)}
-                            >
-                              <FileText className="h-4 w-4" />
-                            </Button>
-                            {item.fileUrl ? (
-                              <Button asChild variant="ghost" size="icon">
-                                <a
-                                  href={item.fileUrl}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                >
-                                  <FileText className="h-4 w-4 text-blue-500" />
-                                </a>
-                              </Button>
-                            ) : !isClientePortalRole(user?.role) ? (
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleOpenUpload(item)}
-                              >
-                                <Upload className="h-4 w-4" />
-                              </Button>
-                            ) : null}
-                            {(user?.role === "admin" ||
-                              user?.role === "supervisor") && (
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="text-destructive hover:text-destructive"
-                                onClick={() => openDeleteConfirm(item.id)}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            )}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  {!isLoadingContracts &&
-                    filteredApprovedContracts?.length === 0 && (
-                      <div className="h-24 flex items-center justify-center text-sm text-muted-foreground">
-                        {approvedContracts?.length === 0
-                          ? "Nenhum contrato finalizado."
-                          : "Nenhum contrato corresponde aos filtros."}
-                      </div>
-                    )}
-                </div>
-                <div className="hidden md:block">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Contratante</TableHead>
-                      <TableHead className="hidden md:table-cell">
-                        Objeto
-                      </TableHead>
-                      <TableHead>Data</TableHead>
-                      <TableHead className="text-right">Ações</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {isLoadingContracts &&
-                      Array.from({ length: 1 }).map((_, i) => (
-                        <TableRow key={i}>
-                          <TableCell>
-                            <Skeleton className="h-5 w-32" />
-                          </TableCell>
-                          <TableCell className="hidden md:table-cell">
-                            <Skeleton className="h-5 w-48" />
-                          </TableCell>
-                          <TableCell>
-                            <Skeleton className="h-5 w-24" />
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <Skeleton className="h-8 w-24" />
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    {!isLoadingContracts &&
-                      filteredApprovedContracts?.map((item) => (
-                        <TableRow key={item.id}>
-                          <TableCell className="font-medium">
-                            {item.contratante?.nome}
-                          </TableCell>
-                          <TableCell className="hidden md:table-cell text-muted-foreground max-w-xs truncate">
-                            {item.objeto.servicos}
-                          </TableCell>
-                          <TableCell className="text-muted-foreground">
-                            {formatDate(item.dataContrato)}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex items-center justify-end gap-1">
+                      <Card
+                        key={item.id}
+                        className="overflow-hidden border-border/80 shadow-sm transition-shadow hover:shadow-md"
+                      >
+                        <CardContent className="p-4 sm:p-5">
+                          <div className="flex flex-col gap-4">
+                            <div className="min-w-0 space-y-2">
+                              <h3 className="text-balance text-base font-semibold leading-snug text-foreground sm:text-lg">
+                                {item.contratante?.nome}
+                              </h3>
+                              <p className="text-sm text-muted-foreground">
+                                {formatDate(item.dataContrato)}
+                              </p>
+                              <p className="line-clamp-2 text-sm text-muted-foreground">
+                                {item.objeto.servicos}
+                              </p>
+                              <Badge variant="outline" className="w-fit">
+                                {item.status || "Aprovado"}
+                              </Badge>
+                            </div>
+                            <Separator className="bg-border/60" />
+                            <div className="flex flex-wrap items-center gap-1">
                               <Tooltip>
                                 <TooltipTrigger asChild>
                                   <Button
                                     variant="ghost"
                                     size="icon"
+                                    className="h-9 w-9 shrink-0"
+                                    type="button"
                                     onClick={() => handleView(item)}
                                   >
                                     <Eye className="h-4 w-4" />
+                                    <span className="sr-only">Ver</span>
                                   </Button>
                                 </TooltipTrigger>
                                 <TooltipContent>
@@ -953,9 +757,12 @@ export default function ContractsPage() {
                                   <Button
                                     variant="ghost"
                                     size="icon"
+                                    className="h-9 w-9 shrink-0"
+                                    type="button"
                                     onClick={() => handleGeneratePdf(item)}
                                   >
                                     <FileText className="h-4 w-4" />
+                                    <span className="sr-only">PDF</span>
                                   </Button>
                                 </TooltipTrigger>
                                 <TooltipContent>
@@ -965,18 +772,19 @@ export default function ContractsPage() {
                               {item.fileUrl ? (
                                 <Tooltip>
                                   <TooltipTrigger asChild>
-                                    <Button asChild variant="ghost" size="icon">
+                                    <Button asChild variant="ghost" size="icon" className="h-9 w-9 shrink-0">
                                       <a
                                         href={item.fileUrl}
                                         target="_blank"
                                         rel="noopener noreferrer"
                                       >
                                         <FileText className="h-4 w-4 text-blue-500" />
+                                        <span className="sr-only">Assinado</span>
                                       </a>
                                     </Button>
                                   </TooltipTrigger>
                                   <TooltipContent>
-                                    <p>Ver Contrato Assinado</p>
+                                    <p>Ver contrato assinado</p>
                                   </TooltipContent>
                                 </Tooltip>
                               ) : !isClientePortalRole(user?.role) ? (
@@ -985,13 +793,16 @@ export default function ContractsPage() {
                                     <Button
                                       variant="ghost"
                                       size="icon"
+                                      className="h-9 w-9 shrink-0"
+                                      type="button"
                                       onClick={() => handleOpenUpload(item)}
                                     >
                                       <Upload className="h-4 w-4" />
+                                      <span className="sr-only">Upload</span>
                                     </Button>
                                   </TooltipTrigger>
                                   <TooltipContent>
-                                    <p>Upload Contrato Assinado</p>
+                                    <p>Upload contrato assinado</p>
                                   </TooltipContent>
                                 </Tooltip>
                               ) : null}
@@ -1002,10 +813,12 @@ export default function ContractsPage() {
                                     <Button
                                       variant="ghost"
                                       size="icon"
-                                      className="text-destructive hover:text-destructive"
+                                      className="h-9 w-9 shrink-0 text-destructive hover:text-destructive"
+                                      type="button"
                                       onClick={() => openDeleteConfirm(item.id)}
                                     >
                                       <Trash2 className="h-4 w-4" />
+                                      <span className="sr-only">Apagar</span>
                                     </Button>
                                   </TooltipTrigger>
                                   <TooltipContent>
@@ -1014,21 +827,17 @@ export default function ContractsPage() {
                                 </Tooltip>
                               )}
                             </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    {!isLoadingContracts &&
-                      filteredApprovedContracts?.length === 0 && (
-                        <TableRow>
-                          <TableCell colSpan={4} className="h-24 text-center">
-                            {approvedContracts?.length === 0
-                              ? "Nenhum contrato finalizado."
-                              : "Nenhum contrato corresponde aos filtros."}
-                          </TableCell>
-                        </TableRow>
-                      )}
-                  </TableBody>
-                </Table>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  {!isLoadingContracts && filteredApprovedContracts?.length === 0 && (
+                    <div className="flex h-24 items-center justify-center rounded-md border-2 border-dashed border-muted-foreground/25 text-center text-sm text-muted-foreground">
+                      {approvedContracts?.length === 0
+                        ? "Nenhum contrato finalizado."
+                        : "Nenhum contrato corresponde aos filtros."}
+                    </div>
+                  )}
                 </div>
               </TooltipProvider>
             </CardContent>

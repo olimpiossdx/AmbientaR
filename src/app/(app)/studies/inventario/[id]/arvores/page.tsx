@@ -36,7 +36,7 @@ import { InventoryModuleHeader, inventoryActionButtonClass } from '../inventory-
 
 export default function ArvoresPage() {
   const params = useParams();
-  const projectId = params.id as string;
+  const projectId = (params?.id as string | undefined) ?? '';
   const { firestore } = useFirebase();
 
   const projectDocRef = React.useMemo(() => {

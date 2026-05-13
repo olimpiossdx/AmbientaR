@@ -9,25 +9,8 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  MoreHorizontal,
   PlusCircle,
   Paperclip,
   Eye,
@@ -353,194 +336,58 @@ export default function LicensesPage() {
             </CardHeader>
             <CardContent>
               <TooltipProvider>
-                <div className="space-y-3 md:hidden">
+                <div className="space-y-4">
                   {isLoading &&
                     Array.from({ length: 5 }).map((_, i) => (
-                      <Card key={i}>
-                        <CardContent className="p-4 space-y-2">
-                          <Skeleton className="h-5 w-40" />
-                          <Skeleton className="h-4 w-32" />
-                          <Skeleton className="h-4 w-28" />
-                        </CardContent>
-                      </Card>
+                      <Skeleton key={i} className="h-28 w-full rounded-lg" />
                     ))}
                   {!isLoading &&
                     filteredLicenses.map((license) => (
-                      <Card key={license.id} className="rounded-xl border-border/70 shadow-sm">
-                        <CardContent className="p-4 space-y-3">
-                          <div className="flex items-start justify-between gap-3">
-                            <div className="min-w-0">
-                              <p className="font-medium truncate">
+                      <Card
+                        key={license.id}
+                        className="overflow-hidden border-border/80 shadow-sm transition-shadow hover:shadow-md"
+                      >
+                        <CardContent className="p-4 sm:p-5">
+                          <div className="flex flex-col gap-4">
+                            <div className="min-w-0 space-y-2">
+                              <h3 className="text-balance text-base font-semibold leading-snug text-foreground sm:text-lg">
                                 {empreendedoresMap.get(license.empreendedorId) || "N/A"}
-                              </p>
-                              <p className="text-sm text-muted-foreground truncate">
+                              </h3>
+                              <p className="text-sm text-muted-foreground">
                                 {projectsMap.get(license.projectId) || "N/A"}
                               </p>
-                            </div>
-                            <Badge
-                              variant={"outline"}
-                              className={cn(getStatusVariant(license.status))}
-                            >
-                              {license.status}
-                            </Badge>
-                          </div>
-                          <div className="text-sm">
-                            <p>
-                              <span className="text-muted-foreground">
-                                Nº Licença:
-                              </span>{" "}
-                              {license.permitNumber || "N/A"}
-                            </p>
-                            <p>
-                              <span className="text-muted-foreground">
-                                Vencimento:
-                              </span>{" "}
-                              {formatDate(license.expirationDate || "")}
-                            </p>
-                          </div>
-                          <div className="flex flex-wrap items-center gap-1">
-                            {license.fileUrl && (
-                              <Button asChild variant="ghost" size="icon">
-                                <a
-                                  href={license.fileUrl}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                >
-                                  <Paperclip className="h-4 w-4" />
-                                </a>
-                              </Button>
-                            )}
-                            {canPerformWriteActions(user) && (
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleEdit(license)}
+                              <p className="text-sm text-muted-foreground">
+                                Nº {license.permitNumber || "N/A"} · Venc.:{" "}
+                                {formatDate(license.expirationDate || "")}
+                                {license.processNumber
+                                  ? ` · Proc.: ${license.processNumber}`
+                                  : ""}
+                              </p>
+                              <Badge
+                                variant="outline"
+                                className={cn("w-fit", getStatusVariant(license.status))}
                               >
-                                <Upload className="h-4 w-4" />
-                              </Button>
-                            )}
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleView(license)}
-                            >
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={handleGoToCondicionantes}
-                            >
-                              <ClipboardCheck className="h-4 w-4" />
-                            </Button>
-                            {canPerformWriteActions(user) && (
-                              <>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => handleEdit(license)}
-                                >
-                                  <Pencil className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="text-destructive hover:text-destructive"
-                                  onClick={() => openDeleteConfirm(license.id)}
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </>
-                            )}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  {!isLoading && filteredLicenses.length === 0 && (
-                    <div className="h-24 flex items-center justify-center text-sm text-muted-foreground">
-                      Nenhuma licença encontrada.
-                    </div>
-                  )}
-                </div>
-                <div className="hidden md:block">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Empreendedor</TableHead>
-                      <TableHead className="hidden lg:table-cell">
-                        Empreendimento
-                      </TableHead>
-                      <TableHead>Nº da Licença</TableHead>
-                      <TableHead className="hidden lg:table-cell">
-                        Vencimento
-                      </TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="text-right">Ações</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {isLoading &&
-                      Array.from({ length: 5 }).map((_, i) => (
-                        <TableRow key={i}>
-                          <TableCell className="hidden lg:table-cell">
-                            <Skeleton className="h-5 w-32" />
-                          </TableCell>
-                          <TableCell>
-                            <Skeleton className="h-5 w-32" />
-                          </TableCell>
-                          <TableCell>
-                            <Skeleton className="h-5 w-24" />
-                          </TableCell>
-                          <TableCell className="hidden lg:table-cell">
-                            <Skeleton className="h-5 w-24" />
-                          </TableCell>
-                          <TableCell>
-                            <Skeleton className="h-6 w-24 rounded-full" />
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <Skeleton className="h-8 w-24" />
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    {!isLoading &&
-                      filteredLicenses.map((license) => (
-                        <TableRow key={license.id}>
-                          <TableCell className="font-medium">
-                            {empreendedoresMap.get(license.empreendedorId) ||
-                              "N/A"}
-                          </TableCell>
-                          <TableCell className="hidden font-medium lg:table-cell">
-                            {projectsMap.get(license.projectId) || "N/A"}
-                          </TableCell>
-                          <TableCell className="font-medium">
-                            {license.permitNumber || "N/A"}
-                          </TableCell>
-                          <TableCell className="hidden lg:table-cell text-muted-foreground">
-                            {formatDate(license.expirationDate || "")}
-                          </TableCell>
-                          <TableCell>
-                            <Badge
-                              variant={"outline"}
-                              className={cn(getStatusVariant(license.status))}
-                            >
-                              {license.status}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex items-center justify-end gap-1">
+                                {license.status}
+                              </Badge>
+                            </div>
+                            <Separator className="bg-border/60" />
+                            <div className="flex flex-wrap items-center gap-1">
                               {license.fileUrl && (
                                 <Tooltip>
                                   <TooltipTrigger asChild>
-                                    <Button asChild variant="ghost" size="icon">
+                                    <Button
+                                      asChild
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-9 w-9 shrink-0"
+                                    >
                                       <a
                                         href={license.fileUrl}
                                         target="_blank"
                                         rel="noopener noreferrer"
                                       >
                                         <Paperclip className="h-4 w-4" />
-                                        <span className="sr-only">
-                                          Ver anexo
-                                        </span>
+                                        <span className="sr-only">Ver anexo</span>
                                       </a>
                                     </Button>
                                   </TooltipTrigger>
@@ -555,6 +402,8 @@ export default function LicensesPage() {
                                     <Button
                                       variant="ghost"
                                       size="icon"
+                                      className="h-9 w-9 shrink-0"
+                                      type="button"
                                       onClick={() => handleEdit(license)}
                                     >
                                       <Upload className="h-4 w-4" />
@@ -571,6 +420,8 @@ export default function LicensesPage() {
                                   <Button
                                     variant="ghost"
                                     size="icon"
+                                    className="h-9 w-9 shrink-0"
+                                    type="button"
                                     onClick={() => handleView(license)}
                                   >
                                     <Eye className="h-4 w-4" />
@@ -586,12 +437,12 @@ export default function LicensesPage() {
                                   <Button
                                     variant="ghost"
                                     size="icon"
+                                    className="h-9 w-9 shrink-0"
+                                    type="button"
                                     onClick={handleGoToCondicionantes}
                                   >
                                     <ClipboardCheck className="h-4 w-4" />
-                                    <span className="sr-only">
-                                      Ver condicionantes
-                                    </span>
+                                    <span className="sr-only">Condicionantes</span>
                                   </Button>
                                 </TooltipTrigger>
                                 <TooltipContent>
@@ -605,6 +456,8 @@ export default function LicensesPage() {
                                       <Button
                                         variant="ghost"
                                         size="icon"
+                                        className="h-9 w-9 shrink-0"
+                                        type="button"
                                         onClick={() => handleEdit(license)}
                                       >
                                         <Pencil className="h-4 w-4" />
@@ -620,10 +473,9 @@ export default function LicensesPage() {
                                       <Button
                                         variant="ghost"
                                         size="icon"
-                                        className="text-destructive hover:text-destructive"
-                                        onClick={() =>
-                                          openDeleteConfirm(license.id)
-                                        }
+                                        className="h-9 w-9 shrink-0 text-destructive hover:text-destructive"
+                                        type="button"
+                                        onClick={() => openDeleteConfirm(license.id)}
                                       >
                                         <Trash2 className="h-4 w-4" />
                                         <span className="sr-only">Deletar</span>
@@ -636,18 +488,15 @@ export default function LicensesPage() {
                                 </>
                               )}
                             </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    {!isLoading && filteredLicenses.length === 0 && (
-                      <TableRow>
-                        <TableCell colSpan={7} className="h-24 text-center">
-                          Nenhuma licença encontrada.
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  {!isLoading && filteredLicenses.length === 0 && (
+                    <div className="flex h-24 items-center justify-center rounded-md border-2 border-dashed border-muted-foreground/25 text-center text-sm text-muted-foreground">
+                      Nenhuma licença encontrada.
+                    </div>
+                  )}
                 </div>
               </TooltipProvider>
             </CardContent>

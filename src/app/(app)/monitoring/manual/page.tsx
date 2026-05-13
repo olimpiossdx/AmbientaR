@@ -9,14 +9,7 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Separator } from "@/components/ui/separator";
 import { PlusCircle } from "lucide-react";
 import { AlertTriangle, CheckCircle2, FileText, Pencil, Trash2 } from "lucide-react";
 import {
@@ -666,97 +659,98 @@ export default function ManualMonitoringPage() {
                       </CardContent>
                     </Card>
                   )}
-                </div>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Data</TableHead>
-                      <TableHead className="hidden md:table-cell">
-                        Horímetro Início
-                      </TableHead>
-                      <TableHead className="hidden md:table-cell">
-                        Horímetro Fim
-                      </TableHead>
-                      <TableHead>Vazão (L/s)</TableHead>
-                      <TableHead className="hidden lg:table-cell">
-                        Vazão (m³/h)
-                      </TableHead>
-                      {canPerformWriteActions(user) && (
-                        <TableHead>
-                          <span className="sr-only">Ações</span>
-                        </TableHead>
-                      )}
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {isLoadingLogs &&
-                      Array.from({ length: 3 }).map((_, i) => (
-                        <TableRow key={i}>
-                          <TableCell colSpan={6}>
-                            <Skeleton className="h-5 w-full" />
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    {!isLoadingLogs &&
-                      filteredLogs.map((log) => (
-                        <TableRow key={log.id}>
-                          <TableCell>{formatDate(log.logDate)}</TableCell>
-                          <TableCell className="hidden md:table-cell">
-                            {log.horimeterStart}
-                          </TableCell>
-                          <TableCell className="hidden md:table-cell">
-                            {log.horimeterEnd}
-                          </TableCell>
-                          <TableCell>{log.flowRateLps}</TableCell>
-                          <TableCell className="hidden lg:table-cell">
-                            {log.flowRateM3h}
-                          </TableCell>
-                          {canPerformWriteActions(user) && (
-                            <TableCell>
-                              <TooltipProvider>
-                                <div className="flex items-center gap-1">
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        onClick={() => handleEdit(log)}
-                                      >
-                                        <Pencil className="h-4 w-4" />
-                                        <span className="sr-only">Editar</span>
-                                      </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent>Editar lançamento</TooltipContent>
-                                  </Tooltip>
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="text-destructive hover:text-destructive"
-                                        onClick={() => openDeleteConfirm(log.id)}
-                                      >
-                                        <Trash2 className="h-4 w-4" />
-                                        <span className="sr-only">Deletar</span>
-                                      </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent>Deletar lançamento</TooltipContent>
-                                  </Tooltip>
+                <TooltipProvider>
+                <div className="space-y-4">
+                  {isLoadingLogs &&
+                    Array.from({ length: 3 }).map((_, i) => (
+                      <Skeleton
+                        key={i}
+                        className="h-28 w-full rounded-lg"
+                      />
+                    ))}
+                  {!isLoadingLogs &&
+                    filteredLogs.map((log) => (
+                      <Card
+                        key={log.id}
+                        className="overflow-hidden border-border/80 shadow-sm transition-shadow hover:shadow-md"
+                      >
+                        <CardContent className="p-4 sm:p-5">
+                          <div className="flex flex-col gap-4">
+                            <div className="min-w-0 space-y-2">
+                              <h3 className="text-base font-semibold leading-snug text-foreground sm:text-lg">
+                                {formatDate(log.logDate)}
+                              </h3>
+                              <p className="text-sm text-muted-foreground">
+                                Horímetro: {log.horimeterStart} →{" "}
+                                {log.horimeterEnd}
+                              </p>
+                              <p className="text-sm text-muted-foreground">
+                                Vazão: {log.flowRateLps} L/s
+                                {log.flowRateM3h != null &&
+                                String(log.flowRateM3h) !== ""
+                                  ? ` · ${log.flowRateM3h} m³/h`
+                                  : ""}
+                              </p>
+                            </div>
+                            {canPerformWriteActions(user) && (
+                              <>
+                                <Separator className="bg-border/60" />
+                                <div className="flex flex-wrap items-center gap-1">
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          className="h-9 w-9 shrink-0"
+                                          type="button"
+                                          onClick={() => handleEdit(log)}
+                                        >
+                                          <Pencil className="h-4 w-4" />
+                                          <span className="sr-only">
+                                            Editar
+                                          </span>
+                                        </Button>
+                                      </TooltipTrigger>
+                                      <TooltipContent>
+                                        Editar lançamento
+                                      </TooltipContent>
+                                    </Tooltip>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          className="h-9 w-9 shrink-0 text-destructive hover:text-destructive"
+                                          type="button"
+                                          onClick={() =>
+                                            openDeleteConfirm(log.id)
+                                          }
+                                        >
+                                          <Trash2 className="h-4 w-4" />
+                                          <span className="sr-only">
+                                            Deletar
+                                          </span>
+                                        </Button>
+                                      </TooltipTrigger>
+                                      <TooltipContent>
+                                        Deletar lançamento
+                                      </TooltipContent>
+                                    </Tooltip>
                                 </div>
-                              </TooltipProvider>
-                            </TableCell>
-                          )}
-                        </TableRow>
-                      ))}
-                    {!isLoadingLogs && filteredLogs.length === 0 && (
-                      <TableRow>
-                        <TableCell colSpan={6} className="h-24 text-center">
-                          Nenhum lançamento encontrado para este ponto.
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
+                              </>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  {!isLoadingLogs && filteredLogs.length === 0 && (
+                    <div className="flex h-24 items-center justify-center rounded-md border-2 border-dashed border-muted-foreground/25 text-center text-sm text-muted-foreground">
+                      Nenhum lançamento encontrado para este ponto.
+                    </div>
+                  )}
+                </div>
+                </TooltipProvider>
+                </div>
               </CardContent>
             </Card>
           )}

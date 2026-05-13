@@ -29,14 +29,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Separator } from "@/components/ui/separator";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { Eye, RotateCcw } from "lucide-react";
 import {
   useAuth,
   useCollection,
@@ -162,116 +162,117 @@ export default function DeletedBackupsPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Data/Hora</TableHead>
-                    <TableHead>Coleção</TableHead>
-                    <TableHead>ID origem</TableHead>
-                    <TableHead>Relacionados</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Usuário</TableHead>
-                    <TableHead className="text-right">Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
+              <TooltipProvider>
+                <div className="space-y-4">
                   {isLoading &&
                     Array.from({ length: 6 }).map((_, idx) => (
-                      <TableRow key={`sk-${idx}`}>
-                        <TableCell>
-                          <Skeleton className="h-4 w-36" />
-                        </TableCell>
-                        <TableCell>
-                          <Skeleton className="h-4 w-24" />
-                        </TableCell>
-                        <TableCell>
-                          <Skeleton className="h-4 w-40" />
-                        </TableCell>
-                        <TableCell>
-                          <Skeleton className="h-4 w-20" />
-                        </TableCell>
-                        <TableCell>
-                          <Skeleton className="h-4 w-20" />
-                        </TableCell>
-                        <TableCell>
-                          <Skeleton className="h-4 w-32" />
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Skeleton className="h-8 w-36 ml-auto" />
-                        </TableCell>
-                      </TableRow>
+                      <Skeleton
+                        key={`sk-${idx}`}
+                        className="h-28 w-full rounded-lg"
+                      />
                     ))}
                   {!isLoading &&
                     (backups || []).map((item) => (
-                      <TableRow key={item.id}>
-                        <TableCell className="text-sm text-muted-foreground">
-                          {formatDate(item.deletedAt)}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline">
-                            {item.sourceCollection || "—"}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="font-mono text-xs">
-                          {item.sourceId || "—"}
-                        </TableCell>
-                        <TableCell>{item.relatedCount ?? 0}</TableCell>
-                        <TableCell>
-                          {item.restoredAt ? (
-                            <Badge
-                              className="bg-emerald-500/15 text-emerald-700 border-emerald-500/30"
-                              variant="outline"
-                            >
-                              Restaurado
-                            </Badge>
-                          ) : (
-                            <Badge
-                              className="bg-amber-500/15 text-amber-700 border-amber-500/30"
-                              variant="outline"
-                            >
-                              Pendente
-                            </Badge>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
-                          {item.deletedBy?.name || item.deletedBy?.email || "—"}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex items-center justify-end gap-2">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => setSelected(item)}
-                            >
-                              Ver
-                            </Button>
-                            <Button
-                              size="sm"
-                              onClick={() => setPendingRestore(item)}
-                              disabled={
-                                !!item.restoredAt || restoringId === item.id
-                              }
-                            >
-                              {restoringId === item.id
-                                ? "Restaurando..."
-                                : "Restaurar"}
-                            </Button>
+                      <Card
+                        key={item.id}
+                        className="overflow-hidden border-border/80 shadow-sm transition-shadow hover:shadow-md"
+                      >
+                        <CardContent className="p-4 sm:p-5">
+                          <div className="flex flex-col gap-4">
+                            <div className="min-w-0 space-y-2">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <Badge variant="outline">
+                                  {item.sourceCollection || "—"}
+                                </Badge>
+                                {item.restoredAt ? (
+                                  <Badge
+                                    className="bg-emerald-500/15 text-emerald-700 border-emerald-500/30"
+                                    variant="outline"
+                                  >
+                                    Restaurado
+                                  </Badge>
+                                ) : (
+                                  <Badge
+                                    className="bg-amber-500/15 text-amber-700 border-amber-500/30"
+                                    variant="outline"
+                                  >
+                                    Pendente
+                                  </Badge>
+                                )}
+                              </div>
+                              <p className="text-xs font-mono text-muted-foreground break-all">
+                                {item.sourceId || "—"}
+                              </p>
+                              <p className="text-sm text-muted-foreground">
+                                {formatDate(item.deletedAt)} · Relacionados:{" "}
+                                {item.relatedCount ?? 0} ·{" "}
+                                {item.deletedBy?.name ||
+                                  item.deletedBy?.email ||
+                                  "Usuário —"}
+                              </p>
+                            </div>
+                            <Separator className="bg-border/60" />
+                            <div className="flex flex-wrap items-center gap-1">
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-9 w-9 shrink-0"
+                                    onClick={() => setSelected(item)}
+                                  >
+                                    <Eye className="h-4 w-4" />
+                                    <span className="sr-only">
+                                      Ver detalhes do backup
+                                    </span>
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Ver detalhes</p>
+                                </TooltipContent>
+                              </Tooltip>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-9 w-9 shrink-0"
+                                    onClick={() => setPendingRestore(item)}
+                                    disabled={
+                                      !!item.restoredAt ||
+                                      restoringId === item.id
+                                    }
+                                  >
+                                    <RotateCcw className="h-4 w-4" />
+                                    <span className="sr-only">
+                                      {restoringId === item.id
+                                        ? "Restaurando"
+                                        : "Restaurar dados"}
+                                    </span>
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>
+                                    {restoringId === item.id
+                                      ? "Restaurando…"
+                                      : "Restaurar a partir do backup"}
+                                  </p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </div>
                           </div>
-                        </TableCell>
-                      </TableRow>
+                        </CardContent>
+                      </Card>
                     ))}
                   {!isLoading && (!backups || backups.length === 0) && (
-                    <TableRow>
-                      <TableCell
-                        colSpan={7}
-                        className="h-24 text-center text-muted-foreground"
-                      >
-                        Nenhum backup de exclusão encontrado.
-                      </TableCell>
-                    </TableRow>
+                    <div className="flex h-24 items-center justify-center rounded-md border-2 border-dashed border-muted-foreground/25 text-center text-sm text-muted-foreground">
+                      Nenhum backup de exclusão encontrado.
+                    </div>
                   )}
-                </TableBody>
-              </Table>
+                </div>
+              </TooltipProvider>
             </CardContent>
           </Card>
         </main>

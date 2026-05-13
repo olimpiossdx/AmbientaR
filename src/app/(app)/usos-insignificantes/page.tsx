@@ -10,14 +10,6 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
@@ -81,6 +73,7 @@ import { useToast } from "@/hooks/use-toast";
 import { AttachmentPreviewSection } from "@/components/shared/attachment-preview-section";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
 import { CardSearchInput } from "@/components/card-search-input";
 import { fetchEmpreendedorIdsForRepresentative } from "@/lib/representative-empreendedor-ids";
 import { isClientePortalRole } from "@/lib/role-guards";
@@ -384,212 +377,129 @@ export default function UsosInsignificantesPage() {
             </CardHeader>
             <CardContent>
               <TooltipProvider>
-                <div className="space-y-3 md:hidden">
+                <div className="space-y-4">
                   {isLoading &&
                     Array.from({ length: 4 }).map((_, i) => (
-                      <Card key={i} className="rounded-xl border-border/70 shadow-sm">
-                        <CardContent className="p-4 space-y-2">
-                          <Skeleton className="h-5 w-40" />
-                          <Skeleton className="h-4 w-32" />
-                        </CardContent>
-                      </Card>
+                      <Skeleton key={i} className="h-28 w-full rounded-lg" />
                     ))}
                   {!isLoading &&
                     filteredUsos.map((item) => (
                       <Card
                         key={item.id}
-                        className="rounded-xl border-border/70 shadow-sm"
+                        className="overflow-hidden border-border/80 shadow-sm transition-shadow hover:shadow-md"
                       >
-                        <CardContent className="p-4 space-y-3">
-                          <div className="flex items-start justify-between gap-3">
-                            <div className="min-w-0">
-                              <p className="font-medium truncate">
+                        <CardContent className="p-4 sm:p-5">
+                          <div className="flex flex-col gap-4">
+                            <div className="min-w-0 space-y-2">
+                              <h3 className="text-balance text-base font-semibold leading-snug text-foreground sm:text-lg">
                                 {item.usoType}
+                              </h3>
+                              <p className="text-sm text-muted-foreground">
+                                {empreendedoresMap.get(item.empreendedorId) || "—"} ·{" "}
+                                {projectsMap.get(item.projectId || "") || "—"}
                               </p>
-                              <p className="text-sm text-muted-foreground truncate">
-                                {empreendedoresMap.get(item.empreendedorId) ||
-                                  "—"}
+                              <p className="text-sm text-muted-foreground">
+                                Doc.: {item.permitNumber} · Venc.:{" "}
+                                {formatDate(item.expirationDate)}
                               </p>
+                              <Badge
+                                variant="outline"
+                                className={cn("w-fit", getStatusVariant(item.status))}
+                              >
+                                {item.status}
+                              </Badge>
                             </div>
-                            <Badge
-                              variant="outline"
-                              className={cn(getStatusVariant(item.status))}
-                            >
-                              {item.status}
-                            </Badge>
-                          </div>
-                          <div className="text-sm space-y-1">
-                            <p>
-                              <span className="text-muted-foreground">
-                                Doc.:
-                              </span>{" "}
-                              {item.permitNumber}
-                            </p>
-                            <p>
-                              <span className="text-muted-foreground">
-                                Venc.:
-                              </span>{" "}
-                              {formatDate(item.expirationDate)}
-                            </p>
-                          </div>
-                          <div className="flex flex-wrap gap-1">
-                            {item.fileUrl && (
-                              <Button asChild variant="ghost" size="icon">
-                                <a
-                                  href={item.fileUrl}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                >
-                                  <Paperclip className="h-4 w-4" />
-                                </a>
-                              </Button>
-                            )}
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleView(item)}
-                            >
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                            {canPerformWriteActions(user) && (
-                              <>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => handleEdit(item)}
-                                >
-                                  <Pencil className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="text-destructive hover:text-destructive"
-                                  onClick={() => openDeleteConfirm(item.id)}
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </>
-                            )}
+                            <Separator className="bg-border/60" />
+                            <div className="flex flex-wrap items-center gap-1">
+                              {item.fileUrl && (
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      asChild
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-9 w-9 shrink-0"
+                                    >
+                                      <a
+                                        href={item.fileUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                      >
+                                        <Paperclip className="h-4 w-4" />
+                                        <span className="sr-only">Anexo</span>
+                                      </a>
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Fazer download</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              )}
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-9 w-9 shrink-0"
+                                    type="button"
+                                    onClick={() => handleView(item)}
+                                  >
+                                    <Eye className="h-4 w-4" />
+                                    <span className="sr-only">Ver</span>
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Visualizar</p>
+                                </TooltipContent>
+                              </Tooltip>
+                              {canPerformWriteActions(user) && (
+                                <>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-9 w-9 shrink-0"
+                                        type="button"
+                                        onClick={() => handleEdit(item)}
+                                      >
+                                        <Pencil className="h-4 w-4" />
+                                        <span className="sr-only">Editar</span>
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>Editar</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-9 w-9 shrink-0 text-destructive hover:text-destructive"
+                                        type="button"
+                                        onClick={() => openDeleteConfirm(item.id)}
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                        <span className="sr-only">Apagar</span>
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>Apagar</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </>
+                              )}
+                            </div>
                           </div>
                         </CardContent>
                       </Card>
                     ))}
                   {!isLoading && filteredUsos.length === 0 && (
-                    <div className="h-48 flex items-center justify-center border-2 border-dashed rounded-lg text-sm text-muted-foreground text-center px-4">
+                    <div className="flex min-h-[7rem] items-center justify-center rounded-md border-2 border-dashed border-muted-foreground/25 px-4 text-center text-sm text-muted-foreground">
                       Nenhum registro encontrado. Adicione um novo uso para começar.
                     </div>
                   )}
-                </div>
-
-                <div className="hidden md:block overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Tipo de uso</TableHead>
-                        <TableHead>Empreendedor</TableHead>
-                        <TableHead>Empreendimento</TableHead>
-                        <TableHead className="hidden lg:table-cell">
-                          Nº doc.
-                        </TableHead>
-                        <TableHead className="hidden lg:table-cell">
-                          Vencimento
-                        </TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead className="text-right">Ações</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {isLoading &&
-                        Array.from({ length: 5 }).map((_, i) => (
-                          <TableRow key={i}>
-                            <TableCell colSpan={7}>
-                              <Skeleton className="h-8 w-full" />
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      {!isLoading &&
-                        filteredUsos.map((item) => (
-                          <TableRow key={item.id}>
-                            <TableCell className="font-medium">
-                              {item.usoType}
-                            </TableCell>
-                            <TableCell>
-                              {empreendedoresMap.get(item.empreendedorId) ||
-                                "—"}
-                            </TableCell>
-                            <TableCell>
-                              {projectsMap.get(item.projectId || "") || "—"}
-                            </TableCell>
-                            <TableCell className="hidden lg:table-cell">
-                              {item.permitNumber}
-                            </TableCell>
-                            <TableCell className="hidden lg:table-cell">
-                              {formatDate(item.expirationDate)}
-                            </TableCell>
-                            <TableCell>
-                              <Badge
-                                variant="outline"
-                                className={cn(getStatusVariant(item.status))}
-                              >
-                                {item.status}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <div className="flex justify-end gap-1">
-                                {item.fileUrl && (
-                                  <Button asChild variant="ghost" size="icon">
-                                    <a
-                                      href={item.fileUrl}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                    >
-                                      <Paperclip className="h-4 w-4" />
-                                    </a>
-                                  </Button>
-                                )}
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => handleView(item)}
-                                >
-                                  <Eye className="h-4 w-4" />
-                                </Button>
-                                {canPerformWriteActions(user) && (
-                                  <>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      onClick={() => handleEdit(item)}
-                                    >
-                                      <Pencil className="h-4 w-4" />
-                                    </Button>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      className="text-destructive"
-                                      onClick={() => openDeleteConfirm(item.id)}
-                                    >
-                                      <Trash2 className="h-4 w-4" />
-                                    </Button>
-                                  </>
-                                )}
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      {!isLoading && filteredUsos.length === 0 && (
-                        <TableRow>
-                          <TableCell
-                            colSpan={7}
-                            className="h-24 text-center text-muted-foreground"
-                          >
-                            Nenhum registro encontrado. Use &quot;Adicionar
-                            Uso&quot; para cadastrar.
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
                 </div>
               </TooltipProvider>
             </CardContent>

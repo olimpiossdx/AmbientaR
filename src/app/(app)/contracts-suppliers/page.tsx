@@ -10,14 +10,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import {
   Dialog,
   DialogContent,
@@ -266,98 +265,144 @@ export default function ContractsSuppliersPage() {
               />
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Nº Contrato</TableHead>
-                    <TableHead>Contratante</TableHead>
-                    <TableHead className="hidden lg:table-cell">Prestador</TableHead>
-                    <TableHead className="hidden md:table-cell">Data</TableHead>
-                    <TableHead className="hidden md:table-cell">Valor</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
+              <TooltipProvider>
+                <div className="space-y-4">
                   {isLoading &&
                     Array.from({ length: 4 }).map((_, i) => (
-                      <TableRow key={i}>
-                        <TableCell colSpan={7}>
-                          <Skeleton className="h-8 w-full" />
-                        </TableCell>
-                      </TableRow>
+                      <Skeleton key={i} className="h-28 w-full rounded-lg" />
                     ))}
                   {!isLoading &&
                     draftContracts.map((item) => (
-                      <TableRow key={item.id}>
-                        <TableCell className="font-medium">{item.contractNumber}</TableCell>
-                        <TableCell>{item.contratante?.nome}</TableCell>
-                        <TableCell className="hidden lg:table-cell">{item.prestador?.nome}</TableCell>
-                        <TableCell className="hidden md:table-cell">
-                          {new Date(item.dataContrato).toLocaleDateString("pt-BR")}
-                        </TableCell>
-                        <TableCell className="hidden md:table-cell">
-                          {Number(item.pagamento?.valorTotal || 0).toLocaleString("pt-BR", {
-                            style: "currency",
-                            currency: "BRL",
-                          })}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline">{item.status}</Badge>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-1">
-                            <Button variant="ghost" size="icon" onClick={() => openView(item)}>
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleExportPdf(item)}
-                            >
-                              <Download className="h-4 w-4" />
-                            </Button>
-                            {canWrite(user) && (
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleApprove(item.id)}
-                              >
-                                <CheckCircle className="h-4 w-4 text-green-600" />
-                              </Button>
-                            )}
-                            {canWrite(user) && (
-                              <>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => openEdit(item)}
-                                >
-                                  <Pencil className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="text-destructive hover:text-destructive"
-                                  onClick={() => openDelete(item.id)}
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </>
-                            )}
+                      <Card
+                        key={item.id}
+                        className="overflow-hidden border-border/80 shadow-sm transition-shadow hover:shadow-md"
+                      >
+                        <CardContent className="p-4 sm:p-5">
+                          <div className="flex flex-col gap-4">
+                            <div className="min-w-0 space-y-2">
+                              <h3 className="text-balance text-base font-semibold leading-snug text-foreground sm:text-lg">
+                                {item.contractNumber}
+                              </h3>
+                              <p className="text-sm text-muted-foreground">
+                                {item.contratante?.nome ?? "—"}
+                                {item.prestador?.nome ? ` · ${item.prestador.nome}` : ""}
+                              </p>
+                              <p className="text-sm text-muted-foreground">
+                                {new Date(item.dataContrato).toLocaleDateString("pt-BR")} ·{" "}
+                                {Number(item.pagamento?.valorTotal || 0).toLocaleString("pt-BR", {
+                                  style: "currency",
+                                  currency: "BRL",
+                                })}
+                              </p>
+                              <Badge variant="outline" className="w-fit">
+                                {item.status}
+                              </Badge>
+                            </div>
+                            <Separator className="bg-border/60" />
+                            <div className="flex flex-wrap items-center gap-1">
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-9 w-9 shrink-0"
+                                    type="button"
+                                    onClick={() => openView(item)}
+                                  >
+                                    <Eye className="h-4 w-4" />
+                                    <span className="sr-only">Ver</span>
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Ver detalhes</p>
+                                </TooltipContent>
+                              </Tooltip>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-9 w-9 shrink-0"
+                                    type="button"
+                                    onClick={() => handleExportPdf(item)}
+                                  >
+                                    <Download className="h-4 w-4" />
+                                    <span className="sr-only">PDF</span>
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Gerar PDF</p>
+                                </TooltipContent>
+                              </Tooltip>
+                              {canWrite(user) && (
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-9 w-9 shrink-0"
+                                      type="button"
+                                      onClick={() => handleApprove(item.id)}
+                                    >
+                                      <CheckCircle className="h-4 w-4 text-green-600" />
+                                      <span className="sr-only">Aprovar</span>
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Aprovar contrato</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              )}
+                              {canWrite(user) && (
+                                <>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-9 w-9 shrink-0"
+                                        type="button"
+                                        onClick={() => openEdit(item)}
+                                      >
+                                        <Pencil className="h-4 w-4" />
+                                        <span className="sr-only">Editar</span>
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>Editar</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-9 w-9 shrink-0 text-destructive hover:text-destructive"
+                                        type="button"
+                                        onClick={() => openDelete(item.id)}
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                        <span className="sr-only">Apagar</span>
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>Apagar</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </>
+                              )}
+                            </div>
                           </div>
-                        </TableCell>
-                      </TableRow>
+                        </CardContent>
+                      </Card>
                     ))}
                   {!isLoading && draftContracts.length === 0 && (
-                    <TableRow>
-                      <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
-                        Nenhum contrato em gerenciamento para o filtro atual.
-                      </TableCell>
-                    </TableRow>
+                    <div className="flex h-24 items-center justify-center rounded-md border-2 border-dashed border-muted-foreground/25 text-center text-sm text-muted-foreground">
+                      Nenhum contrato em gerenciamento para o filtro atual.
+                    </div>
                   )}
-                </TableBody>
-              </Table>
+                </div>
+              </TooltipProvider>
             </CardContent>
           </Card>
 
@@ -369,87 +414,139 @@ export default function ContractsSuppliersPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Nº Contrato</TableHead>
-                    <TableHead>Contratante</TableHead>
-                    <TableHead className="hidden lg:table-cell">Prestador</TableHead>
-                    <TableHead className="hidden md:table-cell">Data</TableHead>
-                    <TableHead className="hidden md:table-cell">Valor</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
+              <TooltipProvider>
+                <div className="space-y-4">
+                  {isLoading &&
+                    Array.from({ length: 3 }).map((_, i) => (
+                      <Skeleton key={i} className="h-28 w-full rounded-lg" />
+                    ))}
                   {!isLoading &&
                     approvedContracts.map((item) => (
-                      <TableRow key={item.id}>
-                        <TableCell className="font-medium">{item.contractNumber}</TableCell>
-                        <TableCell>{item.contratante?.nome}</TableCell>
-                        <TableCell className="hidden lg:table-cell">{item.prestador?.nome}</TableCell>
-                        <TableCell className="hidden md:table-cell">
-                          {new Date(item.dataContrato).toLocaleDateString("pt-BR")}
-                        </TableCell>
-                        <TableCell className="hidden md:table-cell">
-                          {Number(item.pagamento?.valorTotal || 0).toLocaleString("pt-BR", {
-                            style: "currency",
-                            currency: "BRL",
-                          })}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline">{item.status}</Badge>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-1">
-                            <Button variant="ghost" size="icon" onClick={() => openView(item)}>
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleExportPdf(item)}
-                            >
-                              <Download className="h-4 w-4" />
-                            </Button>
-                            {item.fileUrl ? (
-                              <Button asChild variant="ghost" size="icon">
-                                <a href={item.fileUrl} target="_blank" rel="noopener noreferrer">
-                                  <Download className="h-4 w-4 text-blue-600" />
-                                </a>
-                              </Button>
-                            ) : canWrite(user) ? (
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => openUpload(item)}
-                              >
-                                <Upload className="h-4 w-4" />
-                              </Button>
-                            ) : null}
-                            {canWrite(user) && (
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="text-destructive hover:text-destructive"
-                                onClick={() => openDelete(item.id)}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            )}
+                      <Card
+                        key={item.id}
+                        className="overflow-hidden border-border/80 shadow-sm transition-shadow hover:shadow-md"
+                      >
+                        <CardContent className="p-4 sm:p-5">
+                          <div className="flex flex-col gap-4">
+                            <div className="min-w-0 space-y-2">
+                              <h3 className="text-balance text-base font-semibold leading-snug text-foreground sm:text-lg">
+                                {item.contractNumber}
+                              </h3>
+                              <p className="text-sm text-muted-foreground">
+                                {item.contratante?.nome ?? "—"}
+                                {item.prestador?.nome ? ` · ${item.prestador.nome}` : ""}
+                              </p>
+                              <p className="text-sm text-muted-foreground">
+                                {new Date(item.dataContrato).toLocaleDateString("pt-BR")} ·{" "}
+                                {Number(item.pagamento?.valorTotal || 0).toLocaleString("pt-BR", {
+                                  style: "currency",
+                                  currency: "BRL",
+                                })}
+                              </p>
+                              <Badge variant="outline" className="w-fit">
+                                {item.status}
+                              </Badge>
+                            </div>
+                            <Separator className="bg-border/60" />
+                            <div className="flex flex-wrap items-center gap-1">
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-9 w-9 shrink-0"
+                                    type="button"
+                                    onClick={() => openView(item)}
+                                  >
+                                    <Eye className="h-4 w-4" />
+                                    <span className="sr-only">Ver</span>
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Ver detalhes</p>
+                                </TooltipContent>
+                              </Tooltip>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-9 w-9 shrink-0"
+                                    type="button"
+                                    onClick={() => handleExportPdf(item)}
+                                  >
+                                    <Download className="h-4 w-4" />
+                                    <span className="sr-only">PDF</span>
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Gerar PDF</p>
+                                </TooltipContent>
+                              </Tooltip>
+                              {item.fileUrl ? (
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button asChild variant="ghost" size="icon" className="h-9 w-9 shrink-0">
+                                      <a href={item.fileUrl} target="_blank" rel="noopener noreferrer">
+                                        <Download className="h-4 w-4 text-blue-600" />
+                                        <span className="sr-only">Anexo assinado</span>
+                                      </a>
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Abrir contrato assinado</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              ) : canWrite(user) ? (
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-9 w-9 shrink-0"
+                                      type="button"
+                                      onClick={() => openUpload(item)}
+                                    >
+                                      <Upload className="h-4 w-4" />
+                                      <span className="sr-only">Enviar assinado</span>
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Enviar PDF assinado</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              ) : null}
+                              {canWrite(user) && (
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-9 w-9 shrink-0 text-destructive hover:text-destructive"
+                                      type="button"
+                                      onClick={() => openDelete(item.id)}
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                      <span className="sr-only">Apagar</span>
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Apagar</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              )}
+                            </div>
                           </div>
-                        </TableCell>
-                      </TableRow>
+                        </CardContent>
+                      </Card>
                     ))}
                   {!isLoading && approvedContracts.length === 0 && (
-                    <TableRow>
-                      <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
-                        Nenhum contrato finalizado para o filtro atual.
-                      </TableCell>
-                    </TableRow>
+                    <div className="flex h-24 items-center justify-center rounded-md border-2 border-dashed border-muted-foreground/25 text-center text-sm text-muted-foreground">
+                      Nenhum contrato finalizado para o filtro atual.
+                    </div>
                   )}
-                </TableBody>
-              </Table>
+                </div>
+              </TooltipProvider>
             </CardContent>
           </Card>
         </main>

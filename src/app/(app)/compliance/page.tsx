@@ -9,14 +9,7 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Separator } from "@/components/ui/separator";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -672,45 +665,33 @@ export default function CompliancePage() {
   const getStatusVariant = (status: Condicionante["status"]) =>
     condicionanteStatusBadgeClass[status];
 
-  const renderConditionantesTable = (items: Condicionante[]) => (
+  const renderConditionantesList = (items: Condicionante[]) => (
     <TooltipProvider>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="w-2/5">Descrição</TableHead>
-            <TableHead>Vencimento</TableHead>
-            <TableHead>Recorrência</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead className="w-12">Anexo</TableHead>
-            {canPerformWriteActions(user) && (
-              <TableHead>
-                <span className="sr-only">Ações</span>
-              </TableHead>
-            )}
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {items.map((item) => (
-            <TableRow key={item.id}>
-              <TableCell className="font-medium max-w-xs truncate">
-                {item.description}
-              </TableCell>
-              <TableCell className="text-muted-foreground">
-                {formatDate(item.dueDate ?? "")}
-              </TableCell>
-              <TableCell className="text-muted-foreground">
-                {item.recurrence ?? "—"}
-              </TableCell>
-              <TableCell>
-                <Badge
-                  variant={"outline"}
-                  className={cn(getStatusVariant(item.status))}
-                >
-                  {item.status ?? "—"}
-                </Badge>
-              </TableCell>
-              <TableCell>
-                <div className="flex items-center gap-1 flex-wrap">
+      <div className="space-y-4">
+        {items.map((item) => (
+          <Card
+            key={item.id}
+            className="overflow-hidden border-border/80 shadow-sm transition-shadow hover:shadow-md"
+          >
+            <CardContent className="p-4 sm:p-5">
+              <div className="flex flex-col gap-4">
+                <div className="min-w-0 space-y-2">
+                  <h3 className="text-balance text-base font-semibold leading-snug text-foreground sm:text-lg line-clamp-3">
+                    {item.description}
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    Vencimento: {formatDate(item.dueDate ?? "")} · Recorrência:{" "}
+                    {item.recurrence ?? "—"}
+                  </p>
+                  <Badge
+                    variant="outline"
+                    className={cn("w-fit", getStatusVariant(item.status))}
+                  >
+                    {item.status ?? "—"}
+                  </Badge>
+                </div>
+                <Separator className="bg-border/60" />
+                <div className="flex flex-wrap items-center gap-1">
                   <RecordViewDialog
                     title="Condicionante"
                     description="Visualização sem edição."
@@ -754,7 +735,12 @@ export default function CompliancePage() {
                   {item.fileUrl ? (
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <Button asChild variant="ghost" size="icon">
+                        <Button
+                          asChild
+                          variant="ghost"
+                          size="icon"
+                          className="h-9 w-9 shrink-0"
+                        >
                           <a
                             href={item.fileUrl}
                             target="_blank"
@@ -771,51 +757,52 @@ export default function CompliancePage() {
                       </TooltipContent>
                     </Tooltip>
                   ) : (
-                    <span className="text-muted-foreground text-xs">—</span>
+                    <span className="text-xs text-muted-foreground px-1">—</span>
+                  )}
+                  {canPerformWriteActions(user) && (
+                    <>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            aria-label="Editar condicionante"
+                            size="icon"
+                            variant="ghost"
+                            className="h-9 w-9 shrink-0"
+                            type="button"
+                            onClick={() => handleEdit(item)}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Editar condicionante</p>
+                        </TooltipContent>
+                      </Tooltip>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            aria-label="Excluir condicionante"
+                            size="icon"
+                            variant="ghost"
+                            className="h-9 w-9 shrink-0 text-destructive hover:text-destructive"
+                            type="button"
+                            onClick={() => openDeleteConfirm(item.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Excluir condicionante (com backup)</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </>
                   )}
                 </div>
-              </TableCell>
-              {canPerformWriteActions(user) && (
-                <TableCell>
-                  <div className="flex items-center gap-1">
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          aria-label="Editar condicionante"
-                          size="icon"
-                          variant="ghost"
-                          onClick={() => handleEdit(item)}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Editar condicionante</p>
-                      </TooltipContent>
-                    </Tooltip>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          aria-label="Excluir condicionante"
-                          size="icon"
-                          variant="ghost"
-                          className="text-destructive hover:text-destructive"
-                          onClick={() => openDeleteConfirm(item.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Excluir condicionante (com backup)</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </div>
-                </TableCell>
-              )}
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
     </TooltipProvider>
   );
 
@@ -836,7 +823,7 @@ export default function CompliancePage() {
         {isLoading ? (
           <Skeleton className="h-40 w-full" />
         ) : (
-          renderConditionantesTable(filteredCondicionantes)
+          renderConditionantesList(filteredCondicionantes)
         )}
         {!isLoading && filteredCondicionantes.length === 0 && (
           <div className="h-24 text-center flex items-center justify-center border-2 border-dashed rounded-md">
@@ -904,7 +891,7 @@ export default function CompliancePage() {
                       </div>
                     </AccordionTrigger>
                     <AccordionContent>
-                      {renderConditionantesTable(items)}
+                      {renderConditionantesList(items)}
                     </AccordionContent>
                   </AccordionItem>
                 );
@@ -950,7 +937,7 @@ export default function CompliancePage() {
                       </div>
                     </AccordionTrigger>
                     <AccordionContent>
-                      {renderConditionantesTable(items)}
+                      {renderConditionantesList(items)}
                     </AccordionContent>
                   </AccordionItem>
                 );
@@ -998,7 +985,7 @@ export default function CompliancePage() {
                         </div>
                       </AccordionTrigger>
                       <AccordionContent>
-                        {renderConditionantesTable(items)}
+                        {renderConditionantesList(items)}
                       </AccordionContent>
                     </AccordionItem>
                   );
