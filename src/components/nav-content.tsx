@@ -45,9 +45,27 @@ function estimateMenuLabelsWidthPx(items: NavItem[], userRole: UserRole): number
   return Math.ceil(max);
 }
 
+function useLocationHash(): string {
+  return React.useSyncExternalStore(
+    (onChange) => {
+      if (typeof window === "undefined") return () => {};
+      const handler = () => onChange();
+      window.addEventListener("hashchange", handler);
+      window.addEventListener("popstate", handler);
+      return () => {
+        window.removeEventListener("hashchange", handler);
+        window.removeEventListener("popstate", handler);
+      };
+    },
+    () => (typeof window !== "undefined" ? window.location.hash : ""),
+    () => "",
+  );
+}
+
 function NavContentInner() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const locationHash = useLocationHash();
   const { user } = useAuth();
   const [navItems, setNavItems] = React.useState<NavItem[]>([]);
   const { isMobile, open, setOpenMobile, setDesktopSidebarWidth } = useSidebar();
@@ -63,18 +81,12 @@ function NavContentInner() {
     if (user) {
       const userRole = user.role;
 
-      const sortByLabel = <T extends { label: string }>(items: T[]): T[] =>
-        [...items].sort((a, b) =>
-          a.label.localeCompare(b.label, "pt-BR", { sensitivity: "base" }),
-        );
-
-      const filterItemsByRole = (items: (NavItem | NavSubItem)[], depth = 0): any[] => {
-          const itemsToProcess = depth === 0 ? items : sortByLabel(items as any[]);
-          return itemsToProcess
+      const filterItemsByRole = (items: (NavItem | NavSubItem)[]): any[] => {
+          return items
             .filter(item => !item.roles || item.roles.includes(userRole))
             .map(item => {
               if ('subItems' in item && item.subItems) {
-                  const filteredSubItems = filterItemsByRole(item.subItems, depth + 1);
+                  const filteredSubItems = filterItemsByRole(item.subItems);
                   if (filteredSubItems.length === 0 && !item.href) {
                       return null;
                   }
@@ -114,11 +126,18 @@ function NavContentInner() {
       if (href.startsWith("/external")) return false;
       if (href === "/") return (pathname ?? "") === "/";
 
-      const [pathPart, queryPart] = href.split("?");
+      const [beforeQuery, queryPart] = href.split("?", 2);
+      const hashIdx = beforeQuery.indexOf("#");
+      const pathPart =
+        hashIdx >= 0 ? beforeQuery.slice(0, hashIdx) : beforeQuery;
+      const hashFromHref =
+        hashIdx >= 0 ? beforeQuery.slice(hashIdx) : null;
+
       const pathMatches =
         (pathname ?? "") === pathPart ||
         (pathname ?? "").startsWith(`${pathPart}/`);
       if (!pathMatches) return false;
+      if (hashFromHref && locationHash !== hashFromHref) return false;
       if (!queryPart) return true;
 
       const required = new URLSearchParams(queryPart);
@@ -127,7 +146,7 @@ function NavContentInner() {
       }
       return true;
     },
-    [pathname, searchParams],
+    [pathname, searchParams, locationHash],
   );
 
   const hasActiveDescendant = React.useCallback(
@@ -140,9 +159,38 @@ function NavContentInner() {
     [isPathMatch],
   );
 
+  /** Entre irmãos (ex.: `/crm` vs `/crm/clients`), só o prefixo mais longo deve ficar ativo — espelha a lógica de `route-access`. */
+  const pickLongestActiveSubHref = React.useCallback(
+    (items: NavSubItem[]): string | null => {
+      const hrefs: string[] = [];
+      const walk = (list: NavSubItem[]) => {
+        for (const it of list) {
+          if (it.href && !it.href.startsWith("/external")) hrefs.push(it.href);
+          if (it.subItems?.length) walk(it.subItems);
+        }
+      };
+      walk(items);
+      let best: string | null = null;
+      let bestLen = -1;
+      for (const h of hrefs) {
+        if (!isPathMatch(h)) continue;
+        const pathPart = h.split("?")[0];
+        if (pathPart.length > bestLen) {
+          bestLen = pathPart.length;
+          best = h;
+        }
+      }
+      return best;
+    },
+    [isPathMatch],
+  );
+
   function renderSubItems(subItems: NavSubItem[], pathname: string, userRole: UserRole) {
-      return subItems
-        .filter(subItem => !subItem.roles || subItem.roles.includes(userRole))
+      const visible = subItems.filter(
+        (subItem) => !subItem.roles || subItem.roles.includes(userRole),
+      );
+      const activeExclusiveHref = pickLongestActiveSubHref(visible);
+      return visible
         .map((subItem) => {
 
         if (subItem.subItems && subItem.subItems.length > 0) {
@@ -152,10 +200,13 @@ function NavContentInner() {
           }
 
           return (
-            <SidebarMenuItem key={`${subItem.label}-group`} className="w-full">
+            <SidebarMenuItem
+              key={subItem.label}
+              className="w-full"
+            >
               <Collapsible defaultOpen={hasActiveDescendant(subItem.subItems)}>
                   <CollapsibleTrigger asChild>
-                      <SidebarMenuButton>
+                      <SidebarMenuButton className="group">
                           {subItem.icon && <subItem.icon />}
                           <span>{subItem.label}</span>
                           <ChevronDown className="ml-auto h-4 w-4 shrink-0 transition-transform group-data-[state=open]:rotate-180" />
@@ -174,9 +225,13 @@ function NavContentInner() {
         const href = subItem.href || '#';
         const linkProps = subItem.external ? { href: href, target: "_blank", rel: "noopener noreferrer" } : { href: href };
 
+        const isLeafActive =
+          Boolean(subItem.href) &&
+          activeExclusiveHref !== null &&
+          subItem.href === activeExclusiveHref;
 
         return (
-          <SidebarMenuSubButton key={`${href}-${subItem.label}`} asChild isActive={isPathMatch(href)} onClick={handleLinkClick}>
+          <SidebarMenuSubButton key={`${href}-${subItem.label}`} asChild isActive={isLeafActive} onClick={handleLinkClick}>
              <Link {...linkProps}>
               {subItem.icon && <subItem.icon />}
               <span>{subItem.label}</span>
@@ -269,12 +324,13 @@ function NavContentInner() {
 
   return (
       <SidebarMenu ref={menuRef}>
-        {navItems.map((item, index) => (
-          <SidebarMenuItem key={index} className="w-full">
+        {navItems.map((item) => {
+          return (
+          <SidebarMenuItem key={item.label} className="w-full">
             {item.subItems && item.subItems.length > 0 ? (
               <Collapsible defaultOpen={hasActiveDescendant(item.subItems)}>
                 <CollapsibleTrigger asChild>
-                  <SidebarMenuButton>
+                  <SidebarMenuButton className="group">
                     <item.icon />
                     <span>{item.label}</span>
                     <ChevronDown className="ml-auto h-4 w-4 shrink-0 transition-transform group-data-[state=open]:rotate-180" />
@@ -302,7 +358,8 @@ function NavContentInner() {
               </SidebarMenuButton>
             ) : null}
           </SidebarMenuItem>
-        ))}
+          );
+        })}
       </SidebarMenu>
   );
 }

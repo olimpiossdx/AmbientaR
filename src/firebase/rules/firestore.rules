@@ -230,6 +230,15 @@ service cloud.firestore {
     function isSignedIn() {
       return request.auth != null;
     }
+
+    /** Perfis com acesso ao menu Elaboração de Estudos (Mapas / export jobs). */
+    function canStudyMapsRole() {
+      let role = getRole();
+      return isSignedIn() && (
+        role == 'admin' || role == 'technical' || role == 'gestor' ||
+        role == 'supervisor' || role == 'diretor_fauna' || role == 'advogado'
+      );
+    }
     
     /**
      * @description Checks if the user is authorized to perform technical inspections.
@@ -497,11 +506,11 @@ service cloud.firestore {
 
     /**
      * @description Processo interno de defesa de auto de infração.
-     * Restrito ao perfil administrador.
+     * Administrador e advogado (elaboração/gestão da defesa).
      * @path /databases/{database}/documents/autoInfracaoDefesas/{defesaId}
      */
     match /autoInfracaoDefesas/{defesaId} {
-      allow read, write: if isAdmin();
+      allow read, write: if isAdmin() || (isSignedIn() && getRole() == 'advogado');
     }
     
     /**
@@ -820,6 +829,15 @@ service cloud.firestore {
      */
     match /ai_lab_reports/{reportId} {
       allow read, write: if isAdmin();
+    }
+
+    /**
+     * @description Jobs de exportação Mapas (metadados; escrita via Admin SDK).
+     * Leitura só do próprio utilizador com perfil de estudos.
+     */
+    match /study_map_export_jobs/{jobId} {
+      allow read: if canStudyMapsRole() && resource.data.uid == request.auth.uid;
+      allow create, update, delete: if false;
     }
 
     /**

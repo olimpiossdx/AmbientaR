@@ -73,3 +73,37 @@ export function isRoleAllowedForPath(role: UserRole, pathname: string): boolean 
   return allowed.includes(role);
 }
 
+/**
+ * Rotas do menu "Autorizações/Relatórios" (espelha `navigation-config`).
+ * Ordem = preferência do atalho mobile (primeiro path a que o papel tem acesso).
+ */
+export const AUTORIZACOES_RELATORIOS_MOBILE_HREF_ORDER = [
+  '/licenses',
+  '/outorgas',
+  '/usos-insignificantes',
+  '/intervencoes',
+  '/compliance',
+  '/car',
+  '/monitoring/manual',
+  '/monitoring/telemetric',
+  '/fauna',
+  '/inspections/reports',
+] as const;
+
+export function isAutorizacoesRelatoriosNavPath(pathname: string): boolean {
+  const p = normalizePathname(pathname);
+  for (const base of AUTORIZACOES_RELATORIOS_MOBILE_HREF_ORDER) {
+    const b = normalizePathname(base);
+    if (p === b || p.startsWith(`${b}/`)) return true;
+  }
+  return false;
+}
+
+/** Primeiro destino do grupo a que o papel pode aceder (atalho mobile). */
+export function getFirstAutorizacoesRelatoriosHrefForRole(role: UserRole): string | null {
+  for (const href of AUTORIZACOES_RELATORIOS_MOBILE_HREF_ORDER) {
+    if (isRoleAllowedForPath(role, href)) return href;
+  }
+  return null;
+}
+

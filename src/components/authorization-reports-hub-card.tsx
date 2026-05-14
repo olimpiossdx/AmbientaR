@@ -42,9 +42,7 @@ export function AuthorizationReportsHubCard({ role }: { role: AppUser["role"] })
   const authGroup = allNavItems.find((item) => item.label === "Autorizações/Relatórios");
   if (!authGroup?.subItems) return null;
 
-  const links = flattenLinks(authGroup.subItems, role).sort((a, b) =>
-    a.label.localeCompare(b.label, "pt-BR", { sensitivity: "base" }),
-  );
+  const links = flattenLinks(authGroup.subItems, role);
   if (links.length === 0) return null;
 
   return (

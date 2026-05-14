@@ -24,12 +24,6 @@ function isAllowedForRole(
   return !item.roles || item.roles.includes(role);
 }
 
-function sortByLabel<T extends { label: string }>(items: T[]): T[] {
-  return [...items].sort((a, b) =>
-    a.label.localeCompare(b.label, "pt-BR", { sensitivity: "base" }),
-  );
-}
-
 function flattenLinks(
   items: (NavItem | NavSubItem)[],
   role: AppUser["role"],
@@ -37,7 +31,7 @@ function flattenLinks(
 ): NavigationHubLink[] {
   const links: NavigationHubLink[] = [];
 
-  for (const item of sortByLabel(items)) {
+  for (const item of items) {
     if (!isAllowedForRole(item, role)) continue;
 
     if (item.href && item.href !== "/") {

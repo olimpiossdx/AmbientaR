@@ -3,7 +3,7 @@
 import * as React from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { PageHeader } from "@/components/page-header";
+import { StudyGeospatialSplitShell } from "@/components/studies/study-geospatial-split-shell";
 import {
   Card,
   CardContent,
@@ -12,7 +12,15 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, Sparkles, Globe, FileDown, Database, Share2 } from "lucide-react";
+import {
+  Loader2,
+  Sparkles,
+  Globe,
+  FileDown,
+  Database,
+  Share2,
+  ChevronDown,
+} from "lucide-react";
 import type {
   AnaliseAmbientalOutput,
   AnaliseAmbientalInput,
@@ -25,6 +33,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useFirebase } from "@/firebase";
 import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { handleAnalyseArea } from "./actions";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 
 const LeafletMap = dynamic(() => import("./leaflet-map"), { ssr: false });
 
@@ -66,9 +79,6 @@ export default function AnaliseAmbientalPage() {
   const [polygonInput, setPolygonInput] = React.useState("");
   const [drawnPolygon, setDrawnPolygon] = React.useState<GeoJSONLike | null>(null);
   const [lastPayload, setLastPayload] = React.useState("");
-  const [iframeError, setIframeError] = React.useState(false);
-  const [iframeLoading, setIframeLoading] = React.useState(true);
-  const [iframeKey, setIframeKey] = React.useState(0);
   const { toast } = useToast();
 
   const hasValidInput = React.useMemo(() => {
@@ -366,83 +376,26 @@ export default function AnaliseAmbientalPage() {
   };
 
   return (
-    <div className="flex h-full min-w-0 flex-col overflow-hidden">
-      <PageHeader title="Análise Ambiental Geoespacial com IA" />
-      <main className="mx-auto flex w-full max-w-5xl min-w-0 flex-1 flex-col gap-6 overflow-auto p-4 md:p-6">
-        {/* 1. Geovizualizador - card maior */}
-        <Card className="flex min-w-0 flex-col overflow-hidden">
-          <CardHeader>
-            <CardTitle>Geovizualizador IDE-SisemaNet</CardTitle>
-            <CardDescription>
-              Use o mapa para explorar, localizar imóvel pelo CAR ou desenhar
-              polígono. Copie os dados (número CAR, coordenadas, etc.) e cole no
-              card &quot;Iniciar Análise com IA&quot; abaixo — esses dados serão
-              enviados para a análise geoespacial com IA.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="min-h-[60dvh] flex-1 p-0">
-            {iframeError ? (
-              <div className="flex h-[60dvh] min-h-[420px] flex-col items-center justify-center px-6 text-center md:h-[62vh]">
-                <p className="text-sm font-medium text-destructive mb-2">
-                  Não foi possível carregar o Geovizualizador.
-                </p>
-                <p className="text-xs text-muted-foreground mb-4">
-                  Se o serviço estiver fora do ar, tente novamente em instantes
-                  ou faça a análise pelo texto/manualmente.
-                </p>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    setIframeError(false);
-                    setIframeLoading(true);
-                    setIframeKey((k) => k + 1);
-                  }}
-                >
-                  Tentar novamente
-                </Button>
-              </div>
-            ) : (
-              <div className="relative h-[60dvh] min-h-[420px] w-full max-w-full md:h-[62vh]">
-                {iframeLoading && (
-                  <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/70">
-                    <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                      <Loader2 className="h-6 w-6 animate-spin" />
-                      <p className="text-sm">Carregando Geovizualizador...</p>
-                    </div>
-                  </div>
-                )}
-                <iframe
-                  key={iframeKey}
-                  src="https://visualizador.idesisema.meioambiente.mg.gov.br/"
-                  className="h-[60dvh] min-h-[420px] w-full max-w-full rounded-b-lg border-0 md:h-[62vh]"
-                  title="IDE-SisemaNet Geoviewer"
-                  onLoad={() => {
-                    setIframeLoading(false);
-                    setIframeError(false);
-                  }}
-                  onError={() => {
-                    setIframeLoading(false);
-                    setIframeError(true);
-                  }}
-                />
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
+    <StudyGeospatialSplitShell
+      title="Análise Geoespacial (IA)"
+      description="À esquerda, desenhe ou capture no mapa; à direita, escolha CAR, coordenadas ou polígono, execute a análise com IA e exporte PDF, CSV ou GeoJSON."
+      mapPane={
+        <Card className="flex h-full min-h-[420px] min-w-0 flex-1 flex-col overflow-hidden md:min-h-0">
+          <CardHeader className="shrink-0 space-y-1 pb-3">
             <CardTitle>Captura por coordenada/polígono</CardTitle>
             <CardDescription>
-              Desenhe um polígono para usar na análise ou capture coordenadas automáticas.
+              Desenhe o perímetro no mapa (mesmo basemap que Mapas) ou use as
+              ações abaixo; em seguida confira o modo de entrada na coluna à
+              direita.
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="h-[320px] overflow-hidden rounded-md border">
-              <LeafletMap polygon={drawnPolygon} onPolygonCreated={setDrawnPolygon} />
+          <CardContent className="flex flex-1 flex-col gap-4 pt-0 min-h-0">
+            <div className="relative min-h-[280px] flex-1 basis-0">
+              <div className="absolute inset-0 overflow-hidden rounded-md border">
+                <LeafletMap polygon={drawnPolygon} onPolygonCreated={setDrawnPolygon} />
+              </div>
             </div>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex shrink-0 flex-wrap gap-2">
               <Button type="button" variant="outline" onClick={handleUseCurrentCoordinates}>
                 Capturar coordenada atual
               </Button>
@@ -460,191 +413,233 @@ export default function AnaliseAmbientalPage() {
             </div>
           </CardContent>
         </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Iniciar Análise com IA</CardTitle>
-            <CardDescription>
-              Selecione o tipo de entrada e inicie a análise geoespacial com base em dados públicos.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="input-mode">Modo de entrada</Label>
-              <Select
-                value={inputMode}
-                onValueChange={(value) => setInputMode(value as InputMode)}
-              >
-                <SelectTrigger id="input-mode">
-                  <SelectValue placeholder="Selecione" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="car">Número do CAR</SelectItem>
-                  <SelectItem value="coordinates">Coordenadas</SelectItem>
-                  <SelectItem value="polygon">Polígono (WKT/GeoJSON)</SelectItem>
-                </SelectContent>
-              </Select>
+      }
+      sidebar={
+        <>
+          <Collapsible defaultOpen={false} className="group rounded-lg border bg-card shadow-sm">
+            <div className="flex items-center gap-2 px-3 py-2">
+              <CollapsibleTrigger asChild>
+                <Button type="button" variant="ghost" size="sm" className="h-8 shrink-0 px-2">
+                  <ChevronDown className="h-4 w-4 shrink-0 transition-transform duration-200 group-data-[state=open]:rotate-180" />
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleTrigger asChild>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="h-auto flex-1 justify-start px-0 py-1 text-left font-normal hover:bg-transparent"
+                >
+                  <span className="text-sm font-medium leading-tight">
+                    Como usar esta página
+                  </span>
+                </Button>
+              </CollapsibleTrigger>
             </div>
+            <CollapsibleContent className="space-y-2 border-t px-3 py-3 text-xs leading-relaxed text-muted-foreground">
+              <p>
+                Use o mapa à esquerda para desenhar ou capturar coordenadas;
+                escolha o modo (CAR, coordenadas ou polígono) nos cartões ao lado
+                e gere o relatório com IA. Os dados indicados são enviados à
+                análise — copie do portal público e cole nos campos, se
+                precisar.
+              </p>
+              <p>
+                Para o visualizador oficial de camadas do Sisema-MG, abra{" "}
+                <Link
+                  href="/studies/ide-sisemanet"
+                  className="font-medium text-primary underline-offset-4 hover:underline"
+                >
+                  IDE-SisemaNet
+                </Link>{" "}
+                em Elaboração de estudos.
+              </p>
+            </CollapsibleContent>
+          </Collapsible>
 
-            {inputMode === "car" && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Iniciar Análise com IA</CardTitle>
+              <CardDescription>
+                Selecione o tipo de entrada e inicie a análise geoespacial com base em dados públicos.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="car-input">Número do CAR</Label>
-                <Input
-                  id="car-input"
-                  placeholder="Ex: MG-3106200-1234.ABCD.EF12.3456.7890.ABCD.EF12.3456"
-                  value={carNumber}
-                  onChange={(e) => setCarNumber(e.target.value)}
-                />
+                <Label htmlFor="input-mode">Modo de entrada</Label>
+                <Select
+                  value={inputMode}
+                  onValueChange={(value) => setInputMode(value as InputMode)}
+                >
+                  <SelectTrigger id="input-mode">
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="car">Número do CAR</SelectItem>
+                    <SelectItem value="coordinates">Coordenadas</SelectItem>
+                    <SelectItem value="polygon">Polígono (WKT/GeoJSON)</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-            )}
 
-            {inputMode === "coordinates" && (
-              <div className="space-y-2">
-                <Label htmlFor="coords-input">Coordenadas (lat, lng)</Label>
-                <Input
-                  id="coords-input"
-                  placeholder="Ex: -19.922731, -43.945095"
-                  value={coordinateInput}
-                  onChange={(e) => setCoordinateInput(e.target.value)}
-                />
-              </div>
-            )}
-
-            {inputMode === "polygon" && (
-              <div className="space-y-2">
-                <Label htmlFor="polygon-input">Polígono (WKT ou GeoJSON)</Label>
-                <Textarea
-                  id="polygon-input"
-                  placeholder='Ex: {"type":"Polygon","coordinates":[...]}'
-                  value={polygonInput}
-                  onChange={(e) => setPolygonInput(e.target.value)}
-                  className="min-h-[100px]"
-                />
-              </div>
-            )}
-
-            <div className="space-y-2">
-              <Label htmlFor="analysis-preview">
-                Prévia do payload a analisar
-              </Label>
-              <Textarea
-                id="analysis-preview"
-                value={buildAnalysisInput()?.data ?? ""}
-                readOnly
-                className="min-h-[80px]"
-              />
-            </div>
-            <Button
-              onClick={handleStartAnalysis}
-              disabled={isLoading || !hasValidInput}
-              className="w-full"
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Analisando...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="mr-2 h-4 w-4" />
-                  Gerar relatório de análise geoespacial
-                </>
+              {inputMode === "car" && (
+                <div className="space-y-2">
+                  <Label htmlFor="car-input">Número do CAR</Label>
+                  <Input
+                    id="car-input"
+                    placeholder="Ex: MG-3106200-1234.ABCD.EF12.3456.7890.ABCD.EF12.3456"
+                    value={carNumber}
+                    onChange={(e) => setCarNumber(e.target.value)}
+                  />
+                </div>
               )}
-            </Button>
-          </CardContent>
-        </Card>
 
-        {/* 3. Relatório - card compacto, download PDF */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Relatório da Análise</CardTitle>
-            <CardDescription>
-              Quando o relatório for gerado, ele ficará disponível para download
-              em PDF.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <div className="flex flex-col items-center justify-center py-10 text-muted-foreground">
-                <Loader2 className="w-10 h-10 animate-spin mb-3" />
-                <p className="text-sm">
-                  Processando dados e gerando análise geoespacial...
-                </p>
+              {inputMode === "coordinates" && (
+                <div className="space-y-2">
+                  <Label htmlFor="coords-input">Coordenadas (lat, lng)</Label>
+                  <Input
+                    id="coords-input"
+                    placeholder="Ex: -19.922731, -43.945095"
+                    value={coordinateInput}
+                    onChange={(e) => setCoordinateInput(e.target.value)}
+                  />
+                </div>
+              )}
+
+              {inputMode === "polygon" && (
+                <div className="space-y-2">
+                  <Label htmlFor="polygon-input">Polígono (WKT ou GeoJSON)</Label>
+                  <Textarea
+                    id="polygon-input"
+                    placeholder='Ex: {"type":"Polygon","coordinates":[...]}'
+                    value={polygonInput}
+                    onChange={(e) => setPolygonInput(e.target.value)}
+                    className="min-h-[100px]"
+                  />
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <Label htmlFor="analysis-preview">
+                  Prévia do payload a analisar
+                </Label>
+                <Textarea
+                  id="analysis-preview"
+                  value={buildAnalysisInput()?.data ?? ""}
+                  readOnly
+                  className="min-h-[80px]"
+                />
               </div>
-            ) : analysisResult ? (
-              <div className="space-y-4">
-                <p className="text-sm text-muted-foreground line-clamp-2">
-                  {analysisResult.resumoIA}
-                </p>
-                <div className="rounded-md border p-3">
-                  <p className="mb-2 text-sm font-medium">Evidências factuais</p>
-                  <div className="space-y-2">
-                    {analysisResult.factualData.map((item, idx) => (
-                      <p key={`${item.camada}-${idx}`} className="text-xs text-muted-foreground">
-                        {idx + 1}. {item.camada} ({item.fonte}) - {item.resultado}
-                      </p>
-                    ))}
+              <Button
+                onClick={handleStartAnalysis}
+                disabled={isLoading || !hasValidInput}
+                className="w-full"
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Analisando...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="mr-2 h-4 w-4" />
+                    Gerar relatório de análise geoespacial
+                  </>
+                )}
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Relatório da Análise</CardTitle>
+              <CardDescription>
+                Quando o relatório for gerado, ele ficará disponível para download
+                em PDF.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {isLoading ? (
+                <div className="flex flex-col items-center justify-center py-10 text-muted-foreground">
+                  <Loader2 className="mb-3 h-10 w-10 animate-spin" />
+                  <p className="text-sm">
+                    Processando dados e gerando análise geoespacial...
+                  </p>
+                </div>
+              ) : analysisResult ? (
+                <div className="space-y-4">
+                  <p className="line-clamp-2 text-sm text-muted-foreground">
+                    {analysisResult.resumoIA}
+                  </p>
+                  <div className="rounded-md border p-3">
+                    <p className="mb-2 text-sm font-medium">Evidências factuais</p>
+                    <div className="space-y-2">
+                      {analysisResult.factualData.map((item, idx) => (
+                        <p key={`${item.camada}-${idx}`} className="text-xs text-muted-foreground">
+                          {idx + 1}. {item.camada} ({item.fonte}) - {item.resultado}
+                        </p>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <Button
+                      onClick={handleDownloadPdf}
+                      disabled={isGeneratingPdf}
+                      className="w-full"
+                    >
+                      {isGeneratingPdf ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Gerando PDF...
+                        </>
+                      ) : (
+                        <>
+                          <FileDown className="mr-2 h-4 w-4" />
+                          Baixar PDF
+                        </>
+                      )}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={handleDownloadCsv}
+                      disabled={isExportingCsv}
+                      className="w-full"
+                    >
+                      {isExportingCsv ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Database className="mr-2 h-4 w-4" />}
+                      Exportar CSV
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={handleDownloadGeoJson}
+                      disabled={isExportingGeojson}
+                      className="w-full"
+                    >
+                      {isExportingGeojson ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Globe className="mr-2 h-4 w-4" />}
+                      Exportar GeoJSON
+                    </Button>
+                    <Button asChild variant="secondary" className="w-full">
+                      <Link
+                        href={`/studies/assistant?tipo=mcp&prompt=${encodeURIComponent(buildFactsPrompt())}`}
+                      >
+                        <Share2 className="mr-2 h-4 w-4" />
+                        Enviar para Cruzamento de dados
+                      </Link>
+                    </Button>
                   </div>
                 </div>
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    onClick={handleDownloadPdf}
-                    disabled={isGeneratingPdf}
-                    className="w-full sm:w-auto"
-                  >
-                    {isGeneratingPdf ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Gerando PDF...
-                      </>
-                    ) : (
-                      <>
-                        <FileDown className="mr-2 h-4 w-4" />
-                        Baixar PDF
-                      </>
-                    )}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={handleDownloadCsv}
-                    disabled={isExportingCsv}
-                    className="w-full sm:w-auto"
-                  >
-                    {isExportingCsv ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Database className="mr-2 h-4 w-4" />}
-                    Exportar CSV
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={handleDownloadGeoJson}
-                    disabled={isExportingGeojson}
-                    className="w-full sm:w-auto"
-                  >
-                    {isExportingGeojson ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Globe className="mr-2 h-4 w-4" />}
-                    Exportar GeoJSON
-                  </Button>
-                  <Button asChild variant="secondary" className="w-full sm:w-auto">
-                    <Link
-                      href={`/studies/assistant?tipo=mcp&prompt=${encodeURIComponent(buildFactsPrompt())}`}
-                    >
-                      <Share2 className="mr-2 h-4 w-4" />
-                      Enviar para Cruzamento de dados
-                    </Link>
-                  </Button>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-10 text-center text-muted-foreground">
+                  <Globe className="mb-3 h-12 w-12 opacity-50" />
+                  <p className="text-sm">
+                    Configure CAR, coordenadas ou polígono nos cartões ao lado e
+                    clique em &quot;Gerar relatório de análise geoespacial&quot;.
+                    O PDF ficará disponível aqui.
+                  </p>
                 </div>
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center py-10 text-center text-muted-foreground">
-                <Globe className="w-12 h-12 mb-3 opacity-50" />
-                <p className="text-sm">
-                  Use o Geovizualizador, cole os dados no card acima e clique em
-                  &quot;Gerar relatório de análise geoespacial&quot;. O PDF
-                  ficará disponível aqui.
-                </p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </main>
-    </div>
+              )}
+            </CardContent>
+          </Card>
+        </>
+      }
+    />
   );
 }

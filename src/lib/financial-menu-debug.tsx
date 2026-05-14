@@ -21,12 +21,12 @@ export const FINANCIAL_ROUTES = [
   '/invoices',
   '/commercial-proposals',
   '/contracts',
+  '/contracts-suppliers',
   '/services',
   '/cash-flow',
   '/financial/dre-contabil',
   '/financial/abc-curve',
   '/bank-access',
-  '/reporting',
 ] as const;
 
 export function isFinancialRoute(pathname: string): boolean {

@@ -71,7 +71,11 @@ import NavContent from "@/components/nav-content";
 import { SidebarDebugger } from "@/components/sidebar-debugger";
 import { FinancialMenuDebugPanel } from "@/lib/financial-menu-debug";
 import { CadastroMenuDebugPanel } from "@/lib/cadastro-menu-debug";
-import { isRoleAllowedForPath } from "@/lib/route-access";
+import {
+  getFirstAutorizacoesRelatoriosHrefForRole,
+  isAutorizacoesRelatoriosNavPath,
+  isRoleAllowedForPath,
+} from "@/lib/route-access";
 import { OfflineProvider } from "@/lib/offline";
 import { OfflineQueueBadge } from "@/components/offline-queue-badge";
 
@@ -85,6 +89,7 @@ const mobileNavItems = [
   { href: "/", label: "Painel", icon: LayoutDashboard },
   { href: "/calendar", label: "Agenda", icon: Calendar },
   {
+    /** Valor inicial; em mobile é substituído pelo primeiro path do grupo permitido ao papel. */
     href: "/licenses",
     label: "Autorizações/Relatórios",
     icon: FileSearch,
@@ -330,10 +335,31 @@ const AppLayoutClient = ({ children }: { children: React.ReactNode }) => {
 
   const filteredMobileNavItems = React.useMemo(() => {
     if (!user) return mobileNavItems;
-    return mobileNavItems.filter((i) =>
-      isRoleAllowedForPath(user.role, i.href),
-    );
+    return mobileNavItems
+      .map((i) => {
+        if ("isCenter" in i && i.isCenter) {
+          const href = getFirstAutorizacoesRelatoriosHrefForRole(user.role);
+          if (!href) return null;
+          return { ...i, href };
+        }
+        return i;
+      })
+      .filter(
+        (i): i is (typeof mobileNavItems)[number] =>
+          i !== null && isRoleAllowedForPath(user.role, i.href),
+      );
   }, [user]);
+
+  const isMobileBottomNavItemActive = React.useCallback(
+    (item: (typeof mobileNavItems)[number]) => {
+      if (!pathname) return false;
+      if ("isCenter" in item && item.isCenter) {
+        return isAutorizacoesRelatoriosNavPath(pathname);
+      }
+      return pathname === item.href;
+    },
+    [pathname],
+  );
   const allowExternalChat = Boolean(featureFlagsData?.allowExternalChat);
   const canRenderChatWidget =
     user?.role !== "client" && user?.role !== "representative"
@@ -569,7 +595,7 @@ const AppLayoutClient = ({ children }: { children: React.ReactNode }) => {
                 className={cn(
                   "flex flex-col items-center justify-center gap-1 h-full text-muted-foreground transition-all duration-200 ease-out active:scale-95",
                   item.isCenter ? "w-24 -mt-6" : "w-16",
-                  pathname === item.href && "text-primary",
+                  isMobileBottomNavItemActive(item) && "text-primary",
                 )}
                 onClick={handleLinkClick}
               >
@@ -579,10 +605,10 @@ const AppLayoutClient = ({ children }: { children: React.ReactNode }) => {
                     item.isCenter
                       ? "h-16 w-16 flex items-center justify-center shadow-md bg-primary text-primary-foreground"
                       : "h-10 w-10 flex items-center justify-center",
-                    pathname === item.href &&
+                    isMobileBottomNavItemActive(item) &&
                       !item.isCenter &&
                       "bg-primary/10 text-primary scale-110",
-                    pathname === item.href &&
+                    isMobileBottomNavItemActive(item) &&
                       item.isCenter &&
                       "shadow-lg ring-4 ring-primary/20 -translate-y-0.5",
                   )}
@@ -591,7 +617,7 @@ const AppLayoutClient = ({ children }: { children: React.ReactNode }) => {
                     className={cn(
                       "transition-transform duration-200",
                       item.isCenter ? "h-7 w-7" : "h-[22px] w-[22px]",
-                      pathname === item.href && "scale-110",
+                      isMobileBottomNavItemActive(item) && "scale-110",
                     )}
                   />
                 </div>
@@ -599,7 +625,7 @@ const AppLayoutClient = ({ children }: { children: React.ReactNode }) => {
                   className={cn(
                     "text-[11px] leading-tight text-center transition-colors duration-200",
                     item.isCenter && "text-[10px] max-w-[84px] font-medium",
-                    pathname === item.href && "font-medium",
+                    isMobileBottomNavItemActive(item) && "font-medium",
                   )}
                 >
                   {item.label}
