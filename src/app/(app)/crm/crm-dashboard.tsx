@@ -52,6 +52,13 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import jsPDF from "jspdf";
+import {
+  fetchBrandingImageAsBase64,
+  getImageDimensions,
+  calcPdfImageSize,
+  applyImageOpacity,
+} from "@/lib/branding-pdf";
+import { useLocalBranding } from "@/hooks/use-local-branding";
 
 const PERIOD_PRESETS = [
   { id: "today", label: "Hoje" },
@@ -158,6 +165,7 @@ export default function CrmDashboard({ onAddNew }: CrmDashboardProps) {
   const router = useRouter();
   const firestore = useFirestore();
   const { user } = useAuth();
+  const { data: brandingData } = useLocalBranding();
 
   const opportunitiesQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
@@ -581,10 +589,52 @@ export default function CrmDashboard({ onAddNew }: CrmDashboardProps) {
             variant="outline"
             size="sm"
             className="h-9 w-full justify-center sm:w-auto sm:min-w-[9rem]"
-            onClick={() => {
+            onClick={async () => {
               const list = opportunitiesFiltered ?? [];
+              const headerBase64 = await fetchBrandingImageAsBase64(
+                brandingData?.headerImageUrl,
+              );
+              const footerBase64 = await fetchBrandingImageAsBase64(
+                brandingData?.footerImageUrl,
+              );
+              const watermarkBase64Raw = await fetchBrandingImageAsBase64(
+                brandingData?.watermarkImageUrl,
+              );
+              const watermarkBase64 = watermarkBase64Raw
+                ? await applyImageOpacity(watermarkBase64Raw, 0.15)
+                : null;
+
               const doc = new jsPDF({ unit: "mm", format: "a4" });
+              const pageWidth = doc.internal.pageSize.getWidth();
+              const pageHeight = doc.internal.pageSize.getHeight();
+              const margin = 15;
+              const contentWidth = pageWidth - margin * 2;
+
+              if (watermarkBase64) {
+                const imgProps = doc.getImageProperties(watermarkBase64);
+                const ar = imgProps.width / imgProps.height;
+                const w = 100;
+                const h = w / ar;
+                doc.addImage(
+                  watermarkBase64,
+                  "PNG",
+                  (pageWidth - w) / 2,
+                  (pageHeight - h) / 2,
+                  w,
+                  h,
+                  undefined,
+                  "FAST",
+                );
+              }
+
               let y = 15;
+              if (headerBase64) {
+                const dims = await getImageDimensions(headerBase64);
+                const { w, h } = calcPdfImageSize(dims, contentWidth, 26);
+                doc.addImage(headerBase64, "PNG", margin, 8, w, h);
+                y = 8 + h + 5;
+              }
+
               doc.setFontSize(16);
               doc.text("Dashboard Executivo CRM", 105, y, { align: "center" });
               y += 10;
@@ -652,6 +702,23 @@ export default function CrmDashboard({ onAddNew }: CrmDashboardProps) {
                 );
                 y += 5;
               });
+
+              if (footerBase64) {
+                const fDims = await getImageDimensions(footerBase64);
+                const { w: fw, h: fh } = calcPdfImageSize(
+                  fDims,
+                  pageWidth - 2 * margin,
+                  18,
+                );
+                doc.addImage(
+                  footerBase64,
+                  "PNG",
+                  margin,
+                  pageHeight - fh - 6,
+                  fw,
+                  fh,
+                );
+              }
 
               doc.save(
                 `crm-dashboard-${periodLabel.replace(/[\\s:]/g, "-")}.pdf`,

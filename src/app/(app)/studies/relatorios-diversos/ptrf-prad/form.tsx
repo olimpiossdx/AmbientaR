@@ -30,6 +30,13 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import {
+  fetchBrandingImageAsBase64,
+  getImageDimensions,
+  calcPdfImageSize,
+  applyImageOpacity,
+} from '@/lib/branding-pdf';
+import { useLocalBranding } from '@/hooks/use-local-branding';
 
 const tabelaDiagnosticoSchema = z.object({
   aspecto: z.string(),
@@ -84,10 +91,10 @@ function addPageNumbers(doc: jsPDF, bottomMarginMm: number = 10) {
   }
 }
 
-function buildPdf(doc: jsPDF, values: FormValues) {
+function buildPdf(doc: jsPDF, values: FormValues, startY = 15) {
   const pageWidth = doc.internal.pageSize.getWidth();
   const margin = 15;
-  let y = 15;
+  let y = startY;
 
   doc.setFont('times', 'normal');
   doc.setFontSize(14);
@@ -202,6 +209,7 @@ function buildPdf(doc: jsPDF, values: FormValues) {
 export function PtrfPradForm({ onSuccess, onCancel }: PtrfPradFormProps) {
   const [loading, setLoading] = React.useState(false);
   const { toast } = useToast();
+  const { data: brandingData } = useLocalBranding();
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -226,11 +234,46 @@ export function PtrfPradForm({ onSuccess, onCancel }: PtrfPradFormProps) {
     },
   });
 
-  const handleGeneratePdf = form.handleSubmit((values) => {
+  const handleGeneratePdf = form.handleSubmit(async (values) => {
     try {
+      const margin = 15;
+
+      const headerBase64 = await fetchBrandingImageAsBase64(brandingData?.headerImageUrl);
+      const footerBase64 = await fetchBrandingImageAsBase64(brandingData?.footerImageUrl);
+      const watermarkBase64Raw = await fetchBrandingImageAsBase64(brandingData?.watermarkImageUrl);
+      const watermarkBase64 = watermarkBase64Raw ? await applyImageOpacity(watermarkBase64Raw, 0.15) : null;
+
       const doc = new jsPDF({ unit: 'mm', format: 'a4' });
-      buildPdf(doc, values);
-      // Numeração de páginas alinhada à direita no rodapé.
+      const pw = doc.internal.pageSize.getWidth();
+      const ph = doc.internal.pageSize.getHeight();
+      const contentWidth = pw - margin * 2;
+
+      if (watermarkBase64) {
+        const imgProps = doc.getImageProperties(watermarkBase64);
+        const ar = imgProps.width / imgProps.height;
+        const w = 110;
+        const h = w / ar;
+        doc.addImage(watermarkBase64, 'PNG', (pw - w) / 2, (ph - h) / 2, w, h, undefined, 'FAST');
+      }
+
+      let startY = 15;
+      if (headerBase64) {
+        const dims = await getImageDimensions(headerBase64);
+        const { w, h } = calcPdfImageSize(dims, contentWidth, 28);
+        doc.addImage(headerBase64, 'PNG', margin, 8, w, h);
+        startY = 8 + h + 6;
+      }
+
+      buildPdf(doc, values, startY);
+
+      if (footerBase64) {
+        const tp = doc.getNumberOfPages();
+        doc.setPage(tp);
+        const fDims = await getImageDimensions(footerBase64);
+        const { w: fw, h: fh } = calcPdfImageSize(fDims, pw - 2 * margin, 18);
+        doc.addImage(footerBase64, 'PNG', margin, ph - fh - 6, fw, fh);
+      }
+
       addPageNumbers(doc, 10);
       doc.save('Relatorio-Pericial-PRAD-PTFR-Paracatu.pdf');
       toast({ title: 'PDF gerado', description: 'O relatório foi baixado com sucesso.' });

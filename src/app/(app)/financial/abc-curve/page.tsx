@@ -17,6 +17,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { FileDown, FileSpreadsheet, Printer } from 'lucide-react';
 import jsPDF from 'jspdf';
 import { useToast } from '@/hooks/use-toast';
+import {
+  fetchBrandingImageAsBase64,
+  getImageDimensions,
+  calcPdfImageSize,
+  applyImageOpacity,
+} from '@/lib/branding-pdf';
+import { useLocalBranding } from '@/hooks/use-local-branding';
 
 type AbcSource = 'invoices' | 'revenues' | 'both';
 type PeriodMode = 'year' | 'quarter' | 'month';
@@ -37,6 +44,18 @@ const monthOptions = [
   { value: '07', label: 'Julho' }, { value: '08', label: 'Agosto' }, { value: '09', label: 'Setembro' },
   { value: '10', label: 'Outubro' }, { value: '11', label: 'Novembro' }, { value: '12', label: 'Dezembro' },
 ];
+
+function addPageNumbers(doc: jsPDF, bottomMarginMm: number = 10) {
+  const pageCount = doc.getNumberOfPages();
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i);
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`${i}/${pageCount}`, pageWidth - bottomMarginMm, pageHeight - bottomMarginMm, { align: 'right' });
+  }
+}
 
 function getRangeByPeriod(year: number, mode: PeriodMode, quarter: string, month: string) {
   if (mode === 'year') {
@@ -71,6 +90,7 @@ export default function AbcCurvePage() {
   const [rankingLimit, setRankingLimit] = useState<string>('all');
   const { firestore, user } = useFirebase();
   const { toast } = useToast();
+  const { data: brandingData } = useLocalBranding();
   const printRef = useRef<HTMLDivElement>(null);
   const yearNumber = Number(selectedYear);
   const cutoffA = abcProfile === 'classic' ? 80 : abcProfile === 'balanced' ? 75 : 70;
@@ -300,16 +320,49 @@ export default function AbcCurvePage() {
     };
   }, [abcData.tableData, abcData.classSummary.A.revenue, previousAbcData]);
 
-  const handleExportPdf = () => {
+  const handleExportPdf = async () => {
     if (displayTableData.length === 0) {
       toast({ variant: 'destructive', title: 'Sem dados', description: 'Não há dados para exportar no período selecionado.' });
       return;
     }
 
+    const headerBase64 = await fetchBrandingImageAsBase64(brandingData?.headerImageUrl);
+    const footerBase64 = await fetchBrandingImageAsBase64(brandingData?.footerImageUrl);
+    const watermarkBase64Raw = await fetchBrandingImageAsBase64(brandingData?.watermarkImageUrl);
+    const watermarkBase64 = watermarkBase64Raw ? await applyImageOpacity(watermarkBase64Raw, 0.15) : null;
+
     const doc = new jsPDF({ unit: 'mm', format: 'a4' });
     const pageWidth = doc.internal.pageSize.getWidth();
-    let y = 15;
+    const pageHeight = doc.internal.pageSize.getHeight();
     const margin = 12;
+    const contentWidth = pageWidth - margin * 2;
+    let y = 15;
+
+    if (watermarkBase64) {
+      const imgProps = doc.getImageProperties(watermarkBase64);
+      const aspectRatio = imgProps.width / imgProps.height;
+      const watermarkWidth = 110;
+      const watermarkHeight = watermarkWidth / aspectRatio;
+      const wX = (pageWidth - watermarkWidth) / 2;
+      const wY = (pageHeight - watermarkHeight) / 2;
+      doc.addImage(
+        watermarkBase64,
+        'PNG',
+        wX,
+        wY,
+        watermarkWidth,
+        watermarkHeight,
+        undefined,
+        'FAST',
+      );
+    }
+
+    if (headerBase64) {
+      const dims = await getImageDimensions(headerBase64);
+      const { w, h } = calcPdfImageSize(dims, contentWidth, 28);
+      doc.addImage(headerBase64, 'PNG', margin, 8, w, h);
+      y = 8 + h + 6;
+    }
 
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(14);
@@ -354,6 +407,15 @@ export default function AbcCurvePage() {
       doc.text(`${item.cumulativeRevenuePercentage.toFixed(2)}%`, pageWidth - margin, y, { align: 'right' });
       y += 5;
     });
+
+    const totalPages = doc.getNumberOfPages();
+    if (footerBase64) {
+      const fDims = await getImageDimensions(footerBase64);
+      const { w: fw, h: fh } = calcPdfImageSize(fDims, pageWidth - 2 * margin, 18);
+      doc.setPage(totalPages);
+      doc.addImage(footerBase64, 'PNG', margin, pageHeight - fh - 6, fw, fh);
+    }
+    addPageNumbers(doc, 10);
 
     doc.save(`Curva_ABC_${selectedYear}_${periodMode}_${abcProfile}.pdf`);
     toast({ title: 'PDF exportado', description: 'Relatório da Curva ABC gerado com sucesso.' });
