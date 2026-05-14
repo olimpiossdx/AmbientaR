@@ -16,6 +16,7 @@
     "typecheck": "tsc --noEmit",
     "check:uploads": "node scripts/check-upload-patterns.cjs",
     "deploy:rules": "npx firebase deploy --only firestore:rules",
+    "deploy:storage": "npx firebase deploy --only storage",
     "cap:sync": "npx cap sync",
     "cap:sync:deploy": "node scripts/cap-sync-deploy.cjs",
     "cap:open:android": "npx cap open android",

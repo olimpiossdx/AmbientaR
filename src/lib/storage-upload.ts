@@ -33,8 +33,19 @@ export async function uploadFileToStorage(
     (file.type && file.type.trim()) ||
     inferMimeTypeFromFileName(file.name) ||
     "application/octet-stream";
-  await uploadBytes(storageRef, file, { contentType });
-  return getDownloadURL(storageRef);
+  try {
+    await uploadBytes(storageRef, file, { contentType });
+    return await getDownloadURL(storageRef);
+  } catch (e: unknown) {
+    const err = e as { code?: string; message?: string };
+    if (err?.code === "storage/unauthorized") {
+      throw new Error(
+        "Sem permissão no Firebase Storage (storage/unauthorized). " +
+          "Confirme se as regras do Storage foram publicadas (npm run deploy:storage).",
+      );
+    }
+    throw new Error(err?.message || "Falha no upload.");
+  }
 }
 
 /**
