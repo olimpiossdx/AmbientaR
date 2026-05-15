@@ -27,6 +27,10 @@ import { collection, doc, updateDoc, writeBatch } from "firebase/firestore";
 import { Bell, CheckCheck, ExternalLink } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { FirestorePermissionError } from "@/firebase/errors";
+import {
+  isUserProfileAlignedWithSession,
+  useAuthUserId,
+} from "@/lib/auth-user-id";
 
 const CRM_ROLES = ["admin", "sales", "supervisor", "financial"] as const;
 
@@ -37,15 +41,13 @@ export default function CrmAlertsPage() {
   const { auth } = useFirebase();
   const { toast } = useToast();
 
-  // Sempre usa o UID da sessão quando disponível para respeitar as regras
-  // `/users/{userId}/notifications` com `request.auth.uid == userId`.
-  const userId = auth?.currentUser?.uid || user?.uid || null;
+  const sessionUid = useAuthUserId(auth);
+  const profileAligned = isUserProfileAlignedWithSession(user, sessionUid);
 
   const notificationsQuery = useMemoFirebase(() => {
-    if (!firestore || !user) return null;
-    if (!userId) return null;
-    return collection(firestore, `users/${userId}/notifications`);
-  }, [firestore, user, userId]);
+    if (!firestore || !profileAligned || !sessionUid) return null;
+    return collection(firestore, `users/${sessionUid}/notifications`);
+  }, [firestore, profileAligned, sessionUid]);
 
   const { data: notifications, isLoading } =
     useCollection<Notification>(notificationsQuery);
@@ -69,8 +71,8 @@ export default function CrmAlertsPage() {
   );
 
   const markAsRead = async (n: Notification) => {
-    if (!firestore || !user || !userId) return;
-    const ref = doc(firestore, `users/${userId}/notifications`, n.id);
+    if (!firestore || !profileAligned || !sessionUid) return;
+    const ref = doc(firestore, `users/${sessionUid}/notifications`, n.id);
     try {
       await updateDoc(ref, { isRead: true });
     } catch {
@@ -84,13 +86,13 @@ export default function CrmAlertsPage() {
   };
 
   const markAllAsRead = async () => {
-    if (!firestore || !user || !userId) return;
+    if (!firestore || !profileAligned || !sessionUid) return;
     const unread = sorted.filter((n) => !n.isRead);
     if (unread.length === 0) return;
     try {
       const batch = writeBatch(firestore);
       unread.forEach((n) => {
-        const ref = doc(firestore, `users/${userId}/notifications`, n.id);
+        const ref = doc(firestore, `users/${sessionUid}/notifications`, n.id);
         batch.update(ref, { isRead: true });
       });
       await batch.commit();

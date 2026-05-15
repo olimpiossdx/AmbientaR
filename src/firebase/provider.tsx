@@ -4,7 +4,19 @@
 import React, { createContext, useContext, ReactNode, useMemo, useState, useEffect, useCallback, DependencyList } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { FirebaseApp } from 'firebase/app';
-import { Firestore, doc, getDoc, setDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import {
+  Firestore,
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  limit,
+  query,
+  setDoc,
+  updateDoc,
+  serverTimestamp,
+  where,
+} from 'firebase/firestore';
 import { Auth, User, onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
 import { AppUser } from '@/lib/types';
@@ -114,24 +126,65 @@ export const FirebaseProvider: React.FC<{ children: ReactNode; firebaseApp: Fire
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
         if (firebaseUser) {
             const userDocRef = doc(firestore, 'users', firebaseUser.uid);
+            const normalizedEmail = (firebaseUser.email || '').trim().toLowerCase();
             try {
-                const userDoc = await getDoc(userDocRef);
+                let userDoc = await getDoc(userDocRef);
+
+                // Conta recriada no Auth com novo UID: reutiliza perfil existente pelo e-mail.
+                if (!userDoc.exists() && normalizedEmail) {
+                  const emailQuery = query(
+                    collection(firestore, 'users'),
+                    where('email', '==', normalizedEmail),
+                    limit(1),
+                  );
+                  const emailSnap = await getDocs(emailQuery);
+                  if (!emailSnap.empty) {
+                    const legacyDoc = emailSnap.docs[0];
+                    const legacyData = legacyDoc.data() as Omit<AppUser, 'id'>;
+                    if (legacyDoc.id !== firebaseUser.uid) {
+                      console.warn(
+                        `Migrating user profile from ${legacyDoc.id} to auth uid ${firebaseUser.uid}`,
+                      );
+                      await setDoc(userDocRef, {
+                        ...legacyData,
+                        uid: firebaseUser.uid,
+                        email: normalizedEmail,
+                        lastLogin: serverTimestamp(),
+                        lastSeenAt: serverTimestamp(),
+                        isOnline: true,
+                      });
+                      userDoc = await getDoc(userDocRef);
+                    }
+                  }
+                }
+
                 if (userDoc.exists()) {
                     const userData = userDoc.data() as Omit<AppUser, 'id'>;
-                    const currentUser: AppUser = { 
-                        id: userDoc.id,
+                    const sessionUid = firebaseUser.uid;
+
+                    if (userData.uid && userData.uid !== sessionUid) {
+                      try {
+                        await updateDoc(userDocRef, { uid: sessionUid });
+                      } catch (uidPatchError) {
+                        console.warn('Could not patch stale uid on user profile:', uidPatchError);
+                      }
+                    }
+
+                    const currentUser: AppUser = {
+                        id: sessionUid,
                         ...userData,
-                        uid: firebaseUser.uid,
+                        uid: sessionUid,
+                        email: userData.email || normalizedEmail,
                         photoURL: userData.photoURL || firebaseUser.photoURL || undefined,
                     };
                     setAppUser(currentUser);
-                    await touchUserPresence(firebaseUser.uid);
+                    await touchUserPresence(sessionUid);
                 } else {
                      console.warn(`User document not found for uid: ${firebaseUser.uid}. Attempting to create it.`);
                     const newUser: Omit<AppUser, 'id'> = {
                         uid: firebaseUser.uid,
                         name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'Novo Usuário',
-                        email: firebaseUser.email || '',
+                        email: normalizedEmail,
                         role: firebaseUser.email === 'adm@adm.com' ? 'admin' : 'client',
                         status: 'active',
                         isOnline: true,

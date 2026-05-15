@@ -95,7 +95,14 @@ import {
 } from "@/components/ui/tooltip";
 import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { formatCpfDisplay, formatCpfCnpjDisplay } from "@/lib/masks";
+import { FirebaseAdminSetupHelp } from "@/components/admin/firebase-admin-setup-help";
+import {
+  FIREBASE_AUTH_USERS_CONSOLE_URL,
+  isAdminCredentialsMissing,
+} from "@/lib/admin/firebase-admin-setup";
+import { ToastAction } from "@/components/ui/toast";
 
 /** Adiciona numeração de páginas no rodapé no formato página/total. */
 function addPageNumbers(doc: jsPDF, bottomMarginMm: number = 10) {
@@ -144,10 +151,42 @@ export default function UsersPage() {
   const [revokingRepresentativeId, setRevokingRepresentativeId] = useState<
     string | null
   >(null);
+  const [orphanEmail, setOrphanEmail] = useState("");
+  const [isReleasingOrphanEmail, setIsReleasingOrphanEmail] = useState(false);
+  const [adminSdkConfigured, setAdminSdkConfigured] = useState<boolean | null>(
+    null,
+  );
+  const [showOrphanEmailSetupHelp, setShowOrphanEmailSetupHelp] = useState(false);
   const router = useRouter();
 
   const { firestore, auth, user } = useFirebase();
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (user?.role !== "admin" || !auth?.currentUser) {
+      setAdminSdkConfigured(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const token = await auth.currentUser?.getIdToken();
+        if (!token || cancelled) return;
+        const res = await fetch("/api/admin/credentials-status", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = (await res.json()) as { configured?: boolean };
+        if (!cancelled) {
+          setAdminSdkConfigured(data.configured === true);
+        }
+      } catch {
+        if (!cancelled) setAdminSdkConfigured(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [auth, user?.role, user?.uid]);
 
   const usersQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
@@ -242,6 +281,97 @@ export default function UsersPage() {
       ((isClientePortalRole(user?.role) ||
         user?.role === "representative") &&
         target.id === user?.id));
+
+  const handleReleaseOrphanEmail = async () => {
+    if (!auth) return;
+    const email = orphanEmail.trim().toLowerCase();
+    if (!email) {
+      toast({
+        variant: "destructive",
+        title: "E-mail obrigatório",
+        description: "Informe o e-mail a liberar.",
+      });
+      return;
+    }
+    setIsReleasingOrphanEmail(true);
+    try {
+      const token = await auth.currentUser?.getIdToken();
+      if (!token) throw new Error("Sessão inválida. Faça login novamente.");
+      const res = await fetch("/api/admin/delete-user-by-email", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ email }),
+      });
+      const data = (await res.json()) as {
+        success?: boolean;
+        error?: string;
+        code?: string;
+        result?: {
+          authUserDeleted?: boolean;
+          firestoreUserDeleted?: boolean;
+          accessRequestsDeleted?: number;
+        };
+      };
+      if (!res.ok || !data.success) {
+        if (isAdminCredentialsMissing(res.status, data.code)) {
+          setAdminSdkConfigured(false);
+          setShowOrphanEmailSetupHelp(true);
+        }
+        const credErr = new Error(
+          data.error || "Não foi possível liberar o e-mail no servidor.",
+        ) as Error & { credentialsMissing?: boolean };
+        credErr.credentialsMissing = isAdminCredentialsMissing(
+          res.status,
+          data.code,
+        );
+        throw credErr;
+      }
+      const r = data.result;
+      toast({
+        title: "E-mail liberado",
+        description: `Auth: ${r?.authUserDeleted ? "removido" : "já não existia"}. Firestore: ${r?.firestoreUserDeleted ? "removido" : "não havia perfil"}. Pedidos de acesso: ${r?.accessRequestsDeleted ?? 0}.`,
+      });
+      setOrphanEmail("");
+    } catch (err) {
+      const credentialsMissing =
+        err instanceof Error &&
+        "credentialsMissing" in err &&
+        (err as Error & { credentialsMissing?: boolean }).credentialsMissing;
+
+      toast({
+        variant: "destructive",
+        title: credentialsMissing
+          ? "Credenciais do servidor não configuradas"
+          : "Erro ao liberar e-mail",
+        description: credentialsMissing ? (
+          <span>
+            Configure a conta de serviço no PC ou apague o e-mail no Firebase
+            Console. Instruções no card acima.
+          </span>
+        ) : err instanceof Error ? (
+          err.message
+        ) : (
+          "Verifique credenciais do servidor (Admin SDK) ou use o Firebase Console."
+        ),
+        action: credentialsMissing ? (
+          <ToastAction altText="Abrir Authentication no Firebase Console" asChild>
+            <a
+              href={FIREBASE_AUTH_USERS_CONSOLE_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Abrir Authentication
+            </a>
+          </ToastAction>
+        ) : undefined,
+      });
+    } finally {
+      setIsReleasingOrphanEmail(false);
+    }
+  };
 
   const handleDelete = async () => {
     if (!firestore || !userToDelete || !auth) return;
@@ -1582,7 +1712,50 @@ export default function UsersPage() {
             </Button>
           )}
         </PageHeader>
-        <main className="flex-1 overflow-auto p-4 md:p-6">
+        <main className="flex-1 overflow-auto p-4 md:p-6 space-y-4">
+          {user?.role === "admin" && (
+            <Card className="border-amber-500/30 bg-amber-500/5">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">
+                  Liberar e-mail bloqueado
+                </CardTitle>
+                <CardDescription>
+                  Use quando o perfil já foi apagado mas o login (Firebase
+                  Auth) ainda impede criar o mesmo e-mail — ex.: após exclusão
+                  antiga só no Firestore.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {(adminSdkConfigured === false || showOrphanEmailSetupHelp) && (
+                  <FirebaseAdminSetupHelp
+                    variant="banner"
+                    emailHint={orphanEmail.trim() || undefined}
+                  />
+                )}
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+                  <div className="min-w-0 flex-1 space-y-1.5">
+                    <Label htmlFor="orphan-email">E-mail</Label>
+                    <Input
+                      id="orphan-email"
+                      type="email"
+                      placeholder="financeiro@exemplo.com.br"
+                      value={orphanEmail}
+                      onChange={(e) => setOrphanEmail(e.target.value)}
+                      disabled={isReleasingOrphanEmail}
+                    />
+                  </div>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    disabled={isReleasingOrphanEmail || !orphanEmail.trim()}
+                    onClick={handleReleaseOrphanEmail}
+                  >
+                    {isReleasingOrphanEmail ? "Liberando…" : "Liberar e-mail"}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
           <Card>
             <CardHeader>
               <CardTitle>Gerenciamento de Usuários</CardTitle>
@@ -1924,11 +2097,10 @@ export default function UsersPage() {
                 </>
               ) : (
                 <>
-                  Esta ação não pode ser desfeita. Isso irá deletar
-                  permanentemente o usuário{" "}
-                  <span className="font-semibold">{userToDelete?.name}</span>. A
-                  conta de autenticação precisará ser removida manualmente se
-                  necessário.
+                  Esta ação não pode ser desfeita. Remove o perfil, a conta de
+                  login (Firebase Auth), notificações e pedidos de acesso de{" "}
+                  <span className="font-semibold">{userToDelete?.name}</span>.
+                  O e-mail ficará livre para novo cadastro.
                 </>
               )}
             </AlertDialogDescription>

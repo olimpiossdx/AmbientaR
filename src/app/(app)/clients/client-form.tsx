@@ -70,6 +70,22 @@ const formSchema = z.object({
 });
 
 type ClientFormValues = z.infer<typeof formSchema>;
+
+/** Firestore rejeita `undefined`; omitir evita erro síncrono que impede o `.finally()` de limpar o loading. */
+function toClientFirestorePayload(values: ClientFormValues): Partial<Client> {
+  const { dataNascimento, ...rest } = values;
+  const payload: Record<string, unknown> = { ...rest };
+  if (
+    dataNascimento instanceof Date &&
+    !Number.isNaN(dataNascimento.getTime())
+  ) {
+    payload.dataNascimento = dataNascimento.toISOString();
+  }
+  return Object.fromEntries(
+    Object.entries(payload).filter(([, value]) => value !== undefined),
+  ) as Partial<Client>;
+}
+
 type AutofillField =
   | "name"
   | "email"
@@ -653,77 +669,84 @@ export function ClientForm({
   async function onSubmit(values: ClientFormValues) {
     setLoading(true);
 
-    if (!firestore || !auth) {
-      toast({ variant: "destructive", title: "Firebase não inicializado." });
-      setLoading(false);
-      return;
-    }
+    try {
+      if (!firestore || !auth) {
+        toast({ variant: "destructive", title: "Firebase não inicializado." });
+        return;
+      }
 
-    const dataToSave: Partial<Client> = {
-      ...values,
-      dataNascimento: values.dataNascimento?.toISOString(),
-    };
+      if (currentClient && !form.formState.isDirty) {
+        toast({
+          title: "Cliente atualizado!",
+          description: "Nenhuma alteração foi feita nos dados do cliente.",
+        });
+        onSuccess?.();
+        return;
+      }
 
-    if (currentClient) {
-      const clientRef = doc(firestore, "clients", currentClient.id);
-      const isOwnClient =
-        isClientePortalRole(user?.role) && user?.id === currentClient.id;
-      updateDoc(clientRef, dataToSave)
-        .then(async () => {
-          if (isOwnClient && user?.id) {
-            try {
-              await updateDoc(doc(firestore, "users", user.id), {
-                cadastroIncompleto: false,
-              });
-            } catch (_) {}
-          }
-          toast({
-            title: "Cliente atualizado!",
-            description: "As informações do cliente foram salvas com sucesso.",
-          });
-          logUserAction(firestore, auth, "update_client", {
-            clientId: currentClient.id,
-            clientName: values.name,
-          });
-          onSuccess?.();
-        })
-        .catch(async (serverError) => {
-          const permissionError = new FirestorePermissionError({
+      const dataToSave = toClientFirestorePayload(values);
+
+      if (currentClient) {
+        const clientRef = doc(firestore, "clients", currentClient.id);
+        const isOwnClient =
+          isClientePortalRole(user?.role) && user?.id === currentClient.id;
+
+        await updateDoc(clientRef, dataToSave);
+
+        if (isOwnClient && user?.id) {
+          try {
+            await updateDoc(doc(firestore, "users", user.id), {
+              cadastroIncompleto: false,
+            });
+          } catch (_) {}
+        }
+
+        toast({
+          title: "Cliente atualizado!",
+          description: "As informações do cliente foram salvas com sucesso.",
+        });
+        void logUserAction(firestore, auth, "update_client", {
+          clientId: currentClient.id,
+          clientName: values.name,
+        });
+        onSuccess?.();
+      } else {
+        const clientsCollectionRef = collection(firestore, "clients");
+        const docRef = await addDoc(clientsCollectionRef, dataToSave);
+        toast({
+          title: "Cliente criado!",
+          description: `O cliente ${values.name} foi adicionado com sucesso.`,
+        });
+        void logUserAction(firestore, auth, "create_client", {
+          clientId: docRef.id,
+          clientName: values.name,
+        });
+        form.reset();
+        onSuccess?.();
+      }
+    } catch {
+      if (currentClient) {
+        const clientRef = doc(firestore!, "clients", currentClient.id);
+        errorEmitter.emit(
+          "permission-error",
+          new FirestorePermissionError({
             path: clientRef.path,
             operation: "update",
-            requestResourceData: dataToSave,
-          });
-          errorEmitter.emit("permission-error", permissionError);
-        })
-        .finally(() => {
-          setLoading(false);
-        });
-    } else {
-      const clientsCollectionRef = collection(firestore, "clients");
-      addDoc(clientsCollectionRef, dataToSave)
-        .then((docRef) => {
-          toast({
-            title: "Cliente criado!",
-            description: `O cliente ${values.name} foi adicionado com sucesso.`,
-          });
-          logUserAction(firestore, auth, "create_client", {
-            clientId: docRef.id,
-            clientName: values.name,
-          });
-          form.reset();
-          onSuccess?.();
-        })
-        .catch(async (serverError) => {
-          const permissionError = new FirestorePermissionError({
-            path: clientsCollectionRef.path,
+            requestResourceData: toClientFirestorePayload(values),
+          }),
+        );
+      } else {
+        errorEmitter.emit(
+          "permission-error",
+          new FirestorePermissionError({
+            path: collection(firestore!, "clients").path,
             operation: "create",
-            requestResourceData: dataToSave,
-          });
-          errorEmitter.emit("permission-error", permissionError);
-        })
-        .finally(() => {
-          setLoading(false);
-        });
+            requestResourceData: toClientFirestorePayload(values),
+          }),
+        );
+      }
+    } finally {
+      setLoading(false);
     }
   }
 

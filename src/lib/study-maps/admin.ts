@@ -1,27 +1,16 @@
-import { getApps, initializeApp, type App } from "firebase-admin/app";
-import { getStorage } from "firebase-admin/storage";
-import { getFirestore } from "firebase-admin/firestore";
-import { getAuth } from "firebase-admin/auth";
-import { firebaseConfig } from "@/firebase/config";
+import type { App } from "firebase-admin/app";
+import {
+  adminAuth,
+  adminDb,
+  adminStorage,
+  getFirebaseAdminApp,
+} from "@/lib/firebase-admin";
 
-/** Inicialização lazy — só em rotas API / Node. Usa ADC no GCP ou GOOGLE_APPLICATION_CREDENTIALS local. */
+/** @deprecated Use getFirebaseAdminApp — mantido para compatibilidade com mapas. */
 export function getStudyMapsAdminApp(): App {
-  const apps = getApps();
-  if (apps.length) return apps[0]!;
-  return initializeApp({
-    storageBucket: firebaseConfig.storageBucket,
-    projectId: firebaseConfig.projectId,
-  });
+  return getFirebaseAdminApp();
 }
 
-export function studyMapsAdminAuth() {
-  return getAuth(getStudyMapsAdminApp());
-}
-
-export function studyMapsAdminDb() {
-  return getFirestore(getStudyMapsAdminApp());
-}
-
-export function studyMapsAdminStorage() {
-  return getStorage(getStudyMapsAdminApp());
-}
+export const studyMapsAdminAuth = adminAuth;
+export const studyMapsAdminDb = adminDb;
+export const studyMapsAdminStorage = adminStorage;

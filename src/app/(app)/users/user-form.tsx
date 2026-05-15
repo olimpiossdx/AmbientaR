@@ -472,7 +472,7 @@ export function UserForm({ currentUser, onSuccess, representativeRequestedCpf, r
               variant: 'destructive',
               title: 'Oh, não! Algo deu errado.',
               description: error.code === 'auth/email-already-in-use'
-                ? 'Este e-mail já está em uso por outra conta. Por favor, utilize um e-mail diferente.'
+                ? 'Este e-mail ainda existe no login (Firebase Auth), mesmo que o perfil tenha sido apagado. Um administrador pode usar "Liberar e-mail bloqueado" em Usuários ou apagar a conta em Firebase Console → Authentication.'
                 : (error.message || 'Não foi possível criar o usuário na autenticação.'),
             });
         } finally {

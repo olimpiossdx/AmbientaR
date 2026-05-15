@@ -1,4 +1,4 @@
-import { studyMapsAdminAuth, studyMapsAdminDb } from "@/lib/study-maps/admin";
+import { adminAuth, adminDb, formatFirebaseAdminError } from "@/lib/firebase-admin";
 import type { UserRole } from "@/lib/types";
 
 export type VerifiedAdmin = { uid: string; role: UserRole };
@@ -12,14 +12,20 @@ export async function verifyAdminBearer(
   const idToken = authHeader.slice("Bearer ".length).trim();
   if (!idToken) throw new Error("Token vazio.");
 
-  const decoded = await studyMapsAdminAuth().verifyIdToken(idToken);
-  const profile = await studyMapsAdminDb()
-    .collection("users")
-    .doc(decoded.uid)
-    .get();
-  const role = profile.data()?.role as UserRole | undefined;
-  if (role !== "admin") {
-    throw new Error("Sem permissão. Apenas administrador pode excluir usuários.");
+  try {
+    const decoded = await adminAuth().verifyIdToken(idToken);
+    const profile = await adminDb()
+      .collection("users")
+      .doc(decoded.uid)
+      .get();
+    const role = profile.data()?.role as UserRole | undefined;
+    if (role !== "admin") {
+      throw new Error(
+        "Sem permissão. Apenas administrador pode excluir usuários.",
+      );
+    }
+    return { uid: decoded.uid, role };
+  } catch (err) {
+    throw formatFirebaseAdminError(err);
   }
-  return { uid: decoded.uid, role };
 }

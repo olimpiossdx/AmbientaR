@@ -78,6 +78,10 @@ import {
 } from "@/lib/route-access";
 import { OfflineProvider } from "@/lib/offline";
 import { OfflineQueueBadge } from "@/components/offline-queue-badge";
+import {
+  isUserProfileAlignedWithSession,
+  useAuthUserId,
+} from "@/lib/auth-user-id";
 
 const LogoIcon = () => (
   <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-emerald-400 text-primary-foreground">
@@ -108,17 +112,16 @@ const AppLayoutClient = ({ children }: { children: React.ReactNode }) => {
   const [logoLoading, setLogoLoading] = React.useState(true);
   const { isMobile, openMobile, setOpenMobile } = useSidebar();
 
-  // UID efetivo para subcoleções de `users/{uid}/...`:
-  // prioriza o UID real da sessão autenticada para evitar usar ID de documento por engano.
-  const authUid = auth?.currentUser?.uid || user?.uid || null;
+  const sessionUid = useAuthUserId(auth);
+  const profileAligned = isUserProfileAlignedWithSession(user, sessionUid);
 
   const notificationsQuery = useMemoFirebase(() => {
-    if (!firestore || !user || !authUid) return null;
+    if (!firestore || !profileAligned || !sessionUid) return null;
     return query(
-      collection(firestore, `users/${authUid}/notifications`),
+      collection(firestore, `users/${sessionUid}/notifications`),
       orderBy("createdAt", "desc"),
     );
-  }, [firestore, user, authUid]);
+  }, [firestore, profileAligned, sessionUid]);
 
   const brandingDocRef = useMemoFirebase(() => {
     if (!firestore) return null;
@@ -266,12 +269,12 @@ const AppLayoutClient = ({ children }: { children: React.ReactNode }) => {
   }, [notifications, cadastroIncompleto, pendingAccessRequestsForMe]);
 
   const handleMarkAsRead = async (notification: Notification) => {
-    if (!firestore || !user || !authUid) return;
+    if (!firestore || !profileAligned || !sessionUid) return;
     if (notification.isRead) return;
 
     const notifRef = doc(
       firestore,
-      `users/${authUid}/notifications`,
+      `users/${sessionUid}/notifications`,
       notification.id,
     );
     await updateDoc(notifRef, { isRead: true });

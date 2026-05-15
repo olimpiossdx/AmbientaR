@@ -45,6 +45,10 @@ next-env.d.ts
 
 .genkit/*
 .env*
+!.env.example
+
+# Conta de serviço Firebase (nunca versionar)
+config/firebase-service-account.json
 
 # URL HTTPS da app empacotada no Capacitor (não versionar)
 /capacitor/deployment-url
