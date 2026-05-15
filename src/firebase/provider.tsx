@@ -12,6 +12,7 @@ import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { useToast } from '@/hooks/use-toast';
 import { logUserAction } from '@/lib/audit-log';
+import { PRESENCE_HEARTBEAT_MS } from '@/lib/user-presence';
 
 interface FirebaseContextState {
   firebaseApp: FirebaseApp | null;
@@ -66,9 +67,25 @@ export const FirebaseProvider: React.FC<{ children: ReactNode; firebaseApp: Fire
     if (!firestore) return;
     const userDocRef = doc(firestore, 'users', uid);
     try {
-      await updateDoc(userDocRef, { isOnline });
+      await updateDoc(userDocRef, {
+        isOnline,
+        lastSeenAt: serverTimestamp(),
+      });
     } catch (error) {
       console.warn(`Could not update online status for user ${uid}:`, error);
+    }
+  }, [firestore]);
+
+  const touchUserPresence = useCallback(async (uid: string) => {
+    if (!firestore) return;
+    const userDocRef = doc(firestore, 'users', uid);
+    try {
+      await updateDoc(userDocRef, {
+        isOnline: true,
+        lastSeenAt: serverTimestamp(),
+      });
+    } catch (error) {
+      console.warn(`Could not touch presence for user ${uid}:`, error);
     }
   }, [firestore]);
   
@@ -105,11 +122,10 @@ export const FirebaseProvider: React.FC<{ children: ReactNode; firebaseApp: Fire
                         id: userDoc.id,
                         ...userData,
                         uid: firebaseUser.uid,
-                        isOnline: true,
                         photoURL: userData.photoURL || firebaseUser.photoURL || undefined,
                     };
                     setAppUser(currentUser);
-                    await updateUserOnlineStatus(firebaseUser.uid, true);
+                    await touchUserPresence(firebaseUser.uid);
                 } else {
                      console.warn(`User document not found for uid: ${firebaseUser.uid}. Attempting to create it.`);
                     const newUser: Omit<AppUser, 'id'> = {
@@ -123,7 +139,11 @@ export const FirebaseProvider: React.FC<{ children: ReactNode; firebaseApp: Fire
                         cpf: '',
                         cnpjs: [],
                     };
-                    await setDoc(userDocRef, { ...newUser, lastLogin: serverTimestamp() });
+                    await setDoc(userDocRef, {
+                      ...newUser,
+                      lastLogin: serverTimestamp(),
+                      lastSeenAt: serverTimestamp(),
+                    });
                     setAppUser({ ...newUser, id: firebaseUser.uid });
                 }
             } catch (serverError: any) {
@@ -146,18 +166,47 @@ export const FirebaseProvider: React.FC<{ children: ReactNode; firebaseApp: Fire
 
     const handleBeforeUnload = () => {
       if (auth.currentUser) {
-        updateUserOnlineStatus(auth.currentUser.uid, false);
+        void updateUserOnlineStatus(auth.currentUser.uid, false);
       }
     };
-    
+
+    const handleVisibilityChange = () => {
+      if (!auth.currentUser) return;
+      if (document.visibilityState === 'hidden') {
+        void updateUserOnlineStatus(auth.currentUser.uid, false);
+      } else {
+        void touchUserPresence(auth.currentUser.uid);
+      }
+    };
+
     window.addEventListener('beforeunload', handleBeforeUnload);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
       clearTimeout(safetyTimeout);
       unsubscribe();
       window.removeEventListener('beforeunload', handleBeforeUnload);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      if (auth.currentUser) {
+        void updateUserOnlineStatus(auth.currentUser.uid, false);
+      }
     };
-  }, [auth, firestore, updateUserOnlineStatus]);
+  }, [auth, firestore, updateUserOnlineStatus, touchUserPresence]);
+
+  useEffect(() => {
+    if (!auth?.currentUser) return;
+
+    const uid = auth.currentUser.uid;
+    void touchUserPresence(uid);
+
+    const heartbeat = setInterval(() => {
+      if (auth.currentUser && document.visibilityState === 'visible') {
+        void touchUserPresence(auth.currentUser.uid);
+      }
+    }, PRESENCE_HEARTBEAT_MS);
+
+    return () => clearInterval(heartbeat);
+  }, [auth, appUser?.uid, touchUserPresence]);
 
   const login = useCallback(async (email: string, password_hash: string): Promise<boolean> => {
     if (!auth || !firestore) {

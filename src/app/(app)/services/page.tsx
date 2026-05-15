@@ -30,6 +30,7 @@ import { FirestorePermissionError } from '@/firebase/errors';
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
+import { isAdminOrFinancialRole } from '@/lib/role-guards';
 
 export default function ServicesPage() {
   const [isAlertOpen, setIsAlertOpen] = useState(false);
@@ -46,6 +47,7 @@ export default function ServicesPage() {
   }, [firestore]);
 
   const { data: services, isLoading } = useCollection<Service>(servicesQuery);
+  const canWrite = isAdminOrFinancialRole(user?.role);
 
   const filteredServices = useMemo(() => {
     if (!services) return [];
@@ -107,10 +109,12 @@ export default function ServicesPage() {
     <>
       <div className="flex flex-col h-full">
         <PageHeader title="Tabela de Serviços">
-          <Button size="sm" className="gap-1" onClick={handleAddNew}>
-            <PlusCircle className="h-4 w-4" />
-            Adicionar Serviço
-          </Button>
+          {canWrite && (
+            <Button size="sm" className="gap-1" onClick={handleAddNew}>
+              <PlusCircle className="h-4 w-4" />
+              Adicionar Serviço
+            </Button>
+          )}
         </PageHeader>
         <main className="flex-1 overflow-auto p-4 md:p-6">
           <Card>
@@ -188,6 +192,7 @@ export default function ServicesPage() {
                               ) : null}
                             </div>
                             <Separator className="bg-border/60" />
+                            {canWrite && (
                             <div className="flex flex-wrap items-center gap-1">
                               <Tooltip>
                                 <TooltipTrigger asChild>
@@ -222,6 +227,7 @@ export default function ServicesPage() {
                                 </TooltipContent>
                               </Tooltip>
                             </div>
+                            )}
                           </div>
                         </CardContent>
                       </Card>

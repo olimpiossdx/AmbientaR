@@ -14,6 +14,8 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { FileDown, Printer, Search } from 'lucide-react';
 import type { Revenue, Expense } from '@/lib/types';
+import { useUser } from '@/firebase';
+import { isAdminOrFinancialRole } from '@/lib/role-guards';
 
 type PeriodType = 'day' | 'month' | 'year';
 
@@ -48,6 +50,8 @@ export type CashFlowViewProps = {
 
 export function CashFlowView(props: CashFlowViewProps) {
   const router = useRouter();
+  const { user } = useUser();
+  const canWrite = isAdminOrFinancialRole(user?.role);
   const {
     periodType,
     setPeriodType,
@@ -80,12 +84,14 @@ export function CashFlowView(props: CashFlowViewProps) {
   return (
     <div className="flex flex-col h-full">
       <PageHeader title="Lançamentos de Caixa">
-        <Tabs defaultValue="revenues">
-          <TabsList>
-            <TabsTrigger value="revenues" onClick={() => router.push('/cash-flow/new?type=revenue')}>+ Receita</TabsTrigger>
-            <TabsTrigger value="expenses" onClick={() => router.push('/cash-flow/new?type=expense')}>+ Despesa</TabsTrigger>
-          </TabsList>
-        </Tabs>
+        {canWrite && (
+          <Tabs defaultValue="revenues">
+            <TabsList>
+              <TabsTrigger value="revenues" onClick={() => router.push('/cash-flow/new?type=revenue')}>+ Receita</TabsTrigger>
+              <TabsTrigger value="expenses" onClick={() => router.push('/cash-flow/new?type=expense')}>+ Despesa</TabsTrigger>
+            </TabsList>
+          </Tabs>
+        )}
       </PageHeader>
       <main className="flex-1 overflow-auto p-4 md:p-6">
         <Card className="mb-4 border-border/60 bg-muted/30 shadow-sm">

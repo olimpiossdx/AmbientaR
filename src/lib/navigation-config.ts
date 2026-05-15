@@ -96,7 +96,6 @@ export const allNavItems: NavItem[] = [
       "admin",
       "financial",
       "sales",
-      "supervisor",
       "client",
       "representative",
     ],
@@ -111,7 +110,7 @@ export const allNavItems: NavItem[] = [
         href: "/clients",
         label: "Clientes",
         icon: Users,
-        roles: ["admin", "sales", "financial", "supervisor"],
+        roles: ["admin", "sales", "financial"],
       },
       {
         href: "/contracts",
@@ -120,7 +119,6 @@ export const allNavItems: NavItem[] = [
         roles: [
           "admin",
           "financial",
-          "supervisor",
           "sales",
           "client",
           "representative",
@@ -133,7 +131,6 @@ export const allNavItems: NavItem[] = [
         roles: [
           "admin",
           "financial",
-          "supervisor",
           "sales",
         ],
       },
@@ -141,13 +138,13 @@ export const allNavItems: NavItem[] = [
         href: "/financial/abc-curve",
         label: "Curva ABC",
         icon: LineChart,
-        roles: ["admin", "financial", "supervisor"],
+        roles: ["admin", "financial"],
       },
       {
         href: "/financial/dre-contabil",
         label: "DRE Contábil",
         icon: BarChart2,
-        roles: ["admin", "financial", "supervisor"],
+        roles: ["admin", "financial"],
       },
       {
         href: "/invoices",
@@ -156,7 +153,6 @@ export const allNavItems: NavItem[] = [
         roles: [
           "admin",
           "financial",
-          "supervisor",
           "client",
           "representative",
         ],
@@ -165,16 +161,16 @@ export const allNavItems: NavItem[] = [
         href: "/suppliers",
         label: "Fornecedores",
         icon: Truck,
-        roles: ["admin", "financial", "supervisor"],
+        roles: ["admin", "financial"],
       },
       {
         href: "/cash-flow",
         label: "Lançamentos de Caixa",
         icon: Landmark,
-        roles: ["admin", "financial", "supervisor"],
+        roles: ["admin", "financial"],
       },
       {
-        href: "/external?url=https%3A%2F%2Fwww.nfe-cidades.com.br%2Flanding-page&title=NFe-Eletr%C3%B4nica&newTab=true",
+        href: "/external?url=https%3A%2F%2Fwww.nfse.gov.br%2FEmissorNacional%2FLogin%3FReturnUrl%3D%252fEmissorNacional&title=NFe-Eletr%C3%B4nica",
         label: "NFe-Eletrônica",
         icon: FileText,
         roles: ["admin", "financial"],
@@ -186,7 +182,6 @@ export const allNavItems: NavItem[] = [
         roles: [
           "admin",
           "financial",
-          "supervisor",
           "sales",
           "client",
           "representative",
@@ -196,7 +191,7 @@ export const allNavItems: NavItem[] = [
         href: "/services",
         label: "Tabela de Serviços",
         icon: List,
-        roles: ["admin", "financial", "supervisor"],
+        roles: ["admin", "financial"],
       },
     ],
   },

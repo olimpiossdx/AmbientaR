@@ -60,7 +60,9 @@ import type {
   CommercialProposal,
 } from "@/lib/types";
 import {
-  isAdminOrSupervisorRole,
+  canApproveContracts,
+  canWriteContractsCommercial,
+  isAdminOrFinancialRole,
   isClientePortalRole,
 } from "@/lib/role-guards";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -482,7 +484,7 @@ export default function ContractsPage() {
     <>
       <div className="flex flex-col h-full">
         <PageHeader title="Contratos">
-          {!isClientePortalRole(user?.role) && (
+          {canWriteContractsCommercial(user?.role) && (
             <div className="flex items-center gap-2">
               <Button
                 size="sm"
@@ -553,7 +555,7 @@ export default function ContractsPage() {
               </div>
             </div>
           </div>
-          {!isClientePortalRole(user?.role) && (
+          {canWriteContractsCommercial(user?.role) && (
             <Card>
               <CardHeader>
                 <CardTitle>Gerenciamento de Contratos</CardTitle>
@@ -643,7 +645,7 @@ export default function ContractsPage() {
                                     <p>Gerar PDF</p>
                                   </TooltipContent>
                                 </Tooltip>
-                                {isAdminOrSupervisorRole(user?.role) && (
+                                {canApproveContracts(user?.role) && (
                                   <Tooltip>
                                     <TooltipTrigger asChild>
                                       <Button
@@ -787,7 +789,7 @@ export default function ContractsPage() {
                                     <p>Ver contrato assinado</p>
                                   </TooltipContent>
                                 </Tooltip>
-                              ) : !isClientePortalRole(user?.role) ? (
+                              ) : canWriteContractsCommercial(user?.role) ? (
                                 <Tooltip>
                                   <TooltipTrigger asChild>
                                     <Button
@@ -806,8 +808,7 @@ export default function ContractsPage() {
                                   </TooltipContent>
                                 </Tooltip>
                               ) : null}
-                              {(user?.role === "admin" ||
-                                user?.role === "supervisor") && (
+                              {isAdminOrFinancialRole(user?.role) && (
                                 <Tooltip>
                                   <TooltipTrigger asChild>
                                     <Button

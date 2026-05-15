@@ -308,11 +308,7 @@ export default function InvoicesPage() {
     if (!firestore || !user) return null;
 
     // Perfis internos: veem todas as faturas.
-    if (
-      user.role === "admin" ||
-      user.role === "financial" ||
-      user.role === "supervisor"
-    ) {
+    if (user.role === "admin" || user.role === "financial") {
       return collection(firestore, "invoices");
     }
 
@@ -937,9 +933,7 @@ export default function InvoicesPage() {
     <>
       <div className="flex flex-col h-full">
         <PageHeader title="Faturas">
-          {(user?.role === "admin" ||
-            user?.role === "financial" ||
-            user?.role === "supervisor") && (
+          {(user?.role === "admin" || user?.role === "financial") && (
             <Button size="sm" className="gap-1" onClick={handleAddNew}>
               <PlusCircle className="h-4 w-4" />
               Criar Fatura
@@ -1391,8 +1385,7 @@ export default function InvoicesPage() {
                                 </Tooltip>
                               )}
                               {(user?.role === "admin" ||
-                                user?.role === "financial" ||
-                                user?.role === "supervisor") && (
+                                user?.role === "financial") && (
                                 <>
                                   <Tooltip>
                                     <TooltipTrigger asChild>

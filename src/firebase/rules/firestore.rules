@@ -364,7 +364,7 @@ service cloud.firestore {
      */
     match /clients/{clientId} {
       allow read: if request.auth != null;
-      allow write: if isSignedIn();
+      allow write: if isAdmin() || isFinancial() || isSales();
     }
     
     /**
@@ -372,8 +372,8 @@ service cloud.firestore {
      * @path /databases/{database}/documents/fornecedores/{fornecedorId}
      */
     match /fornecedores/{fornecedorId} {
-      allow read: if isAdmin() || isFinancial() || isSupervisor();
-      allow write: if isAdmin() || isFinancial() || isSupervisor();
+      allow read: if isAdmin() || isFinancial() || isSales();
+      allow write: if isAdmin() || isFinancial();
     }
     
     /**
@@ -383,7 +383,7 @@ service cloud.firestore {
      */
     match /services/{serviceId} {
       allow read: if isSignedIn();
-      allow write: if isAdmin() || isFinancial() || isSupervisor();
+      allow write: if isAdmin() || isFinancial();
     }
 
 
@@ -659,7 +659,7 @@ service cloud.firestore {
      */
     match /invoices/{invoiceId} {
       allow read: if isSignedIn();
-      allow write: if isAdmin() || isFinancial() || isSupervisor();
+      allow write: if isAdmin() || isFinancial();
     }
 
      /**
@@ -668,9 +668,9 @@ service cloud.firestore {
      */
     match /commercialProposals/{proposalId} {
       allow read: if isSignedIn();
-      allow write: if isAdmin() || isSales() || isSupervisor() || isFinancial();
+      allow write: if isAdmin() || isSales() || isFinancial();
       allow update: if (isAdmin() || isFinancial()) || (
-        (isSales() || isSupervisor()) &&
+        isSales() &&
         !(
           'status' in request.resource.data &&
           (
@@ -688,7 +688,7 @@ service cloud.firestore {
      */
     match /proposals/{proposalId} {
       allow read: if isSignedIn();
-      allow write: if isAdmin() || isSales() || isSupervisor() || isFinancial();
+      allow write: if isAdmin() || isSales() || isFinancial();
     }
 
     /**
@@ -697,9 +697,9 @@ service cloud.firestore {
      */
     match /contracts/{contractId} {
       allow read: if isSignedIn();
-      allow write: if isAdmin() || isSales() || isSupervisor() || isFinancial();
+      allow write: if isAdmin() || isSales() || isFinancial();
       allow update: if (isAdmin() || isFinancial()) || (
-        (isSales() || isSupervisor()) &&
+        isSales() &&
         !(
           'status' in request.resource.data &&
           request.resource.data.status == 'Aprovado' &&
@@ -714,7 +714,7 @@ service cloud.firestore {
      */
     match /supplierContracts/{contractId} {
       allow read: if isSignedIn();
-      allow write: if isAdmin() || isSales() || isSupervisor() || isFinancial();
+      allow write: if isAdmin() || isSales() || isFinancial();
     }
 
     /**
@@ -813,6 +813,7 @@ service cloud.firestore {
     match /access_requests/{requestId} {
       allow read, create: if request.auth != null;
       allow update: if request.auth != null;
+      allow delete: if isAdmin();
     }
 
     /**

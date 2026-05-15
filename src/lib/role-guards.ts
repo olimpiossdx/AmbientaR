@@ -103,3 +103,42 @@ export function canManageProposalsAndCommercialQuotes(
 ): boolean {
   return role === "admin" || role === "financial";
 }
+
+/** Lançamentos de caixa, faturas, fornecedores, tabela de serviços: escrita admin/financeiro. */
+export function isAdminOrFinancialRole(
+  role: UserRole | undefined | null,
+): boolean {
+  return role === "admin" || role === "financial";
+}
+
+/** Clientes comerciais: escrita admin, financeiro e vendas. */
+export function canWriteCommercialClients(
+  role: UserRole | undefined | null,
+): boolean {
+  return (
+    role === "admin" || role === "financial" || role === "sales"
+  );
+}
+
+/** Contratos e contratos-fornecedores: criar/editar (não aprovar) — admin, financeiro, vendas. */
+export function canWriteContractsCommercial(
+  role: UserRole | undefined | null,
+): boolean {
+  return (
+    role === "admin" || role === "financial" || role === "sales"
+  );
+}
+
+/** Aprovar contrato (status Aprovado): apenas admin e financeiro. */
+export function canApproveContracts(
+  role: UserRole | undefined | null,
+): boolean {
+  return role === "admin" || role === "financial";
+}
+
+/** Aceitar/rejeitar proposta comercial: apenas admin e financeiro. */
+export function canAcceptRejectCommercialProposals(
+  role: UserRole | undefined | null,
+): boolean {
+  return role === "admin" || role === "financial";
+}

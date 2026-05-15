@@ -73,7 +73,6 @@ const canWrite = (user: AppUser | null) =>
   !!user &&
   (user.role === "admin" ||
     user.role === "financial" ||
-    user.role === "supervisor" ||
     user.role === "sales");
 
 export default function ContractsSuppliersPage() {

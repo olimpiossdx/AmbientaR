@@ -32,6 +32,7 @@ import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/comp
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import { formatCpfCnpjDisplay } from '@/lib/masks';
+import { isAdminOrFinancialRole } from '@/lib/role-guards';
 
 export default function SuppliersPage() {
   const [isAlertOpen, setIsAlertOpen] = useState(false);
@@ -48,6 +49,7 @@ export default function SuppliersPage() {
   }, [firestore, user]);
 
   const { data: suppliers, isLoading } = useCollection<Fornecedor>(suppliersQuery);
+  const canWrite = isAdminOrFinancialRole(user?.role);
 
   const filteredSuppliers = useMemo(() => {
     if (!suppliers) return [];
@@ -110,10 +112,12 @@ export default function SuppliersPage() {
     <>
       <div className="flex flex-col h-full">
         <PageHeader title="Fornecedores">
-          <Button size="sm" className="gap-1" onClick={handleAddNew}>
-            <PlusCircle className="h-4 w-4" />
-            Adicionar Fornecedor
-          </Button>
+          {canWrite && (
+            <Button size="sm" className="gap-1" onClick={handleAddNew}>
+              <PlusCircle className="h-4 w-4" />
+              Adicionar Fornecedor
+            </Button>
+          )}
         </PageHeader>
         <main className="flex-1 overflow-auto p-4 md:p-6">
           <Card>
@@ -179,40 +183,42 @@ export default function SuppliersPage() {
                               </p>
                             </div>
                             <Separator className="bg-border/60" />
-                            <div className="flex flex-wrap items-center gap-1">
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-9 w-9 shrink-0"
-                                    onClick={() => handleEdit(supplier)}
-                                  >
-                                    <Pencil className="h-4 w-4" />
-                                    <span className="sr-only">Editar</span>
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  <p>Editar fornecedor</p>
-                                </TooltipContent>
-                              </Tooltip>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-9 w-9 shrink-0 text-destructive hover:text-destructive"
-                                    onClick={() => openDeleteConfirm(supplier.id)}
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                    <span className="sr-only">Deletar</span>
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  <p>Deletar fornecedor</p>
-                                </TooltipContent>
-                              </Tooltip>
-                            </div>
+                            {canWrite && (
+                              <div className="flex flex-wrap items-center gap-1">
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-9 w-9 shrink-0"
+                                      onClick={() => handleEdit(supplier)}
+                                    >
+                                      <Pencil className="h-4 w-4" />
+                                      <span className="sr-only">Editar</span>
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Editar fornecedor</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-9 w-9 shrink-0 text-destructive hover:text-destructive"
+                                      onClick={() => openDeleteConfirm(supplier.id)}
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                      <span className="sr-only">Deletar</span>
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Deletar fornecedor</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </div>
+                            )}
                           </div>
                         </CardContent>
                       </Card>

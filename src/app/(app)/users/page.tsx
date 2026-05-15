@@ -22,6 +22,8 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { isClientePortalRole } from "@/lib/role-guards";
+import { isUserConsideredOnline } from "@/lib/user-presence";
+import { usePresenceClock } from "@/hooks/use-user-presence";
 import type {
   AppUser,
   AuditLog,
@@ -183,6 +185,7 @@ export default function UsersPage() {
   }, [firestore, user]);
 
   const { data: appUsers, isLoading } = useCollection<AppUser>(usersQuery);
+  const presenceNow = usePresenceClock();
 
   const { data: brandingData } = useLocalBranding();
 
@@ -240,7 +243,7 @@ export default function UsersPage() {
         user?.role === "representative") &&
         target.id === user?.id));
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!firestore || !userToDelete || !auth) return;
     if (!canDeleteUser(userToDelete)) {
       toast({
@@ -255,14 +258,39 @@ export default function UsersPage() {
     }
     const isSelfDelete = userToDelete.id === user?.id;
     const userDocRef = doc(firestore, "users", userToDelete.id);
-    deleteDoc(userDocRef)
-      .then(async () => {
-        if (user?.role === "admin" && !isSelfDelete) {
-          logUserAction(firestore, auth, "delete_user", {
-            deletedUserId: userToDelete.uid,
-            deletedUserName: userToDelete.name,
-          });
+
+    try {
+      if (user?.role === "admin" && !isSelfDelete) {
+        const token = await auth.currentUser?.getIdToken();
+        if (!token) throw new Error("Sessão inválida. Faça login novamente.");
+        const res = await fetch("/api/admin/delete-user", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            userId: userToDelete.id,
+            email: userToDelete.email,
+          }),
+        });
+        const data = (await res.json()) as { success?: boolean; error?: string };
+        if (!res.ok || !data.success) {
+          throw new Error(
+            data.error ||
+              "Não foi possível remover o utilizador por completo no servidor.",
+          );
         }
+        logUserAction(firestore, auth, "delete_user", {
+          deletedUserId: userToDelete.uid,
+          deletedUserName: userToDelete.name,
+        });
+        toast({
+          title: "Usuário excluído",
+          description: `O utilizador ${userToDelete.name} foi removido do Firestore, do login (Auth) e dos pedidos de acesso associados. O e-mail pode ser reutilizado.`,
+        });
+      } else {
+        await deleteDoc(userDocRef);
         toast({
           title: isSelfDelete
             ? "Usuário de acesso removido"
@@ -274,9 +302,13 @@ export default function UsersPage() {
         if (isSelfDelete && auth.currentUser) {
           try {
             await deleteUser(auth.currentUser);
-          } catch (err: any) {
+          } catch (err: unknown) {
             await auth.signOut();
-            if (err?.code === "auth/requires-recent-login") {
+            const code =
+              err && typeof err === "object" && "code" in err
+                ? String((err as { code: string }).code)
+                : "";
+            if (code === "auth/requires-recent-login") {
               toast({
                 variant: "destructive",
                 title: "Reautenticação necessária",
@@ -294,18 +326,33 @@ export default function UsersPage() {
           }
           router.push("/login");
         }
-      })
-      .catch(async (serverError) => {
+      }
+    } catch (serverError) {
+      const message =
+        serverError instanceof Error
+          ? serverError.message
+          : "Não foi possível excluir o utilizador.";
+      if (
+        user?.role === "admin" &&
+        !isSelfDelete &&
+        message.includes("credencial") === false
+      ) {
+        toast({
+          variant: "destructive",
+          title: "Erro na exclusão definitiva",
+          description: message,
+        });
+      } else {
         const permissionError = new FirestorePermissionError({
           path: userDocRef.path,
           operation: "delete",
         });
         errorEmitter.emit("permission-error", permissionError);
-      })
-      .finally(() => {
-        setIsAlertOpen(false);
-        setUserToDelete(null);
-      });
+      }
+    } finally {
+      setIsAlertOpen(false);
+      setUserToDelete(null);
+    }
   };
 
   const handleGenerateLog = async (logUser: AppUser, format: "txt" | "pdf") => {
@@ -1571,12 +1618,14 @@ export default function UsersPage() {
                                 <span
                                   className={cn(
                                     "h-2.5 w-2.5 shrink-0 rounded-full",
-                                    appUser.isOnline
+                                    isUserConsideredOnline(appUser, presenceNow)
                                       ? "bg-green-500"
                                       : "bg-red-500",
                                   )}
                                 />
-                                {appUser.isOnline ? "Online" : "Offline"}
+                                {isUserConsideredOnline(appUser, presenceNow)
+                                  ? "Online"
+                                  : "Offline"}
                               </span>
                               <span className="hidden sm:inline">·</span>
                               <span className="hidden sm:inline break-all">
@@ -1805,7 +1854,11 @@ export default function UsersPage() {
               <div className="grid grid-cols-2 gap-4">
                 <DetailItem
                   label="Status Online"
-                  value={viewingUser.isOnline ? "Online" : "Offline"}
+                  value={
+                    isUserConsideredOnline(viewingUser, presenceNow)
+                      ? "Online"
+                      : "Offline"
+                  }
                 />
                 <DetailItem
                   label="Último Login"

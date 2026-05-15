@@ -17,6 +17,13 @@ service firebase.storage {
         userRoleForStorage() != 'representative';
     }
 
+    /** Uploads financeiros: apenas admin e financeiro. */
+    function mayWriteFinancialStorage() {
+      return request.auth != null &&
+        firestore.exists(/databases/(default)/documents/users/$(request.auth.uid)) &&
+        (userRoleForStorage() == 'admin' || userRoleForStorage() == 'financial');
+    }
+
     match /car/{fileName} {
       allow read: if request.auth != null;
       allow write: if mayWriteCarStorage();
@@ -34,18 +41,34 @@ service firebase.storage {
       allow write: if request.auth != null && request.auth.uid == userId;
     }
 
-    // Pastas financeiras / contratos (regex com | não é suportada no path; blocos separados).
+    // Pastas financeiras / contratos: leitura autenticada; escrita admin/financeiro.
     match /invoices/{allPaths=**} {
-      allow read, write: if request.auth != null;
+      allow read: if request.auth != null;
+      allow write: if mayWriteFinancialStorage();
     }
     match /contracts/{allPaths=**} {
-      allow read, write: if request.auth != null;
+      allow read: if request.auth != null;
+      allow write: if mayWriteFinancialStorage();
     }
     match /receipts/{allPaths=**} {
-      allow read, write: if request.auth != null;
+      allow read: if request.auth != null;
+      allow write: if mayWriteFinancialStorage();
     }
     match /signed-contracts/{allPaths=**} {
-      allow read, write: if request.auth != null;
+      allow read: if request.auth != null;
+      allow write: if mayWriteFinancialStorage();
+    }
+    match /transactions/{allPaths=**} {
+      allow read: if request.auth != null;
+      allow write: if mayWriteFinancialStorage();
+    }
+    match /commercial-proposals/{allPaths=**} {
+      allow read: if request.auth != null;
+      allow write: if mayWriteFinancialStorage();
+    }
+    match /supplier-contracts/{allPaths=**} {
+      allow read: if request.auth != null;
+      allow write: if mayWriteFinancialStorage();
     }
     
     // Regra padrão: nega acesso a todos os outros caminhos por segurança,

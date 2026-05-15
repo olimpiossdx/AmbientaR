@@ -37,6 +37,7 @@ import { FirestorePermissionError } from '@/firebase/errors';
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { useMemo } from 'react';
 import { TransactionViewDialog } from './transaction-view-dialog';
+import { isAdminOrFinancialRole } from '@/lib/role-guards';
 
 type ExpenseTableProps = {
   expenses?: Expense[] | null;
@@ -63,6 +64,7 @@ export function ExpenseTable({ expenses: expensesProp, isLoadingExpenses: isLoad
     [expensesProp, hookExpenses],
   );
   const isLoading = expensesProp !== undefined ? (isLoadingExpensesProp ?? false) : hookLoading;
+  const canWrite = isAdminOrFinancialRole(user?.role);
   const sortedExpenses = useMemo(
     () =>
       [...(expenses || [])].sort(
@@ -116,12 +118,14 @@ export function ExpenseTable({ expenses: expensesProp, isLoadingExpenses: isLoad
 
   return (
     <>
+     {canWrite && (
      <div className="flex justify-end mb-4">
         <Button size="sm" className="gap-1" onClick={handleAddNew}>
           <PlusCircle className="h-4 w-4" />
           Adicionar Despesa
         </Button>
       </div>
+     )}
        <TooltipProvider>
         <div className="space-y-3 md:hidden">
           {isLoading &&
@@ -154,17 +158,21 @@ export function ExpenseTable({ expenses: expensesProp, isLoadingExpenses: isLoad
                         </a>
                       </Button>
                     )}
-                    <Button variant="ghost" size="icon" onClick={() => handleEdit(item)}>
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="text-destructive hover:text-destructive"
-                      onClick={() => openDeleteConfirm(item.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    {canWrite && (
+                      <>
+                        <Button variant="ghost" size="icon" onClick={() => handleEdit(item)}>
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-destructive hover:text-destructive"
+                          onClick={() => openDeleteConfirm(item.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -222,24 +230,28 @@ export function ExpenseTable({ expenses: expensesProp, isLoadingExpenses: isLoad
                 <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-1">
                         <TransactionViewDialog item={item} type="Despesa" />
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Button variant="ghost" size="icon" onClick={() => handleEdit(item)}>
-                                    <Pencil className="h-4 w-4" />
-                                    <span className="sr-only">Editar</span>
-                                </Button>
-                            </TooltipTrigger>
-                            <TooltipContent><p>Editar Lançamento</p></TooltipContent>
-                        </Tooltip>
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => openDeleteConfirm(item.id)}>
-                                    <Trash2 className="h-4 w-4" />
-                                    <span className="sr-only">Deletar</span>
-                                </Button>
-                            </TooltipTrigger>
-                            <TooltipContent><p>Deletar Lançamento</p></TooltipContent>
-                        </Tooltip>
+                        {canWrite && (
+                          <>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button variant="ghost" size="icon" onClick={() => handleEdit(item)}>
+                                        <Pencil className="h-4 w-4" />
+                                        <span className="sr-only">Editar</span>
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent><p>Editar Lançamento</p></TooltipContent>
+                            </Tooltip>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => openDeleteConfirm(item.id)}>
+                                        <Trash2 className="h-4 w-4" />
+                                        <span className="sr-only">Deletar</span>
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent><p>Deletar Lançamento</p></TooltipContent>
+                            </Tooltip>
+                          </>
+                        )}
                     </div>
                 </TableCell>
                 </TableRow>

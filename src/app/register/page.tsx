@@ -476,7 +476,7 @@ export default function RegisterPage() {
           mode === "representative" ? null : serverTimestamp(),
         createdAt: serverTimestamp(),
         lastLogin: serverTimestamp(),
-        isOnline: true,
+        isOnline: false,
         cadastroIncompleto: true,
         ...(isTitularPlanMode
           ? {

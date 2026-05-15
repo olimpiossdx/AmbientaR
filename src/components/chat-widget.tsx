@@ -17,6 +17,8 @@ import { useToast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { Badge } from '@/components/ui/badge';
+import { isUserConsideredOnline } from '@/lib/user-presence';
+import { usePresenceClock } from '@/hooks/use-user-presence';
 
 
 const getChatId = (uid1: string, uid2: string) => {
@@ -47,6 +49,7 @@ export default function ChatWidget() {
         return query(collection(firestore, 'users'), where('role', 'in', ['admin', 'supervisor']));
     }, [firestore, user]);
     const { data: users, isLoading: isLoadingUsers } = useCollection<AppUser>(usersQuery);
+    const presenceNow = usePresenceClock();
     
     const chatsQuery = useMemoFirebase(() => {
         if (!firestore || !user) return null;
@@ -270,7 +273,7 @@ export default function ChatWidget() {
                                             <div className="flex-1 text-left flex items-center justify-between">
                                                 <div className='flex items-center gap-2'>
                                                   <div className="font-medium">{u.name}</div>
-                                                  <span className={cn("h-2 w-2 rounded-full", u.isOnline ? 'bg-green-500' : 'bg-red-500')} />
+                                                  <span className={cn("h-2 w-2 rounded-full", isUserConsideredOnline(u, presenceNow) ? 'bg-green-500' : 'bg-red-500')} />
                                                 </div>
                                                 {unreadCounts[u.uid] > 0 && (
                                                     <Badge className="h-5 w-5 p-0 flex items-center justify-center text-xs">{unreadCounts[u.uid]}</Badge>

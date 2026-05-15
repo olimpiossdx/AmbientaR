@@ -22,8 +22,9 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
+  canAcceptRejectCommercialProposals,
   canManageProposalsAndCommercialQuotes,
-  isAdminOrSupervisorRole,
+  isAdminOrFinancialRole,
   isClientePortalRole,
 } from "@/lib/role-guards";
 import {
@@ -1025,7 +1026,7 @@ export default function CommercialProposalsPage() {
                                             </TooltipContent>
                                           </Tooltip>
                                         )}
-                                        {isAdminOrSupervisorRole(user?.role) && (
+                                        {canAcceptRejectCommercialProposals(user?.role) && (
                                           <>
                                             <Tooltip>
                                               <TooltipTrigger asChild>
@@ -1193,7 +1194,7 @@ export default function CommercialProposalsPage() {
                                       </TooltipContent>
                                     </Tooltip>
                                   )}
-                                  {isAdminOrSupervisorRole(user?.role) && (
+                                  {isAdminOrFinancialRole(user?.role) && (
                                     <Tooltip>
                                       <TooltipTrigger asChild>
                                         <Button

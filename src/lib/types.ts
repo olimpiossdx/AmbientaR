@@ -1282,6 +1282,8 @@ export type AppUser = {
   cnpjs?: string[];
   photoURL?: string;
   isOnline?: boolean;
+  /** Atualizado pelo heartbeat de presença; usado com TTL na UI. */
+  lastSeenAt?: any;
   lastLogin?: any;
   dataNascimento?: string;
   phone?: string;
