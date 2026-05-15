@@ -48,19 +48,13 @@ import {
   where,
   updateDoc,
   getDoc,
-  getDocs,
 } from "firebase/firestore";
 import * as React from "react";
-import {
-  fetchBrandingImageAsBase64,
-  getImageDimensions,
-  calcPdfImageSize,
-  applyImageOpacity,
-} from "@/lib/branding-pdf";
+import { generateCommercialProposalPdf } from "@/lib/commercial-proposal-pdf";
+import { useLocalBranding } from "@/hooks/use-local-branding";
 import type {
   CommercialProposal,
   Client,
-  CompanySettings,
   Contract,
   EnvironmentalCompany,
 } from "@/lib/types";
@@ -86,8 +80,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { FirestorePermissionError } from "@/firebase/errors";
-import jsPDF from "jspdf";
-import "jspdf-autotable";
 import { logUserAction } from "@/lib/audit-log";
 import { ProposalForm } from "./proposal-form";
 import {
@@ -115,24 +107,6 @@ import {
   XCircle as XCircleIcon,
   Link2,
 } from "lucide-react";
-
-/** Adiciona numeração de páginas no rodapé no formato página/total. */
-function addPageNumbers(doc: jsPDF, bottomMarginMm: number = 10) {
-  const pageCount = doc.getNumberOfPages();
-  for (let i = 1; i <= pageCount; i++) {
-    doc.setPage(i);
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const pageHeight = doc.internal.pageSize.getHeight();
-    doc.setFontSize(8);
-    doc.setFont("helvetica", "normal");
-    doc.text(
-      `${i}/${pageCount}`,
-      pageWidth - bottomMarginMm,
-      pageHeight - bottomMarginMm,
-      { align: "right" },
-    );
-  }
-}
 
 const DetailItem = ({
   label,
@@ -165,10 +139,14 @@ export default function CommercialProposalsPage() {
   const [filterValorMax, setFilterValorMax] = useState("");
   const [filterNumero, setFilterNumero] = useState("");
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [exportingProposalId, setExportingProposalId] = useState<string | null>(
+    null,
+  );
   const router = useRouter();
 
   const { firestore, auth, user } = useFirebase();
   const { toast } = useToast();
+  const { data: brandingData } = useLocalBranding();
 
   const [clientIdsForUser, setClientIdsForUser] = useState<string[] | null>(
     null,
@@ -457,275 +435,47 @@ export default function CommercialProposalsPage() {
       });
       return;
     }
+    if (exportingProposalId) return;
 
-    const client = clientsMap.get(proposal.clientId);
-    const pdfDoc = new jsPDF({ unit: "mm", format: "a4" });
-
-    const companyProfileDocRef = doc(
-      firestore,
-      "companySettings",
-      "companyProfile",
-    );
-    let companyProfile: Omit<EnvironmentalCompany, "id"> | null = null;
-    let brandingData: {
-      headerImageUrl?: string | null;
-      footerImageUrl?: string | null;
-      watermarkImageUrl?: string | null;
-    } | null = null;
-
-    const brandingDocRef = doc(firestore, "companySettings", "branding");
+    setExportingProposalId(proposal.id);
     try {
-      const [brandingSnap, companySnap] = await Promise.all([
-        getDoc(brandingDocRef),
-        getDoc(companyProfileDocRef),
+      const [proposalSnap, companySnap] = await Promise.all([
+        getDoc(doc(firestore, "commercialProposals", proposal.id)),
+        getDoc(doc(firestore, "companySettings", "companyProfile")),
       ]);
-      if (brandingSnap.exists()) {
-        brandingData = brandingSnap.data() as {
-          headerImageUrl?: string | null;
-          footerImageUrl?: string | null;
-          watermarkImageUrl?: string | null;
-        };
-      }
-      companyProfile = companySnap.exists()
+
+      const proposalData = proposalSnap.exists()
+        ? ({ ...(proposalSnap.data() as Omit<CommercialProposal, "id">), id: proposal.id } as CommercialProposal)
+        : proposal;
+
+      const companyProfile = companySnap.exists()
         ? (companySnap.data() as Omit<EnvironmentalCompany, "id">)
         : null;
+
+      const client = clientsMap.get(proposalData.clientId);
+
+      await generateCommercialProposalPdf({
+        proposal: proposalData,
+        client,
+        companyProfile,
+        branding: brandingData,
+      });
+
+      toast({
+        title: "PDF exportado",
+        description: `Proposta ${proposalData.proposalNumber} gerada com sucesso.`,
+      });
     } catch (error) {
-      console.error("Error fetching settings for PDF:", error);
+      console.error("Erro ao exportar proposta comercial:", error);
       toast({
         variant: "destructive",
-        title: "Erro ao buscar dados",
-        description: "Não foi possível carregar as configurações da empresa.",
+        title: "Erro ao exportar PDF",
+        description:
+          "Não foi possível gerar o arquivo. Verifique a conexão e tente novamente.",
       });
+    } finally {
+      setExportingProposalId(null);
     }
-
-    const headerBase64 = await fetchBrandingImageAsBase64(
-      brandingData?.headerImageUrl ?? undefined,
-    );
-    const footerBase64 = await fetchBrandingImageAsBase64(
-      brandingData?.footerImageUrl ?? undefined,
-    );
-    const watermarkBase64Raw = await fetchBrandingImageAsBase64(
-      brandingData?.watermarkImageUrl ?? undefined,
-    );
-    const watermarkBase64 = watermarkBase64Raw
-      ? await applyImageOpacity(watermarkBase64Raw, 0.15)
-      : null;
-
-    const pageHeight = pdfDoc.internal.pageSize.getHeight();
-    const pageWidth = pdfDoc.internal.pageSize.getWidth();
-    const margins = { top: 15, bottom: 25, left: 15, right: 15 };
-    const contentWidth = pageWidth - margins.left - margins.right;
-    let yPos = margins.top;
-
-    const hDims = headerBase64 ? await getImageDimensions(headerBase64) : null;
-    const hSize = hDims ? calcPdfImageSize(hDims, contentWidth, 30) : null;
-    const fDims = footerBase64 ? await getImageDimensions(footerBase64) : null;
-    const fSize = fDims ? calcPdfImageSize(fDims, contentWidth, 20) : null;
-
-    const addHeaderFooter = (docInstance: jsPDF) => {
-      const pageCount = docInstance.getNumberOfPages();
-      for (let i = 1; i <= pageCount; i++) {
-        docInstance.setPage(i);
-        if (headerBase64 && hSize) {
-          try {
-            docInstance.addImage(
-              headerBase64,
-              "PNG",
-              margins.left,
-              10,
-              hSize.w,
-              hSize.h,
-            );
-          } catch (e) {
-            console.error("Error adding header image to PDF", e);
-          }
-        }
-        if (watermarkBase64) {
-          try {
-            const imgProps = docInstance.getImageProperties(watermarkBase64);
-            const aspectRatio = imgProps.width / imgProps.height;
-            const w = 100;
-            const h = w / aspectRatio;
-            docInstance.addImage(
-              watermarkBase64,
-              "PNG",
-              (pageWidth - w) / 2,
-              (pageHeight - h) / 2,
-              w,
-              h,
-              undefined,
-              "FAST",
-            );
-          } catch (e) {
-            console.error("Error adding watermark to PDF", e);
-          }
-        }
-        if (footerBase64 && fSize) {
-          try {
-            docInstance.addImage(
-              footerBase64,
-              "PNG",
-              margins.left,
-              pageHeight - fSize.h - 5,
-              fSize.w,
-              fSize.h,
-            );
-          } catch (e) {
-            console.error("Error adding footer image to PDF", e);
-          }
-        }
-      }
-      // Numeração de páginas alinhada à direita no rodapé.
-      addPageNumbers(docInstance, 10);
-    };
-
-    yPos = headerBase64 && hSize ? 10 + hSize.h + 5 : 20;
-
-    pdfDoc.setFontSize(18);
-    pdfDoc.setFont("helvetica", "bold");
-    pdfDoc.text("PROPOSTA COMERCIAL", pageWidth / 2, yPos, { align: "center" });
-    yPos += 10;
-
-    pdfDoc.setFontSize(10);
-    pdfDoc.setFont("helvetica", "normal");
-    pdfDoc.text(
-      `Data: ${new Date(proposal.proposalDate).toLocaleDateString("pt-BR", { year: "numeric", month: "long", day: "numeric" })}`,
-      margins.left,
-      yPos,
-    );
-    yPos += 10;
-
-    if (client) {
-      const introText = `A presente proposta foi elaborada no sentido de atender a demanda solicitada para o Sr(a). ${client.name} para o empreendimento ${proposal.empreendimento || "não especificado"} no município de ${client.municipio || "não especificado"} no estado de ${client.uf || "não especificado"}.`;
-      const introLines = pdfDoc.splitTextToSize(introText, contentWidth);
-      pdfDoc.text(introLines, margins.left, yPos);
-      yPos += introLines.length * 5 + 10;
-    }
-
-    pdfDoc.setFontSize(12);
-    pdfDoc.setFont("helvetica", "bold");
-    pdfDoc.text("Descrição dos Serviços:", margins.left, yPos);
-    yPos += 7;
-
-    pdfDoc.setFontSize(10);
-    pdfDoc.setFont("helvetica", "normal");
-    (proposal.items || []).forEach((item) => {
-      const itemText = `• ${item.description}: ${formatCurrency(item.value)}`;
-      const itemLines = pdfDoc.splitTextToSize(itemText, contentWidth);
-      if (yPos + itemLines.length * 5 > pageHeight - margins.bottom) {
-        pdfDoc.addPage();
-        yPos = margins.top + 20;
-      }
-      pdfDoc.text(itemLines, margins.left + 5, yPos);
-      yPos += itemLines.length * 5 + 2;
-    });
-    yPos += 5;
-
-    pdfDoc.setFontSize(12);
-    pdfDoc.setFont("helvetica", "bold");
-    pdfDoc.text("Forma de Pagamento:", margins.left, yPos);
-    yPos += 7;
-    pdfDoc.setFontSize(10);
-    pdfDoc.setFont("helvetica", "normal");
-    const paymentTerms = proposal.paymentTerms || "A ser combinado.";
-    const paymentLines = pdfDoc.splitTextToSize(paymentTerms, contentWidth);
-    pdfDoc.text(paymentLines, margins.left, yPos);
-    yPos += paymentLines.length * 5 + 10;
-
-    pdfDoc.setFontSize(12);
-    pdfDoc.setFont("helvetica", "bold");
-    pdfDoc.text("Observações:", margins.left, yPos);
-    yPos += 5;
-
-    const responsabilidadesContratada = [
-      "Os custos de taxas e emolumentos referentes ao órgão licenciador NÃO estão inclusos.",
-      "Juntar, avaliar e definir estratégias para a condução dos processos de licenciamento visando o menor custo e tempo.",
-      "Mensurar e avaliar estudos prévios para evitar retrabalhos.",
-      "Reunir com ex-contratados para definir continuidade de trabalhos iniciados.",
-      "Repassar ao contratante, de forma didática e simplificada, o andamento de cada etapa.",
-      "Conduzir os trabalhos conforme normas técnicas e legislação vigente.",
-      "Cumprir todas as obrigações sociais, trabalhistas, fiscais e de seguros contra acidentes de trabalho.",
-      "Disponibilizar meios necessários para auditorias, controles e consultorias.",
-      "Prestar informações e relatórios sempre que solicitado.",
-    ];
-
-    const responsabilidadesContratante = [
-      "Credenciar o pessoal da contratada para obtenção de informações e dados necessários.",
-      "Fornecer alojamento e alimentação ao corpo técnico durante os estudos no imóvel.",
-      "Providenciar acesso às propriedades públicas ou privadas necessárias aos trabalhos.",
-      "Fornecer informações e dados em tempo hábil quando solicitado.",
-    ];
-
-    pdfDoc.setFontSize(11);
-    pdfDoc.setFont("helvetica", "bold");
-    pdfDoc.text("Responsabilidades da Contratada", margins.left, yPos);
-    yPos += 7;
-    pdfDoc.setFontSize(9);
-    pdfDoc.setFont("helvetica", "normal");
-    responsabilidadesContratada.forEach((item) => {
-      const lines = pdfDoc.splitTextToSize(`• ${item}`, contentWidth - 5);
-      if (yPos + lines.length * 4 > pageHeight - margins.bottom) {
-        pdfDoc.addPage();
-        yPos = margins.top + 20;
-      }
-      pdfDoc.text(lines, margins.left + 5, yPos);
-      yPos += lines.length * 4 + 2;
-    });
-    yPos += 5;
-
-    pdfDoc.setFontSize(11);
-    pdfDoc.setFont("helvetica", "bold");
-    pdfDoc.text("Responsabilidades da Contratante", margins.left, yPos);
-    yPos += 7;
-    pdfDoc.setFontSize(9);
-    pdfDoc.setFont("helvetica", "normal");
-    responsabilidadesContratante.forEach((item) => {
-      const lines = pdfDoc.splitTextToSize(`• ${item}`, contentWidth - 5);
-      if (yPos + lines.length * 4 > pageHeight - margins.bottom) {
-        pdfDoc.addPage();
-        yPos = margins.top + 20;
-      }
-      pdfDoc.text(lines, margins.left + 5, yPos);
-      yPos += lines.length * 4 + 2;
-    });
-
-    yPos += 15;
-
-    if (yPos > pageHeight - 60) {
-      // Check space for signature
-      pdfDoc.addPage();
-      yPos = margins.top + 20;
-    }
-
-    pdfDoc.setFontSize(10);
-    pdfDoc.text("Atenciosamente,", pageWidth / 2, yPos, { align: "center" });
-    yPos += 20; // Space for signature
-
-    pdfDoc.text(
-      "_________________________________________",
-      pageWidth / 2,
-      yPos,
-      { align: "center" },
-    );
-    yPos += 5;
-    pdfDoc.setFont("helvetica", "bold");
-    pdfDoc.text(
-      companyProfile?.name || "Pimenta Consultoria Ambiental",
-      pageWidth / 2,
-      yPos,
-      { align: "center" },
-    );
-    yPos += 5;
-    pdfDoc.setFont("helvetica", "normal");
-    pdfDoc.text(
-      companyProfile?.cnpj || "21.367.930/0001-58",
-      pageWidth / 2,
-      yPos,
-      { align: "center" },
-    );
-
-    addHeaderFooter(pdfDoc);
-    pdfDoc.save(`proposta_${proposal.proposalNumber}.pdf`);
   };
 
   const formatCurrency = (value: number) =>
@@ -995,6 +745,7 @@ export default function CommercialProposalsPage() {
                                               size="icon"
                                               className="h-9 w-9 shrink-0"
                                               type="button"
+                                              disabled={exportingProposalId === proposal.id}
                                               onClick={() => handleExportPdf(proposal)}
                                             >
                                               <FileText className="h-4 w-4" />
@@ -1163,6 +914,7 @@ export default function CommercialProposalsPage() {
                                         size="icon"
                                         className="h-9 w-9 shrink-0"
                                         type="button"
+                                        disabled={exportingProposalId === proposal.id}
                                         onClick={() => handleExportPdf(proposal)}
                                       >
                                         <FileText className="h-4 w-4" />
