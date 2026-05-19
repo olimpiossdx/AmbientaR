@@ -18,6 +18,8 @@ if (process.cwd() !== projectRoot) {
 }
 
 /** @type {import('next').NextConfig} */
+const appHostingStrictBuild = process.env.APPHOSTING_STRICT_BUILD === "1";
+
 const nextConfig = {
   /**
    * Evita `distDir: ".next"` explícito com `output: "standalone"`: em dev (14.1+)
@@ -51,8 +53,8 @@ const nextConfig = {
     }
     return config;
   },
-  typescript: { ignoreBuildErrors: true },
-  eslint: { ignoreDuringBuilds: true },
+  typescript: { ignoreBuildErrors: !appHostingStrictBuild },
+  eslint: { ignoreDuringBuilds: !appHostingStrictBuild },
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "placehold.co", port: "", pathname: "/**" },

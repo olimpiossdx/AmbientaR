@@ -119,9 +119,9 @@ export function FaunaUploadForm({ onSuccess }: FaunaUploadFormProps) {
     form.setValue("fileUrl", "");
 
     try {
-      const downloadURL = await uploadFile(file);
-      if (!downloadURL) return;
-      form.setValue("fileUrl", downloadURL, { shouldValidate: true });
+      const downloadUrl = await uploadFile(file);
+      if (!downloadUrl) return;
+      form.setValue("fileUrl", downloadUrl, { shouldValidate: true });
       toast({
         title: "Anexo carregado",
         description: "O arquivo está pronto para ser salvo.",

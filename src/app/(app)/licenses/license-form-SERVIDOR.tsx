@@ -166,11 +166,11 @@ export function LicenseForm({ currentLicense, onSuccess }: LicenseFormProps) {
     setUploadedFileUrl(null);
     try {
       const safe = sanitizeStorageFileName(file.name);
-      const downloadURL = await uploadFileToStorage(
+      const downloadUrl = await uploadFileToStorage(
         file,
         `licenses/${Date.now()}-${safe}`,
       );
-      setUploadedFileUrl(downloadURL);
+      setUploadedFileUrl(downloadUrl);
       toast({
         title: 'Anexo carregado',
         description: 'O arquivo está pronto para ser salvo.',

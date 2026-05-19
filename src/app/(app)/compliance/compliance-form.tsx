@@ -210,9 +210,9 @@ export function ComplianceForm({
     setIsUploading(true);
     setUploadedFileUrl(null);
     try {
-      const downloadURL = await uploadFile(file);
-      if (!downloadURL) return;
-      setUploadedFileUrl(downloadURL);
+      const downloadUrl = await uploadFile(file);
+      if (!downloadUrl) return;
+      setUploadedFileUrl(downloadUrl);
       toast({
         title: "Anexo carregado",
         description: "O arquivo está pronto para ser salvo.",

@@ -183,7 +183,7 @@ async function compressEmbeddedImageBuffer(
     if (!IMAGE_MIME.has(mime) && !/\.(jpe?g|png|webp)$/i.test(name)) {
       return null;
     }
-    const blob = new Blob([buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength)]);
+    const blob = new Blob([buffer.slice()]);
     const file = fileFromBlob(blob, name.split("/").pop() || "img.jpg", mime || "image/jpeg");
     const compressed = await compressImageFile(file, Math.min(maxBytes, file.size), undefined);
     return new Uint8Array(await compressed.arrayBuffer());

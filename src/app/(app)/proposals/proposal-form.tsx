@@ -275,8 +275,8 @@ export function ProposalForm({
       // Permite selecionar o mesmo arquivo novamente.
       inputEl.value = "";
 
-      const downloadURL = await uploadFile(file);
-      if (!downloadURL) return;
+      const downloadUrl = await uploadFile(file);
+      if (!downloadUrl) return;
       setUploadedFileUrl(downloadUrl);
       toast({
         title: "Anexo carregado",

@@ -45,7 +45,7 @@ export function downloadJsPdf(doc: jsPDF, filename: string): void {
   const finalName = safeName.toLowerCase().endsWith(".pdf")
     ? safeName
     : `${safeName}.pdf`;
-  const blob = doc.output("blob", { compress: true } as { compress?: boolean });
+  const blob = doc.output("blob");
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;

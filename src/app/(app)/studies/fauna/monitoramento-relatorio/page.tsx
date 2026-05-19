@@ -20,7 +20,7 @@ import { ProjetoVinculadoBanner } from "../_shared/projeto-vinculado-banner";
 
 function MonitoramentoRelatorioFaunaPageContent() {
   const searchParams = useSearchParams();
-  const projetoId = searchParams.get("projetoId");
+  const projetoId = searchParams?.get("projetoId") ?? null;
   const { firestore } = useFirebase();
   const handleSave = useFaunaStudyPageSave("monitoramento_relatorio");
 
