@@ -3,7 +3,6 @@ import { Suspense } from "react";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 import { FirebaseClientProvider } from "@/firebase";
-import { Inter } from "next/font/google";
 import { ToastContainer } from "@/components/ToastContainer";
 import { ThemeProvider } from "@/components/theme-provider";
 import { AuthThemeEnforcer } from "@/components/auth-theme-enforcer";
@@ -26,12 +25,6 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
-const inter = Inter({
-  subsets: ["latin", "latin-ext"],
-  display: "swap",
-  variable: "--font-inter",
-});
-
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -44,10 +37,7 @@ export default function RootLayout({
         <meta name="mobile-web-app-capable" content="yes" />
       </head>
       <body
-        className={cn(
-          "min-h-screen bg-background font-body antialiased",
-          inter.variable,
-        )}
+        className={cn("min-h-screen bg-background font-body antialiased")}
       >
         <ThemeProvider
           attribute="class"

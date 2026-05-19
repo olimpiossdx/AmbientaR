@@ -133,7 +133,7 @@ export default function VendaAtivoDetailPage() {
       }
 
       const installments = sale.installments.map((i) =>
-        i.seq === inst.seq ? { ...i, status: 'paid' as const, ...inst } : i,
+        i.seq === inst.seq ? { ...i, ...inst, status: 'paid' as const } : i,
       );
       const newReceived = installments
         .filter((i) => i.status === 'paid')
