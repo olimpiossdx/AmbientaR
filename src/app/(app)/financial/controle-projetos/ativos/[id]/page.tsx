@@ -34,8 +34,8 @@ import { Badge } from '@/components/ui/badge';
 import { logUserAction } from '@/lib/audit-log';
 
 export default function VendaAtivoDetailPage() {
-  const params = useParams<{ id: string }>();
-  const saleId = params.id;
+  const params = useParams<{ id?: string }>() ?? {};
+  const saleId = typeof params.id === 'string' ? params.id : '';
   const { firestore, auth } = useFirebase();
   const { toast } = useToast();
   const [sale, setSale] = useState<FinancialAssetSale | null>(null);
