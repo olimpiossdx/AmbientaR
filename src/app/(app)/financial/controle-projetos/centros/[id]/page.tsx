@@ -52,8 +52,8 @@ import { Link2 } from 'lucide-react';
 import { useEffect } from 'react';
 
 export default function CentroDetailPage() {
-  const params = useParams();
-  const centerId = params.id as string;
+  const params = useParams<{ id: string }>();
+  const centerId = params.id;
   const { firestore, auth, user } = useFirebase();
   const { toast } = useToast();
   const [center, setCenter] = useState<FinancialCenter | null>(null);
