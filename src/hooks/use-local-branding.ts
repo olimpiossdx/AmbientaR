@@ -1,8 +1,9 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useFirebase, useDoc, useMemoFirebase } from '@/firebase';
 import { doc } from 'firebase/firestore';
+import { clearBrandingPdfCache, warmBrandingPdfCache } from '@/lib/branding-pdf';
 
 export type LocalBranding = {
   headerImageUrl: string | null;
@@ -21,10 +22,13 @@ const empty: LocalBranding = {
 };
 
 export function useLocalBranding() {
-  const { firestore } = useFirebase();
+  const { firestore, auth } = useFirebase();
   const brandingRef = useMemoFirebase(
-    () => (firestore ? doc(firestore, 'companySettings', 'branding') : null),
-    [firestore]
+    () =>
+      firestore && auth?.currentUser
+        ? doc(firestore, 'companySettings', 'branding')
+        : null,
+    [firestore, auth?.currentUser?.uid],
   );
   const { data: brandingData, isLoading } = useDoc<Partial<LocalBranding>>(brandingRef);
 
@@ -36,5 +40,14 @@ export function useLocalBranding() {
     systemLogoSource: brandingData?.systemLogoSource ?? 'header',
   }), [brandingData]);
 
-  return { data: data ?? empty, isLoading, refetch: () => {} };
+  useEffect(() => {
+    if (isLoading) return;
+    warmBrandingPdfCache(data);
+  }, [isLoading, data.headerImageUrl, data.footerImageUrl, data.watermarkImageUrl]);
+
+  const refetch = () => {
+    clearBrandingPdfCache();
+  };
+
+  return { data: data ?? empty, isLoading, refetch };
 }

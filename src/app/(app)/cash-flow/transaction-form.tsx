@@ -24,7 +24,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { CalendarIcon, Loader2 } from "lucide-react";
 import { cn, numberToWordsBRL } from "@/lib/utils";
 import { format, parse } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { ptBR } from "date-fns/locale/pt-BR";
 import { useToast } from "@/hooks/use-toast";
 import type { Revenue, Expense, Client } from "@/lib/types";
 import {
@@ -36,11 +36,10 @@ import {
 import { FirestorePermissionError } from "@/firebase/errors";
 import { collection, doc, addDoc, updateDoc } from "firebase/firestore";
 import { isImageOrPdfForTransaction } from "@/lib/file-mime";
-import {
-  uploadFileToStorage,
-  sanitizeStorageFileName,
-} from "@/lib/storage-upload";
 import { logUserAction } from "@/lib/audit-log";
+import { UploadPreparationDialog } from "@/components/shared/upload-preparation-dialog";
+import { useStorageFileUpload } from "@/hooks/use-storage-file-upload";
+import { UPLOAD_RAW_FILE_SAFETY_MAX } from "@/lib/upload-limits";
 import { Label } from "@/components/ui/label";
 import { AttachmentPreviewSection } from "@/components/shared/attachment-preview-section";
 import {
@@ -50,8 +49,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
 const formSchema = z.object({
   description: z.string().min(2, "A descrição é obrigatória."),
@@ -64,8 +61,10 @@ const formSchema = z.object({
     .optional()
     .refine(
       (files) =>
-        !files || files.length === 0 || files?.[0]?.size <= MAX_FILE_SIZE,
-      `O tamanho máximo do arquivo é 5MB.`,
+        !files ||
+          files.length === 0 ||
+          files?.[0]?.size <= UPLOAD_RAW_FILE_SAFETY_MAX,
+      "Arquivo excede o limite de processamento no navegador.",
     ),
 });
 
@@ -144,6 +143,16 @@ export function TransactionForm({
   );
   const { toast } = useToast();
   const { firestore, auth } = useFirebase();
+  const { uploadFile, dialogProps, limitLabel } = useStorageFileUpload({
+    storageFolder: "transactions",
+    buildStoragePath: (file, safe) => {
+      const uid = auth?.currentUser?.uid;
+      if (!uid) throw new Error("Sessão inválida. Faça login novamente.");
+      const sub =
+        transactionType === "revenue" ? "revenues" : "expenses";
+      return `transactions/${sub}/${uid}/${Date.now()}-${safe}`;
+    },
+  });
 
   const clientsQuery = useMemoFirebase(
     () => (firestore ? collection(firestore, "clients") : null),
@@ -211,16 +220,6 @@ export function TransactionForm({
     const file = inputEl.files?.[0];
     if (!file) return;
 
-    if (file.size > MAX_FILE_SIZE) {
-      toast({
-        variant: "destructive",
-        title: "Arquivo muito grande",
-        description: "O tamanho máximo do arquivo é 5MB.",
-      });
-      inputEl.value = "";
-      return;
-    }
-
     if (!isImageOrPdfForTransaction(file)) {
       toast({
         variant: "destructive",
@@ -237,15 +236,8 @@ export function TransactionForm({
     setIsUploading(true);
     setUploadedFileUrl(null);
     try {
-      const uid = auth?.currentUser?.uid;
-      if (!uid) {
-        throw new Error("Sessão inválida. Faça login novamente.");
-      }
-
-      const folder = transactionType === "revenue" ? "revenues" : "expenses";
-      const safeFileName = sanitizeStorageFileName(file.name);
-      const filePath = `transactions/${folder}/${uid}/${Date.now()}-${safeFileName}`;
-      const downloadUrl = await uploadFileToStorage(file, filePath);
+      const downloadUrl = await uploadFile(file);
+      if (!downloadUrl) return;
       setUploadedFileUrl(downloadUrl);
       toast({
         title: "Anexo carregado",
@@ -478,7 +470,8 @@ export function TransactionForm({
                   />
                 </FormControl>
                 <FormDescription>
-                  Anexe o comprovante (PDF, JPG, PNG). Máx 5MB.
+                  Anexe o comprovante (PDF, JPG, PNG). Limite após otimização:{" "}
+                  {limitLabel}.
                 </FormDescription>
                 {(currentItem?.fileUrl || uploadedFileUrl) && (
                   <div className="mt-3">
@@ -522,6 +515,7 @@ export function TransactionForm({
           </Button>
         </div>
       </form>
+      <UploadPreparationDialog {...dialogProps} />
     </Form>
   );
 }

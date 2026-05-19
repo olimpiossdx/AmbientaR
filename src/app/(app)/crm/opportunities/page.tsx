@@ -46,8 +46,10 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 
+import { canAccessCrm, canWriteCrm } from '@/lib/role-guards';
+
 const canWrite = (user: AppUser | null) =>
-  user && ['admin', 'sales', 'supervisor'].includes(user.role);
+  Boolean(user && canWriteCrm(user.role));
 
 export default function CrmOpportunitiesPage() {
   const [isAlertOpen, setIsAlertOpen] = React.useState(false);

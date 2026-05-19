@@ -51,6 +51,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import {
   fetchBrandingImageAsBase64,
+  downloadJsPdf,
   getImageDimensions,
   calcPdfImageSize,
 } from "@/lib/branding-pdf";
@@ -444,7 +445,7 @@ export default function InspectionReportsListPage() {
     addPageNumbers(doc, 10);
 
     const fileName = `Relatorio_Vistoria_${(projectsMap.get(report.projectId) || "desconhecido").replace(/\s+/g, "_")}.pdf`;
-    doc.save(fileName);
+    downloadJsPdf(doc, fileName);
   };
 
   return (

@@ -8,7 +8,8 @@ import { Loader2, CloudUpload, FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useFirebase } from '@/firebase';
 import { doc, setDoc } from 'firebase/firestore';
-import { uploadFileToStorage, sanitizeStorageFileName } from '@/lib/storage-upload';
+import { UploadPreparationDialog } from '@/components/shared/upload-preparation-dialog';
+import { useStorageFileUpload } from '@/hooks/use-storage-file-upload';
 import type { DocxTemplateSlug } from '@/lib/docx-template-slugs';
 
 interface TemplateUploaderProps {
@@ -23,6 +24,10 @@ export function TemplateUploader({ slug, label, fileName, onUploadComplete }: Te
   const [isUploading, setIsUploading] = React.useState(false);
   const { toast } = useToast();
   const { firestore, auth } = useFirebase();
+  const { uploadFile, dialogProps } = useStorageFileUpload({
+    storageFolder: 'templates/docx',
+    buildStoragePath: (_file, safe) => `templates/docx/${slug}/${Date.now()}-${safe}`,
+  });
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFile(e.target.files?.[0] ?? null);
@@ -45,9 +50,8 @@ export function TemplateUploader({ slug, label, fileName, onUploadComplete }: Te
 
     setIsUploading(true);
     try {
-      const safe = sanitizeStorageFileName(file.name);
-      const storagePath = `templates/docx/${slug}/${Date.now()}-${safe}`;
-      const url = await uploadFileToStorage(file, storagePath);
+      const url = await uploadFile(file);
+      if (!url) return;
       await setDoc(
         doc(firestore, 'companySettings', 'docxTemplates'),
         { [slug]: { url, fileName: file.name } },
@@ -102,6 +106,7 @@ export function TemplateUploader({ slug, label, fileName, onUploadComplete }: Te
           )}
         </Button>
       </div>
+      <UploadPreparationDialog {...dialogProps} />
     </div>
   );
 }

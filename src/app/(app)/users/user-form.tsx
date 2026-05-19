@@ -38,6 +38,7 @@ import { Label } from '@/components/ui/label';
 import { DialogFooter } from '@/components/ui/dialog';
 import { logUserAction } from '@/lib/audit-log';
 import { formatCpfCnpjDisplay } from '@/lib/masks';
+import { lookupClientAndEmpreendedorByDocument, normalizeDocumentDigits } from '@/lib/document-lookup';
 
 const baseSchema = z.object({
   name: z.string().min(2, 'O nome é obrigatório.'),
@@ -174,8 +175,7 @@ const roles: { value: UserRole; label: string }[] = [
 const isTitularRole = (role: UserRole | undefined) =>
   role === 'client' || role === 'cliente_autonomo';
 
-const normalizeDocument = (value: string | undefined | null) =>
-  (value || '').replace(/\D/g, '').trim();
+const normalizeDocument = normalizeDocumentDigits;
 
 const getEntityTypeFromDocument = (value: string) =>
   normalizeDocument(value).length === 14 ? 'Pessoa Jurídica' as const : 'Pessoa Física' as const;
@@ -183,8 +183,16 @@ const getEntityTypeFromDocument = (value: string) =>
 export function UserForm({ currentUser, onSuccess, representativeRequestedCpf, representativesForThisClient, representativeRequestedCpfsCnpjs }: UserFormProps) {
   const [loading, setLoading] = React.useState(false);
   const [showPassword, setShowPassword] = React.useState(false);
+  const [linkedClientId, setLinkedClientId] = React.useState<string | null>(currentUser?.linkedClientId ?? null);
+  const [linkedEmpreendedorId, setLinkedEmpreendedorId] = React.useState<string | null>(currentUser?.linkedEmpreendedorId ?? null);
   const { toast } = useToast();
-  const { auth, firestore } = useFirebase();
+  const { auth, firestore, user: sessionProfile } = useFirebase();
+
+  const isEditingSelf = Boolean(
+    currentUser && auth?.currentUser?.uid === currentUser.id,
+  );
+  const isPrivilegedEditor =
+    sessionProfile?.role === 'admin' || sessionProfile?.role === 'supervisor';
 
   const currentSchema = currentUser ? editFormSchema : createFormSchema;
 
@@ -222,6 +230,34 @@ export function UserForm({ currentUser, onSuccess, representativeRequestedCpf, r
 
   const handleUserCpfChange = (value: string) => {
     form.setValue('userCpf', value, { shouldValidate: true });
+  };
+
+  const handleTitularCpfBlur = async () => {
+    if (!firestore || !isTitularRole(selectedRole)) return;
+    const titularDoc = normalizeDocument(form.getValues('cpf'));
+    if (titularDoc.length !== 11 && titularDoc.length !== 14) return;
+
+    try {
+      const { client, empreendedor } = await lookupClientAndEmpreendedorByDocument(
+        firestore,
+        titularDoc,
+      );
+      if (!client && !empreendedor) return;
+
+      if (client?.id) setLinkedClientId(client.id);
+      if (empreendedor?.id) setLinkedEmpreendedorId(empreendedor.id);
+
+      if (client?.name) form.setValue('name', client.name, { shouldValidate: true });
+      if (client?.email) form.setValue('email', client.email, { shouldValidate: true });
+
+      toast({
+        title: 'Cadastro existente encontrado',
+        description:
+          'Os dados foram preenchidos a partir do Cliente/Empreendedor já cadastrado. Ao salvar, sua conta será vinculada sem criar duplicatas.',
+      });
+    } catch (e) {
+      console.warn('Busca por CPF/CNPJ no perfil:', e);
+    }
   };
   
   const handleCnpjChange = (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
@@ -269,12 +305,9 @@ export function UserForm({ currentUser, onSuccess, representativeRequestedCpf, r
     if (currentUser) {
       // --- Update existing user logic ---
       const userRef = doc(firestore, 'users', currentUser.id);
-      const isEditingSelf = auth.currentUser?.uid === currentUser.id;
       const updateData: Partial<AppUser> = {
         name: values.name,
         email: values.email,
-        role: values.role,
-        status: values.status,
         userCpf: normalizeDocument(values.userCpf),
         cpf: values.role === 'representative' ? (cpfsArray[0] || '') : titularCpfCnpj,
         cnpjs: values.role === 'representative'
@@ -285,12 +318,21 @@ export function UserForm({ currentUser, onSuccess, representativeRequestedCpf, r
         photoURL: values.photoURL || '',
         dataNascimento: values.dataNascimento?.toISOString() || '',
         ...(isEditingSelf ? { cadastroIncompleto: false } : {}),
+        ...(linkedClientId ? { linkedClientId } : {}),
+        ...(linkedEmpreendedorId ? { linkedEmpreendedorId } : {}),
       };
+
+      if (isPrivilegedEditor) {
+        updateData.role = values.role;
+        updateData.status = values.status;
+      }
 
       updateDoc(userRef, updateData)
         .then(async () => {
           if (isTitularRole(values.role) && currentUser.id && (titularCpfCnpj.length === 11 || titularCpfCnpj.length === 14)) {
             const entityType = getEntityTypeFromDocument(titularCpfCnpj);
+            const clientDocId = linkedClientId || currentUser.linkedClientId || currentUser.id;
+            const empreendedorDocId = linkedEmpreendedorId || currentUser.linkedEmpreendedorId || currentUser.id;
             const linkedData = {
               name: values.name,
               email: values.email,
@@ -305,8 +347,8 @@ export function UserForm({ currentUser, onSuccess, representativeRequestedCpf, r
               entityType: [entityType],
               userId: currentUser.id,
             };
-            await setDoc(doc(firestore, 'clients', currentUser.id), linkedData, { merge: true });
-            await setDoc(doc(firestore, 'empreendedores', currentUser.id), linkedEmpreendedorData, { merge: true });
+            await setDoc(doc(firestore, 'clients', clientDocId), linkedData, { merge: true });
+            await setDoc(doc(firestore, 'empreendedores', empreendedorDocId), linkedEmpreendedorData, { merge: true });
             const existingClients = await getDocs(query(collection(firestore, 'clients'), where('userId', '==', currentUser.id)));
             const existingEmpreendedores = await getDocs(query(collection(firestore, 'empreendedores'), where('userId', '==', currentUser.id)));
             for (const snap of existingClients.docs) {
@@ -585,6 +627,7 @@ export function UserForm({ currentUser, onSuccess, representativeRequestedCpf, r
                     )}
                     />
                     
+                    {(!isEditingSelf || isPrivilegedEditor) && (
                     <FormField
                     control={form.control}
                     name="role"
@@ -607,6 +650,7 @@ export function UserForm({ currentUser, onSuccess, representativeRequestedCpf, r
                         </FormItem>
                     )}
                     />
+                    )}
                     {selectedRole !== 'admin' && (
                     <FormField
                         control={form.control}
@@ -638,6 +682,10 @@ export function UserForm({ currentUser, onSuccess, representativeRequestedCpf, r
                               mask="cpfCnpj"
                               placeholder="000.000.000-00 ou 00.000.000/0000-00"
                               {...field}
+                              onBlur={() => {
+                                field.onBlur();
+                                void handleTitularCpfBlur();
+                              }}
                             />
                           </FormControl>
                           <FormDescription>
@@ -728,6 +776,7 @@ export function UserForm({ currentUser, onSuccess, representativeRequestedCpf, r
                         </div>
                     </div>
                     )}
+                    {(!isEditingSelf || isPrivilegedEditor) && (
                     <FormField
                     control={form.control}
                     name="status"
@@ -748,6 +797,7 @@ export function UserForm({ currentUser, onSuccess, representativeRequestedCpf, r
                         </FormItem>
                     )}
                     />
+                    )}
                 </div>
                 <DialogFooter>
                     <Button type="button" variant="outline" onClick={onSuccess}>

@@ -18,6 +18,8 @@ import {
   uploadFileToStorage,
   sanitizeStorageFileName,
 } from '@/lib/storage-upload';
+import { UploadPreparationDialog } from '@/components/shared/upload-preparation-dialog';
+import { usePreparedUpload } from '@/hooks/use-prepared-upload';
 
 type StoredPhoto = {
   id: string;
@@ -72,6 +74,9 @@ export function ProjectPhotosDialog({
   onSaveSelection,
 }: ProjectPhotosDialogProps) {
   const { toast } = useToast();
+  const { prepareFile, dialogProps } = usePreparedUpload({
+    storagePathPrefix: 'inventory-project-photos/',
+  });
   const { firestore } = useFirebase();
   const [photos, setPhotos] = React.useState<DisplayPhoto[]>([]);
   const [activePhotoId, setActivePhotoId] = React.useState<string | null>(null);
@@ -157,7 +162,9 @@ export function ProjectPhotosDialog({
         const id = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
         const safe = sanitizeStorageFileName(file.name);
         const storagePath = `inventory-project-photos/${projectId}/${id}-${safe}`;
-        const url = await uploadFileToStorage(file, storagePath);
+        const prepared = await prepareFile(file);
+        if (!prepared) return;
+        const url = await uploadFileToStorage(prepared, storagePath);
         newItems.push({ id, name: file.name, url, storagePath });
       }
 
@@ -239,6 +246,7 @@ export function ProjectPhotosDialog({
   };
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-6xl h-[90vh] p-0 gap-0 flex flex-col">
         <DialogHeader className="px-4 py-3 border-b">
@@ -365,5 +373,7 @@ export function ProjectPhotosDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+    <UploadPreparationDialog {...dialogProps} />
+    </>
   );
 }

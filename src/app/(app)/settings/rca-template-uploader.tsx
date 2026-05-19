@@ -8,7 +8,8 @@ import { Loader2, CloudUpload, FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useFirebase } from '@/firebase';
 import { doc, setDoc } from 'firebase/firestore';
-import { uploadFileToStorage, sanitizeStorageFileName } from '@/lib/storage-upload';
+import { UploadPreparationDialog } from '@/components/shared/upload-preparation-dialog';
+import { useStorageFileUpload } from '@/hooks/use-storage-file-upload';
 
 interface RcaTemplateUploaderProps {
   fileName?: string | null;
@@ -20,6 +21,10 @@ export function RcaTemplateUploader({ fileName, onUploadComplete }: RcaTemplateU
   const [isUploading, setIsUploading] = React.useState(false);
   const { toast } = useToast();
   const { firestore, auth } = useFirebase();
+  const { uploadFile, dialogProps } = useStorageFileUpload({
+    storageFolder: 'templates/docx/rca',
+    buildStoragePath: (_file, safe) => `templates/docx/rca/${Date.now()}-${safe}`,
+  });
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFile(e.target.files?.[0] ?? null);
@@ -42,9 +47,8 @@ export function RcaTemplateUploader({ fileName, onUploadComplete }: RcaTemplateU
 
     setIsUploading(true);
     try {
-      const safe = sanitizeStorageFileName(file.name);
-      const storagePath = `templates/docx/rca/${Date.now()}-${safe}`;
-      const url = await uploadFileToStorage(file, storagePath);
+      const url = await uploadFile(file);
+      if (!url) return;
       await setDoc(
         doc(firestore, 'companySettings', 'docxTemplates'),
         { rca: { url, fileName: file.name } },
@@ -102,6 +106,7 @@ export function RcaTemplateUploader({ fileName, onUploadComplete }: RcaTemplateU
           )}
         </Button>
       </div>
+      <UploadPreparationDialog {...dialogProps} />
     </div>
   );
 }

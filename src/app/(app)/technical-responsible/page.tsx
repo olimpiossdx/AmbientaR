@@ -36,6 +36,7 @@ import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/comp
 import { Separator } from '@/components/ui/separator';
 import { Label } from '@/components/ui/label';
 import { formatCpfCnpjDisplay } from '@/lib/masks';
+import { canWriteTechnicalResponsibles } from '@/lib/role-guards';
 
 const DetailItem = ({ label, value }: { label: string, value?: string | null | string[] }) => (
     <div className="space-y-1">
@@ -54,7 +55,7 @@ export default function TechnicalResponsiblePage() {
   const firestore = useFirestore();
   const { toast } = useToast();
   
-  const canWrite = user && (user.role === 'admin' || user.role === 'supervisor' || user.role === 'gestor');
+  const canWrite = canWriteTechnicalResponsibles(user?.role);
 
   const responsiblesQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;

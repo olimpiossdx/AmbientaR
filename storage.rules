@@ -24,6 +24,14 @@ service firebase.storage {
         (userRoleForStorage() == 'admin' || userRoleForStorage() == 'financial');
     }
 
+    function underFinancialSize() {
+      return request.resource.size < 20 * 1024 * 1024;
+    }
+
+    function underDefaultSize() {
+      return request.resource.size < 40 * 1024 * 1024;
+    }
+
     match /car/{fileName} {
       allow read: if request.auth != null;
       allow write: if mayWriteCarStorage();
@@ -44,37 +52,37 @@ service firebase.storage {
     // Pastas financeiras / contratos: leitura autenticada; escrita admin/financeiro.
     match /invoices/{allPaths=**} {
       allow read: if request.auth != null;
-      allow write: if mayWriteFinancialStorage();
+      allow write: if mayWriteFinancialStorage() && underFinancialSize();
     }
     match /contracts/{allPaths=**} {
       allow read: if request.auth != null;
-      allow write: if mayWriteFinancialStorage();
+      allow write: if mayWriteFinancialStorage() && underFinancialSize();
     }
     match /receipts/{allPaths=**} {
       allow read: if request.auth != null;
-      allow write: if mayWriteFinancialStorage();
+      allow write: if mayWriteFinancialStorage() && underFinancialSize();
     }
     match /signed-contracts/{allPaths=**} {
       allow read: if request.auth != null;
-      allow write: if mayWriteFinancialStorage();
+      allow write: if mayWriteFinancialStorage() && underFinancialSize();
     }
     match /transactions/{allPaths=**} {
       allow read: if request.auth != null;
-      allow write: if mayWriteFinancialStorage();
+      allow write: if mayWriteFinancialStorage() && underFinancialSize();
     }
     match /commercial-proposals/{allPaths=**} {
       allow read: if request.auth != null;
-      allow write: if mayWriteFinancialStorage();
+      allow write: if mayWriteFinancialStorage() && underFinancialSize();
     }
     match /supplier-contracts/{allPaths=**} {
       allow read: if request.auth != null;
-      allow write: if mayWriteFinancialStorage();
+      allow write: if mayWriteFinancialStorage() && underFinancialSize();
     }
     
     // Regra padrão: nega acesso a todos os outros caminhos por segurança,
     // exceto para usuários autenticados (regra geral).
     match /{allPaths=**} {
-      allow read, write: if request.auth != null;
+      allow read, write: if request.auth != null && underDefaultSize();
     }
   }
 }

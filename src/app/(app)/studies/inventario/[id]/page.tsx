@@ -34,7 +34,9 @@ import { Label } from '@/components/ui/label';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { IpeAmareloDefaultCover } from '@/components/studies/inventory/IpeAmareloDefaultCover';
-import { uploadFileToStorage, deleteFileAtStoragePath, storagePathFromDownloadUrl, sanitizeStorageFileName } from '@/lib/storage-upload';
+import { deleteFileAtStoragePath, storagePathFromDownloadUrl } from '@/lib/storage-upload';
+import { UploadPreparationDialog } from '@/components/shared/upload-preparation-dialog';
+import { useStorageFileUpload } from '@/hooks/use-storage-file-upload';
 
 const formSchema = z.object({
   nome: z.string().min(1, "O nome do projeto é obrigatório."),
@@ -73,6 +75,11 @@ export default function InventarioProjectPage() {
   const [coverUploading, setCoverUploading] = React.useState(false);
   const coverFileInputRef = React.useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+  const { uploadFile, dialogProps } = useStorageFileUpload({
+    storageFolder: 'inventory-project-photos',
+    buildStoragePath: (_file, safe) =>
+      `inventory-project-photos/${projectId}/cover-${Date.now()}-${safe}`,
+  });
 
   const { firestore, user, auth } = useFirebase();
 
@@ -204,9 +211,8 @@ export default function InventarioProjectPage() {
     if (!file || !projectDocRef || !projectId || !auth?.currentUser) return;
     setCoverUploading(true);
     try {
-      const safe = sanitizeStorageFileName(file.name);
-      const storagePath = `inventory-project-photos/${projectId}/cover-${Date.now()}-${safe}`;
-      const url = await uploadFileToStorage(file, storagePath);
+      const url = await uploadFile(file);
+      if (!url) return;
       await updateDoc(projectDocRef, {
         coverImageUrl: url,
         updatedAt: serverTimestamp(),
@@ -455,6 +461,7 @@ export default function InventarioProjectPage() {
           });
         }}
       />
+      <UploadPreparationDialog {...dialogProps} />
     </>
   );
 }

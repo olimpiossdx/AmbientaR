@@ -4,6 +4,7 @@ import path from "node:path";
 import mammoth from "mammoth";
 import { isAiLocalImportEnabled } from "@/lib/deploy-flags";
 import { getDefaultAiReferenceImportBasePath } from "@/lib/ai-reference-import-base-path";
+import { adminApiErrorResponse, requireAdminApiAuth } from "@/lib/api-auth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -96,6 +97,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    await requireAdminApiAuth(request);
     const body = (await request.json().catch(() => ({}))) as {
       basePath?: string;
       extensions?: string[];
@@ -200,15 +202,14 @@ export async function POST(request: NextRequest) {
       limits: { maxFiles: MAX_FILES, maxCharsPerFile: MAX_CHARS_PER_FILE },
     });
   } catch (error) {
+    const { message, status, code } = adminApiErrorResponse(error);
     return NextResponse.json(
       {
         success: false,
-        error:
-          error instanceof Error
-            ? error.message
-            : "Falha ao importar arquivos de referência.",
+        error: message || "Falha ao importar arquivos de referência.",
+        code,
       },
-      { status: 500 },
+      { status },
     );
   }
 }

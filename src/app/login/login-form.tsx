@@ -56,13 +56,11 @@ export function LoginForm() {
     setLoading(true);
     const success = await login(values.email, values.password);
     if (success) {
-        toast({
+      toast({
         title: 'Login bem-sucedido!',
         description: 'Bem-vindo de volta!',
-        });
+      });
     }
-    // Error toast is handled within the login function now
-    // Redirect is also handled within the login function
     setLoading(false);
   }
 

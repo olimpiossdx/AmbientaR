@@ -11,7 +11,7 @@ import { CalendarClock, Briefcase, FileText, ClipboardCheck, ChevronRight } from
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { format, addDays } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import { ptBR } from 'date-fns/locale/pt-BR';
 import { cn } from '@/lib/utils';
 
 const eventIcons: Record<string, React.ReactNode> = {

@@ -19,7 +19,7 @@ import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { AppointmentForm } from './appointment-form';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { format, addDays } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import { ptBR } from 'date-fns/locale/pt-BR';
 
 const eventIcons: Record<string, React.ReactNode> = {
   appointment: <Briefcase className="w-4 h-4" />,
@@ -57,67 +57,74 @@ export default function CalendarPage() {
   const { firestore, user } = useFirebase();
   const { toast } = useToast();
 
-  React.useEffect(() => {
+  const fetchEvents = React.useCallback(async () => {
     if (!firestore || !user) return;
 
     setIsLoading(true);
-    
-    const fetchEvents = async () => {
-        try {
-            const baseQuery = collection(firestore, 'appointments');
-            let queriesToRun = [];
+    try {
+      const baseQuery = collection(firestore, 'appointments');
+      const queriesToRun = [];
 
-            if (
-                user.role === 'admin' ||
-                user.role === 'supervisor' ||
-                user.role === 'financial' ||
-                user.role === 'sales' ||
-                user.role === 'gestor' ||
-                user.role === 'technical' ||
-                user.role === 'diretor_fauna' ||
-                user.role === 'advogado'
-            ) {
-                queriesToRun.push(getDocs(baseQuery));
-            } else {
-                // Fetch non-financial (public) events
-                const publicQuery = query(baseQuery, where('ownerRole', '!=', 'financial'));
-                queriesToRun.push(getDocs(publicQuery));
+      if (
+        user.role === 'admin' ||
+        user.role === 'supervisor' ||
+        user.role === 'financial' ||
+        user.role === 'sales' ||
+        user.role === 'gestor' ||
+        user.role === 'technical' ||
+        user.role === 'diretor_fauna' ||
+        user.role === 'advogado'
+      ) {
+        queriesToRun.push(getDocs(baseQuery));
+      } else {
+        const publicQuery = query(baseQuery, where('ownerRole', '!=', 'financial'));
+        queriesToRun.push(getDocs(publicQuery));
+        const privateQuery = query(baseQuery, where('ownerId', '==', user.uid));
+        queriesToRun.push(getDocs(privateQuery));
+      }
 
-                // Fetch user's own private events
-                const privateQuery = query(baseQuery, where('ownerId', '==', user.uid));
-                queriesToRun.push(getDocs(privateQuery));
-            }
+      const querySnapshots = await Promise.all(queriesToRun);
+      const allDocs: Record<string, CalendarEvent> = {};
 
-            const querySnapshots = await Promise.all(queriesToRun);
-            const allDocs: Record<string, CalendarEvent> = {};
-            
-            querySnapshots.forEach(snapshot => {
-                snapshot.forEach(doc => {
-                    if (!allDocs[doc.id]) {
-                        allDocs[doc.id] = { ...doc.data(), id: doc.id } as CalendarEvent;
-                    }
-                });
-            });
+      querySnapshots.forEach((snapshot) => {
+        snapshot.forEach((docSnap) => {
+          if (!allDocs[docSnap.id]) {
+            allDocs[docSnap.id] = { ...docSnap.data(), id: docSnap.id } as CalendarEvent;
+          }
+        });
+      });
 
-            setEvents(Object.values(allDocs));
-            setError(null);
-        } catch (e: any) {
-            console.error("Firestore error fetching appointments:", e);
-            setError(e);
-            // Assuming a more specific error handling would be here if needed
-        } finally {
-            setIsLoading(false);
-        }
+      setEvents(Object.values(allDocs));
+      setError(null);
+    } catch (e: unknown) {
+      console.error('Firestore error fetching appointments:', e);
+      setError(e instanceof Error ? e : new Error('Falha ao carregar agenda.'));
+    } finally {
+      setIsLoading(false);
     }
-
-    fetchEvents();
-
   }, [firestore, user]);
+
+  React.useEffect(() => {
+    void fetchEvents();
+  }, [fetchEvents]);
+
+  const canManageEvent = React.useCallback(
+    (event: CalendarEvent) => {
+      if (!user) return false;
+      if (user.role === 'admin' || user.role === 'supervisor') return true;
+      if (user.role === 'financial' && event.ownerRole === 'financial') return true;
+      return event.ownerId === user.uid;
+    },
+    [user],
+  );
   
   const eventsOnSelectedDate = React.useMemo(() => {
     if (!date || !events) return [];
-    const selectedDayStart = new Date(date.setHours(0, 0, 0, 0));
-    const selectedDayEnd = new Date(date.setHours(23, 59, 59, 999));
+    const day = new Date(date);
+    const selectedDayStart = new Date(day);
+    selectedDayStart.setHours(0, 0, 0, 0);
+    const selectedDayEnd = new Date(day);
+    selectedDayEnd.setHours(23, 59, 59, 999);
     
     return events.filter(event => {
         const eventStart = new Date(event.startTime);
@@ -220,10 +227,12 @@ export default function CalendarPage() {
                           {getEventTypeLabel(event.type)}
                         </Badge>
                       </div>
-                      <div className="flex gap-1">
-                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleEdit(event)}><Pencil className="h-4 w-4" /></Button>
-                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => openDeleteConfirm(event.id)}><Trash2 className="h-4 w-4" /></Button>
-                      </div>
+                      {canManageEvent(event) && (
+                        <div className="flex gap-1">
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleEdit(event)}><Pencil className="h-4 w-4" /></Button>
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => openDeleteConfirm(event.id)}><Trash2 className="h-4 w-4" /></Button>
+                        </div>
+                      )}
                     </div>
                   ))
                 ) : !isLoading ? (
@@ -307,7 +316,13 @@ export default function CalendarPage() {
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogContent className="sm:max-w-xl">
-              <AppointmentForm currentItem={editingItem} onSuccess={() => setIsDialogOpen(false)} />
+              <AppointmentForm
+                currentItem={editingItem}
+                onSuccess={() => {
+                  setIsDialogOpen(false);
+                  void fetchEvents();
+                }}
+              />
           </DialogContent>
       </Dialog>
       

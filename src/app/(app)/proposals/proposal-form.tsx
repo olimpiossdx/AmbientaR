@@ -31,7 +31,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { CalendarIcon, Loader2, PlusCircle, Trash2, List } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format, parse } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { ptBR } from "date-fns/locale/pt-BR";
 import { useToast } from "@/hooks/use-toast";
 import type { Proposal, Client, ProposalItem, Service } from "@/lib/types";
 import {
@@ -43,10 +43,9 @@ import {
 import { FirestorePermissionError } from "@/firebase/errors";
 import { AttachmentPreviewSection } from "@/components/shared/attachment-preview-section";
 import { collection, doc, addDoc, updateDoc } from "firebase/firestore";
-import {
-  uploadFileToStorage,
-  sanitizeStorageFileName,
-} from "@/lib/storage-upload";
+import { UploadPreparationDialog } from "@/components/shared/upload-preparation-dialog";
+import { useStorageFileUpload } from "@/hooks/use-storage-file-upload";
+import { UPLOAD_RAW_FILE_SAFETY_MAX } from "@/lib/upload-limits";
 import { Textarea } from "@/components/ui/textarea";
 import { logUserAction } from "@/lib/audit-log";
 import {
@@ -59,8 +58,6 @@ import {
 } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
-
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
 const formSchema = z
   .object({
@@ -90,8 +87,8 @@ const formSchema = z
       .optional()
       .refine(
         (files) =>
-          !files || files.length === 0 || files?.[0]?.size <= MAX_FILE_SIZE,
-        `O tamanho máximo do arquivo é ${MAX_FILE_SIZE / 1024 / 1024}MB.`,
+          !files || files.length === 0 || files?.[0]?.size <= UPLOAD_RAW_FILE_SAFETY_MAX,
+        "Arquivo excede o limite de processamento no navegador.",
       ),
   })
   .refine((data) => data.validUntilDate >= data.proposalDate, {
@@ -175,6 +172,9 @@ export function ProposalForm({
   const [isServiceModalOpen, setIsServiceModalOpen] = React.useState(false);
 
   const { toast } = useToast();
+  const { uploadFile, dialogProps, limitLabel } = useStorageFileUpload({
+    storageFolder: "proposals",
+  });
   const { firestore, auth } = useFirebase();
 
   const clientsQuery = useMemoFirebase(
@@ -275,11 +275,8 @@ export function ProposalForm({
       // Permite selecionar o mesmo arquivo novamente.
       inputEl.value = "";
 
-      const safe = sanitizeStorageFileName(file.name);
-      const downloadUrl = await uploadFileToStorage(
-        file,
-        `proposals/${Date.now()}-${safe}`,
-      );
+      const downloadURL = await uploadFile(file);
+      if (!downloadURL) return;
       setUploadedFileUrl(downloadUrl);
       toast({
         title: "Anexo carregado",
@@ -716,6 +713,7 @@ export function ProposalForm({
           </DialogFooter>
         </form>
       </Form>
+      <UploadPreparationDialog {...dialogProps} />
       {/* Service Selection Modal */}
     </>
   );

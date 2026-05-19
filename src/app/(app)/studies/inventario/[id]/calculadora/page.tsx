@@ -19,7 +19,7 @@ import { Button } from '@/components/ui/button';
 import { HelpCircle, Filter, ExternalLink, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import { ptBR } from 'date-fns/locale/pt-BR';
 import {
   AmostragemPanel,
   EstDiametricaPanel,

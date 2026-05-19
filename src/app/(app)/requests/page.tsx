@@ -51,6 +51,8 @@ import {
   getChecklistStatusLabel,
   type InterventionChecklistItem,
 } from '@/lib/intervention-checklist';
+import { canAdvanceRequestStatus } from '@/lib/aia-validation';
+import { sortStringsPt } from '@/lib/sort-pt-br';
 import { cn } from '@/lib/utils';
 import { fetchEmpreendedorIdsForProcessosPortal } from '@/lib/requests-portal-empreendedor-ids';
 import {
@@ -274,24 +276,7 @@ export default function RequestsPage() {
   const canAdvanceStatus = (item: Request): { allowed: boolean; reason?: string } => {
     const next = getNextStatus(item.status);
     if (!next) return { allowed: false, reason: 'Processo já está concluído.' };
-    if (!item.services.includes(INTERVENTION_SERVICE_LABEL)) return { allowed: true };
-
-    const checklist = item.interventionChecklist || [];
-    const completedCount = checklist.filter((c) => c.status === 'completed').length;
-    const requiredItems = checklist.filter((c) => c.required);
-    const requiredCompleted = requiredItems.filter((c) => c.status === 'completed').length;
-    const attachmentCount = checklist.reduce((acc, c) => acc + (c.attachments?.length || 0), 0);
-
-    if (next === 'Submitted' && attachmentCount === 0) {
-      return { allowed: false, reason: 'Anexe ao menos 1 documento no checklist para enviar.' };
-    }
-    if (next === 'In Progress' && completedCount === 0) {
-      return { allowed: false, reason: 'Marque pelo menos 1 item do checklist como concluído.' };
-    }
-    if (next === 'Completed' && requiredItems.length > 0 && requiredCompleted < requiredItems.length) {
-      return { allowed: false, reason: 'Conclua todos os itens obrigatórios do checklist antes de finalizar.' };
-    }
-    return { allowed: true };
+    return canAdvanceRequestStatus(item, next);
   };
 
   const handleAdvanceStatus = (item: Request) => {
@@ -585,7 +570,10 @@ export default function RequestsPage() {
                     <DetailItem label="Empreendedor" value={empreendedoresMap.get(viewingItem.empreendedorId)} />
                     <DetailItem label="Empreendimento" value={projectsMap.get(viewingItem.projectId)} />
                     <Separator />
-                    <DetailItem label="Serviços Solicitados" value={viewingItem.services} />
+                    <DetailItem
+                      label="Serviços Solicitados"
+                      value={sortStringsPt(viewingItem.services ?? [])}
+                    />
                     {viewingItem.services.includes('Licenciamento ambiental') && viewingItem.licensingData && (
                       <>
                         <DetailItem

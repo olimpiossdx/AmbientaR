@@ -9,10 +9,12 @@ import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Loader2 } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Textarea } from '@/components/ui/textarea';
 import { useRouter } from 'next/navigation';
+import { useDoc, useFirebase, useMemoFirebase } from '@/firebase';
+import { doc } from 'firebase/firestore';
+import type { FaunaStudy } from '@/lib/types';
 
 const formSchema = z.object({
   numeroAutorizacao: z.string().optional(),
@@ -28,30 +30,69 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
-export function RelatorioResgateForm() {
+interface RelatorioResgateFormProps {
+  documentId?: string | null;
+  seedStudy?: FaunaStudy | null;
+  onSave: (data: FormValues & { id?: string }, status: "draft" | "completed") => Promise<void>;
+}
+
+export function RelatorioResgateForm({
+  documentId,
+  seedStudy,
+  onSave,
+}: RelatorioResgateFormProps) {
   const [loading, setLoading] = React.useState(false);
-  const { toast } = useToast();
   const router = useRouter();
+  const { firestore } = useFirebase();
+
+  const studyDocRef = useMemoFirebase(
+    () =>
+      firestore && documentId
+        ? doc(firestore, "faunaStudies", documentId)
+        : null,
+    [firestore, documentId],
+  );
+  const { data: study, isLoading: isLoadingStudy } = useDoc<FaunaStudy>(studyDocRef);
+  const source = study ?? seedStudy;
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {},
   });
 
-  async function onSubmit(values: FormValues) {
+  React.useEffect(() => {
+    if (source) {
+      form.reset({
+        numeroAutorizacao: source.numeroAutorizacao || "",
+        responsaveisTecnicosRelatorio:
+          source.responsaveisTecnicosRelatorio || "",
+        caracterizacaoEmpreendimento:
+          source.caracterizacaoEmpreendimento || "",
+        areaDiretamenteAfetada: source.areaDiretamenteAfetada || "",
+        areasIntervencao: source.areasIntervencao || "",
+        areasSoltura: source.areasSoltura || "",
+        acoesResgate: source.acoesResgate || "",
+        discussao: source.discussao || "",
+        referencias: source.referencias || "",
+      });
+    }
+  }, [source, form]);
+
+  const submit = async (status: "draft" | "completed") => {
     setLoading(true);
-    console.log(values);
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    toast({
-      title: 'Relatório Salvo!',
-      description: 'O relatório de resgate de fauna foi salvo como rascunho.',
-    });
+    const values = form.getValues();
+    const payload = documentId ? { ...values, id: documentId } : values;
+    await onSave(payload, status);
     setLoading(false);
+  };
+
+  if (isLoadingStudy && documentId) {
+    return <p className="text-sm text-muted-foreground">Carregando...</p>;
   }
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="h-full flex flex-col overflow-hidden">
+      <form onSubmit={(e) => e.preventDefault()} className="h-full flex flex-col overflow-hidden">
         <div className="flex-1 overflow-y-auto pr-4 -mr-6">
             <Accordion type="multiple" defaultValue={['item-1', 'item-3']} className="w-full">
             
@@ -86,8 +127,11 @@ export function RelatorioResgateForm() {
         </div>
         <div className="flex justify-end gap-2 pt-6 mt-4 p-4 border-t">
           <Button variant="outline" type="button" onClick={() => router.back()}>Voltar</Button>
-          <Button type="submit" disabled={loading}>
-            {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Salvando...</> : 'Salvar Relatório'}
+          <Button variant="secondary" type="button" disabled={loading} onClick={() => submit("draft")}>
+            {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Salvando...</> : "Salvar Rascunho"}
+          </Button>
+          <Button type="button" disabled={loading} onClick={() => submit("completed")}>
+            {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Concluindo...</> : "Concluir Relatório"}
           </Button>
         </div>
       </form>

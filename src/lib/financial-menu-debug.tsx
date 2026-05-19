@@ -13,6 +13,7 @@ import { useAuth } from '@/firebase';
 import { getNavDebugInfo, type NavDebugInfo } from '@/lib/nav-debug';
 import { allNavItems } from '@/lib/navigation-config';
 import type { NavItem, NavSubItem, UserRole } from '@/lib/types';
+import { canAccessNavItem } from '@/lib/role-guards';
 
 /** Prefixos e rotas exatas do menu Financeiro (subitens de allNavItems "Financeiro") */
 export const FINANCIAL_ROUTES = [
@@ -51,7 +52,7 @@ export function getFinancialMenuForRole(userRole: UserRole): { item: NavItem | n
 
   function walk(items: NavSubItem[]) {
     for (const sub of items) {
-      if (sub.roles && !sub.roles.includes(userRole)) continue;
+      if (sub.roles && !canAccessNavItem(userRole, sub.roles)) continue;
       visibleSubItems.push({
         label: sub.label,
         href: 'href' in sub ? sub.href : undefined,

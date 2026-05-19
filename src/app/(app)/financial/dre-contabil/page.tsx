@@ -28,7 +28,12 @@ import {
 } from '@/components/ui/table';
 import jsPDF from 'jspdf';
 import { useToast } from '@/hooks/use-toast';
-import { fetchBrandingImageAsBase64, getImageDimensions, calcPdfImageSize, applyImageOpacity } from '@/lib/branding-pdf';
+import {
+  fetchBrandingImagesForPdf,
+  brandingPdfMissingSlots,
+  getImageDimensions,
+  calcPdfImageSize,
+} from '@/lib/branding-pdf';
 import { useLocalBranding } from '@/hooks/use-local-branding';
 import { useFinancialMenuDebug } from '@/lib/financial-menu-debug';
 
@@ -146,10 +151,21 @@ export default function DreContabilPage() {
 
   const handleExportPdf = async () => {
     if (!dre) return;
-    const headerBase64 = await fetchBrandingImageAsBase64(brandingData?.headerImageUrl);
-    const footerBase64 = await fetchBrandingImageAsBase64(brandingData?.footerImageUrl);
-    const watermarkBase64Raw = await fetchBrandingImageAsBase64(brandingData?.watermarkImageUrl);
-    const watermarkBase64 = watermarkBase64Raw ? await applyImageOpacity(watermarkBase64Raw, 0.15) : null;
+    const brandingUrls = {
+      headerImageUrl: brandingData?.headerImageUrl,
+      footerImageUrl: brandingData?.footerImageUrl,
+      watermarkImageUrl: brandingData?.watermarkImageUrl,
+    };
+    const brandingLoaded = await fetchBrandingImagesForPdf(brandingUrls);
+    const { headerBase64, footerBase64, watermarkBase64 } = brandingLoaded;
+    const missing = brandingPdfMissingSlots(brandingUrls, brandingLoaded);
+    if (missing.length > 0) {
+      toast({
+        variant: 'destructive',
+        title: 'Identidade visual incompleta no PDF',
+        description: `Não foi possível carregar: ${missing.join(', ')}.`,
+      });
+    }
 
     const doc = new jsPDF({ unit: 'mm', format: 'a4' });
     const pageWidth = doc.internal.pageSize.getWidth();

@@ -75,11 +75,11 @@ import {
   Line,
   Legend,
 } from "recharts";
-import { isClientePortalRole } from "@/lib/role-guards";
+import { isClientePortalRole, canPerformManualMonitoringWrite } from "@/lib/role-guards";
 
 const canPerformWriteActions = (user: AppUser | null): boolean => {
   if (!user) return false;
-  return user.role === "admin" || user.role === "gestor" || user.role === "cliente_autonomo";
+  return canPerformManualMonitoringWrite(user.role);
 };
 
 export default function ManualMonitoringPage() {

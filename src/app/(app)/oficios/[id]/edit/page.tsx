@@ -1,5 +1,5 @@
 'use client';
-import { Suspense } from 'react';
+import { Suspense, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { PageHeader } from '@/components/page-header';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -8,13 +8,20 @@ import { useDoc, useFirebase, useMemoFirebase } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import type { Oficio } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
+import { isOficioReadOnlyRole } from '@/lib/role-guards';
 
 function EditOficioPageContent() {
     const router = useRouter();
     const params = useParams();
     const itemId = (params?.id as string | undefined) ?? '';
     
-    const { firestore } = useFirebase();
+    const { firestore, user } = useFirebase();
+
+    useEffect(() => {
+      if (user && isOficioReadOnlyRole(user.role)) {
+        router.replace('/oficios');
+      }
+    }, [user, router]);
 
     const itemDocRef = useMemoFirebase(() => {
         if (!firestore || !itemId) return null;

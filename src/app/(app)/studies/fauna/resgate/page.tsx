@@ -1,10 +1,19 @@
 'use client';
+
 import { PageHeader } from '@/components/page-header';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from '@/components/ui/card';
 import { ResgateForm } from './resgate-form';
+import { useFaunaStudyPageSave } from '../_shared/use-fauna-study-page-save';
 
 export default function ResgateFaunaPage() {
-  
+  const handleSave = useFaunaStudyPageSave('resgate_projeto');
+
   return (
     <div className="flex flex-col h-full">
       <PageHeader title="Projeto de Resgate e Destinação de Fauna" />
@@ -17,7 +26,7 @@ export default function ResgateFaunaPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <ResgateForm />
+            <ResgateForm onSave={handleSave} />
           </CardContent>
         </Card>
       </main>

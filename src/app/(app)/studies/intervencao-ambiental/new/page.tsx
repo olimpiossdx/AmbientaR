@@ -32,6 +32,11 @@ function NewPiaPageContent() {
                           currentItem={null}
                           piaType={piaType}
                           onSuccess={handleSuccess}
+                          linkContext={{
+                            requestId: searchParams?.get('requestId') ?? undefined,
+                            projectId: searchParams?.get('projectId') ?? undefined,
+                            empreendedorId: searchParams?.get('empreendedorId') ?? undefined,
+                          }}
                       />
                   </CardContent>
               </Card>

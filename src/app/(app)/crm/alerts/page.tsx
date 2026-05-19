@@ -32,7 +32,7 @@ import {
   useAuthUserId,
 } from "@/lib/auth-user-id";
 
-const CRM_ROLES = ["admin", "sales", "supervisor", "financial"] as const;
+import { canAccessCrm } from '@/lib/role-guards';
 
 export default function CrmAlertsPage() {
   const router = useRouter();
@@ -114,7 +114,7 @@ export default function CrmAlertsPage() {
     if (n.link) router.push(n.link);
   };
 
-  if (!user || !CRM_ROLES.includes(user.role as any)) {
+  if (!user || !canAccessCrm(user.role)) {
     return (
       <div className="flex flex-col h-full">
         <PageHeader title="Alertas & Notificações (CRM)" />

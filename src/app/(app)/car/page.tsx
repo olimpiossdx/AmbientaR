@@ -38,10 +38,8 @@ import {
 } from "firebase/firestore";
 import type { Client, Project } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  uploadFileToStorage,
-  sanitizeStorageFileName,
-} from "@/lib/storage-upload";
+import { UploadPreparationDialog } from "@/components/shared/upload-preparation-dialog";
+import { useStorageFileUpload } from "@/hooks/use-storage-file-upload";
 import { isPdfLikeFile } from "@/lib/file-mime";
 import { FileText, Upload, Map as MapIcon } from "lucide-react";
 import {
@@ -61,6 +59,13 @@ export default function CarPage() {
   const { firestore } = useFirebase();
   const { user } = useAuth();
   const { toast } = useToast();
+  const carUploadKindRef = React.useRef<"car" | "car-shp">("car");
+  const { uploadFile, dialogProps } = useStorageFileUpload({
+    storageFolder: "car",
+    storagePathPrefix: "car/",
+    buildStoragePath: (_file, safe) =>
+      `${carUploadKindRef.current}/${Date.now()}-${safe}`,
+  });
   const canManageCar = canManageCarUploadsOnProject(user?.role);
 
   const [clientId, setClientId] = React.useState("");
@@ -360,11 +365,9 @@ export default function CarPage() {
       // Permite selecionar o mesmo arquivo novamente.
       inputEl.value = "";
 
-      const safe = sanitizeStorageFileName(file.name);
-      const url = await uploadFileToStorage(
-        file,
-        `car/${Date.now()}-${safe}`,
-      );
+      carUploadKindRef.current = "car";
+      const url = await uploadFile(file);
+      if (!url) return;
       setPdfUrl(url);
       toast({
         title: "Recibo enviado",
@@ -395,11 +398,9 @@ export default function CarPage() {
       // Permite selecionar o mesmo arquivo novamente.
       inputEl.value = "";
 
-      const safe = sanitizeStorageFileName(file.name);
-      const url = await uploadFileToStorage(
-        file,
-        `car-shp/${Date.now()}-${safe}`,
-      );
+      carUploadKindRef.current = "car-shp";
+      const url = await uploadFile(file);
+      if (!url) return;
       setShpUrl(url);
       toast({
         title: "Arquivo de geometria enviado",
@@ -777,6 +778,7 @@ export default function CarPage() {
           </CardContent>
         </Card>
       </main>
+      <UploadPreparationDialog {...dialogProps} />
     </div>
   );
 }

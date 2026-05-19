@@ -29,7 +29,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { CalendarIcon, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, parse } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import { ptBR } from 'date-fns/locale/pt-BR';
 
 import { useToast } from '@/hooks/use-toast';
 import type { License, PermitType, PermitStatus, Empreendedor, Project } from '@/lib/types';
@@ -44,7 +44,9 @@ import { DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/co
 import { Label } from '@/components/ui/label';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+import { UPLOAD_RAW_FILE_SAFETY_MAX } from '@/lib/upload-limits';
+
+const MAX_FILE_SIZE = UPLOAD_RAW_FILE_SAFETY_MAX;
 
 const formSchema = z.object({
   empreendedorId: z.string().min(1, 'Selecione um empreendedor.'),

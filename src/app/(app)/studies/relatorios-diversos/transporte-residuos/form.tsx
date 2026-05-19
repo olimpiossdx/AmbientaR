@@ -25,13 +25,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { Empreendedor, EnvironmentalCompany, Project, TechnicalResponsible, TransporteResiduosPerigosos } from '@/lib/types';
 import { Textarea } from '@/components/ui/textarea';
-import {
-  uploadFileToStorage,
-  sanitizeStorageFileName,
-} from '@/lib/storage-upload';
 import { isImageOrPdfForTransaction } from '@/lib/file-mime';
-
-const MAX_ANEXO_ART_BYTES = 10 * 1024 * 1024;
+import { UploadPreparationDialog } from '@/components/shared/upload-preparation-dialog';
+import { useStorageFileUpload } from '@/hooks/use-storage-file-upload';
 
 const formSchema = z.object({
     empreendedor: z.object({
@@ -126,6 +122,14 @@ export function TransporteResiduosForm({ onSuccess, onCancel }: TransporteResidu
   const [isUploadingArt, setIsUploadingArt] = React.useState(false);
   const { toast } = useToast();
   const { firestore, auth } = useFirebase();
+  const { uploadFile, dialogProps } = useStorageFileUpload({
+    storageFolder: 'transporte-residuos-reports',
+    buildStoragePath: (_file, safe) => {
+      const uid = auth?.currentUser?.uid;
+      if (!uid) throw new Error('Sessão inválida.');
+      return `transporte-residuos-reports/${uid}/${Date.now()}-${safe}`;
+    },
+  });
 
   const empreendedoresQuery = useMemoFirebase(() => firestore ? collection(firestore, 'empreendedores') : null, [firestore]);
   const { data: empreendedores, isLoading: isLoadingEmpreendedores } = useCollection<Empreendedor>(empreendedoresQuery);
@@ -224,15 +228,6 @@ export function TransporteResiduosForm({ onSuccess, onCancel }: TransporteResidu
     const file = inputEl.files?.[0];
     if (!file) return;
 
-    if (file.size > MAX_ANEXO_ART_BYTES) {
-      toast({
-        variant: 'destructive',
-        title: 'Arquivo muito grande',
-        description: `Máximo ${MAX_ANEXO_ART_BYTES / 1024 / 1024}MB.`,
-      });
-      inputEl.value = '';
-      return;
-    }
     if (!isImageOrPdfForTransaction(file)) {
       toast({
         variant: 'destructive',
@@ -257,11 +252,8 @@ export function TransporteResiduosForm({ onSuccess, onCancel }: TransporteResidu
     inputEl.value = '';
     setIsUploadingArt(true);
     try {
-      const safe = sanitizeStorageFileName(file.name);
-      const url = await uploadFileToStorage(
-        file,
-        `transporte-residuos-reports/${uid}/${Date.now()}-${safe}`,
-      );
+      const url = await uploadFile(file);
+      if (!url) return;
       onUrlChange(url);
       toast({ title: 'Anexo enviado', description: 'A cópia da ART foi guardada no Storage.' });
     } catch (e) {
@@ -612,6 +604,7 @@ export function TransporteResiduosForm({ onSuccess, onCancel }: TransporteResidu
           </Button>
         </div>
       </form>
+      <UploadPreparationDialog {...dialogProps} />
     </Form>
   );
 }

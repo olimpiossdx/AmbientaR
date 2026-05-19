@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { suggestEmpreendedorAutofill } from "@/ai/flows/suggest-empreendedor-autofill";
 import { isAiRoutesEnabled } from "@/lib/deploy-flags";
+import { adminApiErrorResponse, requireAdminApiAuth } from "@/lib/api-auth";
 
 type Body = {
   cpf?: string;
@@ -21,6 +22,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    await requireAdminApiAuth(request);
     const body = (await request.json()) as Body;
     const cpf = (body.cpf || "").trim();
     if (!cpf) {
@@ -41,13 +43,20 @@ export async function POST(request: NextRequest) {
       suggestions: result.suggestions || [],
     });
   } catch (error) {
+    const { message, status, code } = adminApiErrorResponse(error);
+    if (status !== 500) {
+      return NextResponse.json(
+        { success: false, error: message, code },
+        { status },
+      );
+    }
     console.error("POST /api/ai-lab/autofill-empreendedor:", error);
     return NextResponse.json(
       {
         success: false,
-        error: error instanceof Error ? error.message : "Falha no autofill.",
+        error: message || "Falha no autofill.",
       },
-      { status: 500 },
+      { status },
     );
   }
 }

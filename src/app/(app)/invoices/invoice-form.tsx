@@ -31,7 +31,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { CalendarIcon, Loader2, Upload } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { ptBR } from "date-fns/locale/pt-BR";
 import { useToast } from "@/hooks/use-toast";
 import type { Invoice, Client, Contract } from "@/lib/types";
 import {
@@ -49,14 +49,11 @@ import {
   query,
   where,
 } from "firebase/firestore";
-import {
-  uploadFileToStorage,
-  sanitizeStorageFileName,
-} from "@/lib/storage-upload";
 import { DialogFooter } from "@/components/ui/dialog";
 import { AttachmentPreviewSection } from "@/components/shared/attachment-preview-section";
-
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+import { UploadPreparationDialog } from "@/components/shared/upload-preparation-dialog";
+import { useStorageFileUpload } from "@/hooks/use-storage-file-upload";
+import { UPLOAD_RAW_FILE_SAFETY_MAX } from "@/lib/upload-limits";
 
 const formSchema = z
   .object({
@@ -72,8 +69,10 @@ const formSchema = z
       .optional()
       .refine(
         (files) =>
-          !files || files.length === 0 || files?.[0]?.size <= MAX_FILE_SIZE,
-        `O tamanho máximo do arquivo é 5MB.`,
+          !files ||
+          files.length === 0 ||
+          files?.[0]?.size <= UPLOAD_RAW_FILE_SAFETY_MAX,
+        "Arquivo excede o limite de processamento no navegador.",
       ),
   })
   .refine((data) => data.dueDate >= data.invoiceDate, {
@@ -156,6 +155,9 @@ export function InvoiceForm({
 
   const { toast } = useToast();
   const { firestore } = useFirebase();
+  const { uploadFile, dialogProps, limitLabel } = useStorageFileUpload({
+    storageFolder: "invoices",
+  });
 
   const clientsQuery = useMemoFirebase(
     () => (firestore ? collection(firestore, "clients") : null),
@@ -209,11 +211,8 @@ export function InvoiceForm({
       // Permite selecionar o mesmo arquivo novamente.
       inputEl.value = "";
 
-      const safe = sanitizeStorageFileName(file.name);
-      const downloadUrl = await uploadFileToStorage(
-        file,
-        `invoices/${Date.now()}-${safe}`,
-      );
+      const downloadUrl = await uploadFile(file);
+      if (!downloadUrl) return;
       setUploadedFileUrl(downloadUrl);
       toast({
         title: "Anexo carregado",
@@ -524,8 +523,9 @@ export function InvoiceForm({
                   />
                 </FormControl>
                 <FormDescription>
-                  Anexe o boleto ou comprovante da fatura (PDF, JPG, PNG). Máx
-                  5MB.
+                  Anexe o boleto ou comprovante (PDF, JPG, PNG). Limite após
+                  otimização: {limitLabel}. Arquivos maiores serão comprimidos
+                  automaticamente.
                 </FormDescription>
                 {(currentItem?.fileUrl || uploadedFileUrl) && (
                   <div className="mt-3">
@@ -565,6 +565,7 @@ export function InvoiceForm({
           </Button>
         </DialogFooter>
       </form>
+      <UploadPreparationDialog {...dialogProps} />
     </Form>
   );
 }

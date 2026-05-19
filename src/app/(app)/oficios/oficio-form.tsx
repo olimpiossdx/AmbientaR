@@ -24,7 +24,7 @@ import { FirestorePermissionError } from '@/firebase/errors';
 import { collection, doc, addDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import { ptBR } from 'date-fns/locale/pt-BR';
 import { Label } from '@/components/ui/label';
 import { getRoleLabelPt } from '@/lib/user-role-labels';
 

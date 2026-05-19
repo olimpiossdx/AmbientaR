@@ -45,7 +45,7 @@ const DetailItem = ({ label, value }: { label: string; value?: string | null | s
   );
 };
 
-const CRM_ROLES = ['admin', 'sales', 'supervisor', 'financial'] as const;
+import { canAccessCrm } from '@/lib/role-guards';
 
 export default function CrmClientsPage() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -58,7 +58,7 @@ export default function CrmClientsPage() {
 
   const clientsQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
-    if (CRM_ROLES.includes(user.role as any)) return collection(firestore, 'clients');
+    if (canAccessCrm(user.role)) return collection(firestore, 'clients');
     return query(collection(firestore, 'clients'), where('id', '==', '__none__'));
   }, [firestore, user]);
 
@@ -93,7 +93,7 @@ export default function CrmClientsPage() {
     router.push('/clients');
   };
 
-  if (user && !CRM_ROLES.includes(user.role as any)) {
+  if (user && !canAccessCrm(user.role)) {
     return (
       <div className="flex flex-col h-full">
         <PageHeader title="Gestão de Clientes (CRM)" />

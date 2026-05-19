@@ -28,7 +28,7 @@ import { Input } from '@/components/ui/input';
 import { CalendarIcon, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import { ptBR } from 'date-fns/locale/pt-BR';
 import { useToast } from '@/hooks/use-toast';
 import type { Appointment, Client, UserRole } from '@/lib/types';
 import { useFirebase, errorEmitter, useCollection, useMemoFirebase } from '@/firebase';

@@ -46,13 +46,20 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import type { Empreendedor, Project, Inspection } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import { ptBR } from 'date-fns/locale/pt-BR';
 import { CardFooter } from '@/components/ui/card';
 import { SignaturePad } from '@/components/ui/signature-pad';
 import { Badge } from '@/components/ui/badge';
 
 
-const MAX_FILE_SIZE = 15 * 1024 * 1024; // 15 MB (fotos + PDF)
+import { UploadPreparationDialog } from '@/components/shared/upload-preparation-dialog';
+import { usePreparedUpload } from '@/hooks/use-prepared-upload';
+import {
+  formatUploadLimitMb,
+  UPLOAD_RAW_FILE_SAFETY_MAX,
+} from '@/lib/upload-limits';
+
+const MAX_FILE_SIZE = UPLOAD_RAW_FILE_SAFETY_MAX;
 const MAX_LAUDO_ATTACHMENTS = 24;
 const MAX_INCONF_IMAGES = 12;
 
@@ -115,13 +122,19 @@ export function InspectionForm({ onSuccess, currentItem }: InspectionFormProps) 
 
   const { toast } = useToast();
   const { firestore, user } = useFirebase();
+  const { prepareFile, dialogProps } = usePreparedUpload({
+    storagePathPrefix: 'inspections/',
+  });
+  const limitLabel = formatUploadLimitMb({ storagePathPrefix: 'inspections/' });
 
   const uploadToStorage = React.useCallback(
     async (file: File, pathPrefix: string) => {
       if (!user?.uid) throw new Error('Utilizador não autenticado.');
-      if (file.size > MAX_FILE_SIZE) {
-        throw new Error(`Ficheiro demasiado grande (máx. ${MAX_FILE_SIZE / 1024 / 1024} MB).`);
+      if (file.size > UPLOAD_RAW_FILE_SAFETY_MAX) {
+        throw new Error('Ficheiro excede o limite de processamento no navegador.');
       }
+      const prepared = await prepareFile(file);
+      if (!prepared) throw new Error('Upload cancelado.');
       const mime = file.type || '';
       const isPdfName = file.name.toLowerCase().endsWith('.pdf');
       const ok =
@@ -146,10 +159,10 @@ export function InspectionForm({ onSuccess, currentItem }: InspectionFormProps) 
         mime === 'image/gif'
           ? mime
           : 'application/pdf';
-      const snap = await uploadBytes(storageRef, file, { contentType });
+      const snap = await uploadBytes(storageRef, prepared, { contentType });
       return getDownloadURL(snap.ref);
     },
-    [user?.uid],
+    [user?.uid, prepareFile],
   );
 
   const empreendedoresQuery = useMemoFirebase(() => firestore ? collection(firestore, 'empreendedores') : null, [firestore]);
@@ -514,7 +527,7 @@ export function InspectionForm({ onSuccess, currentItem }: InspectionFormProps) 
                                                 Fotos e anexos desta inconformidade
                                             </FormLabel>
                                             <FormDescription>
-                                                Evidências do laudo para este ponto — JPEG, PNG, WebP, GIF ou PDF; até {MAX_INCONF_IMAGES} ficheiros, máx. {MAX_FILE_SIZE / 1024 / 1024} MB cada.
+                                                Evidências do laudo para este ponto — JPEG, PNG, WebP, GIF ou PDF; até {MAX_INCONF_IMAGES} ficheiros. Limite após otimização: {limitLabel} cada.
                                             </FormDescription>
                                             <input
                                                 ref={(el) => {
@@ -620,7 +633,7 @@ export function InspectionForm({ onSuccess, currentItem }: InspectionFormProps) 
                     render={({ field }) => (
                         <FormItem>
                             <FormDescription>
-                                Até {MAX_LAUDO_ATTACHMENTS} ficheiros, {MAX_FILE_SIZE / 1024 / 1024} MB cada — imagens ou PDF. Armazenados no Firebase Storage.
+                                Até {MAX_LAUDO_ATTACHMENTS} ficheiros ({limitLabel} cada após otimização) — imagens ou PDF. Armazenados no Firebase Storage.
                             </FormDescription>
                             <input
                                 ref={laudoInputRef}
@@ -731,6 +744,7 @@ export function InspectionForm({ onSuccess, currentItem }: InspectionFormProps) 
                 </Button>
             </CardFooter>
         </form>
+        <UploadPreparationDialog {...dialogProps} />
     </Form>
   );
 }

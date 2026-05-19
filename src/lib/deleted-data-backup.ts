@@ -13,6 +13,14 @@ import {
   type Firestore,
 } from "firebase/firestore";
 import type { AppUser, Condicionante } from "@/lib/types";
+import { hasAnyRoleOrAdmin, isAdminRole } from "@/lib/role-guards";
+
+function canSkipBackupOnFailure(user: AppUser | null | undefined): boolean {
+  return (
+    isAdminRole(user?.role) ||
+    hasAnyRoleOrAdmin(user?.role, ["gestor", "supervisor"])
+  );
+}
 
 type SupportedParentCollection = "licenses" | "outorgas" | "intervencoes";
 
@@ -64,19 +72,25 @@ export async function backupAndDeleteParentWithCondicionantes(params: {
     ...d.data(),
   })) as Condicionante[];
 
-  await addDoc(collection(firestore, "deleted_data_backups"), {
-    sourceCollection: collectionName,
-    sourceType: referenceType,
-    sourceId: documentId,
-    sourceData: sanitizeForBackup(parentSnap.data()),
-    relatedCollection: "condicionantes",
-    relatedIds: relatedCondicionantes.map((c) => c.id),
-    relatedData: sanitizeForBackup(relatedCondicionantes),
-    relatedCount: relatedCondicionantes.length,
-    deletedBy: getActor(user),
-    reason: reason || null,
-    deletedAt: serverTimestamp(),
-  });
+  try {
+    await addDoc(collection(firestore, "deleted_data_backups"), {
+      sourceCollection: collectionName,
+      sourceType: referenceType,
+      sourceId: documentId,
+      sourceData: sanitizeForBackup(parentSnap.data()),
+      relatedCollection: "condicionantes",
+      relatedIds: relatedCondicionantes.map((c) => c.id),
+      relatedData: sanitizeForBackup(relatedCondicionantes),
+      relatedCount: relatedCondicionantes.length,
+      deletedBy: getActor(user),
+      reason: reason || null,
+      deletedAt: serverTimestamp(),
+    });
+  } catch (backupError) {
+    if (!canSkipBackupOnFailure(user)) {
+      throw backupError;
+    }
+  }
 
   for (const condicionante of relatedCondicionantes) {
     await deleteDoc(doc(firestore, "condicionantes", condicionante.id));
@@ -97,21 +111,35 @@ export async function backupAndDeleteSingleCondicionante(params: {
     throw new Error("Condicionante não encontrada para exclusão.");
   }
 
-  await addDoc(collection(firestore, "deleted_data_backups"), {
-    sourceCollection: "condicionantes",
-    sourceType: "condicionante",
-    sourceId: condicionanteId,
-    sourceData: sanitizeForBackup(condSnap.data()),
-    relatedCollection: null,
-    relatedIds: [],
-    relatedData: [],
-    relatedCount: 0,
-    deletedBy: getActor(user),
-    reason: reason || null,
-    deletedAt: serverTimestamp(),
-  });
+  try {
+    await addDoc(collection(firestore, "deleted_data_backups"), {
+      sourceCollection: "condicionantes",
+      sourceType: "condicionante",
+      sourceId: condicionanteId,
+      sourceData: sanitizeForBackup(condSnap.data()),
+      relatedCollection: null,
+      relatedIds: [],
+      relatedData: [],
+      relatedCount: 0,
+      deletedBy: getActor(user),
+      reason: reason || null,
+      deletedAt: serverTimestamp(),
+    });
+  } catch (backupError) {
+    if (!canSkipBackupOnFailure(user)) {
+      throw backupError;
+    }
+  }
 
   await deleteDoc(condRef);
+}
+
+/** Exclusão direta (sem backup) — fallback quando backup falha mas delete é permitido. */
+export async function deleteCondicionanteDirect(
+  firestore: Firestore,
+  condicionanteId: string,
+): Promise<void> {
+  await deleteDoc(doc(firestore, "condicionantes", condicionanteId));
 }
 
 export async function restoreDeletedBackup(params: {

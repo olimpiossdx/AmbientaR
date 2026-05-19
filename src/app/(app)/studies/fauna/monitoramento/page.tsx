@@ -1,10 +1,19 @@
 'use client';
+
 import { PageHeader } from '@/components/page-header';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from '@/components/ui/card';
 import { MonitoramentoForm } from './monitoramento-form';
+import { useFaunaStudyPageSave } from '../_shared/use-fauna-study-page-save';
 
 export default function MonitoramentoFaunaPage() {
-  
+  const handleSave = useFaunaStudyPageSave('monitoramento_projeto');
+
   return (
     <div className="flex flex-col h-full">
       <PageHeader title="Projeto Técnico de Monitoramento de Fauna" />
@@ -17,7 +26,7 @@ export default function MonitoramentoFaunaPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <MonitoramentoForm />
+            <MonitoramentoForm onSave={handleSave} />
           </CardContent>
         </Card>
       </main>

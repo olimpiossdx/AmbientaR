@@ -26,6 +26,7 @@ import {
   serverTimestamp,
 } from "firebase/firestore";
 import { DEFAULT_AI_LOCAL_SOURCE_PATH } from "@/lib/ai-local-source-defaults";
+import { getAdminApiRequestHeaders } from "@/lib/admin-api-client";
 
 type RagSource = {
   id: string;
@@ -78,7 +79,7 @@ function isPermissionDenied(error: unknown) {
 
 export default function AiLabRagPage() {
   const { user } = useAuth();
-  const { firestore } = useFirebase();
+  const { firestore, auth } = useFirebase();
   const { toast } = useToast();
   const [title, setTitle] = React.useState("");
   const [content, setContent] = React.useState("");
@@ -275,7 +276,7 @@ export default function AiLabRagPage() {
 
       const res = await fetch("/api/ai-lab/import-reference-files", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: await getAdminApiRequestHeaders(auth),
         body: JSON.stringify({
           basePath: configuredPath,
           extensions:

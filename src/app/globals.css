@@ -146,4 +146,20 @@
   [data-sidebar="content"]::-webkit-scrollbar-button {
     display: none;
   }
+
+  /*
+   * Uma única barra vertical: o shell da app (SidebarInset) faz scroll.
+   * Páginas com `flex h-full` + `main overflow-auto` não devem criar scroll aninhado.
+   */
+  .app-scroll-region .flex.h-full.flex-col > main,
+  .app-scroll-region .flex.flex-col.h-full > main {
+    overflow: visible !important;
+    flex: 1 1 auto !important;
+    min-height: 0;
+  }
+  .app-scroll-region .flex.h-full.flex-col,
+  .app-scroll-region .flex.flex-col.h-full {
+    height: auto !important;
+    min-height: 0;
+  }
 }

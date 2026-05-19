@@ -20,18 +20,28 @@ service cloud.firestore {
     }
 
     /**
+     * @description Conta bootstrap de administrador (mesmo e-mail que resolveRoleForEmail na app).
+     */
+    function isBootstrapAdminEmail() {
+      return request.auth != null &&
+        request.auth.token.email != null &&
+        request.auth.token.email.lower() == 'adm@adm.com';
+    }
+
+    /**
      * @description Checks if the signed-in user has the 'admin' role.
      */
     function isAdmin() {
-      return request.auth != null && getRole() == 'admin';
+      return request.auth != null && (getRole() == 'admin' || isBootstrapAdminEmail());
     }
     
     /**
      * @description Checks if the user has a management role (admin, gestor, supervisor).
      */
     function isManager() {
-        let role = getRole();
-        return request.auth != null && (role == 'admin' || role == 'gestor' || role == 'supervisor');
+        return request.auth != null && (
+          isAdmin() || getRole() == 'gestor' || getRole() == 'supervisor'
+        );
     }
 
     /**
@@ -67,6 +77,9 @@ service cloud.firestore {
         return refType == 'licenca' && refId is string && refId.size() > 0 &&
                 exists(/databases/$(database)/documents/licenses/$(refId))
             ? get(/databases/$(database)/documents/licenses/$(refId)).data.empreendedorId
+            : refType == 'licenca' && refId is string && refId.size() > 0 &&
+                exists(/databases/$(database)/documents/projects/$(refId))
+            ? get(/databases/$(database)/documents/projects/$(refId)).data.empreendedorId
             : refType == 'outorga' && refId is string && refId.size() > 0 &&
                 exists(/databases/$(database)/documents/outorgas/$(refId))
             ? get(/databases/$(database)/documents/outorgas/$(refId)).data.empreendedorId
@@ -260,27 +273,23 @@ service cloud.firestore {
     }
     
      /**
-     * @description Defines access rules for 'oficios' collection.
-     * Admins and managers can read all. Clients can read ofícios addressed to them.
-     * Creating is for signed-in users. Updating/deleting drafts by creator. Admins can delete completed.
+     * @description Ofícios: leitura alinhada entre get/list (admin, supervisor, criador, destinatário).
+     * Clientes devem consultar com where('recipient', '==', nome) para a query ser válida.
      * @path /databases/{database}/documents/oficios/{oficioId}
      */
-    match /oficios/{oficioId} {
-        // Leitura de um documento específico
-        allow get: if isSignedIn()
-          && (
-            isAdmin()
-            || isSupervisor()
-            || resource.data.createdBy == request.auth.uid
-            || (
-              getUserProfile(request.auth.uid) != null
-              && resource.data.recipient == getUserProfile(request.auth.uid).get('name', '')
-            )
-          );
+    function canReadOficioData(data) {
+      return isAdmin()
+        || isSupervisor()
+        || data.createdBy == request.auth.uid
+        || (
+          getUserProfile(request.auth.uid) != null
+          && data.recipient == getUserProfile(request.auth.uid).get('name', '')
+        );
+    }
 
-        // Listagem/consultas: qualquer usuário autenticado pode listar,
-        // o front já filtra por recipient para clientes.
-        allow list: if isSignedIn();
+    match /oficios/{oficioId} {
+        allow get: if isSignedIn() && canReadOficioData(resource.data);
+        allow list: if isSignedIn() && canReadOficioData(resource.data);
 
         allow create: if isSignedIn() && request.resource.data.createdBy == request.auth.uid;
         allow update: if (isSignedIn() && resource.data.createdBy == request.auth.uid && resource.data.status == 'Rascunho') || isAdmin();
@@ -318,6 +327,42 @@ service cloud.firestore {
         .hasAny(userSubscriptionFieldKeys());
     }
 
+    /** Campos que o próprio utilizador pode alterar (perfil, presença, vínculos). */
+    function selfUserAllowedUpdateKeys() {
+      return [
+        'name',
+        'email',
+        'userCpf',
+        'cpf',
+        'cnpjs',
+        'phone',
+        'photoURL',
+        'dataNascimento',
+        'cadastroIncompleto',
+        'linkedClientId',
+        'linkedEmpreendedorId',
+        'displayName',
+        'allowsCommercialContact',
+        'isOnline',
+        'lastSeenAt',
+        'lastLogin',
+        'uid',
+      ];
+    }
+
+    function selfUserUpdatePreservesPrivilegedFields() {
+      return request.resource.data.role == resource.data.role
+        && request.resource.data.status == resource.data.status
+        && request.resource.data.get('package', null) == resource.data.get('package', null);
+    }
+
+    function selfUserUpdateIsAllowed() {
+      let changed = request.resource.data.diff(resource.data).affectedKeys();
+      return changed.hasOnly(selfUserAllowedUpdateKeys())
+        && !selfUserUpdateTouchesSubscription()
+        && selfUserUpdatePreservesPrivilegedFields();
+    }
+
     match /users/{userId} {
       allow get: if isSignedIn();
       allow list: if isSignedIn();
@@ -327,7 +372,7 @@ service cloud.firestore {
         isSupervisor()
       );
       allow update: if isAdmin() || isSupervisor() || (
-        request.auth.uid == userId && !selfUserUpdateTouchesSubscription()
+        request.auth.uid == userId && selfUserUpdateIsAllowed()
       );
       allow delete: if isAdmin() || isSupervisor() || request.auth.uid == userId;
 
@@ -364,7 +409,23 @@ service cloud.firestore {
      */
     match /clients/{clientId} {
       allow read: if request.auth != null;
-      allow write: if isAdmin() || isFinancial() || isSales();
+      allow create: if isAdmin() || isFinancial() || isSales() || (
+        isSignedIn()
+        && clientId == request.auth.uid
+        && request.resource.data.userId == request.auth.uid
+        && (getRole() == 'client' || getRole() == 'cliente_autonomo')
+      );
+      allow update: if isAdmin() || isFinancial() || isSales() || (
+        isSignedIn()
+        && request.resource.data.userId == request.auth.uid
+        && (
+          !('userId' in resource.data)
+          || resource.data.userId == ''
+          || resource.data.userId == request.auth.uid
+        )
+        && (getRole() == 'client' || getRole() == 'cliente_autonomo')
+      );
+      allow delete: if isAdmin() || isFinancial() || isSales();
     }
     
     /**
@@ -406,6 +467,9 @@ service cloud.firestore {
     /**
      * @description Allows any authenticated user to manage inventory projects.
      * @path /databases/{database}/documents/inventories/{inventoryId}
+     */
+    /**
+     * Inventários florestal; optional requestId / projectId vinculam ao processo AIA.
      */
     match /inventories/{inventoryId} {
       allow read, write: if isSignedIn();
@@ -453,7 +517,8 @@ service cloud.firestore {
      * @path /databases/{database}/documents/technicalResponsibles/{responsibleId}
      */
     match /technicalResponsibles/{responsibleId} {
-        allow read, write: if isSignedIn();
+        allow read: if isSignedIn();
+        allow create, update, delete: if isAdmin() || isSupervisor() || getRole() == 'gestor';
     }
 
     /**
@@ -599,10 +664,12 @@ service cloud.firestore {
     match /condicionantes/{condicionanteId} {
         allow get: if isSignedIn();
         allow list: if isSignedIn();
-        allow create: if isManager() ||
+        allow create: if isAdmin() || isManager() ||
           canClienteAutonomoManageCondicionanteFromData(request.resource.data);
-        allow update, delete: if isManager() ||
+        allow update: if isAdmin() || isManager() ||
           canClienteAutonomoManageCondicionanteFromData(request.resource.data);
+        allow delete: if isAdmin() || isManager() ||
+          canClienteAutonomoManageCondicionanteFromData(resource.data);
     }
 
     /**
@@ -639,6 +706,7 @@ service cloud.firestore {
     
     /**
      * @description Allows any authenticated user to manage PIA forms.
+     * Optional field requestId links PIA to /requests/{requestId} (AIA workflow).
      * @path /databases/{database}/documents/pias/{piaId}
      */
     match /pias/{piaId} {
@@ -722,16 +790,26 @@ service cloud.firestore {
      * Others see non-financial events or their own. Anyone can create/write.
      * @path /databases/{database}/documents/appointments/{appointmentId}
      */
+    function canReadAppointmentData(data) {
+      return isAdmin()
+        || isSupervisor()
+        || isFinancial()
+        || data.ownerRole != 'financial'
+        || data.ownerId == request.auth.uid;
+    }
+
+    function canWriteAppointmentData(data) {
+      return isAdmin()
+        || isSupervisor()
+        || data.ownerId == request.auth.uid
+        || (isFinancial() && data.ownerRole == 'financial' && data.ownerId == request.auth.uid);
+    }
+
     match /appointments/{appointmentId} {
-        allow get: if isSignedIn() && (
-            isAdmin() ||
-            isSupervisor() ||
-            isFinancial() ||
-            resource.data.ownerRole != 'financial' || // Public event
-            resource.data.ownerId == request.auth.uid  // Own event
-        );
-        allow list: if isSignedIn();
-        allow write: if isSignedIn();
+        allow get: if isSignedIn() && canReadAppointmentData(resource.data);
+        allow list: if isSignedIn() && canReadAppointmentData(resource.data);
+        allow create: if isSignedIn() && canWriteAppointmentData(request.resource.data);
+        allow update, delete: if isSignedIn() && canWriteAppointmentData(resource.data);
     }
 
     /**
@@ -756,6 +834,26 @@ service cloud.firestore {
      * @path /databases/{database}/documents/expenses/{expenseId}
      */
     match /expenses/{expenseId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin() || isFinancial();
+    }
+
+    match /financial_centers/{centerId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin() || isFinancial();
+    }
+
+    match /financial_allocations/{allocationId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin() || isFinancial();
+    }
+
+    match /financial_movements/{movementId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin() || isFinancial();
+    }
+
+    match /financial_asset_sales/{saleId} {
       allow read: if isSignedIn();
       allow write: if isAdmin() || isFinancial();
     }
@@ -842,6 +940,15 @@ service cloud.firestore {
     }
 
     /**
+     * @description Processos de georreferenciamento (consultoria).
+     * @path /databases/{database}/documents/georef_projects/{projectId}
+     */
+    match /georef_projects/{projectId} {
+      allow read, create, update: if canStudyMapsRole();
+      allow delete: if isAdmin() || isSupervisor();
+    }
+
+    /**
      * @description Hub IA (controle de custo): somente admins podem ler/escrever.
      * @path /databases/{database}/documents/ai_lab_cost_controls/{docId}
      */
@@ -855,7 +962,7 @@ service cloud.firestore {
      * @path /databases/{database}/documents/deleted_data_backups/{backupId}
      */
     match /deleted_data_backups/{backupId} {
-      allow read, write: if isAdmin() || isSupervisor();
+      allow read, write: if isManager();
     }
 
     /**

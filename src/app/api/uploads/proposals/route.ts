@@ -1,10 +1,11 @@
+import { UPLOAD_MAX_BYTES_DEFAULT } from "@/lib/upload-limits";
 import { NextRequest, NextResponse } from "next/server";
 import { promises as fs } from "fs";
 import path from "path";
 import { effectiveMimeType } from "@/lib/file-mime";
 
 const UPLOAD_DIR = path.join(process.cwd(), "public", "uploads", "proposals");
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const MAX_FILE_SIZE = UPLOAD_MAX_BYTES_DEFAULT; // 10MB
 const ALLOWED_TYPES = ["application/pdf"];
 
 async function ensureDir() {

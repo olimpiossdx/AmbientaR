@@ -44,6 +44,7 @@ import { ibgeData } from "@/lib/ibge-data";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { DEFAULT_AI_LOCAL_SOURCE_PATH } from "@/lib/ai-local-source-defaults";
+import { getAdminApiRequestHeaders } from "@/lib/admin-api-client";
 
 const formSchema = z.object({
   name: z.string().min(2, "O nome é obrigatório."),
@@ -142,16 +143,22 @@ const CRITICAL_FIELDS = new Set<AutofillField>([
 ]);
 
 interface ClientFormProps {
+  /** Cliente existente (edição). Exige `id` válido. */
   currentClient?: Client | null;
+  /** Valores iniciais só para novo cadastro (sem `id`). */
+  defaultDraft?: Partial<Client> | null;
   onSuccess?: () => void;
   onCancel?: () => void;
 }
 
 export function ClientForm({
   currentClient,
+  defaultDraft,
   onSuccess,
   onCancel,
 }: ClientFormProps) {
+  const editingClientId = currentClient?.id?.trim() || null;
+  const seedValues = currentClient ?? defaultDraft;
   const [loading, setLoading] = React.useState(false);
   const [isAutofilling, setIsAutofilling] = React.useState(false);
   const [autofillSuggestions, setAutofillSuggestions] = React.useState<
@@ -165,25 +172,25 @@ export function ClientForm({
   const form = useForm<ClientFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: currentClient?.name || "",
-      cpfCnpj: currentClient?.cpfCnpj || "",
-      entityType: currentClient?.entityType || undefined,
-      phone: currentClient?.phone || "",
-      email: currentClient?.email || "",
-      identidade: currentClient?.identidade || "",
-      emissor: currentClient?.emissor || "",
-      nacionalidade: currentClient?.nacionalidade || "Brasileira",
-      estadoCivil: currentClient?.estadoCivil || "",
-      dataNascimento: currentClient?.dataNascimento
-        ? new Date(currentClient.dataNascimento)
+      name: seedValues?.name || "",
+      cpfCnpj: seedValues?.cpfCnpj || "",
+      entityType: seedValues?.entityType || undefined,
+      phone: seedValues?.phone || "",
+      email: seedValues?.email || "",
+      identidade: seedValues?.identidade || "",
+      emissor: seedValues?.emissor || "",
+      nacionalidade: seedValues?.nacionalidade || "Brasileira",
+      estadoCivil: seedValues?.estadoCivil || "",
+      dataNascimento: seedValues?.dataNascimento
+        ? new Date(seedValues.dataNascimento)
         : undefined,
-      ctfIbama: currentClient?.ctfIbama || "",
-      address: currentClient?.address || "",
-      numero: currentClient?.numero || "",
-      bairro: currentClient?.bairro || "",
-      municipio: currentClient?.municipio || "",
-      uf: currentClient?.uf || "",
-      cep: currentClient?.cep || "",
+      ctfIbama: seedValues?.ctfIbama || "",
+      address: seedValues?.address || "",
+      numero: seedValues?.numero || "",
+      bairro: seedValues?.bairro || "",
+      municipio: seedValues?.municipio || "",
+      uf: seedValues?.uf || "",
+      cep: seedValues?.cep || "",
     },
   });
 
@@ -501,7 +508,7 @@ export function ClientForm({
         const requestLocalImport = async (modifiedAfter?: string) => {
           const res = await fetch("/api/ai-lab/import-reference-files", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: await getAdminApiRequestHeaders(auth),
             body: JSON.stringify({
               basePath: configuredPath,
               extensions:
@@ -612,7 +619,7 @@ export function ClientForm({
 
       const llmRes = await fetch("/api/ai-lab/autofill-empreendedor", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: await getAdminApiRequestHeaders(auth),
         body: JSON.stringify({ cpf: digits, hardContextJson, evidenceText }),
       });
       const llmData = await llmRes.json();
@@ -675,7 +682,7 @@ export function ClientForm({
         return;
       }
 
-      if (currentClient && !form.formState.isDirty) {
+      if (editingClientId && !form.formState.isDirty) {
         toast({
           title: "Cliente atualizado!",
           description: "Nenhuma alteração foi feita nos dados do cliente.",
@@ -686,10 +693,10 @@ export function ClientForm({
 
       const dataToSave = toClientFirestorePayload(values);
 
-      if (currentClient) {
-        const clientRef = doc(firestore, "clients", currentClient.id);
+      if (editingClientId) {
+        const clientRef = doc(firestore, "clients", editingClientId);
         const isOwnClient =
-          isClientePortalRole(user?.role) && user?.id === currentClient.id;
+          isClientePortalRole(user?.role) && user?.id === editingClientId;
 
         await updateDoc(clientRef, dataToSave);
 
@@ -706,7 +713,7 @@ export function ClientForm({
           description: "As informações do cliente foram salvas com sucesso.",
         });
         void logUserAction(firestore, auth, "update_client", {
-          clientId: currentClient.id,
+          clientId: editingClientId,
           clientName: values.name,
         });
         onSuccess?.();
@@ -725,8 +732,8 @@ export function ClientForm({
         onSuccess?.();
       }
     } catch {
-      if (currentClient) {
-        const clientRef = doc(firestore!, "clients", currentClient.id);
+      if (editingClientId) {
+        const clientRef = doc(firestore!, "clients", editingClientId);
         errorEmitter.emit(
           "permission-error",
           new FirestorePermissionError({

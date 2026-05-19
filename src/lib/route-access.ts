@@ -1,12 +1,41 @@
 import type { NavItem, NavSubItem, UserRole } from '@/lib/types';
+import { isAdminRole } from '@/lib/role-guards';
 import { allNavItems } from '@/lib/navigation-config';
 
 type FlatNavEntry = { href: string; roles?: UserRole[] };
+
+/** Todas as roles que utilizam a app autenticada. */
+const ALL_APP_ROLES: UserRole[] = [
+  'admin',
+  'client',
+  'cliente_autonomo',
+  'representative',
+  'technical',
+  'sales',
+  'financial',
+  'gestor',
+  'supervisor',
+  'diretor_fauna',
+  'advogado',
+];
+
+/** Criar/editar ofícios (lista continua acessível a clientes titulares). */
+const OFICIOS_WRITE_ROLES: UserRole[] = [
+  'admin',
+  'technical',
+  'sales',
+  'financial',
+  'gestor',
+  'supervisor',
+  'diretor_fauna',
+  'advogado',
+];
 
 /** Prefixos que o perfil `cliente_autonomo` não pode aceder (IA, elaboração de estudos, processos). */
 const PATH_PREFIXES_DENIED_FOR_CLIENTE_AUTONOMO: readonly string[] = [
   '/ai-lab',
   '/studies',
+  '/georeferenciamento',
   '/analise-ambiental',
   '/requests',
 ];
@@ -26,27 +55,121 @@ function flattenNav(items: (NavItem | NavSubItem)[], out: FlatNavEntry[] = []): 
 
 const flatNav = flattenNav(allNavItems);
 
+/** Parâmetros de rota (ex.: `useSearchParams()` no layout). */
+export type RouteSearchParams = Pick<URLSearchParams, 'get'> | null | undefined;
+
 function normalizePathname(pathname: string): string {
-  // Garante que `/foo?x=1` seja tratado como `/foo`.
-  const idx = pathname.indexOf('?');
-  return idx >= 0 ? pathname.slice(0, idx) : pathname;
+  // Garante que `/foo?x=1` e `/foo#hash` sejam tratados como `/foo`.
+  let path = pathname;
+  const qIdx = path.indexOf('?');
+  if (qIdx >= 0) path = path.slice(0, qIdx);
+  const hIdx = path.indexOf('#');
+  if (hIdx >= 0) path = path.slice(0, hIdx);
+  return path;
+}
+
+function normalizeNavHref(href: string): string {
+  return normalizePathname(href);
+}
+
+/** Rotas com política explícita (prioridade sobre o menu). */
+function getManualAllowedRoles(path: string): UserRole[] | null {
+  if (path === '/settings/appearance') return ALL_APP_ROLES;
+  if (path === '/settings') return ['admin'];
+  if (path === '/oficios/new' || /\/oficios\/[^/]+\/edit$/.test(path)) {
+    return OFICIOS_WRITE_ROLES;
+  }
+  return null;
 }
 
 function matchHrefToPath(href: string, pathname: string): boolean {
   const path = normalizePathname(pathname);
-  const base = normalizePathname(href);
+  const base = normalizeNavHref(href);
   if (base === '/') return path === '/';
   return path === base || path.startsWith(`${base}/`);
 }
 
-export function getAllowedRolesForPath(pathname: string): UserRole[] | null {
+function getUrlFromNavHref(href: string): string | null {
+  const qIdx = href.indexOf('?');
+  if (qIdx < 0) return null;
+  const url = new URLSearchParams(href.slice(qIdx + 1)).get('url');
+  return url?.trim() ? url : null;
+}
+
+function getUrlFromRouteSearchParams(searchParams?: RouteSearchParams): string | null {
+  if (!searchParams) return null;
+  const url = searchParams.get('url');
+  return url?.trim() ? url : null;
+}
+
+/** Compara destinos `/external?url=…` de forma estável (barra final, etc.). */
+function externalUrlsEqual(a: string, b: string): boolean {
+  const normalize = (raw: string): string => {
+    try {
+      const parsed = new URL(raw);
+      let path = parsed.pathname;
+      if (path.length > 1 && path.endsWith('/')) path = path.slice(0, -1);
+      return `${parsed.origin}${path}${parsed.search}${parsed.hash}`;
+    } catch {
+      return raw.trim();
+    }
+  };
+  return normalize(a) === normalize(b);
+}
+
+function externalNavEntries(): FlatNavEntry[] {
+  return flatNav.filter((e) => normalizePathname(e.href) === '/external');
+}
+
+function unionRolesFromEntries(entries: FlatNavEntry[]): UserRole[] | null {
+  const roles = new Set<UserRole>();
+  for (const entry of entries) {
+    for (const role of entry.roles ?? []) roles.add(role);
+  }
+  return roles.size > 0 ? [...roles] : null;
+}
+
+function getAllowedRolesForExternal(searchParams?: RouteSearchParams): UserRole[] | null {
+  const entries = externalNavEntries();
+  if (entries.length === 0) return null;
+
+  const targetUrl = getUrlFromRouteSearchParams(searchParams);
+  if (!targetUrl) return unionRolesFromEntries(entries);
+
+  const matched = entries.filter((entry) => {
+    const entryUrl = getUrlFromNavHref(entry.href);
+    return entryUrl != null && externalUrlsEqual(entryUrl, targetUrl);
+  });
+
+  if (matched.length === 1) {
+    const roles = matched[0].roles;
+    return roles?.length ? roles : null;
+  }
+  if (matched.length > 1) return unionRolesFromEntries(matched);
+
+  // `url` presente mas sem entrada exata no menu: união (evita falso negativo).
+  return unionRolesFromEntries(entries);
+}
+
+export function getAllowedRolesForPath(
+  pathname: string,
+  searchParams?: RouteSearchParams,
+): UserRole[] | null {
   const path = normalizePathname(pathname);
 
-  // Escolhe o match mais específico (maior prefixo).
+  const manual = getManualAllowedRoles(path);
+  if (manual) return manual;
+
+  if (path === '/external') {
+    return getAllowedRolesForExternal(searchParams);
+  }
+
+  // Escolhe o match mais específico (maior prefixo). Ignora `/external?…` (tratado acima).
   let best: FlatNavEntry | null = null;
   for (const entry of flatNav) {
+    if (normalizeNavHref(entry.href) === '/external') continue;
     if (!matchHrefToPath(entry.href, path)) continue;
-    if (!best || normalizePathname(entry.href).length > normalizePathname(best.href).length) {
+    if (!best || normalizeNavHref(entry.href).length > normalizeNavHref(best.href).length) {
       best = entry;
     }
   }
@@ -60,15 +183,19 @@ export function getAllowedRolesForPath(pathname: string): UserRole[] | null {
   return best.roles;
 }
 
-export function isRoleAllowedForPath(role: UserRole, pathname: string): boolean {
-  if (role === 'admin') return true;
+export function isRoleAllowedForPath(
+  role: UserRole,
+  pathname: string,
+  searchParams?: RouteSearchParams,
+): boolean {
+  if (isAdminRole(role)) return true;
   const path = normalizePathname(pathname);
   if (role === 'cliente_autonomo') {
     for (const prefix of PATH_PREFIXES_DENIED_FOR_CLIENTE_AUTONOMO) {
       if (pathMatchesIaDeniedPrefix(path, prefix)) return false;
     }
   }
-  const allowed = getAllowedRolesForPath(pathname);
+  const allowed = getAllowedRolesForPath(pathname, searchParams);
   if (!allowed) return true;
   return allowed.includes(role);
 }

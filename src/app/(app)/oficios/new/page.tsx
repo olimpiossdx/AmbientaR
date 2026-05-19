@@ -1,12 +1,21 @@
 'use client';
-import { Suspense } from 'react';
+import { Suspense, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { PageHeader } from '@/components/page-header';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { OficioForm } from '../oficio-form';
+import { useFirebase } from '@/firebase';
+import { isOficioReadOnlyRole } from '@/lib/role-guards';
 
 function NewOficioPageContent() {
     const router = useRouter();
+    const { user } = useFirebase();
+
+    useEffect(() => {
+      if (user && isOficioReadOnlyRole(user.role)) {
+        router.replace('/oficios');
+      }
+    }, [user, router]);
 
     const handleSuccess = () => {
       router.push('/oficios');

@@ -12,7 +12,7 @@ import { useAuth } from '@/firebase';
 import { Settings, Target } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-const CRM_ROLES = ['admin', 'sales', 'supervisor', 'financial'] as const;
+import { canAccessCrm } from '@/lib/role-guards';
 
 const DEFAULT_STAGES: OpportunityStage[] = [
   'Qualificação',
@@ -70,7 +70,7 @@ export default function CrmSettingsPage() {
     writeLocalSettings({ monthlyTargetBRL: monthlyTargetNumber });
   };
 
-  if (!user || !CRM_ROLES.includes(user.role as any)) {
+  if (!user || !canAccessCrm(user.role)) {
     return (
       <div className="flex flex-col h-full">
         <PageHeader title="Configurações do CRM" />

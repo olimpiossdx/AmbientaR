@@ -14,16 +14,39 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { PlusCircle, Upload, Eye, Lock, LockOpen, Save, FileDown } from "lucide-react";
+import {
+  PlusCircle,
+  Upload,
+  Eye,
+  Lock,
+  LockOpen,
+  Save,
+  FileDown,
+  Pencil,
+  Trash2,
+} from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { CardSearchInput } from "@/components/card-search-input";
 import { useCollection, useFirebase, useMemoFirebase } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
-import { collection, addDoc, doc, serverTimestamp, updateDoc } from "firebase/firestore";
+import { isAdminRole } from "@/lib/role-guards";
+import { collection, addDoc, doc, serverTimestamp, updateDoc, deleteDoc } from "firebase/firestore";
 import { effectiveMimeType } from "@/lib/file-mime";
 import {
   uploadFileToStorage,
   sanitizeStorageFileName,
 } from "@/lib/storage-upload";
+import { UploadPreparationDialog } from "@/components/shared/upload-preparation-dialog";
+import { usePreparedUpload } from "@/hooks/use-prepared-upload";
 import type { Empreendedor, Project } from "@/lib/types";
 
 type TipoDefesa = "Defesa em 1º Instância / Administrativa" | "Defesa em 2º Instância / Administrativa";
@@ -147,6 +170,56 @@ function formatProjectCoordinates(project?: Project | null): string {
 function valueOrPlaceholder(value: string | undefined, placeholder: string): string {
   const normalized = (value || "").trim();
   return normalized.length > 0 ? normalized : placeholder;
+}
+
+function getDefesaResumoText(defesa: AutoInfracaoDefesa): string | null {
+  const interno = (defesa.informacoesInternas || "").trim();
+  if (interno) return interno;
+  const sintese = (defesa.defesaConteudo?.sinteseAuto || "").trim();
+  return sintese || null;
+}
+
+function getDefesaSinteseAuto(defesa: AutoInfracaoDefesa): string | null {
+  const sintese = (defesa.defesaConteudo?.sinteseAuto || "").trim();
+  const interno = (defesa.informacoesInternas || "").trim();
+  if (!sintese || sintese === interno) return null;
+  return sintese;
+}
+
+function getDefesaMotivosInfracao(defesa: AutoInfracaoDefesa): string | null {
+  const c = defesa.defesaConteudo || {};
+  const linhas: string[] = [];
+  const numero = (c.autoNumero || "").trim();
+  const codigo = (c.autoCodigo || "").trim();
+  const artigo = (c.autoArtigoBase || "").trim();
+  const relato = (c.autoRelatoFiscal || "").trim();
+  if (numero) linhas.push(`Auto nº ${numero}`);
+  if (codigo) linhas.push(`Código da infração: ${codigo}`);
+  if (artigo) linhas.push(`Tipificação: ${artigo}`);
+  if (relato) linhas.push(relato);
+  return linhas.length > 0 ? linhas.join("\n") : null;
+}
+
+function getDefesaAutoMeta(defesa: AutoInfracaoDefesa): string[] {
+  const c = defesa.defesaConteudo || {};
+  const meta: string[] = [];
+  const multa = (c.autoValorMulta || "").trim();
+  const dataFato = (c.autoDataFato || "").trim();
+  const medida = (c.autoMedidaCautelar || "").trim();
+  if (multa) meta.push(`Multa: ${multa}`);
+  if (dataFato) meta.push(`Fato: ${dataFato}`);
+  if (medida) meta.push(`Medida cautelar: ${medida}`);
+  return meta;
+}
+
+/** Uma linha para o card (padrão das outras listas). */
+function getDefesaMotivosLinha(defesa: AutoInfracaoDefesa): string | null {
+  const partes: string[] = [];
+  const motivos = getDefesaMotivosInfracao(defesa);
+  if (motivos) partes.push(motivos.replace(/\n/g, " · "));
+  partes.push(...getDefesaAutoMeta(defesa));
+  const linha = partes.join(" · ").trim();
+  return linha || null;
 }
 
 function formatDefesaDocContent(defesa: AutoInfracaoDefesa, empreendedorNome: string, empreendimentoNome: string): string {
@@ -273,9 +346,23 @@ function formatDefesaDocContent(defesa: AutoInfracaoDefesa, empreendedorNome: st
 export default function AutosInfracaoDefesaPage() {
   const { firestore, user } = useFirebase();
   const { toast } = useToast();
+  const { prepareFile, dialogProps } = usePreparedUpload({
+    storagePathPrefix: "autos-infracao-defesa/",
+  });
+
+  const uploadDefesaFile = React.useCallback(
+    async (file: File, filePath: string) => {
+      const prepared = await prepareFile(file);
+      if (!prepared) throw new Error("Upload cancelado.");
+      return uploadFileToStorage(prepared, filePath);
+    },
+    [prepareFile],
+  );
 
   const [open, setOpen] = React.useState(false);
   const [openProcess, setOpenProcess] = React.useState(false);
+  const [deleteTarget, setDeleteTarget] = React.useState<AutoInfracaoDefesa | null>(null);
+  const [deleting, setDeleting] = React.useState(false);
   const [saving, setSaving] = React.useState(false);
   const [savingProcess, setSavingProcess] = React.useState(false);
   const [isLocked, setIsLocked] = React.useState(true);
@@ -412,7 +499,7 @@ export default function AutosInfracaoDefesaPage() {
         const file = checklistFiles[item.id];
         if (!file) continue;
         const filePath = `autos-infracao-defesa/${year}/checklist-${item.id}-${Date.now()}-${sanitizeStorageFileName(file.name)}`;
-        const url = await uploadFileToStorage(file, filePath);
+        const url = await uploadDefesaFile(file, filePath);
         anexos.push({
           name: file.name,
           url,
@@ -425,7 +512,7 @@ export default function AutosInfracaoDefesaPage() {
       let geralIdx = 0;
       for (const file of generalFiles) {
         const filePath = `autos-infracao-defesa/${year}/geral-${Date.now()}-${geralIdx++}-${sanitizeStorageFileName(file.name)}`;
-        const url = await uploadFileToStorage(file, filePath);
+        const url = await uploadDefesaFile(file, filePath);
         anexos.push({
           name: file.name,
           url,
@@ -506,9 +593,15 @@ export default function AutosInfracaoDefesaPage() {
     }
   };
 
-  const openDefesaProcess = (defesa: AutoInfracaoDefesa) => {
+  /** Página restrita a admin/advogado no menu; quem chega aqui pode gerir o processo. */
+  const canWriteDefesa = isAdminRole(user?.role) || user?.role === "advogado";
+
+  const openDefesaProcess = (
+    defesa: AutoInfracaoDefesa,
+    options?: { unlocked?: boolean },
+  ) => {
     setSelectedDefesa(defesa);
-    setIsLocked(true);
+    setIsLocked(!options?.unlocked);
     setAutoNumero(defesa.defesaConteudo?.autoNumero || "");
     setAutoCodigo(defesa.defesaConteudo?.autoCodigo || "");
     setAutoArtigoBase(defesa.defesaConteudo?.autoArtigoBase || "");
@@ -570,7 +663,7 @@ export default function AutosInfracaoDefesaPage() {
       let procIdx = 0;
       for (const file of processGeneralFiles) {
         const filePath = `autos-infracao-defesa/${selectedDefesa.processYear}/processo-${Date.now()}-${procIdx++}-${sanitizeStorageFileName(file.name)}`;
-        const url = await uploadFileToStorage(file, filePath);
+        const url = await uploadDefesaFile(file, filePath);
         newAnexos.push({
           name: file.name,
           url,
@@ -633,33 +726,64 @@ export default function AutosInfracaoDefesaPage() {
     }
   };
 
-  const exportDocx = () => {
-    if (!selectedDefesa) return;
-    const empreendedorNome = empreendedorNameMap.get(selectedDefesa.empreendedorId) || "N/A";
-    const empreendimentoNome = projectNameMap.get(selectedDefesa.projectId) || "N/A";
-    const content = formatDefesaDocContent(selectedDefesa, empreendedorNome, empreendimentoNome);
+  const exportDocxFor = (defesa: AutoInfracaoDefesa) => {
+    const empreendedorNome = empreendedorNameMap.get(defesa.empreendedorId) || "N/A";
+    const empreendimentoNome = projectNameMap.get(defesa.projectId) || "N/A";
+    const content = formatDefesaDocContent(defesa, empreendedorNome, empreendimentoNome);
     const blob = new Blob([content], {
       type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `defesa-${selectedDefesa.processNumber.replace("/", "-")}.docx`;
+    a.download = `defesa-${defesa.processNumber.replace("/", "-")}.docx`;
     a.click();
     URL.revokeObjectURL(url);
   };
 
-  const exportPdf = () => {
-    if (!selectedDefesa) return;
-    const empreendedorNome = empreendedorNameMap.get(selectedDefesa.empreendedorId) || "N/A";
-    const empreendimentoNome = projectNameMap.get(selectedDefesa.projectId) || "N/A";
-    const content = formatDefesaDocContent(selectedDefesa, empreendedorNome, empreendimentoNome).replace(/\n/g, "<br/>");
+  const exportPdfFor = (defesa: AutoInfracaoDefesa) => {
+    const empreendedorNome = empreendedorNameMap.get(defesa.empreendedorId) || "N/A";
+    const empreendimentoNome = projectNameMap.get(defesa.projectId) || "N/A";
+    const content = formatDefesaDocContent(defesa, empreendedorNome, empreendimentoNome).replace(/\n/g, "<br/>");
     const w = window.open("", "_blank");
     if (!w) return;
-    w.document.write(`<html><head><title>Defesa ${selectedDefesa.processNumber}</title></head><body style="font-family:Arial,sans-serif;padding:24px;">${content}</body></html>`);
+    w.document.write(`<html><head><title>Defesa ${defesa.processNumber}</title></head><body style="font-family:Arial,sans-serif;padding:24px;">${content}</body></html>`);
     w.document.close();
     w.focus();
     w.print();
+  };
+
+  const exportDocx = () => {
+    if (!selectedDefesa) return;
+    exportDocxFor(selectedDefesa);
+  };
+
+  const exportPdf = () => {
+    if (!selectedDefesa) return;
+    exportPdfFor(selectedDefesa);
+  };
+
+  const handleDeleteDefesa = async () => {
+    if (!firestore || !deleteTarget) return;
+    setDeleting(true);
+    try {
+      await deleteDoc(doc(firestore, "autoInfracaoDefesas", deleteTarget.id));
+      if (selectedDefesa?.id === deleteTarget.id) {
+        setOpenProcess(false);
+        setSelectedDefesa(null);
+      }
+      toast({ title: "Processo de defesa excluído." });
+      setDeleteTarget(null);
+    } catch (error) {
+      console.error(error);
+      toast({
+        variant: "destructive",
+        title: "Erro ao excluir",
+        description: "Não foi possível excluir o processo de defesa.",
+      });
+    } finally {
+      setDeleting(false);
+    }
   };
 
   const isLoading = isLoadingDefesas || isLoadingEmpreendedores || isLoadingProjects;
@@ -670,10 +794,23 @@ export default function AutosInfracaoDefesaPage() {
       : (defesas || []).filter((item) => {
       const empreendedor = (empreendedorNameMap.get(item.empreendedorId) || "").toLowerCase();
       const empreendimento = (projectNameMap.get(item.projectId) || "").toLowerCase();
+      const c = item.defesaConteudo || {};
+      const conteudoBusca = [
+        c.autoNumero,
+        c.autoCodigo,
+        c.autoArtigoBase,
+        c.autoRelatoFiscal,
+        c.sinteseAuto,
+        c.referenciaAutoProcesso,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
       return (
         item.processNumber.toLowerCase().includes(term) ||
         item.tipoDefesa.toLowerCase().includes(term) ||
         (item.informacoesInternas || "").toLowerCase().includes(term) ||
+        conteudoBusca.includes(term) ||
         empreendedor.includes(term) ||
         empreendimento.includes(term)
       );
@@ -728,6 +865,13 @@ export default function AutosInfracaoDefesaPage() {
                       (c) => c.checked,
                     ).length;
                     const total = (item.checklist || []).length;
+                    const resumo = getDefesaResumoText(item);
+                    const sintese = getDefesaSinteseAuto(item);
+                    const motivosLinha = getDefesaMotivosLinha(item);
+                    const autoNumero = (item.defesaConteudo?.autoNumero || "").trim();
+                    const tituloCard = autoNumero
+                      ? `${item.processNumber} · Auto ${autoNumero}`
+                      : item.processNumber;
                     return (
                       <Card
                         key={item.id}
@@ -737,12 +881,10 @@ export default function AutosInfracaoDefesaPage() {
                           <div className="flex flex-col gap-4">
                             <div className="min-w-0 space-y-2">
                               <h3 className="text-balance text-base font-semibold leading-snug text-foreground sm:text-lg">
-                                {item.processNumber}
+                                {tituloCard}
                               </h3>
                               <p className="text-sm text-muted-foreground">
-                                {item.tipoDefesa}
-                              </p>
-                              <p className="text-sm text-muted-foreground">
+                                {item.tipoDefesa} ·{" "}
                                 {empreendedorNameMap.get(item.empreendedorId) ||
                                   "Empreendedor N/A"}{" "}
                                 ·{" "}
@@ -750,7 +892,19 @@ export default function AutosInfracaoDefesaPage() {
                                   "Empreendimento N/A"}
                               </p>
                               <p className="line-clamp-2 text-sm text-muted-foreground">
-                                {item.informacoesInternas || "Sem resumo interno"}
+                                <span className="text-foreground/80">Resumo:</span>{" "}
+                                {resumo || "Sem resumo cadastrado"}
+                              </p>
+                              {sintese ? (
+                                <p className="line-clamp-2 text-sm text-muted-foreground">
+                                  <span className="text-foreground/80">Síntese:</span>{" "}
+                                  {sintese}
+                                </p>
+                              ) : null}
+                              <p className="line-clamp-3 text-sm text-muted-foreground">
+                                <span className="text-foreground/80">Infração:</span>{" "}
+                                {motivosLinha ||
+                                  "Sem dados do auto de infração preenchidos"}
                               </p>
                               <Badge variant="outline" className="w-fit">
                                 Checklist {checked}/{total}
@@ -777,6 +931,82 @@ export default function AutosInfracaoDefesaPage() {
                                   <p>Abrir processo de defesa</p>
                                 </TooltipContent>
                               </Tooltip>
+                              {canWriteDefesa ? (
+                                <>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button
+                                        aria-label="Editar processo de defesa"
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-9 w-9 shrink-0"
+                                        type="button"
+                                        onClick={() =>
+                                          openDefesaProcess(item, {
+                                            unlocked: true,
+                                          })
+                                        }
+                                      >
+                                        <Pencil className="h-4 w-4" />
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>Editar processo</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button
+                                        aria-label="Exportar PDF"
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-9 w-9 shrink-0"
+                                        type="button"
+                                        onClick={() => exportPdfFor(item)}
+                                      >
+                                        <FileDown className="h-4 w-4" />
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>Exportar PDF</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button
+                                        aria-label="Exportar DOCX"
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-9 w-9 shrink-0"
+                                        type="button"
+                                        onClick={() => exportDocxFor(item)}
+                                      >
+                                        <FileDown className="h-4 w-4" />
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>Exportar DOCX</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button
+                                        aria-label="Excluir processo de defesa"
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-9 w-9 shrink-0 text-destructive hover:text-destructive"
+                                        type="button"
+                                        onClick={() => setDeleteTarget(item)}
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>Excluir processo</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </>
+                              ) : null}
                             </div>
                           </div>
                         </CardContent>
@@ -1183,6 +1413,36 @@ export default function AutosInfracaoDefesaPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir processo de defesa?</AlertDialogTitle>
+            <AlertDialogDescription>
+              O processo{" "}
+              <strong>{deleteTarget?.processNumber}</strong> será removido
+              permanentemente. Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={deleting}
+              onClick={(e) => {
+                e.preventDefault();
+                void handleDeleteDefesa();
+              }}
+            >
+              {deleting ? "Excluindo..." : "Excluir"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      <UploadPreparationDialog {...dialogProps} />
     </div>
   );
 }

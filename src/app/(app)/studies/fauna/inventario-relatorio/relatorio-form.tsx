@@ -17,7 +17,6 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Loader2 } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Textarea } from '@/components/ui/textarea';
 import { useRouter } from 'next/navigation';
@@ -43,17 +42,32 @@ const formSchema = z.object({
 type FormValues = z.infer<typeof formSchema>;
 
 interface RelatorioInventarioFormProps {
-    studyId: string | null;
+  documentId: string | null;
+  seedStudy?: FaunaStudy | null;
+  onSave: (
+    data: FormValues & { id?: string },
+    status: "draft" | "completed",
+  ) => Promise<void>;
 }
 
-export function RelatorioInventarioForm({ studyId }: RelatorioInventarioFormProps) {
+export function RelatorioInventarioForm({
+  documentId,
+  seedStudy,
+  onSave,
+}: RelatorioInventarioFormProps) {
   const [loading, setLoading] = React.useState(false);
-  const { toast } = useToast();
   const router = useRouter();
   const { firestore } = useFirebase();
 
-  const studyDocRef = useMemoFirebase(() => (firestore && studyId ? doc(firestore, 'faunaStudies', studyId) : null), [firestore, studyId]);
+  const studyDocRef = useMemoFirebase(
+    () =>
+      firestore && documentId
+        ? doc(firestore, "faunaStudies", documentId)
+        : null,
+    [firestore, documentId],
+  );
   const { data: study, isLoading: isLoadingStudy } = useDoc<FaunaStudy>(studyDocRef);
+  const source = study ?? seedStudy;
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -61,39 +75,43 @@ export function RelatorioInventarioForm({ studyId }: RelatorioInventarioFormProp
   });
 
   React.useEffect(() => {
-    if (study) {
-        form.reset({
-            numeroAutorizacao: study.numeroAutorizacao || '',
-            responsaveisTecnicosRelatorio: study.responsaveisTecnicosRelatorio || '',
-            caracterizacaoEmpreendimento: study.caracterizacaoEmpreendimento || '',
-            areaDiretamenteAfetada: study.areaDiretamenteAfetada || '',
-            resultados: {
-                caracterizacaoAmbientalPrimaria: study.resultados?.caracterizacaoAmbientalPrimaria || '',
-                listaEspeciesPrimaria: study.resultados?.listaEspeciesPrimaria || '',
-                impactosAmbientais: study.resultados?.impactosAmbientais || '',
-            },
-            discussao: study.discussao || '',
-            recomendacoes: study.recomendacoes || '',
-            referencias: study.referencias || '',
-        })
+    if (source) {
+      form.reset({
+        numeroAutorizacao: source.numeroAutorizacao || "",
+        responsaveisTecnicosRelatorio:
+          source.responsaveisTecnicosRelatorio || "",
+        caracterizacaoEmpreendimento:
+          source.caracterizacaoEmpreendimento || "",
+        areaDiretamenteAfetada: source.areaDiretamenteAfetada || "",
+        resultados: {
+          caracterizacaoAmbientalPrimaria:
+            source.resultados?.caracterizacaoAmbientalPrimaria || "",
+          listaEspeciesPrimaria:
+            source.resultados?.listaEspeciesPrimaria || "",
+          impactosAmbientais: source.resultados?.impactosAmbientais || "",
+        },
+        discussao: source.discussao || "",
+        recomendacoes: source.recomendacoes || "",
+        referencias: source.referencias || "",
+      });
     }
-  }, [study, form]);
+  }, [source, form]);
 
-
-  async function onSubmit(values: FormValues) {
+  const submit = async (status: "draft" | "completed") => {
     setLoading(true);
-    console.log(values);
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    toast({
-      title: 'Relatório Salvo!',
-      description: 'O relatório de inventário de fauna foi salvo como rascunho.',
-    });
+    const values = form.getValues();
+    const payload = documentId ? { ...values, id: documentId } : values;
+    await onSave(payload, status);
     setLoading(false);
+  };
+
+  if (isLoadingStudy && documentId) {
+    return <p className="text-sm text-muted-foreground">Carregando...</p>;
   }
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={(e) => e.preventDefault()} className="space-y-6">
         <Accordion type="multiple" defaultValue={['item-1', 'item-2', 'item-3']} className="w-full">
           
           <AccordionItem value="item-1">
@@ -146,8 +164,11 @@ export function RelatorioInventarioForm({ studyId }: RelatorioInventarioFormProp
         </Accordion>
         <div className="flex justify-end gap-2 pt-6">
           <Button variant="outline" type="button" onClick={() => router.back()}>Voltar</Button>
-          <Button type="submit" disabled={loading}>
-            {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Salvando...</> : 'Salvar Relatório'}
+          <Button variant="secondary" type="button" disabled={loading} onClick={() => submit("draft")}>
+            {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Salvando...</> : "Salvar Rascunho"}
+          </Button>
+          <Button type="button" disabled={loading} onClick={() => submit("completed")}>
+            {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Concluindo...</> : "Concluir Relatório"}
           </Button>
         </div>
       </form>

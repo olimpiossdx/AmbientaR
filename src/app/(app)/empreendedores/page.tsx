@@ -10,7 +10,7 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
-import { PlusCircle, Import, Eye, Pencil, Trash2 } from "lucide-react";
+import { PlusCircle, Import, Eye, Pencil, Trash2, Copy } from "lucide-react";
 import {
   useCollection,
   useFirestore,
@@ -50,6 +50,7 @@ import { useToast } from "@/hooks/use-toast";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { useAuth } from "@/firebase";
 import { ClientImportDialog } from "./client-import-dialog";
+import { EmpreendedorDuplicatesDialog } from "@/components/empreendedores/empreendedor-duplicates-dialog";
 import { useCadastroMenuDebug } from "@/lib/cadastro-menu-debug";
 import {
   Tooltip,
@@ -66,6 +67,7 @@ import {
   canWriteCadastroClienteAutonomo,
   isCadastroReadOnlyClienteGestao,
   canImportEmpreendedoresFromClients,
+  canWriteCadastro,
 } from "@/lib/role-guards";
 
 const DetailItem = ({
@@ -91,6 +93,7 @@ export default function EmpreendedoresPage() {
   const router = useRouter();
   const [isAlertOpen, setIsAlertOpen] = useState(false);
   const [isImportOpen, setIsImportOpen] = useState(false);
+  const [isDuplicatesDialogOpen, setIsDuplicatesDialogOpen] = useState(false);
   const [isViewOpen, setIsViewOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
   const [itemToView, setItemToView] = useState<Empreendedor | null>(null);
@@ -100,12 +103,7 @@ export default function EmpreendedoresPage() {
   const { user } = useAuth();
   const { toast } = useToast();
 
-  const canWrite =
-    user &&
-    (user.role === "admin" ||
-      user.role === "supervisor" ||
-      user.role === "gestor" ||
-      canWriteCadastroClienteAutonomo(user.role));
+  const canWrite = Boolean(user && canWriteCadastro(user.role));
 
   const canImportFromClients =
     Boolean(user) && canImportEmpreendedoresFromClients(user?.role);
@@ -286,6 +284,17 @@ export default function EmpreendedoresPage() {
       <div className="flex flex-col h-full">
         <PageHeader title="Empreendedores">
           <div className="flex w-full min-w-0 max-w-full flex-col gap-2 sm:flex-row sm:flex-wrap sm:justify-end">
+            {user?.role === "admin" && (
+              <Button
+                size="sm"
+                className="gap-1 sm:shrink-0"
+                variant="outline"
+                onClick={() => setIsDuplicatesDialogOpen(true)}
+              >
+                <Copy className="h-4 w-4 shrink-0" />
+                Duplicatas CPF/CNPJ
+              </Button>
+            )}
             {canImportFromClients && (
               <Button
                 size="sm"
@@ -492,6 +501,13 @@ export default function EmpreendedoresPage() {
           onImportSuccess={() => {
             setIsImportOpen(false);
           }}
+        />
+      )}
+
+      {user?.role === "admin" && (
+        <EmpreendedorDuplicatesDialog
+          open={isDuplicatesDialogOpen}
+          onOpenChange={setIsDuplicatesDialogOpen}
         />
       )}
 

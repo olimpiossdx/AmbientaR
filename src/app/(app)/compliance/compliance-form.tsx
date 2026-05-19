@@ -31,7 +31,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { CalendarIcon, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { ptBR } from "date-fns/locale/pt-BR";
 import { useToast } from "@/hooks/use-toast";
 import type {
   Condicionante,
@@ -60,10 +60,8 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import {
-  uploadFileToStorage,
-  sanitizeStorageFileName,
-} from "@/lib/storage-upload";
+import { UploadPreparationDialog } from "@/components/shared/upload-preparation-dialog";
+import { useStorageFileUpload } from "@/hooks/use-storage-file-upload";
 import {
   Tooltip,
   TooltipContent,
@@ -85,8 +83,6 @@ const formSchema = z.object({
     required_error: "Selecione a recorrência.",
   }),
 });
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
-
 type FormValues = z.infer<typeof formSchema>;
 
 interface ComplianceFormProps {
@@ -124,6 +120,9 @@ export function ComplianceForm({
   const [isDueDateOpen, setIsDueDateOpen] = React.useState(false);
   const { toast } = useToast();
   const { firestore, user: currentUser } = useFirebase();
+  const { uploadFile, dialogProps, limitLabel } = useStorageFileUpload({
+    storageFolder: "condicionantes",
+  });
 
   const projectsQuery = useMemoFirebase(
     () =>
@@ -208,22 +207,11 @@ export function ComplianceForm({
 
     // Permite selecionar o mesmo arquivo novamente.
     inputEl.value = "";
-    if (file.size > MAX_FILE_SIZE) {
-      toast({
-        variant: "destructive",
-        title: "Arquivo muito grande",
-        description: `O arquivo não pode exceder ${MAX_FILE_SIZE / 1024 / 1024}MB.`,
-      });
-      return;
-    }
     setIsUploading(true);
     setUploadedFileUrl(null);
     try {
-      const safe = sanitizeStorageFileName(file.name);
-      const downloadURL = await uploadFileToStorage(
-        file,
-        `condicionantes/${Date.now()}-${safe}`,
-      );
+      const downloadURL = await uploadFile(file);
+      if (!downloadURL) return;
       setUploadedFileUrl(downloadURL);
       toast({
         title: "Anexo carregado",
@@ -602,7 +590,7 @@ export function ComplianceForm({
               />
               <FormDescription>
                 Anexe comprovante ou documento relacionado à condicionante (PDF,
-                JPG, PNG). Máx 10MB.
+                JPG, PNG). Limite após otimização: {limitLabel}.
               </FormDescription>
               {(currentItem?.fileUrl || uploadedFileUrl) && (
                 <div className="mt-3">
@@ -641,6 +629,7 @@ export function ComplianceForm({
             </Button>
           </DialogFooter>
         </form>
+      <UploadPreparationDialog {...dialogProps} />
       </Form>
     </>
   );

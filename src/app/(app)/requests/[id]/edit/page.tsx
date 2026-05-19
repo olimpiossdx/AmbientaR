@@ -1,6 +1,7 @@
 
 'use client';
 import { Suspense } from 'react';
+import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { PageHeader } from '@/components/page-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,33 +18,48 @@ import { Loader2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Separator } from '@/components/ui/separator';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { Badge } from '@/components/ui/badge';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase';
 import {
-  createInterventionChecklist,
-  getChecklistStatusBadgeClass,
-  getChecklistStatusLabel,
-  IEF_INTERVENTION_REFERENCE_DOCS,
+  DEFAULT_AIA_PROFILE,
   INTERVENTION_SERVICE_LABEL,
+  buildInterventionChecklist,
+  mergeInterventionChecklist,
+  normalizeInterventionSubserviceIds,
+  resolveAiaChecklistForSave,
   type InterventionChecklistItem,
+  type InterventionSubserviceId,
+  type TipoIntervencaoAia,
 } from '@/lib/intervention-checklist';
-import { sanitizeStorageFileName, uploadFileToStorage } from '@/lib/storage-upload';
+import type { AiaImovelSnapshot, AiaLinkedArtifacts, AiaProfile } from '@/lib/types';
+import {
+  AiaWorkflowPanel,
+  applyImovelFromProject,
+  useAiaChecklistSubserviceSync,
+} from '@/components/processos/aia-workflow-panel';
+import {
+  sanitizeStorageFileName,
+  uploadFileToStorage,
+} from '@/lib/storage-upload';
+import { UploadPreparationDialog } from '@/components/shared/upload-preparation-dialog';
+import { usePreparedUpload } from '@/hooks/use-prepared-upload';
 import {
   LicensingLocationalBlock,
   type LocationalAnalysisPayload,
 } from '@/components/licensing/licensing-locational-block';
-import { Badge } from '@/components/ui/badge';
-import { cn } from '@/lib/utils';
 import { isProcessosPortalReadOnlyRole } from '@/lib/role-guards';
 import { fetchEmpreendedorIdsForProcessosPortal } from '@/lib/requests-portal-empreendedor-ids';
-
-const services = [
-  "Licenciamento ambiental",
-  "Outorga",
-  INTERVENTION_SERVICE_LABEL,
-  "Reserva legal (Averbação, Compensação e/ou Relocação)",
-  "Uso Insignificante"
-];
+import {
+  LICENSING_CRITERIO_LOCACIONAL_OPTIONS,
+  LICENSING_DOCS_TEMPLATE,
+  LICENSING_SIZE_UNIT_OPTIONS,
+  PROCESSOS_SERVICES,
+  PROCESSOS_STATUS_OPTIONS,
+  sortEmpreendedoresByName,
+  sortProjectsByPropertyName,
+  sortSelectedProcessosServices,
+} from '@/lib/processos-form-order';
 
 type LicensingDoc = { id: string; label: string; checked: boolean; fileName?: string; fileUrl?: string };
 type LicensingGrading = { porte: 'P' | 'M' | 'G'; potencial: 'P' | 'M' | 'G'; criterioLocacional: '0' | '1' | '2' };
@@ -57,17 +73,6 @@ type LicensingActivity = {
   autoPorte?: 'P' | 'M' | 'G';
   autoPotencial?: 'P' | 'M' | 'G';
 };
-
-const LICENSING_DOCS_TEMPLATE: Omit<LicensingDoc, 'checked' | 'fileName' | 'fileUrl'>[] = [
-  { id: 'lic_req', label: 'Requerimento e FCE/FCEI' },
-  { id: 'lic_doc_emp', label: 'Documentos do empreendedor (CPF/CNPJ e endereço)' },
-  { id: 'lic_caract', label: 'Caracterização do empreendimento e atividade' },
-  { id: 'lic_uso_solo', label: 'Comprovação de uso/ocupação do solo e zoneamento' },
-  { id: 'lic_car_ambiental', label: 'CAR/regularidade ambiental da área (quando aplicável)' },
-  { id: 'lic_art', label: 'ART e responsável técnico' },
-  { id: 'lic_taxas', label: 'Comprovantes de taxas/emolumentos' },
-  { id: 'lic_estudos', label: 'Estudos exigidos (RAS/PCA/RCA/EIA, conforme enquadramento)' },
-];
 
 const createLicensingDocs = (): LicensingDoc[] =>
   LICENSING_DOCS_TEMPLATE.map((doc) => ({ ...doc, checked: false }));
@@ -239,9 +244,11 @@ const LicenciamentoCard = ({
                             <SelectValue placeholder="Unidade" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="ha">ha</SelectItem>
-                            <SelectItem value="m2">m²</SelectItem>
-                            <SelectItem value="un">unidade</SelectItem>
+                            {LICENSING_SIZE_UNIT_OPTIONS.map((opt) => (
+                              <SelectItem key={opt.value} value={opt.value}>
+                                {opt.label}
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                         <div className="flex items-center gap-2 text-xs">
@@ -281,9 +288,11 @@ const LicenciamentoCard = ({
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="0">0 - Sem critério</SelectItem>
-                        <SelectItem value="1">1 - Médio</SelectItem>
-                        <SelectItem value="2">2 - Alto</SelectItem>
+                        {LICENSING_CRITERIO_LOCACIONAL_OPTIONS.map((opt) => (
+                          <SelectItem key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
@@ -410,6 +419,17 @@ function EditRequestPageContent() {
     const { firestore } = useFirebase();
     const { user } = useAuth();
     const { toast } = useToast();
+    const { prepareFile, dialogProps } = usePreparedUpload({
+        storagePathPrefix: 'requests/',
+    });
+    const uploadRequestFile = React.useCallback(
+        async (file: File, storagePath: string) => {
+            const prepared = await prepareFile(file);
+            if (!prepared) throw new Error('Upload cancelado.');
+            return uploadFileToStorage(prepared, storagePath);
+        },
+        [prepareFile],
+    );
     const readOnly = isProcessosPortalReadOnlyRole(user?.role);
 
     const requestId = (params?.id as string | undefined) ?? '';
@@ -438,7 +458,11 @@ function EditRequestPageContent() {
     const [selectedServices, setSelectedServices] = React.useState<string[]>([]);
     const [selectedStatus, setSelectedStatus] = React.useState<Request['status']>('Draft');
     const [interventionChecklist, setInterventionChecklist] = React.useState<InterventionChecklistItem[]>([]);
-    const [uploadingChecklistItemId, setUploadingChecklistItemId] = React.useState<string | null>(null);
+    const [interventionSubservices, setInterventionSubservices] = React.useState<InterventionSubserviceId[]>([]);
+    const [tipoIntervencao, setTipoIntervencao] = React.useState<TipoIntervencaoAia | undefined>();
+    const [imovelSnapshot, setImovelSnapshot] = React.useState<AiaImovelSnapshot>({});
+    const [aiaProfile, setAiaProfile] = React.useState<AiaProfile>({ ...DEFAULT_AIA_PROFILE });
+    const [linkedArtifacts, setLinkedArtifacts] = React.useState<AiaLinkedArtifacts>({});
     const [licensingGrading, setLicensingGrading] = React.useState<LicensingGrading>({
         porte: 'P',
         potencial: 'P',
@@ -466,13 +490,31 @@ function EditRequestPageContent() {
             setSelectedServices(request.services);
             setSelectedStatus(request.status);
             if (request.services.includes(INTERVENTION_SERVICE_LABEL)) {
+                const subs = normalizeInterventionSubserviceIds(request.interventionSubservices);
+                const imovel = request.imovelSnapshot ?? {};
+                const ctx = {
+                    subservices: subs,
+                    imovel,
+                    tipoIntervencao: request.tipoIntervencao,
+                    orgao: request.aiaProfile?.orgao,
+                    uf: request.aiaProfile?.uf,
+                };
                 setInterventionChecklist(
                     request.interventionChecklist && request.interventionChecklist.length > 0
-                        ? request.interventionChecklist
-                        : createInterventionChecklist(),
+                        ? mergeInterventionChecklist(request.interventionChecklist, ctx)
+                        : buildInterventionChecklist(ctx),
                 );
+                setInterventionSubservices(subs);
+                setTipoIntervencao(request.tipoIntervencao);
+                setImovelSnapshot(imovel);
+                setAiaProfile(request.aiaProfile ?? { ...DEFAULT_AIA_PROFILE });
+                setLinkedArtifacts(request.linkedArtifacts ?? {});
             } else {
                 setInterventionChecklist([]);
+                setInterventionSubservices([]);
+                setTipoIntervencao(undefined);
+                setImovelSnapshot({});
+                setLinkedArtifacts({});
             }
             if (request.licensingData) {
                 setLicensingGrading({
@@ -508,9 +550,11 @@ function EditRequestPageContent() {
     const empreendedoresForSelect = React.useMemo(() => {
         if (!empreendedores) return [];
         if (readOnly && request) {
-            return empreendedores.filter((e) => e.id === request.empreendedorId);
+            return sortEmpreendedoresByName(
+                empreendedores.filter((e) => e.id === request.empreendedorId),
+            );
         }
-        return empreendedores;
+        return sortEmpreendedoresByName(empreendedores);
     }, [empreendedores, readOnly, request]);
 
     const accessDeniedPortal =
@@ -521,14 +565,46 @@ function EditRequestPageContent() {
 
     const filteredProjects = React.useMemo(() => {
         if (!selectedEmpreendedor || !allProjects) return [];
-        return allProjects.filter((p) => p.empreendedorId === selectedEmpreendedor);
+        return sortProjectsByPropertyName(
+            allProjects.filter((p) => p.empreendedorId === selectedEmpreendedor),
+        );
     }, [selectedEmpreendedor, allProjects]);
+
+    const orderedSelectedServices = React.useMemo(
+        () => sortSelectedProcessosServices(selectedServices),
+        [selectedServices],
+    );
+
+    const selectedProject = React.useMemo(
+        () => filteredProjects.find((p) => p.id === selectedEmpreendimento) ?? null,
+        [filteredProjects, selectedEmpreendimento],
+    );
+
+    const hasInterventionService = selectedServices.includes(INTERVENTION_SERVICE_LABEL);
+
+    React.useEffect(() => {
+        if (!selectedProject || readOnly) return;
+        setImovelSnapshot((prev) => applyImovelFromProject(selectedProject, prev));
+    }, [selectedProject, readOnly]);
+
+    useAiaChecklistSubserviceSync(
+        hasInterventionService && !readOnly,
+        interventionChecklist,
+        setInterventionChecklist,
+        {
+            subservices: interventionSubservices,
+            imovel: imovelSnapshot,
+            tipoIntervencao,
+            orgao: aiaProfile.orgao,
+            uf: aiaProfile.uf,
+        },
+    );
 
     const handleServiceChange = (service: string) => {
         setSelectedServices(prev => 
             prev.includes(service) 
-            ? prev.filter(s => s !== service) 
-            : [...prev, service]
+                ? prev.filter(s => s !== service) 
+                : [...prev, service]
         );
     };
 
@@ -596,7 +672,10 @@ function EditRequestPageContent() {
         try {
             setUploadingLicensingDocId(id);
             const safeName = sanitizeStorageFileName(file.name);
-            const url = await uploadFileToStorage(file, `requests/licenciamento/${requestId}/${Date.now()}-${id}-${safeName}`);
+            const url = await uploadRequestFile(
+                file,
+                `requests/licenciamento/${requestId}/${Date.now()}-${id}-${safeName}`,
+            );
             setLicensingDocuments((prev) =>
                 prev.map((doc) => (doc.id === id ? { ...doc, fileName: file.name, fileUrl: url } : doc)),
             );
@@ -605,78 +684,6 @@ function EditRequestPageContent() {
             toast({ variant: 'destructive', title: 'Falha no upload', description: 'Não foi possível enviar o arquivo.' });
         } finally {
             setUploadingLicensingDocId(null);
-        }
-    };
-
-    React.useEffect(() => {
-        const hasInterventionService = selectedServices.includes(INTERVENTION_SERVICE_LABEL);
-        if (hasInterventionService && interventionChecklist.length === 0) {
-            setInterventionChecklist(createInterventionChecklist());
-            return;
-        }
-        if (!hasInterventionService && interventionChecklist.length > 0) {
-            setInterventionChecklist([]);
-        }
-    }, [selectedServices, interventionChecklist.length]);
-
-    const updateChecklistStatus = (
-        itemId: string,
-        status: InterventionChecklistItem['status'],
-    ) => {
-        setInterventionChecklist((prev) =>
-            prev.map((item) => (item.id === itemId ? { ...item, status } : item)),
-        );
-    };
-
-    const handleChecklistFileUpload = async (
-        itemId: string,
-        event: React.ChangeEvent<HTMLInputElement>,
-    ) => {
-        const inputEl = event.currentTarget;
-        const file = inputEl.files?.[0];
-        inputEl.value = '';
-        if (!file) return;
-        const allowedExtensions = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'jpg', 'jpeg', 'png', 'webp'];
-        const extension = file.name.split('.').pop()?.toLowerCase() || '';
-        if (!allowedExtensions.includes(extension)) {
-            toast({
-                variant: 'destructive',
-                title: 'Formato não permitido',
-                description: 'Use PDF, Word, Excel ou imagem (JPG/PNG/WEBP).',
-            });
-            return;
-        }
-
-        try {
-            setUploadingChecklistItemId(itemId);
-            const safeName = sanitizeStorageFileName(file.name);
-            const url = await uploadFileToStorage(
-                file,
-                `requests/intervencao/${requestId}/${Date.now()}-${itemId}-${safeName}`,
-            );
-
-            setInterventionChecklist((prev) =>
-                prev.map((item) =>
-                    item.id === itemId
-                        ? {
-                            ...item,
-                            attachments: [
-                                ...item.attachments,
-                                { name: file.name, url, uploadedAt: new Date().toISOString() },
-                            ],
-                          }
-                        : item,
-                ),
-            );
-            toast({ title: 'Arquivo anexado', description: 'Checklist atualizado com sucesso.' });
-        } catch {
-            toast({
-                variant: 'destructive',
-                title: 'Falha no upload',
-                description: 'Nao foi possivel anexar o arquivo deste item.',
-            });
-        } finally {
-            setUploadingChecklistItemId(null);
         }
     };
 
@@ -704,8 +711,29 @@ function EditRequestPageContent() {
             services: selectedServices,
             status: selectedStatus,
             ...(selectedServices.includes(INTERVENTION_SERVICE_LABEL)
-                ? { interventionChecklist }
-                : { interventionChecklist: [] }),
+                ? {
+                    interventionChecklist: resolveAiaChecklistForSave(
+                        interventionChecklist,
+                        {
+                            subservices: interventionSubservices,
+                            imovel: imovelSnapshot,
+                            tipoIntervencao,
+                            orgao: aiaProfile.orgao,
+                            uf: aiaProfile.uf,
+                        },
+                    ),
+                    interventionSubservices,
+                    aiaProfile,
+                    imovelSnapshot,
+                    linkedArtifacts,
+                    ...(tipoIntervencao ? { tipoIntervencao } : {}),
+                  }
+                : {
+                    interventionChecklist: [],
+                    interventionSubservices: [],
+                    imovelSnapshot: {},
+                    linkedArtifacts: {},
+                  }),
             ...(selectedServices.includes('Licenciamento ambiental')
                 ? {
                     licensingData: {
@@ -875,17 +903,33 @@ function EditRequestPageContent() {
                             <div className="space-y-2 pt-4">
                                 <Label>Serviços Requeridos</Label>
                                 <div className="space-y-2 rounded-md border p-4 grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2">
-                                    {services.map(service => (
-                                        <div key={service} className="flex items-center space-x-2">
-                                            <Checkbox 
-                                                id={service} 
-                                                checked={selectedServices.includes(service)}
-                                                disabled={readOnly}
-                                                onCheckedChange={() => handleServiceChange(service)}
-                                            />
-                                            <Label htmlFor={service} className="font-normal cursor-pointer">{service}</Label>
-                                        </div>
-                                    ))}
+                                    {PROCESSOS_SERVICES.map((service) =>
+                                        service === INTERVENTION_SERVICE_LABEL ? (
+                                            <div key={service} className="md:col-span-2 flex items-center space-x-2">
+                                                <Checkbox
+                                                    id={service}
+                                                    checked={selectedServices.includes(service)}
+                                                    disabled={readOnly}
+                                                    onCheckedChange={() => handleServiceChange(service)}
+                                                />
+                                                <Label htmlFor={service} className="font-normal cursor-pointer">
+                                                    {service}
+                                                </Label>
+                                            </div>
+                                        ) : (
+                                            <div key={service} className="flex items-center space-x-2">
+                                                <Checkbox
+                                                    id={service}
+                                                    checked={selectedServices.includes(service)}
+                                                    disabled={readOnly}
+                                                    onCheckedChange={() => handleServiceChange(service)}
+                                                />
+                                                <Label htmlFor={service} className="font-normal cursor-pointer">
+                                                    {service}
+                                                </Label>
+                                            </div>
+                                        ),
+                                    )}
                                 </div>
                             </div>
                             <div className="space-y-2">
@@ -895,10 +939,11 @@ function EditRequestPageContent() {
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="Draft">Rascunho</SelectItem>
-                                        <SelectItem value="Submitted">Enviado</SelectItem>
-                                        <SelectItem value="In Progress">Em Andamento</SelectItem>
-                                        <SelectItem value="Completed">Concluído</SelectItem>
+                                        {PROCESSOS_STATUS_OPTIONS.map((opt) => (
+                                            <SelectItem key={opt.value} value={opt.value}>
+                                                {opt.label}
+                                            </SelectItem>
+                                        ))}
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -909,133 +954,60 @@ function EditRequestPageContent() {
                         <div className="space-y-6">
                             <Separator />
                             <h2 className="text-2xl font-semibold tracking-tight">Detalhes dos Serviços</h2>
-                            {selectedServices.includes(INTERVENTION_SERVICE_LABEL) && (
-                                <Card>
-                                    <CardHeader>
-                                        <CardTitle>Detalhes da Intervenção Ambiental (AIA)</CardTitle>
-                                        <CardDescription>
-                                            Checklist de fases e documentos para o processo de AIA.
-                                        </CardDescription>
-                                    </CardHeader>
-                                    <CardContent className="space-y-4">
-                                        <Accordion type="multiple" className="w-full">
-                                            {Array.from(new Set(interventionChecklist.map((i) => i.phase))).map((phase) => (
-                                                <AccordionItem key={phase} value={phase}>
-                                                    <AccordionTrigger>{phase}</AccordionTrigger>
-                                                    <AccordionContent>
-                                                        <div className="space-y-2">
-                                                            {interventionChecklist
-                                                                .filter((item) => item.phase === phase)
-                                                                .map((item) => (
-                                                                    <div key={item.id} className="rounded-md border p-2">
-                                                                        <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
-                                                                            <div className="flex items-start space-x-2">
-                                                                                <Checkbox
-                                                                                    id={item.id}
-                                                                                    checked={item.status === 'completed'}
-                                                                                    disabled={readOnly}
-                                                                                    onCheckedChange={(checked) =>
-                                                                                        updateChecklistStatus(
-                                                                                            item.id,
-                                                                                            checked ? 'completed' : 'not_started',
-                                                                                        )
-                                                                                    }
-                                                                                />
-                                                                                <div className="grid gap-1.5 leading-none">
-                                                                                    <Label htmlFor={item.id} className="font-normal">
-                                                                                        {item.title}
-                                                                                    </Label>
-                                                                                    <div className="flex items-center gap-2">
-                                                                                        {!item.required && (
-                                                                                            <Badge variant="outline">Opcional</Badge>
-                                                                                        )}
-                                                                                        <Badge
-                                                                                            variant="outline"
-                                                                                            className={cn(getChecklistStatusBadgeClass(item.status))}
-                                                                                        >
-                                                                                            {getChecklistStatusLabel(item.status)}
-                                                                                        </Badge>
-                                                                                    </div>
-                                                                                </div>
-                                                                            </div>
-                                                                            <div className="md:min-w-[250px]">
-                                                                                <input
-                                                                                    type="file"
-                                                                                    accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.webp"
-                                                                                    aria-label={`Carregar arquivo para ${item.title}`}
-                                                                                    onChange={(event) => handleChecklistFileUpload(item.id, event)}
-                                                                                    disabled={readOnly || uploadingChecklistItemId === item.id}
-                                                                                    className="text-sm w-full"
-                                                                                />
-                                                                            </div>
-                                                                        </div>
-                                                                        {uploadingChecklistItemId === item.id && (
-                                                                            <p className="text-xs text-muted-foreground mt-2">Enviando anexo...</p>
-                                                                        )}
-                                                                        {item.attachments.length > 0 && (
-                                                                            <ul className="list-disc pl-5 text-xs text-muted-foreground mt-2">
-                                                                                {item.attachments.map((att) => (
-                                                                                    <li key={`${item.id}-${att.url}`}>
-                                                                                        <a
-                                                                                            href={att.url}
-                                                                                            target="_blank"
-                                                                                            rel="noopener noreferrer"
-                                                                                            className="underline"
-                                                                                        >
-                                                                                            {att.name}
-                                                                                        </a>
-                                                                                    </li>
-                                                                                ))}
-                                                                            </ul>
-                                                                        )}
-                                                                    </div>
-                                                                ))}
-                                                        </div>
-                                                    </AccordionContent>
-                                                </AccordionItem>
-                                            ))}
-                                        </Accordion>
-                                        <div className="space-y-2">
-                                            <Label className="text-sm font-medium">Referências oficiais</Label>
-                                            <ul className="list-disc pl-5 text-sm text-muted-foreground space-y-1">
-                                                {IEF_INTERVENTION_REFERENCE_DOCS.map((doc) => (
-                                                    <li key={doc.url}>
-                                                        <a
-                                                            href={doc.url}
-                                                            target="_blank"
-                                                            rel="noopener noreferrer"
-                                                            className="underline"
-                                                        >
-                                                            {doc.title} ({doc.type})
-                                                        </a>
-                                                    </li>
-                                                ))}
-                                            </ul>
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            )}
-                            {selectedServices.includes('Licenciamento ambiental') && (
-                                <LicenciamentoCard
-                                    grading={licensingGrading}
-                                    activities={licensingActivities}
-                                    documents={licensingDocuments}
-                                    uploadingDocId={uploadingLicensingDocId}
-                                    onGradingChange={(next) => setLicensingGrading((prev) => ({ ...prev, ...next }))}
-                                    onActivityAdd={handleLicensingActivityAdd}
-                                    onActivityRemove={handleLicensingActivityRemove}
-                                    onActivityChange={handleLicensingActivityChange}
-                                    onToggleDoc={handleLicensingDocToggle}
-                                    onFileUpload={handleLicensingDocUpload}
-                                    locationalSavedAnalysis={licLocAnalysis}
-                                    locationalManualLock={licLocManual}
-                                    onLocationalManualLockChange={setLicLocManual}
-                                    onLocationalSuggested={handleLocationalSuggested}
-                                />
-                            )}
-                            {selectedServices
-                              .filter((service) => service !== INTERVENTION_SERVICE_LABEL && service !== 'Licenciamento ambiental')
-                              .map(service => {
+                            {orderedSelectedServices.map((service) => {
+                                if (service === INTERVENTION_SERVICE_LABEL) {
+                                    return (
+                                        <React.Fragment key={service}>
+                                            {!readOnly && (
+                                                <div className="flex justify-end">
+                                                    <Button variant="outline" size="sm" asChild>
+                                                        <Link href={`/requests/${requestId}/aia`}>Abrir fluxo AIA</Link>
+                                                    </Button>
+                                                </div>
+                                            )}
+                                            <AiaWorkflowPanel
+                                                requestId={requestId}
+                                                empreendedorId={selectedEmpreendedor}
+                                                projectId={selectedEmpreendimento}
+                                                interventionSubservices={interventionSubservices}
+                                                onSubservicesChange={setInterventionSubservices}
+                                                tipoIntervencao={tipoIntervencao}
+                                                onTipoIntervencaoChange={setTipoIntervencao}
+                                                imovelSnapshot={imovelSnapshot}
+                                                onImovelSnapshotChange={setImovelSnapshot}
+                                                aiaProfile={aiaProfile}
+                                                checklist={interventionChecklist}
+                                                onChecklistChange={setInterventionChecklist}
+                                                linkedArtifacts={linkedArtifacts}
+                                                onLinkedArtifactsChange={setLinkedArtifacts}
+                                                uploadStoragePrefix="requests/intervencao"
+                                                showMergeTemplate={!readOnly}
+                                                readOnly={readOnly}
+                                            />
+                                        </React.Fragment>
+                                    );
+                                }
+                                if (service === 'Licenciamento ambiental') {
+                                    return (
+                                        <LicenciamentoCard
+                                            key={service}
+                                            grading={licensingGrading}
+                                            activities={licensingActivities}
+                                            documents={licensingDocuments}
+                                            uploadingDocId={uploadingLicensingDocId}
+                                            onGradingChange={(next) => setLicensingGrading((prev) => ({ ...prev, ...next }))}
+                                            onActivityAdd={handleLicensingActivityAdd}
+                                            onActivityRemove={handleLicensingActivityRemove}
+                                            onActivityChange={handleLicensingActivityChange}
+                                            onToggleDoc={handleLicensingDocToggle}
+                                            onFileUpload={handleLicensingDocUpload}
+                                            locationalSavedAnalysis={licLocAnalysis}
+                                            locationalManualLock={licLocManual}
+                                            onLocationalManualLockChange={setLicLocManual}
+                                            onLocationalSuggested={handleLocationalSuggested}
+                                        />
+                                    );
+                                }
                                 const ServiceCard = serviceCardMap[service];
                                 return ServiceCard ? <ServiceCard key={service} /> : null;
                             })}
@@ -1060,6 +1032,7 @@ function EditRequestPageContent() {
                     </div>
                 </div>
             </main>
+            <UploadPreparationDialog {...dialogProps} />
         </div>
     );
 }

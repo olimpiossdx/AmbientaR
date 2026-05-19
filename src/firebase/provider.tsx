@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { createContext, useContext, ReactNode, useMemo, useState, useEffect, useCallback, DependencyList } from 'react';
+import React, { createContext, useContext, ReactNode, useMemo, useState, useEffect, useCallback, useRef, DependencyList } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { FirebaseApp } from 'firebase/app';
 import {
@@ -20,11 +20,13 @@ import {
 import { Auth, User, onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
 import { AppUser } from '@/lib/types';
-import { errorEmitter } from '@/firebase/error-emitter';
-import { FirestorePermissionError } from '@/firebase/errors';
 import { useToast } from '@/hooks/use-toast';
 import { logUserAction } from '@/lib/audit-log';
 import { PRESENCE_HEARTBEAT_MS } from '@/lib/user-presence';
+import {
+  ADMIN_BOOTSTRAP_EMAIL,
+  buildFallbackAppUser,
+} from '@/lib/auth-user-id';
 
 interface FirebaseContextState {
   firebaseApp: FirebaseApp | null;
@@ -32,8 +34,18 @@ interface FirebaseContextState {
   auth: Auth | null;
   user: AppUser | null;
   isInitialized: boolean;
+  /** True enquanto o perfil Firestore está a ser carregado após sessão Auth. */
+  isProfileLoading: boolean;
   login: (email: string, password_hash: string) => Promise<boolean>;
   logout: () => void;
+}
+
+function resolveRoleForEmail(
+  email: string,
+  existingRole?: AppUser['role'],
+): AppUser['role'] {
+  if (email === ADMIN_BOOTSTRAP_EMAIL) return 'admin';
+  return existingRole ?? 'client';
 }
 
 export const FirebaseContext = createContext<FirebaseContextState | undefined>(undefined);
@@ -52,13 +64,28 @@ function AuthRedirectsInner({ children }: { children: ReactNode }) {
   const router = useRouter();
   const appUser = ctx?.user ?? null;
   const isInitialized = ctx?.isInitialized ?? false;
+  const isProfileLoading = ctx?.isProfileLoading ?? false;
+  const hasAuthSession = Boolean(ctx?.auth?.currentUser);
+
   useEffect(() => {
-    if (isInitialized && !appUser && pathname !== '/login' && pathname !== '/forgot-password' && pathname !== '/register') {
+    if (!isInitialized || isProfileLoading) return;
+    if (appUser || hasAuthSession) return;
+    if (
+      pathname !== '/login' &&
+      pathname !== '/forgot-password' &&
+      pathname !== '/register'
+    ) {
       router.push('/login');
     }
-  }, [appUser, isInitialized, pathname, router]);
+  }, [appUser, hasAuthSession, isInitialized, isProfileLoading, pathname, router]);
+
   useEffect(() => {
-    if (appUser && (pathname === '/login' || pathname === '/register' || pathname === '/forgot-password')) {
+    if (!appUser) return;
+    if (
+      pathname === '/login' ||
+      pathname === '/register' ||
+      pathname === '/forgot-password'
+    ) {
       router.replace('/');
     }
   }, [appUser, pathname, router]);
@@ -72,8 +99,46 @@ export const FirebaseProvider: React.FC<{ children: ReactNode; firebaseApp: Fire
   auth,
 }) => {
   const [appUser, setAppUser] = useState<AppUser | null>(null);
+  const appUserRef = useRef<AppUser | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [isProfileLoading, setIsProfileLoading] = useState(false);
+  const profileWaitersRef = useRef<Set<(user: AppUser | null) => void>>(new Set());
   const { toast } = useToast();
+
+  const notifyProfileWaiters = useCallback((user: AppUser | null) => {
+    profileWaitersRef.current.forEach((resolve) => resolve(user));
+    profileWaitersRef.current.clear();
+  }, []);
+
+  const commitAppUser = useCallback(
+    (user: AppUser | null) => {
+      appUserRef.current = user;
+      setAppUser(user);
+      notifyProfileWaiters(user);
+    },
+    [notifyProfileWaiters],
+  );
+
+  const waitForUserProfile = useCallback(
+    (timeoutMs = 15000): Promise<AppUser | null> =>
+      new Promise((resolve) => {
+        if (appUserRef.current) {
+          resolve(appUserRef.current);
+          return;
+        }
+        const timer = window.setTimeout(() => {
+          profileWaitersRef.current.delete(done);
+          resolve(null);
+        }, timeoutMs);
+        const done = (user: AppUser | null) => {
+          window.clearTimeout(timer);
+          profileWaitersRef.current.delete(done);
+          resolve(user);
+        };
+        profileWaitersRef.current.add(done);
+      }),
+    [],
+  );
 
   const updateUserOnlineStatus = useCallback(async (uid: string, isOnline: boolean) => {
     if (!firestore) return;
@@ -111,6 +176,105 @@ export const FirebaseProvider: React.FC<{ children: ReactNode; firebaseApp: Fire
     }
   }, [firestore]);
 
+  const loadUserProfile = useCallback(
+    async (firebaseUser: User): Promise<AppUser> => {
+      const userDocRef = doc(firestore, 'users', firebaseUser.uid);
+      const normalizedEmail = (firebaseUser.email || '').trim().toLowerCase();
+      const sessionUid = firebaseUser.uid;
+
+      let userDoc = await getDoc(userDocRef);
+
+      if (!userDoc.exists() && normalizedEmail) {
+        try {
+          const emailQuery = query(
+            collection(firestore, 'users'),
+            where('email', '==', normalizedEmail),
+            limit(1),
+          );
+          const emailSnap = await getDocs(emailQuery);
+          if (!emailSnap.empty) {
+            const legacyDoc = emailSnap.docs[0];
+            const legacyData = legacyDoc.data() as Omit<AppUser, 'id'>;
+            if (legacyDoc.id !== sessionUid) {
+              console.warn(
+                `Migrating user profile from ${legacyDoc.id} to auth uid ${sessionUid}`,
+              );
+              await setDoc(userDocRef, {
+                ...legacyData,
+                uid: sessionUid,
+                email: normalizedEmail,
+                role: resolveRoleForEmail(normalizedEmail, legacyData.role),
+                lastLogin: serverTimestamp(),
+                lastSeenAt: serverTimestamp(),
+                isOnline: true,
+              });
+              userDoc = await getDoc(userDocRef);
+            }
+          }
+        } catch (migrationError) {
+          console.warn('Profile migration by email failed:', migrationError);
+        }
+      }
+
+      if (userDoc.exists()) {
+        const userData = userDoc.data() as Omit<AppUser, 'id'>;
+
+        if (userData.uid && userData.uid !== sessionUid) {
+          try {
+            await updateDoc(userDocRef, { uid: sessionUid });
+          } catch (uidPatchError) {
+            console.warn('Could not patch stale uid on user profile:', uidPatchError);
+          }
+        }
+
+        const resolvedRole = resolveRoleForEmail(
+          normalizedEmail,
+          userData.role,
+        );
+        if (userData.role !== resolvedRole) {
+          try {
+            await updateDoc(userDocRef, { role: resolvedRole });
+          } catch (rolePatchError) {
+            console.warn('Could not sync role to Firestore profile:', rolePatchError);
+          }
+        }
+
+        return {
+          id: sessionUid,
+          ...userData,
+          uid: sessionUid,
+          email: userData.email || normalizedEmail,
+          role: resolvedRole,
+          photoURL: userData.photoURL || firebaseUser.photoURL || undefined,
+        };
+      }
+
+      console.warn(
+        `User document not found for uid: ${sessionUid}. Creating profile.`,
+      );
+      const newUser: Omit<AppUser, 'id'> = {
+        uid: sessionUid,
+        name:
+          firebaseUser.displayName ||
+          normalizedEmail.split('@')[0] ||
+          'Novo Usuário',
+        email: normalizedEmail,
+        role: resolveRoleForEmail(normalizedEmail),
+        status: 'active',
+        isOnline: true,
+        photoURL: firebaseUser.photoURL || '',
+        cpf: '',
+        cnpjs: [],
+      };
+      await setDoc(userDocRef, {
+        ...newUser,
+        lastLogin: serverTimestamp(),
+        lastSeenAt: serverTimestamp(),
+      });
+      return { ...newUser, id: sessionUid };
+    },
+    [firestore],
+  );
 
   useEffect(() => {
     if (!auth || !firestore) {
@@ -125,87 +289,32 @@ export const FirebaseProvider: React.FC<{ children: ReactNode; firebaseApp: Fire
 
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
         if (firebaseUser) {
-            const userDocRef = doc(firestore, 'users', firebaseUser.uid);
-            const normalizedEmail = (firebaseUser.email || '').trim().toLowerCase();
+            setIsProfileLoading(true);
+            let loadedUser: AppUser | null = null;
             try {
-                let userDoc = await getDoc(userDocRef);
-
-                // Conta recriada no Auth com novo UID: reutiliza perfil existente pelo e-mail.
-                if (!userDoc.exists() && normalizedEmail) {
-                  const emailQuery = query(
-                    collection(firestore, 'users'),
-                    where('email', '==', normalizedEmail),
-                    limit(1),
-                  );
-                  const emailSnap = await getDocs(emailQuery);
-                  if (!emailSnap.empty) {
-                    const legacyDoc = emailSnap.docs[0];
-                    const legacyData = legacyDoc.data() as Omit<AppUser, 'id'>;
-                    if (legacyDoc.id !== firebaseUser.uid) {
-                      console.warn(
-                        `Migrating user profile from ${legacyDoc.id} to auth uid ${firebaseUser.uid}`,
-                      );
-                      await setDoc(userDocRef, {
-                        ...legacyData,
-                        uid: firebaseUser.uid,
-                        email: normalizedEmail,
-                        lastLogin: serverTimestamp(),
-                        lastSeenAt: serverTimestamp(),
-                        isOnline: true,
-                      });
-                      userDoc = await getDoc(userDocRef);
-                    }
-                  }
-                }
-
-                if (userDoc.exists()) {
-                    const userData = userDoc.data() as Omit<AppUser, 'id'>;
-                    const sessionUid = firebaseUser.uid;
-
-                    if (userData.uid && userData.uid !== sessionUid) {
-                      try {
-                        await updateDoc(userDocRef, { uid: sessionUid });
-                      } catch (uidPatchError) {
-                        console.warn('Could not patch stale uid on user profile:', uidPatchError);
-                      }
-                    }
-
-                    const currentUser: AppUser = {
-                        id: sessionUid,
-                        ...userData,
-                        uid: sessionUid,
-                        email: userData.email || normalizedEmail,
-                        photoURL: userData.photoURL || firebaseUser.photoURL || undefined,
-                    };
-                    setAppUser(currentUser);
-                    await touchUserPresence(sessionUid);
-                } else {
-                     console.warn(`User document not found for uid: ${firebaseUser.uid}. Attempting to create it.`);
-                    const newUser: Omit<AppUser, 'id'> = {
-                        uid: firebaseUser.uid,
-                        name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'Novo Usuário',
-                        email: normalizedEmail,
-                        role: firebaseUser.email === 'adm@adm.com' ? 'admin' : 'client',
-                        status: 'active',
-                        isOnline: true,
-                        photoURL: firebaseUser.photoURL || '',
-                        cpf: '',
-                        cnpjs: [],
-                    };
-                    await setDoc(userDocRef, {
-                      ...newUser,
-                      lastLogin: serverTimestamp(),
-                      lastSeenAt: serverTimestamp(),
-                    });
-                    setAppUser({ ...newUser, id: firebaseUser.uid });
-                }
-            } catch (serverError: any) {
-                console.error("Failed to fetch user document:", serverError);
-                setAppUser(null); 
+                loadedUser = await loadUserProfile(firebaseUser);
+                commitAppUser(loadedUser);
+                await touchUserPresence(firebaseUser.uid);
+            } catch (serverError: unknown) {
+                console.error('Failed to fetch user document:', serverError);
+                const fallback = buildFallbackAppUser(firebaseUser);
+                commitAppUser(fallback);
+                loadedUser = fallback;
+                const userDocRef = doc(firestore, 'users', firebaseUser.uid);
+                void setDoc(userDocRef, {
+                  ...fallback,
+                  lastLogin: serverTimestamp(),
+                  lastSeenAt: serverTimestamp(),
+                }).catch((writeError) => {
+                  console.warn('Could not persist fallback user profile:', writeError);
+                });
+            } finally {
+                setIsProfileLoading(false);
+                setIsInitialized(true);
             }
-            setIsInitialized(true);
         } else {
-            setAppUser(null);
+            commitAppUser(null);
+            setIsProfileLoading(false);
             // Em ambientes que simulam mobile (ex.: IDE/browser do Cursor), a persistência
             // do Firebase pode demorar mais para restaurar a sessão. Só marcar como
             // inicializado após um curto atraso, para não redirecionar para /login antes
@@ -244,7 +353,7 @@ export const FirebaseProvider: React.FC<{ children: ReactNode; firebaseApp: Fire
         void updateUserOnlineStatus(auth.currentUser.uid, false);
       }
     };
-  }, [auth, firestore, updateUserOnlineStatus, touchUserPresence]);
+  }, [auth, firestore, updateUserOnlineStatus, touchUserPresence, loadUserProfile, commitAppUser]);
 
   useEffect(() => {
     if (!auth?.currentUser) return;
@@ -274,19 +383,32 @@ export const FirebaseProvider: React.FC<{ children: ReactNode; firebaseApp: Fire
     const normalizedEmail = email.trim().toLowerCase();
     const normalizedPassword = password_hash.trim();
 
+    const finishLogin = async (uid: string, auditAction: string) => {
+      const profile = await waitForUserProfile();
+      if (!profile) {
+        toast({
+          variant: 'destructive',
+          title: 'Perfil não carregado',
+          description:
+            'A autenticação funcionou, mas não foi possível carregar seu perfil. Verifique as regras do Firestore ou tente novamente.',
+        });
+        return false;
+      }
+      await updateLastLogin(uid);
+      await logUserAction(firestore, auth, auditAction);
+      return true;
+    };
+
     try {
       const userCredential = await signInWithEmailAndPassword(
         auth,
         normalizedEmail,
         normalizedPassword,
       );
-      await updateLastLogin(userCredential.user.uid);
-      await logUserAction(firestore, auth, 'login');
-      // Não redirecionar aqui: onAuthStateChanged vai setar appUser e o useEffect acima faz router.replace('/')
-      return true;
+      return finishLogin(userCredential.user.uid, 'login');
     } catch (error: any) {
       if (
-        normalizedEmail === 'adm@adm.com' &&
+        normalizedEmail === ADMIN_BOOTSTRAP_EMAIL &&
         (error.code === 'auth/user-not-found' ||
           error.code === 'auth/invalid-credential')
       ) {
@@ -296,9 +418,10 @@ export const FirebaseProvider: React.FC<{ children: ReactNode; firebaseApp: Fire
             normalizedEmail,
             normalizedPassword,
           );
-          await updateLastLogin(userCredential.user.uid);
-          await logUserAction(firestore, auth, 'login_admin_creation');
-          return true;
+          return finishLogin(
+            userCredential.user.uid,
+            'login_admin_creation',
+          );
         } catch (creationError: any) {
           const msg = creationError?.code === 'auth/weak-password'
             ? 'A senha deve ter no mínimo 6 caracteres.'
@@ -332,7 +455,7 @@ export const FirebaseProvider: React.FC<{ children: ReactNode; firebaseApp: Fire
       });
       return false;
     }
-  }, [auth, firestore, toast, updateLastLogin]);
+  }, [auth, firestore, toast, updateLastLogin, waitForUserProfile]);
 
   const logout = useCallback(async () => {
     if (auth && auth.currentUser && firestore) {
@@ -349,9 +472,10 @@ export const FirebaseProvider: React.FC<{ children: ReactNode; firebaseApp: Fire
     auth,
     user: appUser,
     isInitialized,
+    isProfileLoading,
     login,
     logout,
-  }), [firebaseApp, firestore, auth, appUser, isInitialized, login, logout]);
+  }), [firebaseApp, firestore, auth, appUser, isInitialized, isProfileLoading, login, logout]);
 
   return (
     <FirebaseContext.Provider value={contextValue}>
@@ -371,7 +495,13 @@ export const useFirebase = () => {
 
 export const useAuth = () => {
   const context = useFirebase();
-  return { user: context.user, login: context.login, logout: context.logout, isInitialized: context.isInitialized };
+  return {
+    user: context.user,
+    login: context.login,
+    logout: context.logout,
+    isInitialized: context.isInitialized,
+    isProfileLoading: context.isProfileLoading,
+  };
 }
 
 export const useFirestore = (): Firestore => {
@@ -399,6 +529,6 @@ export function useMemoFirebase<T>(factory: () => T, deps: DependencyList): T | 
 }
 
 export const useUser = (): { user: AppUser | null; isUserLoading: boolean } => {
-  const { user, isInitialized } = useFirebase();
-  return { user, isUserLoading: !isInitialized };
+  const { user, isInitialized, isProfileLoading } = useFirebase();
+  return { user, isUserLoading: !isInitialized || isProfileLoading };
 };

@@ -6,6 +6,7 @@ import { useFirebase } from '@/firebase';
 import { doc, setDoc } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { inferMimeTypeFromFileName } from '@/lib/file-mime';
+import { clearBrandingPdfCache } from '@/lib/branding-pdf';
 
 interface UploadResult {
   success: boolean;
@@ -49,6 +50,8 @@ export function useUploadBrandingImage() {
           { [fieldName]: url },
           { merge: true }
         );
+
+        clearBrandingPdfCache();
 
         return { success: true, url };
       } catch (error: any) {

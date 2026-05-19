@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { generateAbntReport } from "@/ai/flows/generate-abnt-report";
 import { formatAbntWebReference } from "@/lib/abnt";
 import { isAiRoutesEnabled } from "@/lib/deploy-flags";
+import { adminApiErrorResponse, requireAdminApiAuth } from "@/lib/api-auth";
 
 export const maxDuration = 90;
 const MAX_INTERNAL_SOURCES = 8;
@@ -77,6 +78,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    await requireAdminApiAuth(request);
     const body = (await request.json()) as Body;
     const reportTitle = (body.reportTitle || "").trim();
     const objective = (body.objective || "").trim();
@@ -213,13 +215,20 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (e) {
+    const { message, status, code } = adminApiErrorResponse(e);
+    if (status !== 500) {
+      return NextResponse.json(
+        { success: false, error: message, code },
+        { status },
+      );
+    }
     console.error("POST /api/ai-lab/generate-report:", e);
     return NextResponse.json(
       {
         success: false,
-        error: (e as Error).message || "Erro ao gerar relatório.",
+        error: message || "Erro ao gerar relatório.",
       },
-      { status: 500 },
+      { status },
     );
   }
 }

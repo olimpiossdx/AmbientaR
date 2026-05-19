@@ -1,3 +1,4 @@
+import { UPLOAD_MAX_BYTES_DEFAULT } from "@/lib/upload-limits";
 import { NextRequest, NextResponse } from "next/server";
 import { promises as fs } from "fs";
 import path from "path";
@@ -9,7 +10,7 @@ const UPLOAD_DIR = path.join(
   "car",
   "geometry",
 );
-const MAX_FILE_SIZE = 40 * 1024 * 1024; // 40MB (SHP/ZIP pode ser grande)
+const MAX_FILE_SIZE = UPLOAD_MAX_BYTES_DEFAULT; // 40MB (SHP/ZIP pode ser grande)
 const ALLOWED_EXTENSIONS = [".zip", ".shp"];
 
 async function ensureDir() {

@@ -1,18 +1,9 @@
-'use client';
+import { redirect } from 'next/navigation';
 
-import { PageHeader } from '@/components/page-header';
+/** Redireciona rota legada para o embed do menu (menu 12 — Webmail). */
+const WEBMAIL_EXTERNAL_HREF =
+  '/external?url=https%3A%2F%2Fconsultoriapimenta.com.br%3A2096%2F&title=Webmail';
 
 export default function WebmailPage() {
-  return (
-    <div className="flex h-full min-w-0 flex-col overflow-hidden">
-      <PageHeader title="Webmail" />
-      <main className="min-h-0 min-w-0 flex-1 overflow-hidden p-0">
-         <iframe 
-            src="https://consultoriapimenta.com.br:2096/"
-            className="h-[calc(100dvh-4rem)] min-h-[520px] w-full max-w-full border-0 md:h-full md:min-h-0"
-            title="Webmail"
-        ></iframe>
-      </main>
-    </div>
-  );
+  redirect(WEBMAIL_EXTERNAL_HREF);
 }

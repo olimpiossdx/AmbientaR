@@ -24,7 +24,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 
-const CRM_ROLES = ['admin', 'sales', 'supervisor', 'financial'] as const;
+import { canAccessCrm } from '@/lib/role-guards';
 
 const statusVariant: Record<CommercialProposal['status'], string> = {
   Draft: 'bg-slate-500/20 text-slate-700 border-slate-500/30',
@@ -89,7 +89,7 @@ export default function CrmProposalsPage() {
 
   const isLoading = isLoadingProposals || isLoadingClients;
 
-  if (user && !CRM_ROLES.includes(user.role as any)) {
+  if (user && !canAccessCrm(user.role)) {
     return (
       <div className="flex flex-col h-full">
         <PageHeader title="Vendas & Propostas (CRM)" />

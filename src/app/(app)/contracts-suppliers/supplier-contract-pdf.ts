@@ -1,6 +1,6 @@
 import jsPDF from "jspdf";
 import type { SupplierContract, CompanySettings } from "@/lib/types";
-import { applyImageOpacity, getImageDimensions } from "@/lib/branding-pdf";
+import { downloadJsPdf, fetchBrandingImagesForPdf, getImageDimensions } from "@/lib/branding-pdf";
 
 const formatCurrency = (value: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value || 0);
@@ -51,19 +51,17 @@ function addText(
 export async function generateSupplierContractPdf(
   contract: SupplierContract,
   brandingData: CompanySettings | null | undefined,
-  fetchBrandingImageAsBase64: (url: string | undefined) => Promise<string | null>,
 ): Promise<void> {
   const doc = new jsPDF({ unit: "cm", format: "a4" });
   const pageHeight = doc.internal.pageSize.getHeight();
   const pageWidth = doc.internal.pageSize.getWidth();
   const contentWidth = pageWidth - ML - MR;
 
-  const headerBase64 = await fetchBrandingImageAsBase64(brandingData?.headerImageUrl ?? undefined);
-  const footerBase64 = await fetchBrandingImageAsBase64(brandingData?.footerImageUrl ?? undefined);
-  const watermarkBase64Raw = await fetchBrandingImageAsBase64(brandingData?.watermarkImageUrl ?? undefined);
-  const watermarkBase64 = watermarkBase64Raw
-    ? await applyImageOpacity(watermarkBase64Raw, 0.15)
-    : null;
+  const { headerBase64, footerBase64, watermarkBase64 } = await fetchBrandingImagesForPdf({
+    headerImageUrl: brandingData?.headerImageUrl,
+    footerImageUrl: brandingData?.footerImageUrl,
+    watermarkImageUrl: brandingData?.watermarkImageUrl,
+  });
 
   const drawWatermarkOnCurrentPage = () => {
     if (!watermarkBase64) return;
@@ -231,6 +229,6 @@ export async function generateSupplierContractPdf(
   doc.text(`${contract.prestador.nome} (PRESTADOR)`, ML, y);
 
   addHeaderFooter();
-  doc.save(`Contrato_Fornecedor_${contract.contractNumber.replace("/", "-")}.pdf`);
+  downloadJsPdf(doc, `Contrato_Fornecedor_${contract.contractNumber.replace("/", "-")}.pdf`);
 }
 

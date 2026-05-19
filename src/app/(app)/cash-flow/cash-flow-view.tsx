@@ -59,6 +59,7 @@ export type CashFlowViewProps = {
   isLoadingExpenses: boolean;
   onExportPdf: () => void;
   onPrint: () => void;
+  isExportingPdf?: boolean;
 };
 
 export function CashFlowView(props: CashFlowViewProps) {
@@ -92,6 +93,7 @@ export function CashFlowView(props: CashFlowViewProps) {
     isLoadingExpenses,
     onExportPdf,
     onPrint,
+    isExportingPdf = false,
   } = props;
 
   return (
@@ -329,9 +331,11 @@ export function CashFlowView(props: CashFlowViewProps) {
                   variant="outline"
                   className="h-10 w-full gap-2 sm:min-w-[160px] sm:flex-1 lg:flex-initial"
                   onClick={onExportPdf}
+                  disabled={isExportingPdf}
+                  aria-busy={isExportingPdf}
                 >
                   <FileDown className="h-4 w-4 shrink-0" aria-hidden />
-                  Exportar PDF
+                  {isExportingPdf ? 'Gerando PDF…' : 'Exportar PDF'}
                 </Button>
                 <Button
                   type="button"

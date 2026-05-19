@@ -54,13 +54,10 @@ import { SupplierContractForm } from "./supplier-contract-form";
 import { AttachmentPreviewSection } from "@/components/shared/attachment-preview-section";
 import { generateSupplierContractPdf } from "./supplier-contract-pdf";
 import { useLocalBranding } from "@/hooks/use-local-branding";
-import { fetchBrandingImageAsBase64 } from "@/lib/branding-pdf";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  uploadFileToStorage,
-  sanitizeStorageFileName,
-} from "@/lib/storage-upload";
+import { UploadPreparationDialog } from "@/components/shared/upload-preparation-dialog";
+import { useStorageFileUpload } from "@/hooks/use-storage-file-upload";
 
 const DetailItem = ({ label, value }: { label: string; value?: string | number | null }) => (
   <div className="space-y-1">
@@ -69,16 +66,22 @@ const DetailItem = ({ label, value }: { label: string; value?: string | number |
   </div>
 );
 
+import { canWriteContractsCommercial } from "@/lib/role-guards";
+
 const canWrite = (user: AppUser | null) =>
-  !!user &&
-  (user.role === "admin" ||
-    user.role === "financial" ||
-    user.role === "sales");
+  Boolean(user && canWriteContractsCommercial(user.role));
 
 export default function ContractsSuppliersPage() {
   const { firestore } = useFirebase();
   const { user } = useAuth();
   const { toast } = useToast();
+  const { uploadFile, dialogProps } = useStorageFileUpload({
+    storageFolder: "supplier-contracts",
+    buildStoragePath: (_file, safe) => {
+      if (!uploadingItem) throw new Error("Contrato não selecionado.");
+      return `supplier-contracts/signed/${uploadingItem.id}/${Date.now()}-${safe}`;
+    },
+  });
   const { data: brandingData } = useLocalBranding();
 
   const [searchTerm, setSearchTerm] = React.useState("");
@@ -192,11 +195,8 @@ export default function ContractsSuppliersPage() {
     if (!fileToUpload || !uploadingItem || !firestore) return;
     setIsUploading(true);
     try {
-      const safe = sanitizeStorageFileName(fileToUpload.name);
-      const downloadUrl = await uploadFileToStorage(
-        fileToUpload,
-        `supplier-contracts/signed/${uploadingItem.id}/${Date.now()}-${safe}`,
-      );
+      const downloadUrl = await uploadFile(fileToUpload);
+      if (!downloadUrl) return;
       await updateDoc(doc(firestore, "supplierContracts", uploadingItem.id), {
         fileUrl: downloadUrl,
       });
@@ -221,11 +221,7 @@ export default function ContractsSuppliersPage() {
 
   const handleExportPdf = async (item: SupplierContract) => {
     try {
-      await generateSupplierContractPdf(
-        item,
-        brandingData,
-        fetchBrandingImageAsBase64,
-      );
+      await generateSupplierContractPdf(item, brandingData);
       toast({ title: "PDF do contrato gerado com sucesso." });
     } catch (error) {
       console.error(error);
@@ -653,6 +649,7 @@ export default function ContractsSuppliersPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <UploadPreparationDialog {...dialogProps} />
     </>
   );
 }

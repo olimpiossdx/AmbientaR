@@ -9,10 +9,15 @@ import { createUserWithEmailAndPassword } from "firebase/auth";
 import {
   doc,
   setDoc,
+  updateDoc,
   serverTimestamp,
   collection,
   addDoc,
 } from "firebase/firestore";
+import {
+  lookupClientAndEmpreendedorByDocument,
+  normalizeDocumentDigits,
+} from "@/lib/document-lookup";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -211,8 +216,7 @@ const formSchema = z
 
 type FormValues = z.infer<typeof formSchema>;
 
-const normalizeDocument = (raw: string | undefined | null) =>
-  (raw ?? "").replace(/\D/g, "").trim();
+const normalizeDocument = normalizeDocumentDigits;
 
 const isValidCpfOrCnpj = (raw: string | undefined | null) => {
   const digits = normalizeDocument(raw);
@@ -257,6 +261,10 @@ export default function RegisterPage() {
   const [paymentMethod, setPaymentMethod] =
     React.useState<PlatformPaymentMethod>("pix");
   const [paymentAcknowledged, setPaymentAcknowledged] = React.useState(false);
+  const [linkedClientId, setLinkedClientId] = React.useState<string | null>(null);
+  const [linkedEmpreendedorId, setLinkedEmpreendedorId] = React.useState<string | null>(null);
+  const [cpfLinkHint, setCpfLinkHint] = React.useState<string | null>(null);
+  const [cpfLookupLoading, setCpfLookupLoading] = React.useState(false);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -312,6 +320,63 @@ export default function RegisterPage() {
   React.useEffect(() => {
     form.setValue("marketingContactConsent", false);
   }, [selectedPackage, form]);
+
+  React.useEffect(() => {
+    setLinkedClientId(null);
+    setLinkedEmpreendedorId(null);
+    setCpfLinkHint(null);
+  }, [mode]);
+
+  const resolveTitularDocumentForLookup = React.useCallback(() => {
+    const titularField = normalizeDocument(form.getValues("cpfCnpjTitular"));
+    const userCpf = normalizeDocument(form.getValues("cpf"));
+    if (mode === "cliente_autonomo") {
+      return titularField.length >= 11 ? titularField : userCpf;
+    }
+    return titularField;
+  }, [form, mode]);
+
+  const handleTitularDocumentBlur = React.useCallback(async () => {
+    if (!firestore || mode === "representative") return;
+    const docDigits = resolveTitularDocumentForLookup();
+    if (docDigits.length !== 11 && docDigits.length !== 14) {
+      setCpfLinkHint(null);
+      return;
+    }
+
+    setCpfLookupLoading(true);
+    try {
+      const { client, empreendedor } = await lookupClientAndEmpreendedorByDocument(
+        firestore,
+        docDigits,
+      );
+      if (!client && !empreendedor) {
+        setLinkedClientId(null);
+        setLinkedEmpreendedorId(null);
+        setCpfLinkHint(null);
+        return;
+      }
+
+      if (client?.id) setLinkedClientId(client.id);
+      if (empreendedor?.id) setLinkedEmpreendedorId(empreendedor.id);
+
+      if (client?.name) form.setValue("name", client.name, { shouldValidate: true });
+      if (client?.email) form.setValue("email", client.email, { shouldValidate: true });
+      if (client?.phone || empreendedor?.phone) {
+        form.setValue("phone", client?.phone || empreendedor?.phone || "", {
+          shouldValidate: true,
+        });
+      }
+
+      setCpfLinkHint(
+        "Encontramos Cliente/Empreendedor com este documento. Sua conta será vinculada sem criar duplicatas.",
+      );
+    } catch (e) {
+      console.warn("Busca por CPF/CNPJ no cadastro:", e);
+    } finally {
+      setCpfLookupLoading(false);
+    }
+  }, [firestore, form, mode, resolveTitularDocumentForLookup]);
 
   const watchedStep1 = form.watch([
     "name",
@@ -453,6 +518,8 @@ export default function RegisterPage() {
         extraVerified.platformPaymentVerifiedAt = serverTimestamp();
       }
 
+      const hasExistingLink = Boolean(linkedClientId || linkedEmpreendedorId);
+
       await setDoc(doc(firestore, "users", uid), {
         uid: uid,
         name: values.name,
@@ -477,7 +544,14 @@ export default function RegisterPage() {
         createdAt: serverTimestamp(),
         lastLogin: serverTimestamp(),
         isOnline: false,
-        cadastroIncompleto: true,
+        cadastroIncompleto:
+          mode === "representative"
+            ? false
+            : isTitularPlanMode
+              ? !hasExistingLink
+              : true,
+        ...(linkedClientId ? { linkedClientId } : {}),
+        ...(linkedEmpreendedorId ? { linkedEmpreendedorId } : {}),
         ...(isTitularPlanMode
           ? {
               allowsCommercialContact:
@@ -536,12 +610,9 @@ export default function RegisterPage() {
         }
       }
 
-      // Clientes (titulares): criar apenas o Empreendedor (faltas serão completadas em Cadastro > Empreendedores).
-      // Também cria o espelho em Financeiro > Clientes para já aparecer no submenu Clientes.
+      // Clientes (titulares): vincular a registros existentes ou criar esboço inicial.
       if (isTitularPlanMode) {
         try {
-          const empreendedorRef = doc(firestore, "empreendedores", uid);
-          const clientRef = doc(firestore, "clients", uid);
           const empreendedorData = {
             name: values.name,
             phone: values.phone,
@@ -573,19 +644,36 @@ export default function RegisterPage() {
             ctfIbama: "",
             userId: uid,
           };
-          await setDoc(empreendedorRef, empreendedorData, { merge: true });
-          await setDoc(clientRef, clientData, { merge: true });
 
-          // Alerta no sino para completar o cadastro.
-          await createNotificationForUser(firestore, uid, {
-            title: "Complete seu cadastro",
-            description:
-              "Seu cadastro inicial foi criado. Clique para atualizar os dados do empreendedor.",
-            link: `/empreendedores/${uid}/edit`,
-            sourceType: "onboarding",
-            sourceId: uid,
-            actorRole: "admin",
-          });
+          if (hasExistingLink) {
+            if (linkedEmpreendedorId) {
+              await updateDoc(
+                doc(firestore, "empreendedores", linkedEmpreendedorId),
+                empreendedorData,
+              );
+            }
+            if (linkedClientId) {
+              await updateDoc(
+                doc(firestore, "clients", linkedClientId),
+                clientData,
+              );
+            }
+          } else {
+            const empreendedorRef = doc(firestore, "empreendedores", uid);
+            const clientRef = doc(firestore, "clients", uid);
+            await setDoc(empreendedorRef, empreendedorData, { merge: true });
+            await setDoc(clientRef, clientData, { merge: true });
+
+            await createNotificationForUser(firestore, uid, {
+              title: "Concluir cadastro",
+              description:
+                "Complete os dados do seu Cliente e Empreendedor no menu Cadastro.",
+              link: `/empreendedores/${uid}/edit`,
+              sourceType: "onboarding",
+              sourceId: uid,
+              actorRole: "admin",
+            });
+          }
         } catch (e) {
           console.warn(
             "Cadastro inicial de Cliente/Empreendedor não foi concluído integralmente.",
@@ -697,6 +785,12 @@ export default function RegisterPage() {
                   mask="cpf"
                   placeholder="000.000.000-00"
                   {...field}
+                  onBlur={() => {
+                    field.onBlur();
+                    if (mode === "cliente_autonomo") {
+                      void handleTitularDocumentBlur();
+                    }
+                  }}
                 />
               </FormControl>
               <FormMessage />
@@ -720,9 +814,24 @@ export default function RegisterPage() {
                   mask="cpfCnpj"
                   placeholder="000.000.000-00 ou 00.000.000/0000-00"
                   {...field}
+                  onBlur={() => {
+                    field.onBlur();
+                    void handleTitularDocumentBlur();
+                  }}
                 />
               </FormControl>
               <FormMessage />
+              {cpfLookupLoading && (
+                <p className="text-xs text-muted-foreground flex items-center gap-1">
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                  Verificando cadastro existente…
+                </p>
+              )}
+              {cpfLinkHint && !cpfLookupLoading && (
+                <p className="text-xs text-emerald-700 dark:text-emerald-400">
+                  {cpfLinkHint}
+                </p>
+              )}
               <p className="text-xs text-muted-foreground">
                 {mode === "representative"
                   ? "Informe o documento do cliente titular cujos dados você deseja gerenciar. O titular precisará aprovar seu acesso em Usuários."

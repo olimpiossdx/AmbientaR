@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { allNavItems } from "@/lib/navigation-config";
 import type { AppUser, NavItem, NavSubItem } from "@/lib/types";
+import { canAccessNavItem } from "@/lib/role-guards";
 
 type NavigationHubLink = {
   href: string;
@@ -21,7 +22,7 @@ function isAllowedForRole(
   item: NavItem | NavSubItem,
   role: AppUser["role"],
 ) {
-  return !item.roles || item.roles.includes(role);
+  return canAccessNavItem(role, item.roles);
 }
 
 function flattenLinks(

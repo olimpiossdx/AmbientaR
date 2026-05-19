@@ -46,11 +46,8 @@ import {
   getDocs,
 } from "firebase/firestore";
 import * as React from "react";
-import {
-  uploadFileToStorage,
-  sanitizeStorageFileName,
-} from "@/lib/storage-upload";
-import { fetchBrandingImageAsBase64 } from "@/lib/branding-pdf";
+import { UploadPreparationDialog } from "@/components/shared/upload-preparation-dialog";
+import { useStorageFileUpload } from "@/hooks/use-storage-file-upload";
 import { useLocalBranding } from "@/hooks/use-local-branding";
 import type {
   Contract,
@@ -79,7 +76,8 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { generateContractPdf } from "./contract-pdf";
-import { ptBR } from "date-fns/locale";
+import { persistContractPdfForSignature } from "@/lib/persist-contract-pdf";
+import { ptBR } from "date-fns/locale/pt-BR";
 import { format } from "date-fns";
 import { ContractForm } from "./contract-form";
 import {
@@ -134,6 +132,7 @@ export default function ContractsPage() {
   const [uploadingItem, setUploadingItem] = useState<Contract | null>(null);
   const [fileToUpload, setFileToUpload] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [generatingPdfId, setGeneratingPdfId] = useState<string | null>(null);
   const [isFromProposalOpen, setIsFromProposalOpen] = useState(false);
   const [selectedProposalId, setSelectedProposalId] = useState("");
   const [filterCliente, setFilterCliente] = useState("");
@@ -146,6 +145,13 @@ export default function ContractsPage() {
   const { user } = useAuth();
   const { firestore } = useFirebase();
   const { toast } = useToast();
+  const { uploadFile, dialogProps } = useStorageFileUpload({
+    storageFolder: "signed-contracts",
+    buildStoragePath: (_file, safe) => {
+      if (!uploadingItem) throw new Error("Contrato não selecionado.");
+      return `signed-contracts/${uploadingItem.id}/${Date.now()}-${safe}`;
+    },
+  });
 
   const [clientIdsForUser, setClientIdsForUser] = useState<string[] | null>(
     null,
@@ -278,11 +284,8 @@ export default function ContractsPage() {
     setIsUploading(true);
 
     try {
-      const safe = sanitizeStorageFileName(fileToUpload.name);
-      const downloadUrl = await uploadFileToStorage(
-        fileToUpload,
-        `signed-contracts/${uploadingItem.id}/${Date.now()}-${safe}`,
-      );
+      const downloadUrl = await uploadFile(fileToUpload);
+      if (!downloadUrl) return;
 
       const docRef = doc(firestore, "contracts", uploadingItem.id);
       await updateDoc(docRef, { fileUrl: downloadUrl });
@@ -353,18 +356,29 @@ export default function ContractsPage() {
       });
   };
 
-  const handleGeneratePdf = async (contract: Contract) => {
+  const handleGeneratePdf = async (contract: Contract, persist = false) => {
+    if (generatingPdfId) return;
+    setGeneratingPdfId(contract.id);
     try {
-      await generateContractPdf(
-        contract,
-        brandingData ?? undefined,
-        fetchBrandingImageAsBase64,
-      );
-      toast({
-        title: "PDF gerado",
-        description:
-          "O contrato foi exportado com todas as cláusulas e assinaturas.",
-      });
+      if (persist && firestore) {
+        await persistContractPdfForSignature(
+          firestore,
+          contract.id,
+          contract,
+          brandingData,
+        );
+        toast({
+          title: "PDF do contrato atualizado",
+          description:
+            "O documento para assinatura foi gerado e salvo no Storage.",
+        });
+      } else {
+        await generateContractPdf(contract, brandingData ?? undefined);
+        toast({
+          title: "PDF gerado",
+          description: "O download do contrato para assinatura foi iniciado.",
+        });
+      }
     } catch (err) {
       console.error(err);
       toast({
@@ -375,8 +389,13 @@ export default function ContractsPage() {
             : "Não foi possível gerar o PDF do contrato.",
         variant: "destructive",
       });
+    } finally {
+      setGeneratingPdfId(null);
     }
   };
+
+  const isPortalUser =
+    isClientePortalRole(user?.role) || user?.role === "representative";
 
   const formatDate = (dateString: string) => {
     if (!dateString) return "N/A";
@@ -479,6 +498,63 @@ export default function ContractsPage() {
       null,
     [availableAcceptedProposals, selectedProposalId],
   );
+
+  const renderContractPdfActions = (
+    item: Contract,
+    options?: { persistOnGenerate?: boolean },
+  ) => {
+    const persistOnGenerate = options?.persistOnGenerate ?? false;
+    const busy = generatingPdfId === item.id;
+    return (
+      <>
+        {item.contractPdfUrl ? (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button asChild variant="ghost" size="icon" className="h-9 w-9 shrink-0">
+                <a
+                  href={item.contractPdfUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  download
+                >
+                  <FileText className="h-4 w-4 text-primary" />
+                  <span className="sr-only">Baixar contrato para assinatura</span>
+                </a>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Baixar contrato para assinatura</p>
+            </TooltipContent>
+          </Tooltip>
+        ) : null}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9 shrink-0"
+              type="button"
+              disabled={busy}
+              aria-busy={busy}
+              onClick={() => handleGeneratePdf(item, persistOnGenerate)}
+            >
+              <FileText className="h-4 w-4" />
+              <span className="sr-only">Gerar PDF do contrato</span>
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>
+              {persistOnGenerate
+                ? "Gerar e salvar PDF para assinatura"
+                : item.contractPdfUrl
+                  ? "Baixar PDF novamente"
+                  : "Gerar PDF do contrato"}
+            </p>
+          </TooltipContent>
+        </Tooltip>
+      </>
+    );
+  };
 
   return (
     <>
@@ -628,23 +704,9 @@ export default function ContractsPage() {
                                     <p>Editar contrato</p>
                                   </TooltipContent>
                                 </Tooltip>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      className="h-9 w-9 shrink-0"
-                                      type="button"
-                                      onClick={() => handleGeneratePdf(item)}
-                                    >
-                                      <FileText className="h-4 w-4" />
-                                      <span className="sr-only">PDF</span>
-                                    </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent>
-                                    <p>Gerar PDF</p>
-                                  </TooltipContent>
-                                </Tooltip>
+                                {renderContractPdfActions(item, {
+                                  persistOnGenerate: true,
+                                })}
                                 {canApproveContracts(user?.role) && (
                                   <Tooltip>
                                     <TooltipTrigger asChild>
@@ -691,6 +753,82 @@ export default function ContractsPage() {
                         {draftContracts?.length === 0
                           ? "Nenhum contrato em gerenciamento."
                           : "Nenhum contrato corresponde aos filtros."}
+                      </div>
+                    )}
+                  </div>
+                </TooltipProvider>
+              </CardContent>
+            </Card>
+          )}
+
+          {isPortalUser && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Contratos para assinatura</CardTitle>
+                <CardDescription>
+                  Baixe o PDF do contrato gerado a partir da proposta aceita. Após
+                  assinar, a consultoria fará o upload da versão assinada.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <TooltipProvider>
+                  <div className="space-y-4">
+                    {isLoadingContracts &&
+                      Array.from({ length: 2 }).map((_, i) => (
+                        <Skeleton key={i} className="h-28 w-full rounded-lg" />
+                      ))}
+                    {!isLoadingContracts &&
+                      filteredDraftContracts?.map((item) => (
+                        <Card
+                          key={item.id}
+                          className="overflow-hidden border-border/80 shadow-sm"
+                        >
+                          <CardContent className="p-4 sm:p-5">
+                            <div className="flex flex-col gap-4">
+                              <div className="min-w-0 space-y-2">
+                                <h3 className="text-base font-semibold">
+                                  {item.contratante?.nome}
+                                </h3>
+                                <p className="text-sm text-muted-foreground">
+                                  {formatDate(item.dataContrato)}
+                                </p>
+                                {item.sourceProposalNumber ? (
+                                  <p className="text-xs text-muted-foreground">
+                                    Proposta {item.sourceProposalNumber}
+                                  </p>
+                                ) : null}
+                                <Badge variant="outline" className="w-fit">
+                                  Aguardando assinatura
+                                </Badge>
+                              </div>
+                              <Separator />
+                              <div className="flex flex-wrap gap-1">
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-9 w-9"
+                                      type="button"
+                                      onClick={() => handleView(item)}
+                                    >
+                                      <Eye className="h-4 w-4" />
+                                      <span className="sr-only">Ver</span>
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Visualizar detalhes</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                                {renderContractPdfActions(item)}
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    {!isLoadingContracts && filteredDraftContracts?.length === 0 && (
+                      <div className="flex h-24 items-center justify-center rounded-md border-2 border-dashed border-muted-foreground/25 text-center text-sm text-muted-foreground">
+                        Nenhum contrato pendente de assinatura.
                       </div>
                     )}
                   </div>
@@ -754,23 +892,9 @@ export default function ContractsPage() {
                                   <p>Visualizar detalhes</p>
                                 </TooltipContent>
                               </Tooltip>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-9 w-9 shrink-0"
-                                    type="button"
-                                    onClick={() => handleGeneratePdf(item)}
-                                  >
-                                    <FileText className="h-4 w-4" />
-                                    <span className="sr-only">PDF</span>
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  <p>Gerar PDF</p>
-                                </TooltipContent>
-                              </Tooltip>
+                              {renderContractPdfActions(item, {
+                                persistOnGenerate: canWriteContractsCommercial(user?.role),
+                              })}
                               {item.fileUrl ? (
                                 <Tooltip>
                                   <TooltipTrigger asChild>
@@ -1048,11 +1172,18 @@ export default function ContractsPage() {
                 value={viewingItem.pagamento.forma}
               />
               <AttachmentPreviewSection
+                fileUrl={viewingItem.contractPdfUrl}
+                sectionLabel="Contrato para assinatura (PDF)"
+                emptyLabel="PDF do contrato ainda não gerado. Use «Gerar PDF» na lista."
+                zoomTitle="Contrato para assinatura"
+                zoomDescription="Documento gerado a partir dos dados do contrato."
+              />
+              <AttachmentPreviewSection
                 fileUrl={viewingItem.fileUrl}
-                sectionLabel="Contrato assinado (PDF)"
-                emptyLabel="Nenhum arquivo anexado."
-                zoomTitle="Anexo do contrato"
-                zoomDescription="Visualização ampliada do PDF."
+                sectionLabel="Contrato assinado (upload)"
+                emptyLabel="Nenhum contrato assinado anexado."
+                zoomTitle="Contrato assinado"
+                zoomDescription="Versão assinada enviada pela consultoria ou cliente."
               />
             </div>
           )}
@@ -1083,6 +1214,7 @@ export default function ContractsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      <UploadPreparationDialog {...dialogProps} />
     </>
   );
 }

@@ -37,7 +37,6 @@ import {
 import {
   collection,
   doc,
-  deleteDoc,
   query,
   where,
   getDocs,
@@ -82,10 +81,17 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { backupAndDeleteSingleCondicionante } from "@/lib/deleted-data-backup";
+import {
+  backupAndDeleteSingleCondicionante,
+  deleteCondicionanteDirect,
+} from "@/lib/deleted-data-backup";
 import { CardSearchInput } from "@/components/card-search-input";
 import { fetchEmpreendedorIdsForRepresentative } from "@/lib/representative-empreendedor-ids";
-import { isClientePortalRole } from "@/lib/role-guards";
+import {
+  isClientePortalRole,
+  canManageCondicionantes,
+  isAdminRole,
+} from "@/lib/role-guards";
 
 /** Variantes de CPF/CNPJ (original + só dígitos) para match no Firestore, máx 10. */
 function documentVariants(
@@ -104,12 +110,8 @@ function documentVariants(
 
 const canPerformWriteActions = (user: AppUser | null): boolean => {
   if (!user) return false;
-  return (
-    user.role === "admin" ||
-    user.role === "gestor" ||
-    user.role === "supervisor" ||
-    user.role === "cliente_autonomo"
-  );
+  if (isAdminRole(user.role)) return true;
+  return canManageCondicionantes(user.role);
 };
 
 export default function CompliancePage() {
@@ -627,32 +629,93 @@ export default function CompliancePage() {
     setIsAlertOpen(true);
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!firestore || !itemToDelete) return;
     const docRef = doc(firestore, "condicionantes", itemToDelete);
-    backupAndDeleteSingleCondicionante({
-      firestore,
-      condicionanteId: itemToDelete,
-      user,
-      reason: "Exclusão manual na tela de condicionantes",
-    })
-      .then(() => {
-        toast({
-          title: "Condicionante deletada",
-          description: "A condicionante foi removida com backup de segurança.",
-        });
-      })
-      .catch(async (serverError) => {
-        const permissionError = new FirestorePermissionError({
-          path: docRef.path,
-          operation: "delete",
-        });
-        errorEmitter.emit("permission-error", permissionError);
-      })
-      .finally(() => {
-        setIsAlertOpen(false);
-        setItemToDelete(null);
+    const condicionanteId = itemToDelete;
+
+    try {
+      await backupAndDeleteSingleCondicionante({
+        firestore,
+        condicionanteId,
+        user,
+        reason: "Exclusão manual na tela de condicionantes",
       });
+      toast({
+        title: "Condicionante deletada",
+        description: "A condicionante foi removida com backup de segurança.",
+      });
+    } catch (firstError: unknown) {
+      const code =
+        firstError &&
+        typeof firstError === "object" &&
+        "code" in firstError
+          ? String((firstError as { code?: string }).code)
+          : "";
+
+      if (canPerformWriteActions(user)) {
+        try {
+          await deleteCondicionanteDirect(firestore, condicionanteId);
+          toast({
+            title: "Condicionante deletada",
+            description:
+              code === "permission-denied"
+                ? "Removida sem backup (permissão negada no backup). Publique as regras: npm run deploy:rules"
+                : "Removida (backup não foi gravado, exclusão concluída).",
+          });
+        } catch (secondError: unknown) {
+          const message =
+            secondError instanceof Error
+              ? secondError.message
+              : "Não foi possível excluir a condicionante.";
+          const secondCode =
+            secondError &&
+            typeof secondError === "object" &&
+            "code" in secondError
+              ? String((secondError as { code?: string }).code)
+              : "";
+          toast({
+            variant: "destructive",
+            title: "Erro ao excluir",
+            description:
+              secondCode === "permission-denied"
+                ? `${message} Execute npm run deploy:rules e confira se users/{uid}.role é "admin" no Firestore.`
+                : message,
+          });
+          if (secondCode === "permission-denied") {
+            errorEmitter.emit(
+              "permission-error",
+              new FirestorePermissionError({
+                path: docRef.path,
+                operation: "delete",
+              }),
+            );
+          }
+        }
+      } else {
+        const message =
+          firstError instanceof Error
+            ? firstError.message
+            : "Não foi possível excluir a condicionante.";
+        toast({
+          variant: "destructive",
+          title: "Erro ao excluir",
+          description: message,
+        });
+        if (code === "permission-denied") {
+          errorEmitter.emit(
+            "permission-error",
+            new FirestorePermissionError({
+              path: docRef.path,
+              operation: "delete",
+            }),
+          );
+        }
+      }
+    } finally {
+      setIsAlertOpen(false);
+      setItemToDelete(null);
+    }
   };
 
   const formatDate = (dateString: string) => {

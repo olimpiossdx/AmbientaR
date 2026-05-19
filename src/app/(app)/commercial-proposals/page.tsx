@@ -1,5 +1,5 @@
 "use client";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -51,6 +51,7 @@ import {
 } from "firebase/firestore";
 import * as React from "react";
 import { generateCommercialProposalPdf } from "@/lib/commercial-proposal-pdf";
+import { generateContractPdf } from "@/app/(app)/contracts/contract-pdf";
 import { useLocalBranding } from "@/hooks/use-local-branding";
 import type {
   CommercialProposal,
@@ -142,6 +143,7 @@ export default function CommercialProposalsPage() {
   const [exportingProposalId, setExportingProposalId] = useState<string | null>(
     null,
   );
+  const exportInFlightRef = useRef(false);
   const router = useRouter();
 
   const { firestore, auth, user } = useFirebase();
@@ -426,7 +428,44 @@ export default function CommercialProposalsPage() {
       });
   };
 
-  const handleExportPdf = async (proposal: CommercialProposal) => {
+  const linkedContract = (proposal: CommercialProposal) =>
+    proposal.contractId ? contractsMap.get(proposal.contractId) : undefined;
+
+  const handleDownloadDocument = async (proposal: CommercialProposal) => {
+    if (exportInFlightRef.current) return;
+
+    const contract = linkedContract(proposal);
+    if (contract) {
+      if (contract.contractPdfUrl) {
+        window.open(contract.contractPdfUrl, "_blank", "noopener,noreferrer");
+        return;
+      }
+      exportInFlightRef.current = true;
+      setExportingProposalId(proposal.id);
+      try {
+        await generateContractPdf(contract, brandingData ?? undefined);
+        toast({
+          title: "PDF do contrato",
+          description: "Download do contrato para assinatura iniciado.",
+        });
+      } catch (error) {
+        console.error("Erro ao gerar PDF do contrato:", error);
+        toast({
+          variant: "destructive",
+          title: "Erro ao gerar contrato",
+          description: "Não foi possível gerar o PDF do contrato vinculado.",
+        });
+      } finally {
+        exportInFlightRef.current = false;
+        setExportingProposalId(null);
+      }
+      return;
+    }
+
+    await handleExportProposalPdf(proposal);
+  };
+
+  const handleExportProposalPdf = async (proposal: CommercialProposal) => {
     if (!firestore) {
       toast({
         variant: "destructive",
@@ -435,8 +474,9 @@ export default function CommercialProposalsPage() {
       });
       return;
     }
-    if (exportingProposalId) return;
+    if (exportInFlightRef.current) return;
 
+    exportInFlightRef.current = true;
     setExportingProposalId(proposal.id);
     try {
       const [proposalSnap, companySnap] = await Promise.all([
@@ -462,7 +502,7 @@ export default function CommercialProposalsPage() {
       });
 
       toast({
-        title: "PDF exportado",
+        title: "PDF da proposta exportado",
         description: `Proposta ${proposalData.proposalNumber} gerada com sucesso.`,
       });
     } catch (error) {
@@ -474,6 +514,7 @@ export default function CommercialProposalsPage() {
           "Não foi possível gerar o arquivo. Verifique a conexão e tente novamente.",
       });
     } finally {
+      exportInFlightRef.current = false;
       setExportingProposalId(null);
     }
   };
@@ -740,20 +781,27 @@ export default function CommercialProposalsPage() {
                                         </Tooltip>
                                         <Tooltip>
                                           <TooltipTrigger asChild>
-                                            <Button
-                                              variant="ghost"
-                                              size="icon"
-                                              className="h-9 w-9 shrink-0"
-                                              type="button"
-                                              disabled={exportingProposalId === proposal.id}
-                                              onClick={() => handleExportPdf(proposal)}
-                                            >
-                                              <FileText className="h-4 w-4" />
-                                              <span className="sr-only">PDF</span>
-                                            </Button>
+                                            <span className="inline-flex">
+                                              <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="h-9 w-9 shrink-0"
+                                                type="button"
+                                                disabled={exportingProposalId === proposal.id}
+                                                aria-busy={exportingProposalId === proposal.id}
+                                                onClick={() => handleDownloadDocument(proposal)}
+                                              >
+                                                <FileText className="h-4 w-4" />
+                                                <span className="sr-only">PDF</span>
+                                              </Button>
+                                            </span>
                                           </TooltipTrigger>
                                           <TooltipContent>
-                                            <p>Exportar PDF</p>
+                                            <p>
+                                              {proposal.contractId
+                                                ? "Baixar contrato para assinatura"
+                                                : "Exportar PDF da proposta"}
+                                            </p>
                                           </TooltipContent>
                                         </Tooltip>
                                         {proposal.contractId && (
@@ -909,20 +957,27 @@ export default function CommercialProposalsPage() {
                                   </Tooltip>
                                   <Tooltip>
                                     <TooltipTrigger asChild>
-                                      <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-9 w-9 shrink-0"
-                                        type="button"
-                                        disabled={exportingProposalId === proposal.id}
-                                        onClick={() => handleExportPdf(proposal)}
-                                      >
-                                        <FileText className="h-4 w-4" />
-                                        <span className="sr-only">PDF</span>
-                                      </Button>
+                                      <span className="inline-flex">
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          className="h-9 w-9 shrink-0"
+                                          type="button"
+                                          disabled={exportingProposalId === proposal.id}
+                                          aria-busy={exportingProposalId === proposal.id}
+                                          onClick={() => handleDownloadDocument(proposal)}
+                                        >
+                                          <FileText className="h-4 w-4" />
+                                          <span className="sr-only">PDF</span>
+                                        </Button>
+                                      </span>
                                     </TooltipTrigger>
                                     <TooltipContent>
-                                      <p>Exportar PDF</p>
+                                      <p>
+                                        {proposal.contractId
+                                          ? "Baixar contrato para assinatura"
+                                          : "Exportar PDF da proposta"}
+                                      </p>
                                     </TooltipContent>
                                   </Tooltip>
                                   {proposal.contractId && (
@@ -1050,10 +1105,18 @@ export default function CommercialProposalsPage() {
                   value={formatCurrency(viewingItem.amount)}
                 />
               </div>
+              {viewingItem.contractId && contractsMap.get(viewingItem.contractId) ? (
+                <AttachmentPreviewSection
+                  fileUrl={contractsMap.get(viewingItem.contractId!)?.contractPdfUrl}
+                  sectionLabel="Contrato para assinatura (PDF)"
+                  emptyLabel="O contrato ainda não tem PDF gerado. Use o botão de documento na lista ou abra Contratos."
+                  zoomTitle="Contrato para assinatura"
+                />
+              ) : null}
               <AttachmentPreviewSection
                 fileUrl={viewingItem.fileUrl}
-                sectionLabel="PDF / anexo da proposta"
-                emptyLabel="Nenhum PDF ou anexo cadastrado."
+                sectionLabel="Anexo da proposta (opcional)"
+                emptyLabel="Nenhum anexo da proposta cadastrado."
                 zoomTitle="Anexo da proposta"
               />
             </div>

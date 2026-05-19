@@ -54,6 +54,8 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { numberToWordsBRL } from "@/lib/utils";
+import { persistContractPdfForSignature } from "@/lib/persist-contract-pdf";
+import { useLocalBranding } from "@/hooks/use-local-branding";
 
 const formSchema = z.object({
   contratante: z.object({
@@ -189,6 +191,7 @@ export function ContractForm({ currentItem, onSuccess, sourceProposal }: Contrac
   const [loading, setLoading] = React.useState(false);
   const { toast } = useToast();
   const { firestore } = useFirebase();
+  const { data: brandingData } = useLocalBranding();
 
   const clientsQuery = useMemoFirebase(
     () => (firestore ? collection(firestore, "clients") : null),
@@ -363,6 +366,7 @@ export function ContractForm({ currentItem, onSuccess, sourceProposal }: Contrac
 
     const dataToSave = {
       ...values,
+      status: currentItem?.status ?? ("Rascunho" as const),
       // Mantém compatibilidade com leituras legadas por campo raiz.
       clientId: values.contratante.clientId,
       sourceProposalId: currentItem?.sourceProposalId || sourceProposal?.id,
@@ -372,21 +376,65 @@ export function ContractForm({ currentItem, onSuccess, sourceProposal }: Contrac
 
     const safeDataToSave = pruneUndefined(dataToSave) as typeof dataToSave;
 
-    if (currentItem) {
-      const docRef = doc(firestore, "contracts", currentItem.id);
-      await updateDoc(docRef, safeDataToSave);
-      toast({ title: "Contrato atualizado!" });
-    } else {
-      const created = await addDoc(collection(firestore, "contracts"), safeDataToSave);
-      if (sourceProposal?.id) {
-        await updateDoc(doc(firestore, "commercialProposals", sourceProposal.id), {
-          contractId: created.id,
-        });
+    try {
+      let contractId = currentItem?.id;
+      const contractForPdf: Contract = {
+        ...(currentItem ?? ({} as Contract)),
+        ...safeDataToSave,
+        id: contractId ?? "",
+      };
+
+      if (currentItem) {
+        const docRef = doc(firestore, "contracts", currentItem.id);
+        await updateDoc(docRef, safeDataToSave);
+        contractId = currentItem.id;
+        contractForPdf.id = currentItem.id;
+        toast({ title: "Contrato atualizado!" });
+      } else {
+        const created = await addDoc(collection(firestore, "contracts"), safeDataToSave);
+        contractId = created.id;
+        contractForPdf.id = created.id;
+        if (sourceProposal?.id) {
+          await updateDoc(doc(firestore, "commercialProposals", sourceProposal.id), {
+            contractId: created.id,
+          });
+        }
+        toast({ title: "Contrato criado!" });
       }
-      toast({ title: "Contrato criado!" });
+
+      if (contractId) {
+        try {
+          await persistContractPdfForSignature(
+            firestore,
+            contractId,
+            contractForPdf,
+            brandingData,
+          );
+          toast({
+            title: "PDF do contrato gerado",
+            description: "O documento para assinatura foi atualizado no Storage.",
+          });
+        } catch (pdfErr) {
+          console.error("Erro ao gerar PDF do contrato:", pdfErr);
+          toast({
+            variant: "destructive",
+            title: "Contrato salvo, mas falhou o PDF",
+            description:
+              "Use «Gerar PDF» na lista de contratos para tentar novamente.",
+          });
+        }
+      }
+      onSuccess?.();
+    } catch (err) {
+      console.error(err);
+      toast({
+        variant: "destructive",
+        title: "Erro ao salvar contrato",
+        description: err instanceof Error ? err.message : "Tente novamente.",
+      });
+    } finally {
+      setLoading(false);
     }
-    onSuccess?.();
-    setLoading(false);
   }
 
   return (

@@ -50,7 +50,7 @@ if (badFetch.length) {
 const suspicious = [];
 const typeFileRe = /type\s*=\s*["']file["']/g;
 const hasStorageHelper =
-  /uploadFileToStorage|from\s+['"]@\/lib\/storage-upload['"]|useUploadBrandingImage|use-branding-upload/;
+  /uploadFileToStorage|from\s+['"]@\/lib\/storage-upload['"]|useUploadBrandingImage|use-branding-upload|useStorageFileUpload|usePreparedUpload|use-storage-file-upload|use-prepared-upload/;
 const hasUploadBytesStorage =
   /uploadBytes\s*\(\s*storageRef|getStorage\s*\(/;
 const allowListSubstrings = [
@@ -84,6 +84,32 @@ if (suspicious.length) {
 } else {
   console.log(
     "[check-upload-patterns] Nenhum ficheiro .tsx/.ts com type=file fora dos padrões conhecidos.",
+  );
+}
+
+const maxSizeLiteralRe =
+  /const\s+MAX_(?:FILE_SIZE|PROPOSAL_FILE_BYTES|ANEXO_\w+_BYTES)\s*=\s*\d+\s*\*\s*1024\s*\*\s*1024/g;
+const allowedMaxSizeFiles = new Set([
+  path.join(SRC, "lib", "upload-limits.ts").replace(/\\/g, "/"),
+]);
+const badMaxSize = [];
+for (const f of files) {
+  const rel = path.relative(process.cwd(), f).replace(/\\/g, "/");
+  if (allowedMaxSizeFiles.has(rel.replace(/\\/g, "/"))) continue;
+  const c = fs.readFileSync(f, "utf8");
+  maxSizeLiteralRe.lastIndex = 0;
+  if (maxSizeLiteralRe.test(c)) badMaxSize.push(rel);
+}
+
+if (badMaxSize.length) {
+  console.error(
+    "[check-upload-patterns] Constantes MAX_*_BYTES locais (use @/lib/upload-limits):",
+  );
+  badMaxSize.forEach((x) => console.error("  -", x));
+  exit = 1;
+} else {
+  console.log(
+    "[check-upload-patterns] OK: sem MAX_FILE_SIZE / MAX_*_BYTES duplicados fora de upload-limits.ts.",
   );
 }
 

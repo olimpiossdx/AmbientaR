@@ -1,10 +1,11 @@
+import { UPLOAD_MAX_BYTES_FINANCIAL } from "@/lib/upload-limits";
 import { NextRequest, NextResponse } from "next/server";
 import { promises as fs } from "fs";
 import path from "path";
 import { effectiveMimeType } from "@/lib/file-mime";
 
 const UPLOAD_DIR = path.join(process.cwd(), "public", "uploads", "invoices");
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+const MAX_FILE_SIZE = UPLOAD_MAX_BYTES_FINANCIAL; // 5MB
 const ALLOWED_TYPES = [
   "application/pdf",
   "image/jpeg",

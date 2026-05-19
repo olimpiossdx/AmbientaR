@@ -32,7 +32,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { CalendarIcon, Loader2, Plus, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format, parse } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { ptBR } from "date-fns/locale/pt-BR";
 
 import { useToast } from "@/hooks/use-toast";
 import type {
@@ -78,10 +78,9 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import {
-  uploadFileToStorage,
-  sanitizeStorageFileName,
-} from "@/lib/storage-upload";
+import { UploadPreparationDialog } from "@/components/shared/upload-preparation-dialog";
+import { useStorageFileUpload } from "@/hooks/use-storage-file-upload";
+import { UPLOAD_RAW_FILE_SAFETY_MAX } from "@/lib/upload-limits";
 import { Separator } from "@/components/ui/separator";
 
 const formSchema = z
@@ -111,8 +110,6 @@ const formSchema = z
     message: "A data de vencimento deve ser posterior à data de emissão.",
     path: ["expirationDate"],
   });
-
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
 type FormValues = z.infer<typeof formSchema>;
 
@@ -144,6 +141,9 @@ export function UsoInsignificanteForm({
   );
 
   const { toast } = useToast();
+    const { uploadFile, dialogProps, limitLabel } = useStorageFileUpload({
+    storageFolder: "usos-insignificantes",
+  });
   const { firestore } = useFirebase();
 
   const empreendedoresQuery = useMemoFirebase(
@@ -223,25 +223,14 @@ export function UsoInsignificanteForm({
     const inputEl = event.currentTarget;
     const file = inputEl.files?.[0];
     if (!file) return;
-    if (file.size > MAX_FILE_SIZE) {
-      toast({
-        variant: "destructive",
-        title: "Arquivo muito grande",
-        description: `O arquivo não pode exceder ${MAX_FILE_SIZE / 1024 / 1024}MB.`,
-      });
-      return;
-    }
     // Permite selecionar o mesmo arquivo novamente.
     inputEl.value = "";
 
     setIsUploading(true);
     setUploadedFileUrl(null);
     try {
-      const safe = sanitizeStorageFileName(file.name);
-      const downloadURL = await uploadFileToStorage(
-        file,
-        `usos-insignificantes/${Date.now()}-${safe}`,
-      );
+      const downloadURL = await uploadFile(file);
+      if (!downloadURL) return;
       setUploadedFileUrl(downloadURL);
       toast({
         title: "Anexo carregado",
@@ -948,6 +937,7 @@ export function UsoInsignificanteForm({
           </DialogFooter>
         </form>
       </Form>
+      <UploadPreparationDialog {...dialogProps} />
     </>
   );
 }

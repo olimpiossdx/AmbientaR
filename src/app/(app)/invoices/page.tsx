@@ -37,10 +37,11 @@ import {
 } from "firebase/firestore";
 import * as React from "react";
 import {
-  fetchBrandingImageAsBase64,
+  downloadJsPdf,
+  fetchBrandingImagesForPdf,
+  brandingPdfMissingSlots,
   getImageDimensions,
   calcPdfImageSize,
-  applyImageOpacity,
 } from "@/lib/branding-pdf";
 import { useLocalBranding } from "@/hooks/use-local-branding";
 import type { Invoice, Client, CompanySettings, Contract } from "@/lib/types";
@@ -189,6 +190,7 @@ export default function InvoicesPage() {
   const [filterValorMin, setFilterValorMin] = useState("");
   const [filterValorMax, setFilterValorMax] = useState("");
   const [filterNumero, setFilterNumero] = useState("");
+  const [exportingPdfKey, setExportingPdfKey] = useState<string | null>(null);
 
   const { firestore, auth, user } = useFirebase();
   const { toast } = useToast();
@@ -517,24 +519,30 @@ export default function InvoicesPage() {
   };
 
   const handleExportPdf = async (invoice: Invoice) => {
+    if (exportingPdfKey) return;
+    setExportingPdfKey(`invoice-${invoice.id}`);
+    try {
     const client = clientsMap.get(invoice.clientId);
     const contract = invoice.contractId
       ? contractsMap.get(invoice.contractId)
       : null;
     const doc = new jsPDF({ unit: "mm", format: "a4" });
 
-    const headerBase64 = await fetchBrandingImageAsBase64(
-      brandingData?.headerImageUrl,
-    );
-    const footerBase64 = await fetchBrandingImageAsBase64(
-      brandingData?.footerImageUrl,
-    );
-    const watermarkBase64Raw = await fetchBrandingImageAsBase64(
-      brandingData?.watermarkImageUrl,
-    );
-    const watermarkBase64 = watermarkBase64Raw
-      ? await applyImageOpacity(watermarkBase64Raw, 0.15)
-      : null;
+    const brandingUrls = {
+      headerImageUrl: brandingData?.headerImageUrl,
+      footerImageUrl: brandingData?.footerImageUrl,
+      watermarkImageUrl: brandingData?.watermarkImageUrl,
+    };
+    const brandingLoaded = await fetchBrandingImagesForPdf(brandingUrls);
+    const { headerBase64, footerBase64, watermarkBase64 } = brandingLoaded;
+    const missingBranding = brandingPdfMissingSlots(brandingUrls, brandingLoaded);
+    if (missingBranding.length > 0) {
+      toast({
+        variant: "destructive",
+        title: "Identidade visual incompleta no PDF",
+        description: `Não foi possível carregar: ${missingBranding.join(", ")}. Confira Configurações → Identidade visual e publique as regras do Storage (npm run deploy:storage).`,
+      });
+    }
 
     const pageHeight = doc.internal.pageSize.getHeight();
     const pageWidth = doc.internal.pageSize.getWidth();
@@ -736,7 +744,10 @@ export default function InvoicesPage() {
 
     // Numeração de páginas alinhada à direita no rodapé.
     addPageNumbers(doc, 10);
-    doc.save(`fatura_${invoice.invoiceNumber}.pdf`);
+    downloadJsPdf(doc, `fatura_${invoice.invoiceNumber}.pdf`);
+    } finally {
+      setExportingPdfKey(null);
+    }
   };
 
   const formatCurrency = (value: number) =>
@@ -746,18 +757,24 @@ export default function InvoicesPage() {
     }).format(value);
 
   const handleExportPdfByPeriod = async () => {
-    const headerBase64 = await fetchBrandingImageAsBase64(
-      brandingData?.headerImageUrl,
-    );
-    const footerBase64 = await fetchBrandingImageAsBase64(
-      brandingData?.footerImageUrl,
-    );
-    const watermarkBase64Raw = await fetchBrandingImageAsBase64(
-      brandingData?.watermarkImageUrl,
-    );
-    const watermarkBase64 = watermarkBase64Raw
-      ? await applyImageOpacity(watermarkBase64Raw, 0.15)
-      : null;
+    if (exportingPdfKey) return;
+    setExportingPdfKey("period");
+    try {
+    const brandingUrlsPeriod = {
+      headerImageUrl: brandingData?.headerImageUrl,
+      footerImageUrl: brandingData?.footerImageUrl,
+      watermarkImageUrl: brandingData?.watermarkImageUrl,
+    };
+    const brandingLoadedPeriod = await fetchBrandingImagesForPdf(brandingUrlsPeriod);
+    const { headerBase64, footerBase64, watermarkBase64 } = brandingLoadedPeriod;
+    const missingPeriod = brandingPdfMissingSlots(brandingUrlsPeriod, brandingLoadedPeriod);
+    if (missingPeriod.length > 0) {
+      toast({
+        variant: "destructive",
+        title: "Identidade visual incompleta no PDF",
+        description: `Não foi possível carregar: ${missingPeriod.join(", ")}.`,
+      });
+    }
 
     const doc = new jsPDF({ unit: "mm", format: "a4" });
     const pageWidth = doc.internal.pageSize.getWidth();
@@ -866,11 +883,14 @@ export default function InvoicesPage() {
     }
     // Numeração de páginas alinhada à direita no rodapé.
     addPageNumbers(doc, 10);
-    doc.save(`faturas_periodo_${periodLabel.replace(/-/g, "")}.pdf`);
+    downloadJsPdf(doc, `faturas_periodo_${periodLabel.replace(/-/g, "")}.pdf`);
     toast({
       title: "PDF exportado",
       description: "Relatório por período gerado.",
     });
+    } finally {
+      setExportingPdfKey(null);
+    }
   };
 
   const handlePrintByPeriod = () => {
@@ -1265,6 +1285,8 @@ export default function InvoicesPage() {
                         size="sm"
                         className="h-9 shrink-0 gap-1.5 px-2.5 sm:px-3"
                         onClick={handleExportPdfByPeriod}
+                        disabled={!!exportingPdfKey}
+                        aria-busy={exportingPdfKey === 'period'}
                       >
                         <FileDown
                           className="h-3.5 w-3.5 shrink-0"
@@ -1373,6 +1395,8 @@ export default function InvoicesPage() {
                                       size="icon"
                                       className="h-9 w-9 shrink-0"
                                       type="button"
+                                      disabled={exportingPdfKey === `invoice-${invoice.id}`}
+                                      aria-busy={exportingPdfKey === `invoice-${invoice.id}`}
                                       onClick={() => handleExportPdf(invoice)}
                                     >
                                       <FileText className="h-4 w-4" />

@@ -45,6 +45,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { ibgeData } from "@/lib/ibge-data";
 import { DEFAULT_AI_LOCAL_SOURCE_PATH } from "@/lib/ai-local-source-defaults";
+import { getAdminApiRequestHeaders } from "@/lib/admin-api-client";
 
 const entityTypes = [
   { id: "Pessoa Física", label: "Pessoa Física" },
@@ -173,7 +174,7 @@ export function EmpreendedorForm({
   const [showOnlyBlockedSuggestions, setShowOnlyBlockedSuggestions] =
     React.useState(false);
   const { toast } = useToast();
-  const { firestore } = useFirebase();
+  const { firestore, auth } = useFirebase();
   const { user } = useAuth();
 
   const upsertClientFromEmpreendedor = React.useCallback(
@@ -586,7 +587,7 @@ export function EmpreendedorForm({
         const requestLocalImport = async (modifiedAfter?: string) => {
           const res = await fetch("/api/ai-lab/import-reference-files", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: await getAdminApiRequestHeaders(auth),
             body: JSON.stringify({
               basePath: configuredPath,
               extensions:
@@ -699,7 +700,7 @@ export function EmpreendedorForm({
         .concat(localEvidenceText ? `\n\n${localEvidenceText}` : "");
       const llmRes = await fetch("/api/ai-lab/autofill-empreendedor", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: await getAdminApiRequestHeaders(auth),
         body: JSON.stringify({ cpf: digits, hardContextJson, evidenceText }),
       });
       const llmData = await llmRes.json();

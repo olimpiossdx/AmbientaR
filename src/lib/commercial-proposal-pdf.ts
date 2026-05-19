@@ -2,9 +2,9 @@ import jsPDF from 'jspdf';
 import type { Client, CommercialProposal, EnvironmentalCompany } from '@/lib/types';
 import type { LocalBranding } from '@/hooks/use-local-branding';
 import {
-  applyImageOpacity,
   calcPdfImageSize,
-  fetchBrandingImageAsBase64,
+  downloadJsPdf,
+  fetchBrandingImagesForPdf,
   getImageDimensions,
 } from '@/lib/branding-pdf';
 
@@ -68,19 +68,7 @@ function addPageNumbers(doc: jsPDF, bottomMarginMm: number = 10) {
   }
 }
 
-export function downloadJsPdf(doc: jsPDF, filename: string): void {
-  const safeName = filename.replace(/[<>:"/\\|?*]+/g, '-').replace(/\s+/g, '_');
-  const finalName = safeName.toLowerCase().endsWith('.pdf') ? safeName : `${safeName}.pdf`;
-  const blob = doc.output('blob');
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = finalName;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
-}
+export { downloadJsPdf } from '@/lib/branding-pdf';
 
 const RESPONSABILIDADES_CONTRATADA = [
   'Os custos de taxas e emolumentos referentes ao órgão licenciador NÃO estão inclusos.',
@@ -116,12 +104,11 @@ export async function generateCommercialProposalPdf({
 }: GenerateCommercialProposalPdfInput): Promise<void> {
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
 
-  const headerBase64 = await fetchBrandingImageAsBase64(branding?.headerImageUrl);
-  const footerBase64 = await fetchBrandingImageAsBase64(branding?.footerImageUrl);
-  const watermarkBase64Raw = await fetchBrandingImageAsBase64(branding?.watermarkImageUrl);
-  const watermarkBase64 = watermarkBase64Raw
-    ? await applyImageOpacity(watermarkBase64Raw, 0.15)
-    : null;
+  const { headerBase64, footerBase64, watermarkBase64 } = await fetchBrandingImagesForPdf({
+    headerImageUrl: branding?.headerImageUrl,
+    footerImageUrl: branding?.footerImageUrl,
+    watermarkImageUrl: branding?.watermarkImageUrl,
+  });
 
   const pageHeight = doc.internal.pageSize.getHeight();
   const pageWidth = doc.internal.pageSize.getWidth();

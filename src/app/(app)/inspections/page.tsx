@@ -81,6 +81,7 @@ import {
   fetchBrandingImageAsBase64,
   getImageDimensions,
   calcPdfImageSize,
+  downloadJsPdf,
 } from "@/lib/branding-pdf";
 import { useLocalBranding } from "@/hooks/use-local-branding";
 
@@ -367,7 +368,7 @@ export default function InspectionsListPage() {
     addPageNumbers(doc, 10);
 
     const fileName = `Relatorio_Vistoria_${projectsMap.get(report.projectId)?.name?.replace(/\s+/g, "_") || "desconhecido"}.pdf`;
-    doc.save(fileName);
+    downloadJsPdf(doc, fileName);
   };
 
   const getHighestCriticality = (inspection: Inspection) => {

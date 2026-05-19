@@ -27,7 +27,7 @@ import {
   Legend,
 } from 'recharts';
 
-const CRM_ROLES = ['admin', 'sales', 'supervisor', 'financial'] as const;
+import { canAccessCrm } from '@/lib/role-guards';
 
 const STAGE_COLORS: Record<OpportunityStage, string> = {
   'Qualificação': 'hsl(var(--chart-1))',
@@ -132,7 +132,7 @@ export default function CrmReportsPage() {
 
   const isLoading = isLoadingOpps || isLoadingClients || isLoadingUsers;
 
-  if (!user || !CRM_ROLES.includes(user.role as any)) {
+  if (!user || !canAccessCrm(user.role)) {
     return (
       <div className="flex flex-col h-full">
         <PageHeader title="Relatórios & Análises (CRM)" />

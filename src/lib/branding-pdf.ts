@@ -1,5 +1,6 @@
 'use client';
 
+import type jsPDF from 'jspdf';
 import { getApp, getApps } from 'firebase/app';
 import { getBlob, getDownloadURL, getStorage, ref } from 'firebase/storage';
 import { storagePathFromDownloadUrl } from '@/lib/storage-upload';
@@ -7,6 +8,54 @@ import { storagePathFromDownloadUrl } from '@/lib/storage-upload';
 export interface ImageDimensions {
   width: number;
   height: number;
+}
+
+export type BrandingImageUrls = {
+  headerImageUrl?: string | null;
+  footerImageUrl?: string | null;
+  watermarkImageUrl?: string | null;
+};
+
+export type BrandingPdfImages = {
+  headerBase64: string | null;
+  footerBase64: string | null;
+  watermarkBase64: string | null;
+};
+
+/** TTL do cache em memória (URLs do Storage → PNG base64 para PDF). */
+const BRANDING_CACHE_TTL_MS = 20 * 60 * 1000;
+/** Maior aresta em px antes de redimensionar (cabeçalho/rodapé/marca d'água no PDF). */
+const PDF_BRANDING_MAX_EDGE_PX = 1400;
+
+type CacheEntry = { base64: string; expiresAt: number };
+
+const brandingBase64Cache = new Map<string, CacheEntry>();
+const brandingInflight = new Map<string, Promise<string | null>>();
+
+function brandingCacheKey(url: string): string {
+  return url.trim();
+}
+
+function getCachedBrandingBase64(key: string): string | null {
+  const entry = brandingBase64Cache.get(key);
+  if (!entry) return null;
+  if (Date.now() > entry.expiresAt) {
+    brandingBase64Cache.delete(key);
+    return null;
+  }
+  return entry.base64;
+}
+
+function setCachedBrandingBase64(key: string, base64: string): void {
+  brandingBase64Cache.set(key, {
+    base64,
+    expiresAt: Date.now() + BRANDING_CACHE_TTL_MS,
+  });
+}
+
+export function clearBrandingPdfCache(): void {
+  brandingBase64Cache.clear();
+  brandingInflight.clear();
 }
 
 /**
@@ -40,12 +89,78 @@ export async function imageDataUrlToPngDataUrl(dataUrl: string): Promise<string>
 }
 
 /**
+ * Reduz imagens muito grandes antes de embutir no PDF (menos CPU/memória no jsPDF).
+ */
+export async function resizeDataUrlForPdf(
+  dataUrl: string,
+  maxEdgePx: number = PDF_BRANDING_MAX_EDGE_PX,
+): Promise<string> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const w = img.naturalWidth;
+      const h = img.naturalHeight;
+      const maxEdge = Math.max(w, h);
+      if (!w || !h || maxEdge <= maxEdgePx) {
+        resolve(dataUrl);
+        return;
+      }
+      const scale = maxEdgePx / maxEdge;
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.max(1, Math.round(w * scale));
+      canvas.height = Math.max(1, Math.round(h * scale));
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        resolve(dataUrl);
+        return;
+      }
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      resolve(canvas.toDataURL('image/png'));
+    };
+    img.onerror = () => resolve(dataUrl);
+    img.src = dataUrl;
+  });
+}
+
+/**
  * Carrega blob de uma URL HTTPS (Storage ou outra) ou path legado no Storage.
  */
+/** Fallback quando getBlob/fetch falham — a imagem já abre no navegador (preview em Configurações). */
+async function loadBrandingViaImageElement(url: string): Promise<string | null> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      void (async () => {
+        try {
+          const canvas = document.createElement('canvas');
+          canvas.width = img.naturalWidth || 1;
+          canvas.height = img.naturalHeight || 1;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            resolve(null);
+            return;
+          }
+          ctx.drawImage(img, 0, 0);
+          const png = await imageDataUrlToPngDataUrl(canvas.toDataURL('image/png'));
+          resolve(await resizeDataUrlForPdf(png));
+        } catch {
+          resolve(null);
+        }
+      })();
+    };
+    img.onerror = () => resolve(null);
+    img.src = url;
+  });
+}
+
 async function loadImageBlobForBranding(trimmed: string): Promise<Blob> {
   if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+    const isFirebaseStorage =
+      trimmed.includes('firebasestorage.googleapis.com') ||
+      trimmed.includes('firebasestorage.app');
     const useSdk =
-      trimmed.includes('firebasestorage.googleapis.com') &&
+      isFirebaseStorage &&
       typeof getApps === 'function' &&
       getApps().length > 0;
     if (useSdk) {
@@ -54,8 +169,8 @@ async function loadImageBlobForBranding(trimmed: string): Promise<Blob> {
         try {
           const storage = getStorage(getApp());
           return await getBlob(ref(storage, path));
-        } catch {
-          /* continua com fetch */
+        } catch (sdkErr) {
+          console.warn('[branding-pdf] getBlob falhou, tentando fetch:', sdkErr);
         }
       }
     }
@@ -76,6 +191,53 @@ async function loadImageBlobForBranding(trimmed: string): Promise<Blob> {
   const response = await fetch(urlToFetch, { mode: 'cors', credentials: 'omit' });
   if (!response.ok) throw new Error(`HTTP ${response.status}`);
   return response.blob();
+}
+
+async function loadBrandingImageAsBase64Uncached(
+  imageUrl: string | null | undefined,
+): Promise<string | null> {
+  if (!imageUrl || typeof imageUrl !== 'string') return null;
+  const trimmed = imageUrl.trim();
+  if (!trimmed) return null;
+
+  try {
+    if (trimmed.startsWith('data:image')) {
+      const png = await imageDataUrlToPngDataUrl(trimmed);
+      return resizeDataUrlForPdf(png);
+    }
+
+    if (typeof getApps === 'function' && getApps().length === 0) {
+      throw new Error('Firebase não inicializado. Recarregue a página.');
+    }
+
+    const blob = await loadImageBlobForBranding(trimmed);
+    const rawDataUrl: string = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+    const png = await imageDataUrlToPngDataUrl(rawDataUrl);
+    return resizeDataUrlForPdf(png);
+  } catch (error) {
+    console.warn('[branding-pdf] blob/fetch falhou, tentando via <img>:', trimmed, error);
+    const viaImg = await loadBrandingViaImageElement(trimmed);
+    if (viaImg) return viaImg;
+    console.error('Erro ao carregar imagem do branding para PDF:', error);
+    return null;
+  }
+}
+
+/** Avisos quando há URL configurada mas a imagem não entrou no PDF. */
+export function brandingPdfMissingSlots(
+  urls: BrandingImageUrls,
+  loaded: BrandingPdfImages,
+): string[] {
+  const missing: string[] = [];
+  if (urls.headerImageUrl?.trim() && !loaded.headerBase64) missing.push('cabeçalho');
+  if (urls.footerImageUrl?.trim() && !loaded.footerBase64) missing.push('rodapé');
+  if (urls.watermarkImageUrl?.trim() && !loaded.watermarkBase64) missing.push('marca d\'água');
+  return missing;
 }
 
 /**
@@ -135,35 +297,55 @@ export function calcPdfImageSize(
 /**
  * Converte uma imagem (URL pública ou caminho no Firebase Storage) em base64 PNG
  * para uso em PDFs (cabeçalho, rodapé, marca d'água) com jsPDF em formato 'PNG'.
- * - Se não houver URL/path, retorna null (documento fica sem imagem).
- * - Imagens JPEG/WebP são normalizadas para PNG (evita addImage com tipo errado).
+ * Usa cache em memória (TTL ~20 min) e deduplica pedidos em voo.
  */
 export async function fetchBrandingImageAsBase64(
   imageUrl: string | null | undefined,
 ): Promise<string | null> {
   if (!imageUrl || typeof imageUrl !== 'string') return null;
-  const trimmed = imageUrl.trim();
-  if (!trimmed) return null;
+  const key = brandingCacheKey(imageUrl);
+  if (!key) return null;
 
-  try {
-    if (trimmed.startsWith('data:image')) {
-      return await imageDataUrlToPngDataUrl(trimmed);
-    }
+  const cached = getCachedBrandingBase64(key);
+  if (cached) return cached;
 
-    if (typeof getApps === 'function' && getApps().length === 0) {
-      throw new Error('Firebase não inicializado. Recarregue a página.');
-    }
+  const pending = brandingInflight.get(key);
+  if (pending) return pending;
 
-    const blob = await loadImageBlobForBranding(trimmed);
-    const rawDataUrl: string = await new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result as string);
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
-    });
-    return await imageDataUrlToPngDataUrl(rawDataUrl);
-  } catch (error) {
-    console.error('Erro ao carregar imagem do branding para PDF:', error);
-    return null;
-  }
+  const promise = loadBrandingImageAsBase64Uncached(imageUrl).then((result) => {
+    brandingInflight.delete(key);
+    if (result) setCachedBrandingBase64(key, result);
+    return result;
+  });
+  brandingInflight.set(key, promise);
+  return promise;
 }
+
+/**
+ * Carrega cabeçalho, rodapé e marca d'água em paralelo (com cache compartilhado).
+ */
+export async function fetchBrandingImagesForPdf(
+  urls: BrandingImageUrls,
+  watermarkOpacity = 0.15,
+): Promise<BrandingPdfImages> {
+  const [headerBase64, footerBase64, watermarkBase64Raw] = await Promise.all([
+    fetchBrandingImageAsBase64(urls.headerImageUrl),
+    fetchBrandingImageAsBase64(urls.footerImageUrl),
+    fetchBrandingImageAsBase64(urls.watermarkImageUrl),
+  ]);
+  const watermarkBase64 = watermarkBase64Raw
+    ? await applyImageOpacity(watermarkBase64Raw, watermarkOpacity)
+    : null;
+  return { headerBase64, footerBase64, watermarkBase64 };
+}
+
+/** Pré-aquece o cache ao abrir páginas que usam branding (não bloqueia a UI). */
+export function warmBrandingPdfCache(urls: BrandingImageUrls): void {
+  void Promise.all([
+    fetchBrandingImageAsBase64(urls.headerImageUrl),
+    fetchBrandingImageAsBase64(urls.footerImageUrl),
+    fetchBrandingImageAsBase64(urls.watermarkImageUrl),
+  ]).catch(() => {});
+}
+
+export { downloadJsPdf, imageDataUrlToJpegForPdf, PDF_EMBED_JPEG_QUALITY } from '@/lib/pdf-export-utils';

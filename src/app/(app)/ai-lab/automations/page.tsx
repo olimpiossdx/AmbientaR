@@ -17,6 +17,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
+import { getAdminApiRequestHeaders } from "@/lib/admin-api-client";
 import jsPDF from "jspdf";
 import {
   addDoc,
@@ -136,7 +137,7 @@ function estimateRequestCostBRL(params: {
 
 export default function AiLabAutomationsPage() {
   const { user } = useAuth();
-  const { firestore } = useFirebase();
+  const { firestore, auth } = useFirebase();
   const { toast } = useToast();
   const [reportTitle, setReportTitle] = React.useState("");
   const [objective, setObjective] = React.useState("");
@@ -345,7 +346,7 @@ export default function AiLabAutomationsPage() {
     try {
       const res = await fetch("/api/ai-lab/generate-report", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: await getAdminApiRequestHeaders(auth),
         body: JSON.stringify({
           reportTitle: reportTitle.trim(),
           objective: objective.trim(),

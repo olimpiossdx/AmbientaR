@@ -1,9 +1,32 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import type { Auth } from 'firebase/auth';
+import type { Auth, User } from 'firebase/auth';
 import { onAuthStateChanged } from 'firebase/auth';
 import type { AppUser } from '@/lib/types';
+
+/** Conta bootstrap de administrador (criação automática no primeiro login). */
+export const ADMIN_BOOTSTRAP_EMAIL = 'adm@adm.com';
+
+/** Perfil mínimo quando o Firestore falha mas a sessão Auth é válida. */
+export function buildFallbackAppUser(firebaseUser: User): AppUser {
+  const normalizedEmail = (firebaseUser.email || '').trim().toLowerCase();
+  return {
+    id: firebaseUser.uid,
+    uid: firebaseUser.uid,
+    name:
+      firebaseUser.displayName ||
+      normalizedEmail.split('@')[0] ||
+      'Usuário',
+    email: normalizedEmail,
+    role: normalizedEmail === ADMIN_BOOTSTRAP_EMAIL ? 'admin' : 'client',
+    status: 'active',
+    isOnline: true,
+    photoURL: firebaseUser.photoURL || '',
+    cpf: '',
+    cnpjs: [],
+  };
+}
 
 /**
  * UID da sessão Firebase Auth — única fonte válida para paths `users/{uid}/...`

@@ -4,7 +4,7 @@ import * as React from "react";
 import { Suspense } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import {
   SidebarProvider,
@@ -105,8 +105,9 @@ const mobileNavItems = [
 
 const AppLayoutClient = ({ children }: { children: React.ReactNode }) => {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const router = useRouter();
-  const { user, logout, isInitialized } = useAuth();
+  const { user, logout, isInitialized, isProfileLoading } = useAuth();
   const { firestore, auth } = useFirebase();
   const [logoUrl, setLogoUrl] = React.useState<string | null>(null);
   const [logoLoading, setLogoLoading] = React.useState(true);
@@ -123,14 +124,17 @@ const AppLayoutClient = ({ children }: { children: React.ReactNode }) => {
     );
   }, [firestore, profileAligned, sessionUid]);
 
+  /** Só assina após Auth restaurar sessão — evita permission-denied com auth:null em produção. */
+  const companySettingsReady = Boolean(firestore && auth?.currentUser);
+
   const brandingDocRef = useMemoFirebase(() => {
-    if (!firestore) return null;
-    return doc(firestore, "companySettings", "branding");
-  }, [firestore]);
+    if (!companySettingsReady) return null;
+    return doc(firestore!, "companySettings", "branding");
+  }, [companySettingsReady, firestore]);
   const featureFlagsDocRef = useMemoFirebase(() => {
-    if (!firestore) return null;
-    return doc(firestore, "companySettings", "featureFlags");
-  }, [firestore]);
+    if (!companySettingsReady) return null;
+    return doc(firestore!, "companySettings", "featureFlags");
+  }, [companySettingsReady, firestore]);
 
   const { data: notifications } =
     useCollection<Notification>(notificationsQuery);
@@ -259,7 +263,9 @@ const AppLayoutClient = ({ children }: { children: React.ReactNode }) => {
 
   const cadastroIncompleto = Boolean(
     user?.cadastroIncompleto &&
-    (user?.role === "client" || user?.role === "representative"),
+    (user?.role === "client" ||
+      user?.role === "cliente_autonomo" ||
+      user?.role === "representative"),
   );
 
   const unreadCount = React.useMemo(() => {
@@ -307,27 +313,18 @@ const AppLayoutClient = ({ children }: { children: React.ReactNode }) => {
     actorRole ? roleLabel[actorRole] || actorRole : null;
 
   React.useEffect(() => {
-    if (isInitialized && !user) {
+    if (!isInitialized || isProfileLoading) return;
+    if (!user && !auth?.currentUser) {
       router.push("/login");
     }
-  }, [user, isInitialized, router]);
-
-  // Se ainda não inicializou (Firebase demorando), redireciona para login após 3s.
-  // A regra aqui é: não depende do `user` já existir no momento do render; o timeout cancela/atualiza quando `user` mudar.
-  React.useEffect(() => {
-    if (isInitialized) return;
-    const t = setTimeout(() => {
-      if (!user) router.replace("/login");
-    }, 3000);
-    return () => clearTimeout(t);
-  }, [isInitialized, router, user]);
+  }, [user, isInitialized, isProfileLoading, auth, router]);
 
   // Guard simples por role para evitar “furar” o menu digitando URL.
   React.useEffect(() => {
     if (!user) return;
-    if (!pathname || isRoleAllowedForPath(user.role, pathname)) return;
+    if (!pathname || isRoleAllowedForPath(user.role, pathname, searchParams)) return;
     router.replace("/");
-  }, [pathname, router, user]);
+  }, [pathname, searchParams, router, user]);
 
   // Em mobile, sempre fecha o menu lateral ao navegar entre páginas.
   // Evita reabertura visual após voltar para o dashboard via seta.
@@ -375,7 +372,7 @@ const AppLayoutClient = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  if (!isInitialized || !user) {
+  if (!isInitialized || isProfileLoading || !user) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">
@@ -554,12 +551,22 @@ const AppLayoutClient = ({ children }: { children: React.ReactNode }) => {
                 </p>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem asChild>
-                <Link href="/users">Gerenciar Usuários</Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link href="/settings">Configurações</Link>
-              </DropdownMenuItem>
+              {isRoleAllowedForPath(user.role, "/users") && (
+                <DropdownMenuItem asChild>
+                  <Link href="/users">Gerenciar Usuários</Link>
+                </DropdownMenuItem>
+              )}
+              {isRoleAllowedForPath(user.role, "/settings") && (
+                <DropdownMenuItem asChild>
+                  <Link href="/settings">Configurações</Link>
+                </DropdownMenuItem>
+              )}
+              {isRoleAllowedForPath(user.role, "/settings/appearance") &&
+                !isRoleAllowedForPath(user.role, "/settings") && (
+                  <DropdownMenuItem asChild>
+                    <Link href="/settings/appearance">Aparência</Link>
+                  </DropdownMenuItem>
+                )}
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={logout} className="text-destructive">
                 <LogOut className="mr-2 h-4 w-4" />
@@ -577,10 +584,10 @@ const AppLayoutClient = ({ children }: { children: React.ReactNode }) => {
           </SidebarContent>
         </Sidebar>
         <SidebarResizeHandle />
-        <SidebarInset className="min-w-0 flex-1 overflow-y-auto overflow-x-hidden">
+        <SidebarInset className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden pb-20 md:pb-0">
           <div
             key={pathname}
-            className="animate-page-fade-in relative h-full min-w-0 max-w-full"
+            className="app-scroll-region animate-page-fade-in relative min-w-0 max-w-full"
           >
             {children}
           </div>

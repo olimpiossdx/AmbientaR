@@ -66,15 +66,11 @@ import { Label } from "@/components/ui/label";
 import { backupAndDeleteParentWithCondicionantes } from "@/lib/deleted-data-backup";
 import { CardSearchInput } from "@/components/card-search-input";
 import { fetchEmpreendedorIdsForRepresentative } from "@/lib/representative-empreendedor-ids";
+import { canPerformOperationalWrite } from "@/lib/role-guards";
 
 const canPerformWriteActions = (user: AppUser | null): boolean => {
   if (!user) return false;
-  return (
-    user.role === "admin" ||
-    user.role === "gestor" ||
-    user.role === "supervisor" ||
-    user.role === "cliente_autonomo"
-  );
+  return canPerformOperationalWrite(user.role);
 };
 
 const DetailItem = ({

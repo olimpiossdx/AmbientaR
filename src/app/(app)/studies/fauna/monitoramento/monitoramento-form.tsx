@@ -10,13 +10,12 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { MaskedInput } from '@/components/ui/masked-input';
 import { Loader2 } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Textarea } from '@/components/ui/textarea';
 import { useRouter } from 'next/navigation';
 import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
 import { collection } from 'firebase/firestore';
-import type { Empreendedor, EnvironmentalCompany } from '@/lib/types';
+import type { Empreendedor, EnvironmentalCompany, FaunaStudy } from '@/lib/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const formSchema = z.object({
@@ -67,9 +66,13 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
-export function MonitoramentoForm() {
+interface MonitoramentoFormProps {
+  currentItem?: FaunaStudy | null;
+  onSave: (data: FormValues & { id?: string }, status: 'draft' | 'completed') => Promise<void>;
+}
+
+export function MonitoramentoForm({ currentItem, onSave }: MonitoramentoFormProps) {
   const [loading, setLoading] = React.useState(false);
-  const { toast } = useToast();
   const router = useRouter();
   const { firestore } = useFirebase();
 
@@ -83,7 +86,24 @@ export function MonitoramentoForm() {
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
+    defaultValues: currentItem?.studyType === 'monitoramento_projeto' ? {
+      empreendedorId: currentItem.empreendedorId,
+      consultoriaId: currentItem.consultoriaId,
+      empreendedor: currentItem.empreendedor ?? { name: '', cpfCnpj: '', address: '', phone: '', email: '' },
+      consultoria: currentItem.consultoria ?? { name: '', cnpj: '', address: '', phone: '', email: '' },
+      caracterizacaoEmpreendimento: currentItem.caracterizacaoEmpreendimento ?? '',
+      areaDiretamenteAfetada: currentItem.areaDiretamenteAfetada ?? '',
+      caracterizacaoAmbientalSecundaria: currentItem.caracterizacaoAmbientalSecundaria ?? '',
+      listaEspeciesSecundaria: currentItem.listaEspeciesSecundaria ?? '',
+      impactosPotenciais: currentItem.impactosPotenciais ?? { vetores: '', analiseInteracao: '' },
+      objetivosMonitoramento: currentItem.objetivosMonitoramento ?? '',
+      perguntasHipoteses: currentItem.perguntasHipoteses ?? '',
+      metodologiaInventariamento: typeof currentItem.metodologiaInventariamento === 'string' ? currentItem.metodologiaInventariamento : '',
+      cronogramaExecucao: currentItem.cronogramaExecucao ?? '',
+      destinoMaterialBiologico: currentItem.destinoMaterialBiologico ?? '',
+      equipes: currentItem.equipes ?? '',
+      referencias: currentItem.referencias ?? '',
+    } : {
       empreendedor: { name: '', cpfCnpj: '', address: '', phone: '', email: '' },
       consultoria: { name: '', cnpj: '', address: '', phone: '', email: '' },
     },
@@ -132,20 +152,21 @@ export function MonitoramentoForm() {
   }, [selectedConsultoriaId, consultoriasMap, form]);
 
 
-  async function onSubmit(values: FormValues) {
+  const submit = async (status: 'draft' | 'completed') => {
+    if (status === 'completed') {
+      const valid = await form.trigger();
+      if (!valid) return;
+    }
     setLoading(true);
-    console.log(values);
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    toast({
-      title: 'Projeto Salvo!',
-      description: 'O projeto de monitoramento de fauna foi salvo como rascunho.',
-    });
+    const values = form.getValues();
+    const payload = currentItem?.id ? { ...values, id: currentItem.id } : values;
+    await onSave(payload, status);
     setLoading(false);
-  }
+  };
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="h-full flex flex-col overflow-hidden">
+      <form onSubmit={(e) => e.preventDefault()} className="h-full flex flex-col overflow-hidden">
         <div className="flex-1 overflow-y-auto pr-4 -mr-6">
             <Accordion type="multiple" defaultValue={['item-1', 'item-7']} className="w-full">
             <AccordionItem value="item-1">
@@ -202,8 +223,11 @@ export function MonitoramentoForm() {
         </div>
         <div className="flex justify-end gap-2 pt-6 mt-4 p-4 border-t">
           <Button variant="outline" type="button" onClick={() => router.back()}>Voltar</Button>
-          <Button type="submit" disabled={loading}>
-            {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Salvando...</> : 'Salvar Projeto'}
+          <Button variant="secondary" type="button" disabled={loading} onClick={() => submit('draft')}>
+            {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Salvando...</> : 'Salvar Rascunho'}
+          </Button>
+          <Button type="button" disabled={loading} onClick={() => submit('completed')}>
+            {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Concluindo...</> : 'Concluir Projeto'}
           </Button>
         </div>
       </form>

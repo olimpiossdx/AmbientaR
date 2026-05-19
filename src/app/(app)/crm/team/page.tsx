@@ -45,7 +45,7 @@ function getPeriodRange(preset: string): { start: Date; end: Date } {
   return { start, end };
 }
 
-const CRM_ROLES = ['admin', 'sales', 'supervisor', 'financial'] as const;
+import { canAccessCrm, canWriteCrm } from '@/lib/role-guards';
 
 export default function CrmTeamPage() {
   const [periodPreset, setPeriodPreset] = useState<'30d' | '90d' | '12m'>('90d');
@@ -121,7 +121,7 @@ export default function CrmTeamPage() {
 
   const isLoading = isLoadingUsers || isLoadingOpps;
 
-  if (!user || !CRM_ROLES.includes(user.role as any)) {
+  if (!user || !canAccessCrm(user.role)) {
     return (
       <div className="flex flex-col h-full">
         <PageHeader title="Equipe & Desempenho (CRM)" />

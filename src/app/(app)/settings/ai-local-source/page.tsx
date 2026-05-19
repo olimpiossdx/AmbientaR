@@ -12,7 +12,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { useAuth } from "@/firebase";
+import { useFirebase } from "@/firebase";
+import { getAdminApiRequestHeaders } from "@/lib/admin-api-client";
 import { useToast } from "@/hooks/use-toast";
 import { DEFAULT_AI_LOCAL_SOURCE_PATH } from "@/lib/ai-local-source-defaults";
 
@@ -24,7 +25,7 @@ const AI_LOCAL_SOURCE_MODIFIED_AFTER_KEY =
 const DEFAULT_EXTENSIONS = ".pdf,.doc,.docx,.txt,.md,.csv";
 
 export default function AiLocalSourceSettingsPage() {
-  const { user } = useAuth();
+  const { user, auth } = useFirebase();
   const { toast } = useToast();
   const [path, setPath] = React.useState(DEFAULT_AI_LOCAL_SOURCE_PATH);
   const [extensions, setExtensions] = React.useState(DEFAULT_EXTENSIONS);
@@ -103,7 +104,7 @@ export default function AiLocalSourceSettingsPage() {
     try {
       const res = await fetch("/api/ai-lab/import-reference-files", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: await getAdminApiRequestHeaders(auth),
         body: JSON.stringify({
           basePath: path.trim(),
           extensions: extensions

@@ -24,10 +24,11 @@ import { FirestorePermissionError } from '@/firebase/errors';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import CrmDashboard from './crm-dashboard';
 import { CrmPipelineKanban } from './crm-pipeline-kanban';
+import { canWriteCrm } from '@/lib/role-guards';
 
 const canPerformWriteActions = (user: AppUser | null): boolean => {
     if (!user) return false;
-    return ['admin', 'sales', 'supervisor'].includes(user.role);
+    return canWriteCrm(user.role);
 }
 
 

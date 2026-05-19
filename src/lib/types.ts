@@ -139,6 +139,140 @@ export type Expense = {
 
 export type Transaction = (Revenue | Expense) & { type: 'revenue' | 'expense' };
 
+/** Centro de controlo financeiro (projeto, contrato, fornecedor ou venda de ativo). */
+export type FinancialCenterType =
+  | 'project'
+  | 'contract'
+  | 'supplier_contract'
+  | 'asset_sale';
+
+export type FinancialCenterStatus = 'active' | 'closed';
+
+export type FinancialCenter = {
+  id: string;
+  name: string;
+  type: FinancialCenterType;
+  projectId?: string;
+  contractId?: string;
+  supplierContractId?: string;
+  clientId?: string;
+  supplierId?: string;
+  status: FinancialCenterStatus;
+  budgetRevenue?: number;
+  budgetCost?: number;
+  acquisitionCost?: number;
+  notes?: string;
+  createdAt: string;
+  createdBy: string;
+  updatedAt?: string;
+};
+
+export type AllocationSourceType =
+  | 'revenue'
+  | 'expense'
+  | 'invoice'
+  | 'barter_credit';
+
+export type FinancialAllocation = {
+  id: string;
+  centerId: string;
+  sourceType: AllocationSourceType;
+  sourceId: string;
+  amount: number;
+  direction: 'credit' | 'debit';
+  date: string;
+  invoiceId?: string;
+  settlementKind?: 'cash' | 'barter_client' | 'barter_supplier';
+  linkedCenterId?: string;
+  description?: string;
+  createdAt: string;
+  createdBy: string;
+};
+
+export type FinancialMovementKind =
+  | 'cash_in'
+  | 'cash_out'
+  | 'invoice_paid'
+  | 'invoice_unpaid'
+  | 'allocation'
+  | 'asset_sale_open'
+  | 'asset_cost_out'
+  | 'asset_installment_in'
+  | 'asset_barter_in'
+  | 'asset_settled';
+
+export type FinancialMovement = {
+  id: string;
+  date: string;
+  kind: FinancialMovementKind;
+  direction: 'in' | 'out';
+  amount: number;
+  description: string;
+  centerId?: string;
+  sourceCollection?: string;
+  sourceId?: string;
+  assetSaleId?: string;
+  locked?: boolean;
+  createdAt: string;
+  createdBy: string;
+};
+
+export type AssetKind = 'vehicle' | 'tool' | 'equipment' | 'other';
+
+export type AssetSettlementType =
+  | 'cash_only'
+  | 'barter_client_services'
+  | 'barter_supplier_services'
+  | 'mixed';
+
+export type AssetInstallmentStatus = 'pending' | 'paid' | 'cancelled';
+
+export type AssetInstallment = {
+  seq: number;
+  dueDate: string;
+  amount: number;
+  kind: 'cash' | 'barter';
+  status: AssetInstallmentStatus;
+  revenueId?: string;
+  barterAllocationId?: string;
+};
+
+export type AssetSaleStatus = 'open' | 'partial' | 'settled' | 'cancelled';
+
+export type FinancialAssetSale = {
+  id: string;
+  centerId: string;
+  assetKind: AssetKind;
+  description: string;
+  totalValue: number;
+  acquisitionCost?: number;
+  settlementType: AssetSettlementType;
+  counterpartyType: 'client' | 'supplier';
+  counterpartyId: string;
+  linkedContractId?: string;
+  linkedSupplierContractId?: string;
+  installments: AssetInstallment[];
+  status: AssetSaleStatus;
+  notes?: string;
+  createdAt: string;
+  createdBy: string;
+  updatedAt?: string;
+};
+
+export type CenterTotals = {
+  cashCredits: number;
+  cashDebits: number;
+  cashBalance: number;
+  contractCredits: number;
+  contractDebits: number;
+  contractBalance: number;
+  barterCredits: number;
+  investment: number;
+  returnAmount: number;
+  netResult: number;
+  roiPercent: number | null;
+  marginPercent: number | null;
+};
 
 export type Appointment = {
   id: string;
@@ -725,6 +859,8 @@ export type PIA = {
     id: string;
     type: PiaType;
     status?: 'Rascunho' | 'Aprovado';
+    /** Processo (`requests`) que originou ou vincula este PIA. */
+    requestId?: string;
     requerente: {
         clientId?: string;
         nome: string;
@@ -1292,6 +1428,10 @@ export type AppUser = {
   contractSignature?: string;
   /** true quando o usuário se cadastrou pelo "Cadastre-se" (login) e ainda não completou o cadastro no menu Cadastro. Usado para exibir alerta no sino. */
   cadastroIncompleto?: boolean;
+  /** Cliente financeiro já existente vinculado ao perfil (evita duplicar em Clientes). */
+  linkedClientId?: string;
+  /** Empreendedor já existente vinculado ao perfil (evita duplicar em Empreendedores). */
+  linkedEmpreendedorId?: string;
   /** Acesso anual à plataforma (Clientes Gestão / Autônomo). ISO 8601; ausente com perfis antigos = sem bloqueio. */
   platformAccessValidUntil?: string | null;
   platformPaymentStatus?: PlatformPaymentStatus;
@@ -1408,7 +1548,10 @@ export type Contract = {
         uf: string;
     };
     dataContrato: string;
-    fileUrl?: string; // URL to the uploaded signed contract PDF
+    /** PDF gerado para assinatura (modelo de contrato com cláusulas). */
+    contractPdfUrl?: string;
+    /** PDF do contrato já assinado (upload manual). */
+    fileUrl?: string;
 };
 
 
@@ -1478,6 +1621,10 @@ export type InventoryProject = {
     data: string;
     tipoProjeto: string;
     ownerId: string;
+    /** Processo (`requests`) vinculado. */
+    requestId?: string;
+    /** Empreendimento (`projects`) vinculado. */
+    projectId?: string;
     createdAt: any;
     /** IDs de fotos selecionadas para relatório (ver `ProjectPhotosDialog`). */
     selectedPhotoIds?: string[];
@@ -1646,6 +1793,22 @@ export type Inspection = {
     };
 }
 
+export type AiaProfile = {
+    orgao: string;
+    uf: string;
+};
+
+export type AiaImovelSnapshot = import("@/lib/intervention-checklist").AiaImovelSnapshot;
+
+export type AiaLinkedArtifacts = {
+    piaId?: string;
+    inventoryId?: string;
+    mapJobId?: string;
+    georefProjectId?: string;
+};
+
+export type TipoIntervencaoAia = import("@/lib/intervention-checklist").TipoIntervencaoAia;
+
 export type Request = {
     id: string;
     empreendedorId: string;
@@ -1655,6 +1818,16 @@ export type Request = {
     createdAt: any;
     solicitationNumber?: string;
     interventionChecklist?: import("@/lib/intervention-checklist").InterventionChecklistItem[];
+    /** Opções marcadas sob "Autorização para Intervenção Ambiental" (IDs definidos em `INTERVENTION_SUBSERVICES`). */
+    interventionSubservices?: import("@/lib/intervention-checklist").InterventionSubserviceId[];
+    /** Perfil regulatório (ex.: IEF-MG). */
+    aiaProfile?: AiaProfile;
+    /** Tipo de intervenção conforme documento de arquitetura AIA. */
+    tipoIntervencao?: TipoIntervencaoAia;
+    /** Snapshot do imóvel para regras condicionais do checklist. */
+    imovelSnapshot?: AiaImovelSnapshot;
+    /** Vínculos com PIA, inventário, mapas e georef. */
+    linkedArtifacts?: AiaLinkedArtifacts;
     licensingData?: {
         activities?: {
             id: string;

@@ -14,7 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import type { PIA, Empreendedor as Client, Project, PiaType } from '@/lib/types';
 import { useFirebase, errorEmitter, useCollection, useMemoFirebase } from '@/firebase';
 import { FirestorePermissionError } from '@/firebase/errors';
-import { collection, doc, addDoc, updateDoc } from 'firebase/firestore';
+import { collection, doc, addDoc, updateDoc, getDoc } from 'firebase/firestore';
 import { DialogFooter } from '@/components/ui/dialog';
 import { PiaFormInventario } from './pia-form-inventario';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -38,13 +38,20 @@ const formSchema = z.object({
 
 type PiaFormValues = z.infer<typeof formSchema>;
 
+export type PiaLinkContext = {
+  requestId?: string;
+  projectId?: string;
+  empreendedorId?: string;
+};
+
 interface PiaFormProps {
   currentItem?: PIA | null;
   piaType: PiaType | null;
   onSuccess?: () => void;
+  linkContext?: PiaLinkContext;
 }
 
-export function PiaForm({ currentItem, piaType, onSuccess }: PiaFormProps) {
+export function PiaForm({ currentItem, piaType, onSuccess, linkContext }: PiaFormProps) {
   const [loading, setLoading] = React.useState(false);
   const { toast } = useToast();
   const { firestore } = useFirebase();
@@ -62,10 +69,22 @@ export function PiaForm({ currentItem, piaType, onSuccess }: PiaFormProps) {
     } : {
       type: piaType || 'Simplificado',
       status: 'Rascunho',
-      requerente: { clientId: '', nome: '', cpfCnpj: '' },
-      empreendimento: { projectId: '', nome: '' },
+      requerente: { clientId: linkContext?.empreendedorId ?? '', nome: '', cpfCnpj: '' },
+      empreendimento: {
+        projectId: linkContext?.projectId ?? '',
+        nome: '',
+      },
     },
   });
+
+  React.useEffect(() => {
+    if (!linkContext?.projectId || !projects?.length) return;
+    const proj = projects.find((p) => p.id === linkContext.projectId);
+    if (proj) {
+      form.setValue('empreendimento.projectId', proj.id);
+      form.setValue('empreendimento.nome', proj.propertyName ?? proj.fantasyName ?? '');
+    }
+  }, [linkContext?.projectId, projects, form]);
 
   async function handleSave(status: 'Rascunho' | 'Aprovado') {
     setLoading(true);
@@ -92,6 +111,8 @@ export function PiaForm({ currentItem, piaType, onSuccess }: PiaFormProps) {
     const dataToSave = {
         ...values,
         status,
+        ...(linkContext?.requestId ? { requestId: linkContext.requestId } : {}),
+        ...(currentItem?.requestId ? { requestId: currentItem.requestId } : {}),
     };
 
     try {
@@ -104,7 +125,17 @@ export function PiaForm({ currentItem, piaType, onSuccess }: PiaFormProps) {
           });
         } else {
           const collectionRef = collection(firestore, 'pias');
-          await addDoc(collectionRef, dataToSave);
+          const created = await addDoc(collectionRef, dataToSave);
+          if (linkContext?.requestId) {
+            const reqRef = doc(firestore, 'requests', linkContext.requestId);
+            const snap = await getDoc(reqRef);
+            if (snap.exists()) {
+              const prev = snap.data().linkedArtifacts ?? {};
+              await updateDoc(reqRef, {
+                linkedArtifacts: { ...prev, piaId: created.id },
+              });
+            }
+          }
           toast({
             title: 'PIA criado!',
             description: `O formulário foi salvo como ${status.toLowerCase()}.`,

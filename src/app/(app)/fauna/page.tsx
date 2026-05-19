@@ -10,6 +10,8 @@ import { FileText, Download, PlusCircle, Paperclip } from 'lucide-react';
 import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
 import { collection, query, where } from 'firebase/firestore';
 import type { FaunaStudy, Empreendedor } from '@/lib/types';
+import { usePortalEmpreendedorIds } from '@/hooks/use-portal-empreendedor-ids';
+import { getFaunaStudyLabel } from '@/lib/fauna-study-utils';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
@@ -19,28 +21,28 @@ import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { FaunaUploadForm } from './fauna-upload-form';
 import { RecordViewDialog } from '@/components/shared/record-view-dialog';
 
-const studyTypeMap: Record<string, string> = {
-  inventario_projeto: "Projeto de Inventário",
-  inventario_relatorio: "Relatório de Inventário",
-  monitoramento_projeto: "Projeto de Monitoramento",
-  monitoramento_relatorio: "Relatório de Monitoramento",
-  resgate_projeto: "Projeto de Resgate",
-  resgate_relatorio: "Relatório de Resgate",
-  externo: "Documento Externo",
-};
-
 export default function FaunaManagementPage() {
   const [isFormOpen, setIsFormOpen] = React.useState(false);
   const { firestore, user } = useFirebase();
   const { toast } = useToast();
+  const portalEmpreendedorIds = usePortalEmpreendedorIds();
 
   const approvedStudiesQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
-    // Querying for both completed internal studies and all external documents
     return query(collection(firestore, 'faunaStudies'), where('status', '==', 'completed'));
   }, [firestore, user]);
 
-  const { data: studies, isLoading: isLoadingStudies } = useCollection<FaunaStudy>(approvedStudiesQuery);
+  const { data: studiesRaw, isLoading: isLoadingStudies } = useCollection<FaunaStudy>(approvedStudiesQuery);
+
+  const studies = React.useMemo(() => {
+    if (!studiesRaw) return undefined;
+    if (portalEmpreendedorIds === undefined) return undefined;
+    if (portalEmpreendedorIds.length === 0) return studiesRaw;
+    if (portalEmpreendedorIds[0] === 'invalid-placeholder') return [];
+    return studiesRaw.filter((s) =>
+      portalEmpreendedorIds.includes(s.empreendedorId),
+    );
+  }, [studiesRaw, portalEmpreendedorIds]);
 
   const empreendedoresQuery = useMemoFirebase(() => firestore ? collection(firestore, 'empreendedores') : null, [firestore]);
   const { data: empreendedores, isLoading: isLoadingEmpreendedores } = useCollection<Empreendedor>(empreendedoresQuery);
@@ -50,7 +52,10 @@ export default function FaunaManagementPage() {
     return new Map(empreendedores.map(e => [e.id, e.name]));
   }, [empreendedores]);
 
-  const isLoading = isLoadingStudies || isLoadingEmpreendedores;
+  const isLoading =
+    isLoadingStudies ||
+    isLoadingEmpreendedores ||
+    portalEmpreendedorIds === undefined;
   const getSortDateValue = (value: unknown) => {
     if (!value) return Number.POSITIVE_INFINITY;
     if (typeof value === "string") {
@@ -101,17 +106,12 @@ export default function FaunaManagementPage() {
     }
   }
 
-  const getStudyOrDocumentName = (study: FaunaStudy) => {
-    if (study.studyType === 'externo') {
-      return study.documentName || 'Documento Externo';
-    }
-    return studyTypeMap[study.studyType] || 'Desconhecido';
-  }
+  const getStudyOrDocumentName = (study: FaunaStudy) => getFaunaStudyLabel(study);
 
   return (
     <>
       <div className="flex flex-col h-full">
-        <PageHeader title="Gestão de Autorizações e Relatórios de Fauna">
+        <PageHeader title="Fauna — Autorizações e Relatórios">
            <Button size="sm" className="gap-1" onClick={() => setIsFormOpen(true)}>
             <PlusCircle className="h-4 w-4" />
             Adicionar Documento Externo
@@ -121,7 +121,9 @@ export default function FaunaManagementPage() {
           <Card>
             <CardHeader>
               <CardTitle>Relatórios e Licenças Concluídas</CardTitle>
-              <CardDescription>Visualize e baixe todos os documentos de fauna que já foram aprovados ou adicionados.</CardDescription>
+              <CardDescription>
+                Documentos concluídos pela consultoria e arquivos enviados pelo cliente. Estudos em elaboração ficam em Elaboração de Estudos → Estudos de Fauna.
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <TooltipProvider>

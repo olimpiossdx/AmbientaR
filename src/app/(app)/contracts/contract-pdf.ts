@@ -3,9 +3,10 @@
  * Preenche com dados do cliente (contratante), contratado, responsável técnico, objeto, pagamento e foro.
  */
 
-import type { Contract, CompanySettings } from '@/lib/types';
+import type { Contract } from '@/lib/types';
+import type { LocalBranding } from '@/hooks/use-local-branding';
 import jsPDF from 'jspdf';
-import { getImageDimensions, applyImageOpacity } from '@/lib/branding-pdf';
+import { downloadJsPdf, fetchBrandingImagesForPdf, getImageDimensions } from '@/lib/branding-pdf';
 
 const formatCurrency = (value: number) =>
   new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
@@ -110,27 +111,34 @@ function addClauseTitle(
   return y;
 }
 
-export async function generateContractPdf(
+type ContractBranding = LocalBranding | null | undefined;
+
+function safeContractFilename(contratanteNome: string | undefined): string {
+  return `Contrato_Prestacao_Servicos_${(contratanteNome || 'Contratante').replace(/\s+/g, '_')}.pdf`;
+}
+
+/** Monta o jsPDF do contrato (sem gravar nem fazer download). */
+export async function buildContractPdfDoc(
   contract: Contract,
-  brandingData: CompanySettings | null | undefined,
-  fetchBrandingImageAsBase64: (url: string | undefined) => Promise<string | null>
-): Promise<void> {
+  brandingData: ContractBranding,
+): Promise<jsPDF> {
   const doc = new jsPDF({ unit: 'cm', format: 'a4' });
   const pageHeight = doc.internal.pageSize.getHeight();
   const pageWidth = doc.internal.pageSize.getWidth();
   const contentWidth = pageWidth - ML - MR;
 
-  const contratante = contract.contratante;
-  const contratado = contract.contratado;
-  const responsavel = contract.responsavelTecnico;
-  const objeto = contract.objeto;
-  const pagamento = contract.pagamento;
-  const foro = contract.foro;
+  const contratante = contract.contratante ?? { nome: '', cpfCnpj: '', clientId: '' };
+  const contratado = contract.contratado ?? { name: '' };
+  const responsavel = contract.responsavelTecnico ?? { responsibleId: '', name: '' };
+  const objeto = contract.objeto ?? { servicos: '' };
+  const pagamento = contract.pagamento ?? { valorTotal: 0, valorExtenso: '', forma: '' };
+  const foro = contract.foro ?? { comarca: 'Unaí', uf: 'MG' };
 
-  const headerBase64 = await fetchBrandingImageAsBase64(brandingData?.headerImageUrl ?? undefined);
-  const footerBase64 = await fetchBrandingImageAsBase64(brandingData?.footerImageUrl ?? undefined);
-  const watermarkBase64Raw = await fetchBrandingImageAsBase64(brandingData?.watermarkImageUrl ?? undefined);
-  const watermarkBase64 = watermarkBase64Raw ? await applyImageOpacity(watermarkBase64Raw, 0.15) : null;
+  const { headerBase64, footerBase64, watermarkBase64 } = await fetchBrandingImagesForPdf({
+    headerImageUrl: brandingData?.headerImageUrl,
+    footerImageUrl: brandingData?.footerImageUrl,
+    watermarkImageUrl: brandingData?.watermarkImageUrl,
+  });
 
   /** Desenha a marca d'água na página atual (atrás do texto, para não sobrepor o conteúdo). */
   const drawWatermarkOnCurrentPage = () => {
@@ -323,5 +331,21 @@ export async function generateContractPdf(
   doc.text('Testemunha 2: _____________________________________________.', ML, y + 0.5);
 
   addHeaderFooter();
-  doc.save(`Contrato_Prestacao_Servicos_${(contratante.nome || 'Contratante').replace(/\s+/g, '_')}.pdf`);
+  return doc;
+}
+
+export async function contractPdfBlob(
+  contract: Contract,
+  brandingData: ContractBranding,
+): Promise<Blob> {
+  const doc = await buildContractPdfDoc(contract, brandingData);
+  return doc.output('blob');
+}
+
+export async function generateContractPdf(
+  contract: Contract,
+  brandingData: ContractBranding,
+): Promise<void> {
+  const doc = await buildContractPdfDoc(contract, brandingData);
+  downloadJsPdf(doc, safeContractFilename(contract.contratante?.nome));
 }

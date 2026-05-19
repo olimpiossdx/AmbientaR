@@ -31,7 +31,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { FirestorePermissionError } from '@/firebase/errors';
-import { isClienteAutonomo, isClienteGestao } from '@/lib/role-guards';
+import { isClienteAutonomo, isClienteGestao, canWriteCadastro } from '@/lib/role-guards';
 import { useCadastroMenuDebug } from '@/lib/cadastro-menu-debug';
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { Separator } from '@/components/ui/separator';
@@ -54,7 +54,7 @@ export default function ResponsibleCompanyPage() {
   const firestore = useFirestore();
   const { toast } = useToast();
   
-  const canWrite = user && (user.role === 'admin' || user.role === 'supervisor' || user.role === 'gestor' || isClienteAutonomo(user.role));
+  const canWrite = Boolean(user && canWriteCadastro(user.role));
 
   const companiesQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;

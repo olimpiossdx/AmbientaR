@@ -165,7 +165,8 @@ export function InventarioFaunaForm({ currentItem, onSave }: InventarioFaunaForm
   const handleSave = async (status: 'draft' | 'completed') => {
       setLoading(true);
       const values = form.getValues();
-      await onSave(values, status);
+      const payload = currentItem?.id ? { ...values, id: currentItem.id } : values;
+      await onSave(payload, status);
       setLoading(false);
   }
 

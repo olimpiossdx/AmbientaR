@@ -9,7 +9,7 @@ import {
   ToastTitle,
   ToastViewport,
 } from "@/components/ui/toast"
-import { ptBR } from "date-fns/locale"
+import { ptBR } from "date-fns/locale/pt-BR"
 
 export function Toaster() {
   const { toasts } = useToast()

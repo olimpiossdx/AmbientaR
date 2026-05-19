@@ -1,4 +1,5 @@
 import type { UserRole } from "@/lib/types";
+import { hasAnyRoleOrAdmin } from "@/lib/role-guards";
 
 /**
  * Perfil dedicado ao módulo Financeiro (único `UserRole` exclusivo dessa área).
@@ -20,10 +21,5 @@ export function isPerfilFinanceiro(role: UserRole): role is PerfilFinanceiro {
 }
 
 export function temMenuFinanceiro(role: UserRole): role is PapelComMenuFinanceiro {
-  return (
-    role === "admin" ||
-    role === "financial" ||
-    role === "supervisor" ||
-    role === "sales"
-  );
+  return hasAnyRoleOrAdmin(role, ["admin", "financial", "supervisor", "sales"]);
 }

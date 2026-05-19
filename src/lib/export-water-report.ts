@@ -1,7 +1,7 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { ptBR } from "date-fns/locale/pt-BR";
 import type { WaterPermit } from "@/lib/types";
 import type { ComplianceReport } from "@/lib/water-compliance-engine";
 import type { TelemetryReading } from "@/lib/types";

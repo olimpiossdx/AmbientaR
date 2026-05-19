@@ -32,7 +32,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { CalendarIcon, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format, parse } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { ptBR } from "date-fns/locale/pt-BR";
 import { useToast } from "@/hooks/use-toast";
 import type {
   License,
@@ -49,10 +49,9 @@ import {
 } from "@/firebase";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { AttachmentPreviewSection } from "@/components/shared/attachment-preview-section";
-import {
-  uploadFileToStorage,
-  sanitizeStorageFileName,
-} from "@/lib/storage-upload";
+import { UploadPreparationDialog } from "@/components/shared/upload-preparation-dialog";
+import { useStorageFileUpload } from "@/hooks/use-storage-file-upload";
+import { UPLOAD_RAW_FILE_SAFETY_MAX } from "@/lib/upload-limits";
 import { collection, doc, addDoc, updateDoc } from "firebase/firestore";
 import {
   DialogHeader,
@@ -67,8 +66,6 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
 const formSchema = z
   .object({
@@ -101,8 +98,8 @@ const formSchema = z
       .optional()
       .refine(
         (files) =>
-          !files || files.length === 0 || files?.[0]?.size <= MAX_FILE_SIZE,
-        `O tamanho máximo do arquivo é ${MAX_FILE_SIZE / 1024 / 1024}MB.`,
+          !files || files.length === 0 || files?.[0]?.size <= UPLOAD_RAW_FILE_SAFETY_MAX,
+        "Arquivo excede o limite de processamento no navegador.",
       ),
   })
   .refine((data) => data.expirationDate > data.issueDate, {
@@ -149,6 +146,9 @@ export function LicenseForm({
   );
 
   const { toast } = useToast();
+  const { uploadFile, dialogProps, limitLabel } = useStorageFileUpload({
+    storageFolder: "licenses",
+  });
   const { firestore } = useFirebase();
 
   const empreendedoresQuery = useMemoFirebase(
@@ -215,26 +215,14 @@ export function LicenseForm({
     const file = inputEl.files?.[0];
     if (!file) return;
 
-    if (file.size > MAX_FILE_SIZE) {
-      toast({
-        variant: "destructive",
-        title: "Arquivo muito grande",
-        description: `O arquivo não pode exceder ${MAX_FILE_SIZE / 1024 / 1024}MB.`,
-      });
-      return;
-    }
-
     // Permite selecionar o mesmo arquivo novamente.
     inputEl.value = "";
 
     setIsUploading(true);
     setUploadedFileUrl(null);
     try {
-      const safe = sanitizeStorageFileName(file.name);
-      const downloadURL = await uploadFileToStorage(
-        file,
-        `licenses/${Date.now()}-${safe}`,
-      );
+      const downloadURL = await uploadFile(file);
+      if (!downloadURL) return;
       setUploadedFileUrl(downloadURL);
       toast({
         title: "Anexo carregado",
@@ -670,6 +658,7 @@ export function LicenseForm({
           </DialogFooter>
         </form>
       </Form>
+      <UploadPreparationDialog {...dialogProps} />
     </>
   );
 }

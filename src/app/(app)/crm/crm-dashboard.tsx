@@ -52,6 +52,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import jsPDF from "jspdf";
+import { canAccessCrm } from "@/lib/role-guards";
 import {
   fetchBrandingImageAsBase64,
   getImageDimensions,
@@ -394,10 +395,7 @@ export default function CrmDashboard({ onAddNew }: CrmDashboardProps) {
 
   const isLoading = isLoadingOpps || isLoadingClients;
 
-  if (
-    !user ||
-    !["admin", "sales", "supervisor", "financial"].includes(user.role)
-  ) {
+  if (!user || !canAccessCrm(user.role)) {
     return (
       <Card>
         <CardHeader>

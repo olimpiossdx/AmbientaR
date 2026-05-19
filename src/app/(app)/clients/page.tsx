@@ -15,7 +15,9 @@ import {
   Eye,
   Pencil,
   Trash2,
+  Copy,
 } from "lucide-react";
+import { ClientDuplicatesDialog } from "@/components/clients/client-duplicates-dialog";
 import {
   useCollection,
   useFirebase,
@@ -33,6 +35,13 @@ import {
 } from "firebase/firestore";
 import type { Client } from "@/lib/types";
 import { formatCpfCnpjDisplay } from "@/lib/masks";
+import {
+  buildClientPayloadFromEmpreendedor,
+  buildClientsByDocumentIndex,
+  computeSyncEmpreendedorStats,
+  resolveClientIdForEmpreendedor,
+  type EmpreendedorForClientSync,
+} from "@/lib/sync-empreendedor-to-client";
 import {
   canWriteCommercialClients,
   isClientePortalRole,
@@ -112,6 +121,7 @@ export default function ClientsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [isSyncingFromEmpreendedores, setIsSyncingFromEmpreendedores] =
     useState(false);
+  const [isDuplicatesDialogOpen, setIsDuplicatesDialogOpen] = useState(false);
   /** Representante: clientes encontrados por CPF/CNPJ (aprovação no empreendedor ou access_requests), quando o doc em `clients` não tem approvedUserIds. */
   const [fallbackClientsForRep, setFallbackClientsForRep] = useState<
     Client[] | null
@@ -328,13 +338,16 @@ export default function ClientsPage() {
     if (!firestore) return;
     setIsSyncingFromEmpreendedores(true);
     try {
-      const empreendedoresSnap = await getDocs(
-        collection(firestore, "empreendedores"),
-      );
-      const empreendedores = empreendedoresSnap.docs.map((d) => ({
-        id: d.id,
-        ...(d.data() as any),
-      }));
+      const [empreendedoresSnap, clientsSnap] = await Promise.all([
+        getDocs(collection(firestore, "empreendedores")),
+        getDocs(collection(firestore, "clients")),
+      ]);
+
+      const empreendedores: EmpreendedorForClientSync[] =
+        empreendedoresSnap.docs.map((d) => ({
+          id: d.id,
+          ...(d.data() as Omit<EmpreendedorForClientSync, "id">),
+        }));
 
       if (empreendedores.length === 0) {
         toast({
@@ -344,50 +357,61 @@ export default function ClientsPage() {
         return;
       }
 
-      let updatedCount = 0;
+      const clients: Array<Partial<Client> & { id: string }> =
+        clientsSnap.docs.map((d) => ({
+          id: d.id,
+          ...(d.data() as Partial<Client>),
+        }));
+      const clientsById = new Map<string, Partial<Client> & { id: string }>(
+        clients.map((c) => [c.id, c]),
+      );
+      const initialClientIds = new Set<string>(clients.map((c) => c.id));
+      const documentIndex = buildClientsByDocumentIndex(clients);
+
+      let total = 0;
+      let linkedExisting = 0;
+      let newAtEmpreendedorId = 0;
       const chunkSize = 400; // margem de segurança do limite de 500 operações por batch
       for (let i = 0; i < empreendedores.length; i += chunkSize) {
         const chunk = empreendedores.slice(i, i + chunkSize);
         const batch = writeBatch(firestore);
 
         chunk.forEach((emp) => {
-          const cpfCnpjDigits = String(emp.cpfCnpj || "").replace(/\D/g, "");
-          const entityType = Array.isArray(emp.entityType)
-            ? emp.entityType.includes("Pessoa Jurídica")
-              ? "Pessoa Jurídica"
-              : emp.entityType.includes("Produtor Rural")
-                ? "Produtor Rural"
-                : "Pessoa Física"
-            : emp.entityType || "Pessoa Física";
-
-          const payload = {
-            name: emp.name || "",
-            cpfCnpj: cpfCnpjDigits,
-            entityType,
-            phone: emp.phone || "",
-            email: emp.email || "",
-            dataNascimento: emp.dataNascimento || "",
-            ctfIbama: emp.ctfIbama || "",
-            address: emp.address || "",
-            numero: emp.numero || "",
-            bairro: emp.bairro || "",
-            municipio: emp.municipio || "",
-            uf: emp.uf || "",
-            cep: emp.cep || "",
-            userId: emp.userId || "",
-          };
-
-          const clientRef = doc(firestore, "clients", emp.id);
+          const targetClientId = resolveClientIdForEmpreendedor(
+            emp,
+            clientsById,
+            documentIndex,
+          );
+          const payload = buildClientPayloadFromEmpreendedor(emp);
+          const clientRef = doc(firestore, "clients", targetClientId);
           batch.set(clientRef, payload, { merge: true });
-          updatedCount += 1;
+
+          const stats = computeSyncEmpreendedorStats(
+            emp,
+            targetClientId,
+            initialClientIds,
+          );
+          total += 1;
+          linkedExisting += stats.linkedExisting;
+          newAtEmpreendedorId += stats.newAtEmpreendedorId;
         });
 
         await batch.commit();
       }
 
+      const parts = [`${total} empreendedor(es) sincronizado(s).`];
+      if (linkedExisting > 0) {
+        parts.push(
+          `${linkedExisting} vinculado(s) a cliente(s) já existente(s) (sem duplicar).`,
+        );
+      }
+      if (newAtEmpreendedorId > 0) {
+        parts.push(`${newAtEmpreendedorId} novo(s) em Clientes.`);
+      }
+
       toast({
         title: "Sincronização concluída",
-        description: `${updatedCount} cadastro(s) de empreendedor sincronizado(s) em Clientes.`,
+        description: parts.join(" "),
       });
     } catch (error) {
       toast({
@@ -450,17 +474,28 @@ export default function ClientsPage() {
         <PageHeader title="Clientes">
           <div className="flex items-center gap-2">
             {user?.role === "admin" && (
-              <Button
-                size="sm"
-                variant="outline"
-                className="gap-1"
-                onClick={handleSyncEmpreendedoresToClients}
-                disabled={isSyncingFromEmpreendedores}
-              >
-                {isSyncingFromEmpreendedores
-                  ? "Sincronizando..."
-                  : "Sincronizar Empreendedores"}
-              </Button>
+              <>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="gap-1"
+                  onClick={() => setIsDuplicatesDialogOpen(true)}
+                >
+                  <Copy className="h-4 w-4" />
+                  Duplicatas CPF/CNPJ
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="gap-1"
+                  onClick={handleSyncEmpreendedoresToClients}
+                  disabled={isSyncingFromEmpreendedores}
+                >
+                  {isSyncingFromEmpreendedores
+                    ? "Sincronizando..."
+                    : "Sincronizar Empreendedores"}
+                </Button>
+              </>
             )}
             {canWriteCommercialClients(user?.role) && (
               <Button size="sm" className="gap-1" onClick={handleAddNew}>
@@ -697,6 +732,13 @@ export default function ClientsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {user?.role === "admin" && (
+        <ClientDuplicatesDialog
+          open={isDuplicatesDialogOpen}
+          onOpenChange={setIsDuplicatesDialogOpen}
+        />
+      )}
     </>
   );
 }

@@ -20,6 +20,14 @@ export function FirebaseErrorListener() {
       if (path.includes('access_requests')) {
         return;
       }
+      // Lista de usuários no chat (admin): não derrubar a app por falha pontual de regras/índice.
+      if (path.includes('/documents/users')) {
+        return;
+      }
+      // Branding / feature flags: leitura pode ocorrer antes do Auth restaurar a sessão.
+      if (path.includes('/documents/companySettings/')) {
+        return;
+      }
       setError(error);
     };
 

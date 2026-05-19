@@ -32,7 +32,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { CalendarIcon, Loader2, Plus, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format, parse } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { ptBR } from "date-fns/locale/pt-BR";
 
 import { useToast } from "@/hooks/use-toast";
 import type {
@@ -56,10 +56,9 @@ import {
 } from "@/firebase";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { AttachmentPreviewSection } from "@/components/shared/attachment-preview-section";
-import {
-  uploadFileToStorage,
-  sanitizeStorageFileName,
-} from "@/lib/storage-upload";
+import { UploadPreparationDialog } from "@/components/shared/upload-preparation-dialog";
+import { useStorageFileUpload } from "@/hooks/use-storage-file-upload";
+import { UPLOAD_RAW_FILE_SAFETY_MAX } from "@/lib/upload-limits";
 import {
   collection,
   doc,
@@ -108,8 +107,6 @@ const formSchema = z
     path: ["expirationDate"],
   });
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
-
 type FormValues = z.infer<typeof formSchema>;
 
 interface OutorgaFormProps {
@@ -134,6 +131,9 @@ export function OutorgaForm({ currentItem, onSuccess }: OutorgaFormProps) {
   );
 
   const { toast } = useToast();
+    const { uploadFile, dialogProps, limitLabel } = useStorageFileUpload({
+    storageFolder: "outorgas",
+  });
   const { firestore } = useFirebase();
 
   const empreendedoresQuery = useMemoFirebase(
@@ -236,25 +236,14 @@ export function OutorgaForm({ currentItem, onSuccess }: OutorgaFormProps) {
     const inputEl = event.currentTarget;
     const file = inputEl.files?.[0];
     if (!file) return;
-    if (file.size > MAX_FILE_SIZE) {
-      toast({
-        variant: "destructive",
-        title: "Arquivo muito grande",
-        description: `O arquivo não pode exceder ${MAX_FILE_SIZE / 1024 / 1024}MB.`,
-      });
-      return;
-    }
     // Permite selecionar o mesmo arquivo novamente.
     inputEl.value = "";
 
     setIsUploading(true);
     setUploadedFileUrl(null);
     try {
-      const safe = sanitizeStorageFileName(file.name);
-      const downloadURL = await uploadFileToStorage(
-        file,
-        `outorgas/${Date.now()}-${safe}`,
-      );
+      const downloadURL = await uploadFile(file);
+      if (!downloadURL) return;
       setUploadedFileUrl(downloadURL);
       toast({
         title: "Anexo carregado",
@@ -941,6 +930,7 @@ export function OutorgaForm({ currentItem, onSuccess }: OutorgaFormProps) {
           </DialogFooter>
         </form>
       </Form>
+      <UploadPreparationDialog {...dialogProps} />
     </>
   );
 }

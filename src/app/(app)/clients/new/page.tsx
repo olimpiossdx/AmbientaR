@@ -126,7 +126,14 @@ function NewClientPageContent() {
                 </CardHeader>
                 <CardContent>
                   <ClientForm
-                    currentClient={existingClient ?? (initialClient && Object.values(initialClient).some(Boolean) ? ({ id: '', ...initialClient } as Client) : null)}
+                    currentClient={existingClient}
+                    defaultDraft={
+                      !existingClient &&
+                      initialClient &&
+                      Object.values(initialClient).some(Boolean)
+                        ? initialClient
+                        : null
+                    }
                     onSuccess={handleSuccess}
                     onCancel={handleCancel}
                   />

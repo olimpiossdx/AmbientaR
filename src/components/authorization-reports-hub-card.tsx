@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { allNavItems } from "@/lib/navigation-config";
 import type { AppUser, NavItem, NavSubItem } from "@/lib/types";
+import { canAccessNavItem } from "@/lib/role-guards";
 
 type HubLink = {
   href: string;
@@ -20,7 +21,7 @@ function flattenLinks(
   const links: HubLink[] = [];
 
   for (const item of items) {
-    if (!item.roles?.includes(role)) continue;
+    if (!canAccessNavItem(role, item.roles)) continue;
 
     if (item.href) {
       links.push({

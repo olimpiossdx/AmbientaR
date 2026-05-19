@@ -1,6 +1,7 @@
 "use client";
 
 import type { NavItem } from "@/lib/types";
+import { sortNavSubItemsByLabel } from "@/lib/processos-form-order";
 import {
   LayoutDashboard,
   Users,
@@ -68,6 +69,9 @@ import {
   Sparkles,
   Map,
   MapPinned,
+  Crosshair,
+  FileSpreadsheet,
+  BookOpen,
 } from "lucide-react";
 
 export const allNavItems: NavItem[] = [
@@ -498,7 +502,7 @@ export const allNavItems: NavItem[] = [
       "client",
       "representative",
     ],
-    subItems: [
+    subItems: sortNavSubItemsByLabel([
       {
         href: "/requests",
         label: "Lista de processos",
@@ -519,7 +523,7 @@ export const allNavItems: NavItem[] = [
         icon: PlusSquare,
         roles: ["admin", "technical", "gestor", "supervisor", "advogado"],
       },
-    ],
+    ]),
   },
   {
     label: "AmbientaR IA",
@@ -686,7 +690,7 @@ export const allNavItems: NavItem[] = [
       },
       {
         href: "/studies/fauna",
-        label: "Fauna",
+        label: "Estudos de Fauna",
         icon: Bird,
         roles: [
           "admin",
@@ -791,6 +795,79 @@ export const allNavItems: NavItem[] = [
     ],
   },
   {
+    label: "Georeferenciamento",
+    icon: Crosshair,
+    roles: [
+      "admin",
+      "gestor",
+      "supervisor",
+      "diretor_fauna",
+      "advogado",
+    ],
+    subItems: [
+      {
+        href: "/georeferenciamento",
+        label: "Painel",
+        icon: LayoutDashboard,
+        roles: ["admin", "gestor", "supervisor", "diretor_fauna", "advogado"],
+      },
+      {
+        href: "/georeferenciamento/processos",
+        label: "Processos",
+        icon: ClipboardList,
+        roles: ["admin", "gestor", "supervisor", "diretor_fauna", "advogado"],
+      },
+      {
+        href: "/georeferenciamento/rural",
+        label: "Rural (SIGEF/INCRA)",
+        icon: Trees,
+        roles: ["admin", "gestor", "supervisor", "diretor_fauna", "advogado"],
+      },
+      {
+        href: "/georeferenciamento/urbano",
+        label: "Urbano (cartório)",
+        icon: Building2,
+        roles: ["admin", "gestor", "supervisor", "diretor_fauna", "advogado"],
+      },
+      {
+        href: "/georeferenciamento/ambiental",
+        label: "CAR / SICAR",
+        icon: Leaf,
+        roles: ["admin", "gestor", "supervisor", "diretor_fauna", "advogado"],
+      },
+      {
+        href: "/georeferenciamento/campo",
+        label: "Campo e levantamento",
+        icon: Crosshair,
+        roles: ["admin", "gestor", "supervisor", "diretor_fauna", "advogado"],
+      },
+      {
+        href: "/georeferenciamento/documentos",
+        label: "Documentação técnica",
+        icon: FileSpreadsheet,
+        roles: ["admin", "gestor", "supervisor", "diretor_fauna", "advogado"],
+      },
+      {
+        href: "/georeferenciamento/validacoes",
+        label: "Validações",
+        icon: Scale,
+        roles: ["admin", "gestor", "supervisor", "diretor_fauna", "advogado"],
+      },
+      {
+        href: "/georeferenciamento/registro",
+        label: "Cartório e registro",
+        icon: BookOpen,
+        roles: ["admin", "gestor", "supervisor", "diretor_fauna", "advogado"],
+      },
+      {
+        href: "/georeferenciamento/referencias",
+        label: "Referências normativas",
+        icon: BookOpenCheck,
+        roles: ["admin", "gestor", "supervisor", "diretor_fauna", "advogado"],
+      },
+    ],
+  },
+  {
     label: "Vendas & CRM",
     icon: ShoppingCart,
     roles: ["admin", "sales", "supervisor", "financial"],
@@ -874,7 +951,6 @@ export const allNavItems: NavItem[] = [
       "admin",
       "client",
       "cliente_autonomo",
-      "representative",
       "technical",
       "sales",
       "financial",
@@ -1092,7 +1168,25 @@ export const allNavItems: NavItem[] = [
         href: "/technical-responsible",
         label: "Responsáveis Técnicos",
         icon: HardHat,
-        roles: ["admin"],
+        roles: ["admin", "supervisor", "gestor"],
+      },
+      {
+        href: "/settings/appearance",
+        label: "Aparência",
+        icon: Palette,
+        roles: [
+          "admin",
+          "client",
+          "cliente_autonomo",
+          "representative",
+          "technical",
+          "sales",
+          "financial",
+          "gestor",
+          "supervisor",
+          "diretor_fauna",
+          "advogado",
+        ],
       },
       {
         href: "/settings/templates",

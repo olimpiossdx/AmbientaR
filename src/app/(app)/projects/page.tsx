@@ -60,7 +60,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
 import { CardSearchInput } from "@/components/card-search-input";
-import { isClientePortalRole, canWriteCadastroClienteAutonomo, isCadastroReadOnlyClienteGestao } from "@/lib/role-guards";
+import { isClientePortalRole, canWriteCadastroClienteAutonomo, isCadastroReadOnlyClienteGestao, canWriteCadastro } from "@/lib/role-guards";
 
 const DetailItem = ({
   label,
@@ -90,12 +90,7 @@ function ProjectsPageContent() {
   const { user } = useAuth();
   const { toast } = useToast();
 
-  const canWrite =
-    user &&
-    (user.role === "admin" ||
-      user.role === "supervisor" ||
-      user.role === "gestor" ||
-      canWriteCadastroClienteAutonomo(user.role));
+  const canWrite = Boolean(user && canWriteCadastro(user.role));
 
   const [empreendedorIdsForUser, setEmpreendedorIdsForUser] = useState<
     string[] | undefined

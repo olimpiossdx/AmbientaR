@@ -46,6 +46,7 @@ import {
   getImageDimensions,
   calcPdfImageSize,
   applyImageOpacity,
+  downloadJsPdf,
 } from "@/lib/branding-pdf";
 import { useLocalBranding } from "@/hooks/use-local-branding";
 import type { Proposal, Client, CompanySettings, Contract, AppUser } from "@/lib/types";
@@ -467,7 +468,7 @@ export default function ProposalsPage() {
 
     // Numeração de páginas alinhada à direita no rodapé.
     addPageNumbers(doc, 10);
-    doc.save(`orcamento_${proposal.proposalNumber}.pdf`);
+    downloadJsPdf(doc, `orcamento_${proposal.proposalNumber}.pdf`);
   };
 
   const formatCurrency = (value: number) =>

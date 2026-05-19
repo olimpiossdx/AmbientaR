@@ -34,10 +34,9 @@ import {
 import { FirestorePermissionError } from "@/firebase/errors";
 import { AttachmentPreviewSection } from "@/components/shared/attachment-preview-section";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
-import {
-  uploadFileToStorage,
-  sanitizeStorageFileName,
-} from "@/lib/storage-upload";
+import { UploadPreparationDialog } from "@/components/shared/upload-preparation-dialog";
+import { useStorageFileUpload } from "@/hooks/use-storage-file-upload";
+import { UPLOAD_RAW_FILE_SAFETY_MAX } from "@/lib/upload-limits";
 import { isPdfLikeFile } from "@/lib/file-mime";
 import {
   DialogFooter,
@@ -45,8 +44,6 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-
-const MAX_FILE_SIZE = 15 * 1024 * 1024; // 15MB
 
 const formSchema = z.object({
   empreendedorId: z.string().min(1, "Selecione um empreendedor."),
@@ -65,6 +62,9 @@ export function FaunaUploadForm({ onSuccess }: FaunaUploadFormProps) {
   const [isUploading, setIsUploading] = React.useState(false);
 
   const { toast } = useToast();
+  const { uploadFile, dialogProps, limitLabel } = useStorageFileUpload({
+    storageFolder: "fauna",
+  });
   const { firestore, user } = useFirebase();
 
   const empreendedoresQuery = useMemoFirebase(
@@ -96,14 +96,6 @@ export function FaunaUploadForm({ onSuccess }: FaunaUploadFormProps) {
     // Permite selecionar o mesmo arquivo novamente.
     inputEl.value = "";
 
-    if (file.size > MAX_FILE_SIZE) {
-      toast({
-        variant: "destructive",
-        title: "Arquivo muito grande",
-        description: `O arquivo não pode exceder ${MAX_FILE_SIZE / 1024 / 1024}MB.`,
-      });
-      return;
-    }
     if (!isPdfLikeFile(file)) {
       toast({
         variant: "destructive",
@@ -127,12 +119,8 @@ export function FaunaUploadForm({ onSuccess }: FaunaUploadFormProps) {
     form.setValue("fileUrl", "");
 
     try {
-      const safe = sanitizeStorageFileName(file.name);
-      const downloadURL = await uploadFileToStorage(
-        file,
-        `fauna-docs/${Date.now()}-${safe}`,
-      );
-
+      const downloadURL = await uploadFile(file);
+      if (!downloadURL) return;
       form.setValue("fileUrl", downloadURL, { shouldValidate: true });
       toast({
         title: "Anexo carregado",
@@ -311,6 +299,7 @@ export function FaunaUploadForm({ onSuccess }: FaunaUploadFormProps) {
           </DialogFooter>
         </form>
       </Form>
+      <UploadPreparationDialog {...dialogProps} />
     </>
   );
 }

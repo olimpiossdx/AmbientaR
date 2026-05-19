@@ -68,16 +68,11 @@ import { CardSearchInput } from "@/components/card-search-input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { fetchEmpreendedorIdsForRepresentative } from "@/lib/representative-empreendedor-ids";
-import { isClientePortalRole } from "@/lib/role-guards";
+import { isClientePortalRole, canPerformOperationalWrite } from "@/lib/role-guards";
 
 const canPerformWriteActions = (user: AppUser | null): boolean => {
   if (!user) return false;
-  return (
-    user.role === "admin" ||
-    user.role === "gestor" ||
-    user.role === "supervisor" ||
-    user.role === "cliente_autonomo"
-  );
+  return canPerformOperationalWrite(user.role);
 };
 
 const DetailItem = ({

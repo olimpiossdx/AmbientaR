@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
 import { collection, doc, writeBatch } from 'firebase/firestore';
 import type { Client, Empreendedor } from '@/lib/types';
+import { normalizeDocumentDigits } from '@/lib/document-lookup';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -44,10 +45,18 @@ export function ClientImportDialog({ isOpen, onOpenChange, onImportSuccess }: Cl
 
   const importableClients = React.useMemo(() => {
     if (!clients || !empreendedores) return [];
-    
-    const empreendedorCpfCnpjs = new Set(empreendedores.map(e => e.cpfCnpj));
-    
-    return clients.filter(c => !empreendedorCpfCnpjs.has(c.cpfCnpj));
+
+    const empreendedorDocDigits = new Set(
+      empreendedores
+        .map((e) => normalizeDocumentDigits(e.cpfCnpj))
+        .filter(Boolean),
+    );
+
+    return clients.filter((c) => {
+      const digits = normalizeDocumentDigits(c.cpfCnpj);
+      if (!digits) return true;
+      return !empreendedorDocDigits.has(digits);
+    });
   }, [clients, empreendedores]);
 
   const cpfFilterDigits = cpfFilter.replace(/\D/g, '');

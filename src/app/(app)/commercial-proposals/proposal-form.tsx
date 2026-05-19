@@ -28,7 +28,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { CalendarIcon, Loader2, PlusCircle, Trash2, List } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, parse } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import { ptBR } from 'date-fns/locale/pt-BR';
 import { useToast } from '@/hooks/use-toast';
 import type { CommercialProposal, Client, CommercialProposalItem, Service } from '@/lib/types';
 import { useFirebase, errorEmitter, useCollection, useMemoFirebase } from '@/firebase';
@@ -50,13 +50,9 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { AttachmentPreviewSection } from '@/components/shared/attachment-preview-section';
 import { useOfflineOptional } from '@/lib/offline';
-import {
-  uploadFileToStorage,
-  sanitizeStorageFileName,
-} from '@/lib/storage-upload';
 import { isImageOrPdfForTransaction } from '@/lib/file-mime';
-
-const MAX_PROPOSAL_FILE_BYTES = 10 * 1024 * 1024;
+import { UploadPreparationDialog } from '@/components/shared/upload-preparation-dialog';
+import { useStorageFileUpload } from '@/hooks/use-storage-file-upload';
 
 const formSchema = z.object({
   clientId: z.string().min(1, 'Selecione um cliente.'),
@@ -136,6 +132,14 @@ export function ProposalForm({ currentItem, onSuccess, onCancel }: ProposalFormP
   const { toast } = useToast();
   const { firestore, auth } = useFirebase();
   const offline = useOfflineOptional();
+  const { uploadFile, dialogProps, limitLabel } = useStorageFileUpload({
+    storageFolder: 'commercial-proposals',
+    buildStoragePath: (_file, safe) => {
+      const uid = auth?.currentUser?.uid;
+      if (!uid) throw new Error('Sessão inválida. Faça login novamente.');
+      return `commercial-proposals/${uid}/${Date.now()}-${safe}`;
+    },
+  });
 
   const clientsQuery = useMemoFirebase(() => firestore ? collection(firestore, 'clients') : null, [firestore]);
   const { data: clients, isLoading: isLoadingClients } = useCollection<Client>(clientsQuery);
@@ -182,15 +186,6 @@ export function ProposalForm({ currentItem, onSuccess, onCancel }: ProposalFormP
     const file = inputEl.files?.[0];
     if (!file) return;
 
-    if (file.size > MAX_PROPOSAL_FILE_BYTES) {
-      toast({
-        variant: 'destructive',
-        title: 'Arquivo muito grande',
-        description: `O arquivo não pode exceder ${MAX_PROPOSAL_FILE_BYTES / 1024 / 1024}MB.`,
-      });
-      inputEl.value = '';
-      return;
-    }
     if (!isImageOrPdfForTransaction(file)) {
       toast({
         variant: 'destructive',
@@ -205,15 +200,8 @@ export function ProposalForm({ currentItem, onSuccess, onCancel }: ProposalFormP
     setIsUploadingFile(true);
     setFileUrl(null);
     try {
-      const uid = auth?.currentUser?.uid;
-      if (!uid) {
-        throw new Error('Sessão inválida. Faça login novamente.');
-      }
-      const safe = sanitizeStorageFileName(file.name);
-      const downloadUrl = await uploadFileToStorage(
-        file,
-        `commercial-proposals/${uid}/${Date.now()}-${safe}`,
-      );
+      const downloadUrl = await uploadFile(file);
+      if (!downloadUrl) return;
       setFileUrl(downloadUrl);
       toast({
         title: 'Anexo carregado',
@@ -652,6 +640,7 @@ export function ProposalForm({ currentItem, onSuccess, onCancel }: ProposalFormP
              </DialogFooter>
         </DialogContent>
       </Dialog>
+      <UploadPreparationDialog {...dialogProps} />
     </>
   );
 }

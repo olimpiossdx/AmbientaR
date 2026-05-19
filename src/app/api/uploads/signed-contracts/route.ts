@@ -1,3 +1,4 @@
+import { UPLOAD_MAX_BYTES_FINANCIAL } from "@/lib/upload-limits";
 import { NextRequest, NextResponse } from "next/server";
 import { promises as fs } from "fs";
 import path from "path";
@@ -9,7 +10,7 @@ const UPLOAD_DIR = path.join(
   "uploads",
   "signed-contracts",
 );
-const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
+const MAX_FILE_SIZE = UPLOAD_MAX_BYTES_FINANCIAL; // 20MB
 const ALLOWED_TYPES = ["application/pdf", "application/octet-stream"];
 
 async function ensureDir() {

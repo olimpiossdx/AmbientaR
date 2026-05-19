@@ -7,7 +7,13 @@ import { collection } from 'firebase/firestore';
 import type { Revenue, Expense, Client } from '@/lib/types';
 import jsPDF from 'jspdf';
 import { useToast } from '@/hooks/use-toast';
-import { fetchBrandingImageAsBase64, getImageDimensions, calcPdfImageSize, applyImageOpacity } from '@/lib/branding-pdf';
+import {
+  downloadJsPdf,
+  fetchBrandingImagesForPdf,
+  brandingPdfMissingSlots,
+  getImageDimensions,
+  calcPdfImageSize,
+} from '@/lib/branding-pdf';
 import { useLocalBranding } from '@/hooks/use-local-branding';
 import { CashFlowView } from './cash-flow-view';
 import { useFinancialMenuDebug } from '@/lib/financial-menu-debug';
@@ -62,6 +68,7 @@ export default function CashFlowPage() {
   const [filterValorMin, setFilterValorMin] = useState('');
   const [filterValorMax, setFilterValorMax] = useState('');
   const [filterDescricao, setFilterDescricao] = useState('');
+  const [isExportingPdf, setIsExportingPdf] = useState(false);
 
   const revenuesQuery = useMemoFirebase(() => (firestore && user ? collection(firestore, 'revenues') : null), [firestore, user]);
   const { data: allRevenues, isLoading: isLoadingRevenues } = useCollection<Revenue>(revenuesQuery);
@@ -138,10 +145,24 @@ export default function CashFlowPage() {
   const periodLabel = periodType === 'day' ? periodDay : periodType === 'month' ? periodMonth : periodYear;
 
   const handleExportPdf = async () => {
-    const headerBase64 = await fetchBrandingImageAsBase64(brandingData?.headerImageUrl);
-    const footerBase64 = await fetchBrandingImageAsBase64(brandingData?.footerImageUrl);
-    const watermarkBase64Raw = await fetchBrandingImageAsBase64(brandingData?.watermarkImageUrl);
-    const watermarkBase64 = watermarkBase64Raw ? await applyImageOpacity(watermarkBase64Raw, 0.15) : null;
+    if (isExportingPdf) return;
+    setIsExportingPdf(true);
+    try {
+    const brandingUrls = {
+      headerImageUrl: brandingData?.headerImageUrl,
+      footerImageUrl: brandingData?.footerImageUrl,
+      watermarkImageUrl: brandingData?.watermarkImageUrl,
+    };
+    const brandingLoaded = await fetchBrandingImagesForPdf(brandingUrls);
+    const { headerBase64, footerBase64, watermarkBase64 } = brandingLoaded;
+    const missing = brandingPdfMissingSlots(brandingUrls, brandingLoaded);
+    if (missing.length > 0) {
+      toast({
+        variant: 'destructive',
+        title: 'Identidade visual incompleta no PDF',
+        description: `Não foi possível carregar: ${missing.join(', ')}.`,
+      });
+    }
 
     const doc = new jsPDF({ unit: 'mm', format: 'a4' });
     const pageWidth = doc.internal.pageSize.getWidth();
@@ -213,7 +234,10 @@ export default function CashFlowPage() {
     }
     // Numeração de páginas alinhada à direita no rodapé.
     addPageNumbers(doc, 10);
-    doc.save('lancamentos_caixa_' + periodLabel.replace(/-/g, '') + '.pdf');
+    downloadJsPdf(doc, 'lancamentos_caixa_' + periodLabel.replace(/-/g, '') + '.pdf');
+    } finally {
+      setIsExportingPdf(false);
+    }
     toast({ title: 'PDF exportado', description: 'Relatório por período gerado.' });
   };
 
@@ -267,6 +291,7 @@ export default function CashFlowPage() {
       isLoadingRevenues={isLoadingRevenues}
       isLoadingExpenses={isLoadingExpenses}
       onExportPdf={handleExportPdf}
+      isExportingPdf={isExportingPdf}
       onPrint={handlePrint}
     />
   );

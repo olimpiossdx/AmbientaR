@@ -19,6 +19,7 @@ import { ChevronDown } from 'lucide-react';
 import { useAuth } from '@/firebase';
 import type { NavItem, NavSubItem, UserRole } from '@/lib/types';
 import { allNavItems } from '@/lib/navigation-config';
+import { canAccessNavItem } from '@/lib/role-guards';
 import { getFinancialMenuForRole, isFinancialRoute } from '@/lib/financial-menu-debug';
 import { getCadastroMenuForRole, isCadastroRoute } from '@/lib/cadastro-menu-debug';
 
@@ -32,7 +33,7 @@ function estimateMenuLabelsWidthPx(items: NavItem[], userRole: UserRole): number
   let max = 0;
   const walk = (list: (NavItem | NavSubItem)[], depth: number) => {
     for (const item of list) {
-      if ('roles' in item && item.roles && !item.roles.includes(userRole)) continue;
+      if ('roles' in item && item.roles && !canAccessNavItem(userRole, item.roles)) continue;
       const indent = Math.min(depth * 28, 84);
       const chrome = 56;
       max = Math.max(max, ctx.measureText(item.label).width + indent + chrome);
@@ -83,7 +84,7 @@ function NavContentInner() {
 
       const filterItemsByRole = (items: (NavItem | NavSubItem)[]): any[] => {
           return items
-            .filter(item => !item.roles || item.roles.includes(userRole))
+            .filter(item => canAccessNavItem(userRole, item.roles))
             .map(item => {
               if ('subItems' in item && item.subItems) {
                   const filteredSubItems = filterItemsByRole(item.subItems);
@@ -187,7 +188,7 @@ function NavContentInner() {
 
   function renderSubItems(subItems: NavSubItem[], pathname: string, userRole: UserRole) {
       const visible = subItems.filter(
-        (subItem) => !subItem.roles || subItem.roles.includes(userRole),
+        (subItem) => canAccessNavItem(userRole, subItem.roles),
       );
       const activeExclusiveHref = pickLongestActiveSubHref(visible);
       return visible

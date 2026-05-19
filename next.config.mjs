@@ -3,27 +3,19 @@
  * Em desenvolvimento o PWA fica desativado; `UnregisterServiceWorkerDev` remove SW antigos
  * para evitar ChunkLoadError. Ver docs/OFFLINE-PWA-SHELL.md.
  */
-import withPWAInit from "@ducanh2912/next-pwa";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
 
-const withPWA = withPWAInit({
-  dest: "public",
-  disable: process.env.NODE_ENV === "development",
-  register: true,
-  skipWaiting: true,
-  fallbacks: {
-    document: "/offline",
-  },
-  workboxOptions: {
-    navigateFallback: "/offline",
-    /** Evita que otimização de imagens e dados RSC caiam no HTML de fallback. */
-    navigateFallbackDenylist: [
-      /^\/api/,
-      /^\/_next\/data\//,
-      /^\/_next\/image/,
-    ],
-    disableDevLogs: true,
-  },
-});
+/** Caminho canônico do projeto (evita D:\A vs d:\A duplicar módulos no Windows). */
+const projectRoot = fs.realpathSync.native(
+  path.dirname(fileURLToPath(import.meta.url)),
+);
+const nm = (...segments) => path.join(projectRoot, "node_modules", ...segments);
+
+if (process.cwd() !== projectRoot) {
+  process.chdir(projectRoot);
+}
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -33,18 +25,29 @@ const nextConfig = {
    * Use só quando precisar: NEXT_DIST_DIR=out/build
    */
   ...(process.env.NEXT_DIST_DIR ? { distDir: process.env.NEXT_DIST_DIR } : {}),
-  output: "standalone",
+  /** `standalone` em dev quebra error components / App Router no Next 14. */
+  ...(process.env.NODE_ENV === "production" ? { output: "standalone" } : {}),
   experimental: {
     /** Evita empacotar pdf.js no bundle do servidor (DOMMatrix/canvas em build). */
     serverComponentsExternalPackages: [
       "pdf-parse",
       "pdfjs-dist",
       "@napi-rs/canvas",
+      "genkit",
+      "@genkit-ai/core",
+      "@genkit-ai/ai",
+      "@genkit-ai/google-genai",
+      "@genkit-ai/compat-oai",
     ],
   },
   webpack: (config, { dev }) => {
     if (dev && config.output) {
       config.output.chunkLoadTimeout = 180000;
+    }
+    if (dev && process.platform === "win32") {
+      /** Evita cache com caminhos D:\A vs d:\A duplicando módulos. */
+      config.cache = false;
+      config.resolve.modules = [nm(), ...(config.resolve.modules ?? ["node_modules"])];
     }
     return config;
   },
@@ -72,4 +75,27 @@ const nextConfig = {
   },
 };
 
-export default withPWA(nextConfig);
+/** PWA/workbox só em produção — em dev no Windows quebra o App Router (D:\A vs d:\A). */
+async function loadConfig() {
+  if (process.env.NODE_ENV === "development") {
+    return nextConfig;
+  }
+  const { default: withPWAInit } = await import("@ducanh2912/next-pwa");
+  const withPWA = withPWAInit({
+    dest: "public",
+    disable: false,
+    register: true,
+    skipWaiting: true,
+    fallbacks: {
+      document: "/offline",
+    },
+    workboxOptions: {
+      navigateFallback: "/offline",
+      navigateFallbackDenylist: [/^\/api/, /^\/_next\/data\//, /^\/_next\/image/],
+      disableDevLogs: true,
+    },
+  });
+  return withPWA(nextConfig);
+}
+
+export default loadConfig();

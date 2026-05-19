@@ -13,6 +13,7 @@ import { useAuth } from '@/firebase';
 import { getNavDebugInfo, type NavDebugInfo } from '@/lib/nav-debug';
 import { allNavItems } from '@/lib/navigation-config';
 import type { NavItem, NavSubItem, UserRole } from '@/lib/types';
+import { canAccessNavItem } from '@/lib/role-guards';
 
 /** Rotas do menu Cadastro (subitens de allNavItems "Cadastro") */
 export const CADASTRO_ROUTES = [
@@ -46,7 +47,7 @@ export function getCadastroMenuForRole(userRole: UserRole): {
 
   function walk(items: NavSubItem[]) {
     for (const sub of items) {
-      if (sub.roles && !sub.roles.includes(userRole)) continue;
+      if (sub.roles && !canAccessNavItem(userRole, sub.roles)) continue;
       visibleSubItems.push({
         label: sub.label,
         href: 'href' in sub ? sub.href : undefined,
