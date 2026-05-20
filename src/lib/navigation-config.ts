@@ -145,6 +145,12 @@ export const allNavItems: NavItem[] = [
         roles: ["admin", "financial"],
       },
       {
+        href: "/financial/bens-patrimonio",
+        label: "Bens e Patrimônio",
+        icon: Building2,
+        roles: ["admin", "financial"],
+      },
+      {
         href: "/financial/dre-contabil",
         label: "DRE Contábil",
         icon: BarChart2,

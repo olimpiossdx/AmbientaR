@@ -839,6 +839,15 @@ service cloud.firestore {
     }
 
     /**
+     * @description Ativo imobilizado / bens e patrimônio (financeiro).
+     * @path /databases/{database}/documents/bens_patrimonio/{bemId}
+     */
+    match /bens_patrimonio/{bemId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin() || isFinancial();
+    }
+
+    /**
      * @description Allows read access to signed-in users. Write access is restricted to admin or sales roles.
      * @path /databases/{database}/documents/opportunities/{opportunityId}
      */

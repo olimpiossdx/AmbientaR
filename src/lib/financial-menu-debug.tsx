@@ -28,6 +28,7 @@ export const FINANCIAL_ROUTES = [
   '/cash-flow',
   '/financial/dre-contabil',
   '/financial/abc-curve',
+  '/financial/bens-patrimonio',
   '/bank-access',
 ] as const;
 

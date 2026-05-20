@@ -1753,6 +1753,80 @@ export type Fornecedor = {
   };
 };
 
+/** Tipo principal do bem (ativo imobilizado). */
+export type BemPatrimonioCategoria = 'movel' | 'imovel';
+
+/** Subtipo detalhado para classificação e relatórios. */
+export type BemPatrimonioSubtipo =
+  | 'veiculo'
+  | 'moto'
+  | 'motocicleta'
+  | 'barco'
+  | 'equipamento'
+  | 'maquina'
+  | 'informatica'
+  | 'moveis_utensilios'
+  | 'lote'
+  | 'terreno'
+  | 'fazenda'
+  | 'predio'
+  | 'galpao'
+  | 'sala_comercial'
+  | 'outro';
+
+export type BemPatrimonioStatus = 'ativo' | 'baixado' | 'alienado' | 'em_manutencao';
+
+export type BemPatrimonioMetodoDepreciacao = 'linear' | 'nao_depreciavel';
+
+/** Bem do ativo imobilizado (IRPJ / contabilidade — base para LALUR e depreciação). */
+export type BemPatrimonio = {
+  id: string;
+  /** Código interno / plaqueta de patrimônio */
+  codigoPatrimonio?: string;
+  descricao: string;
+  categoria: BemPatrimonioCategoria;
+  subtipo: BemPatrimonioSubtipo;
+  status: BemPatrimonioStatus;
+  /** Identificação adicional: placa, RENAVAM, nº série, matrícula etc. */
+  identificacao?: string;
+  /** Aquisição */
+  dataAquisicao: string;
+  valorAquisicao: number;
+  notaFiscalNumero?: string;
+  notaFiscalSerie?: string;
+  notaFiscalChave?: string;
+  fornecedorNome?: string;
+  fornecedorCnpj?: string;
+  /** Contabilidade / SPED */
+  contaContabilAtivo?: string;
+  contaContabilDepreciacao?: string;
+  contaContabilDespesaDepreciacao?: string;
+  centroCusto?: string;
+  classificacaoFiscal?: string;
+  unidadeMedida?: string;
+  /** Depreciação */
+  metodoDepreciacao: BemPatrimonioMetodoDepreciacao;
+  vidaUtilMeses?: number;
+  taxaDepreciacaoAnual?: number;
+  valorResidual?: number;
+  depreciacaoAcumulada?: number;
+  depreciarNoMesAquisicao?: boolean;
+  /** Imóveis / localização */
+  logradouro?: string;
+  municipio?: string;
+  uf?: string;
+  cep?: string;
+  matricula?: string;
+  inscricaoMunicipal?: string;
+  areaM2?: number;
+  /** Documentos e observações fiscais */
+  fileUrl?: string;
+  observacoes?: string;
+  lalurObservacoes?: string;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
 export type SupplierContract = {
   id: string;
   status: 'Rascunho' | 'Aprovado';
