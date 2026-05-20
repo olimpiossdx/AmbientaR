@@ -1,6 +1,6 @@
 # Auditoria de Uploads
 
-Gerado em: 2026-05-19T21:16:46.581Z
+Gerado em: 2026-05-20T16:04:50.799Z
 
 Padrão adotado: `downloadUrl` para retornos de upload.
 

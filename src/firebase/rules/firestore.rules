@@ -838,26 +838,6 @@ service cloud.firestore {
       allow write: if isAdmin() || isFinancial();
     }
 
-    match /financial_centers/{centerId} {
-      allow read: if isSignedIn();
-      allow write: if isAdmin() || isFinancial();
-    }
-
-    match /financial_allocations/{allocationId} {
-      allow read: if isSignedIn();
-      allow write: if isAdmin() || isFinancial();
-    }
-
-    match /financial_movements/{movementId} {
-      allow read: if isSignedIn();
-      allow write: if isAdmin() || isFinancial();
-    }
-
-    match /financial_asset_sales/{saleId} {
-      allow read: if isSignedIn();
-      allow write: if isAdmin() || isFinancial();
-    }
-
     /**
      * @description Allows read access to signed-in users. Write access is restricted to admin or sales roles.
      * @path /databases/{database}/documents/opportunities/{opportunityId}

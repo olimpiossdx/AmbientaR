@@ -1,6 +1,6 @@
 # Auditoria de Rotas e Menu
 
-Gerado em: 2026-05-19T21:16:02.022Z
+Gerado em: 2026-05-20T16:11:05.819Z
 
 Classificação inicial para limpeza cirúrgica. Rotas órfãs não devem ser removidas automaticamente; precisam de validação funcional antes.
 
@@ -190,14 +190,12 @@ Total: 177
 
 ## Rotas dinâmicas sem entrada direta no menu
 
-Total: 11
+Total: 9
 
 | Rota | Arquivo |
 |------|---------|
 | `/consultas/[id]` | `src/app/(app)/consultas/[id]/page.tsx` |
 | `/consultas/[id]/edit` | `src/app/(app)/consultas/[id]/edit/page.tsx` |
-| `/financial/controle-projetos/ativos/[id]` | `src/app/(app)/financial/controle-projetos/ativos/[id]/page.tsx` |
-| `/financial/controle-projetos/centros/[id]` | `src/app/(app)/financial/controle-projetos/centros/[id]/page.tsx` |
 | `/inventarios/[id]` | `src/app/(app)/inventarios/[id]/page.tsx` |
 | `/inventarios/[id]/parcelas/[parcelaId]` | `src/app/(app)/inventarios/[id]/parcelas/[parcelaId]/page.tsx` |
 | `/knowledge-sources/[id]` | `src/app/(app)/knowledge-sources/[id]/page.tsx` |
@@ -208,7 +206,7 @@ Total: 11
 
 ## Rotas estáticas sem entrada direta no menu
 
-Total: 27
+Total: 21
 
 | Rota | Arquivo |
 |------|---------|
@@ -218,12 +216,6 @@ Total: 27
 | `/consultas/new` | `src/app/(app)/consultas/new/page.tsx` |
 | `/environmental-company` | `src/app/(app)/environmental-company/page.tsx` |
 | `/external` | `src/app/(app)/external/page.tsx` |
-| `/financial/controle-projetos` | `src/app/(app)/financial/controle-projetos/page.tsx` |
-| `/financial/controle-projetos/ativos` | `src/app/(app)/financial/controle-projetos/ativos/page.tsx` |
-| `/financial/controle-projetos/ativos/nova` | `src/app/(app)/financial/controle-projetos/ativos/nova/page.tsx` |
-| `/financial/controle-projetos/centros` | `src/app/(app)/financial/controle-projetos/centros/page.tsx` |
-| `/financial/controle-projetos/movimentacoes` | `src/app/(app)/financial/controle-projetos/movimentacoes/page.tsx` |
-| `/financial/controle-projetos/rentabilidade` | `src/app/(app)/financial/controle-projetos/rentabilidade/page.tsx` |
 | `/inventarios` | `src/app/(app)/inventarios/page.tsx` |
 | `/inventarios/new` | `src/app/(app)/inventarios/new/page.tsx` |
 | `/knowledge-sources` | `src/app/(app)/knowledge-sources/page.tsx` |
