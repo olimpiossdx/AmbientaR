@@ -1142,6 +1142,42 @@ export const allNavItems: NavItem[] = [
         roles: ["admin"],
       },
       {
+        href: "/consultas",
+        label: "Consultas Técnicas",
+        icon: FileQuestion,
+        roles: ["admin", "technical", "gestor", "supervisor", "financial"],
+      },
+      {
+        href: "/laudos",
+        label: "Laudos",
+        icon: BookOpenCheck,
+        roles: ["admin", "technical", "gestor", "supervisor"],
+      },
+      {
+        href: "/knowledge-sources",
+        label: "Fontes Normativas",
+        icon: BookText,
+        roles: ["admin"],
+      },
+      {
+        href: "/inventarios",
+        label: "Inventários de Campo",
+        icon: ListTree,
+        roles: ["admin", "technical", "gestor", "supervisor", "diretor_fauna"],
+      },
+      {
+        href: "/canais",
+        label: "Canais (WhatsApp/IG)",
+        icon: MessagesSquare,
+        roles: ["admin"],
+      },
+      {
+        href: "/app-campo",
+        label: "App de Campo (planej.)",
+        icon: HardHat,
+        roles: ["admin"],
+      },
+      {
         href: "/ai-lab",
         label: "Hub IA + MCP + RAG",
         icon: Bot,

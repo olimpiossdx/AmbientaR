@@ -5,7 +5,15 @@ const appRoot = path.join("src", "app", "(app)");
 const navConfig = readFileSync(path.join("src", "lib", "navigation-config.ts"), "utf8");
 const hrefs = [...navConfig.matchAll(/href:\s*"([^"]+)"/g)]
   .map((m) => m[1])
-  .filter((href) => href.startsWith("/") && !href.startsWith("/external"));
+  .filter((href) => href.startsWith("/"));
+
+function normalizeMenuHref(href) {
+  if (href.startsWith("/external")) return "/external";
+  const base = href.split("?")[0].split("#")[0];
+  return base.endsWith("/") && base.length > 1 ? base.slice(0, -1) : base;
+}
+
+const menuBases = [...new Set(hrefs.map(normalizeMenuHref))];
 
 function walk(dir) {
   const out = [];
@@ -46,8 +54,8 @@ function isDynamic(route) {
 }
 
 function routeCovered(route) {
-  if (hrefs.includes(route)) return true;
-  return hrefs.some((href) => route === href || route.startsWith(`${href}/`));
+  if (menuBases.includes(route)) return true;
+  return menuBases.some((base) => route === base || route.startsWith(`${base}/`));
 }
 
 const active = pages.filter((p) => routeCovered(p.route));

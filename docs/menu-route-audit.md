@@ -1,12 +1,12 @@
 # Auditoria de Rotas e Menu
 
-Gerado em: 2026-05-20T18:02:44.046Z
+Gerado em: 2026-05-20T18:06:33.931Z
 
 Classificação inicial para limpeza cirúrgica. Rotas órfãs não devem ser removidas automaticamente; precisam de validação funcional antes.
 
 ## Código ativo ou coberto por menu
 
-Total: 180
+Total: 199
 
 | Rota | Arquivo |
 |------|---------|
@@ -16,10 +16,12 @@ Total: 180
 | `/ai-lab/mcp` | `src/app/(app)/ai-lab/mcp/page.tsx` |
 | `/ai-lab/rag` | `src/app/(app)/ai-lab/rag/page.tsx` |
 | `/analise-ambiental` | `src/app/(app)/analise-ambiental/page.tsx` |
+| `/app-campo` | `src/app/(app)/app-campo/page.tsx` |
 | `/audit-log` | `src/app/(app)/audit-log/page.tsx` |
 | `/autos-infracao-defesa` | `src/app/(app)/autos-infracao-defesa/page.tsx` |
 | `/bank-access` | `src/app/(app)/bank-access/page.tsx` |
 | `/calendar` | `src/app/(app)/calendar/page.tsx` |
+| `/canais` | `src/app/(app)/canais/page.tsx` |
 | `/car` | `src/app/(app)/car/page.tsx` |
 | `/cash-flow` | `src/app/(app)/cash-flow/page.tsx` |
 | `/cash-flow/[id]/edit` | `src/app/(app)/cash-flow/[id]/edit/page.tsx` |
@@ -31,6 +33,10 @@ Total: 180
 | `/commercial-proposals/[id]/edit` | `src/app/(app)/commercial-proposals/[id]/edit/page.tsx` |
 | `/commercial-proposals/new` | `src/app/(app)/commercial-proposals/new/page.tsx` |
 | `/compliance` | `src/app/(app)/compliance/page.tsx` |
+| `/consultas` | `src/app/(app)/consultas/page.tsx` |
+| `/consultas/[id]` | `src/app/(app)/consultas/[id]/page.tsx` |
+| `/consultas/[id]/edit` | `src/app/(app)/consultas/[id]/edit/page.tsx` |
+| `/consultas/new` | `src/app/(app)/consultas/new/page.tsx` |
 | `/contracts` | `src/app/(app)/contracts/page.tsx` |
 | `/contracts-suppliers` | `src/app/(app)/contracts-suppliers/page.tsx` |
 | `/contracts/[id]/edit` | `src/app/(app)/contracts/[id]/edit/page.tsx` |
@@ -48,6 +54,7 @@ Total: 180
 | `/empreendedores` | `src/app/(app)/empreendedores/page.tsx` |
 | `/empreendedores/[id]/edit` | `src/app/(app)/empreendedores/[id]/edit/page.tsx` |
 | `/empreendedores/new` | `src/app/(app)/empreendedores/new/page.tsx` |
+| `/external` | `src/app/(app)/external/page.tsx` |
 | `/fauna` | `src/app/(app)/fauna/page.tsx` |
 | `/financial/abc-curve` | `src/app/(app)/financial/abc-curve/page.tsx` |
 | `/financial/dre-contabil` | `src/app/(app)/financial/dre-contabil/page.tsx` |
@@ -67,11 +74,21 @@ Total: 180
 | `/inspections/new` | `src/app/(app)/inspections/new/page.tsx` |
 | `/inspections/reports` | `src/app/(app)/inspections/reports/page.tsx` |
 | `/intervencoes` | `src/app/(app)/intervencoes/page.tsx` |
+| `/inventarios` | `src/app/(app)/inventarios/page.tsx` |
+| `/inventarios/[id]` | `src/app/(app)/inventarios/[id]/page.tsx` |
+| `/inventarios/[id]/parcelas/[parcelaId]` | `src/app/(app)/inventarios/[id]/parcelas/[parcelaId]/page.tsx` |
+| `/inventarios/new` | `src/app/(app)/inventarios/new/page.tsx` |
 | `/invoices` | `src/app/(app)/invoices/page.tsx` |
 | `/invoices/[id]/edit` | `src/app/(app)/invoices/(.)[id]/edit/page.tsx` |
 | `/invoices/[id]/edit` | `src/app/(app)/invoices/[id]/edit/page.tsx` |
 | `/invoices/new` | `src/app/(app)/invoices/(.)new/page.tsx` |
 | `/invoices/new` | `src/app/(app)/invoices/new/page.tsx` |
+| `/knowledge-sources` | `src/app/(app)/knowledge-sources/page.tsx` |
+| `/knowledge-sources/[id]` | `src/app/(app)/knowledge-sources/[id]/page.tsx` |
+| `/knowledge-sources/new` | `src/app/(app)/knowledge-sources/new/page.tsx` |
+| `/laudos` | `src/app/(app)/laudos/page.tsx` |
+| `/laudos/[id]` | `src/app/(app)/laudos/[id]/page.tsx` |
+| `/laudos/new` | `src/app/(app)/laudos/new/page.tsx` |
 | `/licenses` | `src/app/(app)/licenses/page.tsx` |
 | `/licenses/[id]/edit` | `src/app/(app)/licenses/(.)[id]/edit/page.tsx` |
 | `/licenses/[id]/edit` | `src/app/(app)/licenses/[id]/edit/page.tsx` |
@@ -104,6 +121,7 @@ Total: 180
 | `/services` | `src/app/(app)/services/page.tsx` |
 | `/services/[id]/edit` | `src/app/(app)/services/[id]/edit/page.tsx` |
 | `/services/new` | `src/app/(app)/services/new/page.tsx` |
+| `/settings` | `src/app/(app)/settings/page.tsx` |
 | `/settings/ai-local-source` | `src/app/(app)/settings/ai-local-source/page.tsx` |
 | `/settings/appearance` | `src/app/(app)/settings/appearance/page.tsx` |
 | `/settings/company` | `src/app/(app)/settings/company/page.tsx` |
@@ -113,6 +131,7 @@ Total: 180
 | `/settings/templates/rca` | `src/app/(app)/settings/templates/rca/page.tsx` |
 | `/social-media` | `src/app/(app)/social-media/page.tsx` |
 | `/studies/analise-socioambiental` | `src/app/(app)/studies/analise-socioambiental/page.tsx` |
+| `/studies/assistant` | `src/app/(app)/studies/assistant/page.tsx` |
 | `/studies/barragem` | `src/app/(app)/studies/barragem/page.tsx` |
 | `/studies/cavidades` | `src/app/(app)/studies/cavidades/page.tsx` |
 | `/studies/educacao-ambiental` | `src/app/(app)/studies/educacao-ambiental/page.tsx` |
@@ -193,41 +212,23 @@ Total: 180
 
 ## Rotas dinâmicas sem entrada direta no menu
 
-Total: 8
+Total: 2
 
 | Rota | Arquivo |
 |------|---------|
-| `/consultas/[id]` | `src/app/(app)/consultas/[id]/page.tsx` |
-| `/consultas/[id]/edit` | `src/app/(app)/consultas/[id]/edit/page.tsx` |
-| `/inventarios/[id]` | `src/app/(app)/inventarios/[id]/page.tsx` |
-| `/inventarios/[id]/parcelas/[parcelaId]` | `src/app/(app)/inventarios/[id]/parcelas/[parcelaId]/page.tsx` |
-| `/knowledge-sources/[id]` | `src/app/(app)/knowledge-sources/[id]/page.tsx` |
-| `/laudos/[id]` | `src/app/(app)/laudos/[id]/page.tsx` |
 | `/studies/intervencao-ambiental/[id]/edit` | `src/app/(app)/studies/intervencao-ambiental/(.)[id]/edit/page.tsx` |
 | `/studies/intervencao-ambiental/[id]/edit` | `src/app/(app)/studies/intervencao-ambiental/[id]/edit/page.tsx` |
 
 ## Rotas estáticas sem entrada direta no menu
 
-Total: 19
+Total: 7
 
 | Rota | Arquivo |
 |------|---------|
-| `/app-campo` | `src/app/(app)/app-campo/page.tsx` |
-| `/canais` | `src/app/(app)/canais/page.tsx` |
-| `/consultas` | `src/app/(app)/consultas/page.tsx` |
-| `/consultas/new` | `src/app/(app)/consultas/new/page.tsx` |
 | `/environmental-company` | `src/app/(app)/environmental-company/page.tsx` |
-| `/external` | `src/app/(app)/external/page.tsx` |
-| `/inventarios` | `src/app/(app)/inventarios/page.tsx` |
-| `/inventarios/new` | `src/app/(app)/inventarios/new/page.tsx` |
-| `/knowledge-sources` | `src/app/(app)/knowledge-sources/page.tsx` |
-| `/knowledge-sources/new` | `src/app/(app)/knowledge-sources/new/page.tsx` |
-| `/laudos` | `src/app/(app)/laudos/page.tsx` |
-| `/laudos/new` | `src/app/(app)/laudos/new/page.tsx` |
 | `/monitoring` | `src/app/(app)/monitoring/page.tsx` |
-| `/settings` | `src/app/(app)/settings/page.tsx` |
 | `/studies` | `src/app/(app)/studies/page.tsx` |
-| `/studies/assistant` | `src/app/(app)/studies/assistant/page.tsx` |
+| `/studies/intervencao-ambiental` | `src/app/(app)/studies/intervencao-ambiental/page.tsx` |
 | `/studies/intervencao-ambiental/new` | `src/app/(app)/studies/intervencao-ambiental/(.)new/page.tsx` |
 | `/studies/intervencao-ambiental/new` | `src/app/(app)/studies/intervencao-ambiental/new/page.tsx` |
 | `/webmail` | `src/app/(app)/webmail/page.tsx` |
