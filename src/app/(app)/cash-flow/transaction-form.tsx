@@ -26,7 +26,8 @@ import { cn, numberToWordsBRL } from "@/lib/utils";
 import { format, parse } from "date-fns";
 import { ptBR } from "date-fns/locale/pt-BR";
 import { useToast } from "@/hooks/use-toast";
-import type { Revenue, Expense, Client } from "@/lib/types";
+import type { Revenue, Expense, Client, Fornecedor, ExpenseCategory } from "@/lib/types";
+import { TransactionExtraFields } from "@/components/financial/transaction-extra-fields";
 import {
   useFirebase,
   errorEmitter,
@@ -56,6 +57,12 @@ const formSchema = z.object({
   amountInWords: z.string().optional(),
   date: z.date({ required_error: "A data é obrigatória." }),
   clientId: z.string().optional(),
+  category: z.string().optional(),
+  supplierId: z.string().optional(),
+  requestId: z.string().optional(),
+  projectId: z.string().optional(),
+  centroCusto: z.string().optional(),
+  invoiceId: z.string().optional(),
   file: z
     .any()
     .optional()
@@ -161,6 +168,13 @@ export function TransactionForm({
   const { data: clients, isLoading: isLoadingClients } =
     useCollection<Client>(clientsQuery);
 
+  const suppliersQuery = useMemoFirebase(
+    () => (firestore && transactionType === "expense" ? collection(firestore, "fornecedores") : null),
+    [firestore, transactionType],
+  );
+  const { data: suppliers, isLoading: isLoadingSuppliers } =
+    useCollection<Fornecedor>(suppliersQuery);
+
   const form = useForm<TransactionFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -171,6 +185,12 @@ export function TransactionForm({
         : "",
       date: currentItem ? new Date(currentItem.date) : new Date(),
       clientId: (currentItem as Revenue)?.clientId || "",
+      category: (currentItem as Expense)?.category || "",
+      supplierId: (currentItem as Expense)?.supplierId || "",
+      requestId: currentItem?.requestId || "",
+      projectId: currentItem?.projectId || "",
+      centroCusto: currentItem?.centroCusto || "",
+      invoiceId: (currentItem as Revenue)?.invoiceId || "",
     },
   });
 
@@ -269,13 +289,23 @@ export function TransactionForm({
 
     const collectionName =
       transactionType === "revenue" ? "revenues" : "expenses";
-    const dataToSave = {
+    const dataToSave: Record<string, unknown> = {
       description: values.description,
       amount: values.amount,
       date: values.date.toISOString(),
       fileUrl: uploadedFileUrl || currentItem?.fileUrl || "",
-      ...(transactionType === "revenue" && { clientId: values.clientId }),
     };
+    if (values.requestId) dataToSave.requestId = values.requestId;
+    if (values.projectId) dataToSave.projectId = values.projectId;
+    if (values.centroCusto) dataToSave.centroCusto = values.centroCusto;
+    if (transactionType === "revenue") {
+      if (values.clientId) dataToSave.clientId = values.clientId;
+      if (values.invoiceId) dataToSave.invoiceId = values.invoiceId;
+    }
+    if (transactionType === "expense") {
+      if (values.category) dataToSave.category = values.category as ExpenseCategory;
+      if (values.supplierId) dataToSave.supplierId = values.supplierId;
+    }
 
     if (currentItem) {
       const itemRef = doc(firestore, collectionName, currentItem.id);
@@ -451,6 +481,13 @@ export function TransactionForm({
                 <FormMessage />
               </FormItem>
             )}
+          />
+          <TransactionExtraFields
+            control={form.control}
+            transactionType={transactionType}
+            suppliers={suppliers ?? undefined}
+            isLoadingSuppliers={isLoadingSuppliers}
+            showInvoiceLink={transactionType === "revenue"}
           />
           <FormField
             control={form.control}

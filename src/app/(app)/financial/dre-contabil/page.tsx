@@ -36,22 +36,22 @@ import {
 } from '@/lib/branding-pdf';
 import { useLocalBranding } from '@/hooks/use-local-branding';
 import { useFinancialMenuDebug } from '@/lib/financial-menu-debug';
+import {
+  calculateDre,
+  formatCurrencyBRL,
+  type DreRevenueRegime,
+} from '@/lib/financial-core';
 
 const currentYear = new Date().getFullYear();
 const years = Array.from({ length: 5 }, (_, i) => currentYear - i);
 
-function formatCurrency(value: number) {
-  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
-}
+const formatCurrency = formatCurrencyBRL;
 
-/** Retorna YYYY-MM-DD para comparação segura; string vazia se inválido */
-function datePart(dateStr: string | undefined): string {
-  if (dateStr == null || dateStr === '') return '';
-  const s = String(dateStr).slice(0, 10);
-  const d = new Date(s);
-  if (Number.isNaN(d.getTime())) return '';
-  return d.toISOString().slice(0, 10);
-}
+const DRE_REGIME_LABELS: Record<DreRevenueRegime, string> = {
+  faturas_pagas: 'Somente faturas pagas',
+  caixa: 'Somente receitas de caixa',
+  combinado_sem_duplicar: 'Faturas pagas + caixa sem vínculo (recomendado)',
+};
 
 /** Adiciona numeração de páginas no rodapé no formato página/total. */
 function addPageNumbers(doc: jsPDF, bottomMarginMm: number = 10) {
@@ -68,6 +68,7 @@ function addPageNumbers(doc: jsPDF, bottomMarginMm: number = 10) {
 
 export default function DreContabilPage() {
   const [selectedYear, setSelectedYear] = useState<string>(String(currentYear));
+  const [revenueRegime, setRevenueRegime] = useState<DreRevenueRegime>('combinado_sem_duplicar');
   const printRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const { firestore, user } = useFirebase();
@@ -94,42 +95,8 @@ export default function DreContabilPage() {
   const dre = useMemo(() => {
     const year = parseInt(selectedYear, 10);
     if (Number.isNaN(year) || !invoices || !revenues || !expenses) return null;
-
-    const start = `${year}-01-01`;
-    const end = `${year}-12-31`;
-
-    const inPeriod = (part: string) => part >= start && part <= end;
-
-    const receitaFaturas = invoices
-      .filter((i) => i.status === 'Paid' && inPeriod(datePart(i.invoiceDate)))
-      .reduce((acc, i) => acc + (Number(i.amount) || 0), 0);
-
-    const receitaCaixa = revenues
-      .filter((r) => inPeriod(datePart(r.date)))
-      .reduce((acc, r) => acc + (Number(r.amount) || 0), 0);
-
-    const receitaBruta = receitaFaturas + receitaCaixa;
-    const deducoes = 0;
-    const receitaLiquida = receitaBruta - deducoes;
-    const despesasOperacionais = expenses
-      .filter((e) => inPeriod(datePart(e.date)))
-      .reduce((acc, e) => acc + (Number(e.amount) || 0), 0);
-    const resultadoOperacional = receitaLiquida - despesasOperacionais;
-    const outrasReceitasDespesas = 0;
-    const resultadoLiquido = resultadoOperacional + outrasReceitasDespesas;
-
-    return {
-      receitaBruta,
-      deducoes,
-      receitaLiquida,
-      despesasOperacionais,
-      resultadoOperacional,
-      outrasReceitasDespesas,
-      resultadoLiquido,
-      receitaFaturas,
-      receitaCaixa,
-    };
-  }, [selectedYear, invoices, revenues, expenses]);
+    return calculateDre(invoices, revenues, expenses, year, revenueRegime);
+  }, [selectedYear, invoices, revenues, expenses, revenueRegime]);
 
   const isLoading = isLoadingInvoices || isLoadingRevenues || isLoadingExpenses;
 
@@ -275,10 +242,25 @@ export default function DreContabilPage() {
               Demonstração do Resultado do Exercício (DRE)
             </CardTitle>
             <CardDescription>
-              Resultado do exercício com base nos lançamentos já cadastrados no menu Financeiro: <strong>Faturas</strong> (recebidas/pagas) e <strong>Lançamentos de Caixa</strong> (receitas e despesas). Os valores são coletados automaticamente dessas fontes para o ano selecionado.
+              Escolha o <strong>regime de receita</strong> para evitar contar duas vezes o mesmo valor (fatura paga + receita de caixa vinculada).
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
+            <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
+              <Label htmlFor="dre-regime" className="shrink-0">Regime de receita</Label>
+              <Select value={revenueRegime} onValueChange={(v) => setRevenueRegime(v as DreRevenueRegime)}>
+                <SelectTrigger id="dre-regime" className="max-w-xl">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {(Object.keys(DRE_REGIME_LABELS) as DreRevenueRegime[]).map((k) => (
+                    <SelectItem key={k} value={k}>
+                      {DRE_REGIME_LABELS[k]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             {isLoading ? (
               <Skeleton className="h-64 w-full" />
             ) : dre ? (
@@ -317,12 +299,27 @@ export default function DreContabilPage() {
                       </TableCell>
                       <TableCell className="text-right">{formatCurrency(dre.receitaFaturas)}</TableCell>
                     </TableRow>
-                    <TableRow className="bg-muted/30">
-                      <TableCell className="pl-8 text-muted-foreground">
-                        Receitas de caixa (lançamentos)
-                      </TableCell>
-                      <TableCell className="text-right">{formatCurrency(dre.receitaCaixa)}</TableCell>
-                    </TableRow>
+                    {revenueRegime === 'combinado_sem_duplicar' ? (
+                      <>
+                        <TableRow className="bg-muted/30">
+                          <TableCell className="pl-8 text-muted-foreground">Receitas de caixa (total no período)</TableCell>
+                          <TableCell className="text-right">{formatCurrency(dre.receitaCaixa)}</TableCell>
+                        </TableRow>
+                        <TableRow className="bg-muted/30">
+                          <TableCell className="pl-10 text-muted-foreground text-xs">↳ vinculadas a faturas (excluídas da soma)</TableCell>
+                          <TableCell className="text-right text-xs">{formatCurrency(dre.receitaCaixaVinculadaFatura)}</TableCell>
+                        </TableRow>
+                        <TableRow className="bg-muted/30">
+                          <TableCell className="pl-10 text-muted-foreground text-xs">↳ avulsas (incluídas na receita bruta)</TableCell>
+                          <TableCell className="text-right text-xs">{formatCurrency(dre.receitaCaixaAvulsa)}</TableCell>
+                        </TableRow>
+                      </>
+                    ) : revenueRegime === 'caixa' ? (
+                      <TableRow className="bg-muted/30">
+                        <TableCell className="pl-8 text-muted-foreground">Receitas de caixa (lançamentos)</TableCell>
+                        <TableCell className="text-right">{formatCurrency(dre.receitaCaixa)}</TableCell>
+                      </TableRow>
+                    ) : null}
                     <TableRow>
                       <TableCell className="font-medium">2. Deduções da Receita</TableCell>
                       <TableCell className="text-right">({formatCurrency(dre.deducoes)})</TableCell>

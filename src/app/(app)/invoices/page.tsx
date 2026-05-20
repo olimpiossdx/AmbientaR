@@ -45,6 +45,10 @@ import {
 } from "@/lib/branding-pdf";
 import { useLocalBranding } from "@/hooks/use-local-branding";
 import type { Invoice, Client, CompanySettings, Contract } from "@/lib/types";
+import { useSyncOverdueInvoices } from "@/hooks/use-sync-overdue-invoices";
+import { isAdminOrFinancialRole } from "@/lib/role-guards";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { AlertTriangle } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Dialog,
@@ -328,6 +332,19 @@ export default function InvoicesPage() {
 
   const { data: invoices, isLoading: isLoadingInvoices } =
     useCollection<Invoice>(invoicesQuery);
+
+  const canSyncOverdue = isAdminOrFinancialRole(user?.role);
+  useSyncOverdueInvoices(invoices ?? undefined, canSyncOverdue);
+
+  const overdueAlert = useMemo(() => {
+    if (!invoices) return 0;
+    const today = new Date().toISOString().slice(0, 10);
+    return invoices.filter(
+      (i) =>
+        (i.status === "Unpaid" || i.status === "Overdue") &&
+        i.dueDate?.slice(0, 10) < today,
+    ).length;
+  }, [invoices]);
 
   const clientsQuery = useMemoFirebase(
     () => (firestore ? collection(firestore, "clients") : null),
@@ -962,7 +979,16 @@ export default function InvoicesPage() {
             </Button>
           )}
         </PageHeader>
-        <main className="flex-1 overflow-auto p-4 md:p-6">
+        <main className="flex-1 overflow-auto p-4 md:p-6 space-y-4">
+          {overdueAlert > 0 && canSyncOverdue && (
+            <Alert variant="destructive">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertTitle>Faturas em atraso</AlertTitle>
+              <AlertDescription>
+                {overdueAlert} fatura(s) com vencimento passado. O sistema atualiza automaticamente o status para &quot;Atrasada&quot; ao abrir esta página.
+              </AlertDescription>
+            </Alert>
+          )}
           <Card>
             <CardHeader>
               <CardTitle>Gerenciamento de Faturas</CardTitle>

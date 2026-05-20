@@ -54,6 +54,17 @@ import { AttachmentPreviewSection } from "@/components/shared/attachment-preview
 import { UploadPreparationDialog } from "@/components/shared/upload-preparation-dialog";
 import { useStorageFileUpload } from "@/hooks/use-storage-file-upload";
 import { UPLOAD_RAW_FILE_SAFETY_MAX } from "@/lib/upload-limits";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { createRevenueFromPaidInvoice } from "@/lib/financial-invoice-revenue";
 
 const formSchema = z
   .object({
@@ -148,6 +159,11 @@ export function InvoiceForm({
   onCancel,
 }: InvoiceFormProps) {
   const [loading, setLoading] = React.useState(false);
+  const [revenuePrompt, setRevenuePrompt] = React.useState<{
+    invoiceId: string;
+    invoice: Invoice;
+  } | null>(null);
+  const [creatingRevenue, setCreatingRevenue] = React.useState(false);
   const [isUploading, setIsUploading] = React.useState(false);
   const [uploadedFileUrl, setUploadedFileUrl] = React.useState<string | null>(
     currentItem?.fileUrl || null,
@@ -250,6 +266,9 @@ export function InvoiceForm({
       contractId: values.contractId || "",
     };
 
+    const wasPaid = currentItem?.status === "Paid";
+    const nowPaid = values.status === "Paid";
+
     if (currentItem) {
       const docRef = doc(firestore, "invoices", currentItem.id);
       updateDoc(docRef, dataToSave)
@@ -258,7 +277,14 @@ export function InvoiceForm({
             title: "Fatura atualizada!",
             description: "As informações foram salvas com sucesso.",
           });
-          onSuccess?.();
+          if (nowPaid && !wasPaid) {
+            setRevenuePrompt({
+              invoiceId: currentItem.id,
+              invoice: { id: currentItem.id, ...dataToSave },
+            });
+          } else {
+            onSuccess?.();
+          }
         })
         .catch(async (serverError) => {
           const permissionError = new FirestorePermissionError({
@@ -272,13 +298,20 @@ export function InvoiceForm({
     } else {
       const collectionRef = collection(firestore, "invoices");
       addDoc(collectionRef, dataToSave)
-        .then(() => {
+        .then((docRef) => {
           toast({
             title: "Fatura criada!",
             description: `A fatura ${values.invoiceNumber} foi criada.`,
           });
-          form.reset();
-          onSuccess?.();
+          if (nowPaid) {
+            setRevenuePrompt({
+              invoiceId: docRef.id,
+              invoice: { ...dataToSave, id: docRef.id } as Invoice,
+            });
+          } else {
+            form.reset();
+            onSuccess?.();
+          }
         })
         .catch(async (serverError) => {
           const permissionError = new FirestorePermissionError({
@@ -566,6 +599,66 @@ export function InvoiceForm({
         </DialogFooter>
       </form>
       <UploadPreparationDialog {...dialogProps} />
+      <AlertDialog
+        open={!!revenuePrompt}
+        onOpenChange={(open) => {
+          if (!open) {
+            setRevenuePrompt(null);
+            onSuccess?.();
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Registrar receita no caixa?</AlertDialogTitle>
+            <AlertDialogDescription>
+              A fatura foi marcada como paga. Deseja criar um lançamento de receita
+              vinculado (evita duplicar na DRE quando usar o regime combinado)?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              onClick={() => {
+                setRevenuePrompt(null);
+                onSuccess?.();
+              }}
+            >
+              Agora não
+            </AlertDialogCancel>
+            <AlertDialogAction
+              disabled={creatingRevenue || !firestore}
+              onClick={async (e) => {
+                e.preventDefault();
+                if (!firestore || !revenuePrompt) return;
+                setCreatingRevenue(true);
+                try {
+                  await createRevenueFromPaidInvoice(
+                    firestore,
+                    revenuePrompt.invoice,
+                    revenuePrompt.invoiceId,
+                  );
+                  toast({
+                    title: "Receita registrada",
+                    description: "Lançamento criado em Lançamentos de Caixa.",
+                  });
+                } catch {
+                  toast({
+                    variant: "destructive",
+                    title: "Erro",
+                    description: "Não foi possível criar a receita.",
+                  });
+                } finally {
+                  setCreatingRevenue(false);
+                  setRevenuePrompt(null);
+                  onSuccess?.();
+                }
+              }}
+            >
+              {creatingRevenue ? "Criando…" : "Sim, registrar receita"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Form>
   );
 }

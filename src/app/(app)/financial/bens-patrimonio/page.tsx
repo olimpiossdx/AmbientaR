@@ -34,6 +34,7 @@ import { Badge } from '@/components/ui/badge';
 import { useFinancialMenuDebug } from '@/lib/financial-menu-debug';
 import { isAdminOrFinancialRole } from '@/lib/role-guards';
 import { useAuth } from '@/firebase';
+import { runMonthlyDepreciationForAll } from '@/lib/financial-depreciation';
 
 const CATEGORIA_LABEL: Record<BemPatrimonioCategoria, string> = {
   movel: 'Móvel',
@@ -67,6 +68,7 @@ export default function BensPatrimonioPage() {
   const [filterCategoria, setFilterCategoria] = useState<string>('all');
   const [isAlertOpen, setIsAlertOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
+  const [runningDepreciation, setRunningDepreciation] = useState(false);
   const router = useRouter();
   const { firestore, user } = useFirebase();
   const { user: authUser } = useAuth();
@@ -133,12 +135,40 @@ export default function BensPatrimonioPage() {
     <>
       <div className="flex flex-col h-full">
         <PageHeader title="Bens e Patrimônio">
-          {canWrite && (
-            <Button size="sm" className="gap-1" onClick={() => router.push('/financial/bens-patrimonio/new')}>
-              <PlusCircle className="h-4 w-4" />
-              Novo bem
-            </Button>
-          )}
+          <div className="flex gap-2">
+            {canWrite && (
+              <>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={runningDepreciation}
+                  onClick={async () => {
+                    if (!firestore) return;
+                    setRunningDepreciation(true);
+                    try {
+                      const r = await runMonthlyDepreciationForAll(firestore, {
+                        createExpense: true,
+                      });
+                      toast({
+                        title: 'Depreciação aplicada',
+                        description: `${r.processed} bem(ns); total ${formatCurrency(r.totalDepreciation)}`,
+                      });
+                    } catch {
+                      toast({ variant: 'destructive', title: 'Erro na depreciação' });
+                    } finally {
+                      setRunningDepreciation(false);
+                    }
+                  }}
+                >
+                  Depreciação do mês
+                </Button>
+                <Button size="sm" className="gap-1" onClick={() => router.push('/financial/bens-patrimonio/new')}>
+                  <PlusCircle className="h-4 w-4" />
+                  Novo bem
+                </Button>
+              </>
+            )}
+          </div>
         </PageHeader>
         <main className="flex-1 overflow-auto p-4 md:p-6 space-y-6">
           <Card>

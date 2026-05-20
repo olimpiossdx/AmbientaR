@@ -848,6 +848,15 @@ service cloud.firestore {
     }
 
     /**
+     * @description Orçamento anual por categoria (metas financeiras).
+     * @path /databases/{database}/documents/financial_budgets/{yearId}
+     */
+    match /financial_budgets/{yearId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin() || isFinancial();
+    }
+
+    /**
      * @description Allows read access to signed-in users. Write access is restricted to admin or sales roles.
      * @path /databases/{database}/documents/opportunities/{opportunityId}
      */

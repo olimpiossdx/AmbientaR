@@ -51,7 +51,6 @@ import {
 } from "firebase/firestore";
 import * as React from "react";
 import { generateCommercialProposalPdf } from "@/lib/commercial-proposal-pdf";
-import { generateContractPdf } from "@/app/(app)/contracts/contract-pdf";
 import { useLocalBranding } from "@/hooks/use-local-branding";
 import type {
   CommercialProposal,
@@ -428,43 +427,6 @@ export default function CommercialProposalsPage() {
       });
   };
 
-  const linkedContract = (proposal: CommercialProposal) =>
-    proposal.contractId ? contractsMap.get(proposal.contractId) : undefined;
-
-  const handleDownloadDocument = async (proposal: CommercialProposal) => {
-    if (exportInFlightRef.current) return;
-
-    const contract = linkedContract(proposal);
-    if (contract) {
-      if (contract.contractPdfUrl) {
-        window.open(contract.contractPdfUrl, "_blank", "noopener,noreferrer");
-        return;
-      }
-      exportInFlightRef.current = true;
-      setExportingProposalId(proposal.id);
-      try {
-        await generateContractPdf(contract, brandingData ?? undefined);
-        toast({
-          title: "PDF do contrato",
-          description: "Download do contrato para assinatura iniciado.",
-        });
-      } catch (error) {
-        console.error("Erro ao gerar PDF do contrato:", error);
-        toast({
-          variant: "destructive",
-          title: "Erro ao gerar contrato",
-          description: "Não foi possível gerar o PDF do contrato vinculado.",
-        });
-      } finally {
-        exportInFlightRef.current = false;
-        setExportingProposalId(null);
-      }
-      return;
-    }
-
-    await handleExportProposalPdf(proposal);
-  };
-
   const handleExportProposalPdf = async (proposal: CommercialProposal) => {
     if (!firestore) {
       toast({
@@ -789,19 +751,15 @@ export default function CommercialProposalsPage() {
                                                 type="button"
                                                 disabled={exportingProposalId === proposal.id}
                                                 aria-busy={exportingProposalId === proposal.id}
-                                                onClick={() => handleDownloadDocument(proposal)}
+                                                onClick={() => handleExportProposalPdf(proposal)}
                                               >
                                                 <FileText className="h-4 w-4" />
-                                                <span className="sr-only">PDF</span>
+                                                <span className="sr-only">PDF da proposta</span>
                                               </Button>
                                             </span>
                                           </TooltipTrigger>
                                           <TooltipContent>
-                                            <p>
-                                              {proposal.contractId
-                                                ? "Baixar contrato para assinatura"
-                                                : "Exportar PDF da proposta"}
-                                            </p>
+                                            <p>Baixar PDF da proposta comercial</p>
                                           </TooltipContent>
                                         </Tooltip>
                                         {proposal.contractId && (
@@ -965,19 +923,15 @@ export default function CommercialProposalsPage() {
                                           type="button"
                                           disabled={exportingProposalId === proposal.id}
                                           aria-busy={exportingProposalId === proposal.id}
-                                          onClick={() => handleDownloadDocument(proposal)}
+                                          onClick={() => handleExportProposalPdf(proposal)}
                                         >
                                           <FileText className="h-4 w-4" />
-                                          <span className="sr-only">PDF</span>
+                                          <span className="sr-only">PDF da proposta</span>
                                         </Button>
                                       </span>
                                     </TooltipTrigger>
                                     <TooltipContent>
-                                      <p>
-                                        {proposal.contractId
-                                          ? "Baixar contrato para assinatura"
-                                          : "Exportar PDF da proposta"}
-                                      </p>
+                                      <p>Baixar PDF da proposta comercial</p>
                                     </TooltipContent>
                                   </Tooltip>
                                   {proposal.contractId && (

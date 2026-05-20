@@ -118,6 +118,10 @@ export type Invoice = {
   amount: number;
   status: 'Paid' | 'Unpaid' | 'Overdue';
   fileUrl?: string;
+  /** Centro de custo / processo ambiental */
+  requestId?: string;
+  projectId?: string;
+  centroCusto?: string;
 };
 
 export type Revenue = {
@@ -127,14 +131,40 @@ export type Revenue = {
   amount: number;
   description: string;
   fileUrl?: string;
+  /** Evita dupla contagem na DRE quando vinculada a fatura paga */
+  invoiceId?: string;
+  contractId?: string;
+  requestId?: string;
+  projectId?: string;
+  centroCusto?: string;
+  reconciledAt?: string;
 };
 
+export type ExpenseCategory =
+  | 'operacional'
+  | 'pessoal'
+  | 'subcontratacao'
+  | 'impostos'
+  | 'depreciacao'
+  | 'aquisicao_bem'
+  | 'financeiro'
+  | 'outros';
+
 export type Expense = {
-    id: string;
-    date: string;
-    amount: number;
-    description: string;
-    fileUrl?: string;
+  id: string;
+  date: string;
+  amount: number;
+  description: string;
+  fileUrl?: string;
+  category?: ExpenseCategory;
+  supplierId?: string;
+  requestId?: string;
+  projectId?: string;
+  centroCusto?: string;
+  /** Despesa gerada por depreciação de bem */
+  depreciacaoBemId?: string;
+  bensPatrimonioId?: string;
+  reconciledAt?: string;
 };
 
 export type Transaction = (Revenue | Expense) & { type: 'revenue' | 'expense' };
@@ -1797,6 +1827,9 @@ export type BemPatrimonio = {
   notaFiscalChave?: string;
   fornecedorNome?: string;
   fornecedorCnpj?: string;
+  fornecedorId?: string;
+  /** Despesa de aquisição vinculada (coleção expenses) */
+  expenseId?: string;
   /** Contabilidade / SPED */
   contaContabilAtivo?: string;
   contaContabilDepreciacao?: string;
