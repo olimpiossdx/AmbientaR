@@ -72,7 +72,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { FirestorePermissionError } from "@/firebase/errors";
-import jsPDF from "jspdf";
+import type jsPDF from "jspdf";
 import { logUserAction } from "@/lib/audit-log";
 import { ProposalForm } from "./proposal-form";
 import {
@@ -317,6 +317,7 @@ export default function ProposalsPage() {
   };
 
   const handleExportPdf = async (proposal: Proposal) => {
+    const { default: jsPDF } = await import("jspdf");
     const client = clientsMap.get(proposal.clientId);
     const contract = proposal.contractId
       ? contractsMap.get(proposal.contractId)

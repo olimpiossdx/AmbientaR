@@ -68,7 +68,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { isClientePortalRole } from "@/lib/role-guards";
 import { FirestorePermissionError } from "@/firebase/errors";
-import jsPDF from "jspdf";
+import type jsPDF from "jspdf";
 import { logUserAction } from "@/lib/audit-log";
 import { InvoiceForm } from "./invoice-form";
 import {
@@ -520,6 +520,7 @@ export default function InvoicesPage() {
 
   const handleExportPdf = async (invoice: Invoice) => {
     if (exportingPdfKey) return;
+    const { default: jsPDF } = await import("jspdf");
     setExportingPdfKey(`invoice-${invoice.id}`);
     try {
     const client = clientsMap.get(invoice.clientId);
@@ -758,6 +759,7 @@ export default function InvoicesPage() {
 
   const handleExportPdfByPeriod = async () => {
     if (exportingPdfKey) return;
+    const { default: jsPDF } = await import("jspdf");
     setExportingPdfKey("period");
     try {
     const brandingUrlsPeriod = {

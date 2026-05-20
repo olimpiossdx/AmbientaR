@@ -84,7 +84,7 @@ import { UserForm } from "./user-form";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/firebase";
 import { deleteUser } from "firebase/auth";
-import jsPDF from "jspdf";
+import type jsPDF from "jspdf";
 import { logUserAction } from "@/lib/audit-log";
 import { UpgradeDialog } from "@/components/upgrade-dialog";
 import {
