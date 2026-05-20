@@ -47,8 +47,7 @@ import {
   serverTimestamp,
 } from "firebase/firestore";
 import { Skeleton } from "@/components/ui/skeleton";
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
+import type jsPDF from "jspdf";
 import {
   fetchBrandingImageAsBase64,
   downloadJsPdf,
@@ -280,6 +279,8 @@ export default function InspectionReportsListPage() {
   };
 
   const handleViewPdf = async (report: Inspection) => {
+    const { default: jsPDF } = await import("jspdf");
+    const { default: autoTable } = await import("jspdf-autotable");
     const doc = new jsPDF();
     const pageHeight = doc.internal.pageSize.getHeight();
     const pageWidth = doc.internal.pageSize.getWidth();
@@ -365,6 +366,8 @@ export default function InspectionReportsListPage() {
   const handleGeneratePdf = async (report: Inspection) => {
     toast({ title: "Gerando PDF...", description: "Por favor, aguarde." });
 
+    const { default: jsPDF } = await import("jspdf");
+    const { default: autoTable } = await import("jspdf-autotable");
     const doc = new jsPDF();
     const pageHeight = doc.internal.pageSize.getHeight();
     const pageWidth = doc.internal.pageSize.getWidth();
