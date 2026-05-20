@@ -15,7 +15,7 @@ import { useFinancialMenuDebug } from '@/lib/financial-menu-debug';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { FileDown, FileSpreadsheet, Printer } from 'lucide-react';
-import jsPDF from 'jspdf';
+import type jsPDF from 'jspdf';
 import { useToast } from '@/hooks/use-toast';
 import {
   fetchBrandingImagesForPdf,
@@ -326,6 +326,7 @@ export default function AbcCurvePage() {
       return;
     }
 
+    const { default: jsPDF } = await import('jspdf');
     const brandingUrls = {
       headerImageUrl: brandingData?.headerImageUrl,
       footerImageUrl: brandingData?.footerImageUrl,

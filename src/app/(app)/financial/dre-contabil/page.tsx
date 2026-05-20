@@ -26,7 +26,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import jsPDF from 'jspdf';
+import type jsPDF from 'jspdf';
 import { useToast } from '@/hooks/use-toast';
 import {
   fetchBrandingImagesForPdf,
@@ -151,6 +151,7 @@ export default function DreContabilPage() {
 
   const handleExportPdf = async () => {
     if (!dre) return;
+    const { default: jsPDF } = await import('jspdf');
     const brandingUrls = {
       headerImageUrl: brandingData?.headerImageUrl,
       footerImageUrl: brandingData?.footerImageUrl,

@@ -5,7 +5,7 @@ import { useMemo, useState } from 'react';
 import { useCollection, useFirestore, useUser, useMemoFirebase } from '@/firebase';
 import { collection } from 'firebase/firestore';
 import type { Revenue, Expense, Client } from '@/lib/types';
-import jsPDF from 'jspdf';
+import type jsPDF from 'jspdf';
 import { useToast } from '@/hooks/use-toast';
 import {
   downloadJsPdf,
@@ -148,6 +148,7 @@ export default function CashFlowPage() {
     if (isExportingPdf) return;
     setIsExportingPdf(true);
     try {
+    const { default: jsPDF } = await import('jspdf');
     const brandingUrls = {
       headerImageUrl: brandingData?.headerImageUrl,
       footerImageUrl: brandingData?.footerImageUrl,
