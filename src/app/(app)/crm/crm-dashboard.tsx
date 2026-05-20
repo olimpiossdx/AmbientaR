@@ -51,7 +51,6 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import jsPDF from "jspdf";
 import { canAccessCrm } from "@/lib/role-guards";
 import {
   fetchBrandingImageAsBase64,
@@ -588,6 +587,7 @@ export default function CrmDashboard({ onAddNew }: CrmDashboardProps) {
             size="sm"
             className="h-9 w-full justify-center sm:w-auto sm:min-w-[9rem]"
             onClick={async () => {
+              const { default: jsPDF } = await import("jspdf");
               const list = opportunitiesFiltered ?? [];
               const headerBase64 = await fetchBrandingImageAsBase64(
                 brandingData?.headerImageUrl,

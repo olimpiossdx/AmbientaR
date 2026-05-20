@@ -18,7 +18,6 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { getAdminApiRequestHeaders } from "@/lib/admin-api-client";
-import jsPDF from "jspdf";
 import {
   addDoc,
   collection,
@@ -503,7 +502,8 @@ export default function AiLabAutomationsPage() {
     }
   };
 
-  const handleExportPdf = (title: string, report: string, refs: string[]) => {
+  const handleExportPdf = async (title: string, report: string, refs: string[]) => {
+    const { default: jsPDF } = await import("jspdf");
     const doc = new jsPDF({ unit: "mm", format: "a4" });
     const margin = 15;
     const pageW = doc.internal.pageSize.getWidth();
