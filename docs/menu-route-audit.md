@@ -1,6 +1,6 @@
 # Auditoria de Rotas e Menu
 
-Gerado em: 2026-05-20T16:11:05.819Z
+Gerado em: 2026-05-20T17:59:46.005Z
 
 Classificação inicial para limpeza cirúrgica. Rotas órfãs não devem ser removidas automaticamente; precisam de validação funcional antes.
 
