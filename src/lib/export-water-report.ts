@@ -1,5 +1,4 @@
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
+import type jsPDF from "jspdf";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale/pt-BR";
 import type { WaterPermit } from "@/lib/types";
@@ -12,13 +11,17 @@ type WaterReportMeta = {
   coordinates?: string;
 };
 
-export function generateWaterCompliancePDF(
+export async function generateWaterCompliancePDF(
   permit: WaterPermit,
   report: ComplianceReport,
   period: Date,
   readings: TelemetryReading[] = [],
   meta?: WaterReportMeta,
 ) {
+  const [{ default: jsPDF }, { default: autoTable }] = await Promise.all([
+    import("jspdf"),
+    import("jspdf-autotable"),
+  ]);
   const doc = new jsPDF();
   const dateStr = format(period, "MMMM 'de' yyyy", { locale: ptBR });
   const emitDate = format(new Date(), "dd/MM/yyyy HH:mm");

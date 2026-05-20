@@ -1,4 +1,4 @@
-import jsPDF from 'jspdf';
+import type jsPDF from 'jspdf';
 import type { Client, CommercialProposal, EnvironmentalCompany } from '@/lib/types';
 import type { LocalBranding } from '@/hooks/use-local-branding';
 import {
@@ -102,6 +102,7 @@ export async function generateCommercialProposalPdf({
   companyProfile,
   branding,
 }: GenerateCommercialProposalPdfInput): Promise<void> {
+  const { default: jsPDF } = await import('jspdf');
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
 
   const { headerBase64, footerBase64, watermarkBase64 } = await fetchBrandingImagesForPdf({

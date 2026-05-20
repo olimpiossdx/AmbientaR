@@ -5,7 +5,7 @@
 
 import type { Contract } from '@/lib/types';
 import type { LocalBranding } from '@/hooks/use-local-branding';
-import jsPDF from 'jspdf';
+import type jsPDF from 'jspdf';
 import { downloadJsPdf, fetchBrandingImagesForPdf, getImageDimensions } from '@/lib/branding-pdf';
 
 const formatCurrency = (value: number) =>
@@ -122,6 +122,7 @@ export async function buildContractPdfDoc(
   contract: Contract,
   brandingData: ContractBranding,
 ): Promise<jsPDF> {
+  const { default: jsPDF } = await import('jspdf');
   const doc = new jsPDF({ unit: 'cm', format: 'a4' });
   const pageHeight = doc.internal.pageSize.getHeight();
   const pageWidth = doc.internal.pageSize.getWidth();

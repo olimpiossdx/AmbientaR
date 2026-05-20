@@ -28,8 +28,7 @@ import { Loader2, FileDown, Printer } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale/pt-BR';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
+import type jsPDF from 'jspdf';
 import {
   fetchBrandingImageAsBase64,
   getImageDimensions,
@@ -91,7 +90,12 @@ function addPageNumbers(doc: jsPDF, bottomMarginMm: number = 10) {
   }
 }
 
-function buildPdf(doc: jsPDF, values: FormValues, startY = 15) {
+function buildPdf(
+  doc: jsPDF,
+  values: FormValues,
+  runAutoTable: typeof import('jspdf-autotable').default,
+  startY = 15,
+) {
   const pageWidth = doc.internal.pageSize.getWidth();
   const margin = 15;
   let y = startY;
@@ -168,7 +172,7 @@ function buildPdf(doc: jsPDF, values: FormValues, startY = 15) {
   y += 8;
 
   const tableBody = values.tabela.map((row) => [row.aspecto, row.inicial, row.atual, row.conformidade]);
-  autoTable(doc, {
+  runAutoTable(doc, {
     startY: y,
     head: [['Aspecto', 'Inicial', 'Atual', 'Conformidade']],
     body: tableBody,
@@ -243,6 +247,10 @@ export function PtrfPradForm({ onSuccess, onCancel }: PtrfPradFormProps) {
       const watermarkBase64Raw = await fetchBrandingImageAsBase64(brandingData?.watermarkImageUrl);
       const watermarkBase64 = watermarkBase64Raw ? await applyImageOpacity(watermarkBase64Raw, 0.15) : null;
 
+      const [{ default: jsPDF }, { default: autoTable }] = await Promise.all([
+        import('jspdf'),
+        import('jspdf-autotable'),
+      ]);
       const doc = new jsPDF({ unit: 'mm', format: 'a4' });
       const pw = doc.internal.pageSize.getWidth();
       const ph = doc.internal.pageSize.getHeight();
@@ -264,7 +272,7 @@ export function PtrfPradForm({ onSuccess, onCancel }: PtrfPradFormProps) {
         startY = 8 + h + 6;
       }
 
-      buildPdf(doc, values, startY);
+      buildPdf(doc, values, autoTable, startY);
 
       if (footerBase64) {
         const tp = doc.getNumberOfPages();

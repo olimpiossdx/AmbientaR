@@ -1,4 +1,4 @@
-import jsPDF from "jspdf";
+import type jsPDF from "jspdf";
 import type { SupplierContract, CompanySettings } from "@/lib/types";
 import { downloadJsPdf, fetchBrandingImagesForPdf, getImageDimensions } from "@/lib/branding-pdf";
 
@@ -52,6 +52,7 @@ export async function generateSupplierContractPdf(
   contract: SupplierContract,
   brandingData: CompanySettings | null | undefined,
 ): Promise<void> {
+  const { default: jsPDF } = await import("jspdf");
   const doc = new jsPDF({ unit: "cm", format: "a4" });
   const pageHeight = doc.internal.pageSize.getHeight();
   const pageWidth = doc.internal.pageSize.getWidth();

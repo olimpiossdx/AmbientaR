@@ -421,7 +421,7 @@ export default function ManualMonitoringPage() {
     return "N/A";
   }, [outorga, projects]);
 
-  const handleExportCompliancePdf = () => {
+  const handleExportCompliancePdf = async () => {
     if (!outorga) return;
     const selectedYear = Number(yearFilter);
     const referenceDate =
@@ -431,7 +431,7 @@ export default function ManualMonitoringPage() {
     const report =
       compliance ??
       calculateWaterCompliance(reportReadings, outorga, referenceDate);
-    generateWaterCompliancePDF(outorga, report, referenceDate, reportReadings, {
+    await generateWaterCompliancePDF(outorga, report, referenceDate, reportReadings, {
       empreendedorName,
       empreendimentoName,
       coordinates: empreendimentoCoordinates,

@@ -549,14 +549,14 @@ export default function TelemetricMonitoringPage() {
   const handleReportPeriodo = () => {
     // TODO: período dateFrom-dateTo → relatório consolidado PDF e XLSX
   };
-  const handleExportCompliancePdf = () => {
+  const handleExportCompliancePdf = async () => {
     if (!compliancePermit || !compliance) return;
     const selectedYear = Number(yearFilter);
     const referenceDate =
       monthFilter === "ano_todo"
         ? new Date(`${selectedYear}-01-01`)
         : new Date(selectedYear, Number(monthFilter), 1);
-    generateWaterCompliancePDF(
+    await generateWaterCompliancePDF(
       compliancePermit,
       compliance,
       referenceDate,
