@@ -2,7 +2,6 @@
 
 import imageCompression from "browser-image-compression";
 import PizZip from "pizzip";
-import { jsPDF } from "jspdf";
 import { effectiveMimeType, isPdfLikeFile } from "@/lib/file-mime";
 import { formatBytesHuman } from "@/lib/upload-limits";
 
@@ -118,6 +117,8 @@ async function compressPdfFile(
   const pdf = await pdfjs.getDocument({ data }).promise;
   const numPages = pdf.numPages;
   const warnings: string[] = [];
+
+  const { jsPDF } = await import("jspdf");
 
   for (const preset of PDF_PRESETS) {
     report(onProgress, 15, `Gerando PDF (${preset.label})…`);

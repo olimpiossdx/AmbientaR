@@ -64,7 +64,6 @@ const filePaths = [
   "src/app/(app)/empreendedores/empreendedor-form.tsx",
   "src/app/(app)/empreendedores/new/page.tsx",
   "src/app/(app)/empreendedores/page.tsx",
-  "src/app/(app)/environmental-company/company-form.tsx",
   "src/app/(app)/environmental-company/page.tsx",
   "src/app/(app)/external/page.tsx",
   "src/app/(app)/inspections/page.tsx",

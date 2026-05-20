@@ -1,6 +1,6 @@
 
 'use client';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
@@ -64,15 +64,6 @@ export default function ResponsibleCompanyPage() {
   const { data: companies, isLoading } = useCollection<EnvironmentalCompany>(companiesQuery);
 
   useCadastroMenuDebug();
-
-  useEffect(() => {
-    if (typeof window === 'undefined' || process.env.NODE_ENV !== 'development') return;
-    console.groupCollapsed('[Cadastro Debug] Empresa Responsável');
-    console.log('loading', isLoading);
-    console.log('count', companies?.length ?? 0);
-    console.log('canWrite', canWrite);
-    console.groupEnd();
-  }, [isLoading, companies?.length, canWrite]);
 
   const handleView = (item: EnvironmentalCompany) => {
     setViewingItem(item);

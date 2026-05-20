@@ -287,34 +287,6 @@ function ProjectsPageContent() {
 
   useCadastroMenuDebug();
 
-  useEffect(() => {
-    if (typeof window === "undefined" || process.env.NODE_ENV !== "development")
-      return;
-    console.groupCollapsed("[Cadastro Debug] Empreendimentos");
-    console.log("loading", {
-      isLoadingProjects,
-      isLoadingEmpreendedores,
-      isLoading,
-    });
-    console.log("counts", {
-      allProjects: allProjects?.length ?? 0,
-      empreendedores: empreendedores?.length ?? 0,
-      filteredProjects: filteredProjects.length,
-    });
-    console.log("statusFilter", statusFilter);
-    console.log("canWrite", canWrite);
-    console.groupEnd();
-  }, [
-    isLoading,
-    isLoadingProjects,
-    isLoadingEmpreendedores,
-    allProjects?.length,
-    empreendedores?.length,
-    filteredProjects.length,
-    statusFilter,
-    canWrite,
-  ]);
-
   const handleAddNew = () => {
     router.push("/projects/new");
   };

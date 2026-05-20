@@ -227,16 +227,6 @@ export default function EmpreendedoresPage() {
 
   useCadastroMenuDebug();
 
-  useEffect(() => {
-    if (typeof window === "undefined" || process.env.NODE_ENV !== "development")
-      return;
-    console.groupCollapsed("[Cadastro Debug] Empreendedores");
-    console.log("loading", isLoading);
-    console.log("count", empreendedores?.length ?? 0);
-    console.log("canWrite", canWrite);
-    console.groupEnd();
-  }, [isLoading, empreendedores?.length, canWrite]);
-
   const handleAddNew = () => {
     router.push("/empreendedores/new");
   };

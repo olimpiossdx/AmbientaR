@@ -229,29 +229,6 @@ export default function AbcCurvePage() {
     return buildAbcDataset(previousRange.start, previousRange.end);
   }, [previousRange, isLoading, revenuesData, invoicesData, clients, buildAbcDataset]);
 
-  useEffect(() => {
-    if (typeof window === 'undefined' || process.env.NODE_ENV !== 'development') return;
-    console.groupCollapsed('[Financial Debug] Curva ABC');
-    console.log('loading', { isLoadingRevenues, isLoadingInvoices, isLoadingClients, isLoading });
-    console.log('counts', {
-      revenues: revenuesData?.length ?? 0,
-      invoices: invoicesData?.length ?? 0,
-      clients: clients?.length ?? 0,
-    });
-    console.log('abcData', { chartPoints: abcData.chartData.length, tableRows: abcData.tableData.length });
-    console.groupEnd();
-  }, [
-    isLoadingRevenues,
-    isLoadingInvoices,
-    isLoadingClients,
-    isLoading,
-    revenuesData?.length,
-    invoicesData?.length,
-    clients?.length,
-    abcData.chartData.length,
-    abcData.tableData.length,
-  ]);
-
   const formatCurrency = (value: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
   const totalRevenue = useMemo(
     () => abcData.tableData.reduce((sum, item) => sum + item.totalRevenue, 0),

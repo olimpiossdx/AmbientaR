@@ -135,20 +135,6 @@ export default function DreContabilPage() {
 
   useFinancialMenuDebug();
 
-  React.useEffect(() => {
-    if (typeof window === 'undefined' || process.env.NODE_ENV !== 'development') return;
-    console.groupCollapsed('[Financial Debug] DRE Contábil');
-    console.log('loading', { isLoadingInvoices, isLoadingRevenues, isLoadingExpenses, isLoading });
-    console.log('counts', {
-      invoices: invoices?.length ?? 0,
-      revenues: revenues?.length ?? 0,
-      expenses: expenses?.length ?? 0,
-    });
-    console.log('selectedYear', selectedYear);
-    console.log('dre', dre ? { receitaBruta: dre.receitaBruta, resultadoLiquido: dre.resultadoLiquido } : null);
-    console.groupEnd();
-  }, [isLoading, isLoadingInvoices, isLoadingRevenues, isLoadingExpenses, invoices?.length, revenues?.length, expenses?.length, selectedYear, dre]);
-
   const handleExportPdf = async () => {
     if (!dre) return;
     const { default: jsPDF } = await import('jspdf');

@@ -124,23 +124,6 @@ export default function CashFlowPage() {
 
   useFinancialMenuDebug();
 
-  React.useEffect(() => {
-    if (typeof window === 'undefined' || process.env.NODE_ENV !== 'development') return;
-    console.groupCollapsed('[Financial Debug] Lançamentos de Caixa');
-    console.log('loading', { isLoadingRevenues, isLoadingExpenses });
-    console.log('counts', {
-      allRevenues: allRevenues?.length ?? 0,
-      allExpenses: allExpenses?.length ?? 0,
-      clients: clients?.length ?? 0,
-      revenuesInPeriod: revenuesInPeriod.length,
-      expensesInPeriod: expensesInPeriod.length,
-      filteredRevenues: filteredRevenues.length,
-      filteredExpenses: filteredExpenses.length,
-    });
-    console.log('period', { periodType, periodStart, periodEnd });
-    console.groupEnd();
-  }, [isLoadingRevenues, isLoadingExpenses, allRevenues?.length, allExpenses?.length, clients?.length, revenuesInPeriod.length, expensesInPeriod.length, filteredRevenues.length, filteredExpenses.length, periodType, periodStart, periodEnd]);
-
   const formatCurrency = (v: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
   const periodLabel = periodType === 'day' ? periodDay : periodType === 'month' ? periodMonth : periodYear;
 

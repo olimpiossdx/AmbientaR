@@ -200,7 +200,6 @@ export function DispensaForm({ currentItem, onSuccess, onCancel }: DispensaFormP
 
   async function onSubmit(values: FormValues) {
     setLoading(true);
-    console.log("Dispensa Form Data:", values);
     await new Promise(resolve => setTimeout(resolve, 1000));
     toast({
       title: 'Solicitação de Dispensa Enviada!',

@@ -70,7 +70,6 @@ export function LasRasForm() {
 
   async function onSubmit(values: FormValues) {
     setLoading(true);
-    console.log("LAS-RAS Form Data:", values);
     await new Promise(resolve => setTimeout(resolve, 1000));
     toast({
       title: 'RAS Salvo com Sucesso!',
