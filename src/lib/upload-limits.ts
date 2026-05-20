@@ -16,6 +16,7 @@ export const FINANCIAL_STORAGE_PREFIXES = [
   "receipts/",
   "contracts/",
   "signed-contracts/",
+  "proposals/",
   "commercial-proposals/",
   "supplier-contracts/",
 ] as const;
@@ -30,6 +31,7 @@ export const FINANCIAL_PATH_PREFIXES = [
   "/invoices",
   "/suppliers",
   "/cash-flow",
+  "/proposals",
   "/commercial-proposals",
   "/services",
 ] as const;

@@ -180,6 +180,19 @@ export const allNavItems: NavItem[] = [
         roles: ["admin", "financial"],
       },
       {
+        href: "/proposals",
+        label: "Orçamentos",
+        icon: FileSpreadsheet,
+        roles: [
+          "admin",
+          "financial",
+          "sales",
+          "client",
+          "cliente_autonomo",
+          "representative",
+        ],
+      },
+      {
         href: "/commercial-proposals",
         label: "Propostas Comerciais",
         icon: ClipboardPenLine,

@@ -1,12 +1,12 @@
 # Auditoria de Rotas e Menu
 
-Gerado em: 2026-05-20T17:59:46.005Z
+Gerado em: 2026-05-20T18:02:44.046Z
 
 Classificação inicial para limpeza cirúrgica. Rotas órfãs não devem ser removidas automaticamente; precisam de validação funcional antes.
 
 ## Código ativo ou coberto por menu
 
-Total: 177
+Total: 180
 
 | Rota | Arquivo |
 |------|---------|
@@ -88,6 +88,9 @@ Total: 177
 | `/projects` | `src/app/(app)/projects/page.tsx` |
 | `/projects/[id]/edit` | `src/app/(app)/projects/[id]/edit/page.tsx` |
 | `/projects/new` | `src/app/(app)/projects/new/page.tsx` |
+| `/proposals` | `src/app/(app)/proposals/page.tsx` |
+| `/proposals/[id]/edit` | `src/app/(app)/proposals/[id]/edit/page.tsx` |
+| `/proposals/new` | `src/app/(app)/proposals/new/page.tsx` |
 | `/reporting` | `src/app/(app)/reporting/page.tsx` |
 | `/requests` | `src/app/(app)/requests/page.tsx` |
 | `/requests/[id]/aia` | `src/app/(app)/requests/[id]/aia/page.tsx` |
@@ -190,7 +193,7 @@ Total: 177
 
 ## Rotas dinâmicas sem entrada direta no menu
 
-Total: 9
+Total: 8
 
 | Rota | Arquivo |
 |------|---------|
@@ -200,13 +203,12 @@ Total: 9
 | `/inventarios/[id]/parcelas/[parcelaId]` | `src/app/(app)/inventarios/[id]/parcelas/[parcelaId]/page.tsx` |
 | `/knowledge-sources/[id]` | `src/app/(app)/knowledge-sources/[id]/page.tsx` |
 | `/laudos/[id]` | `src/app/(app)/laudos/[id]/page.tsx` |
-| `/proposals/[id]/edit` | `src/app/(app)/proposals/[id]/edit/page.tsx` |
 | `/studies/intervencao-ambiental/[id]/edit` | `src/app/(app)/studies/intervencao-ambiental/(.)[id]/edit/page.tsx` |
 | `/studies/intervencao-ambiental/[id]/edit` | `src/app/(app)/studies/intervencao-ambiental/[id]/edit/page.tsx` |
 
 ## Rotas estáticas sem entrada direta no menu
 
-Total: 21
+Total: 19
 
 | Rota | Arquivo |
 |------|---------|
@@ -223,8 +225,6 @@ Total: 21
 | `/laudos` | `src/app/(app)/laudos/page.tsx` |
 | `/laudos/new` | `src/app/(app)/laudos/new/page.tsx` |
 | `/monitoring` | `src/app/(app)/monitoring/page.tsx` |
-| `/proposals` | `src/app/(app)/proposals/page.tsx` |
-| `/proposals/new` | `src/app/(app)/proposals/new/page.tsx` |
 | `/settings` | `src/app/(app)/settings/page.tsx` |
 | `/studies` | `src/app/(app)/studies/page.tsx` |
 | `/studies/assistant` | `src/app/(app)/studies/assistant/page.tsx` |

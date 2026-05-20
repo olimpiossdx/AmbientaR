@@ -20,6 +20,7 @@ export const FINANCIAL_ROUTES = [
   '/clients',
   '/suppliers',
   '/invoices',
+  '/proposals',
   '/commercial-proposals',
   '/contracts',
   '/contracts-suppliers',
