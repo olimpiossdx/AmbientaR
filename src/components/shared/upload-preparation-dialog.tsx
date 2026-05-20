@@ -1,5 +1,7 @@
 "use client";
 
+/* eslint-disable @next/next/no-img-element -- Preview temporário do arquivo preparado pode usar URL blob gerada no navegador. */
+
 import * as React from "react";
 import {
   Dialog,

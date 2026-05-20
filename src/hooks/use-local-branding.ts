@@ -43,7 +43,7 @@ export function useLocalBranding() {
   useEffect(() => {
     if (isLoading) return;
     warmBrandingPdfCache(data);
-  }, [isLoading, data.headerImageUrl, data.footerImageUrl, data.watermarkImageUrl]);
+  }, [isLoading, data]);
 
   const refetch = () => {
     clearBrandingPdfCache();

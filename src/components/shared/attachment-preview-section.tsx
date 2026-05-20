@@ -1,5 +1,7 @@
 'use client';
 
+/* eslint-disable @next/next/no-img-element -- Preview de anexos pode usar URLs blob/data/Firebase que não são imagens LCP da página. */
+
 import { useMemo, useState } from 'react';
 import {
   Dialog,
