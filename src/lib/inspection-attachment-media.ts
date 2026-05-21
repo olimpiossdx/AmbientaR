@@ -51,8 +51,16 @@ export function isPdfAttachmentUrl(url: string): boolean {
 
 export function isImageAttachmentUrl(url: string): boolean {
   if (isPdfAttachmentUrl(url)) return false;
-  const u = url.split('?')[0].toLowerCase();
-  return /\.(jpe?g|png|gif|webp|bmp|heic|heif)$/i.test(u) || u.includes('image');
+  let path = url.split('?')[0];
+  try {
+    if (path.includes('%')) path = decodeURIComponent(path);
+  } catch {
+    /* mantém path original */
+  }
+  const lower = path.toLowerCase();
+  return (
+    /\.(jpe?g|png|gif|webp|bmp|heic|heif)$/i.test(lower) || lower.includes('image')
+  );
 }
 
 export function attachmentKindLabel(url: string): 'PDF' | 'Imagem' | 'Arquivo' {
