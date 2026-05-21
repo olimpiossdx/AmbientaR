@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { z } from "zod";
-import { useForm } from "react-hook-form";
+import { useForm, type Control } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import {
@@ -27,7 +27,10 @@ import { format, parse } from "date-fns";
 import { ptBR } from "date-fns/locale/pt-BR";
 import { useToast } from "@/hooks/use-toast";
 import type { Revenue, Expense, Client, Fornecedor, ExpenseCategory } from "@/lib/types";
-import { TransactionExtraFields } from "@/components/financial/transaction-extra-fields";
+import {
+  TransactionExtraFields,
+  type TransactionExtraFieldsForm,
+} from "@/components/financial/transaction-extra-fields";
 import {
   useFirebase,
   errorEmitter,
@@ -483,7 +486,9 @@ export function TransactionForm({
             )}
           />
           <TransactionExtraFields
-            control={form.control}
+            control={
+              form.control as unknown as Control<TransactionExtraFieldsForm>
+            }
             transactionType={transactionType}
             suppliers={suppliers ?? undefined}
             isLoadingSuppliers={isLoadingSuppliers}

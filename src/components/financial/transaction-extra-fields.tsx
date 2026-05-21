@@ -19,6 +19,7 @@ import type { Control } from 'react-hook-form';
 import { EXPENSE_CATEGORIES } from '@/lib/financial-core';
 import type { Fornecedor } from '@/lib/types';
 
+/** Campos opcionais de classificação (receita/despesa no fluxo de caixa). */
 export type TransactionExtraFieldsForm = {
   category?: string;
   supplierId?: string;
@@ -28,21 +29,21 @@ export type TransactionExtraFieldsForm = {
   invoiceId?: string;
 };
 
-interface TransactionExtraFieldsProps<T extends TransactionExtraFieldsForm = TransactionExtraFieldsForm> {
-  control: Control<T>;
+interface TransactionExtraFieldsProps {
+  control: Control<TransactionExtraFieldsForm>;
   transactionType: 'revenue' | 'expense';
   suppliers?: Fornecedor[];
   isLoadingSuppliers?: boolean;
   showInvoiceLink?: boolean;
 }
 
-export function TransactionExtraFields<T extends TransactionExtraFieldsForm = TransactionExtraFieldsForm>({
+export function TransactionExtraFields({
   control,
   transactionType,
   suppliers,
   isLoadingSuppliers,
   showInvoiceLink,
-}: TransactionExtraFieldsProps<T>) {
+}: TransactionExtraFieldsProps) {
   return (
     <div className="grid gap-4 sm:grid-cols-2 border rounded-md p-4 bg-muted/30">
       <p className="sm:col-span-2 text-sm font-medium text-muted-foreground">
