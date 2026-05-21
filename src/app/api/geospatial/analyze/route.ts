@@ -16,7 +16,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const overlay = await runGeospatialOverlay(body.data);
+    const overlay = await runGeospatialOverlay(body.data, body.dataType);
     const carData =
       body.dataType === "car" ? await fetchCarData(body.data) : null;
 

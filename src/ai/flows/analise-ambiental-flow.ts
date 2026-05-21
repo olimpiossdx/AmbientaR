@@ -54,7 +54,7 @@ const analisarSobreposicao = ai.defineTool(
     }),
   },
   async ({ poligono }) => {
-    const result = await runGeospatialOverlay(poligono);
+    const result = await runGeospatialOverlay(poligono, "polygon");
     return {
       bioma: result.bioma,
       sobreposicaoUC: result.sobreposicaoUC,
@@ -103,7 +103,7 @@ const analiseAmbientalFlow = ai.defineFlow(
         "Configuração de IA ausente no servidor. Defina OPENAI_API_KEY/OPENAI_KEY ou GOOGLE_GENAI_API_KEY/GEMINI_API_KEY.",
       );
     }
-    const factualOverlay = await runGeospatialOverlay(input.data);
+    const factualOverlay = await runGeospatialOverlay(input.data, input.dataType);
     const { output } = await prompt({ input }, { model: aiModel });
     if (!output) {
       throw new Error("A IA não conseguiu gerar uma análise.");

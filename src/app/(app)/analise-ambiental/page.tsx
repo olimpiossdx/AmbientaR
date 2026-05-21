@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { Suspense } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { StudyGeospatialSplitShell } from "@/components/studies/study-geospatial-split-shell";
@@ -42,6 +43,12 @@ import { usePackageUsage } from "@/hooks/use-package-usage";
 import { PackageUsageBanner } from "@/components/package-usage-banner";
 import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { handleAnalyseArea } from "./actions";
+import { handleWaveAAnalysis } from "./actions-wave-a";
+import type { WaveAAnalysisResult } from "@/lib/types/geo-wave-a";
+import { GeoWaveALayerCards } from "@/components/geospatial/geo-wave-a-layer-cards";
+import { appendWaveAFactualPdf } from "@/lib/geospatial/export-wave-a-pdf";
+import { GeoAnalysisComplementPanel } from "@/components/geospatial/geo-analysis-complement-panel";
+import type { PerimeterParseInput } from "@/lib/geospatial/perimeter";
 import {
   Collapsible,
   CollapsibleContent,
@@ -68,6 +75,13 @@ export default function AnaliseAmbientalPage() {
   const [isExportingGeojson, setIsExportingGeojson] = React.useState(false);
   const [analysisResult, setAnalysisResult] =
     React.useState<AnaliseAmbientalOutput | null>(null);
+  const [waveAResult, setWaveAResult] = React.useState<WaveAAnalysisResult | null>(
+    null,
+  );
+  const [savedGeoAnalysisId, setSavedGeoAnalysisId] = React.useState<string | null>(
+    null,
+  );
+  const [isWaveALoading, setIsWaveALoading] = React.useState(false);
   const [carNumber, setCarNumber] = React.useState("");
   const [coordinateInput, setCoordinateInput] = React.useState("");
   const [polygonInput, setPolygonInput] = React.useState("");
@@ -115,6 +129,34 @@ export default function AnaliseAmbientalPage() {
     ].join("\n");
   }, [analysisResult]);
 
+  const saveWaveASnapshot = React.useCallback(
+    async (
+      input: PerimeterParseInput,
+      result: WaveAAnalysisResult,
+    ): Promise<string | null> => {
+      if (!firestore || !user?.uid) return null;
+      try {
+        const ref = await addDoc(collection(firestore, "geo_analyses"), {
+          createdAt: serverTimestamp(),
+          createdBy: user.uid,
+          wave: "ABC",
+          inputMode: input.dataType,
+          inputData: input.data,
+          perimeter: result.perimeter,
+          layers: result.layers,
+          factualSummary: result.factualSummary,
+          fontesConsultadas: result.fontesConsultadas,
+          generatedAtUtc: result.generatedAtUtc,
+        });
+        return ref.id;
+      } catch (error) {
+        console.error("Falha ao persistir geo_analyses:", error);
+        return null;
+      }
+    },
+    [firestore, user?.uid],
+  );
+
   const saveAnalysisSnapshot = React.useCallback(
     async (input: AnaliseAmbientalInput, output: AnaliseAmbientalOutput) => {
       if (!firestore || !user?.uid) return;
@@ -122,6 +164,7 @@ export default function AnaliseAmbientalPage() {
         await addDoc(collection(firestore, "geo_analyses"), {
           createdAt: serverTimestamp(),
           createdBy: user.uid,
+          wave: "legacy_ia",
           inputMode: input.dataType,
           inputData: input.data,
           summary: output.resumoIA,
@@ -135,6 +178,61 @@ export default function AnaliseAmbientalPage() {
     },
     [firestore, user?.uid],
   );
+
+  const handleStartWaveA = async () => {
+    const input = buildAnalysisInput();
+    if (!input) {
+      toast({
+        variant: "destructive",
+        title: "Dados insuficientes",
+        description: "Preencha CAR, coordenadas ou polígono para iniciar a análise.",
+      });
+      return;
+    }
+    if (input.dataType === "coordinates") {
+      toast({
+        title: "Coordenada com buffer mínimo",
+        description:
+          "Para relatório Onda A com % confiável, prefira desenhar o polígono no mapa.",
+      });
+    }
+
+    setIsWaveALoading(true);
+    setWaveAResult(null);
+    setSavedGeoAnalysisId(null);
+    setLastPayload(input.data);
+
+    try {
+      const perimeterInput: PerimeterParseInput = {
+        dataType: input.dataType,
+        data: input.data,
+      };
+      const actionResult = await handleWaveAAnalysis(perimeterInput);
+      if (!actionResult.success) {
+        throw new Error(actionResult.error);
+      }
+      setWaveAResult(actionResult.result);
+      const docId = await saveWaveASnapshot(perimeterInput, actionResult.result);
+      if (docId) setSavedGeoAnalysisId(docId);
+      toast({
+        title: "Análise factual concluída",
+        description:
+          "8 camadas IDE-Sisema (Ondas A+B+C). Exporte o PDF factual ou complemente com IA abaixo.",
+      });
+    } catch (error) {
+      console.error("Wave A failed:", error);
+      toast({
+        variant: "destructive",
+        title: "Erro na análise factual",
+        description:
+          error instanceof Error
+            ? error.message
+            : "Não foi possível consultar as camadas IDE-Sisema.",
+      });
+    } finally {
+      setIsWaveALoading(false);
+    }
+  };
 
   const handleStartAnalysis = async () => {
     const input = buildAnalysisInput();
@@ -222,83 +320,92 @@ export default function AnaliseAmbientalPage() {
   };
 
   const handleDownloadPdf = async () => {
-    if (!analysisResult || isGeneratingPdf) return;
+    if (isGeneratingPdf) return;
+    if (!waveAResult && !analysisResult) return;
     setIsGeneratingPdf(true);
     try {
       const session = await createMmBrandedPdfSession(
         brandingUrlsFromLocal(brandingData),
       );
-      const { doc, margins } = session;
-      const pageW = doc.internal.pageSize.getWidth();
-      let y = session.startY;
-      const onPdfPage = () => drawWatermarkOnPage(doc, session.branding);
 
-      doc.setFontSize(16);
-      doc.setFont("helvetica", "bold");
-      doc.text("Relatório de Análise Ambiental Geoespacial", pageW / 2, y, {
-        align: "center",
-      });
-      y += 10;
+      if (waveAResult) {
+        appendWaveAFactualPdf(session, waveAResult);
+      } else if (analysisResult) {
+        const { doc, margins } = session;
+        const pageW = doc.internal.pageSize.getWidth();
+        let y = session.startY;
+        const onPdfPage = () => drawWatermarkOnPage(doc, session.branding);
 
-      doc.setFontSize(11);
-      doc.setFont("helvetica", "normal");
-      const resumoLines = doc.splitTextToSize(
-        analysisResult.resumoIA,
-        pageW - margins.left - margins.right,
-      );
-      doc.text(resumoLines, margins.left, y);
-      y += resumoLines.length * 6 + 8;
+        doc.setFontSize(16);
+        doc.setFont("helvetica", "bold");
+        doc.text("Relatório de Análise Ambiental Geoespacial", pageW / 2, y, {
+          align: "center",
+        });
+        y += 10;
 
-      doc.setFontSize(12);
-      doc.setFont("helvetica", "bold");
-      doc.text("Evidências factuais", margins.left, y);
-      y += 7;
-      doc.setFontSize(10);
-      doc.setFont("helvetica", "normal");
-      analysisResult.factualData.forEach((item, index) => {
-        const line = `${index + 1}. ${item.camada} | ${item.fonte} | ${item.resultado}`;
-        const lines = doc.splitTextToSize(line, pageW - margins.left - margins.right);
-        for (const l of lines) {
-          if (y > 270) {
-            doc.addPage();
-            onPdfPage();
-            y = session.startY;
-          }
-          doc.text(l, margins.left, y);
-          y += 5;
-        }
-      });
-      y += 6;
+        doc.setFontSize(11);
+        doc.setFont("helvetica", "normal");
+        const resumoLines = doc.splitTextToSize(
+          analysisResult.resumoIA,
+          pageW - margins.left - margins.right,
+        );
+        doc.text(resumoLines, margins.left, y);
+        y += resumoLines.length * 6 + 8;
 
-      const lineHeight = 5;
-      const maxY = 280;
-      analysisResult.analises.forEach((item) => {
-        if (y > maxY - 20) {
-          doc.addPage();
-          onPdfPage();
-          y = session.startY;
-        }
         doc.setFontSize(12);
         doc.setFont("helvetica", "bold");
-        doc.text(item.titulo, margins.left, y);
+        doc.text("Evidências factuais", margins.left, y);
         y += 7;
         doc.setFontSize(10);
         doc.setFont("helvetica", "normal");
-        const lines = doc.splitTextToSize(item.relatorio, pageW - margins.left - margins.right);
-        for (const line of lines) {
-          if (y > maxY - 10) {
+        analysisResult.factualData.forEach((item, index) => {
+          const line = `${index + 1}. ${item.camada} | ${item.fonte} | ${item.resultado}`;
+          const lines = doc.splitTextToSize(line, pageW - margins.left - margins.right);
+          for (const l of lines) {
+            if (y > 270) {
+              doc.addPage();
+              onPdfPage();
+              y = session.startY;
+            }
+            doc.text(l, margins.left, y);
+            y += 5;
+          }
+        });
+        y += 6;
+
+        const lineHeight = 5;
+        const maxY = 280;
+        analysisResult.analises.forEach((item) => {
+          if (y > maxY - 20) {
             doc.addPage();
             onPdfPage();
             y = session.startY;
           }
-          doc.text(line, margins.left, y);
-          y += lineHeight;
-        }
-        y += 6;
-      });
+          doc.setFontSize(12);
+          doc.setFont("helvetica", "bold");
+          doc.text(item.titulo, margins.left, y);
+          y += 7;
+          doc.setFontSize(10);
+          doc.setFont("helvetica", "normal");
+          const lines = doc.splitTextToSize(
+            item.relatorio,
+            pageW - margins.left - margins.right,
+          );
+          for (const line of lines) {
+            if (y > maxY - 10) {
+              doc.addPage();
+              onPdfPage();
+              y = session.startY;
+            }
+            doc.text(line, margins.left, y);
+            y += lineHeight;
+          }
+          y += 6;
+        });
+      }
 
       session.finalize();
-      doc.save(
+      session.doc.save(
         `relatorio-analise-geoespacial-${new Date().toISOString().slice(0, 10)}.pdf`,
       );
       toast({ title: "PDF gerado", description: "O arquivo foi baixado." });
@@ -376,7 +483,7 @@ export default function AnaliseAmbientalPage() {
   return (
     <StudyGeospatialSplitShell
       title="Análise Geoespacial (IA)"
-      description="À esquerda, desenhe ou capture no mapa; à direita, escolha CAR, coordenadas ou polígono, execute a análise com IA e exporte PDF, CSV ou GeoJSON."
+      description="Desenhe o perímetro, execute a Onda A (SIG: hidrografia, bioma, solos) e exporte PDF factual; depois complemente com IA em Relatórios de IA."
       mapPane={
         <Card className="flex h-full min-h-[420px] min-w-0 flex-1 flex-col overflow-hidden md:min-h-0">
           <CardHeader className="shrink-0 space-y-1 pb-3">
@@ -457,9 +564,9 @@ export default function AnaliseAmbientalPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Iniciar Análise com IA</CardTitle>
+              <CardTitle className="text-base">Análise geoespacial factual</CardTitle>
               <CardDescription>
-                Selecione o tipo de entrada e inicie a análise geoespacial com base em dados públicos.
+                IDE-Sisema MG: hidrografia, bioma, solos, geologia, geomorfologia, pedologia, vegetação e fauna.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -529,19 +636,37 @@ export default function AnaliseAmbientalPage() {
                 />
               </div>
               <Button
+                onClick={handleStartWaveA}
+                disabled={isWaveALoading || isLoading || !hasValidInput}
+                className="w-full"
+              >
+                {isWaveALoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Consultando camadas SIG...
+                  </>
+                ) : (
+                  <>
+                    <Globe className="mr-2 h-4 w-4" />
+                    Gerar relatório factual (8 camadas MG)
+                  </>
+                )}
+              </Button>
+              <Button
                 onClick={handleStartAnalysis}
-                disabled={isLoading || !hasValidInput}
+                disabled={isLoading || isWaveALoading || !hasValidInput}
+                variant="outline"
                 className="w-full"
               >
                 {isLoading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Analisando...
+                    IA analisando...
                   </>
                 ) : (
                   <>
                     <Sparkles className="mr-2 h-4 w-4" />
-                    Gerar relatório de análise geoespacial
+                    Relatório com IA (legado)
                   </>
                 )}
               </Button>
@@ -557,28 +682,47 @@ export default function AnaliseAmbientalPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {isLoading ? (
+              {isWaveALoading || isLoading ? (
                 <div className="flex flex-col items-center justify-center py-10 text-muted-foreground">
                   <Loader2 className="mb-3 h-10 w-10 animate-spin" />
                   <p className="text-sm">
-                    Processando dados e gerando análise geoespacial...
+                    {isWaveALoading
+                      ? "Consultando IDE-Sisema (hidrografia, bioma, solos)..."
+                      : "Processando dados e gerando análise geoespacial..."}
                   </p>
                 </div>
-              ) : analysisResult ? (
+              ) : waveAResult || analysisResult ? (
                 <div className="space-y-4">
-                  <p className="line-clamp-2 text-sm text-muted-foreground">
-                    {analysisResult.resumoIA}
-                  </p>
-                  <div className="rounded-md border p-3">
-                    <p className="mb-2 text-sm font-medium">Evidências factuais</p>
-                    <div className="space-y-2">
-                      {analysisResult.factualData.map((item, idx) => (
-                        <p key={`${item.camada}-${idx}`} className="text-xs text-muted-foreground">
-                          {idx + 1}. {item.camada} ({item.fonte}) - {item.resultado}
-                        </p>
-                      ))}
-                    </div>
-                  </div>
+                  {waveAResult ? (
+                    <>
+                      <p className="text-sm text-muted-foreground">
+                        {waveAResult.factualSummary}
+                      </p>
+                      <p className="text-xs font-medium text-primary">
+                        Área: {waveAResult.perimeter.areaHa.toFixed(2)} ha · Ondas A+B+C
+                      </p>
+                      <GeoWaveALayerCards layers={waveAResult.layers} />
+                    </>
+                  ) : analysisResult ? (
+                    <>
+                      <p className="line-clamp-2 text-sm text-muted-foreground">
+                        {analysisResult.resumoIA}
+                      </p>
+                      <div className="rounded-md border p-3">
+                        <p className="mb-2 text-sm font-medium">Evidências factuais</p>
+                        <div className="space-y-2">
+                          {analysisResult.factualData.map((item, idx) => (
+                            <p
+                              key={`${item.camada}-${idx}`}
+                              className="text-xs text-muted-foreground"
+                            >
+                              {idx + 1}. {item.camada} ({item.fonte}) - {item.resultado}
+                            </p>
+                          ))}
+                        </div>
+                      </div>
+                    </>
+                  ) : null}
                   <div className="flex flex-col gap-2">
                     <Button
                       onClick={handleDownloadPdf}
@@ -615,7 +759,7 @@ export default function AnaliseAmbientalPage() {
                       {isExportingGeojson ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Globe className="mr-2 h-4 w-4" />}
                       Exportar GeoJSON
                     </Button>
-                    <Button asChild variant="secondary" className="w-full">
+                    <Button asChild variant="outline" className="w-full">
                       <Link
                         href={`/studies/assistant?tipo=mcp&prompt=${encodeURIComponent(buildFactsPrompt())}`}
                       >
@@ -629,14 +773,23 @@ export default function AnaliseAmbientalPage() {
                 <div className="flex flex-col items-center justify-center py-10 text-center text-muted-foreground">
                   <Globe className="mb-3 h-12 w-12 opacity-50" />
                   <p className="text-sm">
-                    Configure CAR, coordenadas ou polígono nos cartões ao lado e
-                    clique em &quot;Gerar relatório de análise geoespacial&quot;.
-                    O PDF ficará disponível aqui.
+                    Configure o perímetro e clique em &quot;Gerar relatório factual (Onda A)&quot;.
+                    Depois use &quot;Complementar com IA&quot; em Relatórios de IA.
                   </p>
                 </div>
               )}
             </CardContent>
           </Card>
+
+          {user?.uid && (waveAResult || savedGeoAnalysisId) ? (
+            <Suspense fallback={null}>
+              <GeoAnalysisComplementPanel
+                userId={user.uid}
+                initialGeoAnalysisId={savedGeoAnalysisId}
+                inlineWaveResult={waveAResult}
+              />
+            </Suspense>
+          ) : null}
         </>
       }
     />

@@ -1,7 +1,9 @@
 "use client";
 
 import * as React from "react";
+import { Suspense } from "react";
 import { PageHeader } from "@/components/page-header";
+import { GeoAnalysisComplementPanel } from "@/components/geospatial/geo-analysis-complement-panel";
 import { useFirebase } from "@/firebase";
 import {
   Card,
@@ -573,6 +575,11 @@ export default function AiLabAutomationsPage() {
     <div className="flex flex-col h-full">
       <PageHeader title="Automações IA" />
       <main className="flex-1 overflow-auto p-4 md:p-6 space-y-4">
+        {user?.uid ? (
+          <Suspense fallback={null}>
+            <GeoAnalysisComplementPanel userId={user.uid} />
+          </Suspense>
+        ) : null}
         <Card>
           <CardHeader>
             <CardTitle>Objetivo do módulo</CardTitle>

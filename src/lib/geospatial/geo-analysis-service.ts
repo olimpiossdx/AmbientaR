@@ -1,4 +1,6 @@
 import type { GeoFactualItem, GeoFonte } from "@/lib/types/analise-ambiental";
+import { runWaveAAnalysis } from "@/lib/geospatial/run-wave-a-analysis";
+import type { PerimeterParseInput } from "@/lib/geospatial/perimeter";
 
 type SobreposicaoResultado = {
   bioma: string;
@@ -92,48 +94,76 @@ export async function fetchCarData(numeroCAR: string): Promise<CarResultado> {
   };
 }
 
-export async function runGeospatialOverlay(data: string): Promise<SobreposicaoResultado> {
-  let bioma = "Cerrado";
-  let hidrografia: Array<{ nome: string; tipo: string }> = [
-    { nome: "Córrego sem identificação oficial", tipo: "Intermitente" },
-  ];
-
+export async function runGeospatialOverlay(
+  data: string,
+  dataType: PerimeterParseInput["dataType"] = "polygon",
+): Promise<SobreposicaoResultado> {
   try {
-    const response = await withTimeout(
-      fetch("https://geoportal.meioambiente.mg.gov.br/webservices", {
-        method: "GET",
-        cache: "no-store",
-      }),
-      8000,
-    );
-    if (response.ok) {
-      hidrografia = [{ nome: "Camada hídrica identificada no IDE-Sisema", tipo: "Map service" }];
-    }
+    const wave = await runWaveAAnalysis({ dataType, data });
+    const biomaLayer = wave.layers.find((l) => l.layerId === "mg_bioma");
+    const hidroLayer = wave.layers.find((l) => l.layerId === "mg_hidrografia");
+    const bioma =
+      biomaLayer?.stats[0]?.label ?? biomaLayer?.summary ?? "Não identificado";
+    const hidrografia =
+      hidroLayer?.stats.length
+        ? hidroLayer.stats.map((s) => ({
+            nome: s.label,
+            tipo: s.lengthKm != null ? `${s.lengthKm} km` : "interseção",
+          }))
+        : [{ nome: hidroLayer?.summary ?? "Sem feições", tipo: "—" }];
+
+    const factualData: GeoFactualItem[] = wave.layers.map((layer) => ({
+      camada: layer.title,
+      fonte: layer.source?.name ?? "IDE-Sisema GeoServer MG",
+      metodo: layer.source?.method ?? "WFS + interseção (Onda A)",
+      resultado: layer.summary,
+      areaHa: layer.stats[0]?.areaHa,
+    }));
+
+    return {
+      bioma,
+      sobreposicaoUC: {
+        ocorreu: false,
+        nomeUC: "Consulta Onda A (UC não incluída nesta onda)",
+        distanciaKm: undefined,
+      },
+      hidrografia,
+      factualData,
+      fontesConsultadas: wave.fontesConsultadas.length
+        ? wave.fontesConsultadas
+        : DEFAULT_FONTES,
+    };
   } catch {
-    // Mantém resposta com fallback para não quebrar análise ao usuário.
+    // Fallback mínimo se perímetro inválido
   }
 
+  let bioma = "Cerrado";
+  const hidrografia: Array<{ nome: string; tipo: string }> = [
+    { nome: "Consulta Onda A indisponível — verifique o polígono", tipo: "—" },
+  ];
   const areaHa = estimateAreaByInput(data);
 
   const factualData: GeoFactualItem[] = [
     {
-      camada: "Unidades de Conservação (MG)",
-      fonte: "IDE-Sisema GeoServer",
-      metodo: "sobreposição espacial (interseção)",
-      resultado: "Sem interseção direta com UC cadastrada para a geometria informada.",
+      camada: "Hidrografia (Onda A)",
+      fonte: "IDE-Sisema",
+      metodo: "fallback",
+      resultado: hidrografia[0]?.nome ?? "—",
       areaHa,
     },
     {
-      camada: "Embargos federais",
-      fonte: "IBAMA PAMGIA",
-      metodo: "interseção por envelope e proximidade",
-      resultado: "Sem embargo federal incidente no recorte principal informado.",
+      camada: "Bioma (Onda A)",
+      fonte: "IDE-Sisema",
+      metodo: "fallback",
+      resultado: bioma,
+      areaHa,
     },
     {
-      camada: "Hidrografia oficial",
+      camada: "Solos (Onda A)",
       fonte: "IDE-Sisema",
-      metodo: "consulta de camada temática",
-      resultado: hidrografia[0]?.nome ?? "Camada hídrica consultada",
+      metodo: "fallback",
+      resultado: "Perímetro inválido ou serviço indisponível.",
+      areaHa,
     },
   ];
 
@@ -141,7 +171,7 @@ export async function runGeospatialOverlay(data: string): Promise<SobreposicaoRe
     bioma,
     sobreposicaoUC: {
       ocorreu: false,
-      nomeUC: "Não identificada sobreposição",
+      nomeUC: "Não consultado",
       distanciaKm: 15,
     },
     hidrografia,

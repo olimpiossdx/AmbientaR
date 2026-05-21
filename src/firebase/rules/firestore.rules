@@ -977,6 +977,34 @@ service cloud.firestore {
     }
 
     /**
+     * @description Análises geoespaciais factuais (Onda A / SIG).
+     * @path /databases/{database}/documents/geo_analyses/{analysisId}
+     */
+    match /geo_analyses/{analysisId} {
+      allow create: if isSignedIn()
+        && request.resource.data.createdBy == request.auth.uid;
+      allow read: if isSignedIn()
+        && (resource.data.createdBy == request.auth.uid || isAdmin());
+      allow update: if isSignedIn()
+        && resource.data.createdBy == request.auth.uid;
+      allow delete: if isAdmin();
+    }
+
+    /**
+     * @description Complementação IA vinculada a geo_analyses (Etapa 2).
+     * @path /databases/{database}/documents/geo_analysis_complements/{complementId}
+     */
+    match /geo_analysis_complements/{complementId} {
+      allow create: if isSignedIn()
+        && request.resource.data.createdBy == request.auth.uid;
+      allow read: if isSignedIn()
+        && (resource.data.createdBy == request.auth.uid || isAdmin());
+      allow update: if isSignedIn()
+        && resource.data.createdBy == request.auth.uid;
+      allow delete: if isAdmin();
+    }
+
+    /**
      * @description Backups de exclusão para trilha de segurança.
      * Somente admin/supervisor podem consultar e gravar.
      * @path /databases/{database}/documents/deleted_data_backups/{backupId}
