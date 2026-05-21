@@ -122,6 +122,9 @@ export function calculateDre(
   };
 }
 
+/** Valor sentinela para Select (Radix não aceita `value=""` em SelectItem). */
+export const SUPPLIER_NONE_SELECT_VALUE = '__supplier_none__';
+
 export const EXPENSE_CATEGORIES = [
   { value: 'operacional', label: 'Operacional' },
   { value: 'pessoal', label: 'Pessoal / folha' },

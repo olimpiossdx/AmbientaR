@@ -54,7 +54,7 @@ Legenda: **Storage-SDK** = `uploadFileToStorage` ou `getStorage` + `uploadBytes`
 | `/projects` | N/A |
 | `/responsible-company` | N/A |
 
-### Autorizações / Relatórios
+### Documentos Ambientais
 
 | Rota | Upload / ficheiro |
 |------|-------------------|

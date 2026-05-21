@@ -46,7 +46,7 @@ export default function AiLabPage() {
     {
       id: "AI-002",
       nome: "Checklist de pendências de licenças/outorgas",
-      modulo: "Autorizações/Relatórios",
+      modulo: "Documentos Ambientais",
       status: "Em piloto",
       prioridade: "Alta",
     },
@@ -75,7 +75,7 @@ export default function AiLabPage() {
             <p className="text-sm text-muted-foreground">
               Estratégia inicial: validar fluxos, custo, segurança e usabilidade
               neste hub. Depois, pulverizar as capacidades aprovadas para
-              Financeiro, Autorizações/Relatórios, Cadastro e CRM.
+              Financeiro, Documentos Ambientais, Cadastro e CRM.
             </p>
           </CardContent>
         </Card>

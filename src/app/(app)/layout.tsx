@@ -72,10 +72,11 @@ import { SidebarDebugger } from "@/components/sidebar-debugger";
 import { FinancialMenuDebugPanel } from "@/lib/financial-menu-debug";
 import { CadastroMenuDebugPanel } from "@/lib/cadastro-menu-debug";
 import {
-  getFirstAutorizacoesRelatoriosHrefForRole,
-  isAutorizacoesRelatoriosNavPath,
+  getFirstDocumentosAmbientaisHrefForRole,
+  isDocumentosAmbientaisNavPath,
   isRoleAllowedForPath,
 } from "@/lib/route-access";
+import { DOCUMENTOS_AMBIENTAIS_MENU_LABEL } from "@/lib/navigation-config";
 import { OfflineProvider } from "@/lib/offline";
 import { OfflineQueueBadge } from "@/components/offline-queue-badge";
 import {
@@ -95,7 +96,7 @@ const mobileNavItems = [
   {
     /** Valor inicial; em mobile é substituído pelo primeiro path do grupo permitido ao papel. */
     href: "/licenses",
-    label: "Autorizações/Relatórios",
+    label: DOCUMENTOS_AMBIENTAIS_MENU_LABEL,
     icon: FileSearch,
     isCenter: true,
   },
@@ -299,7 +300,7 @@ const AppLayoutClient = ({ children }: { children: React.ReactNode }) => {
 
   const roleLabel: Record<string, string> = {
     admin: "Administrador",
-    gestor: "Autorizações/Relatórios",
+    gestor: "Gestor Ambiental",
     supervisor: "Supervisor",
     financial: "Financeiro",
     sales: "Vendas",
@@ -338,7 +339,7 @@ const AppLayoutClient = ({ children }: { children: React.ReactNode }) => {
     return mobileNavItems
       .map((i) => {
         if ("isCenter" in i && i.isCenter) {
-          const href = getFirstAutorizacoesRelatoriosHrefForRole(user.role);
+          const href = getFirstDocumentosAmbientaisHrefForRole(user.role);
           if (!href) return null;
           return { ...i, href };
         }
@@ -354,7 +355,7 @@ const AppLayoutClient = ({ children }: { children: React.ReactNode }) => {
     (item: (typeof mobileNavItems)[number]) => {
       if (!pathname) return false;
       if ("isCenter" in item && item.isCenter) {
-        return isAutorizacoesRelatoriosNavPath(pathname);
+        return isDocumentosAmbientaisNavPath(pathname);
       }
       return pathname === item.href;
     },

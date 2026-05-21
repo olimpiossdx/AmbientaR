@@ -16,7 +16,10 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import type { Control } from 'react-hook-form';
-import { EXPENSE_CATEGORIES } from '@/lib/financial-core';
+import {
+  EXPENSE_CATEGORIES,
+  SUPPLIER_NONE_SELECT_VALUE,
+} from '@/lib/financial-core';
 import type { Fornecedor } from '@/lib/types';
 
 /** Campos opcionais de classificação (receita/despesa no fluxo de caixa). */
@@ -57,7 +60,10 @@ export function TransactionExtraFields({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Categoria</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value || ''}>
+                <Select
+                  onValueChange={field.onChange}
+                  value={field.value ? field.value : undefined}
+                >
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione" />
@@ -82,8 +88,16 @@ export function TransactionExtraFields({
               <FormItem>
                 <FormLabel>Fornecedor</FormLabel>
                 <Select
-                  onValueChange={field.onChange}
-                  value={field.value || ''}
+                  onValueChange={(v) =>
+                    field.onChange(
+                      v === SUPPLIER_NONE_SELECT_VALUE ? '' : v,
+                    )
+                  }
+                  value={
+                    field.value
+                      ? field.value
+                      : SUPPLIER_NONE_SELECT_VALUE
+                  }
                   disabled={isLoadingSuppliers}
                 >
                   <FormControl>
@@ -92,7 +106,9 @@ export function TransactionExtraFields({
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="">— Nenhum —</SelectItem>
+                    <SelectItem value={SUPPLIER_NONE_SELECT_VALUE}>
+                      — Nenhum —
+                    </SelectItem>
                     {suppliers?.map((s) => (
                       <SelectItem key={s.id} value={s.id}>
                         {s.name || s.id}

@@ -11,7 +11,7 @@ Legenda: ✅ auditado | 🔧 corrigido nesta fase | ⏳ backlog
 | 1 | Painel | — | ✅ |
 | 2 | Financeiro | [auditoria-menu-financeiro.md](./auditoria-menu-financeiro.md) | ✅ 🔧 Orçamentos no menu |
 | 3 | Cadastro | [auditoria-menu-cadastro.md](./auditoria-menu-cadastro.md) | ✅ 🔧 redirect `environmental-company` |
-| 4 | Autorizações/Relatórios | [auditoria-menu-autorizacoes.md](./auditoria-menu-autorizacoes.md) | ✅ (Monitoramento: doc dedicado) |
+| 4 | Documentos Ambientais | [auditoria-menu-autorizacoes.md](./auditoria-menu-autorizacoes.md) | ✅ (Monitoramento: doc dedicado) |
 | 5 | Autos de Infração - Defesa | [auditoria-menu-autorizacoes.md](./auditoria-menu-autorizacoes.md) | ✅ |
 | 6 | Vistoria em Campo | [auditoria-menu-vistoria-processos.md](./auditoria-menu-vistoria-processos.md) | ✅ |
 | 7 | Processos | [auditoria-menu-vistoria-processos.md](./auditoria-menu-vistoria-processos.md) | ✅ |

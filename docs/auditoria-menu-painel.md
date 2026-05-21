@@ -7,6 +7,6 @@
 Comportamento: `DashboardRouterPage` escolhe dashboard por `user.role` (admin, financial, client, CRM, fauna, …).
 
 - Sem página “em construção”.
-- Widgets: aniversários, agenda, hub autorizações (`AuthorizationReportsHubCard`).
+- Widgets: aniversários, agenda, hub documentos ambientais (`DocumentosAmbientaisHubCard`).
 
 Nenhuma correção necessária nesta fase.

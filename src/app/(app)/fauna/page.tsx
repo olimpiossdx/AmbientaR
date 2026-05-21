@@ -111,7 +111,7 @@ export default function FaunaManagementPage() {
   return (
     <>
       <div className="flex flex-col h-full">
-        <PageHeader title="Fauna — Autorizações e Relatórios">
+        <PageHeader title="Fauna — Documentos Ambientais">
            <Button size="sm" className="gap-1" onClick={() => setIsFormOpen(true)}>
             <PlusCircle className="h-4 w-4" />
             Adicionar Documento Externo

@@ -76,6 +76,9 @@ import {
   BookOpen,
 } from "lucide-react";
 
+/** Rótulo do grupo de menu (licenças, CAR, outorgas, fauna, monitoramento, etc.). */
+export const DOCUMENTOS_AMBIENTAIS_MENU_LABEL = "Documentos Ambientais";
+
 export const allNavItems: NavItem[] = [
   {
     href: "/",
@@ -330,7 +333,7 @@ export const allNavItems: NavItem[] = [
     ],
   },
   {
-    label: "Autorizações/Relatórios",
+    label: DOCUMENTOS_AMBIENTAIS_MENU_LABEL,
     icon: Recycle,
     roles: [
       "admin",

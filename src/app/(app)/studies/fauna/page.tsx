@@ -134,7 +134,7 @@ function StudyRowActions({
             </Button>
           </TooltipTrigger>
           <TooltipContent>
-            Concluir e publicar em Autorizações/Relatórios
+            Concluir e publicar em Documentos Ambientais
           </TooltipContent>
         </Tooltip>
       )}
@@ -147,7 +147,7 @@ function StudyRowActions({
               </Link>
             </Button>
           </TooltipTrigger>
-          <TooltipContent>Ver em Autorizações/Relatórios</TooltipContent>
+          <TooltipContent>Ver em Documentos Ambientais</TooltipContent>
         </Tooltip>
       )}
     </div>
@@ -294,7 +294,7 @@ export default function StudiesFaunaPage() {
       toast({
         title: "Estudo concluído",
         description:
-          "O documento ficará disponível em Autorizações/Relatórios → Fauna para o cliente.",
+          "O documento ficará disponível em Documentos Ambientais → Fauna para o cliente.",
       });
     } catch (error) {
       console.error(error);
@@ -346,7 +346,7 @@ export default function StudiesFaunaPage() {
             <CardTitle>Em elaboração</CardTitle>
             <CardDescription>
               Rascunhos da equipe técnica. Ao concluir, o documento passa a
-              aparecer em Autorizações/Relatórios → Fauna.
+              aparecer em Documentos Ambientais → Fauna.
             </CardDescription>
           </CardHeader>
           <CardContent>

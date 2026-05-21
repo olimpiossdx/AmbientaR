@@ -45,7 +45,8 @@ import type {
 import { Skeleton } from "@/components/ui/skeleton";
 import EnvironmentalDashboard from "../environmental-dashboard";
 import AgendaWidget from "./agenda-widget";
-import { AuthorizationReportsHubCard } from "@/components/authorization-reports-hub-card";
+import { DocumentosAmbientaisHubCard } from "@/components/documentos-ambientais-hub-card";
+import { DOCUMENTOS_AMBIENTAIS_MENU_LABEL } from "@/lib/navigation-config";
 import { ProfileNavigationHubCard } from "@/components/profile-navigation-hub-card";
 
 /** Retorna apenas dígitos do CPF/CNPJ para comparação. */
@@ -653,11 +654,11 @@ export default function ClientDashboard() {
         title={isRep ? "Painel do Representante" : "Painel do Cliente"}
       />
       <main className="flex-1 overflow-auto p-4 md:p-6 space-y-8">
-        {user?.role && <AuthorizationReportsHubCard role={user.role} />}
+        {user?.role && <DocumentosAmbientaisHubCard role={user.role} />}
         {user?.role && (
           <ProfileNavigationHubCard
             role={user.role}
-            excludeGroupLabels={["Autorizações/Relatórios"]}
+            excludeGroupLabels={[DOCUMENTOS_AMBIENTAIS_MENU_LABEL]}
           />
         )}
         <AgendaWidget />

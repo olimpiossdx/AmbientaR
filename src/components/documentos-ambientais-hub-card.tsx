@@ -3,7 +3,10 @@
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { allNavItems } from "@/lib/navigation-config";
+import {
+  allNavItems,
+  DOCUMENTOS_AMBIENTAIS_MENU_LABEL,
+} from "@/lib/navigation-config";
 import type { AppUser, NavItem, NavSubItem } from "@/lib/types";
 import { canAccessNavItem } from "@/lib/role-guards";
 
@@ -39,11 +42,13 @@ function flattenLinks(
   return links;
 }
 
-export function AuthorizationReportsHubCard({ role }: { role: AppUser["role"] }) {
-  const authGroup = allNavItems.find((item) => item.label === "Autorizações/Relatórios");
-  if (!authGroup?.subItems) return null;
+export function DocumentosAmbientaisHubCard({ role }: { role: AppUser["role"] }) {
+  const documentosGroup = allNavItems.find(
+    (item) => item.label === DOCUMENTOS_AMBIENTAIS_MENU_LABEL,
+  );
+  if (!documentosGroup?.subItems) return null;
 
-  const links = flattenLinks(authGroup.subItems, role);
+  const links = flattenLinks(documentosGroup.subItems, role);
   if (links.length === 0) return null;
 
   return (
@@ -83,4 +88,3 @@ export function AuthorizationReportsHubCard({ role }: { role: AppUser["role"] })
     </Card>
   );
 }
-

@@ -152,7 +152,7 @@ export function AtosVinculadosPicker({
       <p className="text-sm text-muted-foreground rounded-md border border-dashed px-3 py-4">
         Selecione o empreendedor e o empreendimento para listar licenças (válidas ou em
         renovação), outorgas vigentes e usos insignificantes cadastrados em
-        Autorizações/Relatórios.
+        Documentos Ambientais.
       </p>
     );
   }

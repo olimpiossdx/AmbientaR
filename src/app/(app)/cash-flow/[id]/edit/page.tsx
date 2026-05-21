@@ -17,14 +17,19 @@ function EditTransactionPageContent() {
     const itemId = (params?.id as string | undefined) ?? '';
     const transactionType = searchParams?.get('type') as 'revenue' | 'expense' | null;
 
-    const collectionName = transactionType === 'revenue' ? 'revenues' : 'expenses';
-    
+    const collectionName =
+        transactionType === 'revenue'
+            ? 'revenues'
+            : transactionType === 'expense'
+              ? 'expenses'
+              : null;
+
     const { firestore } = useFirebase();
 
     const itemDocRef = useMemoFirebase(() => {
-        if (!firestore || !itemId || !transactionType) return null;
+        if (!firestore || !itemId || !collectionName) return null;
         return doc(firestore, collectionName, itemId);
-    }, [firestore, itemId, transactionType]);
+    }, [firestore, itemId, collectionName]);
 
     const { data: item, isLoading } = useDoc<Revenue | Expense>(itemDocRef);
 
@@ -53,6 +58,24 @@ function EditTransactionPageContent() {
         );
     }
     
+    if (!transactionType) {
+        return (
+             <div className="flex flex-col h-full">
+                <PageHeader title="Erro" />
+                <main className="flex-1 overflow-auto p-4 md:p-6">
+                     <Card>
+                        <CardHeader>
+                            <CardTitle>Tipo de lançamento inválido</CardTitle>
+                            <CardDescription>
+                                Abra a edição pelo menu de receitas ou despesas (parâmetro type=revenue ou type=expense).
+                            </CardDescription>
+                        </CardHeader>
+                    </Card>
+                </main>
+            </div>
+         )
+    }
+
     if (!item && !isLoading) {
          return (
              <div className="flex flex-col h-full">
@@ -88,7 +111,7 @@ function EditTransactionPageContent() {
                   </CardHeader>
                   <CardContent>
                       <TransactionForm
-                          transactionType={transactionType!}
+                          transactionType={transactionType}
                           currentItem={item}
                           onSuccess={handleSuccess}
                           onCancel={() => router.back()}

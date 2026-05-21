@@ -571,7 +571,7 @@ export default function EnvironmentalDashboard({
           <CardHeader>
             <CardTitle>Licenças ambientais recentes</CardTitle>
             <CardDescription>
-              Registros da coleção Licenças (mesmo menu Autorizações/Relatórios
+              Registros da coleção Licenças (mesmo menu Documentos Ambientais
               &gt; Licenças).
             </CardDescription>
           </CardHeader>

@@ -56,7 +56,7 @@ export function canWriteCrm(role: UserRole | undefined | null): boolean {
 }
 
 /**
- * Escrita em autorizações/relatórios operacionais (licenças, outorgas, condicionantes, etc.).
+ * Escrita em documentos ambientais operacionais (licenças, outorgas, condicionantes, etc.).
  * Espelha os papéis das páginas operacionais; admin incluído via hasAnyRoleOrAdmin.
  */
 export function canPerformOperationalWrite(

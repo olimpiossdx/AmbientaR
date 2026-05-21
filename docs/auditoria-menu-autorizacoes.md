@@ -1,6 +1,6 @@
-# Auditoria — Autorizações/Relatórios + Autos de Infração
+# Auditoria — Documentos Ambientais + Autos de Infração
 
-## Autorizações/Relatórios (subitens)
+## Documentos Ambientais (subitens)
 
 | Rota | Label |
 |------|-------|
