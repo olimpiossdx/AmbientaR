@@ -1,12 +1,12 @@
 # Auditoria de Rotas e Menu
 
-Gerado em: 2026-05-20T18:06:33.931Z
+Gerado em: 2026-05-21T18:33:04.341Z
 
 Classificação inicial para limpeza cirúrgica. Rotas órfãs não devem ser removidas automaticamente; precisam de validação funcional antes.
 
 ## Código ativo ou coberto por menu
 
-Total: 199
+Total: 206
 
 | Rota | Arquivo |
 |------|---------|
@@ -57,7 +57,17 @@ Total: 199
 | `/external` | `src/app/(app)/external/page.tsx` |
 | `/fauna` | `src/app/(app)/fauna/page.tsx` |
 | `/financial/abc-curve` | `src/app/(app)/financial/abc-curve/page.tsx` |
+| `/financial/abc-fornecedores` | `src/app/(app)/financial/abc-fornecedores/page.tsx` |
+| `/financial/abc-servicos` | `src/app/(app)/financial/abc-servicos/page.tsx` |
+| `/financial/bens-patrimonio` | `src/app/(app)/financial/bens-patrimonio/page.tsx` |
+| `/financial/bens-patrimonio/[id]/edit` | `src/app/(app)/financial/bens-patrimonio/[id]/edit/page.tsx` |
+| `/financial/bens-patrimonio/new` | `src/app/(app)/financial/bens-patrimonio/new/page.tsx` |
+| `/financial/conciliacao` | `src/app/(app)/financial/conciliacao/page.tsx` |
 | `/financial/dre-contabil` | `src/app/(app)/financial/dre-contabil/page.tsx` |
+| `/financial/export-contabil` | `src/app/(app)/financial/export-contabil/page.tsx` |
+| `/financial/fluxo-projetado` | `src/app/(app)/financial/fluxo-projetado/page.tsx` |
+| `/financial/orcamento` | `src/app/(app)/financial/orcamento/page.tsx` |
+| `/financial/painel` | `src/app/(app)/financial/painel/page.tsx` |
 | `/georeferenciamento` | `src/app/(app)/georeferenciamento/page.tsx` |
 | `/georeferenciamento/ambiental` | `src/app/(app)/georeferenciamento/ambiental/page.tsx` |
 | `/georeferenciamento/campo` | `src/app/(app)/georeferenciamento/campo/page.tsx` |
@@ -105,9 +115,6 @@ Total: 199
 | `/projects` | `src/app/(app)/projects/page.tsx` |
 | `/projects/[id]/edit` | `src/app/(app)/projects/[id]/edit/page.tsx` |
 | `/projects/new` | `src/app/(app)/projects/new/page.tsx` |
-| `/proposals` | `src/app/(app)/proposals/page.tsx` |
-| `/proposals/[id]/edit` | `src/app/(app)/proposals/[id]/edit/page.tsx` |
-| `/proposals/new` | `src/app/(app)/proposals/new/page.tsx` |
 | `/reporting` | `src/app/(app)/reporting/page.tsx` |
 | `/requests` | `src/app/(app)/requests/page.tsx` |
 | `/requests/[id]/aia` | `src/app/(app)/requests/[id]/aia/page.tsx` |
@@ -212,21 +219,24 @@ Total: 199
 
 ## Rotas dinâmicas sem entrada direta no menu
 
-Total: 2
+Total: 3
 
 | Rota | Arquivo |
 |------|---------|
+| `/proposals/[id]/edit` | `src/app/(app)/proposals/[id]/edit/page.tsx` |
 | `/studies/intervencao-ambiental/[id]/edit` | `src/app/(app)/studies/intervencao-ambiental/(.)[id]/edit/page.tsx` |
 | `/studies/intervencao-ambiental/[id]/edit` | `src/app/(app)/studies/intervencao-ambiental/[id]/edit/page.tsx` |
 
 ## Rotas estáticas sem entrada direta no menu
 
-Total: 7
+Total: 9
 
 | Rota | Arquivo |
 |------|---------|
 | `/environmental-company` | `src/app/(app)/environmental-company/page.tsx` |
 | `/monitoring` | `src/app/(app)/monitoring/page.tsx` |
+| `/proposals` | `src/app/(app)/proposals/page.tsx` |
+| `/proposals/new` | `src/app/(app)/proposals/new/page.tsx` |
 | `/studies` | `src/app/(app)/studies/page.tsx` |
 | `/studies/intervencao-ambiental` | `src/app/(app)/studies/intervencao-ambiental/page.tsx` |
 | `/studies/intervencao-ambiental/new` | `src/app/(app)/studies/intervencao-ambiental/(.)new/page.tsx` |

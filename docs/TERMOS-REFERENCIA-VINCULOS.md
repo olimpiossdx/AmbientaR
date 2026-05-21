@@ -1,4 +1,4 @@
-# Vínculo Termos de Referência ↔ Estudos (Elaboração de Estudos)
+# Vínculo Termos de Referência ↔ Estudos (Estudos Técnicos)
 
 ## O que esta função faz (e o que não faz)
 
@@ -15,7 +15,7 @@ A pasta **`termos de referencia`** na raiz do projeto (ou em `TERMOS_REFERENCIA_
 | **PRADA**        | `PRADA`            | `E:\AmbientaR\termos de referencia\PRADA` |
 | **PTRF**         | `PTRF`             | `E:\AmbientaR\termos de referencia\PTRF`  |
 
-- **Menu:** Elaboração de Estudos → PRADA e Elaboração de Estudos → PTRF.
+- **Menu:** Estudos Técnicos → PRADA e Estudos Técnicos → PTRF.
 - Nas páginas **PRADA** e **PTRF** aparece o card **"Termos de referência vinculados"**, que mostra a pasta vinculada e a lista de arquivos (.pdf, .docx, .dotx) encontrados nela, além do link para a Base Jurídica (RAG).
 
 ## Demais pastas e estudos

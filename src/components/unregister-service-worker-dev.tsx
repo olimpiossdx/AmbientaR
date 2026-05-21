@@ -13,6 +13,9 @@ export function UnregisterServiceWorkerDev() {
 
     void navigator.serviceWorker.getRegistrations().then((regs) => {
       regs.forEach((r) => {
+        const script = r.active?.scriptURL ?? r.installing?.scriptURL ?? r.waiting?.scriptURL ?? "";
+        // Mantém SW do FCM (push no celular); remove só Workbox/PWA (sw.js) que quebra chunks em dev.
+        if (script.includes("firebase-messaging-sw")) return;
         void r.unregister();
       });
     });

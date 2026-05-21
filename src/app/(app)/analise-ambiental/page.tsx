@@ -27,6 +27,7 @@ import type {
 } from "@/lib/types/analise-ambiental";
 import { useToast } from "@/hooks/use-toast";
 import { useLocalBranding } from "@/hooks/use-local-branding";
+import { ESTUDOS_TECNICOS_MENU_LABEL } from "@/lib/navigation-config";
 import {
   brandingUrlsFromLocal,
   createMmBrandedPdfSession,
@@ -36,7 +37,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useFirebase } from "@/firebase";
+import { useFirebase, useAuth } from "@/firebase";
+import { usePackageUsage } from "@/hooks/use-package-usage";
+import { PackageUsageBanner } from "@/components/package-usage-banner";
 import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { handleAnalyseArea } from "./actions";
 import {
@@ -54,7 +57,9 @@ type GeoJSONLike = {
 };
 
 export default function AnaliseAmbientalPage() {
-  const { firestore, user } = useFirebase();
+  const { firestore, user, auth } = useFirebase();
+  const { user: appUser } = useAuth();
+  const packageUsage = usePackageUsage(appUser ?? null);
   const { data: brandingData } = useLocalBranding();
   const [inputMode, setInputMode] = React.useState<InputMode>("car");
   const [isLoading, setIsLoading] = React.useState(false);
@@ -147,13 +152,15 @@ export default function AnaliseAmbientalPage() {
     setLastPayload(input.data);
 
     try {
-      const actionResult = await handleAnalyseArea(input);
+      const idToken = await auth?.currentUser?.getIdToken();
+      const actionResult = await handleAnalyseArea(input, idToken ?? null);
       if (!actionResult.success) {
         throw new Error(actionResult.error);
       }
       const result = actionResult.result;
       setAnalysisResult(result);
       await saveAnalysisSnapshot(input, result);
+      packageUsage.refresh();
       toast({
         title: "Análise concluída",
         description: "Relatório pronto para exportação (PDF/CSV/GeoJSON).",
@@ -407,6 +414,7 @@ export default function AnaliseAmbientalPage() {
       }
       sidebar={
         <>
+          <PackageUsageBanner usage={packageUsage} showAmbbot />
           <Collapsible defaultOpen={false} className="group rounded-lg border bg-card shadow-sm">
             <div className="flex items-center gap-2 px-3 py-2">
               <CollapsibleTrigger asChild>
@@ -442,7 +450,7 @@ export default function AnaliseAmbientalPage() {
                 >
                   IDE-SisemaNet
                 </Link>{" "}
-                em Elaboração de estudos.
+                em {ESTUDOS_TECNICOS_MENU_LABEL}.
               </p>
             </CollapsibleContent>
           </Collapsible>

@@ -59,6 +59,9 @@ import { AttachmentPreviewSection } from "@/components/shared/attachment-preview
 import { UploadPreparationDialog } from "@/components/shared/upload-preparation-dialog";
 import { useStorageFileUpload } from "@/hooks/use-storage-file-upload";
 import { UPLOAD_RAW_FILE_SAFETY_MAX } from "@/lib/upload-limits";
+import { NOTIFICATION_LINKS, NOTIFICATION_SOURCE } from "@/lib/notification-events";
+import { notifyEmpreendedorPortalUsers } from "@/lib/notifications";
+import { guardPortalPackageAction } from "@/lib/package-portal-guard";
 import {
   filterProjectsByEmpreendedorId,
 } from "@/lib/processos-form-order";
@@ -138,7 +141,7 @@ export function OutorgaForm({ currentItem, onSuccess }: OutorgaFormProps) {
     const { uploadFile, dialogProps, limitLabel } = useStorageFileUpload({
     storageFolder: "outorgas",
   });
-  const { firestore } = useFirebase();
+  const { firestore, user, auth } = useFirebase();
 
   const empreendedoresQuery = useMemoFirebase(
     () => (firestore ? collection(firestore, "empreendedores") : null),
@@ -322,9 +325,41 @@ export function OutorgaForm({ currentItem, onSuccess }: OutorgaFormProps) {
         })
         .finally(() => setLoading(false));
     } else {
+      if (user && auth?.currentUser) {
+        const gate = await guardPortalPackageAction(
+          auth,
+          "create_module:outorgas",
+        );
+        if (!gate.ok) {
+          toast({
+            variant: "destructive",
+            title: "Limite do plano",
+            description: gate.message,
+          });
+          setLoading(false);
+          return;
+        }
+      }
       const collectionRef = collection(firestore, "outorgas");
       addDoc(collectionRef, dataToSave as DocumentData)
-        .then(() => {
+        .then(async (ref) => {
+          try {
+            await notifyEmpreendedorPortalUsers(
+              firestore,
+              values.empreendedorId,
+              {
+                title: "Nova outorga cadastrada",
+                description: `Outorga ${values.permitNumber} em Documentos Ambientais.`,
+                link: NOTIFICATION_LINKS.outorgas,
+                sourceType: NOTIFICATION_SOURCE.outorga,
+                sourceId: ref.id,
+                actorRole: user?.role,
+              },
+              { excludeUserId: user?.uid },
+            );
+          } catch (e) {
+            console.warn("[Outorga] notificação:", e);
+          }
           toast({
             title: "Outorga criada!",
             description: `A outorga ${values.permitNumber} foi adicionada com sucesso.`,

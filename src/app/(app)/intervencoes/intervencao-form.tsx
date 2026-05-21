@@ -39,6 +39,9 @@ import type {
   PermitStatus,
   Empreendedor,
 } from "@/lib/types";
+import { NOTIFICATION_LINKS, NOTIFICATION_SOURCE } from "@/lib/notification-events";
+import { notifyEmpreendedorPortalUsers } from "@/lib/notifications";
+import { guardPortalPackageAction } from "@/lib/package-portal-guard";
 import {
   useFirebase,
   errorEmitter,
@@ -122,7 +125,7 @@ export function IntervencaoForm({
     const { uploadFile, dialogProps, limitLabel } = useStorageFileUpload({
     storageFolder: "intervencoes",
   });
-  const { firestore } = useFirebase();
+  const { firestore, user, auth } = useFirebase();
 
   const empreendedoresQuery = useMemoFirebase(
     () => (firestore ? collection(firestore, "empreendedores") : null),
@@ -218,9 +221,41 @@ export function IntervencaoForm({
           setLoading(false);
         });
     } else {
+      if (user && auth?.currentUser) {
+        const gate = await guardPortalPackageAction(
+          auth,
+          "create_module:intervencoes",
+        );
+        if (!gate.ok) {
+          toast({
+            variant: "destructive",
+            title: "Limite do plano",
+            description: gate.message,
+          });
+          setLoading(false);
+          return;
+        }
+      }
       const collectionRef = collection(firestore, "intervencoes");
       addDoc(collectionRef, dataToSave)
-        .then(() => {
+        .then(async (ref) => {
+          try {
+            await notifyEmpreendedorPortalUsers(
+              firestore,
+              values.empreendedorId,
+              {
+                title: "Nova DAIA / intervenção",
+                description: `Intervenção ${values.processNumber} em Documentos Ambientais.`,
+                link: NOTIFICATION_LINKS.intervencoes,
+                sourceType: NOTIFICATION_SOURCE.intervencao,
+                sourceId: ref.id,
+                actorRole: user?.role,
+              },
+              { excludeUserId: user?.uid },
+            );
+          } catch (e) {
+            console.warn("[Intervenção] notificação:", e);
+          }
           toast({
             title: "Intervenção criada!",
             description: `A intervenção no processo ${values.processNumber} foi adicionada com sucesso.`,

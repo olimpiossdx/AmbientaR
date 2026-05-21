@@ -20,6 +20,7 @@ import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/comp
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { FaunaUploadForm } from './fauna-upload-form';
 import { RecordViewDialog } from '@/components/shared/record-view-dialog';
+import { ESTUDOS_TECNICOS_MENU_LABEL } from '@/lib/navigation-config';
 
 export default function FaunaManagementPage() {
   const [isFormOpen, setIsFormOpen] = React.useState(false);
@@ -122,7 +123,7 @@ export default function FaunaManagementPage() {
             <CardHeader>
               <CardTitle>Relatórios e Licenças Concluídas</CardTitle>
               <CardDescription>
-                Documentos concluídos pela consultoria e arquivos enviados pelo cliente. Estudos em elaboração ficam em Elaboração de Estudos → Estudos de Fauna.
+                Documentos concluídos pela consultoria e arquivos enviados pelo cliente. Estudos em elaboração ficam em {ESTUDOS_TECNICOS_MENU_LABEL} → Estudos de Fauna.
               </CardDescription>
             </CardHeader>
             <CardContent>

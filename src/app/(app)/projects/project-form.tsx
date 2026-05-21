@@ -12,7 +12,8 @@ import {
 import { Loader2, ArrowLeft } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { Project, Empreendedor, AppUser } from '@/lib/types';
-import { useFirebase, errorEmitter, useCollection, useMemoFirebase } from '@/firebase';
+import { useFirebase, errorEmitter, useCollection, useMemoFirebase, useAuth } from '@/firebase';
+import { assertCanCreateEmpreendimentoAction } from '@/app/(app)/projects/package-actions';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { collection, doc, addDoc, updateDoc } from 'firebase/firestore';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -121,7 +122,8 @@ const getInitialValues = (currentItem?: Project | null): FormValues => {
 export function ProjectForm({ currentItem, onSuccess, onCancel }: ProjectFormProps) {
   const [loading, setLoading] = React.useState(false);
   const { toast } = useToast();
-  const { firestore } = useFirebase();
+  const { firestore, auth } = useFirebase();
+  const { user } = useAuth();
   const router = useRouter();
 
 
@@ -170,6 +172,31 @@ export function ProjectForm({ currentItem, onSuccess, onCancel }: ProjectFormPro
           setLoading(false);
         });
     } else {
+      if (user && auth?.currentUser) {
+        try {
+          const idToken = await auth.currentUser.getIdToken();
+          const gate = await assertCanCreateEmpreendimentoAction(idToken);
+          if (!gate.ok) {
+            toast({
+              variant: 'destructive',
+              title: 'Limite do plano',
+              description: gate.message,
+            });
+            setLoading(false);
+            return;
+          }
+        } catch (e) {
+          toast({
+            variant: 'destructive',
+            title: 'Não foi possível validar o plano',
+            description:
+              e instanceof Error ? e.message : 'Tente novamente em instantes.',
+          });
+          setLoading(false);
+          return;
+        }
+      }
+
       const collectionRef = collection(firestore, 'projects');
       addDoc(collectionRef, dataToSave)
         .then(() => {

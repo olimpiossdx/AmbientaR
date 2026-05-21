@@ -125,6 +125,9 @@ export function calculateDre(
 /** Valor sentinela para Select (Radix não aceita `value=""` em SelectItem). */
 export const SUPPLIER_NONE_SELECT_VALUE = '__supplier_none__';
 
+/** Contrato opcional em faturas (campo vazio no Firestore). */
+export const CONTRACT_NONE_SELECT_VALUE = '__contract_none__';
+
 export const EXPENSE_CATEGORIES = [
   { value: 'operacional', label: 'Operacional' },
   { value: 'pessoal', label: 'Pessoal / folha' },

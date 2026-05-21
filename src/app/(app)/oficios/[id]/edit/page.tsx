@@ -8,7 +8,7 @@ import { useDoc, useFirebase, useMemoFirebase } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import type { Oficio } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
-import { isOficioReadOnlyRole } from '@/lib/role-guards';
+import { isOficioReadOnlyRole, canAdministerOficios } from '@/lib/role-guards';
 
 function EditOficioPageContent() {
     const router = useRouter();
@@ -29,6 +29,12 @@ function EditOficioPageContent() {
     }, [firestore, itemId]);
 
     const { data: item, isLoading } = useDoc<Oficio>(itemDocRef);
+
+    useEffect(() => {
+      if (item?.status === 'Concluído' && user && !canAdministerOficios(user.role)) {
+        router.replace('/oficios');
+      }
+    }, [item, user, router]);
 
     const handleSuccess = () => {
       router.push('/oficios');
@@ -75,7 +81,13 @@ function EditOficioPageContent() {
   
     return (
       <div className="flex flex-col h-full">
-        <PageHeader title={`Editando Rascunho: ${item?.subject || '...'}`} />
+        <PageHeader
+          title={
+            item?.status === 'Concluído'
+              ? `Editando ofício aprovado: ${item?.subject || '...'}`
+              : `Editando rascunho: ${item?.subject || '...'}`
+          }
+        />
         <main className="flex-1 overflow-auto p-4 md:p-6">
           <div className="max-w-4xl mx-auto">
                <Card>

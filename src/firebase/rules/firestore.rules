@@ -244,7 +244,7 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    /** Perfis com acesso ao menu Elaboração de Estudos (Mapas / export jobs). */
+    /** Perfis com acesso ao menu Estudos Técnicos (Mapas / export jobs). */
     function canStudyMapsRole() {
       let role = getRole();
       return isSignedIn() && (
@@ -280,6 +280,7 @@ service cloud.firestore {
     function canReadOficioData(data) {
       return isAdmin()
         || isSupervisor()
+        || getRole() == 'gestor'
         || data.createdBy == request.auth.uid
         || (
           getUserProfile(request.auth.uid) != null
@@ -287,22 +288,40 @@ service cloud.firestore {
         );
     }
 
+    /** Aprovação / edição de rascunho pela equipa (admin, gestor, supervisor). */
+    function isOficioApprover() {
+      return isManager();
+    }
+
     match /oficios/{oficioId} {
         allow get: if isSignedIn() && canReadOficioData(resource.data);
         allow list: if isSignedIn() && canReadOficioData(resource.data);
 
         allow create: if isSignedIn() && request.resource.data.createdBy == request.auth.uid;
-        allow update: if (isSignedIn() && resource.data.createdBy == request.auth.uid && resource.data.status == 'Rascunho') || isAdmin();
-        allow delete: if (isSignedIn() && resource.data.createdBy == request.auth.uid && resource.data.status == 'Rascunho') || isAdmin();
+        allow update: if isAdmin()
+          || (isSignedIn() && resource.data.createdBy == request.auth.uid && resource.data.status == 'Rascunho')
+          || (isOficioApprover() && resource.data.status == 'Rascunho');
+        allow delete: if isAdmin()
+          || (isSignedIn() && resource.data.createdBy == request.auth.uid && resource.data.status == 'Rascunho');
     }
     
     /**
-     * @description Defines access rules for 'oficioCounters'.
-     * Only authenticated users can read/write to allow for transactional increments.
+     * @description Contador anual de ofícios. Admin define conciliação; aprovadores só incrementam +1.
      * @path /databases/{database}/documents/oficioCounters/{year}
      */
     match /oficioCounters/{year} {
-        allow read, write: if isSignedIn();
+        allow read: if isSignedIn();
+        allow create: if isAdmin()
+          || (isOficioApprover()
+            && request.resource.data.keys().hasAll(['lastSequence'])
+            && request.resource.data.lastSequence is int
+            && request.resource.data.lastSequence >= 1
+            && request.resource.data.lastSequence <= 9999);
+        allow update: if isAdmin()
+          || (isOficioApprover()
+            && resource.data.lastSequence is int
+            && request.resource.data.lastSequence is int
+            && request.resource.data.lastSequence == resource.data.lastSequence + 1);
     }
 
     /**
@@ -344,6 +363,8 @@ service cloud.firestore {
         'displayName',
         'allowsCommercialContact',
         'isOnline',
+        'fcmTokens',
+        'fcmTokensUpdatedAt',
         'lastSeenAt',
         'lastLogin',
         'uid',

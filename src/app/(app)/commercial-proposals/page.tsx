@@ -252,8 +252,15 @@ export default function CommercialProposalsPage() {
     [contracts],
   );
 
+  const isResolvingClientIds =
+    (isClientePortalRole(user?.role) || user?.role === "representative") &&
+    clientIdsForUser === null;
+
   const isLoading =
-    isLoadingProposals || isLoadingClients || isLoadingContracts;
+    isLoadingProposals ||
+    isLoadingClients ||
+    isLoadingContracts ||
+    isResolvingClientIds;
 
   const { activeProposals, finalizedProposals } = useMemo(() => {
     if (!filteredProposals)

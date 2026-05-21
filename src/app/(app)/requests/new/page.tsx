@@ -38,6 +38,10 @@ import {
 } from '@/lib/storage-upload';
 import { UploadPreparationDialog } from '@/components/shared/upload-preparation-dialog';
 import { usePreparedUpload } from '@/hooks/use-prepared-upload';
+import {
+  LICENCIAMENTO_MENU_LABEL,
+  LICENCIAMENTO_NEW_SUBITEM_LABEL,
+} from '@/lib/licenciamento-menu';
 import { canWriteProcessosInternal } from '@/lib/role-guards';
 import {
   LicensingLocationalBlock,
@@ -680,7 +684,7 @@ function NewRequestPageContent() {
             });
             toast({
                 title: 'Solicitação criada',
-                description: 'Rascunho salvo. Continue o preenchimento na próxima tela.',
+                description: 'Trâmite salvo como rascunho. Continue o preenchimento na próxima tela.',
             });
             router.replace(`/requests/${docRef.id}/edit`);
         } catch (serverError: unknown) {
@@ -689,7 +693,7 @@ function NewRequestPageContent() {
                 serverError instanceof Error ? serverError.message : String(serverError);
             toast({
                 variant: 'destructive',
-                title: 'Não foi possível criar o processo',
+                title: 'Não foi possível criar a solicitação',
                 description: message,
             });
             const code =
@@ -717,13 +721,13 @@ function NewRequestPageContent() {
     
     return (
         <div className="flex flex-col h-full">
-            <PageHeader title="Nova Solicitação de Processo" />
+            <PageHeader title={LICENCIAMENTO_NEW_SUBITEM_LABEL} />
             <main className="flex-1 overflow-auto p-4 md:p-6">
                 <div className="max-w-4xl mx-auto space-y-8">
                     <Card>
                         <CardHeader>
-                            <CardTitle>Iniciar Novo Processo</CardTitle>
-                            <CardDescription>Selecione o empreendedor, o empreendimento e os serviços requeridos para começar.</CardDescription>
+                            <CardTitle>Nova solicitação — {LICENCIAMENTO_MENU_LABEL}</CardTitle>
+                            <CardDescription>Selecione o empreendedor, o empreendimento e os serviços requeridos para abrir o trâmite.</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-6">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -846,7 +850,7 @@ function NewRequestPageContent() {
                         <Button variant="outline" onClick={() => router.back()}>Cancelar</Button>
                         <Button onClick={handleCreateProcess} disabled={!isFormValid || loading}>
                             {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                            Criar Processo
+                            Criar solicitação
                         </Button>
                     </div>
                 </div>

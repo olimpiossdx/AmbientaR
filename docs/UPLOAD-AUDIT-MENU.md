@@ -77,7 +77,7 @@ Legenda: **Storage-SDK** = `uploadFileToStorage` ou `getStorage` + `uploadBytes`
 | `/inspections` | Storage-SDK — [`inspection-form.tsx`](../src/app/(app)/inspections/inspection-form.tsx) (`uploadBytes` + `contentType`) |
 | `/requests` | Storage-SDK — [`requests/new/page.tsx`](../src/app/(app)/requests/new/page.tsx), [`requests/[id]/edit/page.tsx`](../src/app/(app)/requests/[id]/edit/page.tsx) |
 
-### AmbientaR IA
+### IA
 
 | Rota | Upload / ficheiro |
 |------|-------------------|
@@ -86,7 +86,7 @@ Legenda: **Storage-SDK** = `uploadFileToStorage` ou `getStorage` + `uploadBytes`
 | `/analise-ambiental` | N/A (mapas / API geoespacial conforme UI) |
 | `/studies/analise-socioambiental` | N/A |
 
-### Elaboração de estudos
+### Estudos Técnicos
 
 | Rota | Upload / ficheiro |
 |------|-------------------|
@@ -155,7 +155,7 @@ Repetir para **um utilizador interno** (ex.: `gestor` ou `admin`) e **um portal 
 4. No Firestore (consola), confirmar campo `fileUrl` / equivalente com URL `firebasestorage.googleapis.com`.
 5. Abrir o URL (autenticado) e confirmar download/visualização.
 
-Rotas críticas mínimas: **Faturas, Contratos, Caixa, Licenças, Condicionantes, CAR, Fauna, Processos (requests), Proposta comercial, Transporte resíduos (anexo ART).**
+Rotas críticas mínimas: **Faturas, Contratos, Caixa, Licenças, Condicionantes, CAR, Fauna, Licenciamento (requests), Proposta comercial, Transporte resíduos (anexo ART).**
 
 ## Alterações fechadas nesta auditoria
 

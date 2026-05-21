@@ -10,6 +10,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { MaskedInput } from '@/components/ui/masked-input';
 import {
   Select,
   SelectContent,
@@ -262,7 +263,7 @@ export function RcaFormLavraSubterranea({ form, clients, isLoadingClients, proje
                             <FormField control={form.control} name="empreendedor.municipio" render={({ field }) => (<FormItem><FormLabel>Município</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
                             <FormField control={form.control} name="empreendedor.distrito" render={({ field }) => (<FormItem><FormLabel>Distrito</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
                             <FormField control={form.control} name="empreendedor.uf" render={({ field }) => (<FormItem><FormLabel>UF</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
-                            <FormField control={form.control} name="empreendedor.cep" render={({ field }) => (<FormItem><FormLabel>CEP</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
+                            <FormField control={form.control} name="empreendedor.cep" render={({ field }) => (<FormItem><FormLabel>CEP</FormLabel><FormControl><MaskedInput mask="cep" placeholder="00000-000" maxLength={9} {...field} /></FormControl></FormItem>)} />
                         </div>
                         <FormField control={form.control} name="empreendedor.email" render={({ field }) => (<FormItem><FormLabel>E-mail</FormLabel><FormControl><Input type="email" {...field} /></FormControl></FormItem>)} />
                          <FormField
@@ -329,7 +330,7 @@ export function RcaFormLavraSubterranea({ form, clients, isLoadingClients, proje
                             <FormField control={form.control} name="empreendimento.municipio" render={({ field }) => (<FormItem><FormLabel>Município</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
                             <FormField control={form.control} name="empreendimento.distrito" render={({ field }) => (<FormItem><FormLabel>Distrito</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
                             <FormField control={form.control} name="empreendimento.uf" render={({ field }) => (<FormItem><FormLabel>UF</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
-                            <FormField control={form.control} name="empreendimento.cep" render={({ field }) => (<FormItem><FormLabel>CEP</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
+                            <FormField control={form.control} name="empreendimento.cep" render={({ field }) => (<FormItem><FormLabel>CEP</FormLabel><FormControl><MaskedInput mask="cep" placeholder="00000-000" maxLength={9} {...field} /></FormControl></FormItem>)} />
                         </div>
                         <FormField control={form.control} name="empreendimento.email" render={({ field }) => (<FormItem><FormLabel>E-mail</FormLabel><FormControl><Input type="email" {...field} /></FormControl></FormItem>)} />
                         

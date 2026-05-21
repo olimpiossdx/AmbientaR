@@ -9,14 +9,16 @@ export const CLIENT_PACKAGES_WITH_ANNUAL_PAYMENT: ClientPackage[] = [
   "completo",
 ];
 
-/** Texto de referência do valor anual (ajustar conforme tabela comercial). */
+import { formatPackageAnnualLabel } from "@/lib/package-limits";
+
+/** Texto de referência do valor anual (fonte: package-limits.ts). */
 export const PACKAGE_ANNUAL_AMOUNT_LABEL: Partial<Record<ClientPackage, string>> = {
-  basico: "R$ 598,80 / ano",
-  intermediario: "R$ 1.198,80 / ano",
-  avancado: "R$ 2.398,80 / ano",
-  completo: "R$ 4.198,80 / ano",
-  gratuito: "R$ 0",
-  sob_consulta: "Sob consulta",
+  gratuito: formatPackageAnnualLabel("gratuito"),
+  basico: formatPackageAnnualLabel("basico"),
+  intermediario: formatPackageAnnualLabel("intermediario"),
+  avancado: formatPackageAnnualLabel("avancado"),
+  completo: formatPackageAnnualLabel("completo"),
+  sob_consulta: formatPackageAnnualLabel("sob_consulta"),
 };
 
 export function clientPackageRequiresAnnualPaymentStep(
@@ -33,6 +35,7 @@ export function isPlatformPaymentAutoApproveEnabled(): boolean {
   );
 }
 
+/** Fallback quando não há empresa da plataforma em Firestore. Prefira `resolvePlatformPixCopyPaste`. */
 export function getPublicPixCopyPaste(): string {
   if (typeof process !== "undefined" && process.env.NEXT_PUBLIC_AMBIENTAR_PIX_COPIA_E_COLA) {
     return process.env.NEXT_PUBLIC_AMBIENTAR_PIX_COPIA_E_COLA;

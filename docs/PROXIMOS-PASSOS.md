@@ -64,4 +64,4 @@ Resumo executivo do que implementar primeiro, com base em [ARQUITETURA-IA-E-RELA
 
 - **Genkit**: `src/ai/genkit.ts`, `src/ai/flows/analise-ambiental-flow.ts`, `assistant-flow.ts`.
 - **Templates**: `src/app/(app)/settings/templates/template-config.ts`, `src/app/api/templates/[type]/route.ts`.
-- **Navegação/estudos**: `src/lib/navigation-config.ts` (Elaboração de Estudos).
+- **Navegação/estudos**: `src/lib/navigation-config.ts` (Estudos Técnicos).

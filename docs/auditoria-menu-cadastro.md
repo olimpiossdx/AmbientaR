@@ -6,7 +6,7 @@
 |------|-------|---------|
 | `/empreendedores` | Empreendedores | `empreendedores` |
 | `/projects` | Empreendimentos | `projects` |
-| `/responsible-company` | Empresa Responsável | `environmentalCompanies` |
+| `/responsible-company` | Empresas | `environmentalCompanies` + `companySettings/platformContractPublic` (empresa ativa para contrato/pagamento) |
 
 ## Órfã / legado
 

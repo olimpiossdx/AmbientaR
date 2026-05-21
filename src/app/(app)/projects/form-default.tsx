@@ -190,7 +190,7 @@ export function FormDefault({ form, clients, isLoadingClients }: FormDefaultProp
                             <SelectContent>{citiesForSelectedUf.map(city => <SelectItem key={city} value={city}>{city}</SelectItem>)}</SelectContent>
                         </Select><FormMessage /></FormItem>
                     )} />
-                    <FormField control={form.control} name="cep" render={({ field }) => ( <FormItem><FormLabel>CEP</FormLabel><FormControl><Input placeholder="00000-000" {...field} /></FormControl><FormMessage /></FormItem> )} />
+                    <FormField control={form.control} name="cep" render={({ field }) => ( <FormItem><FormLabel>CEP</FormLabel><FormControl><MaskedInput mask="cep" placeholder="00000-000" maxLength={9} {...field} /></FormControl><FormMessage /></FormItem> )} />
                 </div>
                 <FormField control={form.control} name="district" render={({ field }) => ( <FormItem><FormLabel>Distrito ou Localidade</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )} />
             </div>

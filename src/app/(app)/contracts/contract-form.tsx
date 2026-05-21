@@ -56,6 +56,8 @@ import {
 import { numberToWordsBRL } from "@/lib/utils";
 import { persistContractPdfForSignature } from "@/lib/persist-contract-pdf";
 import { useLocalBranding } from "@/hooks/use-local-branding";
+import { NOTIFICATION_LINKS, NOTIFICATION_SOURCE } from "@/lib/notification-events";
+import { notifyClientDocPortalUsers } from "@/lib/notifications";
 
 const formSchema = z.object({
   contratante: z.object({
@@ -190,7 +192,7 @@ CurrencyInput.displayName = "CurrencyInput";
 export function ContractForm({ currentItem, onSuccess, sourceProposal }: ContractFormProps) {
   const [loading, setLoading] = React.useState(false);
   const { toast } = useToast();
-  const { firestore } = useFirebase();
+  const { firestore, user } = useFirebase();
   const { data: brandingData } = useLocalBranding();
 
   const clientsQuery = useMemoFirebase(
@@ -398,6 +400,23 @@ export function ContractForm({ currentItem, onSuccess, sourceProposal }: Contrac
           await updateDoc(doc(firestore, "commercialProposals", sourceProposal.id), {
             contractId: created.id,
           });
+        }
+        try {
+          await notifyClientDocPortalUsers(
+            firestore,
+            values.contratante.clientId,
+            {
+              title: "Novo contrato disponível",
+              description: "Um contrato foi cadastrado no menu Financeiro.",
+              link: NOTIFICATION_LINKS.contracts,
+              sourceType: NOTIFICATION_SOURCE.contrato,
+              sourceId: created.id,
+              actorRole: user?.role,
+            },
+            { excludeUserId: user?.uid },
+          );
+        } catch (notifyErr) {
+          console.warn("[Contrato] notificação:", notifyErr);
         }
         toast({ title: "Contrato criado!" });
       }

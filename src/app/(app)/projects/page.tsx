@@ -27,6 +27,7 @@ import {
   getDocs,
 } from "firebase/firestore";
 import type { Project, Empreendedor } from "@/lib/types";
+import { formatCepDisplay } from "@/lib/masks";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Dialog,
@@ -61,6 +62,8 @@ import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
 import { CardSearchInput } from "@/components/card-search-input";
 import { isClientePortalRole, canWriteCadastroClienteAutonomo, isCadastroReadOnlyClienteGestao, canWriteCadastro } from "@/lib/role-guards";
+import { usePackageUsage } from "@/hooks/use-package-usage";
+import { PackageUsageBanner } from "@/components/package-usage-banner";
 
 const DetailItem = ({
   label,
@@ -89,6 +92,7 @@ function ProjectsPageContent() {
   const firestore = useFirestore();
   const { user } = useAuth();
   const { toast } = useToast();
+  const packageUsage = usePackageUsage(user ?? null);
 
   const canWrite = Boolean(user && canWriteCadastro(user.role));
 
@@ -340,6 +344,7 @@ function ProjectsPageContent() {
           )}
         </PageHeader>
         <main className="flex-1 overflow-auto p-4 md:p-6">
+          <PackageUsageBanner usage={packageUsage} />
           <Card>
             <CardHeader>
               <CardTitle>Gerenciamento de Empreendimentos</CardTitle>
@@ -500,7 +505,7 @@ function ProjectsPageContent() {
               <div className="grid grid-cols-3 gap-4">
                 <DetailItem label="Município" value={itemToView.municipio} />
                 <DetailItem label="UF" value={itemToView.uf} />
-                <DetailItem label="CEP" value={itemToView.cep} />
+                <DetailItem label="CEP" value={formatCepDisplay(itemToView.cep)} />
               </div>
             </div>
           )}

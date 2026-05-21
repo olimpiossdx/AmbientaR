@@ -1,3 +1,7 @@
+/**
+ * @deprecated Coleção legada `proposals`. Rotas `/proposals/*` redirecionam para
+ * `/commercial-proposals`. Formulário ativo: `commercial-proposals/proposal-form.tsx`.
+ */
 "use client";
 
 import * as React from "react";

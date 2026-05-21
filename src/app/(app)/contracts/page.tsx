@@ -59,8 +59,10 @@ import type {
 import {
   canApproveContracts,
   canWriteContractsCommercial,
+  getAppUserProfileUid,
   isAdminOrFinancialRole,
   isClientePortalRole,
+  isSelfRegisteredPortalUser,
 } from "@/lib/role-guards";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -163,7 +165,7 @@ export default function ContractsPage() {
 
     // Cliente titular.
     if (isClientePortalRole(user.role)) {
-      const isSelfRegistered = !!(user as any).package;
+      const isSelfRegistered = isSelfRegisteredPortalUser(user);
       const cRef = collection(firestore, "clients");
       const userCpf = user.cpf || user.userCpf;
       const userDocs = documentVariants(userCpf, user.cnpjs);
@@ -201,7 +203,7 @@ export default function ContractsPage() {
 
     // Representante: clientes que o titular aprovou.
     if (user.role === "representative") {
-      const repUid = user.id || (user as any).uid;
+      const repUid = getAppUserProfileUid(user);
       if (!repUid) {
         setClientIdsForUser([]);
         return;
@@ -226,6 +228,11 @@ export default function ContractsPage() {
 
   const { data: contracts, isLoading: isLoadingContracts } =
     useCollection<Contract>(contractsQuery);
+
+  const isResolvingClientIds =
+    (isClientePortalRole(user?.role) || user?.role === "representative") &&
+    clientIdsForUser === null;
+  const contractsLoading = isLoadingContracts || isResolvingClientIds;
   const acceptedProposalsQuery = useMemoFirebase(
     () =>
       firestore
@@ -416,7 +423,7 @@ export default function ContractsPage() {
     if (!clientIdsForUser || clientIdsForUser.length === 0) return [];
     const allowedIds = new Set(clientIdsForUser);
     return all.filter((contract) => {
-      const legacyClientId = (contract as any).clientId as string | undefined;
+      const legacyClientId = contract.clientId;
       const nestedClientId = contract.contratante?.clientId;
       return (
         (legacyClientId && allowedIds.has(legacyClientId)) ||
@@ -642,11 +649,11 @@ export default function ContractsPage() {
               <CardContent>
                 <TooltipProvider>
                   <div className="space-y-4">
-                    {isLoadingContracts &&
+                    {contractsLoading &&
                       Array.from({ length: 3 }).map((_, i) => (
                         <Skeleton key={i} className="h-28 w-full rounded-lg" />
                       ))}
-                    {!isLoadingContracts &&
+                    {!contractsLoading &&
                       filteredDraftContracts?.map((item) => (
                         <Card
                           key={item.id}
@@ -662,7 +669,7 @@ export default function ContractsPage() {
                                   {formatDate(item.dataContrato)}
                                 </p>
                                 <p className="line-clamp-2 text-sm text-muted-foreground">
-                                  {item.objeto.servicos}
+                                  {item.objeto?.servicos ?? "—"}
                                 </p>
                                 <Badge variant="outline" className="w-fit">
                                   {item.status || "Rascunho"}
@@ -748,7 +755,7 @@ export default function ContractsPage() {
                           </CardContent>
                         </Card>
                       ))}
-                    {!isLoadingContracts && filteredDraftContracts?.length === 0 && (
+                    {!contractsLoading && filteredDraftContracts?.length === 0 && (
                       <div className="flex h-24 items-center justify-center rounded-md border-2 border-dashed border-muted-foreground/25 text-center text-sm text-muted-foreground">
                         {draftContracts?.length === 0
                           ? "Nenhum contrato em gerenciamento."
@@ -773,11 +780,11 @@ export default function ContractsPage() {
               <CardContent>
                 <TooltipProvider>
                   <div className="space-y-4">
-                    {isLoadingContracts &&
+                    {contractsLoading &&
                       Array.from({ length: 2 }).map((_, i) => (
                         <Skeleton key={i} className="h-28 w-full rounded-lg" />
                       ))}
-                    {!isLoadingContracts &&
+                    {!contractsLoading &&
                       filteredDraftContracts?.map((item) => (
                         <Card
                           key={item.id}
@@ -826,7 +833,7 @@ export default function ContractsPage() {
                           </CardContent>
                         </Card>
                       ))}
-                    {!isLoadingContracts && filteredDraftContracts?.length === 0 && (
+                    {!contractsLoading && filteredDraftContracts?.length === 0 && (
                       <div className="flex h-24 items-center justify-center rounded-md border-2 border-dashed border-muted-foreground/25 text-center text-sm text-muted-foreground">
                         Nenhum contrato pendente de assinatura.
                       </div>
@@ -847,11 +854,11 @@ export default function ContractsPage() {
             <CardContent>
               <TooltipProvider>
                 <div className="space-y-4">
-                  {isLoadingContracts &&
+                  {contractsLoading &&
                     Array.from({ length: 3 }).map((_, i) => (
                       <Skeleton key={i} className="h-28 w-full rounded-lg" />
                     ))}
-                  {!isLoadingContracts &&
+                  {!contractsLoading &&
                     filteredApprovedContracts?.map((item) => (
                       <Card
                         key={item.id}
@@ -867,7 +874,7 @@ export default function ContractsPage() {
                                 {formatDate(item.dataContrato)}
                               </p>
                               <p className="line-clamp-2 text-sm text-muted-foreground">
-                                {item.objeto.servicos}
+                                {item.objeto?.servicos ?? "—"}
                               </p>
                               <Badge variant="outline" className="w-fit">
                                 {item.status || "Aprovado"}
@@ -956,7 +963,7 @@ export default function ContractsPage() {
                         </CardContent>
                       </Card>
                     ))}
-                  {!isLoadingContracts && filteredApprovedContracts?.length === 0 && (
+                  {!contractsLoading && filteredApprovedContracts?.length === 0 && (
                     <div className="flex h-24 items-center justify-center rounded-md border-2 border-dashed border-muted-foreground/25 text-center text-sm text-muted-foreground">
                       {approvedContracts?.length === 0
                         ? "Nenhum contrato finalizado."
@@ -1051,7 +1058,7 @@ export default function ContractsPage() {
             <DialogTitle>Upload de Contrato Assinado</DialogTitle>
             <DialogDescription>
               Anexe o arquivo PDF do contrato assinado para{" "}
-              {uploadingItem?.contratante.nome}.
+              {uploadingItem?.contratante?.nome ?? "—"}.
             </DialogDescription>
           </DialogHeader>
           <div className="py-4 space-y-2">
@@ -1090,26 +1097,36 @@ export default function ContractsPage() {
           <DialogHeader>
             <DialogTitle>Detalhes do Contrato</DialogTitle>
             <DialogDescription>
-              Visualização do contrato com {viewingItem?.contratante.nome}.
+              Visualização do contrato com{" "}
+              {viewingItem?.contratante?.nome ?? "—"}.
             </DialogDescription>
           </DialogHeader>
           {viewingItem && (
             <div className="max-h-[60vh] overflow-y-auto pr-4 space-y-4">
               <h4 className="font-semibold text-foreground">Contratante</h4>
-              <DetailItem label="Nome" value={viewingItem.contratante.nome} />
+              <DetailItem
+                label="Nome"
+                value={viewingItem.contratante?.nome ?? "—"}
+              />
               <DetailItem
                 label="CPF/CNPJ"
-                value={viewingItem.contratante.cpfCnpj}
+                value={viewingItem.contratante?.cpfCnpj ?? "—"}
               />
               <DetailItem
                 label="Endereço"
-                value={`${viewingItem.contratante.endereco || ""}, ${viewingItem.contratante.numero || ""}`}
+                value={`${viewingItem.contratante?.endereco || ""}, ${viewingItem.contratante?.numero || ""}`}
               />
               <Separator />
 
               <h4 className="font-semibold text-foreground">Contratado</h4>
-              <DetailItem label="Nome" value={viewingItem.contratado.name} />
-              <DetailItem label="CNPJ" value={viewingItem.contratado.cnpj} />
+              <DetailItem
+                label="Nome"
+                value={viewingItem.contratado?.name ?? "—"}
+              />
+              <DetailItem
+                label="CNPJ"
+                value={viewingItem.contratado?.cnpj ?? "—"}
+              />
               <Separator />
 
               <h4 className="font-semibold text-foreground">
@@ -1117,24 +1134,24 @@ export default function ContractsPage() {
               </h4>
               <DetailItem
                 label="Nome"
-                value={viewingItem.responsavelTecnico.name}
+                value={viewingItem.responsavelTecnico?.name ?? "—"}
               />
               <DetailItem
                 label="Profissão"
-                value={viewingItem.responsavelTecnico.profession}
+                value={viewingItem.responsavelTecnico?.profession ?? "—"}
               />
               <Separator />
 
               <h4 className="font-semibold text-foreground">Objeto</h4>
               <DetailItem
                 label="Empreendimento"
-                value={viewingItem.objeto.empreendimento}
+                value={viewingItem.objeto?.empreendimento ?? "—"}
               />
               <p className="text-sm font-medium">Serviços</p>
               <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-                {viewingItem.objeto.servicos}
+                {viewingItem.objeto?.servicos ?? "—"}
               </p>
-              {viewingItem.objeto.itens &&
+              {viewingItem.objeto?.itens &&
                 viewingItem.objeto.itens.length > 0 && (
                   <div>
                     <p className="text-sm font-medium mb-2">

@@ -81,6 +81,9 @@ import {
 import { UploadPreparationDialog } from "@/components/shared/upload-preparation-dialog";
 import { useStorageFileUpload } from "@/hooks/use-storage-file-upload";
 import { UPLOAD_RAW_FILE_SAFETY_MAX } from "@/lib/upload-limits";
+import { NOTIFICATION_LINKS, NOTIFICATION_SOURCE } from "@/lib/notification-events";
+import { notifyEmpreendedorPortalUsers } from "@/lib/notifications";
+import { guardPortalPackageAction } from "@/lib/package-portal-guard";
 import { filterProjectsByEmpreendedorId } from "@/lib/processos-form-order";
 import { Separator } from "@/components/ui/separator";
 
@@ -145,7 +148,7 @@ export function UsoInsignificanteForm({
     const { uploadFile, dialogProps, limitLabel } = useStorageFileUpload({
     storageFolder: "usos-insignificantes",
   });
-  const { firestore } = useFirebase();
+  const { firestore, user, auth } = useFirebase();
 
   const empreendedoresQuery = useMemoFirebase(
     () => (firestore ? collection(firestore, "empreendedores") : null),
@@ -318,9 +321,41 @@ export function UsoInsignificanteForm({
         })
         .finally(() => setLoading(false));
     } else {
+      if (user && auth?.currentUser) {
+        const gate = await guardPortalPackageAction(
+          auth,
+          "create_module:usosInsignificantes",
+        );
+        if (!gate.ok) {
+          toast({
+            variant: "destructive",
+            title: "Limite do plano",
+            description: gate.message,
+          });
+          setLoading(false);
+          return;
+        }
+      }
       const collectionRef = collection(firestore, "usosInsignificantes");
       addDoc(collectionRef, dataToSave as DocumentData)
-        .then(() => {
+        .then(async (ref) => {
+          try {
+            await notifyEmpreendedorPortalUsers(
+              firestore,
+              values.empreendedorId,
+              {
+                title: "Novo uso insignificante",
+                description: `Registro ${values.permitNumber} em Documentos Ambientais.`,
+                link: NOTIFICATION_LINKS.usosInsignificantes,
+                sourceType: NOTIFICATION_SOURCE.uso_insignificante,
+                sourceId: ref.id,
+                actorRole: user?.role,
+              },
+              { excludeUserId: user?.uid },
+            );
+          } catch (e) {
+            console.warn("[Uso insignificante] notificação:", e);
+          }
           toast({
             title: "Uso cadastrado!",
             description: `Registro ${values.permitNumber} salvo com sucesso.`,

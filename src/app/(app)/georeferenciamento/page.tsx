@@ -76,7 +76,7 @@ export default function GeoreferenciamentoDashboardPage() {
         description="Gestão de processos fundiários e ambientais georreferenciados — alinhado ao SIGEF (INCRA), CAR (SICAR) e registro em cartório."
       >
         <Button size="sm" asChild>
-          <Link href="/georeferenciamento/processos">Ver processos</Link>
+          <Link href="/georeferenciamento/processos">Ver trâmites fundiários</Link>
         </Button>
       </PageHeader>
       <main className="flex-1 space-y-8 overflow-auto p-4 md:p-6">

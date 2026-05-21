@@ -88,7 +88,7 @@ function EditCompanyPageContent() {
           <div className="max-w-3xl mx-auto">
                <Card>
                   <CardHeader>
-                      <CardTitle>Editar Empresa Responsável</CardTitle>
+                      <CardTitle>Editar Empresa</CardTitle>
                       <CardDescription>
                           Atualize os detalhes da empresa abaixo.
                       </CardDescription>

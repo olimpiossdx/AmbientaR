@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { GEOREF_TRAMITES_SUBMENU_LABEL } from "@/lib/licenciamento-menu";
 import { cn } from "@/lib/utils";
 
 const LINKS: { href: string; label: string; exact?: boolean }[] = [
   { href: "/georeferenciamento", label: "Painel", exact: true },
-  { href: "/georeferenciamento/processos", label: "Processos" },
+  { href: "/georeferenciamento/processos", label: GEOREF_TRAMITES_SUBMENU_LABEL },
   { href: "/georeferenciamento/rural", label: "Rural (SIGEF)" },
   { href: "/georeferenciamento/urbano", label: "Urbano" },
   { href: "/georeferenciamento/ambiental", label: "CAR" },

@@ -237,13 +237,6 @@ export function ClientForm({
     form.setValue("phone", value);
   };
 
-  const handleCepChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let value = e.target.value.replace(/\D/g, "");
-    if (value.length > 8) value = value.substring(0, 8);
-    value = value.replace(/(\d{5})(\d)/, "$1-$2");
-    form.setValue("cep", value);
-  };
-
   const normalizeDocument = (value: string | undefined | null) =>
     (value || "").replace(/\D/g, "");
   const formatCpf = (digits: string) =>
@@ -1128,11 +1121,11 @@ export function ClientForm({
                 <FormItem>
                   <FormLabel>CEP</FormLabel>
                   <FormControl>
-                    <Input
+                    <MaskedInput
+                      mask="cep"
                       placeholder="00000-000"
-                      {...field}
-                      onChange={handleCepChange}
                       maxLength={9}
+                      {...field}
                     />
                   </FormControl>
                   <FormMessage />

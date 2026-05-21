@@ -19,7 +19,7 @@ function NewCompanyPageContent() {
     if (!isInitialized) {
       return (
         <div className="flex flex-col h-full">
-          <PageHeader title="Nova Empresa Responsável" />
+          <PageHeader title="Nova Empresa" />
           <main className="flex-1 overflow-auto p-4 md:p-6">
             <Skeleton className="mx-auto h-96 max-w-3xl" />
           </main>

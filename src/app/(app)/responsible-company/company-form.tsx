@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -19,12 +20,20 @@ import { MaskedInput } from '@/components/ui/masked-input';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { EnvironmentalCompany } from '@/lib/types';
-import { useFirebase, errorEmitter } from '@/firebase';
+import { useFirebase, errorEmitter, useAuth } from '@/firebase';
 import { FirestorePermissionError } from '@/firebase/errors';
-import { collection, doc, addDoc, updateDoc } from 'firebase/firestore';
+import { collection, doc, addDoc, updateDoc, getDoc } from 'firebase/firestore';
 import { DialogFooter, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ibgeData } from '@/lib/ibge-data';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Separator } from '@/components/ui/separator';
+import { Textarea } from '@/components/ui/textarea';
+import { isAdminRole } from '@/lib/role-guards';
+import {
+  getActivePlatformCompanyId,
+  syncActivePlatformCompanyDocs,
+} from '@/lib/platform-company';
 
 const formSchema = z.object({
   name: z.string().min(2, 'A razão social é obrigatória.'),
@@ -41,6 +50,13 @@ const formSchema = z.object({
   phone: z.string().optional(),
   fax: z.string().optional(),
   email: z.string().email('Por favor, insira um e-mail válido.').optional().or(z.literal('')),
+  bankName: z.string().optional(),
+  bankAgency: z.string().optional(),
+  bankAccount: z.string().optional(),
+  bankAccountType: z.enum(['corrente', 'poupanca']).optional(),
+  pixKey: z.string().optional(),
+  pixCopyPaste: z.string().optional(),
+  setAsPlatformCompany: z.boolean().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -55,6 +71,8 @@ export function CompanyForm({ currentItem, onSuccess, onCancel }: CompanyFormPro
   const [loading, setLoading] = React.useState(false);
   const { toast } = useToast();
   const { firestore } = useFirebase();
+  const { user } = useAuth();
+  const isAdmin = isAdminRole(user?.role);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -73,8 +91,29 @@ export function CompanyForm({ currentItem, onSuccess, onCancel }: CompanyFormPro
       phone: currentItem?.phone || '',
       fax: currentItem?.fax || '',
       email: currentItem?.email || '',
+      bankName: currentItem?.bankName || '',
+      bankAgency: currentItem?.bankAgency || '',
+      bankAccount: currentItem?.bankAccount || '',
+      bankAccountType: currentItem?.bankAccountType,
+      pixKey: currentItem?.pixKey || '',
+      pixCopyPaste: currentItem?.pixCopyPaste || '',
+      setAsPlatformCompany: false,
     },
   });
+
+  React.useEffect(() => {
+    if (!firestore || !currentItem?.id || !isAdmin) return;
+    let cancelled = false;
+    (async () => {
+      const activeId = await getActivePlatformCompanyId(firestore);
+      if (!cancelled && activeId === currentItem.id) {
+        form.setValue('setAsPlatformCompany', true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [firestore, currentItem?.id, isAdmin, form]);
   
   const selectedUf = form.watch('uf');
   const citiesForSelectedUf = React.useMemo(() => {
@@ -90,13 +129,6 @@ export function CompanyForm({ currentItem, onSuccess, onCancel }: CompanyFormPro
     form.setValue('cnpj', value);
   };
   
-  const handleCepChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let value = e.target.value.replace(/\D/g, '');
-    value = value.replace(/(\d{5})(\d)/, '$1-$2');
-    form.setValue('cep', value);
-  }
-
-
   async function onSubmit(values: FormValues) {
     setLoading(true);
 
@@ -106,35 +138,67 @@ export function CompanyForm({ currentItem, onSuccess, onCancel }: CompanyFormPro
       return;
     }
 
+    const { setAsPlatformCompany, ...companyFields } = values;
+    const payload = {
+      ...companyFields,
+      bankAccountType: companyFields.bankAccountType || undefined,
+    };
+
+    const maybeSyncPlatform = async (companyId: string) => {
+      const company: EnvironmentalCompany = { id: companyId, ...payload };
+      const isActive = (await getActivePlatformCompanyId(firestore)) === companyId;
+      const shouldSync = isAdmin && (setAsPlatformCompany || isActive);
+      if (shouldSync) {
+        await syncActivePlatformCompanyDocs(firestore, company);
+      }
+      return shouldSync;
+    };
+
     if (currentItem) {
       const docRef = doc(firestore, 'environmentalCompanies', currentItem.id);
-      updateDoc(docRef, values)
-        .then(() => {
-          toast({ title: 'Empresa atualizada!', description: 'Os dados da empresa foram salvos com sucesso.' });
+      updateDoc(docRef, payload)
+        .then(async () => {
+          const synced = await maybeSyncPlatform(currentItem.id);
+          toast({
+            title: synced ? 'Empresa da plataforma atualizada' : 'Empresa atualizada!',
+            description: synced
+              ? 'Contrato de cadastro e pagamento usam esta empresa.'
+              : 'Os dados da empresa foram salvos com sucesso.',
+          });
           onSuccess?.();
         })
-        .catch(async (serverError) => {
+        .catch(async () => {
           const permissionError = new FirestorePermissionError({
             path: docRef.path,
             operation: 'update',
-            requestResourceData: values,
+            requestResourceData: payload,
           });
           errorEmitter.emit('permission-error', permissionError);
         })
         .finally(() => setLoading(false));
     } else {
       const collectionRef = collection(firestore, 'environmentalCompanies');
-      addDoc(collectionRef, values)
-        .then(() => {
-          toast({ title: 'Empresa criada!', description: `A empresa ${values.name} foi adicionada com sucesso.` });
+      addDoc(collectionRef, payload)
+        .then(async (ref) => {
+          if (isAdmin && setAsPlatformCompany) {
+            const snap = await getDoc(ref);
+            const company = { id: ref.id, ...snap.data() } as EnvironmentalCompany;
+            await syncActivePlatformCompanyDocs(firestore, company);
+            toast({
+              title: 'Empresa criada e definida para a plataforma',
+              description: `${values.name} será usada no contrato de cadastro e no pagamento.`,
+            });
+          } else {
+            toast({ title: 'Empresa criada!', description: `A empresa ${values.name} foi adicionada com sucesso.` });
+          }
           form.reset();
           onSuccess?.();
         })
-        .catch(async (serverError) => {
+        .catch(async () => {
           const permissionError = new FirestorePermissionError({
             path: collectionRef.path,
             operation: 'create',
-            requestResourceData: values,
+            requestResourceData: payload,
           });
           errorEmitter.emit('permission-error', permissionError);
         })
@@ -145,9 +209,9 @@ export function CompanyForm({ currentItem, onSuccess, onCancel }: CompanyFormPro
   return (
     <>
       <DialogHeader>
-        <DialogTitle>{currentItem ? 'Editar Empresa Responsável' : 'Adicionar Nova Empresa Responsável'}</DialogTitle>
+        <DialogTitle>{currentItem ? 'Editar Empresa' : 'Adicionar Nova Empresa'}</DialogTitle>
         <DialogDescription>
-          {currentItem ? 'Atualize os detalhes da empresa abaixo.' : 'Preencha os detalhes para cadastrar uma nova empresa.'}
+          Dados jurídicos, conta corrente e PIX para contrato de assinatura e pagamento do software.
         </DialogDescription>
       </DialogHeader>
       <Form {...form}>
@@ -180,7 +244,7 @@ export function CompanyForm({ currentItem, onSuccess, onCancel }: CompanyFormPro
                               </Select>
                       <FormMessage /></FormItem>
                   )} />
-                  <FormField control={form.control} name="cep" render={({ field }) => (<FormItem><FormLabel>CEP</FormLabel><FormControl><Input placeholder="00000-000" {...field} onChange={handleCepChange} maxLength={9}/></FormControl><FormMessage /></FormItem>)} />
+                  <FormField control={form.control} name="cep" render={({ field }) => (<FormItem><FormLabel>CEP</FormLabel><FormControl><MaskedInput mask="cep" placeholder="00000-000" maxLength={9} {...field} /></FormControl><FormMessage /></FormItem>)} />
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <FormField control={form.control} name="ddd" render={({ field }) => (<FormItem><FormLabel>DDD</FormLabel><FormControl><Input maxLength={2} {...field} /></FormControl><FormMessage /></FormItem>)} />
@@ -188,6 +252,75 @@ export function CompanyForm({ currentItem, onSuccess, onCancel }: CompanyFormPro
                   <FormField control={form.control} name="fax" render={({ field }) => (<FormItem><FormLabel>Fax</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
               </div>
               <FormField control={form.control} name="email" render={({ field }) => (<FormItem><FormLabel>E-mail</FormLabel><FormControl><Input type="email" placeholder="contato@empresa.com" {...field} /></FormControl><FormMessage /></FormItem>)} />
+
+              <Separator />
+              <div>
+                <h4 className="text-sm font-semibold">Conta corrente e PIX</h4>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Usados no cadastro público para pagamento anual do software (PIX, débito ou crédito).
+                </p>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField control={form.control} name="bankName" render={({ field }) => (
+                  <FormItem><FormLabel>Banco</FormLabel><FormControl><Input placeholder="Ex.: Banco do Brasil" {...field} /></FormControl><FormMessage /></FormItem>
+                )} />
+                <FormField control={form.control} name="bankAccountType" render={({ field }) => (
+                  <FormItem><FormLabel>Tipo de conta</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value || ''}>
+                      <FormControl><SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger></FormControl>
+                      <SelectContent>
+                        <SelectItem value="corrente">Corrente</SelectItem>
+                        <SelectItem value="poupanca">Poupança</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage /></FormItem>
+                )} />
+                <FormField control={form.control} name="bankAgency" render={({ field }) => (
+                  <FormItem><FormLabel>Agência</FormLabel><FormControl><Input placeholder="0000-0" {...field} /></FormControl><FormMessage /></FormItem>
+                )} />
+                <FormField control={form.control} name="bankAccount" render={({ field }) => (
+                  <FormItem><FormLabel>Conta</FormLabel><FormControl><Input placeholder="00000-0" {...field} /></FormControl><FormMessage /></FormItem>
+                )} />
+                <FormField control={form.control} name="pixKey" render={({ field }) => (
+                  <FormItem className="md:col-span-2"><FormLabel>Chave PIX</FormLabel><FormControl><Input placeholder="CNPJ, e-mail, telefone ou chave aleatória" {...field} /></FormControl><FormMessage /></FormItem>
+                )} />
+                <FormField control={form.control} name="pixCopyPaste" render={({ field }) => (
+                  <FormItem className="md:col-span-2">
+                    <FormLabel>PIX copia e cola</FormLabel>
+                    <FormControl><Textarea rows={3} placeholder="Cole o código BR Code completo" className="font-mono text-xs" {...field} /></FormControl>
+                    <FormDescription>Exibido no passo de pagamento do cadastro quando o cliente escolhe PIX.</FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+              </div>
+
+              {isAdmin ? (
+                <>
+                  <Separator />
+                  <FormField
+                    control={form.control}
+                    name="setAsPlatformCompany"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-lg border border-primary/25 bg-primary/5 p-3">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value === true}
+                            onCheckedChange={(c) => field.onChange(c === true)}
+                          />
+                        </FormControl>
+                        <div className="space-y-1 leading-none">
+                          <FormLabel className="cursor-pointer font-medium">
+                            Usar esta empresa no contrato de assinatura e no pagamento da plataforma
+                          </FormLabel>
+                          <FormDescription>
+                            Apenas administradores podem alterar qual empresa aparece para novos cadastros.
+                          </FormDescription>
+                        </div>
+                      </FormItem>
+                    )}
+                  />
+                </>
+              ) : null}
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onCancel} disabled={loading}>

@@ -1,5 +1,5 @@
 /**
- * Template do checklist de fiscalização em campo (Vistoria em Campo).
+ * Template do checklist de fiscalização em campo (Vistoria Técnica).
  * Textos alinhados ao roteiro operacional; independente de outros módulos.
  */
 

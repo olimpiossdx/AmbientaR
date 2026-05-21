@@ -35,7 +35,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { Separator } from '@/components/ui/separator';
 import { Label } from '@/components/ui/label';
-import { formatCpfCnpjDisplay } from '@/lib/masks';
+import { formatCepDisplay, formatCpfCnpjDisplay } from '@/lib/masks';
 import { canWriteTechnicalResponsibles } from '@/lib/role-guards';
 
 const DetailItem = ({ label, value }: { label: string, value?: string | null | string[] }) => (
@@ -260,7 +260,7 @@ export default function TechnicalResponsiblePage() {
                          <div className="grid grid-cols-3 gap-4">
                             <DetailItem label="Município" value={viewingItem.municipio} />
                             <DetailItem label="UF" value={viewingItem.uf} />
-                            <DetailItem label="CEP" value={viewingItem.cep} />
+                            <DetailItem label="CEP" value={formatCepDisplay(viewingItem.cep)} />
                         </div>
                     </div>
                 )}

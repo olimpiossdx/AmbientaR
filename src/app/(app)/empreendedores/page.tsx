@@ -60,7 +60,7 @@ import {
 } from "@/components/ui/tooltip";
 import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
-import { formatCpfCnpjDisplay } from "@/lib/masks";
+import { formatCepDisplay, formatCpfCnpjDisplay } from "@/lib/masks";
 import { CardSearchInput } from "@/components/card-search-input";
 import {
   isClientePortalRole,
@@ -470,7 +470,7 @@ export default function EmpreendedoresPage() {
               <div className="grid grid-cols-3 gap-4">
                 <DetailItem label="Município" value={itemToView.municipio} />
                 <DetailItem label="UF" value={itemToView.uf} />
-                <DetailItem label="CEP" value={itemToView.cep} />
+                <DetailItem label="CEP" value={formatCepDisplay(itemToView.cep)} />
               </div>
             </div>
           )}

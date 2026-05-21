@@ -15,6 +15,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { MaskedInput } from '@/components/ui/masked-input';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useFirebase, errorEmitter } from '@/firebase';
@@ -182,7 +183,7 @@ export function CharcoalProductionForm({ onSuccess, onCancel }: CharcoalFormProp
                 <FormField control={form.control} name="proprietario.endereco" render={({ field }) => ( <FormItem><FormLabel>Endereço</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )} />
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <FormField control={form.control} name="proprietario.municipio" render={({ field }) => ( <FormItem><FormLabel>Município</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )} />
-                    <FormField control={form.control} name="proprietario.cep" render={({ field }) => ( <FormItem><FormLabel>CEP</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )} />
+                    <FormField control={form.control} name="proprietario.cep" render={({ field }) => ( <FormItem><FormLabel>CEP</FormLabel><FormControl><MaskedInput mask="cep" placeholder="00000-000" maxLength={9} {...field} /></FormControl><FormMessage /></FormItem> )} />
                     <FormField control={form.control} name="proprietario.telefone" render={({ field }) => ( <FormItem><FormLabel>Telefone</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )} />
                 </div>
             </CardContent>
@@ -199,7 +200,7 @@ export function CharcoalProductionForm({ onSuccess, onCancel }: CharcoalFormProp
                 <FormField control={form.control} name="empreendimento.paCopam" render={({ field }) => ( <FormItem><FormLabel>PA/COPAM nº</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )} />
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FormField control={form.control} name="empreendimento.municipioDistrito" render={({ field }) => ( <FormItem><FormLabel>Município/Distrito</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )} />
-                    <FormField control={form.control} name="empreendimento.cep" render={({ field }) => ( <FormItem><FormLabel>CEP</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )} />
+                    <FormField control={form.control} name="empreendimento.cep" render={({ field }) => ( <FormItem><FormLabel>CEP</FormLabel><FormControl><MaskedInput mask="cep" placeholder="00000-000" maxLength={9} {...field} /></FormControl><FormMessage /></FormItem> )} />
                 </div>
             </CardContent>
         </Card>

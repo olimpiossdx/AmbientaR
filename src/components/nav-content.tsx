@@ -19,6 +19,7 @@ import { ChevronDown } from 'lucide-react';
 import { useAuth } from '@/firebase';
 import type { NavItem, NavSubItem, UserRole } from '@/lib/types';
 import { allNavItems } from '@/lib/navigation-config';
+import { sortSidebarNavItems } from '@/lib/sort-pt-br';
 import { canAccessNavItem } from '@/lib/role-guards';
 import { getFinancialMenuForRole, isFinancialRoute } from '@/lib/financial-menu-debug';
 import { getCadastroMenuForRole, isCadastroRoute } from '@/lib/cadastro-menu-debug';
@@ -97,7 +98,7 @@ function NavContentInner() {
           }).filter(item => item !== null);
       };
       
-      setNavItems(filterItemsByRole(allNavItems));
+      setNavItems(sortSidebarNavItems(filterItemsByRole(allNavItems)));
 
       // Debug do menu Financeiro (apenas em development)
       if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {

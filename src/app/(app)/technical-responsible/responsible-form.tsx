@@ -164,7 +164,7 @@ export function ResponsibleForm({ currentItem, onSuccess, onCancel }: Responsibl
                    <FormField control={form.control} name="municipio" render={({ field }) => (<FormItem className="col-span-2"><FormLabel>Município</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
                    <FormField control={form.control} name="uf" render={({ field }) => (<FormItem><FormLabel>UF</FormLabel><FormControl><Input maxLength={2} {...field} /></FormControl><FormMessage /></FormItem>)} />
                </div>
-               <FormField control={form.control} name="cep" render={({ field }) => (<FormItem><FormLabel>CEP</FormLabel><FormControl><Input placeholder="00000-000" {...field} /></FormControl><FormMessage /></FormItem>)} />
+               <FormField control={form.control} name="cep" render={({ field }) => (<FormItem><FormLabel>CEP</FormLabel><FormControl><MaskedInput mask="cep" placeholder="00000-000" maxLength={9} {...field} /></FormControl><FormMessage /></FormItem>)} />
           </div>
           <FormField control={form.control} name="profession" render={({ field }) => (<FormItem><FormLabel>Formação / Profissão</FormLabel><FormControl><Input placeholder="Engenheiro Florestal" {...field} /></FormControl><FormMessage /></FormItem>)} />
           <FormField control={form.control} name="registrationNumber" render={({ field }) => (<FormItem><FormLabel>Nº de Registro no Conselho de Classe</FormLabel><FormControl><Input placeholder="CREA/CAU/etc." {...field} /></FormControl><FormMessage /></FormItem>)} />

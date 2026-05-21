@@ -43,6 +43,8 @@ export type Empreendedor = {
   ctfIbama?: string;
 };
 
+export type CompanyBankAccountType = 'corrente' | 'poupanca';
+
 export type EnvironmentalCompany = {
     id: string;
     name: string;
@@ -59,7 +61,38 @@ export type EnvironmentalCompany = {
     phone?: string;
     fax?: string;
     email?: string;
-}
+    /** Conta corrente para recebimento (contrato SaaS e pagamento da plataforma). */
+    bankName?: string;
+    bankAgency?: string;
+    bankAccount?: string;
+    bankAccountType?: CompanyBankAccountType;
+    /** Chave PIX (e-mail, CNPJ, telefone ou aleatória). */
+    pixKey?: string;
+    /** Código PIX copia e cola (BR Code). */
+    pixCopyPaste?: string;
+};
+
+/** Snapshot público (companySettings) — contrato de cadastro e instruções de pagamento. */
+export type PlatformContractPublic = {
+  activeCompanyId: string;
+  name: string;
+  fantasyName?: string;
+  cnpj: string;
+  address?: string;
+  numero?: string;
+  municipio?: string;
+  district?: string;
+  uf?: string;
+  cep?: string;
+  email?: string;
+  bankName?: string;
+  bankAgency?: string;
+  bankAccount?: string;
+  bankAccountType?: CompanyBankAccountType;
+  pixKey?: string;
+  pixCopyPaste?: string;
+  updatedAt?: string;
+};
 
 export type TechnicalResponsible = {
     id: string;
@@ -1277,6 +1310,8 @@ export type ClientPackageInfo = {
   name: string;
   description: string;
   price: string;
+  /** Ex.: equivalente mensal ou nota AmbBot */
+  priceDetail?: string;
   features: string[];
   highlighted?: boolean;
 };
@@ -1334,6 +1369,12 @@ export type AppUser = {
   platformPaymentVerifiedAt?: any;
   /** Contato comercial: gratuito/básico via contrato; demais planos via opt-in no cadastro. */
   allowsCommercialContact?: boolean;
+  /** Período UTC (YYYY-MM) do contador de AmbBot incluído no plano. */
+  ambbotUsagePeriod?: string;
+  /** Análises AmbBot incluídas já usadas no período atual. */
+  ambbotIncludedUsed?: number;
+  /** Créditos pré-pagos de consultas AmbBot avulsas. */
+  ambbotPrepaidCredits?: number;
 };
 
 /** Pedido de acesso: usuário (ex.: Renato) solicita acessar dados do titular (ex.: Célio). O titular aprova ou rejeita. */
@@ -1389,6 +1430,8 @@ export type Contract = {
     status: 'Rascunho' | 'Aprovado';
     sourceProposalId?: string;
     sourceProposalNumber?: string;
+    /** Legado: documentos antigos podem ter clientId na raiz. */
+    clientId?: string;
     contratante: {
         clientId: string;
         nome: string;
@@ -2039,9 +2082,28 @@ export type Laudo = {
 
 export type Oficio = {
   id: string;
+  /** Texto composto do destinatário (busca, notificações, registos antigos). */
   recipient: string;
+  recipientSalutation?: string;
+  recipientName?: string;
+  recipientRole?: string;
+  recipientOrganization?: string;
+  recipientAddress?: string;
+  recipientCity?: string;
   subject: string;
+  /** Linha "Referente:" (modelo consolidado). */
+  referente?: string;
+  /** Processo SEI/SLA ou número processual. */
+  processoSei?: string;
+  reference?: string;
+  greeting?: string;
   body: string;
+  closing?: string;
+  attachments?: string;
+  /** Dados do solicitante/responsável legal (antes do fecho). */
+  solicitante?: string;
+  /** Assinatura "p/p Nome" (responsável legal). */
+  signatoryProcuracao?: string;
   municipio: string;
   estado: string;
   assinanteId: string;
@@ -2049,6 +2111,7 @@ export type Oficio = {
   assinanteCargo?: string;
   assinaturaDigitalUrl?: string;
   dataEmissao?: string;
+  oficioNumber?: string;
   status?: 'Rascunho' | 'Emitido' | 'Enviado' | 'Cancelado' | 'Concluído';
   createdAt?: any;
   updatedAt?: any;
@@ -2342,7 +2405,7 @@ export type GenerateFinancialReportOutput = z.infer<typeof GenerateFinancialRepo
 
 export const AssistantInputSchema = z.object({
   prompt: z.string().describe('A pergunta do usuário para o assistente.'),
-  /** Modo DeepSeek (menu Elaboração de Estudos → Assistente IA). */
+  /** Modo DeepSeek (menu Estudos Técnicos → Assistente IA). */
   tipo: z.enum(['geral', 'mira', 'financeiro', 'rag', 'mcp']).optional(),
 });
 export type AssistantInput = z.infer<typeof AssistantInputSchema>;

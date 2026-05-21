@@ -47,11 +47,16 @@ import {
   useCollection,
   useMemoFirebase,
 } from "@/firebase";
+import type { AppUser } from "@/lib/types";
+import { guardPortalPackageAction } from "@/lib/package-portal-guard";
+import { assertFileAllowedForPackage } from "@/lib/storage-upload";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { AttachmentPreviewSection } from "@/components/shared/attachment-preview-section";
 import { UploadPreparationDialog } from "@/components/shared/upload-preparation-dialog";
 import { useStorageFileUpload } from "@/hooks/use-storage-file-upload";
 import { UPLOAD_RAW_FILE_SAFETY_MAX } from "@/lib/upload-limits";
+import { NOTIFICATION_LINKS, NOTIFICATION_SOURCE } from "@/lib/notification-events";
+import { notifyProjectPortalUsers } from "@/lib/notifications";
 import { filterProjectsByEmpreendedorId } from "@/lib/processos-form-order";
 import { collection, doc, addDoc, updateDoc } from "firebase/firestore";
 import {
@@ -150,7 +155,7 @@ export function LicenseForm({
   const { uploadFile, dialogProps, limitLabel } = useStorageFileUpload({
     storageFolder: "licenses",
   });
-  const { firestore } = useFirebase();
+  const { firestore, user, auth } = useFirebase();
 
   const empreendedoresQuery = useMemoFirebase(
     () => (firestore ? collection(firestore, "empreendedores") : null),
@@ -217,6 +222,22 @@ export function LicenseForm({
     // Permite selecionar o mesmo arquivo novamente.
     inputEl.value = "";
 
+    if (user) {
+      try {
+        assertFileAllowedForPackage(file, user as AppUser);
+      } catch (err) {
+        toast({
+          variant: "destructive",
+          title: "Limite do plano",
+          description:
+            err instanceof Error
+              ? err.message
+              : "Upload não permitido neste plano.",
+        });
+        return;
+      }
+    }
+
     setIsUploading(true);
     setUploadedFileUrl(null);
     try {
@@ -279,9 +300,42 @@ export function LicenseForm({
           setLoading(false);
         });
     } else {
+      if (user && auth?.currentUser) {
+        const gate = await guardPortalPackageAction(
+          auth,
+          "create_module:licenses",
+        );
+        if (!gate.ok) {
+          toast({
+            variant: "destructive",
+            title: "Limite do plano",
+            description: gate.message,
+          });
+          setLoading(false);
+          return;
+        }
+      }
+
       const licensesCollectionRef = collection(firestore, "licenses");
       addDoc(licensesCollectionRef, dataToSave)
-        .then(() => {
+        .then(async (ref) => {
+          try {
+            await notifyProjectPortalUsers(
+              firestore,
+              values.projectId,
+              {
+                title: "Nova licença ambiental",
+                description: `Licença ${values.permitNumber} disponível em Documentos Ambientais.`,
+                link: NOTIFICATION_LINKS.licenses,
+                sourceType: NOTIFICATION_SOURCE.licenca,
+                sourceId: ref.id,
+                actorRole: user?.role,
+              },
+              { excludeUserId: user?.uid },
+            );
+          } catch (e) {
+            console.warn("[Licença] notificação:", e);
+          }
           toast({
             title: "Licença criada!",
             description: `A licença ${values.permitNumber} foi adicionada com sucesso.`,

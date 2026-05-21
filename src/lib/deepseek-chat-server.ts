@@ -33,7 +33,7 @@ export type DeepseekChatInput = {
   model?: string;
   temperature?: number;
   max_tokens?: number;
-  /** Anteposto ao preset de `tipo` (ex.: contexto “elaboração de estudos”). */
+  /** Anteposto ao preset de `tipo` (ex.: contexto de estudos técnicos). */
   systemPrefix?: string;
 };
 

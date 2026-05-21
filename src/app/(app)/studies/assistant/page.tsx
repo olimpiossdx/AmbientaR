@@ -28,6 +28,7 @@ import {
 import { Loader2, Sparkles } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { handleAskAssistant } from './actions';
+import { IA_MENU_LABEL } from '@/lib/navigation-config';
 import { PageHeader } from '@/components/page-header';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -124,7 +125,7 @@ function AssistantPageInner() {
                     name="tipo"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Modo (menu AmbientaR IA)</FormLabel>
+                        <FormLabel>Modo (menu {IA_MENU_LABEL})</FormLabel>
                         <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
                             <SelectTrigger>
@@ -140,7 +141,7 @@ function AssistantPageInner() {
                           </SelectContent>
                         </Select>
                         <FormDescription>
-                          O menu lateral <strong className="font-medium text-foreground">AmbientaR IA</strong> abre
+                          O menu lateral <strong className="font-medium text-foreground">{IA_MENU_LABEL}</strong> abre
                           atalhos com o mesmo modo pré-selecionado.
                         </FormDescription>
                         <FormMessage />

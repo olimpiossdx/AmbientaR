@@ -15,6 +15,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { MaskedInput } from '@/components/ui/masked-input';
 import { Textarea } from '@/components/ui/textarea';
 import {
   Select,
@@ -836,7 +837,7 @@ export function PatrimonioForm({ currentItem, onSuccess, onCancel }: PatrimonioF
                         <FormItem>
                           <FormLabel>CEP</FormLabel>
                           <FormControl>
-                            <Input {...field} />
+                            <MaskedInput mask="cep" placeholder="00000-000" maxLength={9} {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>

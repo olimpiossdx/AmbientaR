@@ -83,7 +83,7 @@ export function GeorefSectionPage({
                 </Button>
               ) : null}
               <Button variant="secondary" size="sm" asChild>
-                <Link href="/georeferenciamento/processos">Gerenciar processos</Link>
+                <Link href="/georeferenciamento/processos">Gerenciar trâmites fundiários</Link>
               </Button>
             </CardContent>
           </Card>

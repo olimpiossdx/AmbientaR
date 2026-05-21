@@ -33,6 +33,7 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale/pt-BR";
 import { useToast } from "@/hooks/use-toast";
+import { CONTRACT_NONE_SELECT_VALUE } from "@/lib/financial-core";
 import type { Invoice, Client, Contract } from "@/lib/types";
 import {
   useFirebase,
@@ -54,6 +55,8 @@ import { AttachmentPreviewSection } from "@/components/shared/attachment-preview
 import { UploadPreparationDialog } from "@/components/shared/upload-preparation-dialog";
 import { useStorageFileUpload } from "@/hooks/use-storage-file-upload";
 import { UPLOAD_RAW_FILE_SAFETY_MAX } from "@/lib/upload-limits";
+import { NOTIFICATION_LINKS, NOTIFICATION_SOURCE } from "@/lib/notification-events";
+import { notifyClientDocPortalUsers } from "@/lib/notifications";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -170,7 +173,7 @@ export function InvoiceForm({
   );
 
   const { toast } = useToast();
-  const { firestore } = useFirebase();
+  const { firestore, user } = useFirebase();
   const { uploadFile, dialogProps, limitLabel } = useStorageFileUpload({
     storageFolder: "invoices",
   });
@@ -298,7 +301,24 @@ export function InvoiceForm({
     } else {
       const collectionRef = collection(firestore, "invoices");
       addDoc(collectionRef, dataToSave)
-        .then((docRef) => {
+        .then(async (docRef) => {
+          try {
+            await notifyClientDocPortalUsers(
+              firestore,
+              values.clientId,
+              {
+                title: "Nova fatura disponível",
+                description: `Fatura ${values.invoiceNumber} no menu Financeiro.`,
+                link: NOTIFICATION_LINKS.invoices,
+                sourceType: NOTIFICATION_SOURCE.fatura,
+                sourceId: docRef.id,
+                actorRole: user?.role,
+              },
+              { excludeUserId: user?.uid },
+            );
+          } catch (e) {
+            console.warn("[Fatura] notificação:", e);
+          }
           toast({
             title: "Fatura criada!",
             description: `A fatura ${values.invoiceNumber} foi criada.`,
@@ -373,9 +393,17 @@ export function InvoiceForm({
               <FormItem>
                 <FormLabel>Contrato (Opcional)</FormLabel>
                 <Select
-                  onValueChange={field.onChange}
-                  defaultValue={field.value}
-                  disabled={isLoadingContracts || !contracts}
+                  onValueChange={(v) =>
+                    field.onChange(
+                      v === CONTRACT_NONE_SELECT_VALUE ? "" : v,
+                    )
+                  }
+                  value={
+                    field.value
+                      ? field.value
+                      : CONTRACT_NONE_SELECT_VALUE
+                  }
+                  disabled={isLoadingContracts}
                 >
                   <FormControl>
                     <SelectTrigger>
@@ -389,9 +417,12 @@ export function InvoiceForm({
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
+                    <SelectItem value={CONTRACT_NONE_SELECT_VALUE}>
+                      — Nenhum —
+                    </SelectItem>
                     {contracts?.map((contract) => (
                       <SelectItem key={contract.id} value={contract.id}>
-                        {contract.objeto.empreendimento} -{" "}
+                        {contract.objeto?.empreendimento ?? "Contrato"} -{" "}
                         {new Date(contract.dataContrato).toLocaleDateString(
                           "pt-BR",
                         )}

@@ -248,7 +248,7 @@ export function DispensaForm({ currentItem, onSuccess, onCancel }: DispensaFormP
                 <FormField control={form.control} name="bairroEmpreendedor" render={({ field }) => (<FormItem><FormLabel>Bairro</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
                 <FormField control={form.control} name="municipioEmpreendedor" render={({ field }) => (<FormItem><FormLabel>Município</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
                 <FormField control={form.control} name="ufEmpreendedor" render={({ field }) => (<FormItem><FormLabel>UF</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
-                <FormField control={form.control} name="cepEmpreendedor" render={({ field }) => (<FormItem><FormLabel>CEP</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
+                <FormField control={form.control} name="cepEmpreendedor" render={({ field }) => (<FormItem><FormLabel>CEP</FormLabel><FormControl><MaskedInput mask="cep" placeholder="00000-000" maxLength={9} {...field} /></FormControl></FormItem>)} />
                 <FormField control={form.control} name="telefoneComercialEmpreendedor" render={({ field }) => (<FormItem><FormLabel>Telefone Comercial</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
                 <FormField control={form.control} name="telefoneCelularEmpreendedor" render={({ field }) => (<FormItem><FormLabel>Telefone Celular</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
                 <FormField control={form.control} name="emailEmpreendedor" render={({ field }) => (<FormItem><FormLabel>Email</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
@@ -275,7 +275,7 @@ export function DispensaForm({ currentItem, onSuccess, onCancel }: DispensaFormP
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <FormField control={form.control} name="municipio" render={({ field }) => (<FormItem><FormLabel>2.4.5 Município</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
                     <FormField control={form.control} name="uf" render={({ field }) => (<FormItem><FormLabel>2.4.6 UF</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
-                    <FormField control={form.control} name="cep" render={({ field }) => (<FormItem><FormLabel>2.4.7 CEP</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
+                    <FormField control={form.control} name="cep" render={({ field }) => (<FormItem><FormLabel>2.4.7 CEP</FormLabel><FormControl><MaskedInput mask="cep" placeholder="00000-000" maxLength={9} {...field} /></FormControl></FormItem>)} />
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FormField control={form.control} name="telefoneComercial" render={({ field }) => (<FormItem><FormLabel>2.5 Telefone Comercial</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />

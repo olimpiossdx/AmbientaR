@@ -1,7 +1,14 @@
 "use client";
 
 import type { NavItem } from "@/lib/types";
-import { sortNavSubItemsByLabel } from "@/lib/processos-form-order";
+import {
+  GEOREF_TRAMITES_SUBMENU_LABEL,
+  LICENCIAMENTO_LIST_SUBITEM_LABEL,
+  LICENCIAMENTO_MENU_LABEL,
+  LICENCIAMENTO_NEW_SUBITEM_LABEL,
+} from "@/lib/licenciamento-menu";
+import { MULTAS_E_DEFESAS_MENU_LABEL, MULTAS_DEFESAS_PATH } from "@/lib/multas-defesas";
+import { OFICIOS_MENU_LABEL } from "@/lib/oficios-menu";
 import {
   LayoutDashboard,
   Users,
@@ -78,6 +85,15 @@ import {
 
 /** Rótulo do grupo de menu (licenças, CAR, outorgas, fauna, monitoramento, etc.). */
 export const DOCUMENTOS_AMBIENTAIS_MENU_LABEL = "Documentos Ambientais";
+
+/** Rótulo do menu de IA (análises, assistente, relatórios de IA). */
+export const IA_MENU_LABEL = "IA";
+
+/** Rótulo do menu de vistorias em campo. */
+export const VISTORIA_TECNICA_MENU_LABEL = "Vistoria Técnica";
+
+/** Rótulo do menu de estudos técnicos (EIA, fauna, inventário, planos, mapas, etc.). */
+export const ESTUDOS_TECNICOS_MENU_LABEL = "Estudos Técnicos";
 
 export const allNavItems: NavItem[] = [
   {
@@ -314,7 +330,7 @@ export const allNavItems: NavItem[] = [
       },
       {
         href: "/responsible-company",
-        label: "Empresa Responsável",
+        label: "Empresas",
         icon: Building2,
         roles: [
           "admin",
@@ -502,13 +518,13 @@ export const allNavItems: NavItem[] = [
     ],
   },
   {
-    href: "/autos-infracao-defesa",
-    label: "Autos de Infração - Defesa",
+    href: MULTAS_DEFESAS_PATH,
+    label: MULTAS_E_DEFESAS_MENU_LABEL,
     icon: Scale,
     roles: ["admin", "advogado"],
   },
   {
-    label: "Vistoria em Campo",
+    label: VISTORIA_TECNICA_MENU_LABEL,
     icon: SearchCheck,
     roles: [
       "admin",
@@ -551,8 +567,8 @@ export const allNavItems: NavItem[] = [
     ],
   },
   {
-    label: "Processos",
-    icon: FolderKanban,
+    label: LICENCIAMENTO_MENU_LABEL,
+    icon: ClipboardList,
     roles: [
       "admin",
       "technical",
@@ -562,10 +578,10 @@ export const allNavItems: NavItem[] = [
       "client",
       "representative",
     ],
-    subItems: sortNavSubItemsByLabel([
+    subItems: [
       {
         href: "/requests",
-        label: "Lista de processos",
+        label: LICENCIAMENTO_LIST_SUBITEM_LABEL,
         icon: List,
         roles: [
           "admin",
@@ -579,14 +595,14 @@ export const allNavItems: NavItem[] = [
       },
       {
         href: "/requests/new",
-        label: "Novo processo",
+        label: LICENCIAMENTO_NEW_SUBITEM_LABEL,
         icon: PlusSquare,
         roles: ["admin", "technical", "gestor", "supervisor", "advogado"],
       },
-    ]),
+    ],
   },
   {
-    label: "AmbientaR IA",
+    label: IA_MENU_LABEL,
     icon: Sparkles,
     roles: [
       "admin",
@@ -705,7 +721,7 @@ export const allNavItems: NavItem[] = [
     ],
   },
   {
-    label: "Elaboração de Estudos",
+    label: ESTUDOS_TECNICOS_MENU_LABEL,
     icon: BookText,
     roles: [
       "admin",
@@ -873,8 +889,8 @@ export const allNavItems: NavItem[] = [
       },
       {
         href: "/georeferenciamento/processos",
-        label: "Processos",
-        icon: ClipboardList,
+        label: GEOREF_TRAMITES_SUBMENU_LABEL,
+        icon: FolderKanban,
         roles: ["admin", "gestor", "supervisor", "diretor_fauna", "advogado"],
       },
       {
@@ -1005,7 +1021,7 @@ export const allNavItems: NavItem[] = [
   },
   {
     href: "/oficios",
-    label: "Ofícios e Comunicações",
+    label: OFICIOS_MENU_LABEL,
     icon: Send,
     roles: [
       "admin",

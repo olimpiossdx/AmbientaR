@@ -22,7 +22,7 @@ Motivos:
 
 - Usa dados estruturados (parcelas, árvores, DAP, altura, espécie).
 - Envolve fotos e coordenadas (GPS).
-- É um estudo já presente no menu "Elaboração de Estudos" do AmbientaR.
+- É um estudo já presente no menu "Estudos Técnicos" do AmbientaR.
 - Ambiente típico: área rural, conexão instável ou inexistente.
 
 **Outros candidatos para fases seguintes:** relatório de fauna (pontos de amostragem, espécies, fotos), monitoramento de outorga (leituras, fotos), vistoria (checklist + fotos).
@@ -99,7 +99,7 @@ Regras de segurança: leitura e escrita para usuários autenticados (`isSignedIn
 
 ### Implementado no app web (entrada online)
 
-- Menu **Elaboração de Estudos → Inventário (campo)** (`/inventarios`): listagem, novo inventário (empreendimento, datas, status).
+- Menu **Estudos Técnicos → Inventário (campo)** (`/inventarios`): listagem, novo inventário (empreendimento, datas, status).
 - Detalhe do inventário: parcelas e **Nova parcela** (código, lat/long, observações).
 - Detalhe da parcela: indivíduos e **Novo indivíduo** (número, espécie, DAP, altura). Mesmas coleções Firestore para uso pelo app offline depois.
 

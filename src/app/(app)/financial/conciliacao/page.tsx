@@ -85,8 +85,18 @@ export default function ConciliacaoPage() {
 
   const markReconciled = async (collectionName: 'revenues' | 'expenses', id: string) => {
     if (!firestore) return;
-    await updateDoc(doc(firestore, collectionName, id), { reconciledAt: new Date().toISOString() });
-    toast({ title: 'Marcado como conciliado' });
+    try {
+      await updateDoc(doc(firestore, collectionName, id), {
+        reconciledAt: new Date().toISOString(),
+      });
+      toast({ title: 'Marcado como conciliado' });
+    } catch {
+      toast({
+        variant: 'destructive',
+        title: 'Erro ao conciliar',
+        description: 'Não foi possível atualizar o lançamento. Verifique permissões e conexão.',
+      });
+    }
   };
 
   return (

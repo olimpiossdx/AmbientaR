@@ -79,6 +79,7 @@ import {
 import { DOCUMENTOS_AMBIENTAIS_MENU_LABEL } from "@/lib/navigation-config";
 import { OfflineProvider } from "@/lib/offline";
 import { OfflineQueueBadge } from "@/components/offline-queue-badge";
+import { NotificationPushProvider } from "@/components/notification-push-provider";
 import {
   isUserProfileAlignedWithSession,
   useAuthUserId,
@@ -666,6 +667,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <SidebarProvider>
       <OfflineProvider>
+        <NotificationPushProvider />
         <Suspense fallback={null}>
           <AppLayoutClient>{children}</AppLayoutClient>
         </Suspense>

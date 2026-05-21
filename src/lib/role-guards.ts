@@ -1,4 +1,4 @@
-import type { UserRole } from "@/lib/types";
+import type { AppUser, UserRole } from "@/lib/types";
 
 /** Perfil administrador: acesso total na UI (menus, rotas e ações). */
 export function isAdminRole(role: UserRole | undefined | null): boolean {
@@ -154,7 +154,7 @@ export function canImportEmpreendedoresFromClients(
   ]);
 }
 
-/** Cliente gestão e representante: menu Processos só para consulta (sem criar/editar). */
+/** Cliente gestão e representante: menu Licenciamento só para consulta (sem criar/editar). */
 export function isProcessosPortalReadOnlyRole(
   role: UserRole | undefined | null,
 ): boolean {
@@ -162,14 +162,14 @@ export function isProcessosPortalReadOnlyRole(
   return role === "client" || role === "representative";
 }
 
-/** Quem vê a lista de processos filtrada por empreendedores do portal (gestão + representante). */
+/** Quem vê a lista de trâmites filtrada por empreendedores do portal (gestão + representante). */
 export function isProcessosPortalScopeRole(
   role: UserRole | undefined | null,
 ): boolean {
   return isProcessosPortalReadOnlyRole(role);
 }
 
-/** Criar/editar/apagar processos e avançar status: equipa interna. */
+/** Criar/editar/apagar trâmites de licenciamento e avançar status: equipa interna. */
 export function canWriteProcessosInternal(
   role: UserRole | undefined | null,
 ): boolean {
@@ -209,6 +209,18 @@ export function canManageProposalsAndCommercialQuotes(
   role: UserRole | undefined | null,
 ): boolean {
   return hasAnyRoleOrAdmin(role, ["admin", "financial"]);
+}
+
+/** UID do perfil (id Firestore ou uid Auth) — ex.: representante em queries. */
+export function getAppUserProfileUid(user: Pick<AppUser, "id" | "uid">): string {
+  return user.id || user.uid;
+}
+
+/** Titular cadastrado pelo fluxo Cadastre-se (campo package no perfil). */
+export function isSelfRegisteredPortalUser(
+  user: Pick<AppUser, "package">,
+): boolean {
+  return Boolean(user.package);
 }
 
 /** Lançamentos de caixa, faturas, fornecedores, tabela de serviços: escrita admin/financeiro. */
@@ -255,6 +267,28 @@ export function isOficioReadOnlyRole(
     isClientePortalRole(role) ||
     role === "representative"
   );
+}
+
+/** Aprovar ofício (gerar numeração): admin, supervisor ou gestor. */
+export function canApproveOficio(role: UserRole | undefined | null): boolean {
+  return hasAnyRoleOrAdmin(role, ["admin", "supervisor", "gestor"]);
+}
+
+/** Conciliar contador anual (ofícios já emitidos fora da plataforma): só admin. */
+export function canConfigureOficioCounter(
+  role: UserRole | undefined | null,
+): boolean {
+  return isAdminRole(role);
+}
+
+/** Admin: editar/reverter/excluir qualquer ofício. */
+export function canAdministerOficios(role: UserRole | undefined | null): boolean {
+  return isAdminRole(role);
+}
+
+/** Criar e editar rascunhos (equipe interna, exceto portal). */
+export function canWriteOficioDraft(role: UserRole | undefined | null): boolean {
+  return !isOficioReadOnlyRole(role);
 }
 
 /** Responsáveis técnicos: escrita admin, supervisor ou gestor. */

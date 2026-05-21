@@ -124,7 +124,7 @@ export default function RequestAiaPage() {
     <div className="flex flex-col h-full">
       <PageHeader
         title="Autorização para Intervenção Ambiental"
-        description={`Processo ${request.solicitationNumber ?? request.id.slice(0, 8)}`}
+        description={`Trâmite ${request.solicitationNumber ?? request.id.slice(0, 8)}`}
       />
       <main className="flex-1 overflow-auto p-4 md:p-6 space-y-4">
         <div className="flex flex-wrap gap-2 justify-between">

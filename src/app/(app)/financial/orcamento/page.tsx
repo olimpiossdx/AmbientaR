@@ -23,26 +23,48 @@ export default function OrcamentoAnualPage() {
   const [year, setYear] = useState(String(currentYear));
   const [metas, setMetas] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(false);
+  const [loadingDoc, setLoadingDoc] = useState(true);
   const { firestore, user } = useFirebase();
   const { toast } = useToast();
 
   useEffect(() => {
-    if (!firestore || !user) return;
+    if (!firestore || !user) {
+      setLoadingDoc(false);
+      return;
+    }
+    let cancelled = false;
+    setLoadingDoc(true);
     void (async () => {
-      const snap = await getDoc(doc(firestore, 'financial_budgets', year));
-      if (snap.exists()) {
-        const data = snap.data() as BudgetDoc;
-        setMetas(data.metas || {});
-      } else {
-        const initial: Record<string, number> = {};
-        EXPENSE_CATEGORIES.forEach((c) => {
-          initial[c.value] = 0;
-        });
-        initial.receita_meta = 0;
-        setMetas(initial);
+      try {
+        const snap = await getDoc(doc(firestore, 'financial_budgets', year));
+        if (cancelled) return;
+        if (snap.exists()) {
+          const data = snap.data() as BudgetDoc;
+          setMetas(data.metas || {});
+        } else {
+          const initial: Record<string, number> = {};
+          EXPENSE_CATEGORIES.forEach((c) => {
+            initial[c.value] = 0;
+          });
+          initial.receita_meta = 0;
+          setMetas(initial);
+        }
+      } catch {
+        if (!cancelled) {
+          toast({
+            variant: 'destructive',
+            title: 'Erro ao carregar orçamento',
+            description: 'Tente novamente ou verifique permissões.',
+          });
+        }
+      } finally {
+        if (!cancelled) setLoadingDoc(false);
       }
     })();
-  }, [firestore, user, year]);
+    return () => {
+      cancelled = true;
+    };
+  }, [firestore, user, year, toast]);
 
   const save = async () => {
     if (!firestore) return;
@@ -70,8 +92,8 @@ export default function OrcamentoAnualPage() {
           value={year}
           onChange={(e) => setYear(e.target.value)}
         />
-        <Button onClick={() => void save()} disabled={loading}>
-          Salvar
+        <Button onClick={() => void save()} disabled={loading || loadingDoc}>
+          {loadingDoc ? 'Carregando…' : 'Salvar'}
         </Button>
       </PageHeader>
       <main className="flex-1 overflow-auto p-4 md:p-6">

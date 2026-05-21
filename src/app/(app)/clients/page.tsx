@@ -34,7 +34,7 @@ import {
   writeBatch,
 } from "firebase/firestore";
 import type { Client } from "@/lib/types";
-import { formatCpfCnpjDisplay } from "@/lib/masks";
+import { formatCepDisplay, formatCpfCnpjDisplay } from "@/lib/masks";
 import {
   buildClientPayloadFromEmpreendedor,
   buildClientsByDocumentIndex,
@@ -174,9 +174,12 @@ export default function ClientsPage() {
     return null;
   }, [firestore, user]);
 
-  const { data: clientsByUserId } = useCollection<Client>(clientsQueryByUserId);
-  const { data: clientsByCpf } = useCollection<Client>(clientsQueryByCpf);
-  const { data: clientsRep } = useCollection<Client>(clientsQueryRep);
+  const { data: clientsByUserId, isLoading: isLoadingByUserId } =
+    useCollection<Client>(clientsQueryByUserId);
+  const { data: clientsByCpf, isLoading: isLoadingByCpf } =
+    useCollection<Client>(clientsQueryByCpf);
+  const { data: clientsRep, isLoading: isLoadingRep } =
+    useCollection<Client>(clientsQueryRep);
   const { data: clientsAdmin, isLoading: isLoadingAdmin } =
     useCollection<Client>(clientsQueryAdmin);
 
@@ -186,7 +189,7 @@ export default function ClientsPage() {
       setFallbackClientsForRep(null);
       return;
     }
-    if (clientsRep === undefined) return;
+    if (isLoadingRep) return;
 
     const db = firestore;
     const repUid = user.id ?? (user as { uid?: string }).uid;
@@ -271,7 +274,7 @@ export default function ClientsPage() {
     return () => {
       cancelled = true;
     };
-  }, [firestore, user, clientsRep]);
+  }, [firestore, user, clientsRep, isLoadingRep]);
 
   const clients = useMemo(() => {
     if (isClientePortalRole(user?.role)) {
@@ -305,12 +308,11 @@ export default function ClientsPage() {
     fallbackClientsForRep,
   ]);
 
-  const isLoading =
-    isClientePortalRole(user?.role)
-      ? clientsByUserId === undefined || clientsByCpf === undefined
-      : user?.role === "representative"
-        ? clientsRep === undefined || fallbackClientsForRep === null
-        : isLoadingAdmin;
+  const isLoading = isClientePortalRole(user?.role)
+    ? isLoadingByUserId || isLoadingByCpf
+    : user?.role === "representative"
+      ? isLoadingRep || fallbackClientsForRep === null
+      : isLoadingAdmin;
 
   const filteredClients = useMemo(() => {
     if (!clients) return [];
@@ -701,7 +703,7 @@ export default function ClientsPage() {
               <div className="grid grid-cols-3 gap-4">
                 <DetailItem label="Município" value={clientToView.municipio} />
                 <DetailItem label="UF" value={clientToView.uf} />
-                <DetailItem label="CEP" value={clientToView.cep} />
+                <DetailItem label="CEP" value={formatCepDisplay(clientToView.cep)} />
               </div>
             </div>
           )}

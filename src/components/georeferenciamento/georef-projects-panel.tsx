@@ -174,12 +174,12 @@ export function GeorefProjectsPanel() {
           <DialogTrigger asChild>
             <Button size="sm" className="gap-1">
               <PlusCircle className="h-4 w-4" />
-              Novo processo
+              Novo trâmite fundiário
             </Button>
           </DialogTrigger>
           <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
             <DialogHeader>
-              <DialogTitle>Novo processo</DialogTitle>
+              <DialogTitle>Novo trâmite fundiário</DialogTitle>
             </DialogHeader>
             <div className="grid gap-4 py-2">
               <GeorefClientProjectFields

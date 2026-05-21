@@ -55,6 +55,8 @@ import {
   isClienteAutonomo,
   isClientePortalRole,
 } from "@/lib/role-guards";
+import { NOTIFICATION_LINKS, NOTIFICATION_SOURCE } from "@/lib/notification-events";
+import { notifyProjectPortalUsers } from "@/lib/notifications";
 
 export default function CarPage() {
   const { firestore } = useFirebase();
@@ -483,6 +485,23 @@ export default function CarPage() {
 
     try {
       await updateDoc(projectRef, { car: carData });
+      try {
+        await notifyProjectPortalUsers(
+          firestore,
+          projectId,
+          {
+            title: "CAR cadastrado no empreendimento",
+            description: `Recibo ${receiptNumber.trim() || "—"} disponível em Documentos Ambientais.`,
+            link: NOTIFICATION_LINKS.car,
+            sourceType: NOTIFICATION_SOURCE.car,
+            sourceId: `${projectId}_${receiptNumber.trim() || Date.now()}`,
+            actorRole: user?.role,
+          },
+          { excludeUserId: user?.uid },
+        );
+      } catch (notifyErr) {
+        console.warn("[CAR] notificação:", notifyErr);
+      }
       toast({
         title: "CAR salvo com sucesso",
         description:

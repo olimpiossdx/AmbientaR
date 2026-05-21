@@ -13,10 +13,10 @@ Legenda: ✅ auditado | 🔧 corrigido nesta fase | ⏳ backlog
 | 3 | Cadastro | [auditoria-menu-cadastro.md](./auditoria-menu-cadastro.md) | ✅ 🔧 redirect `environmental-company` |
 | 4 | Documentos Ambientais | [auditoria-menu-autorizacoes.md](./auditoria-menu-autorizacoes.md) | ✅ (Monitoramento: doc dedicado) |
 | 5 | Autos de Infração - Defesa | [auditoria-menu-autorizacoes.md](./auditoria-menu-autorizacoes.md) | ✅ |
-| 6 | Vistoria em Campo | [auditoria-menu-vistoria-processos.md](./auditoria-menu-vistoria-processos.md) | ✅ |
-| 7 | Processos | [auditoria-menu-vistoria-processos.md](./auditoria-menu-vistoria-processos.md) | ✅ |
-| 8 | AmbientaR IA | [auditoria-menu-ia-estudos.md](./auditoria-menu-ia-estudos.md) | ✅ |
-| 9 | Elaboração de Estudos | [auditoria-menu-ia-estudos.md](./auditoria-menu-ia-estudos.md) | ✅ 🔧 redirect `/studies`, PIA index |
+| 6 | Vistoria Técnica | [auditoria-menu-vistoria-processos.md](./auditoria-menu-vistoria-processos.md) | ✅ |
+| 7 | Licenciamento | [auditoria-menu-vistoria-processos.md](./auditoria-menu-vistoria-processos.md) | ✅ |
+| 8 | IA | [auditoria-menu-ia-estudos.md](./auditoria-menu-ia-estudos.md) | ✅ |
+| 9 | Estudos Técnicos | [auditoria-menu-ia-estudos.md](./auditoria-menu-ia-estudos.md) | ✅ 🔧 redirect `/studies`, PIA index |
 | 10 | Georeferenciamento | [auditoria-menu-georef-crm.md](./auditoria-menu-georef-crm.md) | ✅ |
 | 11 | Vendas & CRM | [auditoria-menu-georef-crm.md](./auditoria-menu-georef-crm.md) | ✅ |
 | 12 | Webmail | [auditoria-menu-config-acessos.md](./auditoria-menu-config-acessos.md) | ✅ |

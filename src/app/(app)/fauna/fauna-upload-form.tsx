@@ -38,6 +38,8 @@ import { UploadPreparationDialog } from "@/components/shared/upload-preparation-
 import { useStorageFileUpload } from "@/hooks/use-storage-file-upload";
 import { UPLOAD_RAW_FILE_SAFETY_MAX } from "@/lib/upload-limits";
 import { isPdfLikeFile } from "@/lib/file-mime";
+import { NOTIFICATION_LINKS, NOTIFICATION_SOURCE } from "@/lib/notification-events";
+import { notifyEmpreendedorPortalUsers } from "@/lib/notifications";
 import {
   DialogFooter,
   DialogHeader,
@@ -157,7 +159,24 @@ export function FaunaUploadForm({ onSuccess }: FaunaUploadFormProps) {
     const collectionRef = collection(firestore, "faunaStudies");
 
     addDoc(collectionRef, dataToSave)
-      .then(() => {
+      .then(async (ref) => {
+        try {
+          await notifyEmpreendedorPortalUsers(
+            firestore,
+            values.empreendedorId,
+            {
+              title: "Novo documento de fauna",
+              description: `${values.documentName} em Documentos Ambientais.`,
+              link: NOTIFICATION_LINKS.fauna,
+              sourceType: NOTIFICATION_SOURCE.fauna,
+              sourceId: ref.id,
+              actorRole: user.role,
+            },
+            { excludeUserId: user.uid },
+          );
+        } catch (e) {
+          console.warn("[Fauna] notificação:", e);
+        }
         toast({
           title: "Documento Salvo!",
           description: "O documento de fauna foi adicionado com sucesso.",

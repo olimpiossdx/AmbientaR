@@ -274,7 +274,7 @@ export default function InspectionsListPage() {
   return (
     <>
       <div className="flex flex-col h-full">
-        <PageHeader title="Vistoria em Campo">
+        <PageHeader title="Vistoria Técnica">
           <Button size="sm" className="gap-1" onClick={handleAddNew}>
             <PlusCircle className="h-4 w-4" />
             Nova Vistoria

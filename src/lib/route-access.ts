@@ -31,7 +31,7 @@ const OFICIOS_WRITE_ROLES: UserRole[] = [
   'advogado',
 ];
 
-/** Prefixos que o perfil `cliente_autonomo` não pode aceder (IA, elaboração de estudos, processos). */
+/** Prefixos que o perfil `cliente_autonomo` não pode aceder (IA, estudos técnicos, licenciamento). */
 const PATH_PREFIXES_DENIED_FOR_CLIENTE_AUTONOMO: readonly string[] = [
   '/ai-lab',
   '/studies',

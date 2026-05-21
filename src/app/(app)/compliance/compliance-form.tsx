@@ -51,9 +51,10 @@ import { FirestorePermissionError } from "@/firebase/errors";
 import { AttachmentPreviewSection } from "@/components/shared/attachment-preview-section";
 import { collection, doc, addDoc, updateDoc } from "firebase/firestore";
 import {
-  createNotificationForUser,
-  getUserIdFromCondicionanteReference,
+  getRecipientUserIdsFromCondicionanteReference,
+  notifyPortalUsers,
 } from "@/lib/notifications";
+import { guardPortalPackageAction } from "@/lib/package-portal-guard";
 import {
   DialogFooter,
   DialogHeader,
@@ -119,7 +120,7 @@ export function ComplianceForm({
   );
   const [isDueDateOpen, setIsDueDateOpen] = React.useState(false);
   const { toast } = useToast();
-  const { firestore, user: currentUser } = useFirebase();
+  const { firestore, user: currentUser, auth } = useFirebase();
   const { uploadFile, dialogProps, limitLabel } = useStorageFileUpload({
     storageFolder: "condicionantes",
   });
@@ -325,21 +326,24 @@ export function ComplianceForm({
             | "licenca"
             | "outorga"
             | "intervencao";
-          const targetUserId = await getUserIdFromCondicionanteReference(
+          const recipients = await getRecipientUserIdsFromCondicionanteReference(
             firestore,
             refType,
             values.referenceId,
           );
-          if (targetUserId && targetUserId !== currentUser?.uid) {
-            await createNotificationForUser(firestore, targetUserId, {
+          await notifyPortalUsers(
+            firestore,
+            recipients,
+            {
               title: "Condicionante atualizada",
               description: `Uma condicionante foi atualizada. Acesse Condicionantes para ver os detalhes.`,
               link: "/compliance",
               sourceType: "condicionante",
               sourceId: currentItem.id,
               actorRole: currentUser?.role,
-            });
-          }
+            },
+            { excludeUserId: currentUser?.uid },
+          );
           onSuccess?.();
         })
         .catch(async (serverError) => {
@@ -354,6 +358,21 @@ export function ComplianceForm({
           setLoading(false);
         });
     } else {
+      if (currentUser && auth?.currentUser) {
+        const gate = await guardPortalPackageAction(
+          auth,
+          "create_module:condicionantes",
+        );
+        if (!gate.ok) {
+          toast({
+            variant: "destructive",
+            title: "Limite do plano",
+            description: gate.message,
+          });
+          setLoading(false);
+          return;
+        }
+      }
       const collectionRef = collection(firestore, "condicionantes");
       addDoc(collectionRef, dataToSave)
         .then(async (ref) => {
@@ -365,21 +384,24 @@ export function ComplianceForm({
             | "licenca"
             | "outorga"
             | "intervencao";
-          const targetUserId = await getUserIdFromCondicionanteReference(
+          const recipients = await getRecipientUserIdsFromCondicionanteReference(
             firestore,
             refType,
             values.referenceId,
           );
-          if (targetUserId && targetUserId !== currentUser?.uid) {
-            await createNotificationForUser(firestore, targetUserId, {
+          await notifyPortalUsers(
+            firestore,
+            recipients,
+            {
               title: "Nova condicionante lançada",
               description: `Uma nova condicionante foi cadastrada. Acesse Condicionantes para acompanhar.`,
               link: "/compliance",
               sourceType: "condicionante",
               sourceId: ref.id,
               actorRole: currentUser?.role,
-            });
-          }
+            },
+            { excludeUserId: currentUser?.uid },
+          );
           form.reset();
           onSuccess?.();
         })

@@ -70,7 +70,11 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { isClientePortalRole } from "@/lib/role-guards";
+import {
+  getAppUserProfileUid,
+  isClientePortalRole,
+  isSelfRegisteredPortalUser,
+} from "@/lib/role-guards";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { logUserAction } from "@/lib/audit-log";
 import { InvoiceForm } from "./invoice-form";
@@ -199,7 +203,7 @@ export default function InvoicesPage() {
 
     // Cliente titular: seus próprios clientes (userId, approvedUserIds, CPF/CNPJ).
     if (isClientePortalRole(user.role)) {
-      const isSelfRegistered = !!(user as any).package;
+      const isSelfRegistered = isSelfRegisteredPortalUser(user);
       const clientsRef = collection(firestore, "clients");
 
       if (isSelfRegistered) {
@@ -269,7 +273,7 @@ export default function InvoicesPage() {
 
     // Representante: clientes que o titular aprovou explicitamente (approvedUserIds).
     if (user.role === "representative") {
-      const repUid = user.id || (user as any).uid;
+      const repUid = getAppUserProfileUid(user);
       if (!repUid) {
         setClientIdsForUser([]);
         return;
@@ -357,11 +361,16 @@ export default function InvoicesPage() {
     hasBrandingUrls,
   } = useLocalBranding();
 
+  const isResolvingClientIds =
+    (isClientePortalRole(user?.role) || user?.role === "representative") &&
+    clientIdsForUser === null;
+
   const isLoading =
     isLoadingInvoices ||
     isLoadingClients ||
     isLoadingBranding ||
-    isLoadingContracts;
+    isLoadingContracts ||
+    isResolvingClientIds;
 
   const sortedInvoices = useMemo(() => {
     if (!invoices) return [];

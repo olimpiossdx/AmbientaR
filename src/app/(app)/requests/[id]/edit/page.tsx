@@ -48,6 +48,7 @@ import {
   LicensingLocationalBlock,
   type LocationalAnalysisPayload,
 } from '@/components/licensing/licensing-locational-block';
+import { LICENCIAMENTO_MENU_LABEL } from '@/lib/licenciamento-menu';
 import { isProcessosPortalReadOnlyRole } from '@/lib/role-guards';
 import { fetchEmpreendedorIdsForProcessosPortal } from '@/lib/requests-portal-empreendedor-ids';
 import {
@@ -698,7 +699,7 @@ function EditRequestPageContent() {
                 variant: 'destructive',
                 title: 'Formulário incompleto',
                 description:
-                    'Verifique empreendedor, empreendimento, serviços e situação do processo antes de salvar.',
+                    'Verifique empreendedor, empreendimento, serviços e situação do trâmite antes de salvar.',
             });
             return;
         }
@@ -765,7 +766,7 @@ function EditRequestPageContent() {
 
         updateDoc(requestRef, dataToSave)
             .then(() => {
-                toast({ title: "Processo Atualizado", description: "As alterações foram salvas."});
+                toast({ title: "Trâmite atualizado", description: "As alterações foram salvas."});
                 router.push('/requests');
             })
             .catch((err: unknown) => {
@@ -807,7 +808,7 @@ function EditRequestPageContent() {
     if (isLoading) {
         return (
              <div className="flex flex-col h-full">
-                <PageHeader title="Carregando Processo..." />
+                <PageHeader title="Carregando trâmite..." />
                 <main className="flex-1 overflow-auto p-4 md:p-6"><Skeleton className="h-[500px] w-full" /></main>
             </div>
         );
@@ -818,7 +819,7 @@ function EditRequestPageContent() {
             <div className="flex flex-col h-full">
                <PageHeader title="Erro" />
                <main className="flex-1 overflow-auto p-4 md:p-6">
-                    <Card><CardHeader><CardTitle>Processo não encontrado</CardTitle></CardHeader></Card>
+                    <Card><CardHeader><CardTitle>Trâmite não encontrado</CardTitle></CardHeader></Card>
                </main>
            </div>
         )
@@ -831,14 +832,14 @@ function EditRequestPageContent() {
                 <main className="flex-1 overflow-auto p-4 md:p-6">
                     <Card>
                         <CardHeader>
-                            <CardTitle>Processo não disponível</CardTitle>
+                            <CardTitle>Trâmite não disponível</CardTitle>
                             <CardDescription>
-                                Este processo não está entre os empreendedores aos quais o seu perfil tem acesso.
+                                Este trâmite não está entre os empreendedores aos quais o seu perfil tem acesso.
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
                             <Button type="button" variant="outline" onClick={() => router.push('/requests')}>
-                                Voltar aos processos
+                                Voltar ao {LICENCIAMENTO_MENU_LABEL.toLowerCase()}
                             </Button>
                         </CardContent>
                     </Card>
@@ -852,8 +853,8 @@ function EditRequestPageContent() {
             <PageHeader
                 title={
                     readOnly
-                        ? `Processo #${request?.solicitationNumber || request?.id.substring(0, 8).toUpperCase()}`
-                        : `Editando Processo #${request?.solicitationNumber || request?.id.substring(0, 8).toUpperCase()}`
+                        ? `Trâmite #${request?.solicitationNumber || request?.id.substring(0, 8).toUpperCase()}`
+                        : `Editar trâmite #${request?.solicitationNumber || request?.id.substring(0, 8).toUpperCase()}`
                 }
             />
             <main className="flex-1 overflow-auto p-4 md:p-6">
@@ -864,11 +865,11 @@ function EditRequestPageContent() {
                     >
                     <Card>
                         <CardHeader>
-                            <CardTitle>{readOnly ? 'Visualização do processo' : 'Editar Processo'}</CardTitle>
+                            <CardTitle>{readOnly ? 'Visualização do trâmite' : 'Editar trâmite'}</CardTitle>
                             <CardDescription>
                                 {readOnly
                                     ? 'Consulte serviços, checklist, anexos e tramitação. Alterações são feitas pela consultoria.'
-                                    : 'Altere as informações do processo conforme necessário.'}
+                                    : 'Altere as informações do trâmite conforme necessário.'}
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-6">
@@ -933,7 +934,7 @@ function EditRequestPageContent() {
                                 </div>
                             </div>
                             <div className="space-y-2">
-                                <Label>Status do Processo</Label>
+                                <Label>Status do trâmite</Label>
                                 <Select value={selectedStatus} onValueChange={(value) => setSelectedStatus(value as Request['status'])} disabled={readOnly}>
                                     <SelectTrigger>
                                         <SelectValue />
@@ -1041,7 +1042,7 @@ export default function EditRequestPage() {
     return (
         <Suspense fallback={
              <div className="flex flex-col h-full">
-                <PageHeader title="Carregando Processo..." />
+                <PageHeader title="Carregando trâmite..." />
                 <main className="flex-1 overflow-auto p-4 md:p-6"><Skeleton className="h-96 w-full" /></main>
             </div>
         }>

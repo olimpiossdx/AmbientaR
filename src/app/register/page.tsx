@@ -63,7 +63,6 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import type {
   ClientPackage,
-  ClientPackageInfo,
   EntityType,
   PlatformPaymentMethod,
 } from "@/lib/types";
@@ -71,94 +70,25 @@ import { createNotificationForUser } from "@/lib/notifications";
 import {
   buildPlatformSubscriptionFieldsForNewTitular,
   clientPackageRequiresAnnualPaymentStep,
-  getPublicPixCopyPaste,
   isPlatformPaymentAutoApproveEnabled,
   PACKAGE_ANNUAL_AMOUNT_LABEL,
 } from "@/lib/platform-access";
 import {
+  resolvePlatformPixCopyPaste,
+  hasPlatformBankDetails,
+  formatBankAccountLabel,
+} from "@/lib/platform-company";
+import { usePlatformContractPublic } from "@/hooks/use-platform-contract-public";
+import {
   RegisterContractContent,
   packageRequiresMarketingOptIn,
 } from "@/app/register/contract-content";
+import {
+  CLIENT_PACKAGE_CATALOG,
+  getAmbbotUsagePeriodKey,
+} from "@/lib/package-limits";
 
-const PACKAGES: ClientPackageInfo[] = [
-  {
-    id: "gratuito",
-    name: "Gratuito",
-    description: "Acesso básico para conhecer a plataforma.",
-    price: "R$ 0",
-    features: [
-      "Acesso ao dashboard básico",
-      "Visualização de licenças",
-      "Suporte por email",
-    ],
-  },
-  {
-    id: "basico",
-    name: "Básico",
-    description: "Ideal para quem está começando na gestão ambiental.",
-    price: "R$ 49,90/mês",
-    features: [
-      "Tudo do plano Gratuito",
-      "Gestão de licenças ambientais",
-      "Calendário de prazos",
-      "Relatórios básicos",
-    ],
-  },
-  {
-    id: "intermediario",
-    name: "Intermediário",
-    description: "Para empresas que precisam de mais recursos.",
-    price: "R$ 99,90/mês",
-    highlighted: true,
-    features: [
-      "Tudo do plano Básico",
-      "Gestão de condicionantes",
-      "Monitoramento ambiental",
-      "Relatórios avançados",
-      "Suporte prioritário",
-    ],
-  },
-  {
-    id: "avancado",
-    name: "Avançado",
-    description: "Recursos completos para gestão ambiental profissional.",
-    price: "R$ 199,90/mês",
-    features: [
-      "Tudo do plano Intermediário",
-      "Elaboração de estudos ambientais",
-      "Análise com Inteligência Artificial",
-      "Gestão financeira integrada",
-      "Suporte dedicado",
-    ],
-  },
-  {
-    id: "completo",
-    name: "Completo",
-    description: "A solução definitiva para gestão ambiental.",
-    price: "R$ 349,90/mês",
-    features: [
-      "Acesso a todos os módulos",
-      "Análises com IA ilimitadas",
-      "CRM e gestão comercial",
-      "Geração de PDFs e relatórios",
-      "Suporte VIP 24h",
-    ],
-  },
-  {
-    id: "sob_consulta",
-    name: "Sob Consulta",
-    description:
-      "Soluções personalizadas para demandas específicas que vão além da plataforma.",
-    price: "Personalizado",
-    features: [
-      "Consultoria ambiental dedicada",
-      "Assessoria técnica especializada",
-      "Projetos sob demanda",
-      "Atendimento presencial",
-      "Orçamento personalizado",
-    ],
-  },
-];
+const PACKAGES = CLIENT_PACKAGE_CATALOG;
 
 const PACKAGE_ICONS: Record<ClientPackage, React.ReactNode> = {
   gratuito: <Gift className="h-6 w-6" />,
@@ -255,6 +185,7 @@ export default function RegisterPage() {
   const showProfileChoice = !initialTipo;
   const [hasChosenProfile, setHasChosenProfile] = React.useState(!!initialTipo);
   const { auth, firestore } = useFirebase();
+  const { platformCompany } = usePlatformContractPublic();
   const { toast } = useToast();
   const router = useRouter();
 
@@ -555,7 +486,6 @@ export default function RegisterPage() {
         ...(isTitularPlanMode
           ? {
               allowsCommercialContact:
-                values.selectedPackage === "gratuito" ||
                 values.selectedPackage === "basico"
                   ? true
                   : Boolean(values.marketingContactConsent),
@@ -563,6 +493,13 @@ export default function RegisterPage() {
           : {}),
         ...subscriptionFields,
         ...extraVerified,
+        ...(isTitularPlanMode
+          ? {
+              ambbotUsagePeriod: getAmbbotUsagePeriodKey(),
+              ambbotIncludedUsed: 0,
+              ambbotPrepaidCredits: 0,
+            }
+          : {}),
       });
 
       if (
@@ -1106,7 +1043,10 @@ export default function RegisterPage() {
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="rounded-lg border bg-white dark:bg-muted/30 max-h-[min(28rem,70vh)] overflow-y-auto shadow-inner">
-          <RegisterContractContent packageId={selectedPackage} />
+          <RegisterContractContent
+            packageId={selectedPackage}
+            platformCompany={platformCompany}
+          />
         </div>
 
         {packageRequiresMarketingOptIn(selectedPackage) && (
@@ -1194,13 +1134,13 @@ export default function RegisterPage() {
   );
 
   const copyPix = async () => {
-    const t = getPublicPixCopyPaste();
+    const t = resolvePlatformPixCopyPaste(platformCompany);
     if (!t) {
       toast({
         variant: "destructive",
         title: "PIX não configurado",
         description:
-          "Peça à equipe o código PIX ou configure NEXT_PUBLIC_AMBIENTAR_PIX_COPIA_E_COLA.",
+          "Peça à equipe o código PIX ou cadastre o PIX copia e cola em Cadastro → Empresas (empresa da plataforma).",
       });
       return;
     }
@@ -1221,7 +1161,7 @@ export default function RegisterPage() {
     const annual = clientPackageRequiresAnnualPaymentStep(pkg);
     const amount =
       (pkg && PACKAGE_ANNUAL_AMOUNT_LABEL[pkg]) ?? "Consulte a equipe";
-    const pixCode = getPublicPixCopyPaste();
+    const pixCode = resolvePlatformPixCopyPaste(platformCompany);
 
     return (
       <Card className="shadow-lg bg-card/80 backdrop-blur-sm border">
@@ -1338,9 +1278,31 @@ export default function RegisterPage() {
                 <div className="space-y-2 rounded-lg border p-4">
                   <p className="text-sm font-medium">Pagamento via PIX</p>
                   <p className="text-xs text-muted-foreground">
-                    Transfira o valor indicado usando a chave ou o código copia e
-                    cola. Envie o comprovante se solicitado pela equipe.
+                    Transfira o valor indicado para{" "}
+                    <strong>{platformCompany?.name ?? "a CONTRATADA"}</strong>{" "}
+                    usando os dados abaixo. Envie o comprovante se solicitado pela
+                    equipe.
                   </p>
+                  {hasPlatformBankDetails(platformCompany) && (
+                    <ul className="text-sm space-y-1 text-muted-foreground list-disc pl-5">
+                      {platformCompany?.bankName ? (
+                        <li>Banco: {platformCompany.bankName}</li>
+                      ) : null}
+                      {platformCompany?.bankAgency ? (
+                        <li>Agência: {platformCompany.bankAgency}</li>
+                      ) : null}
+                      {platformCompany?.bankAccount ? (
+                        <li>
+                          Conta{" "}
+                          {formatBankAccountLabel(platformCompany.bankAccountType)}:{" "}
+                          {platformCompany.bankAccount}
+                        </li>
+                      ) : null}
+                      {platformCompany?.pixKey ? (
+                        <li>Chave PIX: {platformCompany.pixKey}</li>
+                      ) : null}
+                    </ul>
+                  )}
                   {pixCode ? (
                     <>
                       <div className="max-h-24 overflow-y-auto rounded bg-muted p-2 font-mono text-[11px] break-all">
@@ -1352,15 +1314,28 @@ export default function RegisterPage() {
                     </>
                   ) : (
                     <p className="text-sm text-amber-800 dark:text-amber-200">
-                      Configure{" "}
+                      O administrador deve cadastrar o PIX copia e cola em{" "}
+                      <strong>Cadastro → Empresas</strong> (empresa da plataforma)
+                      ou configurar{" "}
                       <code className="rounded bg-muted px-1">
                         NEXT_PUBLIC_AMBIENTAR_PIX_COPIA_E_COLA
-                      </code>{" "}
-                      ou utilize os dados bancários enviados por e-mail.
+                      </code>
+                      .
                     </p>
                   )}
                 </div>
               )}
+
+              {(paymentMethod === "credit_card" ||
+                paymentMethod === "debit_card") &&
+                hasPlatformBankDetails(platformCompany) && (
+                  <div className="rounded-lg border p-4 text-sm space-y-1">
+                    <p className="font-medium">Titular do recebimento</p>
+                    <p className="text-muted-foreground">
+                      {platformCompany?.name} — CNPJ {platformCompany?.cnpj}
+                    </p>
+                  </div>
+                )}
 
               {(paymentMethod === "credit_card" ||
                 paymentMethod === "debit_card") && (
@@ -1376,16 +1351,20 @@ export default function RegisterPage() {
 
           {pkg === "gratuito" && (
             <p className="text-sm text-muted-foreground">
-              Plano gratuito: sem cobrança neste momento. Seu acesso será
-              registrado com vigência anual para controle da plataforma.
+              Plano gratuito (versão com publicidade): sem cobrança neste
+              momento. Ao aceitar o contrato, você declara ciência de que a
+              interface poderá exibir anúncios de terceiros; a CONTRATADA não
+              fará marketing direto pelo só aceite. Seu acesso será registrado
+              com vigência anual para controle da plataforma.
             </p>
           )}
 
           {pkg === "sob_consulta" && (
             <p className="text-sm text-muted-foreground">
               Plano sob consulta: nossa equipe combinará valor e forma de
-              pagamento. Você já poderá acessar a plataforma enquanto o contrato
-              comercial é alinhado.
+              pagamento (incluindo boleto, quando aplicável a prestação de serviço
+              sob medida). Você já poderá acessar a plataforma enquanto o contrato
+              comercial é alinhado. Pagamento online padrão: PIX, débito ou crédito.
             </p>
           )}
 

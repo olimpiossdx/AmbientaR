@@ -294,7 +294,7 @@ export function AiaWorkflowPanel({
     <div className="space-y-6">
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-lg">Dados do processo AIA</CardTitle>
+          <CardTitle className="text-lg">Dados do trâmite AIA</CardTitle>
           <CardDescription>
             Perfil {aiaProfile?.orgao ?? DEFAULT_AIA_PROFILE.orgao} —{" "}
             {aiaProfile?.uf ?? DEFAULT_AIA_PROFILE.uf}. Ajuste o imóvel para regras condicionais do checklist.

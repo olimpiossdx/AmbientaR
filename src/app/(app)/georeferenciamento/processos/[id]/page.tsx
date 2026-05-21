@@ -135,7 +135,7 @@ export default function GeorefProcessoDetailPage() {
         <Button variant="ghost" size="sm" asChild>
           <Link href="/georeferenciamento/processos">
             <ArrowLeft className="mr-1 h-4 w-4" />
-            Processos
+            Trâmites fundiários
           </Link>
         </Button>
       </PageHeader>

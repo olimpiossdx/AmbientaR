@@ -233,7 +233,7 @@ export function SupplierForm({ currentItem, onSuccess, onCancel }: SupplierFormP
              <AccordionItem value="address-details">
                 <AccordionTrigger>Endereço</AccordionTrigger>
                 <AccordionContent className="pt-4 space-y-4">
-                    <FormField control={form.control} name="cep" render={({ field }) => ( <FormItem><FormLabel>CEP</FormLabel><FormControl><div className="relative"><Input placeholder="00000-000" {...field} /><div className="absolute inset-y-0 right-0 flex items-center pr-3">{isCepLoading && <Loader2 className="h-4 w-4 animate-spin" />}</div></div></FormControl><FormMessage /></FormItem> )} />
+                    <FormField control={form.control} name="cep" render={({ field }) => ( <FormItem><FormLabel>CEP</FormLabel><FormControl><div className="relative"><MaskedInput mask="cep" placeholder="00000-000" maxLength={9} {...field} /><div className="absolute inset-y-0 right-0 flex items-center pr-3">{isCepLoading && <Loader2 className="h-4 w-4 animate-spin" />}</div></div></FormControl><FormMessage /></FormItem> )} />
                     <FormField control={form.control} name="logradouro" render={({ field }) => ( <FormItem><FormLabel>Logradouro</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )} />
                     <FormField control={form.control} name="bairro" render={({ field }) => ( <FormItem><FormLabel>Bairro</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )} />
                     <div className="grid grid-cols-2 gap-4">

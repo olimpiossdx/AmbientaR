@@ -15,53 +15,10 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Check, Crown, Star, Zap, Rocket, Gift, MessageSquareMore, ArrowUp, Loader2 } from 'lucide-react';
-import type { ClientPackage, ClientPackageInfo } from '@/lib/types';
+import type { ClientPackage } from '@/lib/types';
+import { CLIENT_PACKAGE_CATALOG } from '@/lib/package-limits';
 
-const PACKAGES: ClientPackageInfo[] = [
-  {
-    id: 'gratuito',
-    name: 'Gratuito',
-    description: 'Acesso básico para conhecer a plataforma.',
-    price: 'R$ 0',
-    features: ['Acesso ao dashboard básico', 'Visualização de licenças', 'Suporte por email'],
-  },
-  {
-    id: 'basico',
-    name: 'Básico',
-    description: 'Ideal para quem está começando na gestão ambiental.',
-    price: 'R$ 49,90/mês',
-    features: ['Tudo do plano Gratuito', 'Gestão de licenças ambientais', 'Calendário de prazos', 'Relatórios básicos'],
-  },
-  {
-    id: 'intermediario',
-    name: 'Intermediário',
-    description: 'Para empresas que precisam de mais recursos.',
-    price: 'R$ 99,90/mês',
-    highlighted: true,
-    features: ['Tudo do plano Básico', 'Gestão de condicionantes', 'Monitoramento ambiental', 'Relatórios avançados', 'Suporte prioritário'],
-  },
-  {
-    id: 'avancado',
-    name: 'Avançado',
-    description: 'Recursos completos para gestão ambiental profissional.',
-    price: 'R$ 199,90/mês',
-    features: ['Tudo do plano Intermediário', 'Elaboração de estudos ambientais', 'Análise com Inteligência Artificial', 'Gestão financeira integrada', 'Suporte dedicado'],
-  },
-  {
-    id: 'completo',
-    name: 'Completo',
-    description: 'A solução definitiva para gestão ambiental.',
-    price: 'R$ 349,90/mês',
-    features: ['Acesso a todos os módulos', 'Análises com IA ilimitadas', 'CRM e gestão comercial', 'Geração de PDFs e relatórios', 'Suporte VIP 24h'],
-  },
-  {
-    id: 'sob_consulta',
-    name: 'Sob Consulta',
-    description: 'Soluções personalizadas que vão além da plataforma.',
-    price: 'Personalizado',
-    features: ['Consultoria ambiental dedicada', 'Assessoria técnica especializada', 'Projetos sob demanda', 'Atendimento presencial', 'Orçamento personalizado'],
-  },
-];
+const PACKAGES = CLIENT_PACKAGE_CATALOG;
 
 const PACKAGE_ICONS: Record<ClientPackage, React.ReactNode> = {
   gratuito: <Gift className="h-5 w-5" />,

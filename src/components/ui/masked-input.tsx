@@ -3,14 +3,15 @@
 
 import * as React from 'react';
 import { Input } from '@/components/ui/input';
-import { maskCpf, maskCnpj, maskCpfCnpj, maskPhone } from '@/lib/masks';
+import { maskCpf, maskCnpj, maskCpfCnpj, maskCep, maskPhone } from '@/lib/masks';
 
-type MaskType = 'cpf' | 'cnpj' | 'cpfCnpj' | 'phone';
+type MaskType = 'cpf' | 'cnpj' | 'cpfCnpj' | 'cep' | 'phone';
 
 const maskFunctions: Record<MaskType, (v: string) => string> = {
   cpf: maskCpf,
   cnpj: maskCnpj,
   cpfCnpj: maskCpfCnpj,
+  cep: maskCep,
   phone: maskPhone,
 };
 

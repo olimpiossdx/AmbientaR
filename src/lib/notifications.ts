@@ -8,8 +8,43 @@ import {
   doc,
   getDoc,
 } from 'firebase/firestore';
+import { getAuth } from 'firebase/auth';
 import type { License, Project, WaterPermit, EnvironmentalIntervention } from '@/lib/types';
 import type { UserRole } from '@/lib/types';
+import {
+  getRecipientUserIdsForEmpreendedor,
+  getRecipientUserIdsForProject,
+  getRecipientUserIdsForClient,
+  getRecipientUserIdsByRecipientName,
+  getRecipientUserIdsFromCondicionanteReference,
+} from '@/lib/notification-recipients';
+
+async function triggerServerPushForUsers(
+  userIds: string[],
+  payload: CreateNotificationPayload,
+): Promise<void> {
+  if (typeof window === 'undefined' || userIds.length === 0) return;
+  try {
+    const auth = getAuth();
+    const idToken = await auth.currentUser?.getIdToken();
+    if (!idToken) return;
+    await fetch('/api/notifications/send-push', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${idToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        userIds,
+        title: payload.title,
+        description: payload.description,
+        link: payload.link,
+      }),
+    });
+  } catch (e) {
+    console.warn('[Notificações] push FCM:', e);
+  }
+}
 
 export type CreateNotificationPayload = {
   title: string;
@@ -30,6 +65,7 @@ export async function createNotificationForUser(
   userId: string,
   payload: CreateNotificationPayload
 ): Promise<void> {
+  if (!userId?.trim()) return;
   const notificationsRef = collection(firestore, `users/${userId}/notifications`);
   await addDoc(notificationsRef, {
     userId,
@@ -43,6 +79,70 @@ export async function createNotificationForUser(
     actorRole: payload.actorRole ?? null,
   });
 }
+
+/** Vários destinatários (portal cliente / representantes). */
+export async function notifyPortalUsers(
+  firestore: Firestore,
+  userIds: Iterable<string>,
+  payload: CreateNotificationPayload,
+  options?: { excludeUserId?: string },
+): Promise<void> {
+  const unique = [...new Set(userIds)].filter(
+    (id) => id?.trim() && id !== options?.excludeUserId,
+  );
+  await Promise.all(
+    unique.map((uid) => createNotificationForUser(firestore, uid, payload)),
+  );
+  void triggerServerPushForUsers(unique, payload);
+}
+
+export async function notifyEmpreendedorPortalUsers(
+  firestore: Firestore,
+  empreendedorId: string | undefined | null,
+  payload: CreateNotificationPayload,
+  options?: { excludeUserId?: string },
+): Promise<void> {
+  const ids = await getRecipientUserIdsForEmpreendedor(firestore, empreendedorId);
+  await notifyPortalUsers(firestore, ids, payload, options);
+}
+
+export async function notifyProjectPortalUsers(
+  firestore: Firestore,
+  projectId: string | undefined | null,
+  payload: CreateNotificationPayload,
+  options?: { excludeUserId?: string },
+): Promise<void> {
+  const ids = await getRecipientUserIdsForProject(firestore, projectId);
+  await notifyPortalUsers(firestore, ids, payload, options);
+}
+
+export async function notifyClientDocPortalUsers(
+  firestore: Firestore,
+  clientId: string | undefined | null,
+  payload: CreateNotificationPayload,
+  options?: { excludeUserId?: string },
+): Promise<void> {
+  const ids = await getRecipientUserIdsForClient(firestore, clientId);
+  await notifyPortalUsers(firestore, ids, payload, options);
+}
+
+export async function notifyOficioRecipientPortalUsers(
+  firestore: Firestore,
+  recipientName: string | undefined | null,
+  payload: CreateNotificationPayload,
+  options?: { excludeUserId?: string },
+): Promise<void> {
+  const ids = await getRecipientUserIdsByRecipientName(firestore, recipientName);
+  await notifyPortalUsers(firestore, ids, payload, options);
+}
+
+export {
+  getRecipientUserIdsForEmpreendedor,
+  getRecipientUserIdsForProject,
+  getRecipientUserIdsForClient,
+  getRecipientUserIdsByRecipientName,
+  getRecipientUserIdsFromCondicionanteReference,
+};
 
 /**
  * Resolve o userId do cliente/empreendedor a partir da referência de uma condicionante

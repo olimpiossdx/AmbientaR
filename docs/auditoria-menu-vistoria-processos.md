@@ -1,6 +1,6 @@
-# Auditoria — Vistoria em Campo + Processos
+# Auditoria — Vistoria Técnica + Licenciamento
 
-## Vistoria em Campo
+## Vistoria Técnica
 
 | Rota | Label |
 |------|-------|
@@ -10,13 +10,15 @@
 
 PDF: jsPDF dinâmico em listagem e relatórios (commits anteriores).
 
-## Processos
+## Licenciamento
 
 | Rota | Label | Nota |
 |------|-------|------|
-| `/requests` | Lista de processos | Menu “Processos” usa `requests`, não `/projects` |
-| `/requests/new` | Novo processo | |
+| `/requests` | Consultar trâmites | Menu «Licenciamento» usa `requests`, não `/projects` |
+| `/requests/new` | Nova solicitação | |
 | `/requests/[id]/edit` | Edição | dinâmica, coberta pelo prefixo |
+
+**Exportação:** PDF com identidade visual (`licenciamento-tramite-pdf.ts`) e rascunho de e-mail (`mailto:` via `licenciamento-tramite-report.ts`) na lista e no diálogo de detalhes.
 
 `/projects` pertence ao menu **Cadastro** (Empreendimentos).
 

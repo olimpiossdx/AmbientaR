@@ -1,7 +1,18 @@
-import type { ClientPackage } from "@/lib/types";
+import type { ClientPackage, PlatformContractPublic } from "@/lib/types";
+import { formatContratadaIntro } from "@/lib/platform-company";
 
-function isGratuitoOuBasico(pkg: ClientPackage | undefined): boolean {
-  return pkg === "gratuito" || pkg === "basico";
+function isGratuito(pkg: ClientPackage | undefined): boolean {
+  return pkg === "gratuito";
+}
+
+function isBasico(pkg: ClientPackage | undefined): boolean {
+  return pkg === "basico";
+}
+
+function isPlanoPagoComOptInMarketing(pkg: ClientPackage | undefined): boolean {
+  return (
+    pkg === "intermediario" || pkg === "avancado" || pkg === "completo"
+  );
 }
 
 /**
@@ -9,10 +20,15 @@ function isGratuitoOuBasico(pkg: ClientPackage | undefined): boolean {
  */
 export function RegisterContractContent({
   packageId,
+  platformCompany,
 }: {
   packageId: ClientPackage | undefined;
+  /** Empresa ativa (Cadastro → Empresas); se ausente, usa texto padrão. */
+  platformCompany?: PlatformContractPublic | null;
 }) {
-  const gOrB = isGratuitoOuBasico(packageId);
+  const gratuito = isGratuito(packageId);
+  const basico = isBasico(packageId);
+  const optInMarketing = isPlanoPagoComOptInMarketing(packageId);
 
   return (
     <div
@@ -31,10 +47,7 @@ export function RegisterContractContent({
       </h2>
 
       <p className="mb-2">
-        <strong>CONTRATADA:</strong> PIMENTA CONSULTORIA AMBIENTAL, pessoa
-        jurídica de direito privado, inscrita no CNPJ sob o nº que consta de
-        seus registros públicos, com sede em território nacional, doravante
-        simplesmente &quot;CONTRATADA&quot; ou &quot;PIMENTA&quot;.
+        <strong>CONTRATADA:</strong> {formatContratadaIntro(platformCompany)}
       </p>
       <p className="mb-3">
         <strong>CONTRATANTE / USUÁRIO:</strong> pessoa física ou jurídica que
@@ -159,10 +172,23 @@ export function RegisterContractContent({
         fiscalizadores, nem pela adequação das informações inseridas pelo
         CONTRATANTE à legislação específica de cada empreendimento.
       </p>
-      <p className="mb-3">
+      <p className="mb-2">
         5.4. Integrações com terceiros (hospedagem, APIs, meios de pagamento,
-        etc.) observam os termos desses fornecedores; falhas alheias à esfera de
-        controle razoável da CONTRATADA não lhe serão imputadas.
+        inteligência artificial, geoprocessamento, etc.) observam os termos desses
+        fornecedores; falhas alheias à esfera de controle razoável da CONTRATADA
+        não lhe serão imputadas.
+      </p>
+      <p className="mb-2">
+        5.5. O CONTRATANTE reconhece que módulos de IA (incluindo análises de
+        área, assistentes e relatórios automatizados) podem conter imprecisões e
+        não constituem parecer técnico, licença, autorização ou despacho de órgão
+        público.
+      </p>
+      <p className="mb-3">
+        5.6. A CONTRATADA não garante recuperação integral de dados após
+        exclusão pelo CONTRATANTE, falha de conexão, uso indevido ou
+        inadimplência; recomenda-se cópia de segurança pelos documentos
+        relevantes.
       </p>
 
       <h3 className="font-bold mt-3 mb-1">
@@ -189,9 +215,19 @@ export function RegisterContractContent({
         7.2. O descumprimento grave pode ensejar rescisão com suspensão
         imediata do acesso, sem prejuízo de perdas e danos na medida da lei.
       </p>
-      <p className="mb-3">
+      <p className="mb-2">
         7.3. Após o encerramento, poderão ser mantidos registros pelo prazo
         legal ou contratual de backup e auditoria, observada a LGPD.
+      </p>
+      <p className="mb-2">
+        7.4. O acesso poderá ser suspenso por inadimplência, suspeita de fraude,
+        violação deste contrato, tentativa de burlar limites técnicos do plano ou
+        ordem de autoridade, sem prejuízo de cobrança de valores em aberto.
+      </p>
+      <p className="mb-3">
+        7.5. A CONTRATADA poderá alterar ou descontinuar funcionalidades do
+        plano gratuito, mediante aviso razoável na Plataforma, sem direito a
+        indenização por mera alteração de escopo gratuito.
       </p>
 
       <h3 className="font-bold mt-3 mb-1">
@@ -213,123 +249,245 @@ export function RegisterContractContent({
         medidas de segurança compatíveis com o risco.
       </p>
 
-      {gOrB ? (
+      {gratuito && (
         <>
           <h3 className="font-bold mt-3 mb-1 border-t border-border pt-2">
-            CLÁUSULA 9ª — DOS PLANOS GRATUITO E BÁSICO: TRATAMENTO DE DADOS PARA
-            CONTATO COMERCIAL
+            CLÁUSULA 9ª — DO PLANO GRATUITO (DEGUSTAÇÃO)
           </h3>
           <p className="mb-2">
-            9.1. O CONTRATANTE que selecionar os planos <strong>Gratuito</strong>{" "}
-            ou <strong>Básico</strong> declara, de forma livre, informada e
-            inequívoca, ao aceitar este contrato, que <strong>autoriza</strong> a
-            CONTRATADA a tratar seus dados cadastrais e de contato — incluindo,
-            sem se limitar a, nome, e-mail, telefone, dados de identificação e
-            demais informações fornecidas no cadastro — para as finalidades de:
-            envio de comunicações sobre produtos e serviços da CONTRATADA e de
-            parceiros comerciais alinhados à área ambiental e de gestão;
-            prospecção comercial; convites a eventos; pesquisas de satisfação;
-            ofertas personalizadas; e contato por e-mail, telefone, mensagens
-            instantâneas, SMS ou outros meios digitais ou físicos,{" "}
-            <strong>sem necessidade de aviso ou autorização prévia adicional</strong>{" "}
-            para cada contato, respeitados os limites legais e o direito de
-            oposição e revogação do consentimento quando aplicável.
+            9.1. O plano <strong>Gratuito</strong> destina-se exclusivamente à
+            experimentação limitada da Plataforma, sem caráter de gestão
+            ambiental completa, e está sujeito aos seguintes limites técnicos,
+            que podem ser verificados automaticamente pelo sistema: até{" "}
+            <strong>um (1) empreendimento</strong> cadastrado; até{" "}
+            <strong>um (1) registro</strong> por módulo de dado (ex.: licença,
+            outorga, condicionante, uso insignificante, intervenção);{" "}
+            <strong>proibição de upload</strong> de arquivos e anexos;{" "}
+            <strong>ausência de alertas automáticos</strong> de vencimento ou
+            prazo no aplicativo; e demais restrições exibidas na tela de planos.
           </p>
           <p className="mb-2">
-            9.2. O CONTRATANTE poderá solicitar a interrupção de comunicações
-            promocionais por meio dos canais de atendimento da CONTRATADA ou
-            mecanismos de descadastro, sem prejuízo do tratamento necessário à
-            execução contratual ou cumprimento de obrigação legal.
+            9.2. O CONTRATANTE no plano Gratuito <strong>não autoriza</strong>,
+            pelo só aceite deste contrato, o uso de seus dados cadastrais para
+            campanhas promocionais <strong>diretas da CONTRATADA</strong> (e-mail,
+            telefone, WhatsApp, SMS ou equivalentes); eventual comunicação
+            limitar-se-á ao necessário para operação da conta, segurança e
+            cumprimento legal. Isso é distinto da publicidade de terceiros
+            prevista no item 9.4.
+          </p>
+          <p className="mb-2">
+            9.3. O plano Gratuito constitui <strong>versão com publicidade</strong>
+            : a Plataforma poderá exibir, em áreas identificadas como
+            patrocinadas ou publicidade (por exemplo rodapé, listagens ou telas
+            de apoio), conteúdo publicitário de <strong>terceiros</strong>,
+            incluindo redes de anúncios como Google AdSense ou equivalentes, sem
+            mistura ao conteúdo técnico ou aos formulários de dados ambientais do
+            CONTRATANTE.
+          </p>
+          <p className="mb-2">
+            9.4. Ao aceitar este contrato no plano Gratuito, o CONTRATANTE declara
+            ciência de que: (a) provedores de publicidade e anunciantes podem
+            utilizar cookies, identificadores de dispositivo e tecnologias
+            correlatas, nos termos das políticas desses provedores e da
+            legislação aplicável (incluindo manifestação de preferências de
+            cookies ou publicidade, quando disponibilizada na Plataforma); (b) a
+            CONTRATADA <strong>não garante, endossa nem responde</strong> pelo
+            conteúdo, produtos ou serviços anunciados por terceiros; (c) a
+            migração para plano pago conforme tabela vigente{" "}
+            <strong>poderá suprimir ou reduzir</strong> a exibição de
+            publicidade de terceiros, conforme política então publicada na
+            Plataforma.
+          </p>
+          <p className="mb-2">
+            9.5. A CONTRATADA compromete-se a não sobrepor publicidade de
+            terceiros a formulários de cadastro de dados ambientais, fluxos de
+            documentos oficiais ou telas de operação crítica; a veiculação
+            restringir-se-á a espaços periféricos da navegação, de forma a
+            preservar a usabilidade da degustação.
           </p>
           <p className="mb-3">
-            9.3. A presente autorização integra o escopo contratual dos referidos
-            planos e vigora enquanto mantida a relação ou até manifestação de
-            oposição nos termos da LGPD.
+            9.6. Para ampliar limites, suprimir publicidade de terceiros (quando
+            aplicável ao plano), anexar documentos, receber alertas de prazo ou
+            utilizar análises com IA (AmbBot), o CONTRATANTE deverá contratar
+            plano pago conforme tabela vigente.
           </p>
         </>
-      ) : (
+      )}
+
+      {basico && (
         <>
           <h3 className="font-bold mt-3 mb-1 border-t border-border pt-2">
-            CLÁUSULA 9ª — DOS DEMAIS PLANOS: CONTATO COMERCIAL SOB CONSENTIMENTO
-            ESPECÍFICO
+            CLÁUSULA {gratuito ? "10ª" : "9ª"} — DO PLANO BÁSICO: LIMITES E
+            AUTORIZAÇÃO DE CONTATO COMERCIAL
+          </h3>
+          <p className="mb-2">
+            {gratuito ? "10.1" : "9.1"}. O plano <strong>Básico (Autônomo 1)</strong>{" "}
+            permite até <strong>um (1) empreendimento</strong>, upload de
+            documentos dentro da cota contratada e funcionalidades descritas na
+            tabela de planos vigente no cadastro.
+          </p>
+          <p className="mb-2">
+            {gratuito ? "10.2" : "9.2"}. Ao aceitar este contrato no plano
+            Básico, o CONTRATANTE declara, de forma livre, informada e
+            inequívoca, que <strong>autoriza</strong> a CONTRATADA a tratar seus
+            dados cadastrais e de contato para: comunicações comerciais;
+            prospecção; ofertas de upgrade; pesquisas; convites; e contato por{" "}
+            <strong>
+              e-mail, telefone (incluindo ligações), WhatsApp, SMS, mensagens
+              em aplicativos de celular, notificações push e demais canais
+              digitais ou presenciais
+            </strong>{" "}
+            relacionados a produtos e serviços da CONTRATADA e parceiros do
+            segmento ambiental,{" "}
+            <strong>
+              sem necessidade de autorização prévia adicional para cada campanha
+            </strong>
+            , respeitados a LGPD e o direito de oposição/revogação.
+          </p>
+          <p className="mb-3">
+            {gratuito ? "10.3" : "9.3"}. O CONTRATANTE poderá solicitar
+            descadastro de comunicações promocionais pelos canais de
+            atendimento, sem prejuízo de mensagens estritamente contratuais ou
+            legais.
+          </p>
+        </>
+      )}
+
+      {optInMarketing && (
+        <>
+          <h3 className="font-bold mt-3 mb-1 border-t border-border pt-2">
+            CLÁUSULA 9ª — DOS PLANOS PAGOS (INTERMEDIÁRIO, AVANÇADO E COMPLETO):
+            CONTATO COMERCIAL SOB CONSENTIMENTO ESPECÍFICO
+          </h3>
+          <p className="mb-2">
+            9.1. Nos planos pagos acima do Básico, o tratamento de dados para{" "}
+            <strong>marketing, prospecção e propaganda</strong>{" "}
+            <strong>não</strong> decorre automaticamente do aceite deste
+            contrato.
+          </p>
+          <p className="mb-3">
+            9.2. Tal tratamento depende de manifestação expressa na caixa
+            &quot;disponibilizo meus dados para contato comercial&quot; no
+            cadastro (art. 7º, I e art. 8º da LGPD). Sem a marcação, a
+            CONTRATADA limitar-se-á ao necessário para prestação do serviço
+            contratado.
+          </p>
+        </>
+      )}
+
+      {packageId === "sob_consulta" && (
+        <>
+          <h3 className="font-bold mt-3 mb-1 border-t border-border pt-2">
+            CLÁUSULA 9ª — PLANO SOB CONSULTA
           </h3>
           <p className="mb-3">
-            9.1. Para os planos <strong>Intermediário</strong>,{" "}
-            <strong>Avançado</strong>, <strong>Completo</strong> e{" "}
-            <strong>Sob consulta</strong>, o tratamento de dados pessoais para
-            fins de marketing, prospecção ou contato comercial{" "}
-            <strong>adicional</strong> ao estritamente necessário à execução do
-            serviço contratado dependerá da manifestação expressa do
-            CONTRATANTE na caixa de seleção específica (&quot;disponibilizo dados
-            para contato&quot;) apresentada no formulário de cadastro, nos termos
-            do art. 8º da LGPD.
+            9.1. Limites de uso, armazenamento, usuários e condições comerciais
+            serão definidos em proposta ou aditivo específico, prevalecendo
+            sobre disposições genéricas deste instrumento em caso de conflito.
           </p>
         </>
       )}
 
       <h3 className="font-bold mt-3 mb-1">
-        CLÁUSULA 10ª — DA CONFIDENCIALIDADE
+        CLÁUSULA 10ª — DO USO ACEITÁVEL E SEGURANÇA
+      </h3>
+      <p className="mb-2">
+        10.1. É vedado utilizar a Plataforma para fins ilícitos, envio de spam,
+        sobrecarga intencional, engenharia reversa, scraping automatizado não
+        autorizado, compartilhamento de credenciais com terceiros não vinculados
+        ao contrato ou revenda de acesso.
+      </p>
+      <p className="mb-3">
+        10.2. O CONTRATANTE é responsável pelos dados inseridos e pelas
+        consequências de sua divulgação a terceiros fora da Plataforma.
+      </p>
+
+      <h3 className="font-bold mt-3 mb-1">
+        CLÁUSULA 11ª — DA CONFIDENCIALIDADE
       </h3>
       <p className="mb-3">
-        10.1. As partes manterão confidenciais informações técnicas ou comerciais
+        11.1. As partes manterão confidenciais informações técnicas ou comerciais
         não públicas a que tenham acesso em razão deste contrato, salvo
         divulgação exigida por lei ou ordem judicial.
       </p>
 
       <h3 className="font-bold mt-3 mb-1">
-        CLÁUSULA 11ª — DAS COMUNICAÇÕES ELETRÔNICAS
+        CLÁUSULA 12ª — DAS COMUNICAÇÕES ELETRÔNICAS
       </h3>
       <p className="mb-3">
-        11.1. Notificações relacionadas ao serviço poderão ser enviadas ao
+        12.1. Notificações relacionadas ao serviço poderão ser enviadas ao
         e-mail cadastrado, presumindo-se recebidas após envio, salvo prova em
         contrário.
       </p>
 
       <h3 className="font-bold mt-3 mb-1">
-        CLÁUSULA 12ª — DA NULIDADE PARCIAL E TOLERÂNCIA
+        CLÁUSULA 13ª — DA NULIDADE PARCIAL E TOLERÂNCIA
       </h3>
       <p className="mb-3">
-        12.1. A eventual nulidade ou ineficácia de cláusula, na medida em que
+        13.1. A eventual nulidade ou ineficácia de cláusula, na medida em que
         declarada por autoridade competente, não prejudicará a validade das
         demais. A tolerância a infrações não implicará renúncia a direitos.
       </p>
 
       <h3 className="font-bold mt-3 mb-1">
-        CLÁUSULA 13ª — DA LEI APLICÁVEL E FORO
+        CLÁUSULA 14ª — DA LEI APLICÁVEL E FORO
       </h3>
       <p className="mb-2">
-        13.1. Aplica-se a legislação brasileira. Quando o CONTRATANTE for
+        14.1. Aplica-se a legislação brasileira. Quando o CONTRATANTE for
         consumidor nos termos do Código de Defesa do Consumidor, serão observadas
         as normas imperativas de proteção ao consumidor, sem prejuízo do
         equilíbrio contratual em cláusulas válidas.
       </p>
       <p className="mb-3">
-        13.2. Fica eleito o foro da comarca de <strong>Belo Horizonte</strong>,
+        14.2. Fica eleito o foro da comarca de <strong>Belo Horizonte</strong>,
         Estado de <strong>Minas Gerais</strong>, com renúncia a qualquer outro,
         por mais privilegiado que seja, salvo competência absoluta de outro
         foro por disposição legal imperativa.
       </p>
 
       <h3 className="font-bold mt-3 mb-1">
-        CLÁUSULA 14ª — DAS DISPOSIÇÕES FINAIS
+        CLÁUSULA 15ª — DAS DISPOSIÇÕES FINAIS
       </h3>
       <p className="mb-2">
-        14.1. Este instrumento constitui o entendimento integral entre as
+        15.1. Este instrumento constitui o entendimento integral entre as
         partes quanto ao objeto, substituindo tratativas anteriores sobre a
         mesma matéria.
       </p>
-      <p className="mb-3">
-        14.2. O aceite eletrônico, com uso de login e senha ou confirmação em
+      <p className="mb-2">
+        15.2. O aceite eletrônico, com uso de login e senha ou confirmação em
         tela, produz os mesmos efeitos de assinatura física, nos termos da
         Medida Provisória nº 2.200-2/2001 e legislação correlata, quando
         aplicável.
       </p>
+      <p className="mb-3">
+        15.3. Os limites técnicos dos planos (empreendimentos, arquivos, módulos,
+        AmbBot, alertas) são parte integrante da relação contratual e podem ser
+        atualizados com comunicação prévia na Plataforma.
+      </p>
 
-      {!gOrB && (
+      {optInMarketing && (
         <div className="mt-3 rounded-md border border-primary/30 bg-primary/5 p-2 text-[11px]">
           <strong>Atenção:</strong> para o plano selecionado, além de aceitar este
           contrato, você deverá marcar a opção específica de disponibilização de
           dados para contato comercial no formulário abaixo do texto contratual.
+        </div>
+      )}
+
+      {gratuito && (
+        <div className="mt-3 rounded-md border border-amber-500/40 bg-amber-500/10 p-2 text-[11px]">
+          <strong>Plano Gratuito (versão com publicidade):</strong> uso limitado
+          (1 empreendimento, 1 registro por tipo, sem upload e sem alertas
+          automáticos de prazo). Poderão ser exibidos anúncios de terceiros em
+          áreas da Plataforma — sem contato comercial automático da CONTRATADA.
+          Planos pagos ampliam recursos e podem remover a publicidade.
+        </div>
+      )}
+
+      {basico && (
+        <div className="mt-3 rounded-md border border-emerald-500/30 bg-emerald-500/10 p-2 text-[11px]">
+          <strong>Plano Básico:</strong> ao aceitar o contrato, você autoriza
+          contato comercial da CONTRATADA pelos canais descritos na cláusula do
+          plano Básico (e-mail, telefone, WhatsApp, SMS, etc.).
         </div>
       )}
 
@@ -344,6 +502,5 @@ export function RegisterContractContent({
 export function packageRequiresMarketingOptIn(
   pkg: ClientPackage | undefined | null,
 ): boolean {
-  if (!pkg) return false;
-  return !isGratuitoOuBasico(pkg);
+  return isPlanoPagoComOptInMarketing(pkg ?? undefined);
 }

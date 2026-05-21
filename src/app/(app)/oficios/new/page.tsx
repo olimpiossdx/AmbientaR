@@ -30,7 +30,7 @@ function NewOficioPageContent() {
                   <CardHeader>
                       <CardTitle>Criar Novo Ofício</CardTitle>
                       <CardDescription>
-                          Preencha os detalhes para criar um novo ofício. Você pode salvar como rascunho.
+                          Preencha destinatário, assunto, referência, texto e assinatura conforme o modelo do ofício. Salve como rascunho e conclua na lista quando estiver pronto.
                       </CardDescription>
                   </CardHeader>
                   <CardContent>

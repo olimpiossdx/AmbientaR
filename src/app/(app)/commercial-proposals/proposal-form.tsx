@@ -36,6 +36,8 @@ import { FirestorePermissionError } from '@/firebase/errors';
 import { collection, doc, addDoc, updateDoc } from 'firebase/firestore';
 import { Textarea } from '@/components/ui/textarea';
 import { logUserAction } from '@/lib/audit-log';
+import { NOTIFICATION_LINKS, NOTIFICATION_SOURCE } from '@/lib/notification-events';
+import { notifyClientDocPortalUsers } from '@/lib/notifications';
 import { Dialog, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogContent } from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
 import { Label } from '@/components/ui/label';
@@ -130,7 +132,7 @@ export function ProposalForm({ currentItem, onSuccess, onCancel }: ProposalFormP
   const [isServiceModalOpen, setIsServiceModalOpen] = React.useState(false);
 
   const { toast } = useToast();
-  const { firestore, auth } = useFirebase();
+  const { firestore, auth, user } = useFirebase();
   const offline = useOfflineOptional();
   const { uploadFile, dialogProps, limitLabel } = useStorageFileUpload({
     storageFolder: 'commercial-proposals',
@@ -289,7 +291,24 @@ export function ProposalForm({ currentItem, onSuccess, onCancel }: ProposalFormP
     } else {
       const collectionRef = collection(firestore, 'commercialProposals');
       addDoc(collectionRef, dataToSave)
-        .then((docRef) => {
+        .then(async (docRef) => {
+          try {
+            await notifyClientDocPortalUsers(
+              firestore,
+              values.clientId,
+              {
+                title: 'Nova proposta comercial',
+                description: `Proposta ${values.proposalNumber} disponível no menu Financeiro.`,
+                link: NOTIFICATION_LINKS.commercialProposals,
+                sourceType: NOTIFICATION_SOURCE.proposta_comercial,
+                sourceId: docRef.id,
+                actorRole: user?.role,
+              },
+              { excludeUserId: user?.uid },
+            );
+          } catch (e) {
+            console.warn('[Proposta] notificação:', e);
+          }
           toast({ title: 'Proposta criada!', description: `A proposta ${values.proposalNumber} foi criada.` });
           logUserAction(firestore, auth, 'create_proposal', { proposalId: docRef.id, proposalNumber: values.proposalNumber });
           form.reset();

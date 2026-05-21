@@ -89,13 +89,6 @@ export function CompanyForm({ currentItem, onSuccess }: CompanyFormProps) {
     form.setValue('cnpj', value);
   };
   
-  const handleCepChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let value = e.target.value.replace(/\D/g, '');
-    value = value.replace(/(\d{5})(\d)/, '$1-$2');
-    form.setValue('cep', value);
-  }
-
-
   async function onSubmit(values: FormValues) {
     setLoading(true);
 
@@ -161,7 +154,7 @@ export function CompanyForm({ currentItem, onSuccess }: CompanyFormProps) {
                           </Select>
                   <FormMessage /></FormItem>
               )} />
-              <FormField control={form.control} name="cep" render={({ field }) => (<FormItem><FormLabel>CEP</FormLabel><FormControl><Input placeholder="00000-000" {...field} onChange={handleCepChange} maxLength={9}/></FormControl><FormMessage /></FormItem>)} />
+              <FormField control={form.control} name="cep" render={({ field }) => (<FormItem><FormLabel>CEP</FormLabel><FormControl><MaskedInput mask="cep" placeholder="00000-000" maxLength={9} {...field} /></FormControl><FormMessage /></FormItem>)} />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <FormField control={form.control} name="ddd" render={({ field }) => (<FormItem><FormLabel>DDD</FormLabel><FormControl><Input maxLength={2} {...field} /></FormControl><FormMessage /></FormItem>)} />

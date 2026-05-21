@@ -2,7 +2,7 @@
 
 ## Georeferenciamento
 
-Submenu completo em `/georeferenciamento/*` (painel, processos, rural, urbano, CAR, campo, documentos, validações, registro, referências).
+Submenu completo em `/georeferenciamento/*` (painel, trâmites fundiários, rural, urbano, CAR, campo, documentos, validações, registro, referências).
 
 - Sem TODOs na pasta `georeferenciamento/`.
 - Processo dinâmico: `/georeferenciamento/processos/[id]`.

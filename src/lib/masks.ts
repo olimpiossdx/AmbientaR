@@ -48,6 +48,19 @@ export function formatCpfCnpjDisplay(value: string | undefined | null): string {
   return d.length === 14 ? maskCnpj(value) : value;
 }
 
+/** Aplica máscara de CEP: 00000-000 */
+export function maskCep(value: string): string {
+  const digits = value.replace(/\D/g, '').slice(0, 8);
+  if (digits.length <= 5) return digits;
+  return `${digits.slice(0, 5)}-${digits.slice(5)}`;
+}
+
+/** Formata CEP para exibição: 00000-000 */
+export function formatCepDisplay(value: string | undefined | null): string {
+  if (value == null || value === '') return '';
+  return maskCep(value);
+}
+
 /** Aplica máscara de telefone: (00) 00000-0000 ou (00) 0000-0000 */
 export function maskPhone(value: string): string {
   const digits = value.replace(/\D/g, '').slice(0, 11);

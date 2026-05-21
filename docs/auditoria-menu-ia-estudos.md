@@ -1,6 +1,6 @@
-# Auditoria — AmbientaR IA + Elaboração de Estudos
+# Auditoria — IA + Estudos Técnicos
 
-## AmbientaR IA
+## IA
 
 | Rota | Label |
 |------|-------|
@@ -13,9 +13,9 @@
 
 Hub admin: `/ai-lab`, `/ai-lab/rag`, `/ai-lab/mcp` no menu **Configurações**.
 
-## Elaboração de Estudos
+## Estudos Técnicos
 
-Todos os `href` em `navigation-config` sob “Elaboração de Estudos” estão cobertos (EIA/RIMA, fauna, inventário florestal, PTRF, RCA, etc.).
+Todos os `href` em `navigation-config` sob “Estudos Técnicos” estão cobertos (EIA/RIMA, fauna, inventário florestal, PTRF, RCA, etc.).
 
 | Correção | Detalhe |
 |----------|---------|

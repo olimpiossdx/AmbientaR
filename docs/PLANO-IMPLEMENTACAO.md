@@ -205,7 +205,7 @@ Além das normas, o sistema também pode aproveitar **Termos de Referência (TR)
 
 - Usar os Termos de Referência:
   - Como **base para os templates `.docx`** (o que o laudo precisa conter).
-  - Como **base para os campos do menu “Elaboração de Estudos”** (o que o sistema vai te pedir para preencher).
+  - Como **base para os campos do menu “Estudos Técnicos”** (o que o sistema vai te pedir para preencher).
   - Como fonte para o RAG entender “como deve ser um RCA, um PIA, um inventário, etc.” dentro da realidade de Minas.
 
 #### 6.2. Como os TR entram no sistema
@@ -241,7 +241,7 @@ Além das normas, o sistema também pode aproveitar **Termos de Referência (TR)
       - Blocos de texto IA/RAG.
   - Esse modelo vira o arquivo `.docx` base em `templates/` (RCA, PIA, etc.), com placeholders que serão preenchidos automaticamente.
 
-- **Campos do menu “Elaboração de Estudos”**
+- **Campos do menu “Estudos Técnicos”**
   - Para cada tipo de estudo (RCA, PIA, inventário, fauna, etc.), o sistema pode:
     - Ler o TR indexado em `rag_index`.
     - Sugerir uma lista de **seções/campos** que o formulário deve ter:

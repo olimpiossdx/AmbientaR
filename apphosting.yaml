@@ -5,3 +5,11 @@ runConfig:
   # Increase this value if you'd like to automatically spin up
   # more instances in response to increased traffic.
   maxInstances: 1
+
+# Chave pública Web Push (Firebase Console → Cloud Messaging). Pode sobrescrever na consola App Hosting.
+env:
+  - variable: NEXT_PUBLIC_FIREBASE_VAPID_KEY
+    value: BN07XDzDLZThaAoYogVyfwwmBlmfQ8NCpqITt5nW3Ml4dqZIkTcehy9JEHkYilEvH3eWg-XsGMO8Bleh78qZTKo
+    availability:
+      - BUILD
+      - RUNTIME

@@ -1,5 +1,7 @@
+import { ESTUDOS_TECNICOS_MENU_LABEL } from '@/lib/navigation-config';
+
 export const TEMPLATE_CARDS: { slug: string; title: string; description: string }[] = [
-  { slug: 'rca', title: 'RCA', description: 'Template base para Relatório de Controle Ambiental. Será usado na exportação dos estudos RCA em Elaboração de Estudos.' },
+  { slug: 'rca', title: 'RCA', description: `Template base para Relatório de Controle Ambiental. Será usado na exportação dos estudos RCA em ${ESTUDOS_TECNICOS_MENU_LABEL}.` },
   { slug: 'ptrf', title: 'PTRF', description: 'Template base para Plano de Transporte de Resíduos Florestais.' },
   { slug: 'prada', title: 'PRADA', description: 'Template base para Plano de Recuperação de Áreas Degradadas.' },
   { slug: 'pia', title: 'PIA', description: 'Template base para Plano de Intervenção Ambiental.' },

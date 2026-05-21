@@ -7,6 +7,14 @@ import {
   uploadBytes,
 } from "firebase/storage";
 import { inferMimeTypeFromFileName } from "@/lib/file-mime";
+import {
+  buildLimitErrorMessage,
+  getPackageLimits,
+  isPackageLimitsExempt,
+  isSubjectToPackageLimits,
+  type PackageLimits,
+} from "@/lib/package-limits";
+import type { AppUser } from "@/lib/types";
 
 function getFirebaseAppOrThrow() {
   if (typeof getApps === "function" && getApps().length === 0) {
@@ -18,6 +26,24 @@ function getFirebaseAppOrThrow() {
 /** Sanitiza nome para usar em paths do Storage. */
 export function sanitizeStorageFileName(name: string): string {
   return name.replace(/[^\w.\-]/g, "_") || "file";
+}
+
+/** Valida tamanho do arquivo contra o plano do portal (cliente autônomo / titular). */
+export function assertFileAllowedForPackage(
+  file: File,
+  user: Pick<AppUser, "role" | "package" | "platformPaymentStatus"> | null | undefined,
+): PackageLimits | null {
+  if (!user || !isSubjectToPackageLimits(user) || isPackageLimitsExempt(user)) {
+    return null;
+  }
+  const limits = getPackageLimits(user);
+  if (!limits.allowsStorageUpload || limits.maxTotalFiles <= 0) {
+    throw new Error(buildLimitErrorMessage("upload_not_allowed", limits));
+  }
+  if (file.size > limits.maxFileSizeBytes) {
+    throw new Error(buildLimitErrorMessage("file_too_large", limits));
+  }
+  return limits;
 }
 
 /**

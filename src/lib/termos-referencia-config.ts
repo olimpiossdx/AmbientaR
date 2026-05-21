@@ -1,5 +1,5 @@
 /**
- * Configuração da pasta "termos de referencia" e vínculo com estudos (Elaboração de Estudos).
+ * Configuração da pasta "termos de referencia" e vínculo com estudos (Estudos Técnicos).
  *
  * - A pasta base E:\AmbientaR\termos de referencia (ou TERMOS_REFERENCIA_DIR) é carregada como um todo para RAG/indexação.
  * - No primeiro momento apenas dois estudos têm vínculo direto com uma subpasta:

@@ -8,7 +8,7 @@ import {
 import type { AppUser } from "@/lib/types";
 import { fetchEmpreendedorIdsForRepresentative } from "@/lib/representative-empreendedor-ids";
 
-/** IDs de empreendedores ligados ao titular Cliente Gestão (mesma regra da lista de Processos). */
+/** IDs de empreendedores ligados ao titular Cliente Gestão (mesma regra da lista de Licenciamento). */
 export async function fetchEmpreendedorIdsForClientGestao(
   firestore: Firestore,
   user: AppUser,
@@ -40,7 +40,7 @@ export async function fetchEmpreendedorIdsForClientGestao(
   return ids.size > 0 ? Array.from(ids) : ["invalid-placeholder"];
 }
 
-/** Escopo de processos para Cliente Gestão ou Representante (consulta). */
+/** Escopo de trâmites para Cliente Gestão ou Representante (consulta). */
 export async function fetchEmpreendedorIdsForProcessosPortal(
   firestore: Firestore,
   user: AppUser,
