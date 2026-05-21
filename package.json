@@ -28,7 +28,9 @@
     "cap:copy": "npx cap copy",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "prepare": "husky"
+    "prepare": "husky",
+    "copy:pdf-worker": "node scripts/copy-pdf-worker.mjs",
+    "postinstall": "npm run copy:pdf-worker"
   },
   "overrides": {
     "browserslist": "^4.23.0",

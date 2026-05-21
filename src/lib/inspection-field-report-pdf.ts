@@ -11,8 +11,14 @@ import {
   FIELD_INSPECTION_CHECKLIST,
   mergeChecklistWithTemplate,
 } from '@/lib/field-inspection-checklist';
+import { formatProcessoLicenciamentoDisplay } from '@/lib/field-inspection-atos-vinculados';
+import {
+  checklistCriticalityDidParseCell,
+  legacyInconformidadeCriticalityDidParseCell,
+} from '@/lib/inspection-pdf-autotable';
 import {
   appendChecklistSectionEvidences,
+  appendLaudoAttachmentEvidences,
   appendLegacyInconformidadeEvidences,
 } from '@/lib/inspection-pdf-evidences';
 import {
@@ -93,7 +99,7 @@ export async function appendInspectionReportBody(
       ['Coordenadas', lineOrDash(id.coordenadasGeograficas)],
       [
         'Licenças / outorgas / usos',
-        lineOrDash(id.processoLicenciamentoOutorga),
+        lineOrDash(formatProcessoLicenciamentoDisplay(id)),
       ],
       [
         'Motivo da fiscalização',
@@ -193,6 +199,7 @@ export async function appendInspectionReportBody(
           2: { cellWidth: 24 },
           3: { cellWidth: 'auto' },
         },
+        didParseCell: checklistCriticalityDidParseCell,
         willDrawPage: onPdfPage,
       });
       yPos = yAfterAutoTable(doc, yPos);
@@ -222,6 +229,8 @@ export async function appendInspectionReportBody(
       body: tableData,
       theme: 'striped',
       headStyles: { fillColor: TABLE_HEAD_GREEN },
+      styles: { fontSize: 8, cellPadding: 2 },
+      didParseCell: legacyInconformidadeCriticalityDidParseCell,
       willDrawPage: onPdfPage,
     });
     yPos = yAfterAutoTable(doc, yPos);
@@ -248,20 +257,7 @@ export async function appendInspectionReportBody(
 
   const attachments = report.laudoAttachmentUrls?.filter((u) => u?.trim()) ?? [];
   if (attachments.length > 0) {
-    yPos = session.ensureSpace(yPos, 14);
-    doc.setFontSize(12);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Registros e documentos adicionais', MARGIN_X, yPos);
-    yPos += 7;
-    doc.setFontSize(9);
-    doc.setFont('helvetica', 'normal');
-    attachments.forEach((url, index) => {
-      yPos = session.ensureSpace(yPos, 6);
-      const label = `Anexo ${index + 1}: ${url}`;
-      yPos = appendWrappedLines(doc, label, MARGIN_X, yPos, contentWidth, 4.5);
-      yPos += 2;
-    });
-    yPos += 4;
+    yPos = await appendLaudoAttachmentEvidences(doc, session, attachments, yPos);
   }
 
   return yPos;

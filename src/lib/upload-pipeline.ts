@@ -4,6 +4,7 @@ import imageCompression from "browser-image-compression";
 import PizZip from "pizzip";
 import { effectiveMimeType, isPdfLikeFile } from "@/lib/file-mime";
 import { formatBytesHuman } from "@/lib/upload-limits";
+import { loadPdfJsForBrowser } from "@/lib/pdfjs-worker";
 
 export type PrepareFileProgress = (percent: number, message: string) => void;
 
@@ -100,20 +101,12 @@ async function compressImageFile(
   return last;
 }
 
-async function loadPdfJs() {
-  const pdfjs = await import("pdfjs-dist");
-  if (typeof window !== "undefined" && !pdfjs.GlobalWorkerOptions.workerSrc) {
-    pdfjs.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
-  }
-  return pdfjs;
-}
-
 async function compressPdfFile(
   file: File,
   maxBytes: number,
   onProgress?: PrepareFileProgress,
 ): Promise<{ file: File; effectiveDpi?: number; previewUrl?: string }> {
-  const pdfjs = await loadPdfJs();
+  const pdfjs = await loadPdfJsForBrowser();
   const data = new Uint8Array(await file.arrayBuffer());
   report(onProgress, 5, "Lendo PDF…");
   const pdf = await pdfjs.getDocument({ data }).promise;

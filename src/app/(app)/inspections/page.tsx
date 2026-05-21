@@ -35,6 +35,8 @@ import {
   updateDoc,
   getDoc,
 } from "firebase/firestore";
+import { formatProcessoLicenciamentoDisplay } from "@/lib/field-inspection-atos-vinculados";
+import { inconformidadeCriticalityBadgeClass } from "@/lib/status-display-classes";
 import type {
   Inspection,
   Empreendedor,
@@ -269,23 +271,6 @@ export default function InspectionsListPage() {
     ) as Inspection["inconformidades"][0]["criticality"];
   };
 
-  const getCriticalityVariant = (
-    criticality: Inspection["inconformidades"][0]["criticality"],
-  ) => {
-    switch (criticality) {
-      case "Baixa":
-        return "bg-blue-500/20 text-blue-700 border-blue-500/30";
-      case "Média":
-        return "bg-yellow-500/20 text-yellow-700 border-yellow-500/30";
-      case "Alta":
-        return "bg-orange-500/20 text-orange-700 border-orange-500/30";
-      case "Urgente":
-        return "bg-red-500/20 text-red-700 border-red-500/30";
-      default:
-        return "bg-slate-500/20 text-slate-700 border-slate-500/30";
-    }
-  };
-
   return (
     <>
       <div className="flex flex-col h-full">
@@ -341,7 +326,7 @@ export default function InspectionsListPage() {
                                     variant="outline"
                                     className={cn(
                                       "w-fit",
-                                      getCriticalityVariant(
+                                      inconformidadeCriticalityBadgeClass(
                                         highestCriticality,
                                       ),
                                     )}
@@ -656,9 +641,9 @@ export default function InspectionsListPage() {
                     />
                     <DetailItem
                       label="Licenças / outorgas / usos"
-                      value={
-                        viewingItem.identificacao.processoLicenciamentoOutorga
-                      }
+                      value={formatProcessoLicenciamentoDisplay(
+                        viewingItem.identificacao,
+                      )}
                     />
                     <DetailItem
                       label="Motivo da fiscalização"
@@ -706,7 +691,7 @@ export default function InspectionsListPage() {
                                       <Badge
                                         variant="outline"
                                         className={cn(
-                                          getCriticalityVariant(
+                                          inconformidadeCriticalityBadgeClass(
                                             item.criticality,
                                           ),
                                         )}
@@ -778,7 +763,7 @@ export default function InspectionsListPage() {
                         <Badge
                           variant="outline"
                           className={cn(
-                            getCriticalityVariant(item.criticality),
+                            inconformidadeCriticalityBadgeClass(item.criticality),
                           )}
                         >
                           {item.criticality}

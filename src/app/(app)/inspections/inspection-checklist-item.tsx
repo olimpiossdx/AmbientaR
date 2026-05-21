@@ -22,23 +22,13 @@ import {
 
 import { Textarea } from '@/components/ui/textarea';
 
-import {
-
-  Select,
-
-  SelectContent,
-
-  SelectItem,
-
-  SelectTrigger,
-
-  SelectValue,
-
-} from '@/components/ui/select';
-
 import { Button } from '@/components/ui/button';
 
 import { cn } from '@/lib/utils';
+
+import { CriticalitySelect } from '@/components/inspections/criticality-select';
+
+import { inconformidadeCriticalityCardClass } from '@/lib/status-display-classes';
 
 import {
 
@@ -109,6 +99,8 @@ export function InspectionChecklistItem({
 
   const status = form.watch(`checklistResponses.${index}.status`) as ChecklistItemStatus;
 
+  const ncCriticality = form.watch(`checklistResponses.${index}.criticality`);
+
   const showNc = status === 'nao_conforme';
 
 
@@ -177,7 +169,17 @@ export function InspectionChecklistItem({
 
       {showNc ? (
 
-        <div className="space-y-3 rounded-md border border-destructive/20 bg-destructive/5 p-3">
+        <div
+
+          className={cn(
+
+            'space-y-3 rounded-md border p-3 transition-colors',
+
+            inconformidadeCriticalityCardClass(ncCriticality),
+
+          )}
+
+        >
 
           <FormField
 
@@ -191,33 +193,17 @@ export function InspectionChecklistItem({
 
                 <FormLabel>Criticidade</FormLabel>
 
-                <Select onValueChange={field.onChange} value={field.value || 'Média'}>
+                <FormControl>
 
-                  <FormControl>
+                  <CriticalitySelect
 
-                    <SelectTrigger className="h-10">
+                    value={field.value}
 
-                      <SelectValue placeholder="Nível" />
+                    onChange={field.onChange}
 
-                    </SelectTrigger>
+                  />
 
-                  </FormControl>
-
-                  <SelectContent>
-
-                    {['Baixa', 'Média', 'Alta', 'Urgente'].map((level) => (
-
-                      <SelectItem key={level} value={level}>
-
-                        {level}
-
-                      </SelectItem>
-
-                    ))}
-
-                  </SelectContent>
-
-                </Select>
+                </FormControl>
 
                 <FormMessage />
 

@@ -49,51 +49,6 @@ export function formatProjectCoordinates(project: Project | null | undefined): s
   return '';
 }
 
-function summarizeProcesses(
-  licenses: License[],
-  outorgas: WaterPermit[],
-  usos: InsignificantWaterUse[],
-): string {
-  const lines: string[] = [];
-
-  licenses.slice(0, 8).forEach((l) => {
-    const parts = [
-      l.permitType,
-      l.processNumber && `Proc. ${l.processNumber}`,
-      l.permitNumber && `Nº ${l.permitNumber}`,
-      l.licenseNumber && `Lic. ${l.licenseNumber}`,
-      l.status && `(${l.status})`,
-    ].filter(Boolean);
-    if (parts.length) lines.push(`Licença: ${parts.join(' — ')}`);
-  });
-
-  outorgas.slice(0, 6).forEach((o) => {
-    const parts = [
-      o.description,
-      o.processNumber && `Proc. ${o.processNumber}`,
-      o.permitNumber && `Portaria ${o.permitNumber}`,
-      o.status && `(${o.status})`,
-    ].filter(Boolean);
-    if (parts.length) lines.push(`Outorga: ${parts.join(' — ')}`);
-  });
-
-  usos.slice(0, 4).forEach((u) => {
-    const parts = [
-      u.usoType,
-      u.processNumber && `Proc. ${u.processNumber}`,
-      u.permitNumber && `Nº ${u.permitNumber}`,
-      u.status && `(${u.status})`,
-    ].filter(Boolean);
-    if (parts.length) lines.push(`Uso insignificante: ${parts.join(' — ')}`);
-  });
-
-  if (lines.length === 0) return '';
-  if (lines.length > 12) {
-    return `${lines.slice(0, 12).join('\n')}\n(... demais registros no cadastro)`;
-  }
-  return lines.join('\n');
-}
-
 export function buildIdentificacaoFromCadastro(params: {
   empreendedor?: Empreendedor | null;
   project?: Project | null;
@@ -104,22 +59,6 @@ export function buildIdentificacaoFromCadastro(params: {
   const { empreendedor, project } = params;
   const projectId = project?.id;
   const empreendedorId = empreendedor?.id ?? project?.empreendedorId;
-
-  const licenses = (params.licenses ?? []).filter(
-    (l) =>
-      (projectId && l.projectId === projectId) ||
-      (empreendedorId && l.empreendedorId === empreendedorId),
-  );
-  const outorgas = (params.outorgas ?? []).filter(
-    (o) =>
-      (projectId && o.projectId === projectId) ||
-      (empreendedorId && o.empreendedorId === empreendedorId),
-  );
-  const usos = (params.usosInsignificantes ?? []).filter(
-    (u) =>
-      (projectId && u.projectId === projectId) ||
-      (empreendedorId && u.empreendedorId === empreendedorId),
-  );
 
   const enderecoProject = joinAddress([
     project?.address,
@@ -146,7 +85,8 @@ export function buildIdentificacaoFromCadastro(params: {
     atividadePrincipal: project?.activity || '',
     enderecoCompleto: enderecoProject || enderecoEmpreendedor || '',
     coordenadasGeograficas: formatProjectCoordinates(project),
-    processoLicenciamentoOutorga: summarizeProcesses(licenses, outorgas, usos),
+    atosVinculados: [],
+    processoLicenciamentoOutorga: '',
     motivoFiscalizacao: [],
   };
 }
@@ -173,6 +113,9 @@ export function mergeIdentificacaoPreferExisting(
       current.coordenadasGeograficas,
       fromCadastro.coordenadasGeograficas,
     ),
+    atosVinculados: current.atosVinculados?.length
+      ? current.atosVinculados
+      : fromCadastro.atosVinculados ?? [],
     processoLicenciamentoOutorga: pick(
       current.processoLicenciamentoOutorga,
       fromCadastro.processoLicenciamentoOutorga,

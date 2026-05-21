@@ -95,6 +95,9 @@ import { getUploadMaxBytes } from '@/lib/upload-limits';
 import { filterProjectsByEmpreendedorId } from '@/lib/processos-form-order';
 import { InspectionChecklistItem } from './inspection-checklist-item';
 import { InspectionAttachmentList } from './inspection-attachment-list';
+import { AtosVinculadosPicker } from '@/components/inspections/atos-vinculados-picker';
+import { CriticalitySelect } from '@/components/inspections/criticality-select';
+import { inconformidadeCriticalityCardClass } from '@/lib/status-display-classes';
 
 const MAX_LAUDO_ATTACHMENTS = 24;
 const MAX_INCONF_IMAGES = 12;
@@ -116,6 +119,12 @@ function normalizeFirestoreId(raw: unknown): string {
   return '';
 }
 
+const atoVinculadoSchema = z.object({
+  tipo: z.enum(['licenca', 'outorga', 'uso_insignificante']),
+  id: z.string(),
+  rotulo: z.string(),
+});
+
 const identificacaoSchema = z.object({
   razaoSocial: z.string().optional(),
   nomeFantasia: z.string().optional(),
@@ -123,6 +132,7 @@ const identificacaoSchema = z.object({
   atividadePrincipal: z.string().optional(),
   enderecoCompleto: z.string().optional(),
   coordenadasGeograficas: z.string().optional(),
+  atosVinculados: z.array(atoVinculadoSchema).optional(),
   processoLicenciamentoOutorga: z.string().optional(),
   motivoFiscalizacao: z.array(
     z.enum(['Denúncia', 'Rotina', 'Condicionante', 'Auto anterior']),
@@ -172,6 +182,7 @@ const emptyIdentificacao = () => ({
   atividadePrincipal: '',
   enderecoCompleto: '',
   coordenadasGeograficas: '',
+  atosVinculados: [] as InspectionFormValues['identificacao']['atosVinculados'],
   processoLicenciamentoOutorga: '',
   motivoFiscalizacao: [] as FieldInspectionMotivo[],
 });
@@ -359,7 +370,12 @@ export function InspectionForm({ onSuccess, currentItem }: InspectionFormProps) 
       const current = form.getValues('identificacao');
       const merged = onlyEmptyFields
         ? mergeIdentificacaoPreferExisting(current, built)
-        : { ...built, motivoFiscalizacao: current.motivoFiscalizacao ?? [] };
+        : {
+            ...built,
+            motivoFiscalizacao: current.motivoFiscalizacao ?? [],
+            atosVinculados: current.atosVinculados ?? [],
+            processoLicenciamentoOutorga: current.processoLicenciamentoOutorga ?? '',
+          };
       form.setValue('identificacao', merged, { shouldDirty: true });
       toast({
         title: 'Dados do cadastro aplicados',
@@ -380,6 +396,17 @@ export function InspectionForm({ onSuccess, currentItem }: InspectionFormProps) 
       toast,
     ],
   );
+
+  const prevProjectForAtosRef = React.useRef<string | undefined>(undefined);
+  React.useEffect(() => {
+    if (
+      prevProjectForAtosRef.current !== undefined &&
+      prevProjectForAtosRef.current !== selectedProjectId
+    ) {
+      form.setValue('identificacao.atosVinculados', [], { shouldDirty: true });
+    }
+    prevProjectForAtosRef.current = selectedProjectId || undefined;
+  }, [selectedProjectId, form]);
 
   const lastAppliedProjectRef = React.useRef<string | null>(null);
   React.useEffect(() => {
@@ -462,7 +489,7 @@ export function InspectionForm({ onSuccess, currentItem }: InspectionFormProps) 
         setUploadingLaudo(false);
       }
     },
-    [currentItem?.id, toast, uploadToStorage],
+    [currentItem?.id, form, toast, uploadToStorage],
   );
 
   const handleInconformidadeFiles = React.useCallback(
@@ -505,7 +532,7 @@ export function InspectionForm({ onSuccess, currentItem }: InspectionFormProps) 
         setUploadingIncIndex(null);
       }
     },
-    [currentItem?.id, toast, uploadToStorage],
+    [currentItem?.id, form, toast, uploadToStorage],
   );
 
   const handleChecklistFiles = React.useCallback(
@@ -552,7 +579,7 @@ export function InspectionForm({ onSuccess, currentItem }: InspectionFormProps) 
         setUploadingChecklistIndex(null);
       }
     },
-    [currentItem?.id, toast, uploadToStorage],
+    [currentItem?.id, form, toast, uploadToStorage],
   );
 
   const removeLaudoUrl = (idx: number) => {
@@ -858,13 +885,39 @@ export function InspectionForm({ onSuccess, currentItem }: InspectionFormProps) 
                 />
                 <FormField
                   control={form.control}
+                  name="identificacao.atosVinculados"
+                  render={({ field }) => (
+                    <FormItem>
+                      <AtosVinculadosPicker
+                        empreendedorId={selectedEmpreendedorId}
+                        projectId={selectedProjectId}
+                        licenses={allLicenses ?? []}
+                        outorgas={allOutorgas ?? []}
+                        usosInsignificantes={allUsos ?? []}
+                        value={field.value ?? []}
+                        onChange={field.onChange}
+                      />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
                   name="identificacao.processoLicenciamentoOutorga"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Processo de licenciamento / outorga vinculado</FormLabel>
+                      <FormLabel>Observações (licenciamento / outorga / usos)</FormLabel>
                       <FormControl>
-                        <Textarea className="min-h-20 resize-y" {...field} value={field.value ?? ''} />
+                        <Textarea
+                          className="min-h-20 resize-y"
+                          placeholder="Complementos sobre os atos vinculados ou outros processos não listados acima..."
+                          {...field}
+                          value={field.value ?? ''}
+                        />
                       </FormControl>
+                      <FormDescription>
+                        Texto livre. Os atos selecionados no quadro acima são guardados separadamente
+                        e entram no relatório da vistoria.
+                      </FormDescription>
                     </FormItem>
                   )}
                 />
@@ -960,8 +1013,16 @@ export function InspectionForm({ onSuccess, currentItem }: InspectionFormProps) 
                   <PlusCircle className="h-4 w-4 mr-2" />
                   Adicionar registro
                 </Button>
-                {inconformidadeFields.map((field, index) => (
-                  <div key={field.id} className="p-3 border rounded-lg space-y-3 relative">
+                {inconformidadeFields.map((field, index) => {
+                  const incCriticality = form.watch(`inconformidades.${index}.criticality`);
+                  return (
+                  <div
+                    key={field.id}
+                    className={cn(
+                      'p-3 border rounded-lg space-y-3 relative transition-colors',
+                      inconformidadeCriticalityCardClass(incCriticality),
+                    )}
+                  >
                     <Button
                       type="button"
                       variant="destructive"
@@ -990,20 +1051,12 @@ export function InspectionForm({ onSuccess, currentItem }: InspectionFormProps) 
                       render={({ field: f }) => (
                         <FormItem>
                           <FormLabel>Criticidade</FormLabel>
-                          <Select onValueChange={f.onChange} value={f.value}>
-                            <FormControl>
-                              <SelectTrigger className="min-h-10">
-                                <SelectValue />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {['Baixa', 'Média', 'Alta', 'Urgente'].map((l) => (
-                                <SelectItem key={l} value={l}>
-                                  {l}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                          <FormControl>
+                            <CriticalitySelect
+                              value={f.value}
+                              onChange={f.onChange}
+                            />
+                          </FormControl>
                         </FormItem>
                       )}
                     />
@@ -1037,7 +1090,8 @@ export function InspectionForm({ onSuccess, currentItem }: InspectionFormProps) 
                       )}
                     />
                   </div>
-                ))}
+                  );
+                })}
               </AccordionContent>
             </AccordionItem>
 

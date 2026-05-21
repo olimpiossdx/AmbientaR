@@ -7,9 +7,9 @@ export function isImageAttachmentUrl(url: string | undefined | null): boolean {
   try {
     const u = new URL(url);
     const haystack = decodeURIComponent(u.pathname + u.search);
-    return /\.(jpg|jpeg|png|webp|gif)(\?|&|#|$)/i.test(haystack);
+    return /\.(jpe?g|png|webp|gif|heic|heif|bmp)(\?|&|#|$)/i.test(haystack);
   } catch {
-    return /\.(jpg|jpeg|png|webp|gif)(\?|#|$)/i.test(url);
+    return /\.(jpe?g|png|webp|gif|heic|heif|bmp)(\?|#|$)/i.test(url);
   }
 }
 

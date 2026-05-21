@@ -1675,6 +1675,16 @@ export type FieldInspectionMotivo =
     | 'Condicionante'
     | 'Auto anterior';
 
+export type FieldInspectionAtoVinculadoTipo = 'licenca' | 'outorga' | 'uso_insignificante';
+
+/** Ato autorizativo (licença, outorga ou uso insignificante) vinculado à vistoria. */
+export type FieldInspectionAtoVinculado = {
+    tipo: FieldInspectionAtoVinculadoTipo;
+    id: string;
+    /** Rótulo para exibição/PDF (snapshot na data da vistoria). */
+    rotulo: string;
+};
+
 export type FieldInspectionIdentificacao = {
     razaoSocial?: string;
     nomeFantasia?: string;
@@ -1682,6 +1692,9 @@ export type FieldInspectionIdentificacao = {
     atividadePrincipal?: string;
     enderecoCompleto?: string;
     coordenadasGeograficas?: string;
+    /** Atos selecionados no formulário (licenças, outorgas, usos insignificantes). */
+    atosVinculados?: FieldInspectionAtoVinculado[];
+    /** Observações complementares (texto livre). */
     processoLicenciamentoOutorga?: string;
     motivoFiscalizacao?: FieldInspectionMotivo[];
 };
