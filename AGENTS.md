@@ -13,6 +13,7 @@ AmbientaR (EcoGestão MG) é uma aplicação Next.js (PWA) de gestão ambiental 
 - **Dev:** `npm run dev` — porta **9002** (0.0.0.0)
 - **Dev (mais rápido, ideal para teste no celular):** `npm run dev:turbo` — mesma porta, compilação bem mais rápida
 - **Build:** `npm run build` — erros de TypeScript/ESLint são ignorados no build (`next.config.mjs`)
+- **Deploy Firebase App Hosting:** antes de push/rollout, correr `npm run apphosting:check` (lint + typecheck no build, como na nuvem). O adaptador App Hosting corre ESLint mesmo quando o build local ignora.
 - **Lint:** `npm run lint`
 - **Typecheck:** `npm run typecheck`
 - **Genkit (IA):** `npm run genkit:dev` (opcional; requer `GOOGLE_GENAI_API_KEY`)

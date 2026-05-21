@@ -19,7 +19,7 @@ import type { Control } from 'react-hook-form';
 import { EXPENSE_CATEGORIES } from '@/lib/financial-core';
 import type { Fornecedor } from '@/lib/types';
 
-type ExtraFieldsForm = {
+export type TransactionExtraFieldsForm = {
   category?: string;
   supplierId?: string;
   requestId?: string;
@@ -29,8 +29,7 @@ type ExtraFieldsForm = {
 };
 
 interface TransactionExtraFieldsProps {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  control: Control<any>;
+  control: Control<TransactionExtraFieldsForm>;
   transactionType: 'revenue' | 'expense';
   suppliers?: Fornecedor[];
   isLoadingSuppliers?: boolean;
