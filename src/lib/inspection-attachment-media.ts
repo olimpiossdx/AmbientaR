@@ -35,8 +35,10 @@ export const INSPECTION_EVIDENCE_H_MM = 105;
 export const PDF_REPORT_MAX_BYTES = 15 * 1024 * 1024;
 /** Máximo de páginas incorporadas por anexo PDF no relatório. */
 export const PDF_REPORT_MAX_PAGES_EMBED = 10;
-/** Largura alvo em px ao rasterizar PDF (≈ folha A4 em tamanho real no laudo). */
-export const PDF_REPORT_RENDER_TARGET_PX = 2400;
+/** Largura alvo em px ao rasterizar PDF (≈ A4 legível no laudo; ~2× a miniatura anterior). */
+export const PDF_REPORT_RENDER_TARGET_PX = 2000;
+/** Limite de aresta ao embutir no jsPDF (evita falha silenciosa do addImage). */
+const PDF_REPORT_JPEG_MAX_EDGE_PX = 2200;
 /** Redimensiona fotos antes do PDF (caixa 10×15 cm no laudo). */
 const PHOTO_PDF_MAX_EDGE_PX = 1400;
 
@@ -130,7 +132,7 @@ async function blobToPhotoDataUrlForPdf(blob: Blob): Promise<string | null> {
 
 export type InspectionPdfPageImage = {
   dataUrl: string;
-  format: 'JPEG';
+  format: 'JPEG' | 'PNG';
   pageNumber: number;
   totalPages: number;
   /** true se o PDF original tem mais páginas do que as incorporadas. */
@@ -164,7 +166,7 @@ export async function renderPdfPagesFromBlob(
     console.warn('[inspection-pdf] PDF excede limite de tamanho para o laudo');
     return null;
   }
-  const targetWidths = [PDF_REPORT_RENDER_TARGET_PX, 1600, 1200];
+  const targetWidths = [PDF_REPORT_RENDER_TARGET_PX, 1600, 1200, 900];
   try {
     const pdfjs = await loadPdfJsForBrowser();
     const data = new Uint8Array(await blob.arrayBuffer());
@@ -186,9 +188,14 @@ export async function renderPdfPagesFromBlob(
         }
       }
       if (!dataUrl) continue;
+      const sized = await resizeDataUrlForPdf(dataUrl, PDF_REPORT_JPEG_MAX_EDGE_PX);
+      const embedUrl = sized.startsWith('data:image') ? sized : dataUrl;
+      const format: 'JPEG' | 'PNG' = embedUrl.startsWith('data:image/png')
+        ? 'PNG'
+        : 'JPEG';
       pages.push({
-        dataUrl,
-        format: 'JPEG',
+        dataUrl: embedUrl,
+        format,
         pageNumber: pageNum,
         totalPages,
         truncated: pageNum === pagesToRender && truncated ? true : undefined,
@@ -285,7 +292,8 @@ export async function resolveInspectionEvidenceForPdf(
 ): Promise<InspectionEvidencePdfImage | 'pdf_reference' | null> {
   const resolved = await resolveInspectionAttachmentForReport(url);
   if (resolved.kind === 'pages') {
-    return { dataUrl: resolved.pages[0].dataUrl, format: 'JPEG' };
+    const first = resolved.pages[0];
+    return { dataUrl: first.dataUrl, format: first.format };
   }
   if (resolved.kind === 'image') {
     return { dataUrl: resolved.dataUrl, format: resolved.format };

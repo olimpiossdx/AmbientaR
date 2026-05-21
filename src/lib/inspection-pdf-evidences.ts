@@ -10,6 +10,7 @@ import {
   resolveInspectionAttachmentForReport,
   type InspectionPdfPageImage,
 } from '@/lib/inspection-attachment-media';
+import { resizeDataUrlForPdf } from '@/lib/branding-pdf';
 import type { MmBrandedPdfSession } from '@/lib/pdf-branding-layout';
 import {
   drawWatermarkOnPage,
@@ -159,6 +160,7 @@ async function drawPdfPageInReport(
   y: number,
   caption: string,
   dataUrl: string,
+  format: 'JPEG' | 'PNG',
   sourceUrl: string,
 ): Promise<number> {
   const contentW = reportContentWidthMm(doc);
@@ -190,11 +192,23 @@ async function drawPdfPageInReport(
 
   cy = session.ensureSpace(cy, h + 8);
 
+  const tryDraw = (url: string, fmt: 'JPEG' | 'PNG') => {
+    doc.addImage(url, fmt, MARGIN_X, cy, w, h, undefined, 'MEDIUM');
+  };
   try {
-    doc.addImage(dataUrl, 'JPEG', MARGIN_X, cy, w, h, undefined, 'MEDIUM');
+    tryDraw(dataUrl, format);
   } catch (e) {
-    console.warn('[inspection-pdf] página PDF não desenhada:', e);
-    return drawPdfReferenceCard(doc, session, cy, caption, sourceUrl);
+    console.warn('[inspection-pdf] página PDF não desenhada, tentando menor:', e);
+    try {
+      const smaller = await resizeDataUrlForPdf(dataUrl, 1400);
+      const fmt: 'JPEG' | 'PNG' = smaller.startsWith('data:image/png')
+        ? 'PNG'
+        : format;
+      tryDraw(smaller, fmt);
+    } catch (e2) {
+      console.warn('[inspection-pdf] fallback referência:', e2);
+      return drawPdfReferenceCard(doc, session, cy, caption, sourceUrl);
+    }
   }
 
   return cy + h + BLOCK_GAP_MM;
@@ -230,6 +244,7 @@ async function drawResolvedAttachment(
         cy,
         cap,
         page.dataUrl,
+        page.format,
         url,
       );
     }
