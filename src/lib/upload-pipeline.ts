@@ -30,6 +30,8 @@ const IMAGE_MIME = new Set([
   "image/png",
   "image/webp",
   "image/gif",
+  "image/heic",
+  "image/heif",
 ]);
 
 const OFFICE_EXT = /\.(docx|xlsx|xls|doc)$/i;
@@ -55,7 +57,7 @@ function fileFromBlob(blob: Blob, name: string, type: string): File {
 export function isImageUploadFile(file: File): boolean {
   const mime = effectiveMimeType(file);
   if (IMAGE_MIME.has(mime)) return true;
-  return /\.(jpe?g|png|webp|gif)$/i.test(file.name);
+  return /\.(jpe?g|png|webp|gif|heic|heif)$/i.test(file.name);
 }
 
 export function isOfficeZipUploadFile(file: File): boolean {

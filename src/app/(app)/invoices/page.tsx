@@ -36,13 +36,13 @@ import {
   getDocs,
 } from "firebase/firestore";
 import * as React from "react";
+import { downloadJsPdf } from "@/lib/branding-pdf";
 import {
-  downloadJsPdf,
-  fetchBrandingImagesForPdf,
-  brandingPdfMissingSlots,
-  getImageDimensions,
-  calcPdfImageSize,
-} from "@/lib/branding-pdf";
+  brandingUrlsFromLocal,
+  createMmBrandedPdfSession,
+  guardBrandingPdfExport,
+  reportBrandingPdfIssues,
+} from "@/lib/pdf-branding-layout";
 import { useLocalBranding } from "@/hooks/use-local-branding";
 import type { Invoice, Client, CompanySettings, Contract } from "@/lib/types";
 import { useSyncOverdueInvoices } from "@/hooks/use-sync-overdue-invoices";
@@ -72,7 +72,6 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { isClientePortalRole } from "@/lib/role-guards";
 import { FirestorePermissionError } from "@/firebase/errors";
-import type jsPDF from "jspdf";
 import { logUserAction } from "@/lib/audit-log";
 import { InvoiceForm } from "./invoice-form";
 import {
@@ -124,24 +123,6 @@ function documentVariants(
 }
 
 type PeriodType = "day" | "month" | "year";
-
-/** Adiciona numeração de páginas no rodapé no formato página/total. */
-function addPageNumbers(doc: jsPDF, bottomMarginMm: number = 10) {
-  const pageCount = doc.getNumberOfPages();
-  for (let i = 1; i <= pageCount; i++) {
-    doc.setPage(i);
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const pageHeight = doc.internal.pageSize.getHeight();
-    doc.setFontSize(8);
-    doc.setFont("helvetica", "normal");
-    doc.text(
-      `${i}/${pageCount}`,
-      pageWidth - bottomMarginMm,
-      pageHeight - bottomMarginMm,
-      { align: "right" },
-    );
-  }
-}
 
 function isInvoiceInPeriod(
   invoice: Invoice,
@@ -368,8 +349,13 @@ export default function InvoicesPage() {
     [contracts],
   );
 
-  const { data: brandingData, isLoading: isLoadingBranding } =
-    useLocalBranding();
+  const {
+    data: brandingData,
+    isLoading: isLoadingBranding,
+    pdfImages,
+    isPdfImagesLoading,
+    hasBrandingUrls,
+  } = useLocalBranding();
 
   const isLoading =
     isLoadingInvoices ||
@@ -537,66 +523,35 @@ export default function InvoicesPage() {
 
   const handleExportPdf = async (invoice: Invoice) => {
     if (exportingPdfKey) return;
-    const { default: jsPDF } = await import("jspdf");
     setExportingPdfKey(`invoice-${invoice.id}`);
     try {
+    if (!guardBrandingPdfExport({ isPdfImagesLoading, hasBrandingUrls, toast })) return;
     const client = clientsMap.get(invoice.clientId);
     const contract = invoice.contractId
       ? contractsMap.get(invoice.contractId)
       : null;
-    const doc = new jsPDF({ unit: "mm", format: "a4" });
 
-    const brandingUrls = {
-      headerImageUrl: brandingData?.headerImageUrl,
-      footerImageUrl: brandingData?.footerImageUrl,
-      watermarkImageUrl: brandingData?.watermarkImageUrl,
-    };
-    const brandingLoaded = await fetchBrandingImagesForPdf(brandingUrls);
-    const { headerBase64, footerBase64, watermarkBase64 } = brandingLoaded;
-    const missingBranding = brandingPdfMissingSlots(brandingUrls, brandingLoaded);
-    if (missingBranding.length > 0) {
+    const invoiceMargins = { left: 15, right: 15, top: 15, bottom: 25 };
+    const brandingUrls = brandingUrlsFromLocal(brandingData);
+    const session = await createMmBrandedPdfSession(brandingUrls, invoiceMargins, pdfImages);
+    reportBrandingPdfIssues(brandingUrls, session.branding.images, (payload) =>
       toast({
-        variant: "destructive",
-        title: "Identidade visual incompleta no PDF",
-        description: `Não foi possível carregar: ${missingBranding.join(", ")}. Confira Configurações → Identidade visual e publique as regras do Storage (npm run deploy:storage).`,
-      });
-    }
-
-    const pageHeight = doc.internal.pageSize.getHeight();
+        ...payload,
+        description: payload.description
+          ? `${payload.description} Confira Configurações → Identidade visual e publique as regras do Storage (npm run deploy:storage).`
+          : undefined,
+      }),
+    );
+    const { doc, margins } = session;
     const pageWidth = doc.internal.pageSize.getWidth();
-    const margins = { top: 15, bottom: 25, left: 15, right: 15 };
-    const contentWidth = pageWidth - margins.left - margins.right;
-
-    // Header
-    let headerH = 0;
-    if (headerBase64) {
-      const dims = await getImageDimensions(headerBase64);
-      const { w, h } = calcPdfImageSize(dims, contentWidth, 30);
-      doc.addImage(headerBase64, "PNG", margins.left, 10, w, h);
-      headerH = h;
-    }
-
-    // Watermark
-    if (watermarkBase64) {
-      const imgProps = doc.getImageProperties(watermarkBase64);
-      const aspectRatio = imgProps.width / imgProps.height;
-      const watermarkWidth = 100;
-      const watermarkHeight = watermarkWidth / aspectRatio;
-      const x = (pageWidth - watermarkWidth) / 2;
-      const y = (pageHeight - watermarkHeight) / 2;
-      doc.addImage(
-        watermarkBase64,
-        "PNG",
-        x,
-        y,
-        watermarkWidth,
-        watermarkHeight,
-        undefined,
-        "FAST",
-      );
-    }
-
-    let yPos = headerBase64 ? 10 + headerH + 5 : 20;
+    const contentWidth = session.contentWidth;
+    const innerPad = 5;
+    const lineH = 5;
+    const priceColW = 38;
+    const descMaxW = contentWidth - priceColW - innerPad * 2 - 4;
+    const priceX = margins.left + contentWidth - innerPad;
+    const descX = margins.left + innerPad;
+    let yPos = session.startY;
 
     doc.setFontSize(18);
     doc.setFont("helvetica", "bold");
@@ -613,25 +568,36 @@ export default function InvoicesPage() {
     doc.setFont("helvetica", "bold");
     doc.text(
       `Data de Vencimento: ${new Date(invoice.dueDate).toLocaleDateString("pt-BR")}`,
-      margins.left + 5,
+      descX,
       yPos + 8,
     );
     doc.setFont("helvetica", "normal");
-    doc.text(`Data de Emissão:`, margins.left + contentWidth - 60, yPos + 8);
+    const emissaoLabel = "Data de Emissão:";
+    const emissaoDate = new Date(invoice.invoiceDate).toLocaleDateString("pt-BR");
     doc.text(
-      `${new Date(invoice.invoiceDate).toLocaleDateString("pt-BR")}`,
-      margins.left + contentWidth - 5,
+      `${emissaoLabel} ${emissaoDate}`,
+      priceX,
       yPos + 8,
-      { align: "right" },
+      { align: "right", maxWidth: contentWidth * 0.45 },
     );
     doc.setLineWidth(0.2);
     yPos += 15 + 2;
 
     // Client Data Box
-    let clientBoxHeight = 15;
-    if (client?.address) clientBoxHeight += 5;
-    if (client?.phone || client?.email) clientBoxHeight += 5;
-    if (client?.cpfCnpj) clientBoxHeight += 5;
+    const clientInnerW = contentWidth - innerPad * 2;
+    const clientLines: string[] = [];
+    if (client) {
+      clientLines.push(client.name);
+      clientLines.push(`Doc: ${client.cpfCnpj || "Não informado"}`);
+      clientLines.push(
+        `Contato: ${client.phone || ""} | ${client.email || ""}`,
+      );
+      const addressString = `${client.address || ""}, ${client.numero || "s/n"} - ${client.bairro || ""}. ${client.municipio || ""}/${client.uf || ""} - CEP: ${client.cep || ""}`;
+      clientLines.push(
+        ...doc.splitTextToSize(`Endereço: ${addressString}`, clientInnerW),
+      );
+    }
+    const clientBoxHeight = 12 + clientLines.length * lineH + 4;
     doc.roundedRect(
       margins.left,
       yPos,
@@ -643,41 +609,44 @@ export default function InvoicesPage() {
     );
     doc.setFont("helvetica", "bold");
     doc.setFontSize(12);
-    doc.text("Cliente:", margins.left + 5, yPos + 8);
+    doc.text("Cliente:", descX, yPos + 8);
     doc.setFont("helvetica", "normal");
     doc.setFontSize(10);
-    let clientY = yPos + 15;
-    if (client) {
-      doc.text(client.name, margins.left + 5, clientY);
-      clientY += 5;
-      doc.text(
-        `Doc: ${client.cpfCnpj || "Não informado"}`,
-        margins.left + 5,
-        clientY,
-      );
-      clientY += 5;
-      doc.text(
-        `Contato: ${client.phone || ""} | ${client.email || ""}`,
-        margins.left + 5,
-        clientY,
-      );
-      clientY += 5;
-      const addressString = `${client.address || ""}, ${client.numero || "s/n"} - ${client.bairro || ""}. ${client.municipio || ""}/${client.uf || ""} - CEP: ${client.cep || ""}`;
-      doc.text(`Endereço: ${addressString}`, margins.left + 5, clientY);
-    }
+    let clientY = yPos + 14;
+    clientLines.forEach((line) => {
+      doc.text(line, descX, clientY, { maxWidth: clientInnerW });
+      clientY += lineH;
+    });
     yPos += clientBoxHeight + 2;
 
-    // Items Box
-    let itemsBoxHeight = 15; // min height
+    // Items Box — altura dinâmica e coluna de preço à direita
+    type ItemRow = { descLines: string[]; price: string };
+    const itemRows: ItemRow[] = [];
     if (
       contract &&
       contract.objeto?.itens &&
       contract.objeto.itens.length > 0
     ) {
-      itemsBoxHeight += contract.objeto.itens.length * 6 + 5;
+      contract.objeto.itens.forEach((item) => {
+        itemRows.push({
+          descLines: doc.splitTextToSize(item.descricao, descMaxW),
+          price: formatCurrency(item.valor),
+        });
+      });
     } else {
-      itemsBoxHeight += 10;
+      itemRows.push({
+        descLines: doc.splitTextToSize(
+          `Serviços referentes à fatura ${invoice.invoiceNumber}`,
+          descMaxW,
+        ),
+        price: "",
+      });
     }
+    let itemsBodyH = 0;
+    itemRows.forEach((row) => {
+      itemsBodyH += Math.max(row.descLines.length * lineH, lineH) + 3;
+    });
+    const itemsBoxHeight = 12 + itemsBodyH + 4;
     doc.roundedRect(
       margins.left,
       yPos,
@@ -689,40 +658,22 @@ export default function InvoicesPage() {
     );
     doc.setFontSize(12);
     doc.setFont("helvetica", "bold");
-    doc.text("Descrição dos Serviços:", margins.left + 5, yPos + 8);
-    let itemsY = yPos + 15;
+    doc.text("Descrição dos Serviços:", descX, yPos + 8);
+    let itemsY = yPos + 14;
     doc.setFontSize(10);
     doc.setFont("helvetica", "normal");
-
-    if (
-      contract &&
-      contract.objeto?.itens &&
-      contract.objeto.itens.length > 0
-    ) {
-      contract.objeto.itens.forEach((item) => {
-        const splitDescription = doc.splitTextToSize(item.descricao, 130);
-        doc.text(splitDescription, margins.left + 7, itemsY, {
-          align: "justify",
-        });
-        doc.text(
-          formatCurrency(item.valor),
-          margins.left + contentWidth - 7,
-          itemsY,
-          { align: "right" },
-        );
-        itemsY += splitDescription.length * 5 + 4;
-      });
-    } else {
-      doc.text(
-        `Serviços referentes à fatura ${invoice.invoiceNumber}`,
-        margins.left + 7,
-        itemsY,
-      );
-    }
+    itemRows.forEach((row) => {
+      const rowH = Math.max(row.descLines.length * lineH, lineH);
+      doc.text(row.descLines, descX, itemsY, { maxWidth: descMaxW });
+      if (row.price) {
+        doc.text(row.price, priceX, itemsY, { align: "right" });
+      }
+      itemsY += rowH + 3;
+    });
     yPos += itemsBoxHeight + 2;
 
     // Total Box
-    const totalBoxHeight = 20;
+    const totalBoxHeight = 22;
     doc.roundedRect(
       margins.left,
       yPos,
@@ -736,32 +687,17 @@ export default function InvoicesPage() {
     doc.setFontSize(10);
     doc.setFont("helvetica", "normal");
     const statusText = `Status: ${invoice.status === "Paid" ? "Paga" : invoice.status === "Unpaid" ? "Pendente" : "Atrasada"}`;
-    doc.text(statusText, margins.left + 5, yPos + 8);
+    doc.text(statusText, descX, yPos + 8, { maxWidth: descMaxW });
 
-    doc.setFontSize(14);
+    doc.setFontSize(11);
     doc.setFont("helvetica", "bold");
-    const valorTotalText = "Valor Total:";
-    doc.text(valorTotalText, margins.left + contentWidth - 60, yPos + 8);
-    doc.text(
-      formatCurrency(invoice.amount),
-      margins.left + contentWidth - 5,
-      yPos + 8,
-      { align: "right" },
-    );
+    doc.text("Valor Total", priceX, yPos + 8, { align: "right" });
+    doc.setFontSize(14);
+    doc.text(formatCurrency(invoice.amount), priceX, yPos + 15, {
+      align: "right",
+    });
 
-    // Footer
-    if (footerBase64) {
-      const fDims = await getImageDimensions(footerBase64);
-      const { w: fw, h: fh } = calcPdfImageSize(fDims, pageWidth - 20, 20);
-      const totalPages = doc.getNumberOfPages();
-      for (let i = 1; i <= totalPages; i++) {
-        doc.setPage(i);
-        doc.addImage(footerBase64, "PNG", 10, pageHeight - fh - 5, fw, fh);
-      }
-    }
-
-    // Numeração de páginas alinhada à direita no rodapé.
-    addPageNumbers(doc, 10);
+    session.finalize();
     downloadJsPdf(doc, `fatura_${invoice.invoiceNumber}.pdf`);
     } finally {
       setExportingPdfKey(null);
@@ -776,53 +712,15 @@ export default function InvoicesPage() {
 
   const handleExportPdfByPeriod = async () => {
     if (exportingPdfKey) return;
-    const { default: jsPDF } = await import("jspdf");
     setExportingPdfKey("period");
     try {
-    const brandingUrlsPeriod = {
-      headerImageUrl: brandingData?.headerImageUrl,
-      footerImageUrl: brandingData?.footerImageUrl,
-      watermarkImageUrl: brandingData?.watermarkImageUrl,
-    };
-    const brandingLoadedPeriod = await fetchBrandingImagesForPdf(brandingUrlsPeriod);
-    const { headerBase64, footerBase64, watermarkBase64 } = brandingLoadedPeriod;
-    const missingPeriod = brandingPdfMissingSlots(brandingUrlsPeriod, brandingLoadedPeriod);
-    if (missingPeriod.length > 0) {
-      toast({
-        variant: "destructive",
-        title: "Identidade visual incompleta no PDF",
-        description: `Não foi possível carregar: ${missingPeriod.join(", ")}.`,
-      });
-    }
-
-    const doc = new jsPDF({ unit: "mm", format: "a4" });
+    if (!guardBrandingPdfExport({ isPdfImagesLoading, hasBrandingUrls, toast })) return;
+    const brandingUrlsPeriod = brandingUrlsFromLocal(brandingData);
+    const session = await createMmBrandedPdfSession(brandingUrlsPeriod, undefined, pdfImages);
+    reportBrandingPdfIssues(brandingUrlsPeriod, session.branding.images, toast);
+    const { doc, margins } = session;
     const pageWidth = doc.internal.pageSize.getWidth();
-    const pageHeight = doc.internal.pageSize.getHeight();
-    const margin = 15;
-    const contentWidth = pageWidth - margin * 2;
-    let y = 20;
-    if (headerBase64) {
-      const dims = await getImageDimensions(headerBase64);
-      const { w, h } = calcPdfImageSize(dims, contentWidth, 30);
-      doc.addImage(headerBase64, "PNG", margin, 10, w, h);
-      y = 10 + h + 5;
-    }
-    if (watermarkBase64) {
-      const imgProps = doc.getImageProperties(watermarkBase64);
-      const aspectRatio = imgProps.width / imgProps.height;
-      const w = 100;
-      const h = w / aspectRatio;
-      doc.addImage(
-        watermarkBase64,
-        "PNG",
-        (pageWidth - w) / 2,
-        (pageHeight - h) / 2,
-        w,
-        h,
-        undefined,
-        "FAST",
-      );
-    }
+    let y = session.startY;
     doc.setFontSize(14);
     doc.setFont("helvetica", "bold");
     doc.text("Relatório de Faturas por Período", pageWidth / 2, y, {
@@ -848,7 +746,7 @@ export default function InvoicesPage() {
     const colWidths = [25, 50, 25, 35, 30];
     doc.setFont("helvetica", "bold");
     doc.setFontSize(9);
-    let x = margin;
+    let x = margins.left;
     cols.forEach((c, i) => {
       doc.text(c, x, y);
       x += colWidths[i];
@@ -856,11 +754,8 @@ export default function InvoicesPage() {
     y += 7;
     doc.setFont("helvetica", "normal");
     invoicesInPeriod.forEach((inv) => {
-      if (y > 270) {
-        doc.addPage();
-        y = 20;
-      }
-      x = margin;
+      y = session.ensureSpace(y, 6);
+      x = margins.left;
       const clientName = (clientsMap.get(inv.clientId)?.name || "").slice(
         0,
         22,
@@ -887,21 +782,11 @@ export default function InvoicesPage() {
     const total = invoicesInPeriod.reduce((s, i) => s + i.amount, 0);
     doc.text(
       `Total: ${formatCurrency(total)} (${invoicesInPeriod.length} fatura(s))`,
-      margin,
+      margins.left,
       y,
     );
 
-    if (footerBase64) {
-      const fDims = await getImageDimensions(footerBase64);
-      const { w: fw, h: fh } = calcPdfImageSize(fDims, pageWidth - 20, 20);
-      const totalPages = doc.getNumberOfPages();
-      for (let i = 1; i <= totalPages; i++) {
-        doc.setPage(i);
-        doc.addImage(footerBase64, "PNG", 10, pageHeight - fh - 5, fw, fh);
-      }
-    }
-    // Numeração de páginas alinhada à direita no rodapé.
-    addPageNumbers(doc, 10);
+    session.finalize();
     downloadJsPdf(doc, `faturas_periodo_${periodLabel.replace(/-/g, "")}.pdf`);
     toast({
       title: "PDF exportado",

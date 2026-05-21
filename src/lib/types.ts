@@ -1669,6 +1669,39 @@ export type Inconformidade = {
     imageUrls?: string[];
 };
 
+export type FieldInspectionMotivo =
+    | 'Denúncia'
+    | 'Rotina'
+    | 'Condicionante'
+    | 'Auto anterior';
+
+export type FieldInspectionIdentificacao = {
+    razaoSocial?: string;
+    nomeFantasia?: string;
+    cnpjCpf?: string;
+    atividadePrincipal?: string;
+    enderecoCompleto?: string;
+    coordenadasGeograficas?: string;
+    processoLicenciamentoOutorga?: string;
+    motivoFiscalizacao?: FieldInspectionMotivo[];
+};
+
+export type FieldInspectionChecklistStatus =
+    | 'conforme'
+    | 'nao_conforme'
+    | 'nao_aplicavel'
+    | 'nao_verificado';
+
+export type FieldInspectionChecklistResponse = {
+    sectionId: string;
+    itemId: string;
+    label: string;
+    status: FieldInspectionChecklistStatus;
+    criticality?: Inconformidade['criticality'];
+    observations?: string;
+    imageUrls?: string[];
+};
+
 export type Inspection = {
     id: string;
     empreendedorId: string;
@@ -1677,6 +1710,12 @@ export type Inspection = {
     inspectorId: string;
     inspectorName: string;
     inconformidades: Inconformidade[];
+    /** Seção 1 — identificação do empreendimento (snapshot na data da vistoria). */
+    identificacao?: FieldInspectionIdentificacao;
+    /** Seções 2–7 — checklist de fiscalização. */
+    checklistResponses?: FieldInspectionChecklistResponse[];
+    /** Seção 8 — observações gerais da equipe. */
+    teamObservations?: string;
     /** Documentos extra opcionais (mapas, ofícios, PDFs gerais) — além dos anexos por inconformidade. */
     laudoAttachmentUrls?: string[];
     createdAt: any;
@@ -1884,18 +1923,28 @@ export type SupplierContract = {
     endereco?: string;
   };
   objeto: {
+    empreendimento?: string;
+    municipio?: string;
+    uf?: string;
     servicos: string;
     observacoes?: string;
+    itens?: { descricao: string; valor: number }[];
   };
   pagamento: {
     valorTotal: number;
+    valorExtenso: string;
     forma: string;
+    banco?: string;
+    agencia?: string;
+    conta?: string;
+    pix?: string;
   };
   foro: {
     comarca: string;
     uf: string;
   };
   dataContrato: string;
+  contractPdfUrl?: string;
   fileUrl?: string;
 };
 

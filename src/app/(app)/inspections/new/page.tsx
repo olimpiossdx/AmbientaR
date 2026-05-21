@@ -18,7 +18,7 @@ export default function NewInspectionPage() {
         <div className="flex flex-col h-full">
             <PageHeader title="Nova Vistoria" />
             <main className="flex-1 overflow-auto p-4 md:p-6">
-                <div className="max-w-2xl mx-auto">
+                <div className="max-w-4xl mx-auto w-full">
                     <Card>
                     <CardHeader>
                         <CardTitle>Registrar Nova Vistoria</CardTitle>

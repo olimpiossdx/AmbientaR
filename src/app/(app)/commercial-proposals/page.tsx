@@ -461,6 +461,7 @@ export default function CommercialProposalsPage() {
         client,
         companyProfile,
         branding: brandingData,
+        onBrandingIssue: toast,
       });
 
       toast({

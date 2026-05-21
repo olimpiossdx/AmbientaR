@@ -2,11 +2,16 @@
 
 import * as React from "react";
 import { z } from "zod";
-import { useForm } from "react-hook-form";
+import { useForm, useFieldArray, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { collection, doc, addDoc, updateDoc, getDocs } from "firebase/firestore";
 import { useCollection, useDoc, useFirebase, useMemoFirebase } from "@/firebase";
-import type { SupplierContract, Fornecedor, EnvironmentalCompany } from "@/lib/types";
+import type {
+  SupplierContract,
+  Fornecedor,
+  EnvironmentalCompany,
+  Service,
+} from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import {
@@ -27,12 +32,31 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  Dialog,
+  DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Loader2 } from "lucide-react";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Loader2, List, PlusCircle, Trash2 } from "lucide-react";
+import { numberToWordsBRL } from "@/lib/utils";
 
 const formSchema = z.object({
   prestador: z.object({
@@ -45,12 +69,28 @@ const formSchema = z.object({
     endereco: z.string().optional(),
   }),
   objeto: z.object({
-    servicos: z.string().min(1, "Descreva os serviços contratados."),
+    empreendimento: z.string().optional(),
+    municipio: z.string().optional(),
+    uf: z.string().optional(),
+    servicos: z.string().min(1, "A descrição geral dos serviços é obrigatória."),
     observacoes: z.string().optional(),
+    itens: z
+      .array(
+        z.object({
+          descricao: z.string().min(1, "Informe a descrição do item."),
+          valor: z.coerce.number().min(0, "Valor inválido."),
+        }),
+      )
+      .min(1, "Adicione ao menos um serviço."),
   }),
   pagamento: z.object({
     valorTotal: z.coerce.number().positive("Informe um valor maior que zero."),
+    valorExtenso: z.string().min(1, "Valor por extenso é obrigatório."),
     forma: z.string().min(1, "Selecione a forma de pagamento."),
+    banco: z.string().optional(),
+    agencia: z.string().optional(),
+    conta: z.string().optional(),
+    pix: z.string().optional(),
   }),
   foro: z.object({
     comarca: z.string().min(1, "Informe a comarca."),
@@ -77,6 +117,54 @@ const paymentMethods = [
   "Debito",
 ];
 
+const formatCurrencyBRL = (value: number) => {
+  if (Number.isNaN(value)) value = 0;
+  return new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  }).format(value);
+};
+
+const CurrencyInput = React.forwardRef<
+  HTMLInputElement,
+  Omit<React.InputHTMLAttributes<HTMLInputElement>, "onChange"> & {
+    onChange: (value: number) => void;
+    value: number;
+  }
+>(({ value, onChange, ...props }, ref) => {
+  const [displayValue, setDisplayValue] = React.useState(
+    formatCurrencyBRL(value || 0),
+  );
+
+  React.useEffect(() => {
+    setDisplayValue(formatCurrencyBRL(value || 0));
+  }, [value]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const rawValue = e.target.value.replace(/\D/g, "");
+    const numericValue = Number(rawValue) / 100;
+    onChange(numericValue);
+    setDisplayValue(formatCurrencyBRL(numericValue));
+  };
+
+  const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    const rawValue = e.target.value.replace(/\D/g, "");
+    const numericValue = Number(rawValue) / 100;
+    setDisplayValue(formatCurrencyBRL(numericValue));
+  };
+
+  return (
+    <Input
+      ref={ref}
+      value={displayValue}
+      onChange={handleChange}
+      onBlur={handleBlur}
+      {...props}
+    />
+  );
+});
+CurrencyInput.displayName = "SupplierCurrencyInput";
+
 async function getNextSupplierContractNumber(
   firestore: NonNullable<ReturnType<typeof useFirebase>["firestore"]>,
 ): Promise<string> {
@@ -94,6 +182,25 @@ async function getNextSupplierContractNumber(
   return `CFS-${String(max + 1).padStart(4, "0")}/${currentYear}`;
 }
 
+function defaultItensFromContract(item: SupplierContract | null | undefined) {
+  if (item?.objeto?.itens && item.objeto.itens.length > 0) {
+    return item.objeto.itens.map((i) => ({
+      descricao: i.descricao,
+      valor: Number(i.valor) || 0,
+    }));
+  }
+  const legacy = item?.objeto?.servicos?.trim();
+  if (legacy) {
+    return [
+      {
+        descricao: legacy,
+        valor: Number(item?.pagamento?.valorTotal) || 0,
+      },
+    ];
+  }
+  return [{ descricao: "", valor: 0 }];
+}
+
 export function SupplierContractForm({
   currentItem,
   onSuccess,
@@ -101,6 +208,7 @@ export function SupplierContractForm({
   const { firestore } = useFirebase();
   const { toast } = useToast();
   const [loading, setLoading] = React.useState(false);
+  const [isServiceModalOpen, setIsServiceModalOpen] = React.useState(false);
 
   const suppliersQuery = useMemoFirebase(
     () => (firestore ? collection(firestore, "fornecedores") : null),
@@ -108,6 +216,13 @@ export function SupplierContractForm({
   );
   const { data: suppliers, isLoading: isLoadingSuppliers } =
     useCollection<Fornecedor>(suppliersQuery);
+
+  const servicesQuery = useMemoFirebase(
+    () => (firestore ? collection(firestore, "services") : null),
+    [firestore],
+  );
+  const { data: services, isLoading: isLoadingServices } =
+    useCollection<Service>(servicesQuery);
 
   const companyProfileDocRef = useMemoFirebase(
     () =>
@@ -122,10 +237,28 @@ export function SupplierContractForm({
     defaultValues: currentItem
       ? {
           prestador: currentItem.prestador,
-          objeto: currentItem.objeto,
-          pagamento: currentItem.pagamento,
+          objeto: {
+            empreendimento: currentItem.objeto?.empreendimento || "",
+            municipio: currentItem.objeto?.municipio || "",
+            uf: currentItem.objeto?.uf || "",
+            servicos: currentItem.objeto?.servicos || "",
+            observacoes: currentItem.objeto?.observacoes || "",
+            itens: defaultItensFromContract(currentItem),
+          },
+          pagamento: {
+            valorTotal: Number(currentItem.pagamento?.valorTotal) || 0,
+            valorExtenso:
+              currentItem.pagamento?.valorExtenso ||
+              numberToWordsBRL(Number(currentItem.pagamento?.valorTotal) || 0),
+            forma: currentItem.pagamento?.forma || "",
+            banco: currentItem.pagamento?.banco || "",
+            agencia: currentItem.pagamento?.agencia || "",
+            conta: currentItem.pagamento?.conta || "",
+            pix: currentItem.pagamento?.pix || "",
+          },
           foro: currentItem.foro,
-          dataContrato: currentItem.dataContrato.split("T")[0] || currentItem.dataContrato,
+          dataContrato:
+            currentItem.dataContrato.split("T")[0] || currentItem.dataContrato,
           status: currentItem.status,
         }
       : {
@@ -139,23 +272,47 @@ export function SupplierContractForm({
             endereco: "",
           },
           objeto: {
+            empreendimento: "",
+            municipio: "",
+            uf: "",
             servicos: "",
             observacoes: "",
+            itens: [{ descricao: "", valor: 0 }],
           },
           pagamento: {
             valorTotal: 0,
+            valorExtenso: "",
             forma: "",
+            banco: "",
+            agencia: "",
+            conta: "",
+            pix: "",
           },
-          foro: {
-            comarca: "Unaí",
-            uf: "MG",
-          },
+          foro: { comarca: "Unaí", uf: "MG" },
           dataContrato: new Date().toISOString().split("T")[0],
           status: "Rascunho",
         },
   });
 
+  const { fields, append, remove } = useFieldArray({
+    control: form.control,
+    name: "objeto.itens",
+  });
+
+  const watchedItems = useWatch({ control: form.control, name: "objeto.itens" });
   const selectedSupplierId = form.watch("prestador.supplierId");
+
+  const totalAmount = React.useMemo(
+    () =>
+      watchedItems?.reduce((acc, item) => acc + (Number(item.valor) || 0), 0) ||
+      0,
+    [watchedItems],
+  );
+
+  React.useEffect(() => {
+    form.setValue("pagamento.valorTotal", totalAmount);
+    form.setValue("pagamento.valorExtenso", numberToWordsBRL(totalAmount));
+  }, [totalAmount, form]);
 
   React.useEffect(() => {
     if (!selectedSupplierId || !suppliers) return;
@@ -173,6 +330,31 @@ export function SupplierContractForm({
         .join(", "),
     );
   }, [selectedSupplierId, suppliers, form]);
+
+  const handleAddServiceFromTable = (service: Service) => {
+    const desc =
+      service.name + (service.description ? `\n${service.description}` : "");
+    append({ descricao: desc, valor: service.price });
+    setIsServiceModalOpen(false);
+    toast({
+      title: "Serviço adicionado",
+      description: `"${service.name}" incluído no contrato.`,
+    });
+  };
+
+  const pruneUndefined = React.useCallback((value: unknown): unknown => {
+    if (Array.isArray(value)) return value.map(pruneUndefined);
+    if (value && typeof value === "object") {
+      const obj = value as Record<string, unknown>;
+      const cleaned: Record<string, unknown> = {};
+      Object.entries(obj).forEach(([k, v]) => {
+        if (v === undefined) return;
+        cleaned[k] = pruneUndefined(v);
+      });
+      return cleaned;
+    }
+    return value;
+  }, []);
 
   async function onSubmit(values: FormValues) {
     if (!firestore) return;
@@ -206,17 +388,29 @@ export function SupplierContractForm({
           cep: companyProfile.cep || "",
         },
         prestador: values.prestador,
-        objeto: values.objeto,
+        objeto: {
+          empreendimento: values.objeto.empreendimento,
+          municipio: values.objeto.municipio,
+          uf: values.objeto.uf,
+          servicos: values.objeto.servicos,
+          observacoes: values.objeto.observacoes,
+          itens: values.objeto.itens,
+        },
         pagamento: values.pagamento,
         foro: values.foro,
         dataContrato: new Date(values.dataContrato).toISOString(),
       };
 
+      const cleaned = pruneUndefined(payload) as Omit<SupplierContract, "id">;
+
       if (currentItem) {
-        await updateDoc(doc(firestore, "supplierContracts", currentItem.id), payload);
+        await updateDoc(
+          doc(firestore, "supplierContracts", currentItem.id),
+          cleaned,
+        );
         toast({ title: "Contrato de fornecedor atualizado com sucesso." });
       } else {
-        await addDoc(collection(firestore, "supplierContracts"), payload);
+        await addDoc(collection(firestore, "supplierContracts"), cleaned);
         toast({ title: "Contrato de fornecedor criado com sucesso." });
       }
       onSuccess?.();
@@ -241,205 +435,420 @@ export function SupplierContractForm({
             : "Novo Contrato-Fornecedores"}
         </DialogTitle>
         <DialogDescription>
-          A contratante é preenchida automaticamente pela tela de Informações da
-          Empresa e o prestador vem do cadastro de fornecedores.
+          Contrato independente do menu Contratos (clientes). A Pimenta é a
+          contratante; o prestador vem do cadastro de fornecedores. Serviços podem
+          ser lançados pela Tabela de Serviços ou manualmente, sem proposta
+          comercial.
         </DialogDescription>
       </DialogHeader>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           <div className="rounded-md border p-3 text-sm">
-            <p className="font-medium">Contratante (fixo)</p>
+            <p className="font-medium">Contratante (Pimenta — automático)</p>
             <p className="text-muted-foreground">
               {isLoadingCompanyProfile
                 ? "Carregando..."
                 : companyProfile?.name || "Empresa não configurada"}
             </p>
             <p className="text-muted-foreground">
-              {companyProfile?.cnpj || "Sem CNPJ"}
+              CNPJ {companyProfile?.cnpj || "—"}
             </p>
           </div>
 
-          <FormField
-            control={form.control}
-            name="prestador.supplierId"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Prestador de serviço (Fornecedores)</FormLabel>
-                <Select
-                  onValueChange={field.onChange}
-                  defaultValue={field.value}
-                  disabled={isLoadingSuppliers}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue
-                        placeholder={
-                          isLoadingSuppliers
-                            ? "Carregando..."
-                            : "Selecione um fornecedor"
-                        }
-                      />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {(suppliers || []).map((supplier) => (
-                      <SelectItem key={supplier.id} value={supplier.id}>
-                        {supplier.name}
-                      </SelectItem>
+          <Accordion type="multiple" defaultValue={["prestador", "objeto", "pagamento"]}>
+            <AccordionItem value="prestador">
+              <AccordionTrigger>Prestador de serviços</AccordionTrigger>
+              <AccordionContent className="space-y-4 pt-2">
+                <FormField
+                  control={form.control}
+                  name="prestador.supplierId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Fornecedor</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value}
+                        disabled={isLoadingSuppliers}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue
+                              placeholder={
+                                isLoadingSuppliers
+                                  ? "Carregando..."
+                                  : "Selecione um fornecedor"
+                              }
+                            />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {(suppliers || []).map((supplier) => (
+                            <SelectItem key={supplier.id} value={supplier.id}>
+                              {supplier.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <FormField
+                    control={form.control}
+                    name="prestador.nome"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Nome</FormLabel>
+                        <FormControl>
+                          <Input {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="prestador.cpfCnpj"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>CPF/CNPJ</FormLabel>
+                        <FormControl>
+                          <Input {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+
+            <AccordionItem value="objeto">
+              <AccordionTrigger>Objeto e serviços</AccordionTrigger>
+              <AccordionContent className="space-y-4 pt-2">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <FormField
+                    control={form.control}
+                    name="objeto.empreendimento"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Empreendimento (opcional)</FormLabel>
+                        <FormControl>
+                          <Input {...field} />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="objeto.municipio"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Município</FormLabel>
+                        <FormControl>
+                          <Input {...field} />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="objeto.uf"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>UF</FormLabel>
+                        <FormControl>
+                          <Input maxLength={2} {...field} />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                <FormField
+                  control={form.control}
+                  name="objeto.servicos"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Descrição geral dos serviços</FormLabel>
+                      <FormControl>
+                        <Textarea className="min-h-24" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <div className="min-w-0 space-y-4 rounded-lg border border-border/80 bg-muted/15 p-4">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <h3 className="text-base font-semibold">Itens contratados</h3>
+                    <div className="grid w-full grid-cols-2 gap-2 sm:w-auto">
+                      <Button
+                        size="sm"
+                        type="button"
+                        variant="outline"
+                        onClick={() => setIsServiceModalOpen(true)}
+                      >
+                        <List className="mr-2 h-4 w-4" />
+                        Adicionar da Tabela
+                      </Button>
+                      <Button
+                        size="sm"
+                        type="button"
+                        onClick={() => append({ descricao: "", valor: 0 })}
+                      >
+                        <PlusCircle className="mr-2 h-4 w-4" />
+                        Adicionar Manual
+                      </Button>
+                    </div>
+                  </div>
+                  {fields.length === 0 ? (
+                    <p className="text-sm text-muted-foreground text-center py-4">
+                      Nenhum item. Use a Tabela de Serviços ou adicione manualmente.
+                    </p>
+                  ) : null}
+                  <div className="space-y-3">
+                    {fields.map((field, index) => (
+                      <div
+                        key={field.id}
+                        className="grid grid-cols-1 gap-3 rounded-md border bg-background p-3 sm:grid-cols-[minmax(0,1fr)_10.5rem_auto] sm:items-end"
+                      >
+                        <FormField
+                          control={form.control}
+                          name={`objeto.itens.${index}.descricao`}
+                          render={({ field: f }) => (
+                            <FormItem className="min-w-0">
+                              <FormLabel>Descrição</FormLabel>
+                              <FormControl>
+                                <Textarea
+                                  className="min-h-[4.5rem] resize-y"
+                                  {...f}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name={`objeto.itens.${index}.valor`}
+                          render={({ field: f }) => (
+                            <FormItem>
+                              <FormLabel>Valor (R$)</FormLabel>
+                              <FormControl>
+                                <CurrencyInput
+                                  className="text-right"
+                                  value={f.value}
+                                  onChange={f.onChange}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="icon"
+                          className="h-10 w-10"
+                          onClick={() => remove(index)}
+                          disabled={fields.length <= 1}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+                  </div>
+                  <Separator />
+                  <div className="flex justify-end gap-2 text-base font-semibold">
+                    <span className="text-muted-foreground">Valor total:</span>
+                    <span>{formatCurrencyBRL(totalAmount)}</span>
+                  </div>
+                </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <FormField
-              control={form.control}
-              name="prestador.nome"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Nome do prestador</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="prestador.cpfCnpj"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>CPF/CNPJ do prestador</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
+                <FormField
+                  control={form.control}
+                  name="objeto.observacoes"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Observações (opcional)</FormLabel>
+                      <FormControl>
+                        <Textarea {...field} />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+              </AccordionContent>
+            </AccordionItem>
 
-          <FormField
-            control={form.control}
-            name="objeto.servicos"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Serviços contratados</FormLabel>
-                <FormControl>
-                  <Textarea className="min-h-28" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <FormField
-              control={form.control}
-              name="pagamento.valorTotal"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Valor total (R$)</FormLabel>
-                  <FormControl>
-                    <Input type="number" step="0.01" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="pagamento.forma"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Forma de pagamento</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {paymentMethods.map((method) => (
-                        <SelectItem key={method} value={method}>
-                          {method}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="dataContrato"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Data do contrato</FormLabel>
-                  <FormControl>
-                    <Input type="date" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <FormField
-              control={form.control}
-              name="foro.comarca"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Comarca</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="foro.uf"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>UF do foro</FormLabel>
-                  <FormControl>
-                    <Input maxLength={2} {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-
-          <FormField
-            control={form.control}
-            name="status"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Status</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="Rascunho">Rascunho</SelectItem>
-                    <SelectItem value="Aprovado">Aprovado</SelectItem>
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+            <AccordionItem value="pagamento">
+              <AccordionTrigger>Pagamento e foro</AccordionTrigger>
+              <AccordionContent className="space-y-4 pt-2">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <FormField
+                    control={form.control}
+                    name="pagamento.valorTotal"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Valor total (R$)</FormLabel>
+                        <FormControl>
+                          <Input type="number" readOnly {...field} />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="pagamento.valorExtenso"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Valor por extenso</FormLabel>
+                        <FormControl>
+                          <Input readOnly {...field} />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                <FormField
+                  control={form.control}
+                  name="pagamento.forma"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Forma de pagamento</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {paymentMethods.map((method) => (
+                            <SelectItem key={method} value={method}>
+                              {method}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <FormField
+                    control={form.control}
+                    name="pagamento.banco"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Banco (opcional)</FormLabel>
+                        <FormControl>
+                          <Input {...field} />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="pagamento.agencia"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Agência</FormLabel>
+                        <FormControl>
+                          <Input {...field} />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="pagamento.conta"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Conta</FormLabel>
+                        <FormControl>
+                          <Input {...field} />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="pagamento.pix"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>PIX</FormLabel>
+                        <FormControl>
+                          <Input {...field} />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <FormField
+                    control={form.control}
+                    name="dataContrato"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Data do contrato</FormLabel>
+                        <FormControl>
+                          <Input type="date" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="foro.comarca"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Comarca</FormLabel>
+                        <FormControl>
+                          <Input {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="foro.uf"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>UF do foro</FormLabel>
+                        <FormControl>
+                          <Input maxLength={2} {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                <FormField
+                  control={form.control}
+                  name="status"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Status</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="Rascunho">Rascunho</SelectItem>
+                          <SelectItem value="Aprovado">Aprovado</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
 
           <DialogFooter>
             <Button type="submit" disabled={loading}>
@@ -449,7 +858,57 @@ export function SupplierContractForm({
           </DialogFooter>
         </form>
       </Form>
+
+      <Dialog open={isServiceModalOpen} onOpenChange={setIsServiceModalOpen}>
+        <DialogContent className="sm:max-w-xl">
+          <DialogHeader>
+            <DialogTitle>Tabela de Serviços</DialogTitle>
+            <DialogDescription>
+              Clique em um serviço para adicioná-lo ao contrato com fornecedor.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="max-h-[60vh] overflow-y-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Serviço</TableHead>
+                  <TableHead className="text-right">Preço</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {isLoadingServices && (
+                  <TableRow>
+                    <TableCell colSpan={2}>
+                      <Skeleton className="h-10 w-full" />
+                    </TableCell>
+                  </TableRow>
+                )}
+                {(services || []).map((service) => (
+                  <TableRow
+                    key={service.id}
+                    className="cursor-pointer"
+                    onClick={() => handleAddServiceFromTable(service)}
+                  >
+                    <TableCell className="font-medium">{service.name}</TableCell>
+                    <TableCell className="text-right">
+                      {formatCurrencyBRL(service.price)}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              type="button"
+              onClick={() => setIsServiceModalOpen(false)}
+            >
+              Fechar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
-

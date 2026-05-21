@@ -48,6 +48,7 @@ import {
 import { UploadPreparationDialog } from "@/components/shared/upload-preparation-dialog";
 import { usePreparedUpload } from "@/hooks/use-prepared-upload";
 import type { Empreendedor, Project } from "@/lib/types";
+import { filterProjectsByEmpreendedorId } from "@/lib/processos-form-order";
 
 type TipoDefesa = "Defesa em 1º Instância / Administrativa" | "Defesa em 2º Instância / Administrativa";
 
@@ -421,7 +422,7 @@ export default function AutosInfracaoDefesaPage() {
     [projects],
   );
   const filteredProjects = React.useMemo(
-    () => (projects || []).filter((p) => p.empreendedorId === empreendedorId),
+    () => filterProjectsByEmpreendedorId(projects, empreendedorId),
     [projects, empreendedorId],
   );
   const selectedEmpreendedor = React.useMemo(

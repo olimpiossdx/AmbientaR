@@ -4,6 +4,11 @@ import { ptBR } from "date-fns/locale/pt-BR";
 import type { WaterPermit } from "@/lib/types";
 import type { ComplianceReport } from "@/lib/water-compliance-engine";
 import type { TelemetryReading } from "@/lib/types";
+import type { BrandingImageUrls } from "@/lib/branding-pdf";
+import {
+  createMmBrandedPdfSession,
+  drawWatermarkOnPage,
+} from "@/lib/pdf-branding-layout";
 
 type WaterReportMeta = {
   empreendedorName?: string;
@@ -17,12 +22,22 @@ export async function generateWaterCompliancePDF(
   period: Date,
   readings: TelemetryReading[] = [],
   meta?: WaterReportMeta,
+  brandingUrls?: BrandingImageUrls | null,
 ) {
-  const [{ default: jsPDF }, { default: autoTable }] = await Promise.all([
-    import("jspdf"),
-    import("jspdf-autotable"),
-  ]);
-  const doc = new jsPDF();
+  const { default: autoTable } = await import("jspdf-autotable");
+  const hasBranding =
+    Boolean(brandingUrls?.headerImageUrl) ||
+    Boolean(brandingUrls?.footerImageUrl) ||
+    Boolean(brandingUrls?.watermarkImageUrl);
+  const session = hasBranding
+    ? await createMmBrandedPdfSession(brandingUrls!)
+    : null;
+  const doc: jsPDF = session?.doc ?? new (await import("jspdf")).default();
+  const contentTop = session?.startY ?? 22;
+  const yShift = contentTop - 22;
+  const onPdfPage = session
+    ? () => drawWatermarkOnPage(doc, session.branding)
+    : undefined;
   const dateStr = format(period, "MMMM 'de' yyyy", { locale: ptBR });
   const emitDate = format(new Date(), "dd/MM/yyyy HH:mm");
   const year = period.getFullYear();
@@ -56,27 +71,28 @@ export async function generateWaterCompliancePDF(
 
   doc.setFontSize(18);
   doc.setTextColor(40);
-  doc.text("Relatório de Conformidade Hídrica", 14, 22);
+  doc.text("Relatório de Conformidade Hídrica", 14, contentTop);
 
   doc.setFontSize(10);
   doc.setTextColor(100);
-  doc.text(`Período de Referência: ${dateStr} (${year})`, 14, 30);
-  doc.text(`Emitido em: ${emitDate}`, 14, 35);
+  doc.text(`Período de Referência: ${dateStr} (${year})`, 14, 30 + yShift);
+  doc.text(`Emitido em: ${emitDate}`, 14, 35 + yShift);
 
   doc.setDrawColor(41, 128, 185);
   doc.setFillColor(236, 246, 255);
-  doc.roundedRect(14, 40, 182, 24, 2, 2, "FD");
+  doc.roundedRect(14, 40 + yShift, 182, 24, 2, 2, "FD");
   doc.setFontSize(12);
   doc.setTextColor(28, 83, 132);
-  doc.text("Identificação do Empreendimento", 16, 46);
+  doc.text("Identificação do Empreendimento", 16, 46 + yShift);
   doc.setFontSize(10);
   doc.setTextColor(60);
-  doc.text(`Empreendedor: ${meta?.empreendedorName || "N/A"}`, 16, 52);
-  doc.text(`Empreendimento: ${meta?.empreendimentoName || "N/A"}`, 16, 57);
-  doc.text(`Coordenadas: ${meta?.coordinates || "N/A"}`, 16, 62);
+  doc.text(`Empreendedor: ${meta?.empreendedorName || "N/A"}`, 16, 52 + yShift);
+  doc.text(`Empreendimento: ${meta?.empreendimentoName || "N/A"}`, 16, 57 + yShift);
+  doc.text(`Coordenadas: ${meta?.coordinates || "N/A"}`, 16, 62 + yShift);
 
   autoTable(doc, {
-    startY: 70,
+    startY: 70 + yShift,
+    willDrawPage: onPdfPage,
     head: [["Informação", "Detalhe"]],
     body: [
       ["Nº da Portaria", permit.permitNumber || "N/A"],
@@ -97,6 +113,7 @@ export async function generateWaterCompliancePDF(
   doc.text("CAPTAÇÕES NO PERÍODO", 14, nextY);
   autoTable(doc, {
     startY: nextY + 3,
+    willDrawPage: onPdfPage,
     head: [["Métrica", "Valor"]],
     body: [
       ["Captado (ano referência)", `${totalCapturedYear.toLocaleString("pt-BR")} m³`],
@@ -134,6 +151,7 @@ export async function generateWaterCompliancePDF(
 
   autoTable(doc, {
     startY: nextY + 3,
+    willDrawPage: onPdfPage,
     head: [
       [
         "Mês",
@@ -154,7 +172,8 @@ export async function generateWaterCompliancePDF(
   nextY = ((doc as any).lastAutoTable?.finalY || nextY) + 10;
   if (nextY > 250) {
     doc.addPage();
-    nextY = 20;
+    onPdfPage?.();
+    nextY = session ? session.startY : 20;
   }
 
   doc.setFontSize(14);
@@ -169,6 +188,7 @@ export async function generateWaterCompliancePDF(
   if (report.alerts.length > 0) {
     autoTable(doc, {
       startY: nextY + 5,
+      willDrawPage: onPdfPage,
       head: [["Tipo", "Ocorrências"]],
       body: [
         ["Horas diárias excedidas", String(countByType.horas_diarias || 0)],
@@ -189,6 +209,7 @@ export async function generateWaterCompliancePDF(
 
     autoTable(doc, {
       startY: detailsY,
+      willDrawPage: onPdfPage,
       head: [["Data", "Tipo de Alerta", "Descrição da Ocorrência"]],
       body: alertRows,
       headStyles: { fillColor: [192, 57, 43] },
@@ -200,16 +221,20 @@ export async function generateWaterCompliancePDF(
     doc.text("Nenhuma irregularidade detectada no período analisado.", 14, nextY + 10);
   }
 
-  const pageCount = (doc as any).internal.getNumberOfPages();
-  for (let i = 1; i <= pageCount; i += 1) {
-    doc.setPage(i);
-    doc.setFontSize(8);
-    doc.text(
-      "Documento gerado automaticamente pelo sistema de gestão ambiental.",
-      doc.internal.pageSize.width / 2,
-      doc.internal.pageSize.height - 10,
-      { align: "center" },
-    );
+  if (session) {
+    session.finalize();
+  } else {
+    const pageCount = doc.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i += 1) {
+      doc.setPage(i);
+      doc.setFontSize(8);
+      doc.text(
+        "Documento gerado automaticamente pelo sistema de gestão ambiental.",
+        doc.internal.pageSize.getWidth() / 2,
+        doc.internal.pageSize.getHeight() - 10,
+        { align: "center" },
+      );
+    }
   }
 
   const fileName = `Relatorio_Hidrico_${permit.permitNumber || "outorga"}_${format(period, "yyyy-MM")}.pdf`;

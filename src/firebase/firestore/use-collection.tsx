@@ -12,6 +12,7 @@ import {
 } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
+import { sortFirestoreDocsForSelect } from '@/lib/sort-pt-br';
 
 /** Utility type to add an 'id' field to a given type T. */
 export type WithId<T> = T & { id: string };
@@ -91,7 +92,9 @@ export function useCollection<T = any>(
         for (const doc of snapshot.docs) {
           results.push({ ...(doc.data() as T), id: doc.id });
         }
-        setData(results);
+        setData(
+          sortFirestoreDocsForSelect(results as (ResultItemType & Record<string, unknown>)[]) as ResultItemType[],
+        );
         setError(null);
         setIsLoading(false);
       },

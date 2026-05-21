@@ -26,6 +26,12 @@ import type {
   AnaliseAmbientalInput,
 } from "@/lib/types/analise-ambiental";
 import { useToast } from "@/hooks/use-toast";
+import { useLocalBranding } from "@/hooks/use-local-branding";
+import {
+  brandingUrlsFromLocal,
+  createMmBrandedPdfSession,
+  drawWatermarkOnPage,
+} from "@/lib/pdf-branding-layout";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -47,26 +53,9 @@ type GeoJSONLike = {
   [key: string]: unknown;
 };
 
-/** Adiciona numeração de páginas no rodapé no formato página/total. */
-function addPageNumbers(doc: any, bottomMarginMm: number = 10) {
-  const pageCount = doc.getNumberOfPages();
-  for (let i = 1; i <= pageCount; i++) {
-    doc.setPage(i);
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const pageHeight = doc.internal.pageSize.getHeight();
-    doc.setFontSize(8);
-    doc.setFont("helvetica", "normal");
-    doc.text(
-      `${i}/${pageCount}`,
-      pageWidth - bottomMarginMm,
-      pageHeight - bottomMarginMm,
-      { align: "right" },
-    );
-  }
-}
-
 export default function AnaliseAmbientalPage() {
   const { firestore, user } = useFirebase();
+  const { data: brandingData } = useLocalBranding();
   const [inputMode, setInputMode] = React.useState<InputMode>("car");
   const [isLoading, setIsLoading] = React.useState(false);
   const [isGeneratingPdf, setIsGeneratingPdf] = React.useState(false);
@@ -229,13 +218,13 @@ export default function AnaliseAmbientalPage() {
     if (!analysisResult || isGeneratingPdf) return;
     setIsGeneratingPdf(true);
     try {
-      const mod = await import("jspdf");
-      const jsPDF = mod.default;
-
-      const doc = new jsPDF({ unit: "mm", format: "a4" });
-      const margin = 15;
+      const session = await createMmBrandedPdfSession(
+        brandingUrlsFromLocal(brandingData),
+      );
+      const { doc, margins } = session;
       const pageW = doc.internal.pageSize.getWidth();
-      let y = margin;
+      let y = session.startY;
+      const onPdfPage = () => drawWatermarkOnPage(doc, session.branding);
 
       doc.setFontSize(16);
       doc.setFont("helvetica", "bold");
@@ -248,26 +237,27 @@ export default function AnaliseAmbientalPage() {
       doc.setFont("helvetica", "normal");
       const resumoLines = doc.splitTextToSize(
         analysisResult.resumoIA,
-        pageW - 2 * margin,
+        pageW - margins.left - margins.right,
       );
-      doc.text(resumoLines, margin, y);
+      doc.text(resumoLines, margins.left, y);
       y += resumoLines.length * 6 + 8;
 
       doc.setFontSize(12);
       doc.setFont("helvetica", "bold");
-      doc.text("Evidências factuais", margin, y);
+      doc.text("Evidências factuais", margins.left, y);
       y += 7;
       doc.setFontSize(10);
       doc.setFont("helvetica", "normal");
       analysisResult.factualData.forEach((item, index) => {
         const line = `${index + 1}. ${item.camada} | ${item.fonte} | ${item.resultado}`;
-        const lines = doc.splitTextToSize(line, pageW - 2 * margin);
+        const lines = doc.splitTextToSize(line, pageW - margins.left - margins.right);
         for (const l of lines) {
           if (y > 270) {
             doc.addPage();
-            y = margin;
+            onPdfPage();
+            y = session.startY;
           }
-          doc.text(l, margin, y);
+          doc.text(l, margins.left, y);
           y += 5;
         }
       });
@@ -278,28 +268,29 @@ export default function AnaliseAmbientalPage() {
       analysisResult.analises.forEach((item) => {
         if (y > maxY - 20) {
           doc.addPage();
-          y = margin;
+          onPdfPage();
+          y = session.startY;
         }
         doc.setFontSize(12);
         doc.setFont("helvetica", "bold");
-        doc.text(item.titulo, margin, y);
+        doc.text(item.titulo, margins.left, y);
         y += 7;
         doc.setFontSize(10);
         doc.setFont("helvetica", "normal");
-        const lines = doc.splitTextToSize(item.relatorio, pageW - 2 * margin);
+        const lines = doc.splitTextToSize(item.relatorio, pageW - margins.left - margins.right);
         for (const line of lines) {
           if (y > maxY - 10) {
             doc.addPage();
-            y = margin;
+            onPdfPage();
+            y = session.startY;
           }
-          doc.text(line, margin, y);
+          doc.text(line, margins.left, y);
           y += lineHeight;
         }
         y += 6;
       });
 
-      // Numeração de páginas alinhada à direita no rodapé.
-      addPageNumbers(doc, 10);
+      session.finalize();
       doc.save(
         `relatorio-analise-geoespacial-${new Date().toISOString().slice(0, 10)}.pdf`,
       );

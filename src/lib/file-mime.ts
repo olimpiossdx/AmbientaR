@@ -18,6 +18,10 @@ export function inferMimeTypeFromFileName(fileName: string): string {
       return "image/webp";
     case ".gif":
       return "image/gif";
+    case ".heic":
+      return "image/heic";
+    case ".heif":
+      return "image/heif";
     case ".zip":
       return "application/zip";
     default:

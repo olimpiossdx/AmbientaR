@@ -65,7 +65,10 @@ export async function deleteFileAtStoragePath(
 export function storagePathFromDownloadUrl(url: string): string | null {
   try {
     const u = new URL(url);
-    if (!u.hostname.includes("firebasestorage.googleapis.com")) {
+    if (
+      !u.hostname.includes("firebasestorage.googleapis.com") &&
+      !u.hostname.includes("firebasestorage.app")
+    ) {
       return null;
     }
     const parts = u.pathname.split("/");

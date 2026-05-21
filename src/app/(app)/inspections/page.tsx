@@ -73,34 +73,20 @@ import {
 } from "@/components/ui/tooltip";
 import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
-import type jsPDF from "jspdf";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { createNotificationForUser } from "@/lib/notifications";
+import { downloadJsPdf } from "@/lib/branding-pdf";
+import { buildInspectionFieldReportPdf } from "@/lib/inspection-field-report-pdf";
 import {
-  fetchBrandingImageAsBase64,
-  getImageDimensions,
-  calcPdfImageSize,
-  downloadJsPdf,
-} from "@/lib/branding-pdf";
+  CHECKLIST_STATUS_LABELS,
+  FIELD_INSPECTION_CHECKLIST,
+  mergeChecklistWithTemplate,
+} from "@/lib/field-inspection-checklist";
+import {
+  brandingUrlsFromLocal,
+  createMmBrandedPdfSession,
+} from "@/lib/pdf-branding-layout";
 import { useLocalBranding } from "@/hooks/use-local-branding";
-
-/** Adiciona numeração de páginas no rodapé no formato página/total. */
-function addPageNumbers(doc: jsPDF, bottomMarginMm: number = 10) {
-  const pageCount = doc.getNumberOfPages();
-  for (let i = 1; i <= pageCount; i++) {
-    doc.setPage(i);
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const pageHeight = doc.internal.pageSize.getHeight();
-    doc.setFontSize(8);
-    doc.setFont("helvetica", "normal");
-    doc.text(
-      `${i}/${pageCount}`,
-      pageWidth - bottomMarginMm,
-      pageHeight - bottomMarginMm,
-      { align: "right" },
-    );
-  }
-}
 
 const DetailItem = ({
   label,
@@ -252,124 +238,23 @@ export default function InspectionsListPage() {
   const handleGeneratePdf = async (report: Inspection) => {
     toast({ title: "Gerando PDF...", description: "Por favor, aguarde." });
 
-    const { default: jsPDF } = await import("jspdf");
-    const { default: autoTable } = await import("jspdf-autotable");
-    const doc = new jsPDF();
-    const pageHeight = doc.internal.pageSize.getHeight();
-    const pageWidth = doc.internal.pageSize.getWidth();
-    let yPos = 15;
-
-    const headerBase64 = await fetchBrandingImageAsBase64(
-      brandingData?.headerImageUrl,
+    const session = await createMmBrandedPdfSession(
+      brandingUrlsFromLocal(brandingData),
     );
-    const footerBase64 = await fetchBrandingImageAsBase64(
-      brandingData?.footerImageUrl,
-    );
-
-    if (headerBase64) {
-      const dims = await getImageDimensions(headerBase64);
-      const { w, h } = calcPdfImageSize(dims, pageWidth - 20, 30);
-      doc.addImage(headerBase64, "PNG", 10, 10, w, h);
-      yPos = 10 + h + 5;
-    }
-
-    doc.setFontSize(16);
-    doc.setFont("helvetica", "bold");
-    doc.text("Relatório de Campo", pageWidth / 2, yPos, { align: "center" });
-    yPos += 15;
-
-    doc.setFontSize(10);
-    doc.setFont("helvetica", "normal");
-    doc.text(
-      `Empreendimento: ${projectsMap.get(report.projectId)?.name || "N/A"}`,
-      15,
-      yPos,
-    );
-    yPos += 6;
-    doc.text(
-      `Empreendedor: ${empreendedoresMap.get(report.empreendedorId) || "N/A"}`,
-      15,
-      yPos,
-    );
-    yPos += 6;
-    doc.text(
-      `Data da Vistoria: ${new Date(report.inspectionDate).toLocaleDateString("pt-BR")}`,
-      15,
-      yPos,
-    );
-    yPos += 6;
-    doc.text(`Responsável: ${report.inspectorName}`, 15, yPos);
-    yPos += 12;
-
-    doc.setFontSize(12);
-    doc.setFont("helvetica", "bold");
-    doc.text("Inconformidades e Observações", 15, yPos);
-    yPos += 6;
-
-    const tableData = report.inconformidades.map((item) => [
-      item.description,
-      item.criticality,
-    ]);
-
-    autoTable(doc, {
-      startY: yPos,
-      head: [["Descrição", "Criticidade"]],
-      body: tableData,
-      theme: "striped",
-      headStyles: { fillColor: [34, 139, 34] },
-      didDrawPage: (data) => {
-        yPos = data.cursor?.y || 0;
+    await buildInspectionFieldReportPdf(
+      session.doc,
+      report,
+      session,
+      session.startY,
+      {
+        projectName: projectsMap.get(report.projectId)?.name,
+        empreendedorName: empreendedoresMap.get(report.empreendedorId),
       },
-    });
-
-    yPos = (doc as any).lastAutoTable.finalY + 10;
-
-    if (report.accompaniedBy || report.signatureUrl) {
-      if (yPos > pageHeight - 50) {
-        doc.addPage();
-        yPos = 15;
-      }
-
-      doc.setFontSize(12);
-      doc.setFont("helvetica", "bold");
-      doc.text("Acompanhado por", 15, yPos);
-      yPos += 8;
-
-      if (report.accompaniedBy) {
-        doc.setFontSize(10);
-        doc.setFont("helvetica", "normal");
-        doc.text(`Nome: ${report.accompaniedBy}`, 15, yPos);
-        yPos += 8;
-      }
-
-      if (report.signatureUrl) {
-        const signatureBase64 = await fetchBrandingImageAsBase64(
-          report.signatureUrl,
-        );
-        if (signatureBase64) {
-          try {
-            doc.addImage(signatureBase64, "PNG", 15, yPos, 60, 30);
-          } catch (e) {
-            console.error("Error adding signature image to PDF", e);
-          }
-        }
-      }
-    }
-
-    if (footerBase64) {
-      const totalPages = doc.getNumberOfPages();
-      for (let i = 1; i <= totalPages; i++) {
-        doc.setPage(i);
-        const fDims = await getImageDimensions(footerBase64);
-        const { w: fw, h: fh } = calcPdfImageSize(fDims, pageWidth - 20, 20);
-        doc.addImage(footerBase64, "PNG", 10, pageHeight - fh - 5, fw, fh);
-      }
-    }
-    // Numeração de páginas alinhada à direita no rodapé.
-    addPageNumbers(doc, 10);
+    );
+    session.finalize();
 
     const fileName = `Relatorio_Vistoria_${projectsMap.get(report.projectId)?.name?.replace(/\s+/g, "_") || "desconhecido"}.pdf`;
-    downloadJsPdf(doc, fileName);
+    downloadJsPdf(session.doc, fileName);
   };
 
   const getHighestCriticality = (inspection: Inspection) => {
@@ -706,7 +591,7 @@ export default function InspectionsListPage() {
       </div>
 
       <Dialog open={isViewOpen} onOpenChange={setIsViewOpen}>
-        <DialogContent className="sm:max-w-2xl">
+        <DialogContent className="sm:max-w-3xl">
           <DialogHeader>
             <DialogTitle>Detalhes da Vistoria</DialogTitle>
             <DialogDescription>
@@ -738,6 +623,146 @@ export default function InspectionsListPage() {
                   value={viewingItem.accompaniedBy}
                 />
               </div>
+              {viewingItem.identificacao && (
+                <>
+                  <Separator />
+                  <h4 className="font-semibold text-foreground">
+                    1. Identificação
+                  </h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <DetailItem
+                      label="Razão social"
+                      value={viewingItem.identificacao.razaoSocial}
+                    />
+                    <DetailItem
+                      label="Nome fantasia"
+                      value={viewingItem.identificacao.nomeFantasia}
+                    />
+                    <DetailItem
+                      label="CNPJ/CPF"
+                      value={viewingItem.identificacao.cnpjCpf}
+                    />
+                    <DetailItem
+                      label="Atividade principal"
+                      value={viewingItem.identificacao.atividadePrincipal}
+                    />
+                    <DetailItem
+                      label="Endereço"
+                      value={viewingItem.identificacao.enderecoCompleto}
+                    />
+                    <DetailItem
+                      label="Coordenadas"
+                      value={viewingItem.identificacao.coordenadasGeograficas}
+                    />
+                    <DetailItem
+                      label="Licenças / outorgas / usos"
+                      value={
+                        viewingItem.identificacao.processoLicenciamentoOutorga
+                      }
+                    />
+                    <DetailItem
+                      label="Motivo da fiscalização"
+                      value={viewingItem.identificacao.motivoFiscalizacao?.join(
+                        ", ",
+                      )}
+                    />
+                  </div>
+                </>
+              )}
+              {(() => {
+                const checklist = mergeChecklistWithTemplate(
+                  viewingItem.checklistResponses,
+                ).filter((r) => r.status !== "nao_verificado");
+                if (checklist.length === 0) return null;
+                return (
+                  <>
+                    <Separator />
+                    <h4 className="font-semibold text-foreground">
+                      Checklist de fiscalização
+                    </h4>
+                    <div className="space-y-4">
+                      {FIELD_INSPECTION_CHECKLIST.map((section) => {
+                        const items = checklist.filter(
+                          (r) => r.sectionId === section.id,
+                        );
+                        if (items.length === 0) return null;
+                        return (
+                          <div key={section.id} className="space-y-2">
+                            <p className="text-sm font-medium text-foreground">
+                              {section.title}
+                            </p>
+                            <ul className="space-y-2">
+                              {items.map((item) => (
+                                <li
+                                  key={`${item.sectionId}:${item.itemId}`}
+                                  className="p-3 border rounded-md text-sm space-y-1"
+                                >
+                                  <p>{item.label}</p>
+                                  <div className="flex flex-wrap gap-2 items-center">
+                                    <Badge variant="outline">
+                                      {CHECKLIST_STATUS_LABELS[item.status]}
+                                    </Badge>
+                                    {item.criticality && (
+                                      <Badge
+                                        variant="outline"
+                                        className={cn(
+                                          getCriticalityVariant(
+                                            item.criticality,
+                                          ),
+                                        )}
+                                      >
+                                        {item.criticality}
+                                      </Badge>
+                                    )}
+                                  </div>
+                                  {item.observations?.trim() && (
+                                    <p className="text-muted-foreground">
+                                      {item.observations}
+                                    </p>
+                                  )}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </>
+                );
+              })()}
+              {viewingItem.teamObservations?.trim() && (
+                <>
+                  <Separator />
+                  <h4 className="font-semibold text-foreground">
+                    Observações gerais da equipe
+                  </h4>
+                  <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                    {viewingItem.teamObservations}
+                  </p>
+                </>
+              )}
+              {(viewingItem.laudoAttachmentUrls?.length ?? 0) > 0 && (
+                <>
+                  <Separator />
+                  <h4 className="font-semibold text-foreground">
+                    Registros e documentos adicionais
+                  </h4>
+                  <ul className="space-y-2 text-sm">
+                    {viewingItem.laudoAttachmentUrls!.map((url, index) => (
+                      <li key={url}>
+                        <a
+                          href={url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-primary underline break-all"
+                        >
+                          Anexo {index + 1}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              )}
               <Separator />
               <h4 className="font-semibold text-foreground">
                 Inconformidades Registradas

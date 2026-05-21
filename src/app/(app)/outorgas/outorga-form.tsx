@@ -60,6 +60,10 @@ import { UploadPreparationDialog } from "@/components/shared/upload-preparation-
 import { useStorageFileUpload } from "@/hooks/use-storage-file-upload";
 import { UPLOAD_RAW_FILE_SAFETY_MAX } from "@/lib/upload-limits";
 import {
+  filterProjectsByEmpreendedorId,
+} from "@/lib/processos-form-order";
+import { sortByPropertyNamePt } from "@/lib/sort-pt-br";
+import {
   collection,
   doc,
   addDoc,
@@ -202,12 +206,10 @@ export function OutorgaForm({ currentItem, onSuccess }: OutorgaFormProps) {
 
   const selectedEmpreendedorId = form.watch("empreendedorId");
 
-  const filteredProjects = React.useMemo(() => {
-    if (!selectedEmpreendedorId || !allProjects) return [];
-    return allProjects.filter(
-      (p) => p.empreendedorId === selectedEmpreendedorId,
-    );
-  }, [selectedEmpreendedorId, allProjects]);
+  const filteredProjects = React.useMemo(
+    () => filterProjectsByEmpreendedorId(allProjects, selectedEmpreendedorId),
+    [selectedEmpreendedorId, allProjects],
+  );
 
   const projectOptions = React.useMemo(() => {
     const options = [...filteredProjects];
@@ -217,7 +219,7 @@ export function OutorgaForm({ currentItem, onSuccess }: OutorgaFormProps) {
     if (existsInFiltered) return options;
     const selectedProject = allProjects.find((p) => p.id === selectedProjectId);
     if (selectedProject) options.push(selectedProject);
-    return options;
+    return sortByPropertyNamePt(options);
   }, [filteredProjects, allProjects, form]);
 
   React.useEffect(() => {

@@ -1,12 +1,18 @@
 import type jsPDF from 'jspdf';
 import type { Client, CommercialProposal, EnvironmentalCompany } from '@/lib/types';
 import type { LocalBranding } from '@/hooks/use-local-branding';
+import { downloadJsPdf } from '@/lib/branding-pdf';
 import {
-  calcPdfImageSize,
-  downloadJsPdf,
-  fetchBrandingImagesForPdf,
-  getImageDimensions,
-} from '@/lib/branding-pdf';
+  brandingUrlsFromLocal,
+  drawWatermarkOnPage,
+  finalizePdfBranding,
+  getContentBottomLimit,
+  getContentStartY,
+  loadPdfBranding,
+  PDF_BRANDING_MARGINS_MM,
+  reportBrandingPdfIssues,
+  type BrandingPdfToastReporter,
+} from '@/lib/pdf-branding-layout';
 
 const formatCurrency = (value: number) =>
   new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(
@@ -50,24 +56,6 @@ function statusLabel(status: CommercialProposal['status']): string {
   }
 }
 
-/** Adiciona numeração de páginas no rodapé no formato página/total. */
-function addPageNumbers(doc: jsPDF, bottomMarginMm: number = 10) {
-  const pageCount = doc.getNumberOfPages();
-  for (let i = 1; i <= pageCount; i++) {
-    doc.setPage(i);
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const pageHeight = doc.internal.pageSize.getHeight();
-    doc.setFontSize(8);
-    doc.setFont('helvetica', 'normal');
-    doc.text(
-      `${i}/${pageCount}`,
-      pageWidth - bottomMarginMm,
-      pageHeight - bottomMarginMm,
-      { align: 'right' },
-    );
-  }
-}
-
 export { downloadJsPdf } from '@/lib/branding-pdf';
 
 const RESPONSABILIDADES_CONTRATADA = [
@@ -94,6 +82,7 @@ export type GenerateCommercialProposalPdfInput = {
   client?: Client | null;
   companyProfile?: Omit<EnvironmentalCompany, 'id'> | null;
   branding?: LocalBranding | null;
+  onBrandingIssue?: BrandingPdfToastReporter;
 };
 
 export async function generateCommercialProposalPdf({
@@ -101,35 +90,28 @@ export async function generateCommercialProposalPdf({
   client,
   companyProfile,
   branding,
+  onBrandingIssue,
 }: GenerateCommercialProposalPdfInput): Promise<void> {
   const { default: jsPDF } = await import('jspdf');
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
 
-  const { headerBase64, footerBase64, watermarkBase64 } = await fetchBrandingImagesForPdf({
-    headerImageUrl: branding?.headerImageUrl,
-    footerImageUrl: branding?.footerImageUrl,
-    watermarkImageUrl: branding?.watermarkImageUrl,
-  });
+  const urls = brandingUrlsFromLocal(branding);
+  const pdfBranding = await loadPdfBranding(doc, urls, PDF_BRANDING_MARGINS_MM);
+  reportBrandingPdfIssues(urls, pdfBranding.images, onBrandingIssue);
 
-  const pageHeight = doc.internal.pageSize.getHeight();
+  const { margins } = pdfBranding;
   const pageWidth = doc.internal.pageSize.getWidth();
-  const margins = { top: 15, bottom: 28, left: 15, right: 15 };
   const contentWidth = pageWidth - margins.left - margins.right;
+  const bottomLimit = () => getContentBottomLimit(doc, pdfBranding);
 
-  let headerRenderedH = 0;
-  if (headerBase64) {
-    const dims = await getImageDimensions(headerBase64);
-    const { w, h } = calcPdfImageSize(dims, contentWidth, 30);
-    doc.addImage(headerBase64, 'PNG', margins.left, 10, w, h, undefined, 'FAST');
-    headerRenderedH = h;
-  }
-
-  let yPos = headerBase64 ? 10 + headerRenderedH + 5 : 20;
+  drawWatermarkOnPage(doc, pdfBranding);
+  let yPos = getContentStartY(pdfBranding);
 
   const ensureSpace = (neededMm: number) => {
-    if (yPos + neededMm > pageHeight - margins.bottom) {
+    if (yPos + neededMm > bottomLimit()) {
       doc.addPage();
-      yPos = margins.top + (headerBase64 ? 8 : 0);
+      drawWatermarkOnPage(doc, pdfBranding);
+      yPos = getContentStartY(pdfBranding);
     }
   };
 
@@ -260,36 +242,6 @@ export async function generateCommercialProposalPdf({
   doc.setFont('helvetica', 'normal');
   doc.text(companyProfile?.cnpj || '21.367.930/0001-58', pageWidth / 2, yPos, { align: 'center' });
 
-  const totalPages = doc.getNumberOfPages();
-  if (watermarkBase64) {
-    const imgProps = doc.getImageProperties(watermarkBase64);
-    const aspectRatio = imgProps.width / imgProps.height;
-    const w = 100;
-    const h = w / aspectRatio;
-    for (let i = 1; i <= totalPages; i++) {
-      doc.setPage(i);
-      doc.addImage(
-        watermarkBase64,
-        'PNG',
-        (pageWidth - w) / 2,
-        (pageHeight - h) / 2,
-        w,
-        h,
-        undefined,
-        'FAST',
-      );
-    }
-  }
-
-  if (footerBase64) {
-    const fDims = await getImageDimensions(footerBase64);
-    const { w: fw, h: fh } = calcPdfImageSize(fDims, contentWidth, 20);
-    for (let i = 1; i <= totalPages; i++) {
-      doc.setPage(i);
-      doc.addImage(footerBase64, 'PNG', margins.left, pageHeight - fh - 5, fw, fh);
-    }
-  }
-
-  addPageNumbers(doc, 10);
+  finalizePdfBranding(doc, pdfBranding);
   downloadJsPdf(doc, `proposta_${proposal.proposalNumber || proposal.id}.pdf`);
 }

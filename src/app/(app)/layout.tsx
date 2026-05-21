@@ -405,9 +405,10 @@ const AppLayoutClient = ({ children }: { children: React.ReactNode }) => {
               <Image
                 src={logoUrl!}
                 alt="Logo"
-                width={120}
-                height={28}
-                className="object-contain"
+                width={280}
+                height={64}
+                priority
+                className="h-12 w-auto max-w-[min(280px,55vw)] object-contain sm:h-14"
               />
             ) : (
               <>

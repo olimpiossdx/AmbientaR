@@ -1,5 +1,5 @@
 import { INTERVENTION_SERVICE_LABEL } from "@/lib/intervention-checklist";
-import { sortByLabelPt, sortStringsPt } from "@/lib/sort-pt-br";
+import { sortByLabelPt, sortByNamePt, sortByPropertyNamePt, sortStringsPt } from "@/lib/sort-pt-br";
 /** Serviços disponíveis ao criar/editar processo (ordem alfabética). */
 export const PROCESSOS_SERVICES = sortStringsPt([
   INTERVENTION_SERVICE_LABEL,
@@ -58,16 +58,47 @@ export function sortSelectedProcessosServices(services: string[]): string[] {
   return sortStringsPt(services);
 }
 
-export function sortEmpreendedoresByName<T extends { name: string }>(
+/** @deprecated Preferir sortByNamePt */
+export function sortEmpreendedoresByName<T extends { name?: string | null }>(
   items: readonly T[],
 ): T[] {
-  return sortByLabelPt(items, (e) => e.name);
+  return sortByNamePt(items);
 }
 
-export function sortProjectsByPropertyName<T extends { propertyName: string }>(
+/** @deprecated Preferir sortByPropertyNamePt */
+export function sortProjectsByPropertyName<T extends { propertyName?: string | null }>(
   items: readonly T[],
 ): T[] {
-  return sortByLabelPt(items, (p) => p.propertyName);
+  return sortByPropertyNamePt(items);
+}
+
+export function sortClientsByName<T extends { name?: string | null }>(
+  items: readonly T[],
+): T[] {
+  return sortByNamePt(items);
+}
+
+export function sortSuppliersByName<T extends { name?: string | null }>(
+  items: readonly T[],
+): T[] {
+  return sortByNamePt(items);
+}
+
+/** Empreendimentos filtrados por empreendedor, ordenados A–Z (pt-BR). */
+export function filterProjectsByEmpreendedorId<
+  T extends { empreendedorId?: string | null; propertyName?: string | null },
+>(
+  projects: readonly T[] | null | undefined,
+  empreendedorId: string | null | undefined,
+  normalizeId: (id: unknown) => string = (id) => String(id ?? "").trim(),
+): T[] {
+  if (!projects?.length || !empreendedorId) return [];
+  const eid = normalizeId(empreendedorId);
+  if (!eid) return [];
+  const filtered = projects.filter(
+    (p) => normalizeId(p.empreendedorId) === eid,
+  );
+  return sortByPropertyNamePt(filtered);
 }
 
 export function sortNavSubItemsByLabel<T extends { label: string }>(

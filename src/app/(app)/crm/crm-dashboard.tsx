@@ -52,13 +52,11 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { canAccessCrm } from "@/lib/role-guards";
-import {
-  fetchBrandingImageAsBase64,
-  getImageDimensions,
-  calcPdfImageSize,
-  applyImageOpacity,
-} from "@/lib/branding-pdf";
 import { useLocalBranding } from "@/hooks/use-local-branding";
+import {
+  brandingUrlsFromLocal,
+  createMmBrandedPdfSession,
+} from "@/lib/pdf-branding-layout";
 
 const PERIOD_PRESETS = [
   { id: "today", label: "Hoje" },
@@ -587,51 +585,13 @@ export default function CrmDashboard({ onAddNew }: CrmDashboardProps) {
             size="sm"
             className="h-9 w-full justify-center sm:w-auto sm:min-w-[9rem]"
             onClick={async () => {
-              const { default: jsPDF } = await import("jspdf");
               const list = opportunitiesFiltered ?? [];
-              const headerBase64 = await fetchBrandingImageAsBase64(
-                brandingData?.headerImageUrl,
+              const session = await createMmBrandedPdfSession(
+                brandingUrlsFromLocal(brandingData),
               );
-              const footerBase64 = await fetchBrandingImageAsBase64(
-                brandingData?.footerImageUrl,
-              );
-              const watermarkBase64Raw = await fetchBrandingImageAsBase64(
-                brandingData?.watermarkImageUrl,
-              );
-              const watermarkBase64 = watermarkBase64Raw
-                ? await applyImageOpacity(watermarkBase64Raw, 0.15)
-                : null;
-
-              const doc = new jsPDF({ unit: "mm", format: "a4" });
+              const { doc, margins } = session;
               const pageWidth = doc.internal.pageSize.getWidth();
-              const pageHeight = doc.internal.pageSize.getHeight();
-              const margin = 15;
-              const contentWidth = pageWidth - margin * 2;
-
-              if (watermarkBase64) {
-                const imgProps = doc.getImageProperties(watermarkBase64);
-                const ar = imgProps.width / imgProps.height;
-                const w = 100;
-                const h = w / ar;
-                doc.addImage(
-                  watermarkBase64,
-                  "PNG",
-                  (pageWidth - w) / 2,
-                  (pageHeight - h) / 2,
-                  w,
-                  h,
-                  undefined,
-                  "FAST",
-                );
-              }
-
-              let y = 15;
-              if (headerBase64) {
-                const dims = await getImageDimensions(headerBase64);
-                const { w, h } = calcPdfImageSize(dims, contentWidth, 26);
-                doc.addImage(headerBase64, "PNG", margin, 8, w, h);
-                y = 8 + h + 5;
-              }
+              let y = session.startY;
 
               doc.setFontSize(16);
               doc.text("Dashboard Executivo CRM", 105, y, { align: "center" });
@@ -689,35 +649,20 @@ export default function CrmDashboard({ onAddNew }: CrmDashboardProps) {
                 )
                 .slice(0, 10);
               sample.forEach((o) => {
+                y = session.ensureSpace(y, 5);
                 const clientName = clientsMap.get(o.clientId) || "N/A";
                 const valueStr = formatCurrency(o.value ?? 0);
                 doc.setFontSize(9);
                 doc.text(
                   `${o.name} (${clientName}) - ${o.stage} - ${valueStr}`,
-                  15,
+                  margins.left,
                   y,
                   { maxWidth: 180 },
                 );
                 y += 5;
               });
 
-              if (footerBase64) {
-                const fDims = await getImageDimensions(footerBase64);
-                const { w: fw, h: fh } = calcPdfImageSize(
-                  fDims,
-                  pageWidth - 2 * margin,
-                  18,
-                );
-                doc.addImage(
-                  footerBase64,
-                  "PNG",
-                  margin,
-                  pageHeight - fh - 6,
-                  fw,
-                  fh,
-                );
-              }
-
+              session.finalize();
               doc.save(
                 `crm-dashboard-${periodLabel.replace(/[\\s:]/g, "-")}.pdf`,
               );

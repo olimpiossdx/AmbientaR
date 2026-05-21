@@ -23,6 +23,7 @@ import { collection } from 'firebase/firestore';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useRouter } from 'next/navigation';
+import { filterProjectsByEmpreendedorId } from '@/lib/processos-form-order';
 
 // Simplified schema for LAS-RAS
 const formSchema = z.object({
@@ -63,10 +64,10 @@ export function LasRasForm() {
 
   const selectedClientId = form.watch('empreendedorId');
   
-  const filteredProjects = React.useMemo(() => {
-    if (!projects) return [];
-    return projects.filter(p => p.empreendedorId === selectedClientId);
-  }, [projects, selectedClientId]);
+  const filteredProjects = React.useMemo(
+    () => filterProjectsByEmpreendedorId(projects, selectedClientId),
+    [projects, selectedClientId],
+  );
 
   async function onSubmit(values: FormValues) {
     setLoading(true);

@@ -30,11 +30,9 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale/pt-BR';
 import type jsPDF from 'jspdf';
 import {
-  fetchBrandingImageAsBase64,
-  getImageDimensions,
-  calcPdfImageSize,
-  applyImageOpacity,
-} from '@/lib/branding-pdf';
+  brandingUrlsFromLocal,
+  createMmBrandedPdfSession,
+} from '@/lib/pdf-branding-layout';
 import { useLocalBranding } from '@/hooks/use-local-branding';
 
 const tabelaDiagnosticoSchema = z.object({
@@ -76,19 +74,6 @@ const defaultTabela = [
   { aspecto: 'Cobertura (%)', inicial: '', atual: '', conformidade: 'Sim' as const },
   { aspecto: 'Mortalidade mudas', inicial: '', atual: '', conformidade: 'Sim' as const },
 ];
-
-/** Adiciona numeração de páginas no rodapé no formato página/total. */
-function addPageNumbers(doc: jsPDF, bottomMarginMm: number = 10) {
-  const pageCount = doc.getNumberOfPages();
-  for (let i = 1; i <= pageCount; i++) {
-    doc.setPage(i);
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const pageHeight = doc.internal.pageSize.getHeight();
-    doc.setFontSize(8);
-    doc.setFont('times', 'normal');
-    doc.text(`${i}/${pageCount}`, pageWidth - bottomMarginMm, pageHeight - bottomMarginMm, { align: 'right' });
-  }
-}
 
 function buildPdf(
   doc: jsPDF,
@@ -240,49 +225,13 @@ export function PtrfPradForm({ onSuccess, onCancel }: PtrfPradFormProps) {
 
   const handleGeneratePdf = form.handleSubmit(async (values) => {
     try {
-      const margin = 15;
-
-      const headerBase64 = await fetchBrandingImageAsBase64(brandingData?.headerImageUrl);
-      const footerBase64 = await fetchBrandingImageAsBase64(brandingData?.footerImageUrl);
-      const watermarkBase64Raw = await fetchBrandingImageAsBase64(brandingData?.watermarkImageUrl);
-      const watermarkBase64 = watermarkBase64Raw ? await applyImageOpacity(watermarkBase64Raw, 0.15) : null;
-
-      const [{ default: jsPDF }, { default: autoTable }] = await Promise.all([
-        import('jspdf'),
-        import('jspdf-autotable'),
-      ]);
-      const doc = new jsPDF({ unit: 'mm', format: 'a4' });
-      const pw = doc.internal.pageSize.getWidth();
-      const ph = doc.internal.pageSize.getHeight();
-      const contentWidth = pw - margin * 2;
-
-      if (watermarkBase64) {
-        const imgProps = doc.getImageProperties(watermarkBase64);
-        const ar = imgProps.width / imgProps.height;
-        const w = 110;
-        const h = w / ar;
-        doc.addImage(watermarkBase64, 'PNG', (pw - w) / 2, (ph - h) / 2, w, h, undefined, 'FAST');
-      }
-
-      let startY = 15;
-      if (headerBase64) {
-        const dims = await getImageDimensions(headerBase64);
-        const { w, h } = calcPdfImageSize(dims, contentWidth, 28);
-        doc.addImage(headerBase64, 'PNG', margin, 8, w, h);
-        startY = 8 + h + 6;
-      }
-
-      buildPdf(doc, values, autoTable, startY);
-
-      if (footerBase64) {
-        const tp = doc.getNumberOfPages();
-        doc.setPage(tp);
-        const fDims = await getImageDimensions(footerBase64);
-        const { w: fw, h: fh } = calcPdfImageSize(fDims, pw - 2 * margin, 18);
-        doc.addImage(footerBase64, 'PNG', margin, ph - fh - 6, fw, fh);
-      }
-
-      addPageNumbers(doc, 10);
+      const { default: autoTable } = await import('jspdf-autotable');
+      const session = await createMmBrandedPdfSession(
+        brandingUrlsFromLocal(brandingData),
+      );
+      const doc = session.doc;
+      buildPdf(doc, values, autoTable, session.startY);
+      session.finalize();
       doc.save('Relatorio-Pericial-PRAD-PTFR-Paracatu.pdf');
       toast({ title: 'PDF gerado', description: 'O relatório foi baixado com sucesso.' });
     } catch (e) {

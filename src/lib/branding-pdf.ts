@@ -25,7 +25,54 @@ export type BrandingPdfImages = {
 /** TTL do cache em memória (URLs do Storage → PNG base64 para PDF). */
 const BRANDING_CACHE_TTL_MS = 20 * 60 * 1000;
 /** Maior aresta em px antes de redimensionar (cabeçalho/rodapé/marca d'água no PDF). */
-const PDF_BRANDING_MAX_EDGE_PX = 1400;
+const PDF_BRANDING_MAX_EDGE_PX = 1000;
+
+function isFirebaseStorageHttpsUrl(url: string): boolean {
+  return (
+    url.includes('firebasestorage.googleapis.com') ||
+    url.includes('firebasestorage.app')
+  );
+}
+
+function isUsablePngDataUrl(dataUrl: string | null): dataUrl is string {
+  return Boolean(dataUrl && dataUrl.startsWith('data:image') && dataUrl.length > 200);
+}
+
+/**
+ * No browser, URLs do Firebase Storage passam pelo proxy same-origin (/api/branding/image)
+ * para evitar CORS (canvas/jsPDF em localhost e em produção sem CORS no bucket).
+ */
+function brandingClientFetchUrl(storageUrl: string): string {
+  if (typeof window === 'undefined') return storageUrl;
+  if (isFirebaseStorageHttpsUrl(storageUrl)) {
+    return `/api/branding/image?url=${encodeURIComponent(storageUrl)}`;
+  }
+  return storageUrl;
+}
+
+async function fetchBrandingBlob(url: string): Promise<Blob> {
+  const fetchUrl = brandingClientFetchUrl(url);
+  const response = await fetch(fetchUrl, {
+    credentials: 'same-origin',
+    cache: 'default',
+  });
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  const blob = await response.blob();
+  if (!blob.size) throw new Error('Resposta vazia');
+  return blob;
+}
+
+async function blobToPngBase64ForPdf(blob: Blob): Promise<string | null> {
+  const rawDataUrl: string = await new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+  const png = await imageDataUrlToPngDataUrl(rawDataUrl);
+  const sized = await resizeDataUrlForPdf(png);
+  return isUsablePngDataUrl(sized) ? sized : null;
+}
 
 type CacheEntry = { base64: string; expiresAt: number };
 
@@ -127,9 +174,11 @@ export async function resizeDataUrlForPdf(
  */
 /** Fallback quando getBlob/fetch falham — a imagem já abre no navegador (preview em Configurações). */
 async function loadBrandingViaImageElement(url: string): Promise<string | null> {
+  const src = brandingClientFetchUrl(url);
+  const sameOrigin = src.startsWith('/');
   return new Promise((resolve) => {
     const img = new Image();
-    img.crossOrigin = 'anonymous';
+    if (!sameOrigin) img.crossOrigin = 'anonymous';
     img.onload = () => {
       void (async () => {
         try {
@@ -150,15 +199,20 @@ async function loadBrandingViaImageElement(url: string): Promise<string | null> 
       })();
     };
     img.onerror = () => resolve(null);
-    img.src = url;
+    img.src = src;
   });
 }
 
 async function loadImageBlobForBranding(trimmed: string): Promise<Blob> {
   if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
-    const isFirebaseStorage =
-      trimmed.includes('firebasestorage.googleapis.com') ||
-      trimmed.includes('firebasestorage.app');
+    if (typeof window !== 'undefined' && isFirebaseStorageHttpsUrl(trimmed)) {
+      try {
+        return await fetchBrandingBlob(trimmed);
+      } catch (proxyErr) {
+        console.warn('[branding-pdf] proxy same-origin falhou:', proxyErr);
+      }
+    }
+    const isFirebaseStorage = isFirebaseStorageHttpsUrl(trimmed);
     const useSdk =
       isFirebaseStorage &&
       typeof getApps === 'function' &&
@@ -170,11 +224,14 @@ async function loadImageBlobForBranding(trimmed: string): Promise<Blob> {
           const storage = getStorage(getApp());
           return await getBlob(ref(storage, path));
         } catch (sdkErr) {
-          console.warn('[branding-pdf] getBlob falhou, tentando fetch:', sdkErr);
+          console.warn('[branding-pdf] getBlob falhou:', sdkErr);
         }
       }
     }
-    const response = await fetch(trimmed, { mode: 'cors', credentials: 'omit' });
+    const response = await fetch(brandingClientFetchUrl(trimmed), {
+      credentials: 'same-origin',
+      cache: 'default',
+    });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     return response.blob();
   }
@@ -188,9 +245,7 @@ async function loadImageBlobForBranding(trimmed: string): Promise<Blob> {
   const storage = getStorage(getApp());
   const imageRef = ref(storage, trimmed);
   const urlToFetch = await getDownloadURL(imageRef);
-  const response = await fetch(urlToFetch, { mode: 'cors', credentials: 'omit' });
-  if (!response.ok) throw new Error(`HTTP ${response.status}`);
-  return response.blob();
+  return fetchBrandingBlob(urlToFetch);
 }
 
 async function loadBrandingImageAsBase64Uncached(
@@ -203,29 +258,26 @@ async function loadBrandingImageAsBase64Uncached(
   try {
     if (trimmed.startsWith('data:image')) {
       const png = await imageDataUrlToPngDataUrl(trimmed);
-      return resizeDataUrlForPdf(png);
+      const sized = await resizeDataUrlForPdf(png);
+      return isUsablePngDataUrl(sized) ? sized : null;
     }
 
-    if (typeof getApps === 'function' && getApps().length === 0) {
-      throw new Error('Firebase não inicializado. Recarregue a página.');
+    if (trimmed.startsWith('https://') || trimmed.startsWith('http://') || trimmed.startsWith('/')) {
+      if (typeof getApps === 'function' && getApps().length === 0 && trimmed.startsWith('https://')) {
+        throw new Error('Firebase não inicializado. Recarregue a página.');
+      }
+      const blob = await loadImageBlobForBranding(trimmed);
+      const fromBlob = await blobToPngBase64ForPdf(blob);
+      if (fromBlob) return fromBlob;
     }
-
-    const blob = await loadImageBlobForBranding(trimmed);
-    const rawDataUrl: string = await new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result as string);
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
-    });
-    const png = await imageDataUrlToPngDataUrl(rawDataUrl);
-    return resizeDataUrlForPdf(png);
   } catch (error) {
     console.warn('[branding-pdf] blob/fetch falhou, tentando via <img>:', trimmed, error);
-    const viaImg = await loadBrandingViaImageElement(trimmed);
-    if (viaImg) return viaImg;
-    console.error('Erro ao carregar imagem do branding para PDF:', error);
-    return null;
   }
+
+  const viaImg = await loadBrandingViaImageElement(trimmed);
+  if (isUsablePngDataUrl(viaImg)) return viaImg;
+  console.error('[branding-pdf] Não foi possível carregar imagem para PDF:', trimmed);
+  return null;
 }
 
 /** Avisos quando há URL configurada mas a imagem não entrou no PDF. */

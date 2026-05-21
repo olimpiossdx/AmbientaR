@@ -58,6 +58,8 @@ import {
 } from "@/components/ui/select";
 import { calculateWaterCompliance, mapManualLogToTelemetryReading } from "@/lib/water-compliance-engine";
 import { generateWaterCompliancePDF } from "@/lib/export-water-report";
+import { useLocalBranding } from "@/hooks/use-local-branding";
+import { brandingUrlsFromLocal } from "@/lib/pdf-branding-layout";
 import {
   Tooltip,
   TooltipContent,
@@ -100,6 +102,7 @@ export default function ManualMonitoringPage() {
   const firestore = useFirestore();
   const { user } = useAuth();
   const { toast } = useToast();
+  const { data: brandingData } = useLocalBranding();
 
   useEffect(() => {
     if (!firestore || !user) return;
@@ -431,11 +434,18 @@ export default function ManualMonitoringPage() {
     const report =
       compliance ??
       calculateWaterCompliance(reportReadings, outorga, referenceDate);
-    await generateWaterCompliancePDF(outorga, report, referenceDate, reportReadings, {
-      empreendedorName,
-      empreendimentoName,
-      coordinates: empreendimentoCoordinates,
-    });
+    await generateWaterCompliancePDF(
+      outorga,
+      report,
+      referenceDate,
+      reportReadings,
+      {
+        empreendedorName,
+        empreendimentoName,
+        coordinates: empreendimentoCoordinates,
+      },
+      brandingUrlsFromLocal(brandingData),
+    );
   };
 
   return (

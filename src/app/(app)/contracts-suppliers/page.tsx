@@ -108,11 +108,15 @@ export default function ContractsSuppliersPage() {
     const termFiltered = !term
       ? base
       : base.filter((item) => {
+      const itensText = (item.objeto?.itens || [])
+        .map((i) => i.descricao)
+        .join(" ");
       return (
         (item.contractNumber || "").toLowerCase().includes(term) ||
         (item.contratante?.nome || "").toLowerCase().includes(term) ||
         (item.prestador?.nome || "").toLowerCase().includes(term) ||
-        (item.objeto?.servicos || "").toLowerCase().includes(term)
+        (item.objeto?.servicos || "").toLowerCase().includes(term) ||
+        itensText.toLowerCase().includes(term)
       );
     });
     return [...termFiltered].sort((a, b) =>
@@ -548,7 +552,7 @@ export default function ContractsSuppliersPage() {
       </div>
 
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-        <DialogContent className="sm:max-w-3xl h-full max-h-[95dvh] overflow-y-auto">
+        <DialogContent className="sm:max-w-4xl h-full max-h-[95dvh] overflow-y-auto">
           <SupplierContractForm
             currentItem={editingItem}
             onSuccess={() => {
@@ -572,13 +576,33 @@ export default function ContractsSuppliersPage() {
               <DetailItem label="Contratante" value={viewingItem.contratante?.nome} />
               <DetailItem label="Prestador" value={viewingItem.prestador?.nome} />
               <DetailItem label="CPF/CNPJ Prestador" value={viewingItem.prestador?.cpfCnpj} />
-              <DetailItem label="Serviços" value={viewingItem.objeto?.servicos} />
+              <DetailItem label="Descrição geral" value={viewingItem.objeto?.servicos} />
+              {viewingItem.objeto?.itens && viewingItem.objeto.itens.length > 0 ? (
+                <div className="space-y-2">
+                  <p className="text-sm font-medium">Itens contratados</p>
+                  <ul className="space-y-1 text-sm text-muted-foreground">
+                    {viewingItem.objeto.itens.map((item, index) => (
+                      <li key={index}>
+                        {item.descricao} —{" "}
+                        {Number(item.valor || 0).toLocaleString("pt-BR", {
+                          style: "currency",
+                          currency: "BRL",
+                        })}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
               <DetailItem
                 label="Valor Total"
                 value={Number(viewingItem.pagamento?.valorTotal || 0).toLocaleString("pt-BR", {
                   style: "currency",
                   currency: "BRL",
                 })}
+              />
+              <DetailItem
+                label="Valor por extenso"
+                value={viewingItem.pagamento?.valorExtenso}
               />
               <DetailItem label="Forma de Pagamento" value={viewingItem.pagamento?.forma} />
               <DetailItem

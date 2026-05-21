@@ -53,13 +53,13 @@ import {
   arrayUnion,
   arrayRemove,
 } from "firebase/firestore";
-import {
-  fetchBrandingImageAsBase64,
-  getImageDimensions,
-  calcPdfImageSize,
-  applyImageOpacity,
-} from "@/lib/branding-pdf";
 import { useLocalBranding } from "@/hooks/use-local-branding";
+import {
+  brandingUrlsFromLocal,
+  createMmBrandedPdfSession,
+  drawWatermarkOnPage,
+  reportBrandingPdfIssues,
+} from "@/lib/pdf-branding-layout";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Dialog,
@@ -84,7 +84,6 @@ import { UserForm } from "./user-form";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/firebase";
 import { deleteUser } from "firebase/auth";
-import type jsPDF from "jspdf";
 import { logUserAction } from "@/lib/audit-log";
 import { UpgradeDialog } from "@/components/upgrade-dialog";
 import {
@@ -103,24 +102,6 @@ import {
   isAdminCredentialsMissing,
 } from "@/lib/admin/firebase-admin-setup";
 import { ToastAction } from "@/components/ui/toast";
-
-/** Adiciona numeração de páginas no rodapé no formato página/total. */
-function addPageNumbers(doc: jsPDF, bottomMarginMm: number = 10) {
-  const pageCount = doc.getNumberOfPages();
-  for (let i = 1; i <= pageCount; i++) {
-    doc.setPage(i);
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const pageHeight = doc.internal.pageSize.getHeight();
-    doc.setFontSize(8);
-    doc.setFont("helvetica", "normal");
-    doc.text(
-      `${i}/${pageCount}`,
-      pageWidth - bottomMarginMm,
-      pageHeight - bottomMarginMm,
-      { align: "right" },
-    );
-  }
-}
 
 const DetailItem = ({
   label,
@@ -535,49 +516,19 @@ export default function UsersPage() {
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
       } else if (format === "pdf") {
-        const { default: jsPDF } = await import("jspdf");
-        const doc = new jsPDF({ unit: "mm", format: "a4" });
-
-        const headerBase64 = await fetchBrandingImageAsBase64(
-          brandingData?.headerImageUrl,
+        const session = await createMmBrandedPdfSession(
+          brandingUrlsFromLocal(brandingData),
         );
-        const footerBase64 = await fetchBrandingImageAsBase64(
-          brandingData?.footerImageUrl,
+        reportBrandingPdfIssues(
+          brandingUrlsFromLocal(brandingData),
+          session.branding.images,
+          toast,
         );
-        const watermarkBase64Raw = await fetchBrandingImageAsBase64(
-          brandingData?.watermarkImageUrl,
-        );
-        const watermarkBase64 = watermarkBase64Raw
-          ? await applyImageOpacity(watermarkBase64Raw, 0.15)
-          : null;
-
+        const { doc } = session;
         const pageHeight = doc.internal.pageSize.getHeight();
         const pageWidth = doc.internal.pageSize.getWidth();
-        let yPos = 15;
-
-        if (headerBase64) {
-          const dims = await getImageDimensions(headerBase64);
-          const { w, h } = calcPdfImageSize(dims, pageWidth - 20, 30);
-          doc.addImage(headerBase64, "PNG", 10, 10, w, h);
-          yPos = 10 + h + 5;
-        }
-
-        if (watermarkBase64) {
-          const imgProps = doc.getImageProperties(watermarkBase64);
-          const aspectRatio = imgProps.width / imgProps.height;
-          const watermarkWidth = 100;
-          const watermarkHeight = watermarkWidth / aspectRatio;
-          doc.addImage(
-            watermarkBase64,
-            "PNG",
-            (pageWidth - watermarkWidth) / 2,
-            (pageHeight - watermarkHeight) / 2,
-            watermarkWidth,
-            watermarkHeight,
-            undefined,
-            "FAST",
-          );
-        }
+        let yPos = session.startY;
+        const onPdfPage = () => drawWatermarkOnPage(doc, session.branding);
 
         doc.setFont("Helvetica", "bold");
         doc.setFontSize(14);
@@ -604,7 +555,8 @@ export default function UsersPage() {
 
             if (yPos + splitText.length * 5 > pageHeight - 30) {
               doc.addPage();
-              yPos = 15;
+              onPdfPage();
+              yPos = session.startY;
             }
 
             doc.text(splitText, 15, yPos);
@@ -615,17 +567,7 @@ export default function UsersPage() {
           });
         }
 
-        if (footerBase64) {
-          const fDims = await getImageDimensions(footerBase64);
-          const { w: fw, h: fh } = calcPdfImageSize(fDims, pageWidth - 20, 20);
-          const totalPages = doc.getNumberOfPages();
-          for (let i = 1; i <= totalPages; i++) {
-            doc.setPage(i);
-            doc.addImage(footerBase64, "PNG", 10, pageHeight - fh - 5, fw, fh);
-          }
-        }
-        // Numeração de páginas alinhada à direita no rodapé.
-        addPageNumbers(doc, 10);
+        session.finalize();
 
         const fileName = `log_${logUser.name.replace(/\s+/g, "_")}_${new Date().toISOString().split("T")[0]}.pdf`;
         doc.save(fileName);

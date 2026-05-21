@@ -28,6 +28,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { isImageOrPdfForTransaction } from '@/lib/file-mime';
 import { UploadPreparationDialog } from '@/components/shared/upload-preparation-dialog';
 import { useStorageFileUpload } from '@/hooks/use-storage-file-upload';
+import { filterProjectsByEmpreendedorId } from '@/lib/processos-form-order';
 
 const formSchema = z.object({
     empreendedor: z.object({
@@ -174,10 +175,10 @@ export function TransporteResiduosForm({ onSuccess, onCancel }: TransporteResidu
   const selectedResponsavelId = form.watch('responsavelTecnico.id');
   const selectedEmpreendimentoId = form.watch('empreendimento.id');
   
-  const filteredProjects = React.useMemo(() => {
-    if (!selectedEmpreendedorId || !allProjects) return [];
-    return allProjects.filter(p => p.empreendedorId === selectedEmpreendedorId);
-  }, [selectedEmpreendedorId, allProjects]);
+  const filteredProjects = React.useMemo(
+    () => filterProjectsByEmpreendedorId(allProjects, selectedEmpreendedorId),
+    [selectedEmpreendedorId, allProjects],
+  );
 
   React.useEffect(() => {
     const empreendedor = empreendedores?.find(e => e.id === selectedEmpreendedorId);

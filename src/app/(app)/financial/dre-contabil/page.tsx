@@ -26,14 +26,13 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import type jsPDF from 'jspdf';
 import { useToast } from '@/hooks/use-toast';
 import {
-  fetchBrandingImagesForPdf,
-  brandingPdfMissingSlots,
-  getImageDimensions,
-  calcPdfImageSize,
-} from '@/lib/branding-pdf';
+  brandingUrlsFromLocal,
+  createMmBrandedPdfSession,
+  guardBrandingPdfExport,
+  reportBrandingPdfIssues,
+} from '@/lib/pdf-branding-layout';
 import { useLocalBranding } from '@/hooks/use-local-branding';
 import { useFinancialMenuDebug } from '@/lib/financial-menu-debug';
 import {
@@ -53,26 +52,18 @@ const DRE_REGIME_LABELS: Record<DreRevenueRegime, string> = {
   combinado_sem_duplicar: 'Faturas pagas + caixa sem vínculo (recomendado)',
 };
 
-/** Adiciona numeração de páginas no rodapé no formato página/total. */
-function addPageNumbers(doc: jsPDF, bottomMarginMm: number = 10) {
-  const pageCount = doc.getNumberOfPages();
-  for (let i = 1; i <= pageCount; i++) {
-    doc.setPage(i);
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const pageHeight = doc.internal.pageSize.getHeight();
-    doc.setFontSize(8);
-    doc.setFont('helvetica', 'normal');
-    doc.text(`${i}/${pageCount}`, pageWidth - bottomMarginMm, pageHeight - bottomMarginMm, { align: 'right' });
-  }
-}
-
 export default function DreContabilPage() {
   const [selectedYear, setSelectedYear] = useState<string>(String(currentYear));
   const [revenueRegime, setRevenueRegime] = useState<DreRevenueRegime>('combinado_sem_duplicar');
   const printRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const { firestore, user } = useFirebase();
-  const { data: brandingData } = useLocalBranding();
+  const {
+    data: brandingData,
+    pdfImages,
+    isPdfImagesLoading,
+    hasBrandingUrls,
+  } = useLocalBranding();
 
   const invoicesQuery = useMemoFirebase(
     () => (firestore && user ? collection(firestore, 'invoices') : null),
@@ -104,42 +95,13 @@ export default function DreContabilPage() {
 
   const handleExportPdf = async () => {
     if (!dre) return;
-    const { default: jsPDF } = await import('jspdf');
-    const brandingUrls = {
-      headerImageUrl: brandingData?.headerImageUrl,
-      footerImageUrl: brandingData?.footerImageUrl,
-      watermarkImageUrl: brandingData?.watermarkImageUrl,
-    };
-    const brandingLoaded = await fetchBrandingImagesForPdf(brandingUrls);
-    const { headerBase64, footerBase64, watermarkBase64 } = brandingLoaded;
-    const missing = brandingPdfMissingSlots(brandingUrls, brandingLoaded);
-    if (missing.length > 0) {
-      toast({
-        variant: 'destructive',
-        title: 'Identidade visual incompleta no PDF',
-        description: `Não foi possível carregar: ${missing.join(', ')}.`,
-      });
-    }
-
-    const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+    if (!guardBrandingPdfExport({ isPdfImagesLoading, hasBrandingUrls, toast })) return;
+    const brandingUrls = brandingUrlsFromLocal(brandingData);
+    const session = await createMmBrandedPdfSession(brandingUrls, undefined, pdfImages);
+    reportBrandingPdfIssues(brandingUrls, session.branding.images, toast);
+    const { doc, margins } = session;
     const pageWidth = doc.internal.pageSize.getWidth();
-    const pageHeight = doc.internal.pageSize.getHeight();
-    const margin = 15;
-    const contentWidth = pageWidth - margin * 2;
-    let y = 20;
-    if (headerBase64) {
-      const dims = await getImageDimensions(headerBase64);
-      const { w, h } = calcPdfImageSize(dims, contentWidth, 30);
-      doc.addImage(headerBase64, 'PNG', margin, 10, w, h);
-      y = 10 + h + 5;
-    }
-    if (watermarkBase64) {
-      const imgProps = doc.getImageProperties(watermarkBase64);
-      const aspectRatio = imgProps.width / imgProps.height;
-      const w = 100;
-      const h = w / aspectRatio;
-      doc.addImage(watermarkBase64, 'PNG', (pageWidth - w) / 2, (pageHeight - h) / 2, w, h, undefined, 'FAST');
-    }
+    let y = session.startY;
     doc.setFontSize(16);
     doc.setFont('helvetica', 'bold');
     doc.text('Demonstração do Resultado do Exercício (DRE)', pageWidth / 2, y, { align: 'center' });
@@ -161,18 +123,13 @@ export default function DreContabilPage() {
       ['7. Resultado Líquido do Exercício', formatCurrency(dre.resultadoLiquido)],
     ];
     lines.forEach(([label, value]) => {
+      y = session.ensureSpace(y, 7);
       doc.setFont('helvetica', label.startsWith('   ') ? 'normal' : label.startsWith('7.') ? 'bold' : 'normal');
-      doc.text(label, margin, y);
-      doc.text(value, pageWidth - margin, y, { align: 'right' });
+      doc.text(label, margins.left, y);
+      doc.text(value, pageWidth - margins.right, y, { align: 'right' });
       y += 7;
     });
-    if (footerBase64) {
-      const fDims = await getImageDimensions(footerBase64);
-      const { w: fw, h: fh } = calcPdfImageSize(fDims, pageWidth - 20, 20);
-      doc.addImage(footerBase64, 'PNG', 10, pageHeight - fh - 5, fw, fh);
-    }
-    // Numeração de páginas alinhada à direita no rodapé.
-    addPageNumbers(doc, 10);
+    session.finalize();
     doc.save(`DRE_Contabil_${selectedYear}.pdf`);
     toast({ title: 'PDF exportado', description: 'Arquivo DRE_Contabil_' + selectedYear + '.pdf' });
   };

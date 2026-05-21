@@ -25,6 +25,7 @@ import type {
 } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
+import { filterProjectsByEmpreendedorId } from '@/lib/processos-form-order';
 
 const TIPO_ESTUDO_OPTIONS: { value: ConsultaTipoServico | string; label: string }[] = [
   { value: 'RCA', label: 'RCA' },
@@ -78,10 +79,10 @@ export default function NewLaudoPage() {
     [firestore]
   );
   const { data: projects } = useCollection<Project>(projectsQuery);
-  const projectsByEmpreendedor = useMemo(() => {
-    if (!projects || !empreendedorId) return [];
-    return projects.filter((p) => p.empreendedorId === empreendedorId);
-  }, [projects, empreendedorId]);
+  const projectsByEmpreendedor = useMemo(
+    () => filterProjectsByEmpreendedorId(projects, empreendedorId),
+    [projects, empreendedorId],
+  );
 
   const consultasQuery = useMemoFirebase(
     () => (firestore ? collection(firestore, 'consultas') : null),

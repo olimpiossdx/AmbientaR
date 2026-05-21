@@ -60,6 +60,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { calculateWaterCompliance } from "@/lib/water-compliance-engine";
 import { generateWaterCompliancePDF } from "@/lib/export-water-report";
+import { useLocalBranding } from "@/hooks/use-local-branding";
+import { brandingUrlsFromLocal } from "@/lib/pdf-branding-layout";
 import {
   Select,
   SelectContent,
@@ -212,6 +214,7 @@ export default function TelemetricMonitoringPage() {
 
   const firestore = useFirestore();
   const { user } = useAuth();
+  const { data: brandingData } = useLocalBranding();
 
   useEffect(() => {
     if (!firestore || !user) return;
@@ -566,6 +569,7 @@ export default function TelemetricMonitoringPage() {
         empreendimentoName,
         coordinates: empreendimentoCoordinates,
       },
+      brandingUrlsFromLocal(brandingData),
     );
   };
 

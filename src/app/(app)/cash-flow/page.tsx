@@ -5,15 +5,14 @@ import { useMemo, useState } from 'react';
 import { useCollection, useFirestore, useUser, useMemoFirebase } from '@/firebase';
 import { collection } from 'firebase/firestore';
 import type { Revenue, Expense, Client } from '@/lib/types';
-import type jsPDF from 'jspdf';
 import { useToast } from '@/hooks/use-toast';
+import { downloadJsPdf } from '@/lib/branding-pdf';
 import {
-  downloadJsPdf,
-  fetchBrandingImagesForPdf,
-  brandingPdfMissingSlots,
-  getImageDimensions,
-  calcPdfImageSize,
-} from '@/lib/branding-pdf';
+  brandingUrlsFromLocal,
+  createMmBrandedPdfSession,
+  guardBrandingPdfExport,
+  reportBrandingPdfIssues,
+} from '@/lib/pdf-branding-layout';
 import { useLocalBranding } from '@/hooks/use-local-branding';
 import { CashFlowView } from './cash-flow-view';
 import { useFinancialMenuDebug } from '@/lib/financial-menu-debug';
@@ -39,24 +38,16 @@ function getPeriodBounds(periodType: PeriodType, periodDay: string, periodMonth:
   return { start: periodYear + '-01-01', end: periodYear + '-12-31' };
 }
 
-/** Adiciona numeração de páginas no rodapé no formato página/total. */
-function addPageNumbers(doc: jsPDF, bottomMarginMm: number = 10) {
-  const pageCount = doc.getNumberOfPages();
-  for (let i = 1; i <= pageCount; i++) {
-    doc.setPage(i);
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const pageHeight = doc.internal.pageSize.getHeight();
-    doc.setFontSize(8);
-    doc.setFont('helvetica', 'normal');
-    doc.text(`${i}/${pageCount}`, pageWidth - bottomMarginMm, pageHeight - bottomMarginMm, { align: 'right' });
-  }
-}
-
 export default function CashFlowPage() {
   const { toast } = useToast();
   const firestore = useFirestore();
   const { user } = useUser();
-  const { data: brandingData } = useLocalBranding();
+  const {
+    data: brandingData,
+    pdfImages,
+    isPdfImagesLoading,
+    hasBrandingUrls,
+  } = useLocalBranding();
 
   const [periodType, setPeriodType] = useState<PeriodType>('month');
   const [periodDay, setPeriodDay] = useState<string>(() => new Date().toISOString().slice(0, 10));
@@ -131,42 +122,13 @@ export default function CashFlowPage() {
     if (isExportingPdf) return;
     setIsExportingPdf(true);
     try {
-    const { default: jsPDF } = await import('jspdf');
-    const brandingUrls = {
-      headerImageUrl: brandingData?.headerImageUrl,
-      footerImageUrl: brandingData?.footerImageUrl,
-      watermarkImageUrl: brandingData?.watermarkImageUrl,
-    };
-    const brandingLoaded = await fetchBrandingImagesForPdf(brandingUrls);
-    const { headerBase64, footerBase64, watermarkBase64 } = brandingLoaded;
-    const missing = brandingPdfMissingSlots(brandingUrls, brandingLoaded);
-    if (missing.length > 0) {
-      toast({
-        variant: 'destructive',
-        title: 'Identidade visual incompleta no PDF',
-        description: `Não foi possível carregar: ${missing.join(', ')}.`,
-      });
-    }
-
-    const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+    if (!guardBrandingPdfExport({ isPdfImagesLoading, hasBrandingUrls, toast })) return;
+    const brandingUrls = brandingUrlsFromLocal(brandingData);
+    const session = await createMmBrandedPdfSession(brandingUrls, undefined, pdfImages);
+    reportBrandingPdfIssues(brandingUrls, session.branding.images, toast);
+    const { doc, margins } = session;
     const pageWidth = doc.internal.pageSize.getWidth();
-    const pageHeight = doc.internal.pageSize.getHeight();
-    const margin = 15;
-    const contentWidth = pageWidth - margin * 2;
-    let y = 20;
-    if (headerBase64) {
-      const dims = await getImageDimensions(headerBase64);
-      const { w, h } = calcPdfImageSize(dims, contentWidth, 30);
-      doc.addImage(headerBase64, 'PNG', margin, 10, w, h);
-      y = 10 + h + 5;
-    }
-    if (watermarkBase64) {
-      const imgProps = doc.getImageProperties(watermarkBase64);
-      const aspectRatio = imgProps.width / imgProps.height;
-      const w = 100;
-      const h = w / aspectRatio;
-      doc.addImage(watermarkBase64, 'PNG', (pageWidth - w) / 2, (pageHeight - h) / 2, w, h, undefined, 'FAST');
-    }
+    let y = session.startY;
     doc.setFontSize(14);
     doc.setFont('helvetica', 'bold');
     doc.text('Lançamentos de Caixa por Período', pageWidth / 2, y, { align: 'center' });
@@ -176,48 +138,38 @@ export default function CashFlowPage() {
     doc.text('Período: ' + (periodType === 'day' ? 'Dia ' : periodType === 'month' ? 'Mês ' : 'Ano ') + periodLabel, pageWidth / 2, y, { align: 'center' });
     y += 12;
     doc.setFont('helvetica', 'bold');
-    doc.text('Receitas', margin, y);
+    doc.text('Receitas', margins.left, y);
     y += 6;
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
     revenuesInPeriod.forEach((r) => {
-      if (y > 270) { doc.addPage(); y = 20; }
-      doc.text(new Date(r.date).toLocaleDateString('pt-BR'), margin, y);
-      doc.text((r.description || '').slice(0, 50), margin + 25, y);
-      doc.text(formatCurrency(r.amount), pageWidth - margin, y, { align: 'right' });
+      y = session.ensureSpace(y, 6);
+      doc.text(new Date(r.date).toLocaleDateString('pt-BR'), margins.left, y);
+      doc.text((r.description || '').slice(0, 50), margins.left + 25, y);
+      doc.text(formatCurrency(r.amount), pageWidth - margins.right, y, { align: 'right' });
       y += 6;
     });
     y += 6;
     doc.setFont('helvetica', 'bold');
-    doc.text('Total Receitas: ' + formatCurrency(revenuesInPeriod.reduce((s, r) => s + r.amount, 0)), margin, y);
+    doc.text('Total Receitas: ' + formatCurrency(revenuesInPeriod.reduce((s, r) => s + r.amount, 0)), margins.left, y);
     y += 10;
     doc.setFont('helvetica', 'bold');
-    doc.text('Despesas', margin, y);
+    doc.text('Despesas', margins.left, y);
     y += 6;
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
     expensesInPeriod.forEach((e) => {
-      if (y > 270) { doc.addPage(); y = 20; }
-      doc.text(new Date(e.date).toLocaleDateString('pt-BR'), margin, y);
-      doc.text((e.description || '').slice(0, 50), margin + 25, y);
-      doc.text(formatCurrency(e.amount), pageWidth - margin, y, { align: 'right' });
+      y = session.ensureSpace(y, 6);
+      doc.text(new Date(e.date).toLocaleDateString('pt-BR'), margins.left, y);
+      doc.text((e.description || '').slice(0, 50), margins.left + 25, y);
+      doc.text(formatCurrency(e.amount), pageWidth - margins.right, y, { align: 'right' });
       y += 6;
     });
     y += 6;
     doc.setFont('helvetica', 'bold');
-    doc.text('Total Despesas: ' + formatCurrency(expensesInPeriod.reduce((s, e) => s + e.amount, 0)), margin, y);
+    doc.text('Total Despesas: ' + formatCurrency(expensesInPeriod.reduce((s, e) => s + e.amount, 0)), margins.left, y);
 
-    if (footerBase64) {
-      const fDims = await getImageDimensions(footerBase64);
-      const { w: fw, h: fh } = calcPdfImageSize(fDims, pageWidth - 20, 20);
-      const totalPages = doc.getNumberOfPages();
-      for (let i = 1; i <= totalPages; i++) {
-        doc.setPage(i);
-        doc.addImage(footerBase64, 'PNG', 10, pageHeight - fh - 5, fw, fh);
-      }
-    }
-    // Numeração de páginas alinhada à direita no rodapé.
-    addPageNumbers(doc, 10);
+    session.finalize();
     downloadJsPdf(doc, 'lancamentos_caixa_' + periodLabel.replace(/-/g, '') + '.pdf');
     } finally {
       setIsExportingPdf(false);

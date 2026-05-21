@@ -37,6 +37,7 @@ import {
   getDocs,
 } from "firebase/firestore";
 import type { Client, Project } from "@/lib/types";
+import { sortByPropertyNamePt } from "@/lib/sort-pt-br";
 import { Skeleton } from "@/components/ui/skeleton";
 import { UploadPreparationDialog } from "@/components/shared/upload-preparation-dialog";
 import { useStorageFileUpload } from "@/hooks/use-storage-file-upload";
@@ -329,8 +330,10 @@ export default function CarPage() {
       )
       .map((e) => e.id);
     if (empIdsOfClient.length === 0) return [];
-    return projects.filter(
-      (p) => p.empreendedorId && empIdsOfClient.includes(p.empreendedorId),
+    return sortByPropertyNamePt(
+      projects.filter(
+        (p) => p.empreendedorId && empIdsOfClient.includes(p.empreendedorId),
+      ),
     );
   }, [projects, user?.role, clientId, clientsMap, empreendedoresForRep]);
 

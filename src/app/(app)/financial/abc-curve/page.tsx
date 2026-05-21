@@ -18,11 +18,11 @@ import { FileDown, FileSpreadsheet, Printer } from 'lucide-react';
 import type jsPDF from 'jspdf';
 import { useToast } from '@/hooks/use-toast';
 import {
-  fetchBrandingImagesForPdf,
-  brandingPdfMissingSlots,
-  getImageDimensions,
-  calcPdfImageSize,
-} from '@/lib/branding-pdf';
+  brandingUrlsFromLocal,
+  createMmBrandedPdfSession,
+  guardBrandingPdfExport,
+  reportBrandingPdfIssues,
+} from '@/lib/pdf-branding-layout';
 import { useLocalBranding } from '@/hooks/use-local-branding';
 
 type AbcSource = 'invoices' | 'revenues' | 'both';
@@ -44,18 +44,6 @@ const monthOptions = [
   { value: '07', label: 'Julho' }, { value: '08', label: 'Agosto' }, { value: '09', label: 'Setembro' },
   { value: '10', label: 'Outubro' }, { value: '11', label: 'Novembro' }, { value: '12', label: 'Dezembro' },
 ];
-
-function addPageNumbers(doc: jsPDF, bottomMarginMm: number = 10) {
-  const pageCount = doc.getNumberOfPages();
-  for (let i = 1; i <= pageCount; i++) {
-    doc.setPage(i);
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const pageHeight = doc.internal.pageSize.getHeight();
-    doc.setFontSize(8);
-    doc.setFont('helvetica', 'normal');
-    doc.text(`${i}/${pageCount}`, pageWidth - bottomMarginMm, pageHeight - bottomMarginMm, { align: 'right' });
-  }
-}
 
 function getRangeByPeriod(year: number, mode: PeriodMode, quarter: string, month: string) {
   if (mode === 'year') {
@@ -90,7 +78,12 @@ export default function AbcCurvePage() {
   const [rankingLimit, setRankingLimit] = useState<string>('all');
   const { firestore, user } = useFirebase();
   const { toast } = useToast();
-  const { data: brandingData } = useLocalBranding();
+  const {
+    data: brandingData,
+    pdfImages,
+    isPdfImagesLoading,
+    hasBrandingUrls,
+  } = useLocalBranding();
   const printRef = useRef<HTMLDivElement>(null);
   const yearNumber = Number(selectedYear);
   const cutoffA = abcProfile === 'classic' ? 80 : abcProfile === 'balanced' ? 75 : 70;
@@ -303,55 +296,14 @@ export default function AbcCurvePage() {
       return;
     }
 
-    const { default: jsPDF } = await import('jspdf');
-    const brandingUrls = {
-      headerImageUrl: brandingData?.headerImageUrl,
-      footerImageUrl: brandingData?.footerImageUrl,
-      watermarkImageUrl: brandingData?.watermarkImageUrl,
-    };
-    const brandingLoaded = await fetchBrandingImagesForPdf(brandingUrls);
-    const { headerBase64, footerBase64, watermarkBase64 } = brandingLoaded;
-    const missing = brandingPdfMissingSlots(brandingUrls, brandingLoaded);
-    if (missing.length > 0) {
-      toast({
-        variant: 'destructive',
-        title: 'Identidade visual incompleta no PDF',
-        description: `Não foi possível carregar: ${missing.join(', ')}.`,
-      });
-    }
-
-    const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+    if (!guardBrandingPdfExport({ isPdfImagesLoading, hasBrandingUrls, toast })) return;
+    const brandingUrls = brandingUrlsFromLocal(brandingData);
+    const abcMargins = { left: 12, right: 12, top: 12, bottom: 28 };
+    const session = await createMmBrandedPdfSession(brandingUrls, abcMargins, pdfImages);
+    reportBrandingPdfIssues(brandingUrls, session.branding.images, toast);
+    const { doc, margins } = session;
     const pageWidth = doc.internal.pageSize.getWidth();
-    const pageHeight = doc.internal.pageSize.getHeight();
-    const margin = 12;
-    const contentWidth = pageWidth - margin * 2;
-    let y = 15;
-
-    if (watermarkBase64) {
-      const imgProps = doc.getImageProperties(watermarkBase64);
-      const aspectRatio = imgProps.width / imgProps.height;
-      const watermarkWidth = 110;
-      const watermarkHeight = watermarkWidth / aspectRatio;
-      const wX = (pageWidth - watermarkWidth) / 2;
-      const wY = (pageHeight - watermarkHeight) / 2;
-      doc.addImage(
-        watermarkBase64,
-        'PNG',
-        wX,
-        wY,
-        watermarkWidth,
-        watermarkHeight,
-        undefined,
-        'FAST',
-      );
-    }
-
-    if (headerBase64) {
-      const dims = await getImageDimensions(headerBase64);
-      const { w, h } = calcPdfImageSize(dims, contentWidth, 28);
-      doc.addImage(headerBase64, 'PNG', margin, 8, w, h);
-      y = 8 + h + 6;
-    }
+    let y = session.startY;
 
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(14);
@@ -359,53 +311,42 @@ export default function AbcCurvePage() {
     y += 8;
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(10);
-    doc.text(`Período: ${periodLabel}`, margin, y);
+    doc.text(`Período: ${periodLabel}`, margins.left, y);
     y += 5;
-    doc.text(`Base: ${sourceLabel}`, margin, y);
+    doc.text(`Base: ${sourceLabel}`, margins.left, y);
     y += 5;
-    doc.text(`Perfil ABC: ${abcProfileLabel}`, margin, y);
+    doc.text(`Perfil ABC: ${abcProfileLabel}`, margins.left, y);
     y += 7;
 
     (['A', 'B', 'C'] as const).forEach((classKey) => {
       const entry = abcData.classSummary[classKey];
       const share = totalRevenue > 0 ? ((entry.revenue / totalRevenue) * 100).toFixed(2) : '0.00';
-      doc.text(`Classe ${classKey}: ${entry.count} cliente(s) | ${formatCurrency(entry.revenue)} | ${share}%`, margin, y);
+      doc.text(`Classe ${classKey}: ${entry.count} cliente(s) | ${formatCurrency(entry.revenue)} | ${share}%`, margins.left, y);
       y += 5;
     });
     y += 3;
 
     doc.setFont('helvetica', 'bold');
-    doc.text('Cliente', margin, y);
+    doc.text('Cliente', margins.left, y);
     doc.text('Receita', 120, y, { align: 'right' });
     doc.text('% Receita', 155, y, { align: 'right' });
-    doc.text('% Acum.', pageWidth - margin, y, { align: 'right' });
+    doc.text('% Acum.', pageWidth - margins.right, y, { align: 'right' });
     y += 2;
-    doc.line(margin, y, pageWidth - margin, y);
+    doc.line(margins.left, y, pageWidth - margins.right, y);
     y += 4;
     doc.setFont('helvetica', 'normal');
 
     displayTableData.forEach((item) => {
-      if (y > 280) {
-        doc.addPage();
-        y = 15;
-      }
+      y = session.ensureSpace(y, 5);
       const clientName = `${item.clientName} [${item.classification}]`;
-      doc.text(clientName.slice(0, 52), margin, y);
+      doc.text(clientName.slice(0, 52), margins.left, y);
       doc.text(formatCurrency(item.totalRevenue), 120, y, { align: 'right' });
       doc.text(`${item.revenuePercentage.toFixed(2)}%`, 155, y, { align: 'right' });
-      doc.text(`${item.cumulativeRevenuePercentage.toFixed(2)}%`, pageWidth - margin, y, { align: 'right' });
+      doc.text(`${item.cumulativeRevenuePercentage.toFixed(2)}%`, pageWidth - margins.right, y, { align: 'right' });
       y += 5;
     });
 
-    const totalPages = doc.getNumberOfPages();
-    if (footerBase64) {
-      const fDims = await getImageDimensions(footerBase64);
-      const { w: fw, h: fh } = calcPdfImageSize(fDims, pageWidth - 2 * margin, 18);
-      doc.setPage(totalPages);
-      doc.addImage(footerBase64, 'PNG', margin, pageHeight - fh - 6, fw, fh);
-    }
-    addPageNumbers(doc, 10);
-
+    session.finalize();
     doc.save(`Curva_ABC_${selectedYear}_${periodMode}_${abcProfile}.pdf`);
     toast({ title: 'PDF exportado', description: 'Relatório da Curva ABC gerado com sucesso.' });
   };

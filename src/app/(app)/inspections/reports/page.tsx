@@ -47,32 +47,13 @@ import {
   serverTimestamp,
 } from "firebase/firestore";
 import { Skeleton } from "@/components/ui/skeleton";
-import type jsPDF from "jspdf";
+import { downloadJsPdf } from "@/lib/branding-pdf";
+import { buildInspectionFieldReportPdf } from "@/lib/inspection-field-report-pdf";
 import {
-  fetchBrandingImageAsBase64,
-  downloadJsPdf,
-  getImageDimensions,
-  calcPdfImageSize,
-} from "@/lib/branding-pdf";
+  brandingUrlsFromLocal,
+  createMmBrandedPdfSession,
+} from "@/lib/pdf-branding-layout";
 import { useLocalBranding } from "@/hooks/use-local-branding";
-
-/** Adiciona numeração de páginas no rodapé no formato página/total. */
-function addPageNumbers(doc: jsPDF, bottomMarginMm: number = 10) {
-  const pageCount = doc.getNumberOfPages();
-  for (let i = 1; i <= pageCount; i++) {
-    doc.setPage(i);
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const pageHeight = doc.internal.pageSize.getHeight();
-    doc.setFontSize(8);
-    doc.setFont("helvetica", "normal");
-    doc.text(
-      `${i}/${pageCount}`,
-      pageWidth - bottomMarginMm,
-      pageHeight - bottomMarginMm,
-      { align: "right" },
-    );
-  }
-}
 import {
   Tooltip,
   TooltipProvider,
@@ -278,175 +259,33 @@ export default function InspectionReportsListPage() {
     setReportToConfirm(null);
   };
 
+  const renderInspectionPdf = async (report: Inspection) => {
+    const session = await createMmBrandedPdfSession(
+      brandingUrlsFromLocal(brandingData),
+    );
+    await buildInspectionFieldReportPdf(
+      session.doc,
+      report,
+      session,
+      session.startY,
+      {
+        projectName: projectsMap.get(report.projectId),
+        empreendedorName: empreendedoresMap.get(report.empreendedorId),
+      },
+    );
+    session.finalize();
+    return session.doc;
+  };
+
   const handleViewPdf = async (report: Inspection) => {
-    const { default: jsPDF } = await import("jspdf");
-    const { default: autoTable } = await import("jspdf-autotable");
-    const doc = new jsPDF();
-    const pageHeight = doc.internal.pageSize.getHeight();
-    const pageWidth = doc.internal.pageSize.getWidth();
-    let yPos = 15;
-
-    const headerBase64 = await fetchBrandingImageAsBase64(
-      brandingData?.headerImageUrl,
-    );
-    const footerBase64 = await fetchBrandingImageAsBase64(
-      brandingData?.footerImageUrl,
-    );
-
-    if (headerBase64) {
-      const dims = await getImageDimensions(headerBase64);
-      const { w, h } = calcPdfImageSize(dims, pageWidth - 20, 30);
-      doc.addImage(headerBase64, "PNG", 10, 10, w, h);
-      yPos = 10 + h + 5;
-    }
-
-    doc.setFontSize(16);
-    doc.setFont("helvetica", "bold");
-    doc.text("Relatório de Campo", pageWidth / 2, yPos, {
-      align: "center",
-    });
-    yPos += 15;
-
-    doc.setFontSize(10);
-    doc.setFont("helvetica", "normal");
-    doc.text(
-      `Empreendimento: ${projectsMap.get(report.projectId) || "N/A"}`,
-      15,
-      yPos,
-    );
-    yPos += 6;
-    doc.text(
-      `Empreendedor: ${empreendedoresMap.get(report.empreendedorId) || "N/A"}`,
-      15,
-      yPos,
-    );
-    yPos += 6;
-    doc.text(
-      `Data da Vistoria: ${new Date(report.inspectionDate).toLocaleDateString("pt-BR")}`,
-      15,
-      yPos,
-    );
-    yPos += 6;
-    doc.text(`Responsável: ${report.inspectorName}`, 15, yPos);
-    yPos += 12;
-
-    doc.setFontSize(12);
-    doc.setFont("helvetica", "bold");
-    doc.text("Inconformidades e Observações", 15, yPos);
-    yPos += 6;
-
-    const tableData = report.inconformidades.map((item) => [
-      item.description,
-      item.criticality,
-    ]);
-
-    autoTable(doc, {
-      startY: yPos,
-      head: [["Descrição", "Criticidade"]],
-      body: tableData,
-      theme: "striped",
-      headStyles: { fillColor: [34, 139, 34] },
-    });
-
-    if (footerBase64) {
-      const totalPages = doc.getNumberOfPages();
-      for (let i = 1; i <= totalPages; i++) {
-        doc.setPage(i);
-        const fDims = await getImageDimensions(footerBase64);
-        const { w: fw, h: fh } = calcPdfImageSize(fDims, pageWidth - 20, 20);
-        doc.addImage(footerBase64, "PNG", 10, pageHeight - fh - 5, fw, fh);
-      }
-    }
-    addPageNumbers(doc, 10);
-
+    const doc = await renderInspectionPdf(report);
     const blobUrl = doc.output("bloburl");
     window.open(blobUrl, "_blank", "noopener,noreferrer");
   };
 
   const handleGeneratePdf = async (report: Inspection) => {
     toast({ title: "Gerando PDF...", description: "Por favor, aguarde." });
-
-    const { default: jsPDF } = await import("jspdf");
-    const { default: autoTable } = await import("jspdf-autotable");
-    const doc = new jsPDF();
-    const pageHeight = doc.internal.pageSize.getHeight();
-    const pageWidth = doc.internal.pageSize.getWidth();
-    let yPos = 15;
-
-    const headerBase64 = await fetchBrandingImageAsBase64(
-      brandingData?.headerImageUrl,
-    );
-    const footerBase64 = await fetchBrandingImageAsBase64(
-      brandingData?.footerImageUrl,
-    );
-
-    if (headerBase64) {
-      const dims = await getImageDimensions(headerBase64);
-      const { w, h } = calcPdfImageSize(dims, pageWidth - 20, 30);
-      doc.addImage(headerBase64, "PNG", 10, 10, w, h);
-      yPos = 10 + h + 5;
-    }
-
-    doc.setFontSize(16);
-    doc.setFont("helvetica", "bold");
-    doc.text("Relatório de Campo", pageWidth / 2, yPos, {
-      align: "center",
-    });
-    yPos += 15;
-
-    doc.setFontSize(10);
-    doc.setFont("helvetica", "normal");
-    doc.text(
-      `Empreendimento: ${projectsMap.get(report.projectId) || "N/A"}`,
-      15,
-      yPos,
-    );
-    yPos += 6;
-    doc.text(
-      `Empreendedor: ${empreendedoresMap.get(report.empreendedorId) || "N/A"}`,
-      15,
-      yPos,
-    );
-    yPos += 6;
-    doc.text(
-      `Data da Vistoria: ${new Date(report.inspectionDate).toLocaleDateString("pt-BR")}`,
-      15,
-      yPos,
-    );
-    yPos += 6;
-    doc.text(`Responsável: ${report.inspectorName}`, 15, yPos);
-    yPos += 12;
-
-    doc.setFontSize(12);
-    doc.setFont("helvetica", "bold");
-    doc.text("Inconformidades e Observações", 15, yPos);
-    yPos += 6;
-
-    const tableData = report.inconformidades.map((item) => [
-      item.description,
-      item.criticality,
-    ]);
-
-    autoTable(doc, {
-      startY: yPos,
-      head: [["Descrição", "Criticidade"]],
-      body: tableData,
-      theme: "striped",
-      headStyles: { fillColor: [34, 139, 34] },
-    });
-
-    if (footerBase64) {
-      const totalPages = doc.getNumberOfPages();
-      for (let i = 1; i <= totalPages; i++) {
-        doc.setPage(i);
-        const fDims = await getImageDimensions(footerBase64);
-        const { w: fw, h: fh } = calcPdfImageSize(fDims, pageWidth - 20, 20);
-        doc.addImage(footerBase64, "PNG", 10, pageHeight - fh - 5, fw, fh);
-      }
-    }
-    // Numeração de páginas alinhada à direita no rodapé.
-    addPageNumbers(doc, 10);
-
+    const doc = await renderInspectionPdf(report);
     const fileName = `Relatorio_Vistoria_${(projectsMap.get(report.projectId) || "desconhecido").replace(/\s+/g, "_")}.pdf`;
     downloadJsPdf(doc, fileName);
   };

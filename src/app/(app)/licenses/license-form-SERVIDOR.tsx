@@ -33,6 +33,7 @@ import { ptBR } from 'date-fns/locale/pt-BR';
 
 import { useToast } from '@/hooks/use-toast';
 import type { License, PermitType, PermitStatus, Empreendedor, Project } from '@/lib/types';
+import { filterProjectsByEmpreendedorId } from '@/lib/processos-form-order';
 import { useFirebase, errorEmitter, useCollection, useMemoFirebase } from '@/firebase';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { collection, doc, addDoc, updateDoc } from 'firebase/firestore';
@@ -135,10 +136,10 @@ export function LicenseForm({ currentLicense, onSuccess }: LicenseFormProps) {
 
   const selectedEmpreendedorId = form.watch('empreendedorId');
 
-  const filteredProjects = React.useMemo(() => {
-    if (!selectedEmpreendedorId || !allProjects) return [];
-    return allProjects.filter(p => p.empreendedorId === selectedEmpreendedorId);
-  }, [selectedEmpreendedorId, allProjects]);
+  const filteredProjects = React.useMemo(
+    () => filterProjectsByEmpreendedorId(allProjects, selectedEmpreendedorId),
+    [selectedEmpreendedorId, allProjects],
+  );
 
   React.useEffect(() => {
     if(form.getValues('empreendedorId') !== selectedEmpreendedorId) {

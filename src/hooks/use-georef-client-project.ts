@@ -10,6 +10,7 @@ import {
 } from "@/firebase";
 import type { Client, Project } from "@/lib/types";
 import { isClienteAutonomo, isClientePortalRole } from "@/lib/role-guards";
+import { sortByPropertyNamePt } from "@/lib/sort-pt-br";
 
 export function useGeorefClientProject(
   clientId: string,
@@ -122,7 +123,9 @@ export function useGeorefClientProject(
     const empIds = empreendedoresForRep
       .filter((e) => e.cpfCnpj && onlyDigits(e.cpfCnpj) === d)
       .map((e) => e.id);
-    return projects.filter((p) => p.empreendedorId && empIds.includes(p.empreendedorId));
+    return sortByPropertyNamePt(
+      projects.filter((p) => p.empreendedorId && empIds.includes(p.empreendedorId)),
+    );
   }, [projects, user?.role, clientId, clientsMap, empreendedoresForRep]);
 
   const selectedClient = clientId ? clientsMap.get(clientId) : undefined;

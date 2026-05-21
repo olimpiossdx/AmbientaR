@@ -17,6 +17,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
+import { useLocalBranding } from "@/hooks/use-local-branding";
+import {
+  brandingUrlsFromLocal,
+  createMmBrandedPdfSession,
+  drawWatermarkOnPage,
+} from "@/lib/pdf-branding-layout";
 import { getAdminApiRequestHeaders } from "@/lib/admin-api-client";
 import {
   addDoc,
@@ -135,6 +141,7 @@ function estimateRequestCostBRL(params: {
 }
 
 export default function AiLabAutomationsPage() {
+  const { data: brandingData } = useLocalBranding();
   const { user } = useAuth();
   const { firestore, auth } = useFirebase();
   const { toast } = useToast();
@@ -503,23 +510,27 @@ export default function AiLabAutomationsPage() {
   };
 
   const handleExportPdf = async (title: string, report: string, refs: string[]) => {
-    const { default: jsPDF } = await import("jspdf");
-    const doc = new jsPDF({ unit: "mm", format: "a4" });
-    const margin = 15;
+    const session = await createMmBrandedPdfSession(
+      brandingUrlsFromLocal(brandingData),
+    );
+    const { doc, margins } = session;
     const pageW = doc.internal.pageSize.getWidth();
     const maxY = 280;
-    let y = margin;
+    let y = session.startY;
+    const onPdfPage = () => drawWatermarkOnPage(doc, session.branding);
+    const contentW = pageW - margins.left - margins.right;
 
     const writeTitle = (text: string) => {
       doc.setFont("helvetica", "bold");
       doc.setFontSize(14);
-      const lines = doc.splitTextToSize(text, pageW - margin * 2);
+      const lines = doc.splitTextToSize(text, contentW);
       lines.forEach((line: string) => {
         if (y > maxY) {
           doc.addPage();
-          y = margin;
+          onPdfPage();
+          y = session.startY;
         }
-        doc.text(line, margin, y);
+        doc.text(line, margins.left, y);
         y += 7;
       });
       y += 2;
@@ -528,13 +539,14 @@ export default function AiLabAutomationsPage() {
     const writeParagraph = (text: string, size = 10) => {
       doc.setFont("helvetica", "normal");
       doc.setFontSize(size);
-      const lines = doc.splitTextToSize(text, pageW - margin * 2);
+      const lines = doc.splitTextToSize(text, contentW);
       lines.forEach((line: string) => {
         if (y > maxY) {
           doc.addPage();
-          y = margin;
+          onPdfPage();
+          y = session.startY;
         }
-        doc.text(line, margin, y);
+        doc.text(line, margins.left, y);
         y += 5;
       });
       y += 2;
@@ -546,12 +558,14 @@ export default function AiLabAutomationsPage() {
     if (refs.length > 0) {
       if (y > maxY - 20) {
         doc.addPage();
-        y = margin;
+        onPdfPage();
+        y = session.startY;
       }
       writeTitle("Referências (ABNT)");
       refs.forEach((r, idx) => writeParagraph(`${idx + 1}. ${r}`, 9));
     }
 
+    session.finalize();
     doc.save(`relatorio-ia-rag-${new Date().toISOString().slice(0, 10)}.pdf`);
   };
 

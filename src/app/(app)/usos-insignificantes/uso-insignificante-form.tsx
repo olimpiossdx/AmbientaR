@@ -81,6 +81,7 @@ import {
 import { UploadPreparationDialog } from "@/components/shared/upload-preparation-dialog";
 import { useStorageFileUpload } from "@/hooks/use-storage-file-upload";
 import { UPLOAD_RAW_FILE_SAFETY_MAX } from "@/lib/upload-limits";
+import { filterProjectsByEmpreendedorId } from "@/lib/processos-form-order";
 import { Separator } from "@/components/ui/separator";
 
 const formSchema = z
@@ -203,12 +204,10 @@ export function UsoInsignificanteForm({
 
   const selectedEmpreendedorId = form.watch("empreendedorId");
 
-  const filteredProjects = React.useMemo(() => {
-    if (!selectedEmpreendedorId || !allProjects) return [];
-    return allProjects.filter(
-      (p) => p.empreendedorId === selectedEmpreendedorId,
-    );
-  }, [selectedEmpreendedorId, allProjects]);
+  const filteredProjects = React.useMemo(
+    () => filterProjectsByEmpreendedorId(allProjects, selectedEmpreendedorId),
+    [selectedEmpreendedorId, allProjects],
+  );
 
   React.useEffect(() => {
     if (form.getValues("empreendedorId") !== selectedEmpreendedorId) {

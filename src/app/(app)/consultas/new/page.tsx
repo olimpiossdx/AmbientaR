@@ -29,6 +29,7 @@ import type {
 } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
+import { filterProjectsByEmpreendedorId } from '@/lib/processos-form-order';
 
 const CANAL_OPTIONS: { value: ConsultaCanal; label: string }[] = [
   { value: 'web', label: 'Web' },
@@ -97,10 +98,10 @@ export default function NewConsultaPage() {
     [firestore]
   );
   const { data: projects } = useCollection<Project>(projectsQuery);
-  const projectsByEmpreendedor = useMemo(() => {
-    if (!projects || !empreendedorId) return [];
-    return projects.filter((p) => p.empreendedorId === empreendedorId);
-  }, [projects, empreendedorId]);
+  const projectsByEmpreendedor = useMemo(
+    () => filterProjectsByEmpreendedorId(projects, empreendedorId),
+    [projects, empreendedorId],
+  );
 
   const usersQuery = useMemoFirebase(
     () => (firestore ? collection(firestore, 'users') : null),
