@@ -462,7 +462,7 @@ export function InspectionForm({ onSuccess, currentItem }: InspectionFormProps) 
         setUploadingLaudo(false);
       }
     },
-    [currentItem?.id, form, toast, uploadToStorage],
+    [currentItem?.id, toast, uploadToStorage],
   );
 
   const handleInconformidadeFiles = React.useCallback(
@@ -505,7 +505,7 @@ export function InspectionForm({ onSuccess, currentItem }: InspectionFormProps) 
         setUploadingIncIndex(null);
       }
     },
-    [currentItem?.id, form, toast, uploadToStorage],
+    [currentItem?.id, toast, uploadToStorage],
   );
 
   const handleChecklistFiles = React.useCallback(
@@ -552,7 +552,7 @@ export function InspectionForm({ onSuccess, currentItem }: InspectionFormProps) 
         setUploadingChecklistIndex(null);
       }
     },
-    [currentItem?.id, form, toast, uploadToStorage],
+    [currentItem?.id, toast, uploadToStorage],
   );
 
   const removeLaudoUrl = (idx: number) => {

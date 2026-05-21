@@ -1,6 +1,6 @@
 'use client';
 
-
+/* eslint-disable @next/next/no-img-element -- URLs dinâmicas do Firebase/proxy; next/image não cobre todos os casos. */
 
 import * as React from 'react';
 
