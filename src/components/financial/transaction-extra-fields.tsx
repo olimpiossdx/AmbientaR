@@ -28,21 +28,21 @@ export type TransactionExtraFieldsForm = {
   invoiceId?: string;
 };
 
-interface TransactionExtraFieldsProps {
-  control: Control<TransactionExtraFieldsForm>;
+interface TransactionExtraFieldsProps<T extends TransactionExtraFieldsForm = TransactionExtraFieldsForm> {
+  control: Control<T>;
   transactionType: 'revenue' | 'expense';
   suppliers?: Fornecedor[];
   isLoadingSuppliers?: boolean;
   showInvoiceLink?: boolean;
 }
 
-export function TransactionExtraFields({
+export function TransactionExtraFields<T extends TransactionExtraFieldsForm = TransactionExtraFieldsForm>({
   control,
   transactionType,
   suppliers,
   isLoadingSuppliers,
   showInvoiceLink,
-}: TransactionExtraFieldsProps) {
+}: TransactionExtraFieldsProps<T>) {
   return (
     <div className="grid gap-4 sm:grid-cols-2 border rounded-md p-4 bg-muted/30">
       <p className="sm:col-span-2 text-sm font-medium text-muted-foreground">

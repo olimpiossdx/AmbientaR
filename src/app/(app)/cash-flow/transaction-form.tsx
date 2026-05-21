@@ -27,11 +27,7 @@ import { format, parse } from "date-fns";
 import { ptBR } from "date-fns/locale/pt-BR";
 import { useToast } from "@/hooks/use-toast";
 import type { Revenue, Expense, Client, Fornecedor, ExpenseCategory } from "@/lib/types";
-import {
-  TransactionExtraFields,
-  type TransactionExtraFieldsForm,
-} from "@/components/financial/transaction-extra-fields";
-import type { Control } from "react-hook-form";
+import { TransactionExtraFields } from "@/components/financial/transaction-extra-fields";
 import {
   useFirebase,
   errorEmitter,
@@ -487,7 +483,7 @@ export function TransactionForm({
             )}
           />
           <TransactionExtraFields
-            control={form.control as Control<TransactionExtraFieldsForm>}
+            control={form.control}
             transactionType={transactionType}
             suppliers={suppliers ?? undefined}
             isLoadingSuppliers={isLoadingSuppliers}
