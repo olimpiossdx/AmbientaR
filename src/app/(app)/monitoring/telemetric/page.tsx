@@ -37,6 +37,7 @@ import {
   type MiraExportAlvo,
 } from "@/lib/mira-export";
 import { Skeleton } from "@/components/ui/skeleton";
+import { BrDateInput } from "@/components/form/br-date-input";
 import { useCollection } from "@/firebase";
 import { useJsApiLoader } from "@react-google-maps/api";
 import dynamic from "next/dynamic";
@@ -814,21 +815,19 @@ export default function TelemetricMonitoringPage() {
                         </Select>
                         <div className="grid grid-cols-[1fr,auto,1fr] items-center gap-2">
                           <label className="sr-only">Data inicial</label>
-                          <input
-                            type="date"
+                          <BrDateInput
                             aria-label="Data inicial do período"
                             value={dateFrom}
-                            onChange={(e) => setDateFrom(e.target.value)}
-                            className="h-9 border rounded px-2 py-1"
+                            onChange={setDateFrom}
+                            className="h-9"
                           />
                           <span className="text-center">até</span>
                           <label className="sr-only">Data final</label>
-                          <input
-                            type="date"
+                          <BrDateInput
                             aria-label="Data final do período"
                             value={dateTo}
-                            onChange={(e) => setDateTo(e.target.value)}
-                            className="h-9 border rounded px-2 py-1"
+                            onChange={setDateTo}
+                            className="h-9"
                           />
                         </div>
                       </div>

@@ -373,12 +373,15 @@ export function guardBrandingPdfExport(
     isPdfImagesLoading: boolean;
     hasBrandingUrls: boolean;
     toast?: BrandingPdfToastReporter;
+    /** Rótulo do formato (ex.: PDF, Word). */
+    formatLabel?: string;
   },
 ): boolean {
   if (!opts.isPdfImagesLoading) return true;
+  const label = opts.formatLabel ?? 'PDF';
   opts.toast?.({
     title: 'Aguarde',
-    description: 'Carregando imagens da identidade visual para o PDF…',
+    description: `Carregando imagens da identidade visual para o ${label}…`,
   });
   return false;
 }

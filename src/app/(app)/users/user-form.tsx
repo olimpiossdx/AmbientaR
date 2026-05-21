@@ -16,6 +16,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { BrDateFormControl } from '@/components/form/br-date-input';
 import { MaskedInput } from '@/components/ui/masked-input';
 import {
   Select,
@@ -273,20 +274,6 @@ export function UserForm({ currentUser, onSuccess, representativeRequestedCpf, r
 
   const handleCpfListItemChange = (value: string, index: number) => {
     form.setValue(`cpfs.${index}.value`, value, { shouldValidate: true });
-  };
-
-  const handleDateInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    if (!value) {
-      form.setValue('dataNascimento', undefined, { shouldValidate: true });
-      return;
-    }
-    const parsedDate = new Date(value);
-    if (!isNaN(parsedDate.getTime())) {
-      form.setValue('dataNascimento', parsedDate, { shouldValidate: true });
-    } else {
-      form.setError('dataNascimento', { type: 'manual', message: 'Data inválida' });
-    }
   };
 
   async function onSubmit(values: UserFormValues) {
@@ -659,10 +646,11 @@ export function UserForm({ currentUser, onSuccess, representativeRequestedCpf, r
                         <FormItem className="flex flex-col">
                                 <FormLabel>Data de Nascimento (Opcional)</FormLabel>
                                 <FormControl>
-                                  <Input
-                                    type="date"
-                                    value={field.value ? field.value.toISOString().slice(0, 10) : ''}
-                                    onChange={handleDateInputChange}
+                                  <BrDateFormControl
+                                    value={field.value}
+                                    onChange={field.onChange}
+                                    onBlur={field.onBlur}
+                                    asDate
                                   />
                                 </FormControl>
                                 <FormMessage />

@@ -73,7 +73,11 @@ import {
   canWriteOficioDraft,
 } from "@/lib/role-guards";
 import { OficioCounterSettings } from "./oficio-counter-settings";
-import { formatOficioNumberFromSequence } from "@/lib/oficio-counter";
+import {
+  formatOficioNumberFromSequence,
+  getCurrentCalendarYear,
+  nextSequenceAfterApproval,
+} from "@/lib/oficio-counter";
 import { NOTIFICATION_LINKS, NOTIFICATION_SOURCE } from "@/lib/notification-events";
 import { notifyOficioRecipientPortalUsers } from "@/lib/notifications";
 import {
@@ -81,6 +85,7 @@ import {
   composeOficioRecipient,
   formatOficioOfficialNumber,
 } from "@/lib/oficio-format";
+import { OficioExportButtons } from "@/components/oficios/oficio-export-buttons";
 
 const DetailItem = ({
   label,
@@ -240,7 +245,7 @@ export default function OficiosPage() {
       return;
     }
 
-    const year = new Date().getFullYear();
+    const year = getCurrentCalendarYear();
     const counterRef = doc(firestore, "oficioCounters", String(year));
     const oficioRef = doc(firestore, "oficios", item.id);
 
@@ -248,10 +253,14 @@ export default function OficiosPage() {
     try {
       await runTransaction(firestore, async (transaction) => {
         const counterDoc = await transaction.get(counterRef);
-        let newSequence = 1;
-        if (counterDoc.exists()) {
-          newSequence = counterDoc.data().lastSequence + 1;
-        }
+        const counterLast = counterDoc.exists()
+          ? (counterDoc.data().lastSequence as number | undefined)
+          : null;
+        const newSequence = nextSequenceAfterApproval(
+          counterLast,
+          oficios ?? [],
+          year,
+        );
         assignedSequence = newSequence;
 
         const oficioNumber = `${String(newSequence).padStart(3, "0")}/${year}`;
@@ -492,6 +501,7 @@ export default function OficiosPage() {
                                     <p>Visualizar detalhes</p>
                                   </TooltipContent>
                                 </Tooltip>
+                                <OficioExportButtons oficio={item} />
                                 {canManage && (
                                   <>
                                     <Tooltip>
@@ -659,7 +669,11 @@ export default function OficiosPage() {
               />
             </div>
           )}
-          <DialogFooter>
+          <DialogFooter className="flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            {itemToView && (
+              <OficioExportButtons oficio={itemToView} variant="default" />
+            )}
+            <div className="flex flex-wrap justify-end gap-2">
             <DialogClose asChild>
               <Button type="button" variant="outline">
                 Fechar
@@ -688,6 +702,7 @@ export default function OficiosPage() {
                 Reverter para rascunho
               </Button>
             )}
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>

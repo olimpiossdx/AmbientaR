@@ -15,6 +15,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { BrDateFormControl } from '@/components/form/br-date-input';
 import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { DialogFooter } from '@/components/ui/dialog';
@@ -230,7 +231,7 @@ export function InventarioForm({ currentItem, onSuccess }: InventarioFormProps) 
                         <FormItem>
                         <FormLabel>Data de:</FormLabel>
                         <FormControl>
-                            <Input type="date" {...field} value={form.getValues('data')?.toISOString().split('T')[0]} onChange={(e) => field.onChange(new Date(e.target.value))} />
+                            <BrDateFormControl value={field.value} onChange={field.onChange} onBlur={field.onBlur} asDate />
                         </FormControl>
                         <FormMessage />
                         </FormItem>

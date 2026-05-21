@@ -94,6 +94,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
+import { BrDateInput } from "@/components/form/br-date-input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Search } from "lucide-react";
 import { AttachmentPreviewSection } from "@/components/shared/attachment-preview-section";
@@ -1049,12 +1050,11 @@ export default function InvoicesPage() {
                       >
                         Data início
                       </Label>
-                      <Input
+                      <BrDateInput
                         id="inv-filter-start"
-                        type="date"
-                        className="h-10 min-w-0 pr-2 [color-scheme:light] dark:[color-scheme:dark]"
+                        className="h-10 min-w-0"
                         value={filterDataInicio}
-                        onChange={(e) => setFilterDataInicio(e.target.value)}
+                        onChange={setFilterDataInicio}
                       />
                     </div>
                     <div className="space-y-1.5">
@@ -1064,12 +1064,11 @@ export default function InvoicesPage() {
                       >
                         Data fim
                       </Label>
-                      <Input
+                      <BrDateInput
                         id="inv-filter-end"
-                        type="date"
-                        className="h-10 min-w-0 pr-2 [color-scheme:light] dark:[color-scheme:dark]"
+                        className="h-10 min-w-0"
                         value={filterDataFim}
-                        onChange={(e) => setFilterDataFim(e.target.value)}
+                        onChange={setFilterDataFim}
                       />
                     </div>
                     <div className="space-y-1.5">
@@ -1158,12 +1157,11 @@ export default function InvoicesPage() {
                               : "Ano"}
                         </Label>
                         {periodType === "day" && (
-                          <Input
+                          <BrDateInput
                             id="inv-period-value"
-                            type="date"
-                            className="h-9 min-w-0 pr-2 [color-scheme:light] dark:[color-scheme:dark]"
+                            className="h-9 min-w-0"
                             value={periodDay}
-                            onChange={(e) => setPeriodDay(e.target.value)}
+                            onChange={setPeriodDay}
                           />
                         )}
                         {periodType === "month" && (

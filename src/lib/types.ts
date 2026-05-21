@@ -1451,6 +1451,8 @@ export type Contract = {
         name: string;
         address?: string;
         cnpj?: string;
+        municipio?: string;
+        uf?: string;
     };
     responsavelTecnico: {
         responsibleId: string;
@@ -1462,6 +1464,8 @@ export type Contract = {
         identidade?: string;
         emissor?: string;
         address?: string;
+        municipio?: string;
+        uf?: string;
         registrationNumber?: string;
         art?: string;
     };

@@ -20,6 +20,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { BrDateInput } from "@/components/form/br-date-input";
 import { Separator } from "@/components/ui/separator";
 import {
   Target,
@@ -450,24 +451,22 @@ export default function CrmDashboard({ onAddNew }: CrmDashboardProps) {
                   <Label htmlFor="crm-period-start" className="text-xs">
                     Data inicial
                   </Label>
-                  <input
+                  <BrDateInput
                     id="crm-period-start"
-                    type="date"
-                    className="h-9 w-full min-w-0 rounded-md border border-input bg-background px-3 text-sm"
+                    className="h-9 w-full min-w-0"
                     value={customStart}
-                    onChange={(e) => setCustomStart(e.target.value)}
+                    onChange={setCustomStart}
                   />
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="crm-period-end" className="text-xs">
                     Data final
                   </Label>
-                  <input
+                  <BrDateInput
                     id="crm-period-end"
-                    type="date"
-                    className="h-9 w-full min-w-0 rounded-md border border-input bg-background px-3 text-sm"
+                    className="h-9 w-full min-w-0"
                     value={customEnd}
-                    onChange={(e) => setCustomEnd(e.target.value)}
+                    onChange={setCustomEnd}
                   />
                 </div>
               </div>

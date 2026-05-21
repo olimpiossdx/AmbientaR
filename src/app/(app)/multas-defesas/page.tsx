@@ -1657,11 +1657,7 @@ export default function MultasDefesasPage() {
             </div>
             <div className="space-y-1">
               <Label>Data da decisão</Label>
-              <Input
-                type="date"
-                value={encerrarData}
-                onChange={(e) => setEncerrarData(e.target.value)}
-              />
+              <BrDateInput value={encerrarData} onChange={setEncerrarData} />
             </div>
             <div className="space-y-1">
               <Label>Histórico / decisão do cliente (obrigatório)</Label>

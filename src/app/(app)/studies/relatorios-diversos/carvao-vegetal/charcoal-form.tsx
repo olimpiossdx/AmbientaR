@@ -22,11 +22,8 @@ import { useFirebase, errorEmitter } from '@/firebase';
 import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
-import { CalendarIcon, PlusCircle, Trash2 } from 'lucide-react';
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale/pt-BR';
+import { PlusCircle, Trash2 } from 'lucide-react';
+import { BrDateFormControl } from '@/components/form/br-date-input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -171,7 +168,7 @@ export function CharcoalProductionForm({ onSuccess, onCancel }: CharcoalFormProp
             <h3 className="text-lg font-medium">Dados Gerais do Relatório</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                  <FormField control={form.control} name="numeroDocumento" render={({ field }) => ( <FormItem><FormLabel>Número do Documento</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )} />
-                 <FormField control={form.control} name="data" render={({ field }) => ( <FormItem><FormLabel>Data</FormLabel><Popover><PopoverTrigger asChild><FormControl><Button variant={"outline"} className="w-full justify-start text-left font-normal">{field.value ? format(field.value, "PPP", { locale: ptBR }) : <span>Escolha uma data</span>}<CalendarIcon className="ml-auto h-4 w-4 opacity-50" /></Button></FormControl></PopoverTrigger><PopoverContent className="w-auto p-0"><Calendar mode="single" selected={field.value} onSelect={field.onChange} /></PopoverContent></Popover><FormMessage /></FormItem> )} />
+                 <FormField control={form.control} name="data" render={({ field }) => ( <FormItem><FormLabel>Data</FormLabel><FormControl><BrDateFormControl value={field.value} onChange={field.onChange} onBlur={field.onBlur} asDate /></FormControl><FormMessage /></FormItem> )} />
                  <FormField control={form.control} name="mesReferencia" render={({ field }) => ( <FormItem><FormLabel>Mês de Referência</FormLabel><FormControl><Input type="month" {...field} /></FormControl><FormMessage /></FormItem> )} />
             </div>
         </div>
@@ -210,7 +207,7 @@ export function CharcoalProductionForm({ onSuccess, onCancel }: CharcoalFormProp
             <CardContent className="space-y-6">
                 <div className="space-y-4 rounded-md border p-4">
                     <h3 className="text-lg font-medium">3.1 Dados da Madeira</h3>
-                     <FormField control={form.control} name="dadosMadeira.dataColheita" render={({ field }) => ( <FormItem><FormLabel>Data da Colheita</FormLabel><Popover><PopoverTrigger asChild><FormControl><Button variant={"outline"} className="w-full justify-start text-left font-normal">{field.value ? format(field.value, "PPP", { locale: ptBR }) : <span>Escolha uma data</span>}<CalendarIcon className="ml-auto h-4 w-4 opacity-50" /></Button></FormControl></PopoverTrigger><PopoverContent className="w-auto p-0"><Calendar mode="single" selected={field.value} onSelect={field.onChange} /></PopoverContent></Popover><FormMessage /></FormItem> )} />
+                     <FormField control={form.control} name="dadosMadeira.dataColheita" render={({ field }) => ( <FormItem><FormLabel>Data da Colheita</FormLabel><FormControl><BrDateFormControl value={field.value} onChange={field.onChange} onBlur={field.onBlur} asDate /></FormControl><FormMessage /></FormItem> )} />
                     <FormField control={form.control} name="dadosMadeira.periodo" render={({ field }) => (
                         <FormItem><FormLabel>Período</FormLabel>
                             <Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Selecione o período da colheita" /></SelectTrigger></FormControl>
@@ -300,7 +297,7 @@ export function CharcoalProductionForm({ onSuccess, onCancel }: CharcoalFormProp
                     {manutencaoFields.map((field, index) => (
                         <div key={field.id} className="p-4 border rounded-md relative space-y-4">
                             <Button type="button" variant="destructive" size="icon" className="absolute top-2 right-2 h-6 w-6" onClick={() => removeManutencao(index)}><Trash2 className="h-4 w-4" /></Button>
-                            <FormField control={form.control} name={`integridadeFornos.manutencaoEstrutura.${index}.data`} render={({ field }) => ( <FormItem><FormLabel>Data da manutenção</FormLabel><Popover><PopoverTrigger asChild><FormControl><Button variant={"outline"} className="w-full justify-start text-left font-normal">{field.value ? format(new Date(field.value), "PPP", { locale: ptBR }) : <span>Escolha uma data</span>}<CalendarIcon className="ml-auto h-4 w-4 opacity-50" /></Button></FormControl></PopoverTrigger><PopoverContent className="w-auto p-0"><Calendar mode="single" selected={new Date(field.value)} onSelect={field.onChange} /></PopoverContent></Popover></FormItem> )} />
+                            <FormField control={form.control} name={`integridadeFornos.manutencaoEstrutura.${index}.data`} render={({ field }) => ( <FormItem><FormLabel>Data da manutenção</FormLabel><FormControl><BrDateFormControl value={field.value} onChange={field.onChange} onBlur={field.onBlur} asDate /></FormControl></FormItem> )} />
                             <FormField control={form.control} name={`integridadeFornos.manutencaoEstrutura.${index}.duracao`} render={({ field }) => ( <FormItem><FormLabel>Tempo de duração</FormLabel><FormControl><Input {...field} /></FormControl></FormItem> )} />
                             <FormField control={form.control} name={`integridadeFornos.manutencaoEstrutura.${index}.operacao`} render={({ field }) => ( <FormItem><FormLabel>Operação realizada</FormLabel><FormControl><Textarea {...field} /></FormControl></FormItem> )} />
                         </div>
@@ -311,7 +308,7 @@ export function CharcoalProductionForm({ onSuccess, onCancel }: CharcoalFormProp
                      {limpezaPisoFields.map((field, index) => (
                         <div key={field.id} className="p-4 border rounded-md relative grid grid-cols-2 gap-4">
                              <Button type="button" variant="destructive" size="icon" className="absolute top-2 right-2 h-6 w-6" onClick={() => removeLimpezaPiso(index)}><Trash2 className="h-4 w-4" /></Button>
-                            <FormField control={form.control} name={`integridadeFornos.limpezaPiso.${index}.data`} render={({ field }) => ( <FormItem><FormLabel>Data da limpeza</FormLabel><Popover><PopoverTrigger asChild><FormControl><Button variant={"outline"} className="w-full justify-start text-left font-normal">{field.value ? format(new Date(field.value), "PPP", { locale: ptBR }) : <span>Escolha uma data</span>}<CalendarIcon className="ml-auto h-4 w-4 opacity-50" /></Button></FormControl></PopoverTrigger><PopoverContent className="w-auto p-0"><Calendar mode="single" selected={new Date(field.value)} onSelect={field.onChange} /></PopoverContent></Popover></FormItem> )} />
+                            <FormField control={form.control} name={`integridadeFornos.limpezaPiso.${index}.data`} render={({ field }) => ( <FormItem><FormLabel>Data da limpeza</FormLabel><FormControl><BrDateFormControl value={field.value} onChange={field.onChange} onBlur={field.onBlur} asDate /></FormControl></FormItem> )} />
                             <FormField control={form.control} name={`integridadeFornos.limpezaPiso.${index}.duracao`} render={({ field }) => ( <FormItem><FormLabel>Tempo de duração</FormLabel><FormControl><Input {...field} /></FormControl></FormItem> )} />
                         </div>
                     ))}
@@ -321,7 +318,7 @@ export function CharcoalProductionForm({ onSuccess, onCancel }: CharcoalFormProp
                      {limpezaConexoesFields.map((field, index) => (
                         <div key={field.id} className="p-4 border rounded-md relative space-y-4">
                              <Button type="button" variant="destructive" size="icon" className="absolute top-2 right-2 h-6 w-6" onClick={() => removeLimpezaConexoes(index)}><Trash2 className="h-4 w-4" /></Button>
-                            <FormField control={form.control} name={`integridadeFornos.limpezaConexoes.${index}.data`} render={({ field }) => ( <FormItem><FormLabel>Data de realização</FormLabel><Popover><PopoverTrigger asChild><FormControl><Button variant={"outline"} className="w-full justify-start text-left font-normal">{field.value ? format(new Date(field.value), "PPP", { locale: ptBR }) : <span>Escolha uma data</span>}<CalendarIcon className="ml-auto h-4 w-4 opacity-50" /></Button></FormControl></PopoverTrigger><PopoverContent className="w-auto p-0"><Calendar mode="single" selected={new Date(field.value)} onSelect={field.onChange} /></PopoverContent></Popover></FormItem> )} />
+                            <FormField control={form.control} name={`integridadeFornos.limpezaConexoes.${index}.data`} render={({ field }) => ( <FormItem><FormLabel>Data de realização</FormLabel><FormControl><BrDateFormControl value={field.value} onChange={field.onChange} onBlur={field.onBlur} asDate /></FormControl></FormItem> )} />
                             <FormField control={form.control} name={`integridadeFornos.limpezaConexoes.${index}.duracao`} render={({ field }) => ( <FormItem><FormLabel>Tempo de duração</FormLabel><FormControl><Input {...field} /></FormControl></FormItem> )} />
                             <FormField control={form.control} name={`integridadeFornos.limpezaConexoes.${index}.operacao`} render={({ field }) => ( <FormItem><FormLabel>Operação realizada</FormLabel><FormControl><Textarea {...field} /></FormControl></FormItem> )} />
                         </div>

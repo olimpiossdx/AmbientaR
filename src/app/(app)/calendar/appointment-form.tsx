@@ -22,13 +22,10 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
 import { Input } from '@/components/ui/input';
-import { CalendarIcon, Loader2 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale/pt-BR';
+import { BrDateFormControl } from '@/components/form/br-date-input';
 import { useToast } from '@/hooks/use-toast';
 import type { Appointment, Client, UserRole } from '@/lib/types';
 import { useFirebase, errorEmitter, useCollection, useMemoFirebase } from '@/firebase';
@@ -181,15 +178,15 @@ export function AppointmentForm({ currentItem, onSuccess }: AppointmentFormProps
             )}/>
             <FormField control={form.control} name="date" render={({ field }) => (
                 <FormItem className="flex flex-col"><FormLabel>Data</FormLabel>
-                <Popover><PopoverTrigger asChild><FormControl>
-                    <Button variant={"outline"} className={cn("pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
-                    {field.value ? format(field.value, "PPP", { locale: ptBR }) : <span>Escolha uma data</span>}
-                    <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                    </Button>
-                </FormControl></PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus />
-                </PopoverContent></Popover><FormMessage /></FormItem>
+                <FormControl>
+                  <BrDateFormControl
+                    value={field.value}
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                    asDate
+                  />
+                </FormControl>
+                <FormMessage /></FormItem>
             )}/>
             <div className="grid grid-cols-2 gap-4">
                 <FormField control={form.control} name="startTime" render={({ field }) => (

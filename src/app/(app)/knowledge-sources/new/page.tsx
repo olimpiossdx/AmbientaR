@@ -7,6 +7,7 @@ import { PageHeader } from '@/components/page-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { BrDateInput } from '@/components/form/br-date-input';
 import { Label } from '@/components/ui/label';
 import {
   Select,
@@ -129,7 +130,7 @@ export default function NewKnowledgeSourcePage() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">
                   <Label>Data publicação</Label>
-                  <Input type="date" value={dataPublicacao} onChange={(e) => setDataPublicacao(e.target.value)} />
+                  <BrDateInput value={dataPublicacao} onChange={setDataPublicacao} />
                 </div>
                 <div className="grid gap-2">
                   <Label>Status</Label>

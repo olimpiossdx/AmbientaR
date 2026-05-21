@@ -78,6 +78,10 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { generateContractPdf } from "./contract-pdf";
+import {
+  getContratadaMissingFields,
+  isContratadaReadyForPdf,
+} from "@/lib/contract-contratada-intro";
 import { persistContractPdfForSignature } from "@/lib/persist-contract-pdf";
 import { ptBR } from "date-fns/locale/pt-BR";
 import { format } from "date-fns";
@@ -93,6 +97,7 @@ import { Separator } from "@/components/ui/separator";
 import { AttachmentPreviewSection } from "@/components/shared/attachment-preview-section";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { BrDateInput } from "@/components/form/br-date-input";
 import { Search } from "lucide-react";
 
 const DetailItem = ({
@@ -365,20 +370,46 @@ export default function ContractsPage() {
 
   const handleGeneratePdf = async (contract: Contract, persist = false) => {
     if (generatingPdfId) return;
+    if (!isContratadaReadyForPdf(contract.contratado, contract.responsavelTecnico)) {
+      const missing = getContratadaMissingFields(
+        contract.contratado,
+        contract.responsavelTecnico,
+      );
+      toast({
+        variant: "destructive",
+        title: "Dados da CONTRATADA incompletos",
+        description: `Edite o contrato e atualize do cadastro. Falta: ${missing.map((m) => m.label).join(", ")}.`,
+      });
+      return;
+    }
     setGeneratingPdfId(contract.id);
     try {
       if (persist && firestore) {
-        await persistContractPdfForSignature(
-          firestore,
-          contract.id,
-          contract,
-          brandingData,
-        );
-        toast({
-          title: "PDF do contrato atualizado",
-          description:
-            "O documento para assinatura foi gerado e salvo no Storage.",
-        });
+        try {
+          await persistContractPdfForSignature(
+            firestore,
+            contract.id,
+            contract,
+            brandingData,
+          );
+          toast({
+            title: "PDF do contrato atualizado",
+            description:
+              "O documento para assinatura foi gerado e salvo no Storage.",
+          });
+        } catch (persistErr) {
+          console.warn("[Contratos] persist PDF falhou, download local:", persistErr);
+          await generateContractPdf(contract, brandingData ?? undefined);
+          toast({
+            title: "PDF gerado (download)",
+            description:
+              persistErr instanceof Error &&
+              (persistErr.message.includes("permissão") ||
+                persistErr.message.includes("Storage"))
+                ? "Sem permissão para salvar no Storage; o PDF foi baixado no seu computador."
+                : "Não foi possível salvar no Storage; o PDF foi baixado localmente.",
+          });
+        }
       } else {
         await generateContractPdf(contract, brandingData ?? undefined);
         toast({
@@ -600,20 +631,18 @@ export default function ContractsPage() {
               </div>
               <div>
                 <Label className="text-xs">Data início</Label>
-                <Input
-                  type="date"
+                <BrDateInput
                   className="h-8 w-36"
                   value={filterDataInicio}
-                  onChange={(e) => setFilterDataInicio(e.target.value)}
+                  onChange={setFilterDataInicio}
                 />
               </div>
               <div>
                 <Label className="text-xs">Data fim</Label>
-                <Input
-                  type="date"
+                <BrDateInput
                   className="h-8 w-36"
                   value={filterDataFim}
-                  onChange={(e) => setFilterDataFim(e.target.value)}
+                  onChange={setFilterDataFim}
                 />
               </div>
               <div>
@@ -712,7 +741,9 @@ export default function ContractsPage() {
                                   </TooltipContent>
                                 </Tooltip>
                                 {renderContractPdfActions(item, {
-                                  persistOnGenerate: true,
+                                  persistOnGenerate: isAdminOrFinancialRole(
+                                    user?.role,
+                                  ),
                                 })}
                                 {canApproveContracts(user?.role) && (
                                   <Tooltip>

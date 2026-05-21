@@ -29,9 +29,9 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { BrDateFormControl } from '@/components/form/br-date-input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { IpeAmareloDefaultCover } from '@/components/studies/inventory/IpeAmareloDefaultCover';
 import { deleteFileAtStoragePath, storagePathFromDownloadUrl } from '@/lib/storage-upload';
@@ -407,7 +407,7 @@ export default function InventarioProjectPage() {
                               <Label>Nome da Empresa</Label>
                               <Input placeholder="Não informado" readOnly className="bg-muted/50" />
                             </div>
-                             <FormField control={form.control} name="data" render={({ field }) => (<FormItem><FormLabel>Data</FormLabel><FormControl><Input type="date" value={format(field.value, 'yyyy-MM-dd')} onChange={(e) => field.onChange(new Date(e.target.value))}/></FormControl><FormMessage /></FormItem>)} />
+                             <FormField control={form.control} name="data" render={({ field }) => (<FormItem><FormLabel>Data</FormLabel><FormControl><BrDateFormControl value={field.value} onChange={field.onChange} onBlur={field.onBlur} asDate /></FormControl><FormMessage /></FormItem>)} />
                             <div className="space-y-2">
                               <Label>Área do Projeto (ha)</Label>
                               <Input type="number" placeholder="Não informado" readOnly className="bg-muted/50" />

@@ -11,6 +11,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { BrDateFormControl } from '@/components/form/br-date-input';
 import {
   Select,
   SelectContent,
@@ -202,7 +203,7 @@ export function RcaFormSiderurgia({ form, clients, isLoadingClients, projects, i
                              <div key={item.id} className="p-4 border rounded-md space-y-4 relative">
                                 <Button type="button" variant="destructive" size="icon" className="absolute top-2 right-2 h-6 w-6" onClick={() => removeReator(index)}><Trash2 className="h-4 w-4" /></Button>
                                 <h4 className="font-medium">Reator Alto Forno {index + 1}</h4>
-                                <FormField control={form.control} name={`reatores.${index}.dataInstalacao`} render={({ field }) => (<FormItem><FormLabel>Data da Instalação</FormLabel><FormControl><Input type="date" {...field} /></FormControl></FormItem>)} />
+                                <FormField control={form.control} name={`reatores.${index}.dataInstalacao`} render={({ field }) => (<FormItem><FormLabel>Data da Instalação</FormLabel><FormControl><BrDateFormControl value={field.value} onChange={field.onChange} onBlur={field.onBlur} /></FormControl></FormItem>)} />
                                  <FormField control={form.control} name={`reatores.${index}.principalCombustivel`} render={({ field }) => (<FormItem>
                                      <FormLabel>Principal Combustível</FormLabel><FormControl>
                                         <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="flex space-x-4">

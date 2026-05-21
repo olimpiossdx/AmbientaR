@@ -16,7 +16,7 @@ import {
   FormDescription
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Loader2, CalendarIcon } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { PCA, Empreendedor as Client, Project } from '@/lib/types';
 import { useFirebase, errorEmitter, useCollection, useMemoFirebase } from '@/firebase';
@@ -26,11 +26,7 @@ import { DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
-import { cn } from '@/lib/utils';
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale/pt-BR';
+import { BrDateFormControl } from '@/components/form/br-date-input';
 
 const formSchema = z.object({
   status: z.enum(['Rascunho', 'Aprovado']).optional(),
@@ -231,14 +227,15 @@ export function PcaForm({ currentItem, onSuccess }: PcaFormProps) {
                     <FormField control={form.control} name="termoReferencia.processo" render={({ field }) => (<FormItem><FormLabel>Nº Processo</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
                     <FormField control={form.control} name="termoReferencia.dataEmissao" render={({ field }) => (
                         <FormItem className="flex flex-col"><FormLabel>Data de Emissão</FormLabel>
-                            <Popover><PopoverTrigger asChild><FormControl>
-                                <Button variant={"outline"} className={cn("pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
-                                {field.value ? format(field.value, "PPP", { locale: ptBR }) : <span>Escolha uma data</span>}
-                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                </Button>
-                            </FormControl></PopoverTrigger>
-                            <PopoverContent className="w-auto p-0" align="start"><Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus /></PopoverContent>
-                            </Popover><FormMessage />
+                            <FormControl>
+                              <BrDateFormControl
+                                value={field.value}
+                                onChange={field.onChange}
+                                onBlur={field.onBlur}
+                                asDate
+                              />
+                            </FormControl>
+                            <FormMessage />
                         </FormItem>)} />
                     <FormField control={form.control} name="termoReferencia.versao" render={({ field }) => (<FormItem><FormLabel>Versão</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
                 </div>

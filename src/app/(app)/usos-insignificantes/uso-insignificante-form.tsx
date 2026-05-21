@@ -23,16 +23,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
-import { CalendarIcon, Loader2, Plus, Trash2 } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { format, parse } from "date-fns";
-import { ptBR } from "date-fns/locale/pt-BR";
+import { Loader2, Plus, Trash2 } from "lucide-react";
+import { BrDateFormControl } from "@/components/form/br-date-input";
 
 import { useToast } from "@/hooks/use-toast";
 import type {
@@ -375,95 +367,6 @@ export function UsoInsignificanteForm({
     }
   }
 
-  const DateInput = ({
-    field,
-    label,
-    disabledFuture,
-    disabledPast,
-  }: {
-    field: any;
-    label: string;
-    disabledFuture?: boolean;
-    disabledPast?: boolean;
-  }) => {
-    const [inputValue, setInputValue] = React.useState(
-      field.value ? format(field.value, "dd/MM/yyyy") : "",
-    );
-
-    React.useEffect(() => {
-      if (
-        field.value &&
-        field.value instanceof Date &&
-        !isNaN(field.value.getTime())
-      ) {
-        setInputValue(format(field.value, "dd/MM/yyyy"));
-      } else if (!field.value) {
-        setInputValue("");
-      }
-    }, [field.value]);
-
-    const handleDateInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      let value = e.target.value.replace(/\D/g, "");
-      if (value.length > 2) value = `${value.slice(0, 2)}/${value.slice(2)}`;
-      if (value.length > 5) value = `${value.slice(0, 5)}/${value.slice(5)}`;
-      if (value.length > 10) value = value.slice(0, 10);
-      setInputValue(value);
-
-      if (value.length === 10) {
-        const parsedDate = parse(value, "dd/MM/yyyy", new Date());
-        if (!isNaN(parsedDate.getTime())) {
-          field.onChange(parsedDate);
-        } else {
-          form.setError(field.name, {
-            type: "manual",
-            message: "Data inválida",
-          });
-        }
-      }
-    };
-
-    const handleDateSelect = (date: Date | undefined) => {
-      field.onChange(date);
-      if (date) {
-        setInputValue(format(date, "dd/MM/yyyy"));
-      }
-    };
-
-    return (
-      <FormItem className="flex flex-col">
-        <FormLabel>{label}</FormLabel>
-        <Popover>
-          <PopoverTrigger asChild>
-            <div className="relative">
-              <FormControl>
-                <Input
-                  placeholder="DD/MM/AAAA"
-                  value={inputValue}
-                  onChange={handleDateInputChange}
-                />
-              </FormControl>
-              <CalendarIcon className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 opacity-50" />
-            </div>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="start">
-            <Calendar
-              mode="single"
-              selected={field.value}
-              onSelect={handleDateSelect}
-              disabled={(date) =>
-                (disabledFuture && date > new Date()) ||
-                (disabledPast && date < new Date("1900-01-01")) ||
-                false
-              }
-              initialFocus
-            />
-          </PopoverContent>
-        </Popover>
-        <FormMessage />
-      </FormItem>
-    );
-  };
-
   return (
     <>
       <DialogHeader>
@@ -581,18 +484,36 @@ export function UsoInsignificanteForm({
                 control={form.control}
                 name="issueDate"
                 render={({ field }) => (
-                  <DateInput
-                    field={field}
-                    label="Data de Emissão"
-                    disabledFuture
-                  />
+                  <FormItem className="flex flex-col">
+                    <FormLabel>Data de Emissão</FormLabel>
+                    <FormControl>
+                      <BrDateFormControl
+                        value={field.value}
+                        onChange={field.onChange}
+                        onBlur={field.onBlur}
+                        asDate
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
                 )}
               />
               <FormField
                 control={form.control}
                 name="expirationDate"
                 render={({ field }) => (
-                  <DateInput field={field} label="Data de Vencimento" />
+                  <FormItem className="flex flex-col">
+                    <FormLabel>Data de Vencimento</FormLabel>
+                    <FormControl>
+                      <BrDateFormControl
+                        value={field.value}
+                        onChange={field.onChange}
+                        onBlur={field.onBlur}
+                        asDate
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
                 )}
               />
             </div>

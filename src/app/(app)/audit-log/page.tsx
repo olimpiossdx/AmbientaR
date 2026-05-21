@@ -18,7 +18,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Download, Calendar as CalendarIcon, ShieldAlert, MessageSquare } from 'lucide-react';
+import { Download, ShieldAlert, MessageSquare } from 'lucide-react';
 import { useCollection, useFirebase, useMemoFirebase, useAuth } from '@/firebase';
 import { collection, query, getDocs, orderBy, where } from 'firebase/firestore';
 import type { AppUser, AuditLog, ChatMessage, Chat } from '@/lib/types';
@@ -27,11 +27,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { logUserAction } from '@/lib/audit-log';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
-import { cn } from '@/lib/utils';
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale/pt-BR';
+import { BrDateInput } from '@/components/form/br-date-input';
+import { dateValueToIso, isoToDate } from '@/lib/br-format';
 import { Label } from '@/components/ui/label';
 
 // Merged AuthorizedAuditLogPage directly into the main component flow
@@ -299,61 +296,19 @@ export default function AuditLogPage() {
                 <div className="flex flex-col md:flex-row gap-4 pt-4">
                   <div className="grid gap-2">
                     <Label>Data de Início</Label>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant={'outline'}
-                          className={cn(
-                            'w-[240px] justify-start text-left font-normal',
-                            !startDate && 'text-muted-foreground'
-                          )}
-                        >
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {startDate ? (
-                            format(startDate, 'PPP', { locale: ptBR })
-                          ) : (
-                            <span>Escolha uma data</span>
-                          )}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={startDate}
-                          onSelect={setStartDate}
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
+                    <BrDateInput
+                      className="w-[240px]"
+                      value={dateValueToIso(startDate)}
+                      onChange={(iso) => setStartDate(iso ? isoToDate(iso) : undefined)}
+                    />
                   </div>
                   <div className="grid gap-2">
                     <Label>Data de Fim</Label>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant={'outline'}
-                          className={cn(
-                            'w-[240px] justify-start text-left font-normal',
-                            !endDate && 'text-muted-foreground'
-                          )}
-                        >
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {endDate ? (
-                            format(endDate, 'PPP', { locale: ptBR })
-                          ) : (
-                            <span>Escolha uma data</span>
-                          )}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={endDate}
-                          onSelect={setEndDate}
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
+                    <BrDateInput
+                      className="w-[240px]"
+                      value={dateValueToIso(endDate)}
+                      onChange={(iso) => setEndDate(iso ? isoToDate(iso) : undefined)}
+                    />
                   </div>
                 </div>
               </CardHeader>

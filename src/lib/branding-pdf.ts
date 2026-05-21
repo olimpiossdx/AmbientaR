@@ -1,8 +1,9 @@
 'use client';
 
 import type jsPDF from 'jspdf';
-import { getApp, getApps } from 'firebase/app';
-import { getBlob, getDownloadURL, getStorage, ref } from 'firebase/storage';
+import { getApps } from 'firebase/app';
+import { getBlob, getDownloadURL, ref } from 'firebase/storage';
+import { getClientFirebaseStorage } from '@/lib/firebase-storage-client';
 import { storagePathFromDownloadUrl } from '@/lib/storage-upload';
 
 export interface ImageDimensions {
@@ -221,7 +222,7 @@ async function loadImageBlobForBranding(trimmed: string): Promise<Blob> {
       const path = storagePathFromDownloadUrl(trimmed);
       if (path) {
         try {
-          const storage = getStorage(getApp());
+          const storage = getClientFirebaseStorage();
           return await getBlob(ref(storage, path));
         } catch (sdkErr) {
           console.warn('[branding-pdf] getBlob falhou:', sdkErr);
@@ -242,7 +243,7 @@ async function loadImageBlobForBranding(trimmed: string): Promise<Blob> {
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     return response.blob();
   }
-  const storage = getStorage(getApp());
+  const storage = getClientFirebaseStorage();
   const imageRef = ref(storage, trimmed);
   const urlToFetch = await getDownloadURL(imageRef);
   return fetchBrandingBlob(urlToFetch);

@@ -16,6 +16,7 @@ import {
   FormDescription,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { BrDateFormControl } from '@/components/form/br-date-input';
 import { MaskedInput } from '@/components/ui/masked-input';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -351,7 +352,7 @@ export function DispensaForm({ currentItem, onSuccess, onCancel }: DispensaFormP
                         <FormField control={form.control} name="licencaAnterior.tipoLicenca" render={({ field }) => (<FormItem><FormLabel>Tipo de Licença</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
                         <FormField control={form.control} name="licencaAnterior.objeto" render={({ field }) => (<FormItem><FormLabel>Objeto</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
                         <div className="grid grid-cols-2 gap-4">
-                            <FormField control={form.control} name="licencaAnterior.dataConcessao" render={({ field }) => (<FormItem><FormLabel>Data de concessão</FormLabel><FormControl><Input type="date" {...field} /></FormControl></FormItem>)} />
+                            <FormField control={form.control} name="licencaAnterior.dataConcessao" render={({ field }) => (<FormItem><FormLabel>Data de concessão</FormLabel><FormControl><BrDateFormControl value={field.value} onChange={field.onChange} onBlur={field.onBlur} /></FormControl></FormItem>)} />
                             <FormField control={form.control} name="licencaAnterior.validade" render={({ field }) => (<FormItem><FormLabel>Validade</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
                         </div>
                     </div>

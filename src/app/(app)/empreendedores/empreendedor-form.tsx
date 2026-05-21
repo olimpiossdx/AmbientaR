@@ -14,6 +14,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { BrDateFormControl } from "@/components/form/br-date-input";
 import { MaskedInput } from "@/components/ui/masked-input";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -1085,10 +1086,10 @@ export function EmpreendedorForm({
                   <FormItem className="flex flex-col">
                     <FormLabel>Data de Nascimento</FormLabel>
                     <FormControl>
-                      <Input
-                        type="date"
-                        value={field.value || ""}
-                        onChange={(e) => field.onChange(e.target.value)}
+                      <BrDateFormControl
+                        value={field.value}
+                        onChange={field.onChange}
+                        onBlur={field.onBlur}
                       />
                     </FormControl>
                     <FormMessage />

@@ -38,6 +38,7 @@ import {
   OFICIO_TEMPLATES,
   type OficioTemplateId,
 } from '@/lib/oficio-templates';
+import { OficioExportButtons } from '@/components/oficios/oficio-export-buttons';
 
 const formSchema = z.object({
   recipientSalutation: z.string().min(1, 'Selecione a forma de tratamento.'),
@@ -658,19 +659,24 @@ export function OficioForm({ currentItem, onSuccess, onCancel }: OficioFormProps
           </div>
 
           <div className="rounded-lg border border-dashed border-border/80 bg-background p-4 space-y-2">
-            <div className="flex items-center justify-between gap-2">
+            <div className="flex flex-wrap items-center justify-between gap-2">
               <h3 className="text-sm font-semibold text-foreground">
                 Pré-visualização consolidada
               </h3>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                disabled={!previewText}
-                onClick={copyConsolidatedText}
-              >
-                Copiar texto
-              </Button>
+              <div className="flex flex-wrap items-center gap-2">
+                {currentItem && (
+                  <OficioExportButtons oficio={currentItem} variant="default" />
+                )}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={!previewText}
+                  onClick={copyConsolidatedText}
+                >
+                  Copiar texto
+                </Button>
+              </div>
             </div>
             <pre className="whitespace-pre-wrap text-sm text-muted-foreground font-sans leading-relaxed max-h-80 overflow-y-auto">
               {previewText || 'Preencha os campos ou aplique um modelo.'}

@@ -6,7 +6,7 @@
 import type { Contract } from '@/lib/types';
 import type { LocalBranding } from '@/hooks/use-local-branding';
 import type jsPDF from 'jspdf';
-import { downloadJsPdf } from '@/lib/branding-pdf';
+import { downloadJsPdf } from '@/lib/pdf-export-utils';
 import {
   brandingUrlsFromLocal,
   drawWatermarkOnPage,
@@ -14,6 +14,7 @@ import {
   getContentStartY,
   loadPdfBranding,
 } from '@/lib/pdf-branding-layout';
+import { formatContratadaContractIntroParagraph } from '@/lib/contract-contratada-intro';
 
 const formatCurrency = (value: number) =>
   new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
@@ -132,12 +133,24 @@ export async function buildContractPdfDoc(
   const foro = contract.foro ?? { comarca: 'Unaí', uf: 'MG' };
 
   const urls = brandingUrlsFromLocal(brandingData);
-  const pdfBranding = await loadPdfBranding(doc, urls, {
-    left: ML,
-    right: MR,
-    top: MT,
-    bottom: MB,
-  });
+  let pdfBranding: Awaited<ReturnType<typeof loadPdfBranding>>;
+  try {
+    pdfBranding = await loadPdfBranding(doc, urls, {
+      left: ML,
+      right: MR,
+      top: MT,
+      bottom: MB,
+    });
+  } catch (brandingErr) {
+    console.warn('[contract-pdf] Identidade visual indisponível; PDF sem cabeçalho/rodapé:', brandingErr);
+    pdfBranding = await loadPdfBranding(
+      doc,
+      {},
+      { left: ML, right: MR, top: MT, bottom: MB },
+      0.15,
+      { headerBase64: null, footerBase64: null, watermarkBase64: null },
+    );
+  }
   const drawWatermarkOnCurrentPage = () => drawWatermarkOnPage(doc, pdfBranding);
   const pageContentStartY = getContentStartY(pdfBranding);
   drawWatermarkOnCurrentPage();
@@ -158,7 +171,7 @@ export async function buildContractPdfDoc(
   y = addText(doc, introContratante, ML, y, contentWidth, pageHeight, MB, LH, drawWatermarkOnCurrentPage, pageContentStartY);
   y += 0.3;
 
-  const introContratada = `e do outro lado a ${contratado.name || '__________________'}, com sede na ${contratado.address || '__________________'}, ${contratado.cnpj ? `CNPJ ${contratado.cnpj}` : ''}, sob responsabilidade técnica do(a) Sr(a). ${responsavel.name || '__________________'}, ${responsavel.profession || '__________________'}, ${responsavel.nacionalidade || 'brasileira'}, ${(responsavel.estadoCivil || '').toLowerCase()}, CPF ${responsavel.cpf || '__________________'} e Cédula de Identidade nº ${responsavel.identidade || '__________________'} ${responsavel.emissor ? `SSP-${responsavel.emissor}` : ''}, residente e domiciliado na cidade de ${responsavel.address || '__________________'}, doravante denominada CONTRATADA. Mediantes as cláusulas e condições seguintes tem justo e contrato o que se segue:`;
+  const introContratada = formatContratadaContractIntroParagraph(contratado, responsavel);
   y = addText(doc, introContratada, ML, y, contentWidth, pageHeight, MB, LH, drawWatermarkOnCurrentPage, pageContentStartY);
   y += 0.8;
 

@@ -18,6 +18,7 @@ import { CashFlowSummary } from './cash-flow-summary';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { BrDateInput } from '@/components/form/br-date-input';
 import {
   Select,
   SelectContent,
@@ -181,12 +182,11 @@ export function CashFlowView(props: CashFlowViewProps) {
                 >
                   Data início
                 </Label>
-                <Input
+                <BrDateInput
                   id="cf-filter-start"
-                  type="date"
-                  className="h-10 min-w-0 pr-2 [color-scheme:light] dark:[color-scheme:dark]"
+                  className="h-10 min-w-0"
                   value={filterDataInicio}
-                  onChange={(e) => setFilterDataInicio(e.target.value)}
+                  onChange={setFilterDataInicio}
                 />
               </div>
               <div className="space-y-1.5">
@@ -196,12 +196,11 @@ export function CashFlowView(props: CashFlowViewProps) {
                 >
                   Data fim
                 </Label>
-                <Input
+                <BrDateInput
                   id="cf-filter-end"
-                  type="date"
-                  className="h-10 min-w-0 pr-2 [color-scheme:light] dark:[color-scheme:dark]"
+                  className="h-10 min-w-0"
                   value={filterDataFim}
-                  onChange={(e) => setFilterDataFim(e.target.value)}
+                  onChange={setFilterDataFim}
                 />
               </div>
               <div className="space-y-1.5">
@@ -289,12 +288,11 @@ export function CashFlowView(props: CashFlowViewProps) {
                         : 'Ano'}
                   </Label>
                   {periodType === 'day' && (
-                    <Input
+                    <BrDateInput
                       id="cf-period-value"
-                      type="date"
-                      className="h-10 min-w-0 pr-2 [color-scheme:light] dark:[color-scheme:dark]"
+                      className="h-10 min-w-0"
                       value={periodDay}
-                      onChange={(e) => setPeriodDay(e.target.value)}
+                      onChange={setPeriodDay}
                     />
                   )}
                   {periodType === 'month' && (

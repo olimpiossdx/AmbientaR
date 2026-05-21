@@ -15,6 +15,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { BrDateFormControl } from '@/components/form/br-date-input';
 import { MaskedInput } from '@/components/ui/masked-input';
 import { Loader2, PlusCircle, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -404,7 +405,7 @@ export function TransporteResiduosForm({ onSuccess, onCancel }: TransporteResidu
                             </div>
                              <div className="grid grid-cols-2 gap-4">
                                 <FormField control={form.control} name={`veiculosTransporte.${index}.civNumero`} render={({ field }) => (<FormItem><FormLabel>Certificado Inmetro (CIV) - Número</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                <FormField control={form.control} name={`veiculosTransporte.${index}.civValidade`} render={({ field }) => (<FormItem><FormLabel>Validade</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                <FormField control={form.control} name={`veiculosTransporte.${index}.civValidade`} render={({ field }) => (<FormItem><FormLabel>Validade</FormLabel><FormControl><BrDateFormControl value={field.value} onChange={field.onChange} onBlur={field.onBlur} /></FormControl><FormMessage /></FormItem>)} />
                             </div>
                         </div>
                     ))}
@@ -432,7 +433,7 @@ export function TransporteResiduosForm({ onSuccess, onCancel }: TransporteResidu
                             </div>
                              <div className="grid grid-cols-2 gap-4">
                                 <FormField control={form.control} name={`equipamentosGranel.${index}.cippNumero`} render={({ field }) => (<FormItem><FormLabel>Certificado Inmetro (CIPP) - Número</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                <FormField control={form.control} name={`equipamentosGranel.${index}.cippValidade`} render={({ field }) => (<FormItem><FormLabel>Validade</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                <FormField control={form.control} name={`equipamentosGranel.${index}.cippValidade`} render={({ field }) => (<FormItem><FormLabel>Validade</FormLabel><FormControl><BrDateFormControl value={field.value} onChange={field.onChange} onBlur={field.onBlur} /></FormControl><FormMessage /></FormItem>)} />
                             </div>
                         </div>
                     ))}

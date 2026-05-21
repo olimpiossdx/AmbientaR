@@ -15,16 +15,9 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
-import { CalendarIcon, Loader2 } from "lucide-react";
-import { cn, numberToWordsBRL } from "@/lib/utils";
-import { format, parse } from "date-fns";
-import { ptBR } from "date-fns/locale/pt-BR";
+import { Loader2 } from "lucide-react";
+import { numberToWordsBRL } from "@/lib/utils";
+import { BrDateFormControl } from "@/components/form/br-date-input";
 import { useToast } from "@/hooks/use-toast";
 import type { Revenue, Expense, Client, Fornecedor, ExpenseCategory } from "@/lib/types";
 import {
@@ -146,11 +139,6 @@ export function TransactionForm({
   const [uploadedFileUrl, setUploadedFileUrl] = React.useState<string | null>(
     currentItem?.fileUrl || null,
   );
-  const [dateInput, setDateInput] = React.useState<string>(
-    currentItem?.date
-      ? format(new Date(currentItem.date), "dd/MM/yyyy")
-      : format(new Date(), "dd/MM/yyyy"),
-  );
   const { toast } = useToast();
   const { firestore, auth } = useFirebase();
   const { uploadFile, dialogProps, limitLabel } = useStorageFileUpload({
@@ -202,37 +190,6 @@ export function TransactionForm({
   React.useEffect(() => {
     form.setValue("amountInWords", numberToWordsBRL(amountValue));
   }, [amountValue, form]);
-
-  const handleDateInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let value = e.target.value.replace(/\D/g, "");
-    if (value.length > 2) value = `${value.slice(0, 2)}/${value.slice(2)}`;
-    if (value.length > 5) value = `${value.slice(0, 5)}/${value.slice(5)}`;
-    if (value.length > 10) value = value.slice(0, 10);
-    setDateInput(value);
-
-    if (value.length === 10) {
-      try {
-        const parsedDate = parse(value, "dd/MM/yyyy", new Date());
-        if (!isNaN(parsedDate.getTime())) {
-          form.setValue("date", parsedDate, { shouldValidate: true });
-        } else {
-          form.setError("date", { type: "manual", message: "Data inválida." });
-        }
-      } catch {
-        form.setError("date", {
-          type: "manual",
-          message: "Formato de data inválido.",
-        });
-      }
-    }
-  };
-
-  const handleDateSelect = (date: Date | undefined) => {
-    if (date) {
-      form.setValue("date", date, { shouldValidate: true });
-      setDateInput(format(date, "dd/MM/yyyy"));
-    }
-  };
 
   const handleFileChange = async (
     event: React.ChangeEvent<HTMLInputElement>,
@@ -456,31 +413,14 @@ export function TransactionForm({
             render={({ field }) => (
               <FormItem className="flex flex-col">
                 <FormLabel>Data da {title}</FormLabel>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <div className="relative">
-                      <FormControl>
-                        <Input
-                          placeholder="DD/MM/AAAA"
-                          value={dateInput}
-                          onChange={handleDateInputChange}
-                        />
-                      </FormControl>
-                      <CalendarIcon className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 opacity-50" />
-                    </div>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={field.value}
-                      onSelect={handleDateSelect}
-                      disabled={(date) =>
-                        date > new Date() || date < new Date("2000-01-01")
-                      }
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
+                <FormControl>
+                  <BrDateFormControl
+                    value={field.value}
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                    asDate
+                  />
+                </FormControl>
                 <FormMessage />
               </FormItem>
             )}

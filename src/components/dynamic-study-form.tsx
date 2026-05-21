@@ -13,6 +13,7 @@ import {
   FormDescription,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { BrDateFormControl } from '@/components/form/br-date-input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -383,11 +384,10 @@ function FieldRender({
           <FormItem>
             <FormLabel>{field.label}</FormLabel>
             <FormControl>
-              <Input
-                type="date"
-                {...f}
+              <BrDateFormControl
                 value={typeof f.value === 'string' ? f.value : ''}
-                onChange={(e) => f.onChange(e.target.value)}
+                onChange={f.onChange}
+                onBlur={f.onBlur}
                 placeholder={field.placeholder}
               />
             </FormControl>

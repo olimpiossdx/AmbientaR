@@ -7,6 +7,7 @@ import { PageHeader } from '@/components/page-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { BrDateInput } from '@/components/form/br-date-input';
 import { Label } from '@/components/ui/label';
 import {
   Select,
@@ -96,11 +97,11 @@ export default function NewInventarioPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">
                   <Label>Data início</Label>
-                  <Input type="date" value={dataInicio} onChange={(e) => setDataInicio(e.target.value)} />
+                  <BrDateInput value={dataInicio} onChange={setDataInicio} />
                 </div>
                 <div className="grid gap-2">
                   <Label>Data fim</Label>
-                  <Input type="date" value={dataFim} onChange={(e) => setDataFim(e.target.value)} />
+                  <BrDateInput value={dataFim} onChange={setDataFim} />
                 </div>
               </div>
               <div className="grid gap-2">

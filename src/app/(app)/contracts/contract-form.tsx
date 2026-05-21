@@ -14,9 +14,10 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { BrDateFormControl } from "@/components/form/br-date-input";
 import { MaskedInput } from "@/components/ui/masked-input";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, PlusCircle, Trash2 } from "lucide-react";
+import { Loader2, PlusCircle, RefreshCw, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type {
   Contract,
@@ -24,6 +25,7 @@ import type {
   EnvironmentalCompany,
   TechnicalResponsible,
   CommercialProposal,
+  PlatformContractPublic,
 } from "@/lib/types";
 import {
   useFirebase,
@@ -58,6 +60,22 @@ import { persistContractPdfForSignature } from "@/lib/persist-contract-pdf";
 import { useLocalBranding } from "@/hooks/use-local-branding";
 import { NOTIFICATION_LINKS, NOTIFICATION_SOURCE } from "@/lib/notification-events";
 import { notifyClientDocPortalUsers } from "@/lib/notifications";
+import { PLATFORM_CONTRACT_PUBLIC_SETTING_ID } from "@/lib/platform-company";
+import {
+  fillEmptyContractPaymentBank,
+  hasCompanyBankDetails,
+  toContractPaymentBankFromCompany,
+} from "@/lib/company-bank-payment";
+import {
+  buildContratadoFromCompany,
+  buildResponsavelFromTechnical,
+  formatResponsavelDomicilio,
+  formatContratadaContractIntroParagraph,
+  getContratadaMissingFields,
+  isContratadaReadyForPdf,
+  resolveContractActiveCompany,
+} from "@/lib/contract-contratada-intro";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const formSchema = z.object({
   contratante: z.object({
@@ -79,6 +97,8 @@ const formSchema = z.object({
     name: z.string().min(1, "Razão social é obrigatória"),
     address: z.string().optional(),
     cnpj: z.string().optional(),
+    municipio: z.string().optional(),
+    uf: z.string().optional(),
   }),
   responsavelTecnico: z.object({
     responsibleId: z.string().min(1, "Selecione um responsável técnico."),
@@ -90,6 +110,8 @@ const formSchema = z.object({
     identidade: z.string().optional(),
     emissor: z.string().optional(),
     address: z.string().optional(),
+    municipio: z.string().optional(),
+    uf: z.string().optional(),
     registrationNumber: z.string().optional(), // Adicionado
     art: z.string().optional(), // Adicionado
   }),
@@ -210,6 +232,25 @@ export function ContractForm({ currentItem, onSuccess, sourceProposal }: Contrac
   const { data: companyProfile, isLoading: isLoadingCompanyProfile } =
     useDoc<Omit<EnvironmentalCompany, "id">>(companyProfileDocRef);
 
+  const platformPublicDocRef = useMemoFirebase(
+    () =>
+      firestore
+        ? doc(firestore, "companySettings", PLATFORM_CONTRACT_PUBLIC_SETTING_ID)
+        : null,
+    [firestore],
+  );
+  const { data: platformPublic } = useDoc<PlatformContractPublic>(
+    platformPublicDocRef,
+  );
+
+  const activeCompanyDocRef = useMemoFirebase(() => {
+    const id = platformPublic?.activeCompanyId;
+    return id && firestore ? doc(firestore, "environmentalCompanies", id) : null;
+  }, [firestore, platformPublic?.activeCompanyId]);
+  const { data: activePlatformCompany } = useDoc<EnvironmentalCompany>(
+    activeCompanyDocRef,
+  );
+
   const responsiblesQuery = useMemoFirebase(
     () => (firestore ? collection(firestore, "technicalResponsibles") : null),
     [firestore],
@@ -307,37 +348,142 @@ export function ContractForm({ currentItem, onSuccess, sourceProposal }: Contrac
     }
   }, [selectedClientId, clients, form]);
 
-  React.useEffect(() => {
-    if (companyProfile) {
-      form.setValue("contratado.name", companyProfile.name);
-      form.setValue("contratado.cnpj", companyProfile.cnpj);
-      form.setValue("contratado.address", companyProfile.address || "");
-    }
-  }, [companyProfile, form]);
+  const syncContratadaFromCadastro = React.useCallback(
+    (opts?: { showToast?: boolean }) => {
+      const company = resolveContractActiveCompany(
+        activePlatformCompany,
+        companyProfile,
+        platformPublic,
+      );
+      const contratado = buildContratadoFromCompany(company);
+      form.setValue("contratado.name", contratado.name);
+      form.setValue("contratado.cnpj", contratado.cnpj || "");
+      form.setValue("contratado.address", contratado.address || "");
+      form.setValue("contratado.municipio", contratado.municipio || "");
+      form.setValue("contratado.uf", contratado.uf || "");
+
+      if (selectedResponsibleId && responsibles) {
+        const rt = responsibles.find((r) => r.id === selectedResponsibleId);
+        if (rt) {
+          const snap = buildResponsavelFromTechnical(rt, selectedResponsibleId);
+          form.setValue("responsavelTecnico.responsibleId", snap.responsibleId);
+          form.setValue("responsavelTecnico.name", snap.name);
+          form.setValue("responsavelTecnico.profession", snap.profession || "");
+          form.setValue("responsavelTecnico.nacionalidade", snap.nacionalidade || "");
+          form.setValue("responsavelTecnico.estadoCivil", snap.estadoCivil || "");
+          form.setValue("responsavelTecnico.cpf", snap.cpf || "");
+          form.setValue("responsavelTecnico.identidade", snap.identidade || "");
+          form.setValue("responsavelTecnico.emissor", snap.emissor || "");
+          form.setValue("responsavelTecnico.address", snap.address || "");
+          form.setValue("responsavelTecnico.municipio", snap.municipio || "");
+          form.setValue("responsavelTecnico.uf", snap.uf || "");
+          form.setValue(
+            "responsavelTecnico.registrationNumber",
+            snap.registrationNumber || "",
+          );
+          form.setValue("responsavelTecnico.art", snap.art || "");
+        }
+      }
+
+      if (opts?.showToast) {
+        const missing = getContratadaMissingFields(
+          form.getValues("contratado"),
+          form.getValues("responsavelTecnico"),
+        );
+        if (missing.length === 0) {
+          toast({
+            title: "Dados da CONTRATADA atualizados",
+            description: "Empresa principal e responsável técnico sincronizados com o cadastro.",
+          });
+        } else {
+          toast({
+            variant: "destructive",
+            title: "Cadastro incompleto",
+            description: `Complete em ${missing[0]?.where}: ${missing.map((m) => m.label).join(", ")}.`,
+          });
+        }
+      }
+    },
+    [
+      activePlatformCompany,
+      companyProfile,
+      platformPublic,
+      responsibles,
+      selectedResponsibleId,
+      form,
+      toast,
+    ],
+  );
 
   React.useEffect(() => {
-    if (selectedResponsibleId && responsibles) {
-      const resp = responsibles.find((r) => r.id === selectedResponsibleId);
-      if (resp) {
-        form.setValue("responsavelTecnico.name", resp.name);
-        form.setValue("responsavelTecnico.cpf", resp.cpf);
-        form.setValue("responsavelTecnico.profession", resp.profession);
-        form.setValue("responsavelTecnico.identidade", resp.identidade || "");
-        form.setValue("responsavelTecnico.emissor", resp.emissor || "");
-        form.setValue(
-          "responsavelTecnico.nacionalidade",
-          resp.nacionalidade || "",
-        );
-        form.setValue("responsavelTecnico.estadoCivil", resp.estadoCivil || "");
-        form.setValue("responsavelTecnico.address", resp.address || "");
-        form.setValue(
-          "responsavelTecnico.registrationNumber",
-          resp.registrationNumber || "",
-        );
-        form.setValue("responsavelTecnico.art", resp.art || "");
-      }
-    }
+    if (currentItem) return;
+    if (!companyProfile && !platformPublic && !activePlatformCompany) return;
+    syncContratadaFromCadastro();
+  }, [
+    currentItem,
+    activePlatformCompany?.id,
+    companyProfile?.name,
+    companyProfile?.cnpj,
+    platformPublic?.activeCompanyId,
+    syncContratadaFromCadastro,
+  ]);
+
+  React.useEffect(() => {
+    if (!companyProfile && !platformPublic) return;
+
+    const bankSource = hasCompanyBankDetails(companyProfile)
+      ? companyProfile
+      : hasCompanyBankDetails(activePlatformCompany)
+        ? activePlatformCompany
+        : hasCompanyBankDetails(platformPublic)
+          ? platformPublic
+          : null;
+    if (!bankSource) return;
+
+    fillEmptyContractPaymentBank(
+      form.setValue,
+      form.getValues,
+      "pagamento",
+      toContractPaymentBankFromCompany(bankSource),
+    );
+  }, [companyProfile, platformPublic, activePlatformCompany, form]);
+
+  React.useEffect(() => {
+    if (!selectedResponsibleId || !responsibles) return;
+    const resp = responsibles.find((r) => r.id === selectedResponsibleId);
+    if (!resp) return;
+    const snap = buildResponsavelFromTechnical(resp, selectedResponsibleId);
+    form.setValue("responsavelTecnico.name", snap.name);
+    form.setValue("responsavelTecnico.cpf", snap.cpf || "");
+    form.setValue("responsavelTecnico.profession", snap.profession || "");
+    form.setValue("responsavelTecnico.identidade", snap.identidade || "");
+    form.setValue("responsavelTecnico.emissor", snap.emissor || "");
+    form.setValue("responsavelTecnico.nacionalidade", snap.nacionalidade || "");
+    form.setValue("responsavelTecnico.estadoCivil", snap.estadoCivil || "");
+    form.setValue("responsavelTecnico.address", snap.address || "");
+    form.setValue("responsavelTecnico.municipio", snap.municipio || "");
+    form.setValue("responsavelTecnico.uf", snap.uf || "");
+    form.setValue(
+      "responsavelTecnico.registrationNumber",
+      snap.registrationNumber || "",
+    );
+    form.setValue("responsavelTecnico.art", snap.art || "");
   }, [selectedResponsibleId, responsibles, form]);
+
+  const watchedContratado = useWatch({ control: form.control, name: "contratado" });
+  const watchedResponsavel = useWatch({
+    control: form.control,
+    name: "responsavelTecnico",
+  });
+  const contratadaPreview = React.useMemo(
+    () =>
+      formatContratadaContractIntroParagraph(watchedContratado, watchedResponsavel),
+    [watchedContratado, watchedResponsavel],
+  );
+  const contratadaMissing = React.useMemo(
+    () => getContratadaMissingFields(watchedContratado, watchedResponsavel),
+    [watchedContratado, watchedResponsavel],
+  );
 
   React.useEffect(() => {
     if (!sourceProposal || currentItem) return;
@@ -362,6 +508,20 @@ export function ContractForm({ currentItem, onSuccess, sourceProposal }: Contrac
     setLoading(true);
     if (!firestore) {
       toast({ variant: "destructive", title: "Firebase não inicializado." });
+      setLoading(false);
+      return;
+    }
+
+    if (!isContratadaReadyForPdf(values.contratado, values.responsavelTecnico)) {
+      const missing = getContratadaMissingFields(
+        values.contratado,
+        values.responsavelTecnico,
+      );
+      toast({
+        variant: "destructive",
+        title: "Dados da CONTRATADA incompletos",
+        description: `Atualize o cadastro ou use «Atualizar do cadastro». Falta: ${missing.map((m) => m.label).join(", ")}.`,
+      });
       setLoading(false);
       return;
     }
@@ -550,7 +710,25 @@ export function ContractForm({ currentItem, onSuccess, sourceProposal }: Contrac
                     />
                   </div>
                   <div className="p-4 border rounded-md space-y-4">
-                    <h3 className="font-semibold">Contratado (Sua Empresa)</h3>
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <h3 className="font-semibold">Contratado (empresa principal)</h3>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="gap-1"
+                        disabled={isLoadingCompanyProfile}
+                        onClick={() => syncContratadaFromCadastro({ showToast: true })}
+                      >
+                        <RefreshCw className="h-3.5 w-3.5" />
+                        Atualizar do cadastro
+                      </Button>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Dados de Cadastro → Empresas (empresa marcada como principal da
+                      plataforma). Ao trocar a empresa principal, use o botão acima para
+                      atualizar contratos em edição.
+                    </p>
                     <FormField
                       control={form.control}
                       name="contratado.name"
@@ -558,15 +736,72 @@ export function ContractForm({ currentItem, onSuccess, sourceProposal }: Contrac
                         <FormItem>
                           <FormLabel>Razão Social</FormLabel>
                           <FormControl>
-                            <Input {...field} disabled />
+                            <Input {...field} readOnly className="bg-muted/40" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
+                    <FormField
+                      control={form.control}
+                      name="contratado.cnpj"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>CNPJ</FormLabel>
+                          <FormControl>
+                            <MaskedInput mask="cnpj" {...field} readOnly className="bg-muted/40" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="contratado.address"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Sede (endereço completo)</FormLabel>
+                          <FormControl>
+                            <Textarea
+                              {...field}
+                              readOnly
+                              rows={2}
+                              className="bg-muted/40 resize-none"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    {contratadaMissing.length > 0 && (
+                      <Alert variant="destructive">
+                        <AlertTitle>Dados faltando no contrato</AlertTitle>
+                        <AlertDescription>
+                          <ul className="list-disc pl-4 text-sm space-y-1 mt-1">
+                            {contratadaMissing.map((m) => (
+                              <li key={m.id}>
+                                <strong>{m.label}</strong> — {m.where}
+                              </li>
+                            ))}
+                          </ul>
+                        </AlertDescription>
+                      </Alert>
+                    )}
+                    <div className="rounded-md border border-dashed bg-muted/20 p-3 space-y-1">
+                      <p className="text-xs font-medium text-foreground">
+                        Pré-visualização no PDF
+                      </p>
+                      <p className="text-xs text-muted-foreground whitespace-pre-wrap leading-relaxed">
+                        {contratadaPreview}
+                      </p>
+                    </div>
                   </div>
                   <div className="p-4 border rounded-md space-y-4">
                     <h3 className="font-semibold">Responsável Técnico</h3>
+                    <p className="text-xs text-muted-foreground">
+                      Dados de Configurações → Responsáveis técnicos (endereço,
+                      município e UF vêm do cadastro do profissional).
+                    </p>
                     <FormField
                       control={form.control}
                       name="responsavelTecnico.responsibleId"
@@ -575,7 +810,7 @@ export function ContractForm({ currentItem, onSuccess, sourceProposal }: Contrac
                           <FormLabel>Selecionar Responsável Técnico</FormLabel>
                           <Select
                             onValueChange={field.onChange}
-                            defaultValue={field.value}
+                            value={field.value}
                             disabled={isLoadingResponsibles}
                           >
                             <FormControl>
@@ -608,12 +843,77 @@ export function ContractForm({ currentItem, onSuccess, sourceProposal }: Contrac
                         <FormItem>
                           <FormLabel>Nome</FormLabel>
                           <FormControl>
-                            <Input {...field} />
+                            <Input {...field} readOnly className="bg-muted/40" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="responsavelTecnico.cpf"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>CPF</FormLabel>
+                            <FormControl>
+                              <MaskedInput
+                                mask="cpf"
+                                {...field}
+                                readOnly
+                                className="bg-muted/40"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="responsavelTecnico.profession"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Profissão / conselho</FormLabel>
+                            <FormControl>
+                              <Input {...field} readOnly className="bg-muted/40" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                    <FormItem>
+                      <FormLabel>Domicílio (cidade no contrato)</FormLabel>
+                      <FormControl>
+                        <Input
+                          readOnly
+                          className="bg-muted/40"
+                          value={
+                            formatResponsavelDomicilio(watchedResponsavel) ||
+                            "Preencha município/UF ou endereço no cadastro do responsável"
+                          }
+                        />
+                      </FormControl>
+                    </FormItem>
+                    {watchedResponsavel?.address?.trim() ? (
+                      <FormField
+                        control={form.control}
+                        name="responsavelTecnico.address"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Endereço completo (cadastro)</FormLabel>
+                            <FormControl>
+                              <Textarea
+                                {...field}
+                                readOnly
+                                rows={2}
+                                className="bg-muted/40 resize-none"
+                              />
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+                    ) : null}
                   </div>
                 </AccordionContent>
               </AccordionItem>
@@ -766,6 +1066,10 @@ export function ContractForm({ currentItem, onSuccess, sourceProposal }: Contrac
                     <h3 className="font-semibold">
                       Dados Bancários para Pagamento
                     </h3>
+                    <p className="text-xs text-muted-foreground">
+                      Preenchidos automaticamente a partir de Cadastro → Empresas
+                      (empresa da plataforma), quando os campos estão vazios.
+                    </p>
                     <FormField
                       control={form.control}
                       name="pagamento.banco"
@@ -853,7 +1157,11 @@ export function ContractForm({ currentItem, onSuccess, sourceProposal }: Contrac
                       <FormItem>
                         <FormLabel>Data de Assinatura do Contrato</FormLabel>
                         <FormControl>
-                          <Input type="date" {...field} />
+                          <BrDateFormControl
+                            value={field.value}
+                            onChange={field.onChange}
+                            onBlur={field.onBlur}
+                          />
                         </FormControl>
                       </FormItem>
                     )}

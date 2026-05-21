@@ -14,6 +14,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { BrDateFormControl } from "@/components/form/br-date-input";
 import { MaskedInput } from "@/components/ui/masked-input";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -1030,24 +1031,11 @@ export function ClientForm({
                 <FormItem className="flex flex-col">
                   <FormLabel>Data de Nascimento</FormLabel>
                   <FormControl>
-                    <Input
-                      type="date"
-                      value={
-                        field.value
-                          ? field.value.toISOString().slice(0, 10)
-                          : ""
-                      }
-                      onChange={(e) => {
-                        const v = e.target.value;
-                        if (!v) {
-                          field.onChange(undefined);
-                        } else {
-                          const d = new Date(v);
-                          if (!isNaN(d.getTime())) {
-                            field.onChange(d);
-                          }
-                        }
-                      }}
+                    <BrDateFormControl
+                      value={field.value}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      asDate
                     />
                   </FormControl>
                   <FormMessage />

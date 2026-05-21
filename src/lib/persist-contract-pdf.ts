@@ -20,9 +20,17 @@ export async function persistContractPdfForSignature(
   contract: Contract,
   branding?: LocalBranding | null,
 ): Promise<string> {
+  if (!contractId?.trim()) {
+    throw new Error("ID do contrato inválido para gerar o PDF.");
+  }
   const blob = await contractPdfBlob(contract, branding ?? undefined);
-  const file = new File([blob], 'contrato-para-assinatura.pdf', { type: 'application/pdf' });
-  const storagePath = contractPdfStoragePath(contractId, contract.contratante?.nome);
+  const file = new File([blob], "contrato-para-assinatura.pdf", {
+    type: "application/pdf",
+  });
+  const storagePath = contractPdfStoragePath(
+    contractId.trim(),
+    contract.contratante?.nome,
+  );
   const downloadUrl = await uploadFileToStorage(file, storagePath);
   await updateDoc(doc(firestore, 'contracts', contractId), { contractPdfUrl: downloadUrl });
   return downloadUrl;

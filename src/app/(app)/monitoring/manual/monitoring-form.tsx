@@ -15,12 +15,11 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
-import { CalendarIcon, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale/pt-BR';
+import { BrDateFormControl } from '@/components/form/br-date-input';
 import { useToast } from '@/hooks/use-toast';
 import type { ManualMonitoringLog } from '@/lib/types';
 import type { WaterPermit, TelemetryReading } from '@/lib/types';
@@ -163,19 +162,14 @@ export function MonitoringForm({
               render={({ field }) => (
                   <FormItem className="flex flex-col">
                   <FormLabel>Data do Lançamento</FormLabel>
-                  <Popover>
-                      <PopoverTrigger asChild>
-                      <FormControl>
-                          <Button variant="outline" className={cn("pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
-                          {field.value ? format(field.value, "PPP", { locale: ptBR }) : <span>Escolha uma data</span>}
-                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                          </Button>
-                      </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                          <Calendar mode="single" selected={field.value} onSelect={field.onChange} disabled={(date) => date > new Date()} initialFocus />
-                      </PopoverContent>
-                  </Popover>
+                  <FormControl>
+                    <BrDateFormControl
+                      value={field.value}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      asDate
+                    />
+                  </FormControl>
                   <FormMessage />
                   </FormItem>
               )}

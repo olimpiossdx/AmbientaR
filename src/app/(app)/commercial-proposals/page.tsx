@@ -92,6 +92,7 @@ import { Separator } from "@/components/ui/separator";
 import { AttachmentPreviewSection } from "@/components/shared/attachment-preview-section";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { BrDateInput } from "@/components/form/br-date-input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Collapsible,
@@ -573,20 +574,18 @@ export default function CommercialProposalsPage() {
                 </div>
                 <div>
                   <Label className="text-xs">Data início</Label>
-                  <Input
-                    type="date"
+                  <BrDateInput
                     className="h-8 w-36"
                     value={filterDataInicio}
-                    onChange={(e) => setFilterDataInicio(e.target.value)}
+                    onChange={setFilterDataInicio}
                   />
                 </div>
                 <div>
                   <Label className="text-xs">Data fim</Label>
-                  <Input
-                    type="date"
+                  <BrDateInput
                     className="h-8 w-36"
                     value={filterDataFim}
-                    onChange={(e) => setFilterDataFim(e.target.value)}
+                    onChange={setFilterDataFim}
                   />
                 </div>
                 <div>

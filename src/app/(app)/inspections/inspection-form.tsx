@@ -22,12 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
+import { BrDateFormControl } from '@/components/form/br-date-input';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import {
@@ -39,7 +34,6 @@ import {
 import { Checkbox } from '@/components/ui/checkbox';
 import {
   Loader2,
-  CalendarIcon,
   PlusCircle,
   Trash2,
   Paperclip,
@@ -68,8 +62,6 @@ import type {
   FieldInspectionMotivo,
 } from '@/lib/types';
 import { cleanEmptyValues, cn } from '@/lib/utils';
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale/pt-BR';
 import { CardFooter } from '@/components/ui/card';
 import { SignaturePad } from '@/components/ui/signature-pad';
 import { Badge } from '@/components/ui/badge';
@@ -768,32 +760,14 @@ export function InspectionForm({ onSuccess, currentItem }: InspectionFormProps) 
               render={({ field }) => (
                 <FormItem className="flex flex-col">
                   <FormLabel>Data da vistoria</FormLabel>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <FormControl>
-                        <Button
-                          variant="outline"
-                          className={cn(
-                            'min-h-10 pl-3 text-left font-normal w-full sm:w-auto',
-                            !field.value && 'text-muted-foreground',
-                          )}
-                        >
-                          {field.value
-                            ? format(field.value, 'PPP', { locale: ptBR })
-                            : 'Escolha a data'}
-                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                        </Button>
-                      </FormControl>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={field.value}
-                        onSelect={field.onChange}
-                        disabled={(date) => date > new Date()}
-                      />
-                    </PopoverContent>
-                  </Popover>
+                  <FormControl>
+                    <BrDateFormControl
+                      value={field.value}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      asDate
+                    />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}

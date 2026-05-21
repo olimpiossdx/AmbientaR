@@ -23,6 +23,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { BrDateFormControl } from "@/components/form/br-date-input";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
@@ -57,6 +58,10 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Loader2, List, PlusCircle, Trash2 } from "lucide-react";
 import { numberToWordsBRL } from "@/lib/utils";
+import {
+  fillEmptyContractPaymentBank,
+  toContractPaymentBankFromSupplier,
+} from "@/lib/company-bank-payment";
 
 const formSchema = z.object({
   prestador: z.object({
@@ -328,6 +333,13 @@ export function SupplierContractForm({
       [supplier.logradouro, supplier.bairro, supplier.municipio, supplier.uf]
         .filter(Boolean)
         .join(", "),
+    );
+
+    fillEmptyContractPaymentBank(
+      form.setValue,
+      form.getValues,
+      "pagamento",
+      toContractPaymentBankFromSupplier(supplier.bankDetails),
     );
   }, [selectedSupplierId, suppliers, form]);
 
@@ -792,7 +804,11 @@ export function SupplierContractForm({
                       <FormItem>
                         <FormLabel>Data do contrato</FormLabel>
                         <FormControl>
-                          <Input type="date" {...field} />
+                          <BrDateFormControl
+                            value={field.value}
+                            onChange={field.onChange}
+                            onBlur={field.onBlur}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>

@@ -25,12 +25,8 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import type { AnaliseSolo, AtividadeAgropecuaria, Biome, CoordinateFormat, Datum, Fuso, Irrigacao, Jurisdiction, ManagementCategory, OutraAtividade, OwnerCondition, PhysicalStructure, Project } from '@/lib/types';
 import { ibgeData } from '@/lib/ibge-data';
 import { Textarea } from '@/components/ui/textarea';
-import { CalendarIcon, PlusCircle, Trash2 } from 'lucide-react';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
-import { cn } from '@/lib/utils';
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale/pt-BR';
+import { PlusCircle, Trash2 } from 'lucide-react';
+import { BrDateFormControl } from '@/components/form/br-date-input';
 import type { Empreendedor as Client } from '@/lib/types';
 import { Label } from '@/components/ui/label';
 
@@ -223,8 +219,8 @@ export function PiaFormInventario({ form, clients, isLoadingClients, projects, i
                                 <Button type="button" variant="destructive" size="icon" className="absolute top-2 right-2 h-6 w-6" onClick={() => removeCronograma(index)}><Trash2 className="h-4 w-4" /></Button>
                                 <FormField control={form.control} name={`cronograma.${index}.etapa`} render={({ field }) => (<FormItem><FormLabel>Etapa</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
                                 <div className="grid grid-cols-2 gap-4">
-                                     <FormField control={form.control} name={`cronograma.${index}.dataInicio`} render={({ field }) => (<FormItem className="flex flex-col"><FormLabel>Data de Início</FormLabel><Popover><PopoverTrigger asChild><FormControl><Button variant={"outline"} className={cn("pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>{field.value ? format(field.value, "PPP", { locale: ptBR }) : <span>Escolha uma data</span>}<CalendarIcon className="w-4 h-4 ml-auto opacity-50" /></Button></FormControl></PopoverTrigger><PopoverContent className="w-auto p-0" align="start"><Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus /></PopoverContent></Popover><FormMessage /></FormItem>)} />
-                                     <FormField control={form.control} name={`cronograma.${index}.dataFim`} render={({ field }) => (<FormItem className="flex flex-col"><FormLabel>Data de Fim</FormLabel><Popover><PopoverTrigger asChild><FormControl><Button variant={"outline"} className={cn("pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>{field.value ? format(field.value, "PPP", { locale: ptBR }) : <span>Escolha uma data</span>}<CalendarIcon className="w-4 h-4 ml-auto opacity-50" /></Button></FormControl></PopoverTrigger><PopoverContent className="w-auto p-0" align="start"><Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus /></PopoverContent></Popover><FormMessage /></FormItem>)} />
+                                     <FormField control={form.control} name={`cronograma.${index}.dataInicio`} render={({ field }) => (<FormItem className="flex flex-col"><FormLabel>Data de Início</FormLabel><FormControl><BrDateFormControl value={field.value} onChange={field.onChange} onBlur={field.onBlur} asDate /></FormControl><FormMessage /></FormItem>)} />
+                                     <FormField control={form.control} name={`cronograma.${index}.dataFim`} render={({ field }) => (<FormItem className="flex flex-col"><FormLabel>Data de Fim</FormLabel><FormControl><BrDateFormControl value={field.value} onChange={field.onChange} onBlur={field.onBlur} asDate /></FormControl><FormMessage /></FormItem>)} />
                                 </div>
                             </div>
                         ))}

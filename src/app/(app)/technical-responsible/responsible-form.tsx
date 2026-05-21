@@ -22,7 +22,6 @@ import { useFirebase, errorEmitter } from '@/firebase';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { collection, doc, addDoc, updateDoc } from 'firebase/firestore';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { DialogFooter, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 
 const formSchema = z.object({
   name: z.string().min(2, 'O nome é obrigatório.'),
@@ -123,12 +122,6 @@ export function ResponsibleForm({ currentItem, onSuccess, onCancel }: Responsibl
 
   return (
     <>
-      <DialogHeader>
-        <DialogTitle>{currentItem ? 'Editar Responsável' : 'Adicionar Novo Responsável'}</DialogTitle>
-        <DialogDescription>
-          {currentItem ? 'Atualize os detalhes do profissional.' : 'Preencha os detalhes do novo profissional.'}
-        </DialogDescription>
-      </DialogHeader>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="h-full flex flex-col overflow-hidden">
           <div className="flex-1 overflow-y-auto pr-4 py-4 space-y-4">

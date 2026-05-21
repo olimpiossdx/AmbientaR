@@ -5,6 +5,7 @@ import { PageHeader } from '@/components/page-header';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { BrDateInput } from '@/components/form/br-date-input';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
@@ -154,11 +155,11 @@ export default function CrmReportsPage() {
         <div className="flex flex-wrap items-end gap-3">
           <div>
             <Label className="text-xs">Data início</Label>
-            <Input type="date" className="h-9 w-40 mt-1" value={dateStart} onChange={(e) => setDateStart(e.target.value)} />
+            <BrDateInput className="h-9 w-40 mt-1" value={dateStart} onChange={setDateStart} />
           </div>
           <div>
             <Label className="text-xs">Data fim</Label>
-            <Input type="date" className="h-9 w-40 mt-1" value={dateEnd} onChange={(e) => setDateEnd(e.target.value)} />
+            <BrDateInput className="h-9 w-40 mt-1" value={dateEnd} onChange={setDateEnd} />
           </div>
           <Button variant="outline" size="sm" onClick={() => {}} className="h-9">
             Atualizar

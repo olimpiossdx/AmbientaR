@@ -322,6 +322,7 @@ service cloud.firestore {
             && resource.data.lastSequence is int
             && request.resource.data.lastSequence is int
             && request.resource.data.lastSequence == resource.data.lastSequence + 1);
+        allow delete: if isAdmin();
     }
 
     /**

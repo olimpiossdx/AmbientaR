@@ -8,6 +8,45 @@ export function maskBrDateInput(raw: string): string {
   return value.slice(0, 10);
 }
 
+/** Converte `Date`, ISO ou BR para exibição `dd/MM/yyyy`. */
+export function formatDateBr(value?: Date | string | null): string {
+  if (!value) return "";
+  if (value instanceof Date) {
+    if (isNaN(value.getTime())) return "";
+    const d = String(value.getDate()).padStart(2, "0");
+    const m = String(value.getMonth() + 1).padStart(2, "0");
+    const y = value.getFullYear();
+    return `${d}/${m}/${y}`;
+  }
+  return isoDateToBr(value);
+}
+
+/** Normaliza `Date`, ISO ou BR para ISO `yyyy-MM-dd` (vazio se inválido). */
+export function dateValueToIso(value?: Date | string | null): string {
+  if (!value) return "";
+  if (value instanceof Date) {
+    if (isNaN(value.getTime())) return "";
+    const y = value.getFullYear();
+    const m = String(value.getMonth() + 1).padStart(2, "0");
+    const d = String(value.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  }
+  const trimmed = value.trim();
+  if (!trimmed) return "";
+  if (/^\d{4}-\d{2}-\d{2}/.test(trimmed)) return trimmed.slice(0, 10);
+  const fromBr = brDateToIso(trimmed);
+  return fromBr ?? "";
+}
+
+/** ISO `yyyy-MM-dd` → `Date` local (meia-noite). */
+export function isoToDate(iso?: string | null): Date | undefined {
+  const normalized = dateValueToIso(iso);
+  if (!normalized) return undefined;
+  const [y, m, d] = normalized.split("-").map(Number);
+  const date = new Date(y, m - 1, d);
+  return isNaN(date.getTime()) ? undefined : date;
+}
+
 /** Converte ISO `yyyy-MM-dd` para exibição `dd/MM/yyyy`. */
 export function isoDateToBr(iso?: string | null): string {
   if (!iso?.trim()) return "";

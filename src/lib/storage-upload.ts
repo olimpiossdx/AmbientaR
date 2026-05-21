@@ -1,11 +1,15 @@
-import { getApp, getApps } from "firebase/app";
 import {
   deleteObject,
   getDownloadURL,
-  getStorage,
   ref,
   uploadBytes,
 } from "firebase/storage";
+import {
+  getClientFirebaseStorage,
+  getFirebaseAppOrThrow,
+} from "@/lib/firebase-storage-client";
+
+export { getFirebaseAppOrThrow };
 import { inferMimeTypeFromFileName } from "@/lib/file-mime";
 import {
   buildLimitErrorMessage,
@@ -15,13 +19,6 @@ import {
   type PackageLimits,
 } from "@/lib/package-limits";
 import type { AppUser } from "@/lib/types";
-
-function getFirebaseAppOrThrow() {
-  if (typeof getApps === "function" && getApps().length === 0) {
-    throw new Error("Firebase não inicializado. Recarregue a página.");
-  }
-  return getApp();
-}
 
 /** Sanitiza nome para usar em paths do Storage. */
 export function sanitizeStorageFileName(name: string): string {
@@ -53,7 +50,10 @@ export async function uploadFileToStorage(
   file: File,
   storagePath: string,
 ): Promise<string> {
-  const storage = getStorage(getFirebaseAppOrThrow());
+  if (!storagePath?.trim()) {
+    throw new Error("Caminho do Storage inválido para upload.");
+  }
+  const storage = getClientFirebaseStorage();
   const storageRef = ref(storage, storagePath);
   const contentType =
     (file.type && file.type.trim()) ||
@@ -80,7 +80,10 @@ export async function uploadFileToStorage(
 export async function deleteFileAtStoragePath(
   storagePath: string,
 ): Promise<void> {
-  const storage = getStorage(getFirebaseAppOrThrow());
+  if (!storagePath?.trim()) {
+    throw new Error("Caminho do Storage inválido para upload.");
+  }
+  const storage = getClientFirebaseStorage();
   await deleteObject(ref(storage, storagePath));
 }
 

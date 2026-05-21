@@ -83,6 +83,7 @@
     "cmdk": "^1.0.0",
     "date-fns": "^3.6.0",
     "dexie": "^4.4.2",
+    "docx": "^9.6.1",
     "docxtemplater": "^3.50.0",
     "dotenv": "^16.5.0",
     "embla-carousel-react": "^8.6.0",

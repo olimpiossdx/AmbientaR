@@ -22,16 +22,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
-import { CalendarIcon, Loader2 } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale/pt-BR";
+import { Loader2 } from "lucide-react";
+import { BrDateFormControl } from "@/components/form/br-date-input";
 import { useToast } from "@/hooks/use-toast";
 import type {
   Condicionante,
@@ -118,7 +110,6 @@ export function ComplianceForm({
   const [uploadedFileUrl, setUploadedFileUrl] = React.useState<string | null>(
     currentItem?.fileUrl || null,
   );
-  const [isDueDateOpen, setIsDueDateOpen] = React.useState(false);
   const { toast } = useToast();
   const { firestore, user: currentUser, auth } = useFirebase();
   const { uploadFile, dialogProps, limitLabel } = useStorageFileUpload({
@@ -497,40 +488,14 @@ export function ComplianceForm({
               render={({ field }) => (
                 <FormItem className="flex flex-col">
                   <FormLabel>Data de Vencimento</FormLabel>
-                  <Popover open={isDueDateOpen} onOpenChange={setIsDueDateOpen}>
-                    <PopoverTrigger asChild>
-                      <FormControl>
-                        <Button
-                          variant={"outline"}
-                          className={cn(
-                            "w-full pl-3 text-left font-normal",
-                            !field.value && "text-muted-foreground",
-                          )}
-                        >
-                          {field.value ? (
-                            format(field.value, "PPP", { locale: ptBR })
-                          ) : (
-                            <span>Escolha uma data</span>
-                          )}
-                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                        </Button>
-                      </FormControl>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={field.value}
-                        onSelect={(date) => {
-                          field.onChange(date);
-                          if (date) {
-                            setIsDueDateOpen(false);
-                          }
-                        }}
-                        defaultMonth={field.value ?? new Date()}
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
+                  <FormControl>
+                    <BrDateFormControl
+                      value={field.value}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      asDate
+                    />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}

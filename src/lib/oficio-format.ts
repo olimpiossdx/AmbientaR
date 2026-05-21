@@ -314,7 +314,11 @@ export function buildOficioConsolidatedText(
 
   blocks.push(`${header}                          ${localDate}`);
 
-
+  /** Linha em branco antes de cada metadado do topo (ritmo visual no PDF/Word). */
+  const pushMetaLine = (line: string) => {
+    blocks.push("");
+    blocks.push(line);
+  };
 
   const referente =
 
@@ -322,43 +326,37 @@ export function buildOficioConsolidatedText(
 
   if (referente) {
 
-    blocks.push("", `Referente: ${referente}`);
+    pushMetaLine(`Referente: ${referente}`);
 
   }
-
-
 
   const processo = parts.processoSei?.trim();
 
   if (processo) {
 
-    blocks.push(`Processo SEI/SLA: ${processo}`);
+    pushMetaLine(`Processo SEI/SLA: ${processo}`);
 
   } else if (parts.reference?.trim() && !parts.referente?.trim()) {
 
-    blocks.push(`Referência: ${parts.reference.trim()}`);
+    pushMetaLine(`Referência: ${parts.reference.trim()}`);
 
   }
-
-
 
   if (parts.subject?.trim()) {
 
-    blocks.push(`Assunto: ${parts.subject.trim()}`);
+    pushMetaLine(`Assunto: ${parts.subject.trim()}`);
 
   }
 
-
-
   const greeting = parts.greeting?.trim() || DEFAULT_OFICIO_GREETING;
 
-  blocks.push("", greeting);
-
-
+  pushMetaLine(greeting);
 
   if (parts.body?.trim()) {
 
-    blocks.push("", parts.body.trim());
+    blocks.push("");
+
+    blocks.push(parts.body.trim());
 
   }
 
