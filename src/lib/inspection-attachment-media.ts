@@ -8,6 +8,7 @@ import { effectiveMimeType, isPdfLikeFile } from '@/lib/file-mime';
 import { isImageUploadFile } from '@/lib/upload-pipeline';
 import { fetchBrandingImageAsBase64, resizeDataUrlForPdf } from '@/lib/branding-pdf';
 import { loadPdfJsForBrowser } from '@/lib/pdfjs-worker';
+import type { PDFPageProxy } from 'pdfjs-dist';
 
 /** Imagens (incl. extensão sem MIME no celular) e PDF para evidências de vistoria. */
 export function isAllowedInspectionUploadFile(file: File): boolean {
@@ -140,8 +141,7 @@ export type InspectionPdfPageImage = {
  * Rasteriza até {@link PDF_REPORT_MAX_PAGES_EMBED} páginas de um blob PDF.
  */
 async function rasterizePdfPageToJpeg(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  page: any,
+  page: PDFPageProxy,
   targetWidthPx: number,
 ): Promise<string | null> {
   const baseViewport = page.getViewport({ scale: 1 });
