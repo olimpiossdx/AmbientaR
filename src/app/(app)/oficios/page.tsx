@@ -405,7 +405,7 @@ export default function OficiosPage() {
               <TooltipProvider>
                 <div className="flex flex-col gap-4">
                   {showCounterSettings && (
-                    <OficioCounterSettings oficios={oficios} />
+                    <OficioCounterSettings oficios={oficios ?? undefined} />
                   )}
                   <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
                     <div className="text-sm text-muted-foreground">

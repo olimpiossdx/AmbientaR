@@ -17,7 +17,7 @@ import {
 } from '@/lib/oficio-counter';
 
 type Props = {
-  oficios: Oficio[] | undefined;
+  oficios?: Oficio[] | null;
 };
 
 export function OficioCounterSettings({ oficios }: Props) {
@@ -30,7 +30,7 @@ export function OficioCounterSettings({ oficios }: Props) {
   const [saving, setSaving] = React.useState(false);
 
   const yearNum = parseInt(year, 10);
-  const maxOnPlatform = maxConcludedSequenceInYear(oficios, yearNum);
+  const maxOnPlatform = maxConcludedSequenceInYear(oficios ?? undefined, yearNum);
 
   React.useEffect(() => {
     if (!firestore || !Number.isFinite(yearNum)) return;
