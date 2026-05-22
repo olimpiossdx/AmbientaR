@@ -10,6 +10,10 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import type { AmbientalContext } from '@/lib/types';
 import { buildPlaceholderDataFromContext } from '@/lib/docx-placeholders';
+import {
+  apiAuthErrorResponse,
+  requireAuthenticatedApi,
+} from '@/lib/api-auth';
 
 const TEMPLATE_SLUGS = [
   'rca', 'ptrf', 'prada', 'pia', 'eia-rima', 'las-ras', 'pca', 'pea',
@@ -53,6 +57,12 @@ async function loadTemplateBuffer(
 }
 
 export async function POST(request: NextRequest) {
+  try {
+    await requireAuthenticatedApi(request);
+  } catch (e) {
+    return apiAuthErrorResponse(e);
+  }
+
   try {
     const body = await request.json();
     const { laudoId, tipoEstudo, context, templateUrl } = body as {

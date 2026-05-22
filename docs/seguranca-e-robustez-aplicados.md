@@ -41,12 +41,43 @@ Documento de referência do que foi sugerido para deixar o software mais **segur
 
 ---
 
-## 5. Resumo
+## 5. APIs Next.js (App Hosting)
+
+### Fase 1 (2026-05-22)
+
+- **`src/lib/api-auth.ts`**: `requireAuthenticatedApi` (Bearer Firebase) além de `requireAdminApiAuth`.
+- **`src/lib/api-client-auth.ts`**: `getBearerApiHeaders` para chamadas do browser.
+- **Rotas `/api/uploads/*`**: resposta **410** (disco local desativado; usar Firebase Storage).
+- **Autenticação obrigatória** em: `geospatial/analyze`, `termos-referencia/list`, `external-embed-check`, `laudos/gerar-docx`, `ai/preencher-relatorio`.
+- **`/api/package/check`**: 401 só sem token; limite de plano continua **200** com `{ ok: false }`.
+- **`safe-fetch-api`**: não re tenta 401/403/404/410.
+
+### Fase 2 (2026-05-22)
+
+- **Disco local desativado (410)**: `/api/branding`, `/api/templates/[type]`, `/api/inventory-project-photos`.
+- **Proxy Storage autenticado**: `/api/branding/image` exige Bearer; cliente em `storage-image-proxy-client.ts` (PDFs e laudos).
+- **Preview de anexos**: `<img>` usa URL direta do Storage; `fetch` para PDF usa proxy com token.
+- **Auth em**: `geospatial/wave-a`, `ai/enriquecer-processo`, `ai/deepseek/chat`, `studies/[slug]/form-schema`, `canais/notificar-laudo-pronto`, `package/usage`.
+- **Study-maps / FCM**: `verifyBearerUid` alinhado com `verifyIdTokenAndLoadUser` (perfil Firestore).
+- **Admin / AI Lab**: mantêm `requireAdminApiAuth` (sem alteração).
+
+### Fase 3 (2026-05-22)
+
+- **Layout `(app)`**: subscrições do perfil `client` só com `profileAligned` + `sessionUid` (UID Auth, não `user.id` legado).
+- **`route-access`**: aliases para URLs legadas (`/autos-infracao-defesa`, `/environmental-company`, etc.).
+- **`/autos-infracao-defesa`**: `redirect()` no servidor (sem flash de página cliente).
+- **Checklist**: `docs/auditoria-menus-fase3-checklist.md` via `npm run audit:menus-by-role`.
+- **`fetchApiWithAuth`**: helper para novas chamadas `/api/*`.
+
+---
+
+## 6. Resumo
 
 | Área            | O que está aplicado |
 |-----------------|----------------------|
 | Firestore rules | Catch-all admin; condicionantes; proposals/contracts; autoInfracaoDefesas; supplierContracts |
+| APIs App Hosting | Uploads legados 410; APIs sensíveis com Bearer; package/check sem 401 em limite de plano |
 | UX              | loading.tsx na rota (app); supressão de erros de extensão; sidebar dinâmica; busca unificada |
-| Deploy          | firebase.json, .firebaserc, npm run deploy:rules, firebase-tools |
+| Deploy          | firebase.json, .firebaserc, npm run deploy:rules, `npm run deploy:storage`, firebase-tools |
 
 Este documento pode ser atualizado quando novas melhorias forem aplicadas.

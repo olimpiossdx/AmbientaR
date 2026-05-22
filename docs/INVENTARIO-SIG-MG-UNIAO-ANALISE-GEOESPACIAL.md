@@ -13,7 +13,7 @@ Este inventário é a base técnica/legal da Fase 0 para o módulo `Análise Geo
 | Fonte | Endpoint principal | Tipo | Uso previsto |
 |---|---|---|---|
 | IDE-Sisema Webservices | `https://geoportal.meioambiente.mg.gov.br/webservices` | OGC | Descoberta e consumo de camadas estaduais |
-| GeoServer Sisema | `https://geoserver.meioambiente.mg.gov.br/` | OGC | Interseção geoespacial (WMS/WFS/WCS) |
+| GeoServer Sisema | `https://geoserver.meioambiente.mg.gov.br/` | OGC | Interseção geoespacial (WMS/WFS/WCS). **WFS:** `.../ows` (não `.../geoserver/ows`) |
 | GeoNetwork IDE-Sisema | `https://idesisema.meioambiente.mg.gov.br/geonetwork` | Catálogo | Metadados (CRS, atualização, restrições) |
 | SICAR Imóvel | `https://www.gov.br/conecta/catalogo/apis/sicar-imovel` | API | Consulta de informações de imóvel por CAR |
 | SICAR Demonstrativo | `https://www.gov.br/conecta/catalogo/apis/api-sicar-demonstrativo` | API | APP, RL e dados demonstrativos por CAR |

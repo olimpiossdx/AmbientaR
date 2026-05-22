@@ -7,6 +7,10 @@ import {
 import { effectiveMimeType, isPdfLikeFile } from '@/lib/file-mime';
 import { isImageUploadFile } from '@/lib/upload-pipeline';
 import { fetchBrandingImageAsBase64, resizeDataUrlForPdf } from '@/lib/branding-pdf';
+import {
+  fetchStorageImageProxyBlob,
+  isFirebaseStorageHttpsUrl,
+} from '@/lib/storage-image-proxy-client';
 import { loadPdfJsForBrowser } from '@/lib/pdfjs-worker';
 import type { PDFPageProxy } from 'pdfjs-dist';
 
@@ -42,19 +46,8 @@ const PDF_REPORT_JPEG_MAX_EDGE_PX = 2200;
 /** Redimensiona fotos antes do PDF (caixa 10×15 cm no laudo). */
 const PHOTO_PDF_MAX_EDGE_PX = 1400;
 
-function isFirebaseStorageHttpsUrl(url: string): boolean {
-  return (
-    url.includes('firebasestorage.googleapis.com') ||
-    url.includes('firebasestorage.app')
-  );
-}
-
-/** URL para exibir no browser (evita CORS no Storage). */
+/** URL para `<img>` / preview (download URL do Storage; utilizador autenticado). */
 export function inspectionAttachmentDisplayUrl(url: string): string {
-  if (typeof window === 'undefined') return url;
-  if (isFirebaseStorageHttpsUrl(url)) {
-    return `/api/branding/image?url=${encodeURIComponent(url)}`;
-  }
   return url;
 }
 
@@ -78,22 +71,21 @@ async function fetchInspectionAttachmentBlob(
 ): Promise<{ blob: Blob; contentType: string } | null> {
   if (typeof window === 'undefined') return null;
   try {
-    const res = await fetch(inspectionAttachmentDisplayUrl(url), {
-      credentials: 'same-origin',
-      cache: 'default',
-    });
-    if (!res.ok) {
-      console.warn('[inspection-pdf] fetch anexo', res.status, url.slice(0, 80));
+    const blob = isFirebaseStorageHttpsUrl(url)
+      ? await fetchStorageImageProxyBlob(url)
+      : await (async () => {
+          const res = await fetch(url, {
+            credentials: 'same-origin',
+            cache: 'default',
+          });
+          if (!res.ok) return null;
+          return res.blob();
+        })();
+    if (!blob || blob.type.includes('application/json')) {
+      console.warn('[inspection-pdf] fetch anexo falhou:', url.slice(0, 80));
       return null;
     }
-    const contentTypeHeader =
-      res.headers.get('content-type')?.split(';')[0]?.trim() || '';
-    if (contentTypeHeader.includes('application/json')) {
-      console.warn('[inspection-pdf] proxy devolveu JSON (verifique /api/branding/image)');
-      return null;
-    }
-    const blob = await res.blob();
-    const contentType = contentTypeHeader || blob.type || '';
+    const contentType = blob.type || '';
     return { blob, contentType };
   } catch (e) {
     console.warn('[inspection-pdf] fetch anexo falhou:', e);

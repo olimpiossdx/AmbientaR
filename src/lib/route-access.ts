@@ -72,12 +72,25 @@ function normalizeNavHref(href: string): string {
   return normalizePathname(href);
 }
 
+/** Redirecionamentos legados: mesma política de acesso que a rota canónica. */
+const LEGACY_PATH_ROLE_ALIASES: Record<string, string> = {
+  '/autos-infracao-defesa': '/multas-defesas',
+  '/environmental-company': '/responsible-company',
+  '/monitoring': '/monitoring/manual',
+  '/studies': '/studies/educacao-ambiental',
+  '/studies/intervencao-ambiental': '/studies/pia',
+};
+
 /** Rotas com política explícita (prioridade sobre o menu). */
 function getManualAllowedRoles(path: string): UserRole[] | null {
   if (path === '/settings/appearance') return ALL_APP_ROLES;
   if (path === '/settings') return ['admin'];
   if (path === '/oficios/new' || /\/oficios\/[^/]+\/edit$/.test(path)) {
     return OFICIOS_WRITE_ROLES;
+  }
+  const alias = LEGACY_PATH_ROLE_ALIASES[path];
+  if (alias) {
+    return getAllowedRolesForPath(alias);
   }
   return null;
 }

@@ -26,6 +26,7 @@ import { useCollection, useFirebase, useUser, useMemoFirebase, errorEmitter } fr
 import { collection, doc, deleteDoc, updateDoc } from 'firebase/firestore';
 import type { RCA } from '@/lib/types';
 import { isAdminOrSupervisorRole } from '@/lib/role-guards';
+import { getBearerApiHeaders } from '@/lib/api-client-auth';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   Dialog,
@@ -76,7 +77,7 @@ export default function RcaPage() {
   const [iaDialogOpen, setIaDialogOpen] = useState(false);
 
   const router = useRouter();
-  const { firestore, user } = useFirebase();
+  const { firestore, user, auth } = useFirebase();
   const { toast } = useToast();
 
   const rcasQuery = useMemoFirebase(() => {
@@ -138,9 +139,12 @@ export default function RcaPage() {
     setIaLoading(true);
     setIaRascunho(null);
     try {
+      const headers = await getBearerApiHeaders(auth, {
+        'Content-Type': 'application/json',
+      });
       const res = await fetch('/api/ai/preencher-relatorio', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           tipoDocumento: 'RCA',
           empreendimentoNome: itemToGenerate.empreendimento?.nome ?? '',

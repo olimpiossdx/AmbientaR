@@ -1,6 +1,7 @@
 /**
- * Catálogo Onda A — IDE-Sisema / GeoServer MG.
- * typeNames confirmados via metadados públicos; endpoints alternativos por resiliência.
+ * Catálogo Ondas A+B+C — IDE-Sisema / GeoServer MG.
+ * typeNames confirmados via GetCapabilities (2026-05-22).
+ * WFS base: https://geoserver.meioambiente.mg.gov.br/ows (não usar /geoserver/ows).
  */
 
 export type WaveACatalogEntry = {
@@ -13,10 +14,10 @@ export type WaveACatalogEntry = {
   wfsBaseUrls: string[];
 };
 
+/** Endpoints WFS válidos no GeoServer MG (raiz do host, não /geoserver/). */
 const GEOSERVER_BASES = [
-  "https://geoserver.meioambiente.mg.gov.br/geoserver/ows",
-  "https://geoserver.meioambiente.mg.gov.br/geoserver/wfs",
-  "https://geoportal.meioambiente.mg.gov.br/geoserver/ows",
+  "https://geoserver.meioambiente.mg.gov.br/ows",
+  "https://geoserver.meioambiente.mg.gov.br/wfs",
 ];
 
 export const WAVE_A_FONTES = [
@@ -35,34 +36,30 @@ export const WAVE_A_FONTES = [
 export const WAVE_A_LAYERS: WaveACatalogEntry[] = [
   {
     layerId: "mg_hidrografia",
-    title: "Hidrografia (FBDS MG)",
+    title: "Hidrografia (rede principal + massas d'água FBDS MG)",
     wave: "A",
     geometryKind: "line",
     typeNames: [
-      "ide:ide_240901_mg_hidrografia_fbds_lin",
-      "ide_240901_mg_hidrografia_fbds_lin",
-      "ide:mg_hidrografia_fbds_lin",
+      "IDE:ide_0104_mg_hidrografia_principal_lin",
+      "IDE:ide_240902_mg_rios_duplos_fbds_pol",
     ],
-    labelFields: ["nome", "NOME", "name", "tipo", "TIPO", "classificacao"],
+    labelFields: ["nome", "NOME", "name", "tipo", "TIPO", "classificacao", "categoria"],
     wfsBaseUrls: GEOSERVER_BASES,
   },
   {
     layerId: "mg_bioma",
-    title: "Bioma / cobertura (MapBiomas MG)",
+    title: "Bioma (limites IBGE MG)",
     wave: "A",
     geometryKind: "polygon",
-    typeNames: [
-      "ide:ide_1403_mg_nat_ant_mapbiomas_col9",
-      "ide_1403_mg_nat_ant_mapbiomas_col9",
-      "ide:mg_mapbiomas_bioma",
-    ],
+    typeNames: ["IDE:ide_0302_mg_limite_biomas_ibge_pol"],
     labelFields: [
       "bioma",
       "BIOMA",
+      "Bioma",
+      "nome",
+      "NOME",
       "classe",
       "CLASSE",
-      "class_name",
-      "nome_classe",
       "legenda",
     ],
     wfsBaseUrls: GEOSERVER_BASES,
@@ -72,11 +69,7 @@ export const WAVE_A_LAYERS: WaveACatalogEntry[] = [
     title: "Solos (mapa MG 1:500.000)",
     wave: "A",
     geometryKind: "polygon",
-    typeNames: [
-      "ide:ide_1502_mg_mapa_solos_pol",
-      "ide_1502_mg_mapa_solos_pol",
-      "ide:mg_mapa_solos_pol",
-    ],
+    typeNames: ["IDE:ide_1502_mg_mapa_solos_pol"],
     labelFields: [
       "solo",
       "SOLO",
@@ -86,6 +79,7 @@ export const WAVE_A_LAYERS: WaveACatalogEntry[] = [
       "NOME",
       "legenda",
       "descricao",
+      "SIGLA",
     ],
     wfsBaseUrls: GEOSERVER_BASES,
   },
@@ -95,41 +89,32 @@ export const WAVE_A_LAYERS: WaveACatalogEntry[] = [
 export const WAVE_B_LAYERS: WaveACatalogEntry[] = [
   {
     layerId: "mg_geologia",
-    title: "Geologia",
+    title: "Geologia (mapa geológico MG)",
     wave: "B",
     geometryKind: "polygon",
     typeNames: [
-      "ide:ide_1501_mg_geologia_pol",
-      "ide_1501_mg_geologia_pol",
-      "ide:mg_geologia_pol",
+      "IDE:ide_1701_mg_mapa_geologico_pol",
+      "IDE:ide_1703_mg_unid_geologico_ambientais_pol",
     ],
-    labelFields: ["litologia", "LITOLOGIA", "nome", "NOME", "classe", "CLASSE"],
+    labelFields: ["litologia", "LITOLOGIA", "nome", "NOME", "classe", "CLASSE", "SIGLA"],
     wfsBaseUrls: GEOSERVER_BASES,
   },
   {
     layerId: "mg_geomorfologia",
-    title: "Geomorfologia",
+    title: "Geomorfologia (unidades MG)",
     wave: "B",
     geometryKind: "polygon",
-    typeNames: [
-      "ide:ide_1503_mg_geomorfologia_pol",
-      "ide_1503_mg_geomorfologia_pol",
-      "ide:mg_geomorfologia_pol",
-    ],
-    labelFields: ["geomorf", "GEOMORF", "nome", "NOME", "classe", "CLASSE"],
+    typeNames: ["IDE:ide_0203_mg_unid_geomorfologicas_pol"],
+    labelFields: ["geomorf", "GEOMORF", "nome", "NOME", "classe", "CLASSE", "SIGLA"],
     wfsBaseUrls: GEOSERVER_BASES,
   },
   {
     layerId: "mg_pedologia",
-    title: "Pedologia",
+    title: "Pedologia (mapa pedológico simplificado MG)",
     wave: "B",
     geometryKind: "polygon",
-    typeNames: [
-      "ide:ide_1504_mg_pedologia_pol",
-      "ide_1504_mg_pedologia_pol",
-      "ide:mg_pedologia_pol",
-    ],
-    labelFields: ["pedolo", "PEDOLO", "nome", "NOME", "classe", "CLASSE"],
+    typeNames: ["IDE:ide_2401_mg_mapa_pedologico_simplificado_pol"],
+    labelFields: ["pedolo", "PEDOLO", "nome", "NOME", "classe", "CLASSE", "SIGLA", "legenda"],
     wfsBaseUrls: GEOSERVER_BASES,
   },
 ];
@@ -138,13 +123,12 @@ export const WAVE_B_LAYERS: WaveACatalogEntry[] = [
 export const WAVE_C_LAYERS: WaveACatalogEntry[] = [
   {
     layerId: "mg_inventario_florestal",
-    title: "Inventário / vegetação",
+    title: "Cobertura florestal / vegetação (MG 2009)",
     wave: "C",
     geometryKind: "polygon",
     typeNames: [
-      "ide:ide_1401_mg_vegetacao_pol",
-      "ide_1401_mg_vegetacao_pol",
-      "ide:mg_vegetacao_pol",
+      "IDE:ide_0301_mg_cobertura_florestal__2009_pol",
+      "IDE:ide_250101_mg_recuperacao_vegetal_2020_pol",
     ],
     labelFields: [
       "fitofisionomia",
@@ -153,20 +137,21 @@ export const WAVE_C_LAYERS: WaveACatalogEntry[] = [
       "classe",
       "CLASSE",
       "nome",
+      "NOME",
+      "legenda",
     ],
     wfsBaseUrls: GEOSERVER_BASES,
   },
   {
     layerId: "mg_fauna",
-    title: "Fauna (ocorrências)",
+    title: "Fauna (ocorrências de espécies MG)",
     wave: "C",
     geometryKind: "point",
     typeNames: [
-      "ide:ide_1601_mg_fauna_pon",
-      "ide_1601_mg_fauna_pon",
-      "ide:mg_fauna_pon",
+      "IDE:ide_1801_mg_ocorrencia_especies_pto",
+      "IDE:ide_1805_mg_pesquisa_especies_ameacadas_pto",
     ],
-    labelFields: ["especie", "ESPECIE", "grupo", "GRUPO", "nome", "NOME"],
+    labelFields: ["especie", "ESPECIE", "grupo", "GRUPO", "nome", "NOME", "familia"],
     wfsBaseUrls: GEOSERVER_BASES,
   },
 ];

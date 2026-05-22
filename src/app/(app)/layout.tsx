@@ -147,39 +147,48 @@ const AppLayoutClient = ({ children }: { children: React.ReactNode }) => {
 
   // Consultas auxiliares para identificar todos os CPFs/CNPJs vinculados ao titular (mesma lógica da página de Meu Perfil).
   const accessRequestsQuery = useMemoFirebase(() => {
-    if (!firestore || !user || user.role !== "client") return null;
-    // mesma forma que a página de Meu Perfil (UsersPage): apenas where por status
+    if (!firestore || !profileAligned || !sessionUid || user?.role !== "client") {
+      return null;
+    }
     return query(
       collection(firestore, "access_requests"),
       where("status", "==", "pending"),
     );
-  }, [firestore, user]);
+  }, [firestore, profileAligned, sessionUid, user?.role]);
 
   const myClientsQuery = useMemoFirebase(() => {
-    if (!firestore || !user || user.role !== "client") return null;
+    if (!firestore || !profileAligned || !sessionUid || user?.role !== "client") {
+      return null;
+    }
     return query(
       collection(firestore, "clients"),
-      where("userId", "==", user.id),
+      where("userId", "==", sessionUid),
     );
-  }, [firestore, user]);
+  }, [firestore, profileAligned, sessionUid, user?.role]);
 
   const myEmpreendedoresQuery = useMemoFirebase(() => {
-    if (!firestore || !user || user.role !== "client") return null;
+    if (!firestore || !profileAligned || !sessionUid || user?.role !== "client") {
+      return null;
+    }
     return query(
       collection(firestore, "empreendedores"),
-      where("userId", "==", user.id),
+      where("userId", "==", sessionUid),
     );
-  }, [firestore, user]);
+  }, [firestore, profileAligned, sessionUid, user?.role]);
 
   const clientByIdRef = useMemoFirebase(() => {
-    if (!firestore || !user || user.role !== "client") return null;
-    return doc(firestore, "clients", user.id);
-  }, [firestore, user]);
+    if (!firestore || !profileAligned || !sessionUid || user?.role !== "client") {
+      return null;
+    }
+    return doc(firestore, "clients", sessionUid);
+  }, [firestore, profileAligned, sessionUid, user?.role]);
 
   const empreendedorByIdRef = useMemoFirebase(() => {
-    if (!firestore || !user || user.role !== "client") return null;
-    return doc(firestore, "empreendedores", user.id);
-  }, [firestore, user]);
+    if (!firestore || !profileAligned || !sessionUid || user?.role !== "client") {
+      return null;
+    }
+    return doc(firestore, "empreendedores", sessionUid);
+  }, [firestore, profileAligned, sessionUid, user?.role]);
 
   const { data: pendingAccessRequests } =
     useCollection<AccessRequest>(accessRequestsQuery);
@@ -437,6 +446,31 @@ const AppLayoutClient = ({ children }: { children: React.ReactNode }) => {
           {user?.role === "supervisor" && (
             <Badge variant="outline" className="hidden md:inline-flex">
               Supervisão
+            </Badge>
+          )}
+          {user?.role === "gestor" && (
+            <Badge variant="outline" className="hidden md:inline-flex">
+              Gestão ambiental
+            </Badge>
+          )}
+          {user?.role === "financial" && (
+            <Badge variant="outline" className="hidden md:inline-flex">
+              Financeiro
+            </Badge>
+          )}
+          {user?.role === "sales" && (
+            <Badge variant="outline" className="hidden md:inline-flex">
+              Vendas
+            </Badge>
+          )}
+          {user?.role === "advogado" && (
+            <Badge variant="outline" className="hidden md:inline-flex">
+              Advogado
+            </Badge>
+          )}
+          {user?.role === "diretor_fauna" && (
+            <Badge variant="outline" className="hidden md:inline-flex">
+              Diretor de fauna
             </Badge>
           )}
           <ThemeToggle />

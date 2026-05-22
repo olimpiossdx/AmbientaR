@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { analyseArea } from '@/ai/flows/analise-ambiental-flow';
 import { isAiRoutesEnabled } from '@/lib/deploy-flags';
+import {
+  apiAuthErrorResponse,
+  requireAuthenticatedApi,
+} from '@/lib/api-auth';
 
 export const maxDuration = 90;
 
@@ -14,6 +18,12 @@ export async function POST(request: NextRequest) {
       },
       { status: 503 },
     );
+  }
+
+  try {
+    await requireAuthenticatedApi(request);
+  } catch (e) {
+    return apiAuthErrorResponse(e);
   }
 
   try {

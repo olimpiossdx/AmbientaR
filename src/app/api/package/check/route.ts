@@ -19,8 +19,15 @@ export async function POST(req: Request) {
 
     const authHeader = req.headers.get("authorization");
     const idToken = authHeader?.startsWith("Bearer ")
-      ? authHeader.slice("Bearer ".length)
+      ? authHeader.slice("Bearer ".length).trim()
       : null;
+
+    if (!idToken) {
+      return NextResponse.json(
+        { ok: false, message: "Sessão inválida. Faça login novamente." },
+        { status: 401 },
+      );
+    }
 
     const result = await checkPackageLimitForToken(
       idToken,
@@ -46,7 +53,7 @@ export async function POST(req: Request) {
         message:
           error instanceof Error ? error.message : "Falha na validação do plano.",
       },
-      { status: 401 },
+      { status: 500 },
     );
   }
 }

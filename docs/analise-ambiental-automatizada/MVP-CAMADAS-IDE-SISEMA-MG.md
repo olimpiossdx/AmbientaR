@@ -2,7 +2,26 @@
 
 Lista acordada para consulta no ecossistema **IDE-Sisema** (Minas Gerais), via **GeoServer** e metadados no **GeoNetwork** — sem replicar login do SISEMANET/Geosisemanet na aplicação.
 
-> **Importante:** os nomes exactos `namespace:layer` no WFS devem ser confirmados no catálogo antes de implementar código. URLs base já no inventário: `docs/INVENTARIO-SIG-MG-UNIAO-ANALISE-GEOESPACIAL.md`.
+> **WFS (confirmado 2026-05-22):** usar `https://geoserver.meioambiente.mg.gov.br/ows` — **não** `/geoserver/ows` (404). Workspace: **`IDE:`** (maiúsculas). Código: `src/lib/geospatial/wave-a-catalog.ts`.
+
+---
+
+## Tabela typeName confirmada (GetCapabilities)
+
+| Card (UI) | layerId | typeName WFS (principal) | Geometria |
+|-----------|---------|--------------------------|-----------|
+| Hidrografia | `mg_hidrografia` | `IDE:ide_0104_mg_hidrografia_principal_lin` (+ fallback `ide_240902_mg_rios_duplos_fbds_lin`) | linha |
+| Bioma | `mg_bioma` | `IDE:ide_0302_mg_limite_biomas_ibge_pol` | polígono |
+| Solos | `mg_solos` | `IDE:ide_1502_mg_mapa_solos_pol` | polígono |
+| Geologia | `mg_geologia` | `IDE:ide_1701_mg_mapa_geologico_pol` | polígono |
+| Geomorfologia | `mg_geomorfologia` | `IDE:ide_0203_mg_unid_geomorfologicas_pol` | polígono |
+| Pedologia | `mg_pedologia` | `IDE:ide_2401_mg_mapa_pedologico_simplificado_pol` | polígono |
+| Vegetação | `mg_inventario_florestal` | `IDE:ide_0301_mg_cobertura_florestal__2009_pol` | polígono |
+| Fauna | `mg_fauna` | `IDE:ide_1801_mg_ocorrencia_especies_pto` | ponto |
+
+**Nota bioma:** MapBiomas col.9 **não** listado no GetCapabilities deste GeoServer; usamos limites IBGE MG (equivalente temático no painel “bioma”).
+
+**Nota hidrografia:** massas d’água FBDS (`ide_240904_mg_massas_dagua_fbds_pol`) podem ser card extra futuro (polígono).
 
 ---
 

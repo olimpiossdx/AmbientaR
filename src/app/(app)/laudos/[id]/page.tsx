@@ -16,6 +16,7 @@ import { getAmbientalContextByEmpreendimentoId } from '@/lib/ambiental-context';
 import type { AmbientalContext } from '@/lib/types';
 import type { DocxTemplatesState } from '@/lib/docx-template-slugs';
 import { tipoEstudoToTemplateSlug } from '@/lib/docx-template-slugs';
+import { getBearerApiHeaders } from '@/lib/api-client-auth';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { FileText, Database, Loader2, FileDown, Send } from 'lucide-react';
@@ -60,7 +61,7 @@ export default function LaudoDetailPage() {
   const params = useParams();
   const id = params?.id as string;
 
-  const { firestore } = useFirebase();
+  const { firestore, auth } = useFirebase();
   const laudoDocRef = useMemoFirebase(
     () => (firestore && id ? doc(firestore, 'laudos', id) : null),
     [firestore, id]
@@ -130,9 +131,12 @@ export default function LaudoDetailPage() {
     if (!laudo) return;
     setNotificarLoading(true);
     try {
+      const headers = await getBearerApiHeaders(auth, {
+        'Content-Type': 'application/json',
+      });
       const res = await fetch('/api/canais/notificar-laudo-pronto', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           laudoId: laudo.id,
           consultaId: laudo.consultaId ?? '',
@@ -158,7 +162,7 @@ export default function LaudoDetailPage() {
     } finally {
       setNotificarLoading(false);
     }
-  }, [laudo, empreendimentoName, empreendedor, empreendedorName, firestore, toast]);
+  }, [auth, laudo, empreendimentoName, empreendedor, empreendedorName, firestore, toast]);
 
   const loadContext = useCallback(async () => {
     if (!firestore || !laudo?.empreendimentoId) return;
@@ -191,9 +195,12 @@ export default function LaudoDetailPage() {
     if (!ctx) return;
     setDocxLoading(true);
     try {
+      const headers = await getBearerApiHeaders(auth, {
+        'Content-Type': 'application/json',
+      });
       const res = await fetch('/api/laudos/gerar-docx', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           laudoId: laudo.id,
           tipoEstudo: laudo.tipoEstudo,

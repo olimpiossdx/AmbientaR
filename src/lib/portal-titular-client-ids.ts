@@ -6,6 +6,7 @@ import {
   type Firestore,
 } from "firebase/firestore";
 import type { AppUser } from "@/lib/types";
+import { resolvePortalAuthUid } from "@/lib/auth-user-id";
 
 /** Variantes de CPF/CNPJ (original + só dígitos) para match em `clients`, máx 10. */
 export function titularClientDocumentVariants(
@@ -35,8 +36,9 @@ export async function fetchClientIdsForTitularPortalUser(
   const userCpf = user.cpf || user.userCpf;
   const userDocs = titularClientDocumentVariants(userCpf, user.cnpjs);
 
-  if (isSelfRegistered) {
-    const q = query(cRef, where("userId", "==", user.id));
+  const uid = resolvePortalAuthUid(user);
+  if (isSelfRegistered && uid) {
+    const q = query(cRef, where("userId", "==", uid));
     const qByDoc =
       userDocs.length > 0 ? query(cRef, where("cpfCnpj", "in", userDocs)) : null;
     const snaps = qByDoc

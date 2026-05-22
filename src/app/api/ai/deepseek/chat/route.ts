@@ -5,6 +5,10 @@ import {
   deepseekChatCompletion,
   type DeepseekChatInput,
 } from "@/lib/deepseek-chat-server";
+import {
+  apiAuthErrorResponse,
+  requireAuthenticatedApi,
+} from "@/lib/api-auth";
 
 export const maxDuration = 90;
 
@@ -30,6 +34,12 @@ export async function POST(request: NextRequest) {
       },
       { status: 503 },
     );
+  }
+
+  try {
+    await requireAuthenticatedApi(request);
+  } catch (e) {
+    return apiAuthErrorResponse(e);
   }
 
   let body: DeepseekChatInput;

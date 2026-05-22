@@ -6,6 +6,7 @@ import {
   type Firestore,
 } from "firebase/firestore";
 import type { AppUser } from "@/lib/types";
+import { resolvePortalAuthUid } from "@/lib/auth-user-id";
 import { fetchEmpreendedorIdsForRepresentative } from "@/lib/representative-empreendedor-ids";
 
 /** IDs de empreendedores ligados ao titular Cliente Gestão (mesma regra da lista de Licenciamento). */
@@ -14,7 +15,9 @@ export async function fetchEmpreendedorIdsForClientGestao(
   user: AppUser,
 ): Promise<string[]> {
   const empreendedoresRef = collection(firestore, "empreendedores");
-  const byUserId = query(empreendedoresRef, where("userId", "==", user.id));
+  const uid = resolvePortalAuthUid(user);
+  if (!uid) return ["invalid-placeholder"];
+  const byUserId = query(empreendedoresRef, where("userId", "==", uid));
   const variants = [user.cpf || user.userCpf, ...(user.cnpjs || [])].filter(
     Boolean,
   ) as string[];

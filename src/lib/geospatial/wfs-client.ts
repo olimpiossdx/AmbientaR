@@ -104,6 +104,11 @@ export async function fetchWfsFeaturesInBbox(params: {
           continue;
         }
 
+        if (fc.features.length === 0) {
+          errors.push(`${typeName}: sem feições no recorte`);
+          continue;
+        }
+
         return {
           ok: true,
           features: fc.features,

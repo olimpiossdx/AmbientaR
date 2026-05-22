@@ -62,6 +62,7 @@ import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
 import { formatCepDisplay, formatCpfCnpjDisplay } from "@/lib/masks";
 import { CardSearchInput } from "@/components/card-search-input";
+import { resolvePortalAuthUid } from "@/lib/auth-user-id";
 import {
   isClientePortalRole,
   canWriteCadastroClienteAutonomo,
@@ -134,9 +135,11 @@ export default function EmpreendedoresPage() {
     }
 
     if (user.role === "representative") {
+      const repUid = resolvePortalAuthUid(user);
+      if (!repUid) return null;
       return query(
         collection(firestore, "empreendedores"),
-        where("approvedUserIds", "array-contains", user.id),
+        where("approvedUserIds", "array-contains", repUid),
       );
     }
 
@@ -154,7 +157,11 @@ export default function EmpreendedoresPage() {
       setFallbackEmpreendedores(null);
       return;
     }
-    const repUid = user.id ?? (user as any).uid;
+    const repUid = resolvePortalAuthUid(user);
+    if (!repUid) {
+      setFallbackEmpreendedores([]);
+      return;
+    }
     const accessRequestsRef = collection(firestore, "access_requests");
     const empreendedoresRef = collection(firestore, "empreendedores");
     const qApproved = query(

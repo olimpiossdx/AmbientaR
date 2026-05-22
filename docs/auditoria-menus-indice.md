@@ -1,6 +1,6 @@
 # Índice — Auditoria de menus (pré-varredura React)
 
-Atualizado em: 2026-05-20
+Atualizado em: 2026-05-22
 
 Objetivo: percorrer **todos** os menus de `navigation-config.ts`, documentar rotas, órfãs, correções seguras e backlog — **antes** da varredura React.
 
@@ -48,6 +48,18 @@ Monitoramento (submenu): [auditoria-menu-monitoramento.md](./auditoria-menu-moni
 - `upload-pipeline.ts` — único `import` estático de jsPDF em `src/`.
 - Páginas `*-SERVIDOR*` — ver `docs/AUDITORIA-CODIGO-MORTO-E-API.md`.
 
+## Fase 3 — Validação por perfil (2026-05-22)
+
+Checklist gerado: [auditoria-menus-fase3-checklist.md](./auditoria-menus-fase3-checklist.md) (`npm run audit:menus-by-role`).
+
+Correções aplicadas na fase 3:
+
+| Área | Ação |
+|------|------|
+| Layout cliente | Queries Firestore só após `profileAligned` + `sessionUid` (menos `permission-denied`) |
+| Rotas legadas | `route-access` com aliases; `/autos-infracao-defesa` redirect no servidor |
+| APIs no cliente | `fetchApiWithAuth` em `api-client-auth.ts` |
+
 ## Próximo passo
 
-**Varredura React** (hooks, dependências, duplicação de componentes) após validação em dev dos redirects e novos itens de menu admin.
+Validação manual com um utilizador por perfil (checklist Fase 3) e comparar taxa de erros no Firebase App Hosting após deploy.

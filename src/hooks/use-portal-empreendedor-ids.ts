@@ -5,6 +5,7 @@ import { collection, getDocs, query, where } from "firebase/firestore";
 import { useAuth, useFirestore } from "@/firebase";
 import { fetchEmpreendedorIdsForRepresentative } from "@/lib/representative-empreendedor-ids";
 import { fetchEmpreendedorIdsForClientGestao } from "@/lib/requests-portal-empreendedor-ids";
+import { resolvePortalAuthUid } from "@/lib/auth-user-id";
 import { isClientePortalRole } from "@/lib/role-guards";
 
 /**
@@ -32,8 +33,13 @@ export function usePortalEmpreendedorIds(): string[] | undefined {
 
     if (user.role === "cliente_autonomo") {
       setIds(undefined);
+      const uid = resolvePortalAuthUid(user);
+      if (!uid) {
+        setIds(["invalid-placeholder"]);
+        return;
+      }
       const empreendedoresRef = collection(firestore, "empreendedores");
-      const byUserId = query(empreendedoresRef, where("userId", "==", user.id));
+      const byUserId = query(empreendedoresRef, where("userId", "==", uid));
       const variants = [user.cpf || user.userCpf, ...(user.cnpjs || [])].filter(
         Boolean,
       ) as string[];

@@ -46,6 +46,7 @@ import {
   canWriteCommercialClients,
   isClientePortalRole,
 } from "@/lib/role-guards";
+import { resolvePortalAuthUid } from "@/lib/auth-user-id";
 
 function documentVariants(
   cpf: string | undefined,
@@ -132,13 +133,16 @@ export default function ClientsPage() {
   const { toast } = useToast();
   const router = useRouter();
 
+  const portalUid = resolvePortalAuthUid(user);
+
   const clientsQueryByUserId = useMemoFirebase(() => {
-    if (!firestore || !user || !isClientePortalRole(user.role)) return null;
+    if (!firestore || !user || !portalUid || !isClientePortalRole(user.role))
+      return null;
     return query(
       collection(firestore, "clients"),
-      where("userId", "==", user.id),
+      where("userId", "==", portalUid),
     );
-  }, [firestore, user]);
+  }, [firestore, user, portalUid]);
 
   const clientsQueryByCpf = useMemoFirebase(() => {
     if (!firestore || !user || !isClientePortalRole(user.role)) return null;
@@ -155,12 +159,13 @@ export default function ClientsPage() {
   }, [firestore, user]);
 
   const clientsQueryRep = useMemoFirebase(() => {
-    if (!firestore || !user || user.role !== "representative") return null;
+    if (!firestore || !user || user.role !== "representative" || !portalUid)
+      return null;
     return query(
       collection(firestore, "clients"),
-      where("approvedUserIds", "array-contains", user.id),
+      where("approvedUserIds", "array-contains", portalUid),
     );
-  }, [firestore, user]);
+  }, [firestore, user, portalUid]);
 
   const clientsQueryAdmin = useMemoFirebase(() => {
     if (!firestore || !user) return null;
@@ -192,7 +197,7 @@ export default function ClientsPage() {
     if (isLoadingRep) return;
 
     const db = firestore;
-    const repUid = user.id ?? (user as { uid?: string }).uid;
+    const repUid = resolvePortalAuthUid(user);
     if (!repUid) {
       setFallbackClientsForRep([]);
       return;

@@ -21,6 +21,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { resolvePortalAuthUid } from "@/lib/auth-user-id";
 import {
   canAcceptRejectCommercialProposals,
   canManageProposalsAndCommercialQuotes,
@@ -167,7 +168,7 @@ export default function CommercialProposalsPage() {
 
     // Representante: clientes que o titular aprovou para ele.
     if (user.role === "representative") {
-      const repUid = user.id || (user as { uid?: string }).uid;
+      const repUid = resolvePortalAuthUid(user);
       if (!repUid) {
         setClientIdsForUser([]);
         return;

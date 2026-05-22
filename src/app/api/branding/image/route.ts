@@ -1,4 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
+import {
+  apiAuthErrorResponse,
+  requireAuthenticatedApi,
+} from '@/lib/api-auth';
 
 const ALLOWED_HOST_SNIPPETS = [
   'firebasestorage.googleapis.com',
@@ -39,6 +43,12 @@ function isAllowedStorageProxyUrl(url: string): boolean {
  * Evita CORS no browser ao pré-visualizar anexos e gerar PDFs com canvas/jsPDF.
  */
 export async function GET(request: NextRequest) {
+  try {
+    await requireAuthenticatedApi(request);
+  } catch (e) {
+    return apiAuthErrorResponse(e);
+  }
+
   const rawUrl = request.nextUrl.searchParams.get('url');
   if (!rawUrl?.trim()) {
     return NextResponse.json({ error: 'Parâmetro url é obrigatório.' }, { status: 400 });

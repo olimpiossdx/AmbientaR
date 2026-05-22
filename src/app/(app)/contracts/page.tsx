@@ -64,6 +64,7 @@ import {
   isClientePortalRole,
   isSelfRegisteredPortalUser,
 } from "@/lib/role-guards";
+import { resolvePortalAuthUid } from "@/lib/auth-user-id";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   AlertDialog,
@@ -176,7 +177,12 @@ export default function ContractsPage() {
       const userDocs = documentVariants(userCpf, user.cnpjs);
 
       if (isSelfRegistered) {
-        const q = query(cRef, where("userId", "==", user.id));
+        const uid = resolvePortalAuthUid(user);
+        if (!uid) {
+          setClientIdsForUser([]);
+          return;
+        }
+        const q = query(cRef, where("userId", "==", uid));
 
         // Fallback: se `userId` não casar com os dados do client no Firestore,
         // tenta também por CPF/CNPJ.

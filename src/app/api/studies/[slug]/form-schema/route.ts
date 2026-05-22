@@ -6,6 +6,10 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import {
+  apiAuthErrorResponse,
+  requireAuthenticatedApi,
+} from '@/lib/api-auth';
 import { getStaticFormSchema, hasStaticFormSchema } from '@/lib/study-form-schema';
 import { isStudyLinkedToTr } from '@/lib/termos-referencia-config';
 import { getTermosReferenciaPathForStudy } from '@/lib/termos-referencia-config';
@@ -19,6 +23,12 @@ export async function GET(
   request: NextRequest,
   context: { params: Promise<{ slug: string }> }
 ) {
+  try {
+    await requireAuthenticatedApi(request);
+  } catch (e) {
+    return apiAuthErrorResponse(e);
+  }
+
   const { slug } = await context.params;
   const studySlug = slug?.toLowerCase().trim();
   if (!studySlug) {

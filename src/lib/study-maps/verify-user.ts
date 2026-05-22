@@ -1,15 +1,14 @@
-import { studyMapsAdminAuth } from "@/lib/study-maps/admin";
+import { verifyIdTokenAndLoadUser } from "@/lib/package-enforcement-server";
 
 export type VerifiedUser = { uid: string };
 
+/** Valida Bearer Firebase (mesmo fluxo das demais APIs autenticadas). */
 export async function verifyBearerUid(
   authHeader: string | null,
 ): Promise<VerifiedUser> {
-  if (!authHeader?.startsWith("Bearer ")) {
-    throw new Error("Token em falta. Envie Authorization: Bearer <idToken>.");
-  }
-  const idToken = authHeader.slice("Bearer ".length).trim();
-  if (!idToken) throw new Error("Token vazio.");
-  const decoded = await studyMapsAdminAuth().verifyIdToken(idToken);
-  return { uid: decoded.uid };
+  const idToken = authHeader?.startsWith("Bearer ")
+    ? authHeader.slice("Bearer ".length).trim()
+    : null;
+  const user = await verifyIdTokenAndLoadUser(idToken);
+  return { uid: user.uid || user.id };
 }

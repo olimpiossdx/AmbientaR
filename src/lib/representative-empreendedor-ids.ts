@@ -6,6 +6,7 @@ import {
   type Firestore,
 } from "firebase/firestore";
 import type { AppUser } from "@/lib/types";
+import { resolvePortalAuthUid } from "@/lib/auth-user-id";
 
 /**
  * IDs de empreendedores acessíveis ao representante:
@@ -17,7 +18,8 @@ export async function fetchEmpreendedorIdsForRepresentative(
   firestore: Firestore,
   user: AppUser,
 ): Promise<string[]> {
-  const repUid = user.id;
+  const repUid = resolvePortalAuthUid(user);
+  if (!repUid) return ["invalid-placeholder"];
   const empreendedoresRef = collection(firestore, "empreendedores");
 
   const snapListed = await getDocs(

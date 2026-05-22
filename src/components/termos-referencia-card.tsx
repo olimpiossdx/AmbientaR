@@ -6,7 +6,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { BookOpen, FileText, Loader2, FolderOpen } from 'lucide-react';
 import { getTrFolderForStudy, isStudyLinkedToTr } from '@/lib/termos-referencia-config';
-import { fetchApiWithRetry } from '@/lib/safe-fetch-api';
+import { useFirebase } from '@/firebase';
+import { fetchApiWithAuth } from '@/lib/api-client-auth';
 
 type Props = {
   studySlug: string;
@@ -14,6 +15,7 @@ type Props = {
 };
 
 export function TermosReferenciaCard({ studySlug, studyLabel }: Props) {
+  const { auth } = useFirebase();
   const folderName = getTrFolderForStudy(studySlug);
   const [files, setFiles] = React.useState<{ name: string; relativePath: string }[] | null>(null);
   const [loading, setLoading] = React.useState(true);
@@ -24,7 +26,8 @@ export function TermosReferenciaCard({ studySlug, studyLabel }: Props) {
     let cancelled = false;
     setLoading(true);
     setError(null);
-    fetchApiWithRetry(
+    fetchApiWithAuth(
+      auth,
       `/api/termos-referencia/list?study=${encodeURIComponent(studySlug)}`,
     )
       .then((res) => res.json())
@@ -49,7 +52,7 @@ export function TermosReferenciaCard({ studySlug, studyLabel }: Props) {
     return () => {
       cancelled = true;
     };
-  }, [studySlug, folderName]);
+  }, [studySlug, folderName, auth]);
 
   if (!folderName) return null;
 

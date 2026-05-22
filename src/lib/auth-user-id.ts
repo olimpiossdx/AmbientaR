@@ -46,6 +46,17 @@ export function isUserProfileAlignedWithSession(
 }
 
 /**
+ * UID da sessão para queries de titular / autônomo / representante (`userId`, `approvedUserIds`, etc.).
+ * Preferir isto a `user.id` isolado (documentos antigos podem divergir de `user.uid`).
+ */
+export function resolvePortalAuthUid(
+  user: Pick<AppUser, "id" | "uid"> | null | undefined,
+): string | null {
+  if (!user) return null;
+  return user.uid || user.id || null;
+}
+
+/**
  * Re-renderiza quando o UID da sessão muda (onAuthStateChanged).
  * Evita usar `user?.uid` do Firestore ou `auth.currentUser` sem re-render.
  */

@@ -102,6 +102,12 @@ import {
   isAdminCredentialsMissing,
 } from "@/lib/admin/firebase-admin-setup";
 import { ToastAction } from "@/components/ui/toast";
+import {
+  isUserProfileAlignedWithSession,
+  resolvePortalAuthUid,
+  useAuthUserId,
+} from "@/lib/auth-user-id";
+import { canEditUserInUsersList } from "@/lib/role-guards";
 
 const DetailItem = ({
   label,
@@ -141,6 +147,9 @@ export default function UsersPage() {
   const router = useRouter();
 
   const { firestore, auth, user } = useFirebase();
+  const sessionUid = useAuthUserId(auth);
+  const profileAligned = isUserProfileAlignedWithSession(user, sessionUid);
+  const portalUid = resolvePortalAuthUid(user);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -188,21 +197,26 @@ export default function UsersPage() {
     }
 
     if (
-      ["sales", "technical", "gestor", "client", "representative", "advogado"].includes(
-        user.role,
-      )
+      [
+        "sales",
+        "technical",
+        "gestor",
+        "client",
+        "cliente_autonomo",
+        "representative",
+        "advogado",
+      ].includes(user.role)
     ) {
-      return query(
-        collection(firestore, "users"),
-        where("uid", "==", user.uid),
-      );
+      const uid =
+        profileAligned && sessionUid ? sessionUid : user.uid || user.id;
+      return query(collection(firestore, "users"), where("uid", "==", uid));
     }
 
     return query(
       collection(firestore, "users"),
       where("uid", "==", "invalid-uid-for-non-admins"),
     );
-  }, [firestore, user]);
+  }, [firestore, user, profileAligned, sessionUid]);
 
   const { data: appUsers, isLoading } = useCollection<AppUser>(usersQuery);
   const presenceNow = usePresenceClock();
@@ -256,12 +270,15 @@ export default function UsersPage() {
     setIsAlertOpen(true);
   };
 
+  const sessionTargetUid = sessionUid ?? user?.uid ?? user?.id ?? null;
+
   const canDeleteUser = (target: AppUser | null) =>
     !!target &&
+    !!sessionTargetUid &&
     (user?.role === "admin" ||
       ((isClientePortalRole(user?.role) ||
         user?.role === "representative") &&
-        target.id === user?.id));
+        (target.id === sessionTargetUid || target.uid === sessionTargetUid)));
 
   const handleReleaseOrphanEmail = async () => {
     if (!auth) return;
@@ -367,7 +384,11 @@ export default function UsersPage() {
       setUserToDelete(null);
       return;
     }
-    const isSelfDelete = userToDelete.id === user?.id;
+    const isSelfDelete = Boolean(
+      sessionTargetUid &&
+        (userToDelete.id === sessionTargetUid ||
+          userToDelete.uid === sessionTargetUid),
+    );
     const userDocRef = doc(firestore, "users", userToDelete.id);
 
     try {
@@ -641,49 +662,77 @@ export default function UsersPage() {
   };
 
   const clientProfileDocRef = useMemoFirebase(() => {
-    if (!firestore || !user || !isClientePortalRole(user.role)) return null;
-    return doc(firestore, "users", user.id);
-  }, [firestore, user]);
+    if (
+      !firestore ||
+      !user ||
+      !profileAligned ||
+      !sessionUid ||
+      !isClientePortalRole(user.role)
+    ) {
+      return null;
+    }
+    return doc(firestore, "users", sessionUid);
+  }, [firestore, user, profileAligned, sessionUid]);
   const { data: clientProfile, isLoading: isLoadingProfile } =
     useDoc<AppUser>(clientProfileDocRef);
 
   const accessRequestsQuery = useMemoFirebase(() => {
-    if (!firestore || !user) return null;
+    if (!firestore || !user || user.role !== "client" || !profileAligned) {
+      return null;
+    }
     return query(
       collection(firestore, "access_requests"),
       where("status", "==", "pending"),
     );
-  }, [firestore, user]);
+  }, [firestore, user, profileAligned]);
   const { data: allPendingRequests, error: accessRequestsError } =
     useCollection<AccessRequest>(accessRequestsQuery);
 
   const approvedRequestsQuery = useMemoFirebase(() => {
-    if (!firestore || !user) return null;
+    if (!firestore || !user || user.role !== "client" || !profileAligned) {
+      return null;
+    }
     return query(
       collection(firestore, "access_requests"),
       where("status", "==", "approved"),
     );
-  }, [firestore, user]);
+  }, [firestore, user, profileAligned]);
   const { data: allApprovedRequests } = useCollection<AccessRequest>(
     approvedRequestsQuery,
   );
 
   const myClientsQuery = useMemoFirebase(() => {
-    if (!firestore || !user || !isClientePortalRole(user.role)) return null;
+    if (
+      !firestore ||
+      !user ||
+      !profileAligned ||
+      !portalUid ||
+      !isClientePortalRole(user.role)
+    ) {
+      return null;
+    }
     return query(
       collection(firestore, "clients"),
-      where("userId", "==", user.id),
+      where("userId", "==", portalUid),
     );
-  }, [firestore, user]);
+  }, [firestore, user, profileAligned, portalUid]);
   const { data: myClients } = useCollection<Client>(myClientsQuery);
 
   const myEmpreendedoresQuery = useMemoFirebase(() => {
-    if (!firestore || !user || !isClientePortalRole(user.role)) return null;
+    if (
+      !firestore ||
+      !user ||
+      !profileAligned ||
+      !portalUid ||
+      !isClientePortalRole(user.role)
+    ) {
+      return null;
+    }
     return query(
       collection(firestore, "empreendedores"),
-      where("userId", "==", user.id),
+      where("userId", "==", portalUid),
     );
-  }, [firestore, user]);
+  }, [firestore, user, profileAligned, portalUid]);
   const { data: myEmpreendedores } = useCollection<Empreendedor>(
     myEmpreendedoresQuery,
   );
@@ -691,10 +740,10 @@ export default function UsersPage() {
   // Representante: clientes e empreendedores que aprovaram este usuário (approvedUserIds contém o UID do representante).
   const repUid = useMemo(
     () =>
-      user?.role === "representative" && user
-        ? user.id || (user as any).uid
+      user?.role === "representative" && profileAligned
+        ? resolvePortalAuthUid(user)
         : null,
-    [user],
+    [user, profileAligned],
   );
   const myApprovedClientsAsRepQuery = useMemoFirebase(() => {
     if (!firestore || !repUid) return null;
@@ -719,14 +768,30 @@ export default function UsersPage() {
   );
 
   const clientByIdRef = useMemoFirebase(() => {
-    if (!firestore || !user || !isClientePortalRole(user.role)) return null;
-    return doc(firestore, "clients", user.id);
-  }, [firestore, user]);
+    if (
+      !firestore ||
+      !user ||
+      !profileAligned ||
+      !portalUid ||
+      !isClientePortalRole(user.role)
+    ) {
+      return null;
+    }
+    return doc(firestore, "clients", portalUid);
+  }, [firestore, user, profileAligned, portalUid]);
   const { data: clientById } = useDoc<Client>(clientByIdRef);
   const empreendedorByIdRef = useMemoFirebase(() => {
-    if (!firestore || !user || !isClientePortalRole(user.role)) return null;
-    return doc(firestore, "empreendedores", user.id);
-  }, [firestore, user]);
+    if (
+      !firestore ||
+      !user ||
+      !profileAligned ||
+      !portalUid ||
+      !isClientePortalRole(user.role)
+    ) {
+      return null;
+    }
+    return doc(firestore, "empreendedores", portalUid);
+  }, [firestore, user, profileAligned, portalUid]);
   const { data: empreendedorById } = useDoc<Empreendedor>(empreendedorByIdRef);
 
   const myCpfCnpjSet = useMemo(() => {
@@ -1708,9 +1773,13 @@ export default function UsersPage() {
                   {isLoading &&
                     Array.from({
                       length:
-                        user?.role === "admin" || user?.role === "supervisor"
+                        user?.role === "admin" ||
+                        user?.role === "supervisor" ||
+                        user?.role === "diretor_fauna"
                           ? 5
-                          : 1,
+                          : user?.role === "financial"
+                            ? 3
+                            : 1,
                     }).map((_, i) => (
                       <Skeleton
                         key={i}
@@ -1795,9 +1864,11 @@ export default function UsersPage() {
                                 <p>Visualizar detalhes</p>
                               </TooltipContent>
                             </Tooltip>
-                            {(user?.role === "admin" ||
-                              (user?.role === "representative" &&
-                                appUser.id === user?.id)) && (
+                            {canEditUserInUsersList(
+                              user?.role,
+                              sessionUid ?? user?.uid ?? user?.id,
+                              appUser,
+                            ) && (
                               <Tooltip>
                                 <TooltipTrigger asChild>
                                   <Button
@@ -1813,8 +1884,8 @@ export default function UsersPage() {
                                 </TooltipTrigger>
                                 <TooltipContent>
                                   <p>
-                                    {user?.role === "representative" &&
-                                    appUser.id === user?.id
+                                    {appUser.id === sessionUid ||
+                                    appUser.uid === sessionUid
                                       ? "Editar meu cadastro"
                                       : "Editar usuário"}
                                   </p>
@@ -1837,7 +1908,8 @@ export default function UsersPage() {
                                 </TooltipTrigger>
                                 <TooltipContent>
                                   <p>
-                                    {appUser.id === user?.id &&
+                                    {(appUser.id === sessionTargetUid ||
+                                      appUser.uid === sessionTargetUid) &&
                                     (isClientePortalRole(user?.role) ||
                                       user?.role === "representative")
                                       ? "Excluir usuário de acesso (apenas seus dados de acesso; Clientes/Empreendedores não são alterados)"
@@ -2021,14 +2093,20 @@ export default function UsersPage() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              {userToDelete?.id === user?.id &&
+              {userToDelete &&
+              sessionTargetUid &&
+              (userToDelete.id === sessionTargetUid ||
+                userToDelete.uid === sessionTargetUid) &&
               (isClientePortalRole(user?.role) ||
                 (user?.role as UserRole | undefined) === "representative")
                 ? "Excluir seu usuário de acesso?"
                 : "Você tem certeza?"}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              {userToDelete?.id === user?.id &&
+              {userToDelete &&
+              sessionTargetUid &&
+              (userToDelete.id === sessionTargetUid ||
+                userToDelete.uid === sessionTargetUid) &&
               (isClientePortalRole(user?.role) ||
                 (user?.role as UserRole | undefined) === "representative") ? (
                 <>
@@ -2052,7 +2130,10 @@ export default function UsersPage() {
               Cancelar
             </AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete}>
-              {userToDelete?.id === user?.id &&
+              {userToDelete &&
+              sessionTargetUid &&
+              (userToDelete.id === sessionTargetUid ||
+                userToDelete.uid === sessionTargetUid) &&
               (isClientePortalRole(user?.role) ||
                 (user?.role as UserRole | undefined) === "representative")
                 ? "Sim, excluir meu usuário de acesso"

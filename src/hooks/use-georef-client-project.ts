@@ -9,6 +9,7 @@ import {
   useAuth,
 } from "@/firebase";
 import type { Client, Project } from "@/lib/types";
+import { resolvePortalAuthUid } from "@/lib/auth-user-id";
 import { isClienteAutonomo, isClientePortalRole } from "@/lib/role-guards";
 import { sortByPropertyNamePt } from "@/lib/sort-pt-br";
 
@@ -28,19 +29,26 @@ export function useGeorefClientProject(
     Array<{ id: string; cpfCnpj?: string }>
   >([]);
 
+  const portalUid = resolvePortalAuthUid(user);
+
   const clientsQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
     if (user.role === "representative") {
+      if (!portalUid) return null;
       return query(
         collection(firestore, "clients"),
-        where("approvedUserIds", "array-contains", user.id),
+        where("approvedUserIds", "array-contains", portalUid),
       );
     }
     if (isClienteAutonomo(user.role)) {
-      return query(collection(firestore, "clients"), where("userId", "==", user.id));
+      if (!portalUid) return null;
+      return query(
+        collection(firestore, "clients"),
+        where("userId", "==", portalUid),
+      );
     }
     return collection(firestore, "clients");
-  }, [firestore, user]);
+  }, [firestore, user, portalUid]);
 
   const { data: clients, isLoading: loadingClients } =
     useCollection<Client>(clientsQuery);

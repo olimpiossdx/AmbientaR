@@ -5,6 +5,10 @@ import { getApps } from 'firebase/app';
 import { getBlob, getDownloadURL, ref } from 'firebase/storage';
 import { getClientFirebaseStorage } from '@/lib/firebase-storage-client';
 import { storagePathFromDownloadUrl } from '@/lib/storage-upload';
+import {
+  fetchStorageImageProxyBlob,
+  isFirebaseStorageHttpsUrl,
+} from '@/lib/storage-image-proxy-client';
 
 export interface ImageDimensions {
   width: number;
@@ -28,32 +32,15 @@ const BRANDING_CACHE_TTL_MS = 20 * 60 * 1000;
 /** Maior aresta em px antes de redimensionar (cabeçalho/rodapé/marca d'água no PDF). */
 const PDF_BRANDING_MAX_EDGE_PX = 1000;
 
-function isFirebaseStorageHttpsUrl(url: string): boolean {
-  return (
-    url.includes('firebasestorage.googleapis.com') ||
-    url.includes('firebasestorage.app')
-  );
-}
-
 function isUsablePngDataUrl(dataUrl: string | null): dataUrl is string {
   return Boolean(dataUrl && dataUrl.startsWith('data:image') && dataUrl.length > 200);
 }
 
-/**
- * No browser, URLs do Firebase Storage passam pelo proxy same-origin (/api/branding/image)
- * para evitar CORS (canvas/jsPDF em localhost e em produção sem CORS no bucket).
- */
-function brandingClientFetchUrl(storageUrl: string): string {
-  if (typeof window === 'undefined') return storageUrl;
-  if (isFirebaseStorageHttpsUrl(storageUrl)) {
-    return `/api/branding/image?url=${encodeURIComponent(storageUrl)}`;
-  }
-  return storageUrl;
-}
-
 async function fetchBrandingBlob(url: string): Promise<Blob> {
-  const fetchUrl = brandingClientFetchUrl(url);
-  const response = await fetch(fetchUrl, {
+  if (typeof window !== 'undefined' && isFirebaseStorageHttpsUrl(url)) {
+    return fetchStorageImageProxyBlob(url);
+  }
+  const response = await fetch(url, {
     credentials: 'same-origin',
     cache: 'default',
   });
@@ -173,10 +160,19 @@ export async function resizeDataUrlForPdf(
 /**
  * Carrega blob de uma URL HTTPS (Storage ou outra) ou path legado no Storage.
  */
-/** Fallback quando getBlob/fetch falham — a imagem já abre no navegador (preview em Configurações). */
+/** Fallback quando getBlob/fetch falham — tenta decodificar via canvas. */
 async function loadBrandingViaImageElement(url: string): Promise<string | null> {
-  const src = brandingClientFetchUrl(url);
-  const sameOrigin = src.startsWith('/');
+  if (typeof window !== 'undefined' && isFirebaseStorageHttpsUrl(url)) {
+    try {
+      const blob = await fetchStorageImageProxyBlob(url);
+      const fromBlob = await blobToPngBase64ForPdf(blob);
+      if (fromBlob) return fromBlob;
+    } catch {
+      return null;
+    }
+  }
+
+  const sameOrigin = url.startsWith('/');
   return new Promise((resolve) => {
     const img = new Image();
     if (!sameOrigin) img.crossOrigin = 'anonymous';
@@ -200,7 +196,7 @@ async function loadBrandingViaImageElement(url: string): Promise<string | null> 
       })();
     };
     img.onerror = () => resolve(null);
-    img.src = src;
+    img.src = url;
   });
 }
 
@@ -229,7 +225,10 @@ async function loadImageBlobForBranding(trimmed: string): Promise<Blob> {
         }
       }
     }
-    const response = await fetch(brandingClientFetchUrl(trimmed), {
+    if (typeof window !== 'undefined' && isFirebaseStorageHttpsUrl(trimmed)) {
+      return fetchStorageImageProxyBlob(trimmed);
+    }
+    const response = await fetch(trimmed, {
       credentials: 'same-origin',
       cache: 'default',
     });

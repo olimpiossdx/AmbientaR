@@ -20,7 +20,8 @@ import {
   inferCriterioLocacionalFromOverlay,
   type GeospatialOverlayForLocational,
 } from "@/lib/licensing-locational";
-import { fetchApiWithRetry } from "@/lib/safe-fetch-api";
+import { useFirebase } from "@/firebase";
+import { fetchApiWithAuth } from "@/lib/api-client-auth";
 
 const LeafletMap = dynamic(() => import("@/app/(app)/analise-ambiental/leaflet-map"), {
   ssr: false,
@@ -58,6 +59,7 @@ export function LicensingLocationalBlock({
   onSuggestedCriterio,
   savedAnalysis,
 }: LicensingLocationalBlockProps) {
+  const { auth } = useFirebase();
   const { toast } = useToast();
   const [mode, setMode] = React.useState<LocationalInputMode>(
     savedAnalysis?.inputMode ?? "car",
@@ -132,11 +134,15 @@ export function LicensingLocationalBlock({
 
     setLoading(true);
     try {
-      const res = await fetchApiWithRetry("/api/geospatial/analyze", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(built),
-      });
+      const res = await fetchApiWithAuth(
+        auth,
+        "/api/geospatial/analyze",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(built),
+        },
+      );
       const json = (await res.json()) as ApiAnalyzeResponse;
       if (!res.ok || !json.success || !json.overlay) {
         throw new Error(json.error || "Falha na análise geoespacial.");

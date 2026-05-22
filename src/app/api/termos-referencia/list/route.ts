@@ -9,15 +9,20 @@ import { NextRequest, NextResponse } from 'next/server';
 import { promises as fs } from 'fs';
 import path from 'path';
 import { getTermosReferenciaPathForStudy } from '@/lib/termos-referencia-config';
+import {
+  apiAuthErrorResponse,
+  requireAuthenticatedApi,
+} from '@/lib/api-auth';
 
 const ALLOWED_EXT = ['.pdf', '.docx', '.dotx'];
 
-function getAllDocFiles(dir: string, acc: string[] = []): string[] {
-  // sync helper to collect paths; we'll stat in async
-  return acc;
-}
-
 export async function GET(request: NextRequest) {
+  try {
+    await requireAuthenticatedApi(request);
+  } catch (e) {
+    return apiAuthErrorResponse(e);
+  }
+
   const study = request.nextUrl.searchParams.get('study')?.trim();
   if (!study) {
     return NextResponse.json(

@@ -57,7 +57,7 @@ import {
 
 const LeafletMap = dynamic(() => import("./leaflet-map"), { ssr: false });
 
-type InputMode = "car" | "coordinates" | "polygon";
+type InputMode = "car" | "coordinates" | "polygon" | "shp";
 type GeoJSONLike = {
   type: string;
   [key: string]: unknown;
@@ -86,14 +86,24 @@ export default function AnaliseAmbientalPage() {
   const [coordinateInput, setCoordinateInput] = React.useState("");
   const [polygonInput, setPolygonInput] = React.useState("");
   const [drawnPolygon, setDrawnPolygon] = React.useState<GeoJSONLike | null>(null);
+  const [shpZipBase64, setShpZipBase64] = React.useState("");
+  const [shpFileName, setShpFileName] = React.useState("");
   const [lastPayload, setLastPayload] = React.useState("");
   const { toast } = useToast();
 
   const hasValidInput = React.useMemo(() => {
     if (inputMode === "car") return carNumber.trim().length > 3;
     if (inputMode === "coordinates") return coordinateInput.trim().length > 3;
+    if (inputMode === "shp") return shpZipBase64.length > 20;
     return polygonInput.trim().length > 3 || !!drawnPolygon;
-  }, [carNumber, coordinateInput, drawnPolygon, inputMode, polygonInput]);
+  }, [
+    carNumber,
+    coordinateInput,
+    drawnPolygon,
+    inputMode,
+    polygonInput,
+    shpZipBase64,
+  ]);
 
   const serializedPolygon = React.useMemo(() => {
     if (drawnPolygon) return JSON.stringify(drawnPolygon);
@@ -110,8 +120,11 @@ export default function AnaliseAmbientalPage() {
     if (inputMode === "polygon" && serializedPolygon.trim()) {
       return { dataType: "polygon", data: serializedPolygon.trim() };
     }
+    if (inputMode === "shp" && shpZipBase64) {
+      return { dataType: "shp", data: shpZipBase64 };
+    }
     return null;
-  }, [carNumber, coordinateInput, inputMode, serializedPolygon]);
+  }, [carNumber, coordinateInput, inputMode, serializedPolygon, shpZipBase64]);
 
   const buildFactsPrompt = React.useCallback(() => {
     if (!analysisResult) return "";
@@ -151,10 +164,16 @@ export default function AnaliseAmbientalPage() {
         return ref.id;
       } catch (error) {
         console.error("Falha ao persistir geo_analyses:", error);
+        toast({
+          variant: "destructive",
+          title: "Análise não foi salva",
+          description:
+            "O relatório foi gerado, mas não gravou no Firestore. Verifique regras (deploy:rules) ou permissões.",
+        });
         return null;
       }
     },
-    [firestore, user?.uid],
+    [firestore, toast, user?.uid],
   );
 
   const saveAnalysisSnapshot = React.useCallback(
@@ -214,10 +233,15 @@ export default function AnaliseAmbientalPage() {
       setWaveAResult(actionResult.result);
       const docId = await saveWaveASnapshot(perimeterInput, actionResult.result);
       if (docId) setSavedGeoAnalysisId(docId);
+      const okCount = actionResult.result.layers.filter((l) => l.status === "ok").length;
+      const partialCount = actionResult.result.layers.filter(
+        (l) => l.status === "partial",
+      ).length;
       toast({
         title: "Análise factual concluída",
-        description:
-          "8 camadas IDE-Sisema (Ondas A+B+C). Exporte o PDF factual ou complemente com IA abaixo.",
+        description: docId
+          ? `${okCount} camada(s) OK, ${partialCount} parcial/indisponível. Salva para Etapa 2. Exporte o PDF ou complemente com IA.`
+          : `${okCount} camada(s) OK. Não foi possível salvar para Etapa 2 — veja o alerta acima.`,
       });
     } catch (error) {
       console.error("Wave A failed:", error);
@@ -583,6 +607,7 @@ export default function AnaliseAmbientalPage() {
                     <SelectItem value="car">Número do CAR</SelectItem>
                     <SelectItem value="coordinates">Coordenadas</SelectItem>
                     <SelectItem value="polygon">Polígono (WKT/GeoJSON)</SelectItem>
+                    <SelectItem value="shp">Perímetro SHP (.zip)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -621,6 +646,43 @@ export default function AnaliseAmbientalPage() {
                     onChange={(e) => setPolygonInput(e.target.value)}
                     className="min-h-[100px]"
                   />
+                </div>
+              )}
+
+              {inputMode === "shp" && (
+                <div className="space-y-2">
+                  <Label htmlFor="shp-upload">Arquivo ZIP do shapefile</Label>
+                  <Input
+                    id="shp-upload"
+                    type="file"
+                    accept=".zip,application/zip"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      if (file.size > 8 * 1024 * 1024) {
+                        toast({
+                          variant: "destructive",
+                          title: "Arquivo grande demais",
+                          description: "Use um ZIP até 8 MB com .shp, .shx e .dbf.",
+                        });
+                        return;
+                      }
+                      const buf = await file.arrayBuffer();
+                      const bytes = new Uint8Array(buf);
+                      let binary = "";
+                      for (let i = 0; i < bytes.length; i++) {
+                        binary += String.fromCharCode(bytes[i]!);
+                      }
+                      setShpZipBase64(btoa(binary));
+                      setShpFileName(file.name);
+                    }}
+                  />
+                  {shpFileName ? (
+                    <p className="text-xs text-muted-foreground">
+                      Carregado: {shpFileName}. O ZIP deve conter .shp, .shx e .dbf do
+                      perímetro da propriedade.
+                    </p>
+                  ) : null}
                 </div>
               )}
 

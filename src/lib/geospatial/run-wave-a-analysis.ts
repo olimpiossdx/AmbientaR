@@ -112,7 +112,7 @@ async function analyzeCatalogLayer(params: {
 export async function runWaveAAnalysis(
   input: PerimeterParseInput,
 ): Promise<WaveAAnalysisResult> {
-  const parsed = parsePerimeterPolygon(input);
+  const parsed = await parsePerimeterPolygon(input);
   if (!parsed) {
     throw new Error(
       "Perímetro inválido. Desenhe um polígono no mapa ou informe GeoJSON/WKT válido. Coordenada isolada gera apenas um buffer mínimo.",

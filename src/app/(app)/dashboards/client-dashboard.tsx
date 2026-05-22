@@ -24,6 +24,7 @@ import {
   useAuth,
   useDoc,
 } from "@/firebase";
+import { resolvePortalAuthUid } from "@/lib/auth-user-id";
 import { isClientePortalRole } from "@/lib/role-guards";
 import {
   collection,
@@ -163,7 +164,11 @@ export default function ClientDashboard() {
       const isSelfRegistered = !!(user as any).package;
 
       if (isSelfRegistered) {
-        const uid = user.id || (user as any).uid;
+        const uid = resolvePortalAuthUid(user);
+        if (!uid) {
+          setEmpreendedorIds(["non-existent-placeholder"]);
+          return;
+        }
         const cpfNorm = onlyDigits((user as any).cpf || "");
         const clientsRef = collection(firestore, "clients");
         const empreendedoresRef = collection(firestore, "empreendedores");
@@ -263,13 +268,18 @@ export default function ClientDashboard() {
       const empreendedoresRef = collection(firestore, "empreendedores");
       const clientsRef = collection(firestore, "clients");
 
+      const portalUid = resolvePortalAuthUid(user);
+      if (!portalUid) {
+        setEmpreendedorIds(["non-existent-placeholder"]);
+        return;
+      }
       const byUserId = getDocs(
-        query(empreendedoresRef, where("userId", "==", user.id)),
+        query(empreendedoresRef, where("userId", "==", portalUid)),
       );
       const byApproved = getDocs(
         query(
           empreendedoresRef,
-          where("approvedUserIds", "array-contains", user.id),
+          where("approvedUserIds", "array-contains", portalUid),
         ),
       );
       const userDocuments = documentVariants(
@@ -312,11 +322,11 @@ export default function ClientDashboard() {
               } else {
                 const qClientByUserId = query(
                   clientsRef,
-                  where("userId", "==", user.id),
+                  where("userId", "==", portalUid),
                 );
                 const qClientByApproved = query(
                   clientsRef,
-                  where("approvedUserIds", "array-contains", user.id),
+                  where("approvedUserIds", "array-contains", portalUid),
                 );
                 Promise.all([
                   getDocs(qClientByUserId),
@@ -341,7 +351,7 @@ export default function ClientDashboard() {
           getDocs(
             query(
               empreendedoresRef,
-              where("approvedUserIds", "array-contains", user.id),
+              where("approvedUserIds", "array-contains", portalUid),
             ),
           ),
         ])

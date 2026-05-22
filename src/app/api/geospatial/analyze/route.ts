@@ -1,4 +1,8 @@
 import { NextResponse } from "next/server";
+import {
+  apiAuthErrorResponse,
+  requireAuthenticatedApi,
+} from "@/lib/api-auth";
 import { fetchCarData, runGeospatialOverlay } from "@/lib/geospatial/geo-analysis-service";
 
 type BodyShape = {
@@ -7,6 +11,12 @@ type BodyShape = {
 };
 
 export async function POST(req: Request) {
+  try {
+    await requireAuthenticatedApi(req);
+  } catch (e) {
+    return apiAuthErrorResponse(e);
+  }
+
   try {
     const body = (await req.json()) as BodyShape;
     if (!body?.dataType || !body?.data) {

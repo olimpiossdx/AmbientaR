@@ -118,3 +118,41 @@ Fluxo Etapa 1 ↔ 2 ↔ estudos: [ETAPA-1-E-ETAPA-2.md](./ETAPA-1-E-ETAPA-2.md).
 Decisão: avançar **só Onda A** (hidrografia, bioma, solos) na Etapa 1; **depois** Etapa 2 em Relatórios de IA. Ondas B/C (geologia, geomorfologia, pedologia, inventário florestal, fauna) e integração profunda em estudos ficam para depois.
 
 Plano: [PLANO-ONDA-A-E-ETAPA-2.md](./PLANO-ONDA-A-E-ETAPA-2.md).
+
+---
+
+## Continuação — Passo 3 e teste em produção
+
+### Resultado do teste (prints)
+
+- Área **850,52 ha** — perímetro OK.
+- **8/8 camadas** “Indisponível” — HTTP **404** em `geoserver.meioambiente.mg.gov.br/geoserver/ows`.
+- Etapa 2: mensagem *nenhuma análise factual salva* — bloqueia complemento IA.
+- Registo completo: [REGISTRO-TESTES-PRODUCAO.md](./REGISTRO-TESTES-PRODUCAO.md).
+
+### Passo 3 acordado (só arquitetura)
+
+Linha de montagem: **Estudos técnicos** (RCA, PIA, inventário…) com escolha **cliente + fazenda**, cadastro rico, SHP/KML (ADA, APP, RL, cursos, barragens), preenchimento automático meio físico/biótico/social/florístico, mapas estilo **QGIS** (stack **Python + GDAL + QGIS OSS**), Word editável → revisão → PDF → **Licenciamento** (PIA ↔ inventário ↔ processo intervenção).
+
+Documento principal: [PASSO-3-LINHA-DE-MONTAGEM-SAAS.md](./PASSO-3-LINHA-DE-MONTAGEM-SAAS.md).  
+Roteiro replicável: [ROTEIRO-REPLICAR-SAAS.md](./ROTEIRO-REPLICAR-SAAS.md).
+
+**Nada de código** nesta fase — só documentação e refinamento.
+
+---
+
+## Continuação — Templates Word + branding Financeiro
+
+- Utilizador irá **subir** modelos Word em **Configurações → Templates** como base de todos os estudos.
+- **Todos** os trabalhos exportados (estudos + análise geoespacial) devem ter **cabeçalho, marca d’água e rodapé** como no menu **Financeiro** (`pdf-branding-layout`, `public/branding/`).
+- Fluxo: **DOCX editável** → revisão → **PDF branded** final (anexo licenciamento).
+- Plano consolidado para revisão antes de executar: [PLANO-EXECUCAO-REVISADO.md](./PLANO-EXECUCAO-REVISADO.md).
+- Detalhe branding/templates: [TEMPLATES-E-BRANDING-UNIFICADO.md](./TEMPLATES-E-BRANDING-UNIFICADO.md).
+
+---
+
+## Continuação — Fases cirúrgicas com debug
+
+- Plano repartido em **~33 micro-ações** (M0–M4): cada uma termina com **checklist de debug** antes da seguinte.
+- Documento operacional: [PLANO-FASES-CIRURGICAS.md](./PLANO-FASES-CIRURGICAS.md).
+- Sprint mínimo definido (M0.1, M1.2–M1.4, M1.7–M1.8, M1.10–M1.11, M2.2–M2.5, M3.1, M3.4–M3.5, M3.10) se for preciso cortar escopo.

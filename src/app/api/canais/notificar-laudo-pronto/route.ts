@@ -19,6 +19,10 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { isLaudoWebhookEnabled } from '@/lib/deploy-flags';
+import {
+  apiAuthErrorResponse,
+  requireAuthenticatedApi,
+} from '@/lib/api-auth';
 
 const WEBHOOK_URL = process.env.N8N_LAUDO_PRONTO_WEBHOOK_URL;
 
@@ -35,6 +39,12 @@ export async function POST(request: NextRequest) {
       { error: 'Webhook não configurado. Defina N8N_LAUDO_PRONTO_WEBHOOK_URL.' },
       { status: 503 }
     );
+  }
+
+  try {
+    await requireAuthenticatedApi(request);
+  } catch (e) {
+    return apiAuthErrorResponse(e);
   }
 
   try {

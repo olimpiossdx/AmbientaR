@@ -1,7 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isUrlEmbeddableInIframe } from "@/lib/external-embed";
+import {
+  apiAuthErrorResponse,
+  requireAuthenticatedApi,
+} from "@/lib/api-auth";
 
 export async function GET(request: NextRequest) {
+  try {
+    await requireAuthenticatedApi(request);
+  } catch (e) {
+    return apiAuthErrorResponse(e);
+  }
+
   const rawUrl = request.nextUrl.searchParams.get("url");
   if (!rawUrl) {
     return NextResponse.json({ error: "url é obrigatória" }, { status: 400 });

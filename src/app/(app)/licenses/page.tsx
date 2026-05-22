@@ -27,7 +27,15 @@ import {
   errorEmitter,
 } from "@/firebase";
 import { FirestorePermissionError } from "@/firebase/errors";
-import { collection, doc, query, where, getDocs } from "firebase/firestore";
+import {
+  collection,
+  doc,
+  documentId,
+  query,
+  where,
+  getDocs,
+} from "firebase/firestore";
+import { resolvePortalAuthUid } from "@/lib/auth-user-id";
 import type { License, Empreendedor, AppUser, Project } from "@/lib/types";
 import { permitStatusBadgeClassRich } from "@/lib/status-display-classes";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -107,7 +115,12 @@ export default function LicensesPage() {
     if ((user?.role === "client" || user?.role === "cliente_autonomo") && firestore) {
       setEmpreendedorIdsForUser(undefined);
       const empreendedoresRef = collection(firestore, "empreendedores");
-      const byUserId = query(empreendedoresRef, where("userId", "==", user.id));
+      const uid = resolvePortalAuthUid(user);
+      if (!uid) {
+        setEmpreendedorIdsForUser(["invalid-placeholder"]);
+        return;
+      }
+      const byUserId = query(empreendedoresRef, where("userId", "==", uid));
       const variants = [user.cpf || user.userCpf, ...(user.cnpjs || [])].filter(
         Boolean,
       ) as string[];
@@ -170,17 +183,47 @@ export default function LicensesPage() {
   const { data: licenses, isLoading: isLoadingLicenses } =
     useCollection<License>(licensesQuery);
 
-  const empreendedoresQuery = useMemoFirebase(
-    () => (firestore ? collection(firestore, "empreendedores") : null),
-    [firestore],
-  );
+  const empreendedoresQuery = useMemoFirebase(() => {
+    if (!firestore || !user) return null;
+    const portal =
+      user.role === "client" ||
+      user.role === "cliente_autonomo" ||
+      user.role === "representative";
+    if (portal) {
+      if (empreendedorIdsForUser === undefined) return null;
+      const ids = empreendedorIdsForUser.filter(
+        (id) => id && !id.includes("placeholder") && !id.includes("invalid"),
+      );
+      if (ids.length === 0) return null;
+      return query(
+        collection(firestore, "empreendedores"),
+        where(documentId(), "in", ids.slice(0, 10)),
+      );
+    }
+    return collection(firestore, "empreendedores");
+  }, [firestore, user, empreendedorIdsForUser]);
   const { data: allEmpreendedores, isLoading: isLoadingEmpreendedores } =
     useCollection<Empreendedor>(empreendedoresQuery);
 
-  const projectsQuery = useMemoFirebase(
-    () => (firestore ? collection(firestore, "projects") : null),
-    [firestore],
-  );
+  const projectsQuery = useMemoFirebase(() => {
+    if (!firestore || !user) return null;
+    const portal =
+      user.role === "client" ||
+      user.role === "cliente_autonomo" ||
+      user.role === "representative";
+    if (portal) {
+      if (empreendedorIdsForUser === undefined) return null;
+      const ids = empreendedorIdsForUser.filter(
+        (id) => id && !id.includes("placeholder") && !id.includes("invalid"),
+      );
+      if (ids.length === 0) return null;
+      return query(
+        collection(firestore, "projects"),
+        where("empreendedorId", "in", ids.slice(0, 10)),
+      );
+    }
+    return collection(firestore, "projects");
+  }, [firestore, user, empreendedorIdsForUser]);
   const { data: allProjects, isLoading: isLoadingProjects } =
     useCollection<Project>(projectsQuery);
 

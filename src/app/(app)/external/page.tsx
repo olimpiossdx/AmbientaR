@@ -7,6 +7,8 @@ import { Suspense } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { ExternalLink, Loader2 } from "lucide-react";
+import { useFirebase } from "@/firebase";
+import { getBearerApiHeaders } from "@/lib/api-client-auth";
 
 const IFRAME_LOAD_TIMEOUT_MS = 12_000;
 
@@ -85,6 +87,7 @@ function ExternalPageShell({
 }
 
 function ExternalPageContent() {
+  const { auth } = useFirebase();
   const searchParams = useSearchParams();
   const url = searchParams?.get("url");
   const title = searchParams?.get("title");
@@ -118,25 +121,30 @@ function ExternalPageContent() {
     if (openInNewTab && url) {
       window.open(url, "_blank", "noopener,noreferrer");
     }
-  }, [openInNewTab, url]);
+  }, [openInNewTab, url, auth]);
 
   React.useEffect(() => {
     if (!url || openInNewTab) return;
 
     let cancelled = false;
 
-    fetch(`/api/external-embed-check?url=${encodeURIComponent(url)}`)
-      .then((res) => res.json())
-      .then((data: { embeddable?: boolean | null }) => {
+    (async () => {
+      try {
+        const headers = await getBearerApiHeaders(auth);
+        const res = await fetch(
+          `/api/external-embed-check?url=${encodeURIComponent(url)}`,
+          { headers },
+        );
+        const data = (await res.json()) as { embeddable?: boolean | null };
         if (cancelled) return;
         if (data.embeddable === false) {
           setIframeBlocked(true);
           setIframeLoading(false);
         }
-      })
-      .catch(() => {
+      } catch {
         /* desconhecido: tenta iframe */
-      });
+      }
+    })();
 
     const timeout = window.setTimeout(() => {
       if (!cancelled) {

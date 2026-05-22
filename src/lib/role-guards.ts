@@ -202,18 +202,43 @@ export function canManageCarUploadsOnProject(
 }
 
 /**
- * Orçamentos (`proposals`) e propostas comerciais (`commercialProposals`):
- * criação e gestão na UI restritas a admin e financeiro (não vendas/autônomo).
+ * Criar/editar propostas comerciais na UI (`commercialProposals`).
+ * Aceitar/rejeitar: `canAcceptRejectCommercialProposals` (admin/financeiro; Firestore bloqueia vendas).
  */
 export function canManageProposalsAndCommercialQuotes(
   role: UserRole | undefined | null,
 ): boolean {
-  return hasAnyRoleOrAdmin(role, ["admin", "financial"]);
+  return hasAnyRoleOrAdmin(role, ["admin", "financial", "sales"]);
 }
 
 /** UID do perfil (id Firestore ou uid Auth) — ex.: representante em queries. */
 export function getAppUserProfileUid(user: Pick<AppUser, "id" | "uid">): string {
-  return user.id || user.uid;
+  return user.uid || user.id;
+}
+
+/** Editar linha na página `/users` (botão lápis). */
+export function canEditUserInUsersList(
+  sessionRole: UserRole | undefined | null,
+  sessionUid: string | null | undefined,
+  target: Pick<AppUser, "id" | "uid"> | null | undefined,
+): boolean {
+  if (!sessionRole || !sessionUid || !target) return false;
+  if (isAdminRole(sessionRole) || sessionRole === "supervisor") return true;
+  if (sessionRole === "representative") {
+    return target.id === sessionUid || target.uid === sessionUid;
+  }
+  const selfServiceRoles: UserRole[] = [
+    "gestor",
+    "technical",
+    "sales",
+    "financial",
+    "advogado",
+    "diretor_fauna",
+  ];
+  if (selfServiceRoles.includes(sessionRole)) {
+    return target.id === sessionUid || target.uid === sessionUid;
+  }
+  return false;
 }
 
 /** Titular cadastrado pelo fluxo Cadastre-se (campo package no perfil). */

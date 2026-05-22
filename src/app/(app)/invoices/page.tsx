@@ -75,6 +75,7 @@ import {
   isClientePortalRole,
   isSelfRegisteredPortalUser,
 } from "@/lib/role-guards";
+import { resolvePortalAuthUid } from "@/lib/auth-user-id";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { logUserAction } from "@/lib/audit-log";
 import { InvoiceForm } from "./invoice-form";
@@ -208,10 +209,15 @@ export default function InvoicesPage() {
       const clientsRef = collection(firestore, "clients");
 
       if (isSelfRegistered) {
-        const qUserId = query(clientsRef, where("userId", "==", user.id));
+        const uid = resolvePortalAuthUid(user);
+        if (!uid) {
+          setClientIdsForUser([]);
+          return;
+        }
+        const qUserId = query(clientsRef, where("userId", "==", uid));
         const qApproved = query(
           clientsRef,
-          where("approvedUserIds", "array-contains", user.id),
+          where("approvedUserIds", "array-contains", uid),
         );
 
         // Fallback: se o `userId` não estiver correto/inexistente para o cliente,
@@ -235,13 +241,18 @@ export default function InvoicesPage() {
           })
           .catch(() => setClientIdsForUser([]));
       } else {
+        const uid = resolvePortalAuthUid(user);
+        if (!uid) {
+          setClientIdsForUser([]);
+          return;
+        }
         const byUserId = getDocs(
-          query(clientsRef, where("userId", "==", user.id)),
+          query(clientsRef, where("userId", "==", uid)),
         );
         const byApproved = getDocs(
           query(
             clientsRef,
-            where("approvedUserIds", "array-contains", user.id),
+            where("approvedUserIds", "array-contains", uid),
           ),
         );
         const userDocs = documentVariants(userCpf, user.cnpjs);

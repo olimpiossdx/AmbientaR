@@ -1,4 +1,8 @@
 import { NextResponse } from "next/server";
+import {
+  apiAuthErrorResponse,
+  requireAuthenticatedApi,
+} from "@/lib/api-auth";
 import { runWaveAAnalysis } from "@/lib/geospatial/run-wave-a-analysis";
 import type { PerimeterParseInput } from "@/lib/geospatial/perimeter";
 
@@ -8,6 +12,12 @@ type BodyShape = {
 };
 
 export async function POST(req: Request) {
+  try {
+    await requireAuthenticatedApi(req);
+  } catch (e) {
+    return apiAuthErrorResponse(e);
+  }
+
   try {
     const body = (await req.json()) as BodyShape;
     if (!body?.dataType || !body?.data) {

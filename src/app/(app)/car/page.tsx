@@ -50,6 +50,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { FirestorePermissionError } from "@/firebase/errors";
+import { resolvePortalAuthUid } from "@/lib/auth-user-id";
 import {
   canManageCarUploadsOnProject,
   isClienteAutonomo,
@@ -92,22 +93,26 @@ export default function CarPage() {
     string[] | undefined
   >(undefined);
 
+  const portalUid = resolvePortalAuthUid(user);
+
   const clientsQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
     if (user.role === "representative") {
+      if (!portalUid) return null;
       return query(
         collection(firestore, "clients"),
-        where("approvedUserIds", "array-contains", user.id),
+        where("approvedUserIds", "array-contains", portalUid),
       );
     }
     if (isClienteAutonomo(user.role)) {
+      if (!portalUid) return null;
       return query(
         collection(firestore, "clients"),
-        where("userId", "==", user.id),
+        where("userId", "==", portalUid),
       );
     }
     return collection(firestore, "clients");
-  }, [firestore, user]);
+  }, [firestore, user, portalUid]);
 
   const { data: clients, isLoading: loadingClients } =
     useCollection<Client>(clientsQuery);

@@ -1,12 +1,12 @@
 # Auditoria de Rotas e Menu
 
-Gerado em: 2026-05-21T18:33:04.341Z
+Gerado em: 2026-05-22T12:30:56.807Z
 
 Classificação inicial para limpeza cirúrgica. Rotas órfãs não devem ser removidas automaticamente; precisam de validação funcional antes.
 
 ## Código ativo ou coberto por menu
 
-Total: 206
+Total: 205
 
 | Rota | Arquivo |
 |------|---------|
@@ -18,7 +18,6 @@ Total: 206
 | `/analise-ambiental` | `src/app/(app)/analise-ambiental/page.tsx` |
 | `/app-campo` | `src/app/(app)/app-campo/page.tsx` |
 | `/audit-log` | `src/app/(app)/audit-log/page.tsx` |
-| `/autos-infracao-defesa` | `src/app/(app)/autos-infracao-defesa/page.tsx` |
 | `/bank-access` | `src/app/(app)/bank-access/page.tsx` |
 | `/calendar` | `src/app/(app)/calendar/page.tsx` |
 | `/canais` | `src/app/(app)/canais/page.tsx` |
@@ -229,12 +228,14 @@ Total: 3
 
 ## Rotas estáticas sem entrada direta no menu
 
-Total: 9
+Total: 11
 
 | Rota | Arquivo |
 |------|---------|
+| `/autos-infracao-defesa` | `src/app/(app)/autos-infracao-defesa/page.tsx` |
 | `/environmental-company` | `src/app/(app)/environmental-company/page.tsx` |
 | `/monitoring` | `src/app/(app)/monitoring/page.tsx` |
+| `/multas-defesas` | `src/app/(app)/multas-defesas/page.tsx` |
 | `/proposals` | `src/app/(app)/proposals/page.tsx` |
 | `/proposals/new` | `src/app/(app)/proposals/new/page.tsx` |
 | `/studies` | `src/app/(app)/studies/page.tsx` |

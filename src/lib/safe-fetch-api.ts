@@ -13,6 +13,9 @@ function sleep(ms: number): Promise<void> {
 }
 
 function isRetriableHttpStatus(status: number): boolean {
+  if (status === 401 || status === 403 || status === 404 || status === 410) {
+    return false;
+  }
   return status === 429 || status === 502 || status === 503 || status === 504;
 }
 

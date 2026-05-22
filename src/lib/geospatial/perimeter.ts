@@ -108,9 +108,35 @@ export type PerimeterParseInput = {
   data: string;
 };
 
-export function parsePerimeterPolygon(
+const MAX_SHP_ZIP_BYTES = 8 * 1024 * 1024;
+
+function base64ToArrayBuffer(b64: string): ArrayBuffer {
+  const clean = b64.replace(/^data:[^;]+;base64,/, "").trim();
+  if (typeof Buffer !== "undefined") {
+    const buf = Buffer.from(clean, "base64");
+    return buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength);
+  }
+  const binary = atob(clean);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return bytes.buffer;
+}
+
+async function parseShpZipBase64(b64: string): Promise<Feature<Polygon> | null> {
+  const buffer = base64ToArrayBuffer(b64);
+  if (buffer.byteLength > MAX_SHP_ZIP_BYTES) return null;
+  const shp = (await import("shpjs")).default;
+  const geojson = await shp(buffer);
+  return parseGeoJsonObject(geojson);
+}
+
+export async function parsePerimeterPolygon(
   input: PerimeterParseInput,
-): { polygon: Feature<Polygon>; areaHa: number; bbox: [number, number, number, number] } | null {
+): Promise<{
+  polygon: Feature<Polygon>;
+  areaHa: number;
+  bbox: [number, number, number, number];
+} | null> {
   const trimmed = input.data.trim();
   if (!trimmed) return null;
 
@@ -118,6 +144,12 @@ export function parsePerimeterPolygon(
 
   if (input.dataType === "coordinates") {
     feature = parseCoordinatePair(trimmed);
+  } else if (input.dataType === "shp") {
+    try {
+      feature = await parseShpZipBase64(trimmed);
+    } catch {
+      feature = null;
+    }
   } else if (input.dataType === "polygon" || input.dataType === "car") {
     if (trimmed.toUpperCase().startsWith("POLYGON")) {
       feature = parseWktPolygon(trimmed);
