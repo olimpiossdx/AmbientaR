@@ -11,9 +11,9 @@ Subitens principais: automações IA, RAG, MCP, templates, utilizadores, empresa
 | `/consultas` | Consultas Técnicas | Fluxo com laudos |
 | `/laudos` | Laudos | API `gerar-docx`, canais WhatsApp |
 | `/knowledge-sources` | Fontes Normativas | Ligado a termos de referência / RAG |
-| `/inventarios` | Inventários de Campo | Coleção `inventarios` ≠ `studies/inventario` (`inventories`) |
 | `/canais` | Canais | Planejamento Fase 6 (`docs/CANAIS-FASE6.md`) |
-| `/app-campo` | App de Campo | Planejamento Fase 5 (`docs/APP-OFFLINE-FASE5.md`) |
+
+**Coleta de campo** (`/coleta-campo`): submenu de **Estudos Técnicos → Inventário Florestal**. Rotas legadas `/inventarios` e `/app-campo` redirecionam (5B). Ver `docs/COLETA-CAMPO-ESTRATEGIA.md`.
 
 `/settings` — hub “Identidade visual” (hash `#identidade-visual` no menu); página ativa, coberta após normalização do audit.
 

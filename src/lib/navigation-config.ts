@@ -81,6 +81,7 @@ import {
   Crosshair,
   FileSpreadsheet,
   BookOpen,
+  Smartphone,
 } from "lucide-react";
 
 /** Rótulo do grupo de menu (licenças, CAR, outorgas, fauna, monitoramento, etc.). */
@@ -515,6 +516,21 @@ export const allNavItems: NavItem[] = [
           "advogado",
         ],
       },
+      {
+        href: "/inspections/reports",
+        label: "Relatórios de Campo",
+        icon: FileText,
+        roles: [
+          "admin",
+          "client",
+          "cliente_autonomo",
+          "representative",
+          "gestor",
+          "supervisor",
+          "technical",
+          "advogado",
+        ],
+      },
     ],
   },
   {
@@ -532,9 +548,6 @@ export const allNavItems: NavItem[] = [
       "gestor",
       "supervisor",
       "advogado",
-      "client",
-      "cliente_autonomo",
-      "representative",
     ],
     subItems: [
       {
@@ -555,9 +568,6 @@ export const allNavItems: NavItem[] = [
         icon: FileText,
         roles: [
           "admin",
-          "client",
-          "cliente_autonomo",
-          "representative",
           "gestor",
           "supervisor",
           "technical",
@@ -784,10 +794,23 @@ export const allNavItems: NavItem[] = [
         roles: ["admin", "technical", "gestor", "supervisor", "advogado"],
       },
       {
-        href: "/studies/inventario",
         label: "Inventário Florestal",
         icon: ListTree,
         roles: ["admin", "technical", "gestor", "supervisor", "advogado"],
+        subItems: [
+          {
+            href: "/studies/inventario",
+            label: "Inventário Florestal",
+            icon: ListTree,
+            roles: ["admin", "technical", "gestor", "supervisor", "advogado"],
+          },
+          {
+            href: "/coleta-campo",
+            label: "Coleta de campo",
+            icon: Smartphone,
+            roles: ["admin", "technical", "gestor", "supervisor", "diretor_fauna"],
+          },
+        ],
       },
       {
         href: "/studies/las-ras",
@@ -1223,21 +1246,9 @@ export const allNavItems: NavItem[] = [
         roles: ["admin"],
       },
       {
-        href: "/inventarios",
-        label: "Inventários de Campo",
-        icon: ListTree,
-        roles: ["admin", "technical", "gestor", "supervisor", "diretor_fauna"],
-      },
-      {
         href: "/canais",
         label: "Canais (WhatsApp/IG)",
         icon: MessagesSquare,
-        roles: ["admin"],
-      },
-      {
-        href: "/app-campo",
-        label: "App de Campo (planej.)",
-        icon: HardHat,
         roles: ["admin"],
       },
       {

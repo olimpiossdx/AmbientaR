@@ -1,6 +1,6 @@
 # Fase 5 – Aplicativo Offline (campo)
 
-Este documento descreve o escopo inicial e o modelo de dados previstos para o **App de campo** do AmbientaR 2.0. A tela **App de campo** (`/app-campo`) no app web aponta para este arquivo.
+Este documento descreve o escopo inicial e o modelo de dados previstos para o **App de campo** do AmbientaR 2.0. A tela **Coleta de campo** (`/coleta-campo`) no app web implementa este escopo. A rota legada `/app-campo` redireciona para `/coleta-campo`. Ver também `docs/COLETA-CAMPO-ESTRATEGIA.md`.
 
 ---
 
@@ -99,7 +99,7 @@ Regras de segurança: leitura e escrita para usuários autenticados (`isSignedIn
 
 ### Implementado no app web (entrada online)
 
-- Menu **Estudos Técnicos → Inventário (campo)** (`/inventarios`): listagem, novo inventário (empreendimento, datas, status).
+- Menu **Estudos Técnicos → Inventário Florestal → Coleta de campo** (`/coleta-campo`): campanhas, parcelas, export Excel. Rotas legadas `/inventarios` redirecionam para `/coleta-campo`.
 - Detalhe do inventário: parcelas e **Nova parcela** (código, lat/long, observações).
 - Detalhe da parcela: indivíduos e **Novo indivíduo** (número, espécie, DAP, altura). Mesmas coleções Firestore para uso pelo app offline depois.
 
@@ -118,4 +118,4 @@ Regras de segurança: leitura e escrita para usuários autenticados (`isSignedIn
 - Os dados sincronizados (inventário, parcelas, indivíduos) alimentam o **contexto ambiental** e os **laudos** (ex.: relatório de inventário florestal), assim como hoje os dados cadastrados no app web.
 - O **App de campo** é mais uma **fonte de dados** do mesmo ecossistema AmbientaR (Firestore + Storage), com foco em coleta offline e sync posterior.
 
-A tela **App de campo** (`/app-campo`) no app web serve como ponto de entrada para este planejamento e para futura configuração ou download do app quando ele existir.
+O módulo **Coleta de campo** (`/coleta-campo`) é o ponto de entrada PWA para coleta offline e exportação de planilha para o Inventário Florestal.

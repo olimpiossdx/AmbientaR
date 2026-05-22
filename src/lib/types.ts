@@ -2139,15 +2139,29 @@ export type EiaRima = {
   [key: string]: any;
 };
 
-export type InventarioStatus = 'rascunho' | 'em_campo' | 'sincronizado';
+export type InventarioStatus = 'rascunho' | 'em_campo' | 'sincronizado' | 'concluida';
+
+/** Campanha de coleta de campo (coleção `inventarios`). */
+export type ColetaCampanhaModo = 'vinculada' | 'solta';
+export type ColetaTipoInventario = 'simples' | 'multinivel';
 
 export type Inventario = {
   id: string;
-  empreendimentoId: string;
+  /** Preenchido quando modo = vinculada. */
+  empreendimentoId?: string;
+  empreendedorId?: string;
+  modo?: ColetaCampanhaModo;
+  tipoInventario?: ColetaTipoInventario;
+  nomeEmpreendimentoManual?: string;
+  nomeEmpreendedorManual?: string;
+  localManual?: string;
   dataInicio?: string | any;
   dataFim?: string | any;
   status?: InventarioStatus;
   observacoes?: string;
+  sincronizado?: boolean;
+  /** Referência opcional a projeto de inventário florestal (somente metadado). */
+  projectIdInventario?: string;
   createdAt?: any;
   updatedAt?: any;
   [key: string]: any;
@@ -2161,6 +2175,11 @@ export type InventarioParcela = {
   latitude?: number;
   longitude?: number;
   observacoes?: string;
+  /** Inventário multinível */
+  up?: string;
+  us?: string;
+  ni?: string;
+  ordem?: number;
   createdAt?: any;
   [key: string]: any;
 };
@@ -2169,11 +2188,18 @@ export type InventarioIndividuo = {
   id: string;
   inventarioId: string;
   parcelaId: string;
+  numero?: number;
   especie?: string;
+  nomeCientifico?: string;
+  nomeComum?: string;
   nomePopular?: string;
+  familia?: string;
   dap?: number;
+  cap?: number;
   altura?: number;
+  altComercial?: number;
   observacoes?: string;
+  sincronizado?: boolean;
   createdAt?: any;
   [key: string]: any;
 };
