@@ -69,6 +69,29 @@ Documento de referência do que foi sugerido para deixar o software mais **segur
 - **Checklist**: `docs/auditoria-menus-fase3-checklist.md` via `npm run audit:menus-by-role`.
 - **`fetchApiWithAuth`**: helper para novas chamadas `/api/*`.
 
+#### Auditoria por perfil (código)
+
+Documento: **`docs/auditoria-perfis-interacao.md`**. Resumo das correções:
+
+| Perfil | Correções principais |
+|--------|----------------------|
+| `client`, `cliente_autonomo`, `representative` | `resolvePortalAuthUid`; queries portal; `access_requests` só no titular; licenças/contratos/faturas filtrados |
+| `technical`, `gestor` | Sem `access_requests` global; edição do próprio perfil em `/users` |
+| `supervisor` | Botão Editar em `/users` para todos os utilizadores |
+| `financial`, `sales` | `sales` pode criar propostas comerciais (UI alinhada ao Firestore) |
+| `advogado`, `diretor_fauna` | Edição do próprio perfil; `diretor_fauna` em `selfServiceRoles` |
+| `admin` | APIs admin com Bearer; exclusão portal com `sessionTargetUid` |
+
+Helpers: `canEditUserInUsersList`, `getAppUserProfileUid` (`uid` antes de `id`).
+
+### Fase 4 — Deploy e validação (operacional)
+
+1. **Regras Firestore:** `npm run deploy:rules` (requer `firebase login`).
+2. **Storage (se aplicável):** `npm run deploy:storage`.
+3. **Checklist manual:** `docs/auditoria-menus-fase3-checklist.md` — um login por perfil, consola sem `permission-denied` repetido.
+4. **App Hosting:** após push/rollout, comparar erros 401/410 e taxa global no console Firebase.
+5. **Pré-deploy:** `npm run apphosting:check` (lint + typecheck como na nuvem).
+
 ---
 
 ## 6. Resumo

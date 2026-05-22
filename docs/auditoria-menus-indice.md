@@ -60,6 +60,9 @@ Correções aplicadas na fase 3:
 | Rotas legadas | `route-access` com aliases; `/autos-infracao-defesa` redirect no servidor |
 | APIs no cliente | `fetchApiWithAuth` em `api-client-auth.ts` |
 
-## Próximo passo
+## Próximo passo (Fase 4 — operacional)
 
-Validação manual com um utilizador por perfil (checklist Fase 3) e comparar taxa de erros no Firebase App Hosting após deploy.
+1. `npm run deploy:rules` (e `deploy:storage` se necessário).
+2. Validação manual: [auditoria-menus-fase3-checklist.md](./auditoria-menus-fase3-checklist.md) + [auditoria-perfis-interacao.md](./auditoria-perfis-interacao.md).
+3. `git push` e rollout App Hosting; comparar métricas de erro (7 dias).
+4. `npm run apphosting:check` antes do push.

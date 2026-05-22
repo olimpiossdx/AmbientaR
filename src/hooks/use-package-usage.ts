@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { useFirebase } from "@/firebase";
+import { getBearerApiHeaders } from "@/lib/api-client-auth";
 import {
   getPackageLimits,
   isPackageLimitsExempt,
@@ -48,9 +49,8 @@ export function usePackageUsage(
     }
     setLoading(true);
     try {
-      const token = await auth.currentUser.getIdToken();
       const res = await fetch("/api/package/usage", {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: await getBearerApiHeaders(auth),
       });
       const data = await res.json();
       if (data?.usage) {
