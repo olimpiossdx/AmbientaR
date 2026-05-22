@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { PageHeader } from '@/components/page-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -61,10 +61,27 @@ export default function NovaCampanhaPage() {
   );
   const { data: empreendedores } = useCollection<Empreendedor>(empreendedoresQuery);
 
+  const empreendimentosFiltrados = useMemo(() => {
+    if (!empreendedorId.trim() || !projects?.length) return [];
+    return [...projects]
+      .filter((p) => p.empreendedorId === empreendedorId)
+      .sort((a, b) =>
+        String(a.propertyName ?? '').localeCompare(String(b.propertyName ?? ''), 'pt-BR'),
+      );
+  }, [projects, empreendedorId]);
+
+  useEffect(() => {
+    setEmpreendimentoId('');
+  }, [empreendedorId]);
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!firestore) return;
 
+    if (modo === 'vinculada' && !empreendedorId.trim()) {
+      toast({ title: 'Selecione o empreendedor', variant: 'destructive' });
+      return;
+    }
     if (modo === 'vinculada' && !empreendimentoId.trim()) {
       toast({ title: 'Selecione o empreendimento', variant: 'destructive' });
       return;
@@ -88,8 +105,8 @@ export default function NovaCampanhaPage() {
       };
 
       if (modo === 'vinculada') {
+        payload.empreendedorId = empreendedorId.trim();
         payload.empreendimentoId = empreendimentoId.trim();
-        if (empreendedorId.trim()) payload.empreendedorId = empreendedorId.trim();
       } else {
         payload.nomeEmpreendimentoManual = nomeEmpreendimentoManual.trim();
         payload.nomeEmpreendedorManual = nomeEmpreendedorManual.trim() || undefined;
@@ -115,7 +132,7 @@ export default function NovaCampanhaPage() {
           <CardHeader>
             <CardTitle>Dados da campanha</CardTitle>
             <CardDescription>
-              Vinculada usa empreendimento da base. Solta permite atender cliente externo com preenchimento manual.
+              Vinculada: escolha o empreendedor e depois o empreendimento (lista filtrada). Solta: preenchimento manual em campo.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -167,30 +184,44 @@ export default function NovaCampanhaPage() {
               {modo === 'vinculada' ? (
                 <>
                   <div className="grid gap-2">
-                    <Label>Empreendimento *</Label>
-                    <Select value={empreendimentoId} onValueChange={setEmpreendimentoId}>
+                    <Label>Empreendedor *</Label>
+                    <Select value={empreendedorId} onValueChange={setEmpreendedorId}>
                       <SelectTrigger className="min-h-11">
-                        <SelectValue placeholder="Selecione" />
+                        <SelectValue placeholder="Selecione o empreendedor" />
                       </SelectTrigger>
                       <SelectContent>
-                        {projects?.map((p) => (
-                          <SelectItem key={p.id} value={p.id}>
-                            {p.propertyName ?? p.id}
-                          </SelectItem>
-                        ))}
+                        {[...(empreendedores ?? [])]
+                          .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'))
+                          .map((e) => (
+                            <SelectItem key={e.id} value={e.id}>
+                              {e.name}
+                            </SelectItem>
+                          ))}
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="grid gap-2">
-                    <Label>Empreendedor</Label>
-                    <Select value={empreendedorId} onValueChange={setEmpreendedorId}>
+                    <Label>Empreendimento *</Label>
+                    <Select
+                      value={empreendimentoId}
+                      onValueChange={setEmpreendimentoId}
+                      disabled={!empreendedorId}
+                    >
                       <SelectTrigger className="min-h-11">
-                        <SelectValue placeholder="Opcional" />
+                        <SelectValue
+                          placeholder={
+                            !empreendedorId
+                              ? 'Selecione um empreendedor primeiro'
+                              : empreendimentosFiltrados.length
+                                ? 'Selecione o empreendimento'
+                                : 'Nenhum empreendimento para este empreendedor'
+                          }
+                        />
                       </SelectTrigger>
                       <SelectContent>
-                        {empreendedores?.map((e) => (
-                          <SelectItem key={e.id} value={e.id}>
-                            {e.name}
+                        {empreendimentosFiltrados.map((p) => (
+                          <SelectItem key={p.id} value={p.id}>
+                            {p.propertyName ?? p.fantasyName ?? p.id}
                           </SelectItem>
                         ))}
                       </SelectContent>
