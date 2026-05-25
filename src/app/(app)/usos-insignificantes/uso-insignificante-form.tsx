@@ -46,6 +46,7 @@ import {
   errorEmitter,
   useCollection,
   useMemoFirebase,
+  useDoc,
 } from "@/firebase";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { AttachmentPreviewSection } from "@/components/shared/attachment-preview-section";
@@ -76,7 +77,11 @@ import { UPLOAD_RAW_FILE_SAFETY_MAX } from "@/lib/upload-limits";
 import { NOTIFICATION_LINKS, NOTIFICATION_SOURCE } from "@/lib/notification-events";
 import { notifyEmpreendedorPortalUsers } from "@/lib/notifications";
 import { guardPortalPackageAction } from "@/lib/package-portal-guard";
-import { filterProjectsByEmpreendedorId } from "@/lib/processos-form-order";
+import {
+  buildEmpreendedorSelectOptions,
+  buildProjectSelectOptions,
+  normalizeEntityId,
+} from "@/lib/empreendedor-project-select";
 import { Separator } from "@/components/ui/separator";
 
 const formSchema = z
@@ -168,10 +173,13 @@ export function UsoInsignificanteForm({
 
   const monitoringTypeWatch = form.watch("monitoringType");
 
+  const isHydratingFormRef = React.useRef(false);
+
   React.useEffect(() => {
+    isHydratingFormRef.current = true;
     const defaultValues: Partial<FormValues> = {
-      empreendedorId: currentItem?.empreendedorId || "",
-      projectId: currentItem?.projectId || "",
+      empreendedorId: normalizeEntityId(currentItem?.empreendedorId),
+      projectId: normalizeEntityId(currentItem?.projectId),
       permitNumber: currentItem?.permitNumber || "",
       processNumber: currentItem?.processNumber || "",
       issueDate: currentItem ? new Date(currentItem.issueDate) : undefined,
@@ -195,16 +203,59 @@ export function UsoInsignificanteForm({
     };
     form.reset(defaultValues);
     setUploadedFileUrl(currentItem?.fileUrl || null);
+    queueMicrotask(() => {
+      isHydratingFormRef.current = false;
+    });
   }, [currentItem, form]);
 
   const selectedEmpreendedorId = form.watch("empreendedorId");
+  const selectedProjectId = form.watch("projectId");
 
-  const filteredProjects = React.useMemo(
-    () => filterProjectsByEmpreendedorId(allProjects, selectedEmpreendedorId),
-    [selectedEmpreendedorId, allProjects],
+  const linkedEmpreendedorRef = useMemoFirebase(
+    () =>
+      firestore && currentItem?.empreendedorId
+        ? doc(
+            firestore,
+            "empreendedores",
+            normalizeEntityId(currentItem.empreendedorId),
+          )
+        : null,
+    [firestore, currentItem?.empreendedorId],
+  );
+  const { data: linkedEmpreendedor } = useDoc<Empreendedor>(linkedEmpreendedorRef);
+
+  const linkedProjectRef = useMemoFirebase(
+    () =>
+      firestore && currentItem?.projectId
+        ? doc(firestore, "projects", normalizeEntityId(currentItem.projectId))
+        : null,
+    [firestore, currentItem?.projectId],
+  );
+  const { data: linkedProject } = useDoc<Project>(linkedProjectRef);
+
+  const empreendedoresForSelect = React.useMemo(
+    () =>
+      buildEmpreendedorSelectOptions({
+        list: empreendedores,
+        selectedId: selectedEmpreendedorId,
+        linkedDoc: linkedEmpreendedor,
+      }),
+    [empreendedores, selectedEmpreendedorId, linkedEmpreendedor],
+  );
+
+  const projectsForSelect = React.useMemo(
+    () =>
+      buildProjectSelectOptions({
+        allProjects,
+        empreendedorId: selectedEmpreendedorId,
+        selectedProjectId,
+        linkedDoc: linkedProject,
+      }),
+    [allProjects, selectedEmpreendedorId, selectedProjectId, linkedProject],
   );
 
   React.useEffect(() => {
+    if (isHydratingFormRef.current) return;
     if (form.getValues("empreendedorId") !== selectedEmpreendedorId) {
       form.setValue("projectId", "");
     }
@@ -408,7 +459,7 @@ export function UsoInsignificanteForm({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {empreendedores?.map((emp) => (
+                      {empreendedoresForSelect.map((emp) => (
                         <SelectItem key={emp.id} value={emp.id}>
                           {emp.name}
                         </SelectItem>
@@ -442,7 +493,7 @@ export function UsoInsignificanteForm({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {filteredProjects?.map((proj) => (
+                      {projectsForSelect.map((proj) => (
                         <SelectItem key={proj.id} value={proj.id}>
                           {proj.propertyName}
                         </SelectItem>

@@ -45,6 +45,7 @@ import {
   errorEmitter,
   useCollection,
   useMemoFirebase,
+  useDoc,
 } from "@/firebase";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { AttachmentPreviewSection } from "@/components/shared/attachment-preview-section";
@@ -55,9 +56,10 @@ import { NOTIFICATION_LINKS, NOTIFICATION_SOURCE } from "@/lib/notification-even
 import { notifyEmpreendedorPortalUsers } from "@/lib/notifications";
 import { guardPortalPackageAction } from "@/lib/package-portal-guard";
 import {
-  filterProjectsByEmpreendedorId,
-} from "@/lib/processos-form-order";
-import { sortByPropertyNamePt } from "@/lib/sort-pt-br";
+  buildEmpreendedorSelectOptions,
+  buildProjectSelectOptions,
+  normalizeEntityId,
+} from "@/lib/empreendedor-project-select";
 import {
   collection,
   doc,
@@ -168,8 +170,8 @@ export function OutorgaForm({ currentItem, onSuccess }: OutorgaFormProps) {
   React.useEffect(() => {
     isHydratingFormRef.current = true;
     const defaultValues: Partial<FormValues> = {
-      empreendedorId: currentItem?.empreendedorId || "",
-      projectId: currentItem?.projectId || "",
+      empreendedorId: normalizeEntityId(currentItem?.empreendedorId),
+      projectId: normalizeEntityId(currentItem?.projectId),
       permitNumber: currentItem?.permitNumber || "",
       processNumber: currentItem?.processNumber || "",
       issueDate: currentItem ? new Date(currentItem.issueDate) : undefined,
@@ -200,22 +202,50 @@ export function OutorgaForm({ currentItem, onSuccess }: OutorgaFormProps) {
   }, [currentItem, form]);
 
   const selectedEmpreendedorId = form.watch("empreendedorId");
+  const selectedProjectId = form.watch("projectId");
 
-  const filteredProjects = React.useMemo(
-    () => filterProjectsByEmpreendedorId(allProjects, selectedEmpreendedorId),
-    [selectedEmpreendedorId, allProjects],
+  const linkedEmpreendedorRef = useMemoFirebase(
+    () =>
+      firestore && currentItem?.empreendedorId
+        ? doc(
+            firestore,
+            "empreendedores",
+            normalizeEntityId(currentItem.empreendedorId),
+          )
+        : null,
+    [firestore, currentItem?.empreendedorId],
+  );
+  const { data: linkedEmpreendedor } = useDoc<Empreendedor>(linkedEmpreendedorRef);
+
+  const linkedProjectRef = useMemoFirebase(
+    () =>
+      firestore && currentItem?.projectId
+        ? doc(firestore, "projects", normalizeEntityId(currentItem.projectId))
+        : null,
+    [firestore, currentItem?.projectId],
+  );
+  const { data: linkedProject } = useDoc<Project>(linkedProjectRef);
+
+  const empreendedoresForSelect = React.useMemo(
+    () =>
+      buildEmpreendedorSelectOptions({
+        list: empreendedores,
+        selectedId: selectedEmpreendedorId,
+        linkedDoc: linkedEmpreendedor,
+      }),
+    [empreendedores, selectedEmpreendedorId, linkedEmpreendedor],
   );
 
-  const projectOptions = React.useMemo(() => {
-    const options = [...filteredProjects];
-    const selectedProjectId = form.getValues("projectId");
-    if (!selectedProjectId || !allProjects) return options;
-    const existsInFiltered = options.some((p) => p.id === selectedProjectId);
-    if (existsInFiltered) return options;
-    const selectedProject = allProjects.find((p) => p.id === selectedProjectId);
-    if (selectedProject) options.push(selectedProject);
-    return sortByPropertyNamePt(options);
-  }, [filteredProjects, allProjects, form]);
+  const projectsForSelect = React.useMemo(
+    () =>
+      buildProjectSelectOptions({
+        allProjects,
+        empreendedorId: selectedEmpreendedorId,
+        selectedProjectId,
+        linkedDoc: linkedProject,
+      }),
+    [allProjects, selectedEmpreendedorId, selectedProjectId, linkedProject],
+  );
 
   React.useEffect(() => {
     const previous = previousEmpreendedorIdRef.current;
@@ -398,7 +428,7 @@ export function OutorgaForm({ currentItem, onSuccess }: OutorgaFormProps) {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {empreendedores?.map((emp) => (
+                      {empreendedoresForSelect.map((emp) => (
                         <SelectItem key={emp.id} value={emp.id}>
                           {emp.name}
                         </SelectItem>
@@ -432,7 +462,7 @@ export function OutorgaForm({ currentItem, onSuccess }: OutorgaFormProps) {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {projectOptions?.map((proj) => (
+                      {projectsForSelect.map((proj) => (
                         <SelectItem key={proj.id} value={proj.id}>
                           {proj.propertyName}
                         </SelectItem>

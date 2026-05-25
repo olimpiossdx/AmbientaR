@@ -1,16 +1,42 @@
 "use client";
+import dynamic from "next/dynamic";
 import { useAuth } from "@/firebase";
-import AdminDashboard from "./dashboards/admin-dashboard";
-import FinancialDashboard from "./dashboards/financial-dashboard";
-import EnvironmentalDashboard from "./dashboards/environmental-dashboard";
-import ClientDashboard from "./dashboards/client-dashboard";
-import CrmDashboard from "./crm/crm-dashboard";
 import { Leaf } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
-import BirthdayWidget from "./dashboards/birthday-widget";
-import AgendaWidget from "./dashboards/agenda-widget";
-import FaunaDashboard from "./dashboards/fauna-dashboard";
 import { DocumentosAmbientaisHubCard } from "@/components/documentos-ambientais-hub-card";
+
+const DashboardLoading = () => (
+  <div className="flex min-h-[200px] items-center justify-center p-8">
+    <Leaf className="h-8 w-8 animate-pulse text-primary" />
+  </div>
+);
+
+const AdminDashboard = dynamic(() => import("./dashboards/admin-dashboard"), {
+  loading: DashboardLoading,
+});
+const FinancialDashboard = dynamic(
+  () => import("./dashboards/financial-dashboard"),
+  { loading: DashboardLoading },
+);
+const EnvironmentalDashboard = dynamic(
+  () => import("./dashboards/environmental-dashboard"),
+  { loading: DashboardLoading },
+);
+const ClientDashboard = dynamic(() => import("./dashboards/client-dashboard"), {
+  loading: DashboardLoading,
+});
+const CrmDashboard = dynamic(() => import("./crm/crm-dashboard"), {
+  loading: DashboardLoading,
+});
+const BirthdayWidget = dynamic(() => import("./dashboards/birthday-widget"), {
+  loading: () => null,
+});
+const AgendaWidget = dynamic(() => import("./dashboards/agenda-widget"), {
+  loading: () => null,
+});
+const FaunaDashboard = dynamic(() => import("./dashboards/fauna-dashboard"), {
+  loading: DashboardLoading,
+});
 
 export default function DashboardRouterPage() {
   const { user, isInitialized } = useAuth();

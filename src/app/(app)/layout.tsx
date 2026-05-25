@@ -63,7 +63,12 @@ import {
   updateDoc,
   where,
 } from "firebase/firestore";
-import ChatWidget from "@/components/chat-widget";
+import dynamic from "next/dynamic";
+
+const ChatWidget = dynamic(() => import("@/components/chat-widget"), {
+  ssr: false,
+  loading: () => null,
+});
 import { UpgradeButton } from "@/components/upgrade-dialog";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { getStorage, ref, getDownloadURL } from "firebase/storage";
