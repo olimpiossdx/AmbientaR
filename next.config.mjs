@@ -47,9 +47,14 @@ const nextConfig = {
       config.output.chunkLoadTimeout = 180000;
     }
     if (dev && process.platform === "win32") {
-      /** Evita cache com caminhos D:\A vs d:\A duplicando módulos. */
+      /** Evita cache com caminhos D:\A vs d:\A duplicando módulos do Next/React. */
       config.cache = false;
-      config.resolve.modules = [nm(), ...(config.resolve.modules ?? ["node_modules"])];
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        next: nm("next"),
+        react: nm("react"),
+        "react-dom": nm("react-dom"),
+      };
     }
     return config;
   },

@@ -131,12 +131,25 @@ export default function PiaPage() {
           description: 'O formulário PIA foi removido com sucesso.',
         });
       })
-      .catch(async (serverError) => {
-        const permissionError = new FirestorePermissionError({
-          path: docRef.path,
-          operation: 'delete',
-        });
-        errorEmitter.emit('permission-error', permissionError);
+      .catch((serverError) => {
+        console.error('Error deleting PIA:', serverError);
+        const code =
+          serverError && typeof serverError === 'object' && 'code' in serverError
+            ? String((serverError as { code?: string }).code)
+            : '';
+        if (code === 'permission-denied') {
+          const permissionError = new FirestorePermissionError({
+            path: docRef.path,
+            operation: 'delete',
+          });
+          errorEmitter.emit('permission-error', permissionError);
+        } else {
+          toast({
+            variant: 'destructive',
+            title: 'Erro ao excluir',
+            description: 'Não foi possível remover o PIA.',
+          });
+        }
       })
       .finally(() => {
         setIsAlertOpen(false);

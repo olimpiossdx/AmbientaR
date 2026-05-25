@@ -15,6 +15,11 @@ import type { PIA, Empreendedor as Client, Project, PiaType } from '@/lib/types'
 import { useFirebase, errorEmitter, useCollection, useMemoFirebase } from '@/firebase';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { collection, doc, addDoc, updateDoc, getDoc } from 'firebase/firestore';
+import {
+  getFirestoreErrorCode,
+  getFirestoreErrorMessage,
+  stripUndefinedDeep,
+} from '@/lib/firestore-payload';
 import { DialogFooter } from '@/components/ui/dialog';
 import { PiaFormInventario } from './pia-form-inventario';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -108,12 +113,12 @@ export function PiaForm({ currentItem, piaType, onSuccess, linkContext }: PiaFor
       return;
     }
     
-    const dataToSave = {
+    const dataToSave = stripUndefinedDeep({
         ...values,
         status,
         ...(linkContext?.requestId ? { requestId: linkContext.requestId } : {}),
         ...(currentItem?.requestId ? { requestId: currentItem.requestId } : {}),
-    };
+    });
 
     try {
         if (currentItem) {
@@ -127,13 +132,17 @@ export function PiaForm({ currentItem, piaType, onSuccess, linkContext }: PiaFor
           const collectionRef = collection(firestore, 'pias');
           const created = await addDoc(collectionRef, dataToSave);
           if (linkContext?.requestId) {
-            const reqRef = doc(firestore, 'requests', linkContext.requestId);
-            const snap = await getDoc(reqRef);
-            if (snap.exists()) {
-              const prev = snap.data().linkedArtifacts ?? {};
-              await updateDoc(reqRef, {
-                linkedArtifacts: { ...prev, piaId: created.id },
-              });
+            try {
+              const reqRef = doc(firestore, 'requests', linkContext.requestId);
+              const snap = await getDoc(reqRef);
+              if (snap.exists()) {
+                const prev = snap.data().linkedArtifacts ?? {};
+                await updateDoc(reqRef, {
+                  linkedArtifacts: { ...prev, piaId: created.id },
+                });
+              }
+            } catch (syncError) {
+              console.warn('PIA criado; falha ao vincular ao processo:', syncError);
             }
           }
           toast({
@@ -145,12 +154,21 @@ export function PiaForm({ currentItem, piaType, onSuccess, linkContext }: PiaFor
         onSuccess?.();
     } catch (error) {
         console.error("Error saving PIA:", error);
-        const permissionError = new FirestorePermissionError({
+        const code = getFirestoreErrorCode(error);
+        const message = getFirestoreErrorMessage(error);
+        toast({
+          variant: 'destructive',
+          title: 'Erro ao salvar PIA',
+          description: message,
+        });
+        if (code === 'permission-denied') {
+          const permissionError = new FirestorePermissionError({
             path: currentItem ? `pias/${currentItem.id}` : 'pias',
             operation: currentItem ? 'update' : 'create',
             requestResourceData: dataToSave,
-        });
-        errorEmitter.emit('permission-error', permissionError);
+          });
+          errorEmitter.emit('permission-error', permissionError);
+        }
     } finally {
         setLoading(false);
     }

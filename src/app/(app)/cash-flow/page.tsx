@@ -10,7 +10,7 @@ import { downloadJsPdf } from '@/lib/branding-pdf';
 import {
   brandingUrlsFromLocal,
   createMmBrandedPdfSession,
-  guardBrandingPdfExport,
+  guardBrandingExportFromHook,
   reportBrandingPdfIssues,
 } from '@/lib/pdf-branding-layout';
 import { useLocalBranding } from '@/hooks/use-local-branding';
@@ -122,7 +122,18 @@ export default function CashFlowPage() {
     if (isExportingPdf) return;
     setIsExportingPdf(true);
     try {
-    if (!guardBrandingPdfExport({ isPdfImagesLoading, hasBrandingUrls, toast })) return;
+    if (
+      !guardBrandingExportFromHook({
+        brandingData,
+        pdfImages,
+        isPdfImagesLoading,
+        hasBrandingUrls,
+        toast,
+        formatLabel: 'PDF',
+      })
+    ) {
+      return;
+    }
     const brandingUrls = brandingUrlsFromLocal(brandingData);
     const session = await createMmBrandedPdfSession(brandingUrls, undefined, pdfImages);
     reportBrandingPdfIssues(brandingUrls, session.branding.images, toast);

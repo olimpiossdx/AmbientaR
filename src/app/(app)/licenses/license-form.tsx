@@ -38,6 +38,7 @@ import {
   errorEmitter,
   useCollection,
   useMemoFirebase,
+  useDoc,
 } from "@/firebase";
 import type { AppUser } from "@/lib/types";
 import { guardPortalPackageAction } from "@/lib/package-portal-guard";
@@ -49,7 +50,11 @@ import { useStorageFileUpload } from "@/hooks/use-storage-file-upload";
 import { UPLOAD_RAW_FILE_SAFETY_MAX } from "@/lib/upload-limits";
 import { NOTIFICATION_LINKS, NOTIFICATION_SOURCE } from "@/lib/notification-events";
 import { notifyProjectPortalUsers } from "@/lib/notifications";
-import { filterProjectsByEmpreendedorId } from "@/lib/processos-form-order";
+import {
+  buildEmpreendedorSelectOptions,
+  buildProjectSelectOptions,
+  normalizeEntityId,
+} from "@/lib/empreendedor-project-select";
 import { collection, doc, addDoc, updateDoc } from "firebase/firestore";
 import {
   DialogHeader,
@@ -168,11 +173,14 @@ export function LicenseForm({
     defaultValues: {},
   });
 
+  const isHydratingFormRef = React.useRef(false);
+
   React.useEffect(() => {
     if (!currentLicense) return;
+    isHydratingFormRef.current = true;
     const defaultValues: Partial<LicenseFormValues> = {
-      empreendedorId: currentLicense.empreendedorId || "",
-      projectId: currentLicense.projectId || "",
+      empreendedorId: normalizeEntityId(currentLicense.empreendedorId),
+      projectId: normalizeEntityId(currentLicense.projectId),
       permitType: currentLicense.permitType,
       processNumber: currentLicense.processNumber || "",
       permitNumber: currentLicense.permitNumber || "",
@@ -188,16 +196,59 @@ export function LicenseForm({
     };
     form.reset(defaultValues);
     setUploadedFileUrl(currentLicense.fileUrl || null);
+    queueMicrotask(() => {
+      isHydratingFormRef.current = false;
+    });
   }, [currentLicense, form]);
 
   const selectedEmpreendedorId = form.watch("empreendedorId");
+  const selectedProjectId = form.watch("projectId");
 
-  const filteredProjects = React.useMemo(
-    () => filterProjectsByEmpreendedorId(allProjects, selectedEmpreendedorId),
-    [selectedEmpreendedorId, allProjects],
+  const linkedEmpreendedorRef = useMemoFirebase(
+    () =>
+      firestore && currentLicense?.empreendedorId
+        ? doc(
+            firestore,
+            "empreendedores",
+            normalizeEntityId(currentLicense.empreendedorId),
+          )
+        : null,
+    [firestore, currentLicense?.empreendedorId],
+  );
+  const { data: linkedEmpreendedor } = useDoc<Empreendedor>(linkedEmpreendedorRef);
+
+  const linkedProjectRef = useMemoFirebase(
+    () =>
+      firestore && currentLicense?.projectId
+        ? doc(firestore, "projects", normalizeEntityId(currentLicense.projectId))
+        : null,
+    [firestore, currentLicense?.projectId],
+  );
+  const { data: linkedProject } = useDoc<Project>(linkedProjectRef);
+
+  const empreendedoresForSelect = React.useMemo(
+    () =>
+      buildEmpreendedorSelectOptions({
+        list: empreendedores,
+        selectedId: selectedEmpreendedorId,
+        linkedDoc: linkedEmpreendedor,
+      }),
+    [empreendedores, selectedEmpreendedorId, linkedEmpreendedor],
+  );
+
+  const projectsForSelect = React.useMemo(
+    () =>
+      buildProjectSelectOptions({
+        allProjects,
+        empreendedorId: selectedEmpreendedorId,
+        selectedProjectId,
+        linkedDoc: linkedProject,
+      }),
+    [allProjects, selectedEmpreendedorId, selectedProjectId, linkedProject],
   );
 
   React.useEffect(() => {
+    if (isHydratingFormRef.current) return;
     if (form.getValues("empreendedorId") !== selectedEmpreendedorId) {
       form.setValue("projectId", "");
     }
@@ -388,7 +439,7 @@ export function LicenseForm({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {empreendedores?.map((emp) => (
+                      {empreendedoresForSelect.map((emp) => (
                         <SelectItem key={emp.id} value={emp.id}>
                           {emp.name}
                         </SelectItem>
@@ -422,7 +473,7 @@ export function LicenseForm({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {filteredProjects?.map((proj) => (
+                      {projectsForSelect.map((proj) => (
                         <SelectItem key={proj.id} value={proj.id}>
                           {proj.propertyName}
                         </SelectItem>

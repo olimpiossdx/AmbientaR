@@ -19,6 +19,11 @@ import { usesInventarioForm } from '@/lib/pia/pia-record';
 import { validatePiaForApproval } from '@/lib/pia/pia-export-validation';
 import type { PiaRecord } from '@/lib/pia/pia-record';
 import { syncPiaLinksToRequest } from '@/lib/pia/pia-request-sync';
+import {
+  getFirestoreErrorCode,
+  getFirestoreErrorMessage,
+  stripUndefinedDeep,
+} from '@/lib/firestore-payload';
 
 const formSchema = z.object({
   type: z.enum(['Simplificado', 'Corretivo', 'Inventário Florestal', 'Censo Florestal']),
@@ -161,21 +166,25 @@ export function PiaForm({ currentItem, piaType, onSuccess, linkContext }: PiaFor
       linkContext?.requestId ||
       '';
 
-    const dataToSave = {
+    const dataToSave = stripUndefinedDeep({
       ...values,
       status,
       ...(resolvedRequestId ? { requestId: resolvedRequestId } : {}),
-    };
+    });
 
     try {
       if (currentItem) {
         const docRef = doc(firestore, 'pias', currentItem.id);
         await updateDoc(docRef, dataToSave);
-        await syncRequestLinks(
-          currentItem.id,
-          resolvedRequestId,
-          values.inventoryId,
-        );
+        try {
+          await syncRequestLinks(
+            currentItem.id,
+            resolvedRequestId,
+            values.inventoryId,
+          );
+        } catch (syncError) {
+          console.warn('PIA salvo; falha ao vincular ao processo:', syncError);
+        }
         toast({
           title: 'PIA atualizado!',
           description: `O formulário foi salvo como ${status.toLowerCase()}.`,
@@ -183,11 +192,15 @@ export function PiaForm({ currentItem, piaType, onSuccess, linkContext }: PiaFor
       } else {
         const collectionRef = collection(firestore, 'pias');
         const created = await addDoc(collectionRef, dataToSave);
-        await syncRequestLinks(
-          created.id,
-          resolvedRequestId,
-          values.inventoryId,
-        );
+        try {
+          await syncRequestLinks(
+            created.id,
+            resolvedRequestId,
+            values.inventoryId,
+          );
+        } catch (syncError) {
+          console.warn('PIA criado; falha ao vincular ao processo:', syncError);
+        }
         toast({
           title: 'PIA criado!',
           description: `O formulário para ${values.empreendimento.nome} foi criado com sucesso.`,
@@ -197,12 +210,21 @@ export function PiaForm({ currentItem, piaType, onSuccess, linkContext }: PiaFor
       onSuccess?.();
     } catch (error) {
       console.error('Error saving PIA:', error);
-      const permissionError = new FirestorePermissionError({
-        path: currentItem ? `pias/${currentItem.id}` : 'pias',
-        operation: currentItem ? 'update' : 'create',
-        requestResourceData: dataToSave,
+      const code = getFirestoreErrorCode(error);
+      const message = getFirestoreErrorMessage(error);
+      toast({
+        variant: 'destructive',
+        title: 'Erro ao salvar PIA',
+        description: message,
       });
-      errorEmitter.emit('permission-error', permissionError);
+      if (code === 'permission-denied') {
+        const permissionError = new FirestorePermissionError({
+          path: currentItem ? `pias/${currentItem.id}` : 'pias',
+          operation: currentItem ? 'update' : 'create',
+          requestResourceData: dataToSave,
+        });
+        errorEmitter.emit('permission-error', permissionError);
+      }
     } finally {
       setLoading(false);
     }

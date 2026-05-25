@@ -3,8 +3,6 @@
 import type { BrandingPdfImages } from '@/lib/branding-pdf';
 import type { LocalBranding } from '@/hooks/use-local-branding';
 import {
-  brandingUrlsFromLocal,
-  createMmBrandedPdfSession,
   drawWatermarkOnPage,
   getContentStartY,
   type MmBrandedPdfSession,
@@ -160,9 +158,9 @@ export async function generatePiaExportPdfBlob(
   });
 
   if (!session) {
-    const urls = brandingUrlsFromLocal(branding);
-    const fallback = await createMmBrandedPdfSession(urls, undefined, preloadedImages);
-    return generateWithSession(record, fallback, inventory ?? null);
+    throw new Error(
+      'Não foi possível preparar o PDF com identidade visual. Aguarde o carregamento ou verifique Configurações → Identidade visual.',
+    );
   }
 
   return generateWithSession(record, session, inventory ?? null);

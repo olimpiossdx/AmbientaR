@@ -732,7 +732,8 @@ service cloud.firestore {
      * @path /databases/{database}/documents/pias/{piaId}
      */
     match /pias/{piaId} {
-      allow read, write: if isSignedIn();
+      allow read: if isSignedIn();
+      allow create, update, delete: if isSignedIn();
     }
 
     /**

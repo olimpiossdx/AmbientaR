@@ -24,6 +24,8 @@ import {
   brandingUrlsFromLocal,
   createMmBrandedPdfSession,
   drawWatermarkOnPage,
+  guardBrandingExportFromHook,
+  reportBrandingPdfIssues,
 } from "@/lib/pdf-branding-layout";
 import { getAdminApiRequestHeaders } from "@/lib/admin-api-client";
 import { AiProviderBadge } from "@/components/ai/ai-provider-badge";
@@ -145,7 +147,12 @@ function estimateRequestCostBRL(params: {
 }
 
 export default function AiLabAutomationsPage() {
-  const { data: brandingData } = useLocalBranding();
+  const {
+    data: brandingData,
+    pdfImages,
+    isPdfImagesLoading,
+    hasBrandingUrls,
+  } = useLocalBranding();
   const { user } = useAuth();
   const { firestore, auth } = useFirebase();
   const { toast } = useToast();
@@ -522,9 +529,25 @@ export default function AiLabAutomationsPage() {
   };
 
   const handleExportPdf = async (title: string, report: string, refs: string[]) => {
+    if (
+      !guardBrandingExportFromHook({
+        brandingData,
+        pdfImages,
+        isPdfImagesLoading,
+        hasBrandingUrls,
+        toast,
+        formatLabel: "PDF",
+      })
+    ) {
+      return;
+    }
+    const brandingUrls = brandingUrlsFromLocal(brandingData);
     const session = await createMmBrandedPdfSession(
-      brandingUrlsFromLocal(brandingData),
+      brandingUrls,
+      undefined,
+      pdfImages,
     );
+    reportBrandingPdfIssues(brandingUrls, session.branding.images, toast);
     const { doc, margins } = session;
     const pageW = doc.internal.pageSize.getWidth();
     const maxY = 280;

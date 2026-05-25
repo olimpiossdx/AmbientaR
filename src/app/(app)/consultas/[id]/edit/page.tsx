@@ -30,7 +30,11 @@ import type {
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { filterProjectsByEmpreendedorId } from '@/lib/processos-form-order';
+import {
+  buildEmpreendedorSelectOptions,
+  buildProjectSelectOptions,
+  normalizeEntityId,
+} from '@/lib/empreendedor-project-select';
 
 const CANAL_OPTIONS: { value: ConsultaCanal; label: string }[] = [
   { value: 'web', label: 'Web' },
@@ -97,8 +101,8 @@ export default function EditConsultaPage() {
 
   useEffect(() => {
     if (consulta) {
-      setEmpreendedorId(consulta.empreendedorId ?? '');
-      setEmpreendimentoId(consulta.empreendimentoId ?? '');
+      setEmpreendedorId(normalizeEntityId(consulta.empreendedorId));
+      setEmpreendimentoId(normalizeEntityId(consulta.empreendimentoId));
       setTipoServico(consulta.tipoServico);
       setCanal(consulta.canal);
       setStatus(consulta.status);
@@ -113,16 +117,52 @@ export default function EditConsultaPage() {
     () => (firestore ? collection(firestore, 'empreendedores') : null),
     [firestore]
   );
-  const { data: empreendedores } = useCollection<Empreendedor>(empreendedoresQuery);
+  const { data: empreendedores, isLoading: isLoadingEmpreendedores } =
+    useCollection<Empreendedor>(empreendedoresQuery);
 
   const projectsQuery = useMemoFirebase(
     () => (firestore ? collection(firestore, 'projects') : null),
     [firestore]
   );
-  const { data: projects } = useCollection<Project>(projectsQuery);
-  const projectsByEmpreendedor = useMemo(
-    () => filterProjectsByEmpreendedorId(projects, empreendedorId),
-    [projects, empreendedorId],
+  const { data: projects, isLoading: isLoadingProjects } = useCollection<Project>(projectsQuery);
+
+  const linkedEmpreendedorRef = useMemoFirebase(
+    () =>
+      firestore && consulta?.empreendedorId
+        ? doc(firestore, 'empreendedores', normalizeEntityId(consulta.empreendedorId))
+        : null,
+    [firestore, consulta?.empreendedorId],
+  );
+  const { data: linkedEmpreendedor } = useDoc<Empreendedor>(linkedEmpreendedorRef);
+
+  const linkedProjectRef = useMemoFirebase(
+    () =>
+      firestore && consulta?.empreendimentoId
+        ? doc(firestore, 'projects', normalizeEntityId(consulta.empreendimentoId))
+        : null,
+    [firestore, consulta?.empreendimentoId],
+  );
+  const { data: linkedProject } = useDoc<Project>(linkedProjectRef);
+
+  const empreendedoresForSelect = useMemo(
+    () =>
+      buildEmpreendedorSelectOptions({
+        list: empreendedores,
+        selectedId: empreendedorId,
+        linkedDoc: linkedEmpreendedor,
+      }),
+    [empreendedores, empreendedorId, linkedEmpreendedor],
+  );
+
+  const projectsForSelect = useMemo(
+    () =>
+      buildProjectSelectOptions({
+        allProjects: projects,
+        empreendedorId,
+        selectedProjectId: empreendimentoId,
+        linkedDoc: linkedProject,
+      }),
+    [projects, empreendedorId, empreendimentoId, linkedProject],
   );
 
   const usersQuery = useMemoFirebase(
@@ -196,12 +236,20 @@ export default function EditConsultaPage() {
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="grid gap-2">
                 <Label>Empreendedor *</Label>
-                <Select value={empreendedorId} onValueChange={setEmpreendedorId} required>
+                <Select
+                  value={empreendedorId || undefined}
+                  onValueChange={(v) => {
+                    setEmpreendedorId(v);
+                    setEmpreendimentoId('');
+                  }}
+                  required
+                  disabled={isLoadingEmpreendedores}
+                >
                   <SelectTrigger>
-                    <SelectValue placeholder="Selecione o empreendedor" />
+                    <SelectValue placeholder={isLoadingEmpreendedores ? 'Carregando…' : 'Selecione o empreendedor'} />
                   </SelectTrigger>
                   <SelectContent>
-                    {empreendedores?.map((e) => (
+                    {empreendedoresForSelect.map((e) => (
                       <SelectItem key={e.id} value={e.id}>
                         {e.name}
                       </SelectItem>
@@ -213,19 +261,19 @@ export default function EditConsultaPage() {
               <div className="grid gap-2">
                 <Label>Empreendimento</Label>
                 <Select
-                  value={empreendimentoId}
-                  onValueChange={setEmpreendimentoId}
-                  disabled={!empreendedorId || projectsByEmpreendedor.length === 0}
+                  value={empreendimentoId || '__none__'}
+                  onValueChange={(v) => setEmpreendimentoId(v === '__none__' ? '' : v)}
+                  disabled={!empreendedorId || isLoadingProjects}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder={
-                      !empreendedorId ? 'Selecione o empreendedor' : projectsByEmpreendedor.length === 0
-                        ? 'Nenhum empreendimento' : 'Selecione (opcional)'
+                      !empreendedorId ? 'Selecione o empreendedor' : isLoadingProjects
+                        ? 'Carregando empreendimentos…' : 'Selecione (opcional)'
                     } />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Nenhum</SelectItem>
-                    {projectsByEmpreendedor.map((p) => (
+                    <SelectItem value="__none__">Nenhum</SelectItem>
+                    {projectsForSelect.map((p) => (
                       <SelectItem key={p.id} value={p.id}>
                         {p.propertyName}
                       </SelectItem>

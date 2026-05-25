@@ -75,7 +75,7 @@ function EditPradaPageContent() {
                   <CardHeader>
                       <CardTitle>Editar Plano de Recuperação de Áreas Degradadas</CardTitle>
                       <CardDescription>
-                          Atualize os detalhes do PRADA abaixo.
+                          Atualize os detalhes do PRADA abaixo. Use exportar PDF ou Word na listagem ou no diálogo de visualização.
                       </CardDescription>
                   </CardHeader>
                   <CardContent>

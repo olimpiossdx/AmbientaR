@@ -42,7 +42,7 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
+import { useCollection, useFirebase, useMemoFirebase, useDoc } from '@/firebase';
 import {
   collection,
   addDoc,
@@ -84,7 +84,11 @@ import {
 import { inspectionUploadContentType } from '@/lib/inspection-attachment-media';
 import { prepareInspectionEvidenceForUpload } from '@/lib/inspection-upload-prepare';
 import { getUploadMaxBytes } from '@/lib/upload-limits';
-import { filterProjectsByEmpreendedorId } from '@/lib/processos-form-order';
+import {
+  buildEmpreendedorSelectOptions,
+  buildProjectSelectOptions,
+  normalizeEntityId,
+} from '@/lib/empreendedor-project-select';
 import { InspectionChecklistItem } from './inspection-checklist-item';
 import { InspectionAttachmentList } from './inspection-attachment-list';
 import { AtosVinculadosPicker } from '@/components/inspections/atos-vinculados-picker';
@@ -330,14 +334,47 @@ export function InspectionForm({ onSuccess, currentItem }: InspectionFormProps) 
   const selectedProjectId = form.watch('projectId');
   const checklistResponses = form.watch('checklistResponses');
 
-  const filteredProjects = React.useMemo(
+  const linkedEmpreendedorRef = useMemoFirebase(
     () =>
-      filterProjectsByEmpreendedorId(
+      firestore && currentItem?.empreendedorId
+        ? doc(
+            firestore,
+            'empreendedores',
+            normalizeEntityId(currentItem.empreendedorId),
+          )
+        : null,
+    [firestore, currentItem?.empreendedorId],
+  );
+  const { data: linkedEmpreendedor } = useDoc<Empreendedor>(linkedEmpreendedorRef);
+
+  const linkedProjectRef = useMemoFirebase(
+    () =>
+      firestore && currentItem?.projectId
+        ? doc(firestore, 'projects', normalizeEntityId(currentItem.projectId))
+        : null,
+    [firestore, currentItem?.projectId],
+  );
+  const { data: linkedProject } = useDoc<Project>(linkedProjectRef);
+
+  const empreendedoresForSelect = React.useMemo(
+    () =>
+      buildEmpreendedorSelectOptions({
+        list: empreendedores,
+        selectedId: selectedEmpreendedorId,
+        linkedDoc: linkedEmpreendedor,
+      }),
+    [empreendedores, selectedEmpreendedorId, linkedEmpreendedor],
+  );
+
+  const projectsForSelect = React.useMemo(
+    () =>
+      buildProjectSelectOptions({
         allProjects,
-        selectedEmpreendedorId,
-        normalizeFirestoreId,
-      ),
-    [allProjects, selectedEmpreendedorId],
+        empreendedorId: selectedEmpreendedorId,
+        selectedProjectId,
+        linkedDoc: linkedProject,
+      }),
+    [allProjects, selectedEmpreendedorId, selectedProjectId, linkedProject],
   );
 
   const applyCadastro = React.useCallback(
@@ -714,7 +751,7 @@ export function InspectionForm({ onSuccess, currentItem }: InspectionFormProps) 
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {empreendedores?.map((e) => (
+                        {empreendedoresForSelect.map((e) => (
                           <SelectItem key={e.id} value={e.id}>
                             {e.name}
                           </SelectItem>
@@ -742,7 +779,7 @@ export function InspectionForm({ onSuccess, currentItem }: InspectionFormProps) 
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {filteredProjects.map((p) => (
+                        {projectsForSelect.map((p) => (
                           <SelectItem key={p.id} value={p.id}>
                             {p.propertyName}
                           </SelectItem>

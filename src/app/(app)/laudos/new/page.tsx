@@ -25,7 +25,11 @@ import type {
 } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
-import { filterProjectsByEmpreendedorId } from '@/lib/processos-form-order';
+import {
+  buildEmpreendedorSelectOptions,
+  buildProjectSelectOptions,
+  normalizeEntityId,
+} from '@/lib/empreendedor-project-select';
 
 const TIPO_ESTUDO_OPTIONS: { value: ConsultaTipoServico | string; label: string }[] = [
   { value: 'RCA', label: 'RCA' },
@@ -62,10 +66,28 @@ export default function NewLaudoPage() {
   );
   const { data: consulta } = useDoc<Consulta>(consultaDocRef);
 
+  const linkedEmpreendedorRef = useMemoFirebase(
+    () =>
+      firestore && consulta?.empreendedorId
+        ? doc(firestore, 'empreendedores', normalizeEntityId(consulta.empreendedorId))
+        : null,
+    [firestore, consulta?.empreendedorId],
+  );
+  const { data: linkedEmpreendedor } = useDoc<Empreendedor>(linkedEmpreendedorRef);
+
+  const linkedProjectRef = useMemoFirebase(
+    () =>
+      firestore && consulta?.empreendimentoId
+        ? doc(firestore, 'projects', normalizeEntityId(consulta.empreendimentoId))
+        : null,
+    [firestore, consulta?.empreendimentoId],
+  );
+  const { data: linkedProject } = useDoc<Project>(linkedProjectRef);
+
   useEffect(() => {
     if (consulta) {
-      setEmpreendedorId(consulta.empreendedorId);
-      setEmpreendimentoId(consulta.empreendimentoId ?? '');
+      setEmpreendedorId(normalizeEntityId(consulta.empreendedorId));
+      setEmpreendimentoId(normalizeEntityId(consulta.empreendimentoId));
       setTipoEstudo(consulta.tipoServico);
     }
   }, [consulta]);
@@ -85,9 +107,25 @@ export default function NewLaudoPage() {
     [firestore]
   );
   const { data: projects } = useCollection<Project>(projectsQuery);
-  const projectsByEmpreendedor = useMemo(
-    () => filterProjectsByEmpreendedorId(projects, empreendedorId),
-    [projects, empreendedorId],
+  const empreendedoresForSelect = useMemo(
+    () =>
+      buildEmpreendedorSelectOptions({
+        list: empreendedores,
+        selectedId: empreendedorId,
+        linkedDoc: linkedEmpreendedor,
+      }),
+    [empreendedores, empreendedorId, linkedEmpreendedor],
+  );
+
+  const projectsForSelect = useMemo(
+    () =>
+      buildProjectSelectOptions({
+        allProjects: projects,
+        empreendedorId,
+        selectedProjectId: empreendimentoId,
+        linkedDoc: linkedProject,
+      }),
+    [projects, empreendedorId, empreendimentoId, linkedProject],
   );
 
   const consultasQuery = useMemoFirebase(
@@ -95,12 +133,6 @@ export default function NewLaudoPage() {
     [firestore]
   );
   const { data: consultasList } = useCollection<Consulta>(consultasQuery);
-
-  useEffect(() => {
-    if (empreendedorId && !projectsByEmpreendedor.some((p) => p.id === empreendimentoId)) {
-      setEmpreendimentoId('');
-    }
-  }, [empreendedorId, projectsByEmpreendedor, empreendimentoId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -182,7 +214,10 @@ export default function NewLaudoPage() {
                 <Label>Empreendedor *</Label>
                 <Select
                   value={empreendedorId}
-                  onValueChange={setEmpreendedorId}
+                  onValueChange={(v) => {
+                    setEmpreendedorId(v);
+                    setEmpreendimentoId('');
+                  }}
                   required
                   disabled={fromConsulta}
                 >
@@ -190,7 +225,7 @@ export default function NewLaudoPage() {
                     <SelectValue placeholder="Selecione o empreendedor" />
                   </SelectTrigger>
                   <SelectContent>
-                    {empreendedores?.map((e) => (
+                    {empreendedoresForSelect.map((e) => (
                       <SelectItem key={e.id} value={e.id}>
                         {e.name}
                       </SelectItem>
@@ -204,20 +239,20 @@ export default function NewLaudoPage() {
                 <Select
                   value={empreendimentoId}
                   onValueChange={setEmpreendimentoId}
-                  disabled={!empreendedorId || projectsByEmpreendedor.length === 0}
+                  disabled={!empreendedorId}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder={
                       !empreendedorId
                         ? 'Selecione primeiro o empreendedor'
-                        : projectsByEmpreendedor.length === 0
+                        : projectsForSelect.length === 0
                           ? 'Nenhum empreendimento cadastrado'
                           : 'Selecione (opcional)'
                     } />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="">Nenhum</SelectItem>
-                    {projectsByEmpreendedor.map((p) => (
+                    {projectsForSelect.map((p) => (
                       <SelectItem key={p.id} value={p.id}>
                         {p.propertyName}
                       </SelectItem>

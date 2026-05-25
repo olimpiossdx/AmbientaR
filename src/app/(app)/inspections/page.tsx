@@ -87,6 +87,8 @@ import {
 import {
   brandingUrlsFromLocal,
   createMmBrandedPdfSession,
+  guardBrandingExportFromHook,
+  reportBrandingPdfIssues,
 } from "@/lib/pdf-branding-layout";
 import { useLocalBranding } from "@/hooks/use-local-branding";
 
@@ -147,7 +149,12 @@ export default function InspectionsListPage() {
     [projects],
   );
 
-  const { data: brandingData } = useLocalBranding();
+  const {
+    data: brandingData,
+    pdfImages,
+    isPdfImagesLoading,
+    hasBrandingUrls,
+  } = useLocalBranding();
 
   const { draftInspections, approvedInspections } = React.useMemo(() => {
     if (!inspections) return { draftInspections: [], approvedInspections: [] };
@@ -238,11 +245,27 @@ export default function InspectionsListPage() {
   };
 
   const handleGeneratePdf = async (report: Inspection) => {
+    if (
+      !guardBrandingExportFromHook({
+        brandingData,
+        pdfImages,
+        isPdfImagesLoading,
+        hasBrandingUrls,
+        toast,
+        formatLabel: "PDF",
+      })
+    ) {
+      return;
+    }
     toast({ title: "Gerando PDF...", description: "Por favor, aguarde." });
 
+    const brandingUrls = brandingUrlsFromLocal(brandingData);
     const session = await createMmBrandedPdfSession(
-      brandingUrlsFromLocal(brandingData),
+      brandingUrls,
+      undefined,
+      pdfImages,
     );
+    reportBrandingPdfIssues(brandingUrls, session.branding.images, toast);
     await buildInspectionFieldReportPdf(
       session.doc,
       report,

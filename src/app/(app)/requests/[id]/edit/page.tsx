@@ -58,10 +58,13 @@ import {
   LICENSING_SIZE_UNIT_OPTIONS,
   PROCESSOS_SERVICES,
   PROCESSOS_STATUS_OPTIONS,
-  sortEmpreendedoresByName,
-  sortProjectsByPropertyName,
   sortSelectedProcessosServices,
 } from '@/lib/processos-form-order';
+import {
+  buildEmpreendedorSelectOptions,
+  buildProjectSelectOptions,
+  normalizeEntityId,
+} from '@/lib/empreendedor-project-select';
 
 type LicensingDoc = { id: string; label: string; checked: boolean; fileName?: string; fileUrl?: string };
 type LicensingGrading = { porte: 'P' | 'M' | 'G'; potencial: 'P' | 'M' | 'G'; criterioLocacional: '0' | '1' | '2' };
@@ -478,17 +481,37 @@ function EditRequestPageContent() {
     const [licLocManual, setLicLocManual] = React.useState(false);
     const [licLocAnalysis, setLicLocAnalysis] = React.useState<LocationalAnalysisPayload | null>(null);
     const [loading, setLoading] = React.useState(false);
+    const isHydratingFromRequestRef = React.useRef(false);
 
     const empreendedoresQuery = useMemoFirebase(() => firestore ? collection(firestore, 'empreendedores') : null, [firestore]);
     const { data: empreendedores, isLoading: isLoadingEmpreendedores } = useCollection<Empreendedor>(empreendedoresQuery);
 
     const projectsQuery = useMemoFirebase(() => firestore ? collection(firestore, 'projects') : null, [firestore]);
     const { data: allProjects, isLoading: isLoadingProjects } = useCollection<Project>(projectsQuery);
+
+    const linkedEmpreendedorRef = useMemoFirebase(
+        () =>
+            firestore && request?.empreendedorId
+                ? doc(firestore, 'empreendedores', normalizeEntityId(request.empreendedorId))
+                : null,
+        [firestore, request?.empreendedorId],
+    );
+    const { data: linkedEmpreendedor } = useDoc<Empreendedor>(linkedEmpreendedorRef);
+
+    const linkedProjectRef = useMemoFirebase(
+        () =>
+            firestore && request?.projectId
+                ? doc(firestore, 'projects', normalizeEntityId(request.projectId))
+                : null,
+        [firestore, request?.projectId],
+    );
+    const { data: linkedProject } = useDoc<Project>(linkedProjectRef);
     
     React.useEffect(() => {
         if (request) {
-            setSelectedEmpreendedor(request.empreendedorId);
-            setSelectedEmpreendimento(request.projectId);
+            isHydratingFromRequestRef.current = true;
+            setSelectedEmpreendedor(normalizeEntityId(request.empreendedorId));
+            setSelectedEmpreendimento(normalizeEntityId(request.projectId));
             setSelectedServices(request.services);
             setSelectedStatus(request.status);
             if (request.services.includes(INTERVENTION_SERVICE_LABEL)) {
@@ -546,18 +569,36 @@ function EditRequestPageContent() {
                 setLicLocManual(false);
                 setLicLocAnalysis(null);
             }
+            queueMicrotask(() => {
+                isHydratingFromRequestRef.current = false;
+            });
         }
     }, [request]);
 
-    const empreendedoresForSelect = React.useMemo(() => {
-        if (!empreendedores) return [];
-        if (readOnly && request) {
-            return sortEmpreendedoresByName(
-                empreendedores.filter((e) => e.id === request.empreendedorId),
-            );
+    React.useEffect(() => {
+        if (isHydratingFromRequestRef.current) return;
+        if (!selectedEmpreendedor) {
+            setSelectedEmpreendimento('');
+            return;
         }
-        return sortEmpreendedoresByName(empreendedores);
-    }, [empreendedores, readOnly, request]);
+        const pid = normalizeEntityId(selectedEmpreendimento);
+        if (!pid || !allProjects?.length) return;
+        const project = allProjects.find((p) => p.id === pid);
+        if (project && normalizeEntityId(project.empreendedorId) !== selectedEmpreendedor) {
+            setSelectedEmpreendimento('');
+        }
+    }, [selectedEmpreendedor, selectedEmpreendimento, allProjects]);
+
+    const empreendedoresForSelect = React.useMemo(
+        () =>
+            buildEmpreendedorSelectOptions({
+                list: empreendedores,
+                selectedId: selectedEmpreendedor,
+                linkedDoc: linkedEmpreendedor,
+                restrictToId: readOnly && request ? request.empreendedorId : undefined,
+            }),
+        [empreendedores, selectedEmpreendedor, linkedEmpreendedor, readOnly, request],
+    );
 
     const accessDeniedPortal =
         readOnly &&
@@ -565,12 +606,16 @@ function EditRequestPageContent() {
         request &&
         !portalEmpreendedorIds.includes(request.empreendedorId);
 
-    const filteredProjects = React.useMemo(() => {
-        if (!selectedEmpreendedor || !allProjects) return [];
-        return sortProjectsByPropertyName(
-            allProjects.filter((p) => p.empreendedorId === selectedEmpreendedor),
-        );
-    }, [selectedEmpreendedor, allProjects]);
+    const projectsForSelect = React.useMemo(
+        () =>
+            buildProjectSelectOptions({
+                allProjects,
+                empreendedorId: selectedEmpreendedor,
+                selectedProjectId: selectedEmpreendimento,
+                linkedDoc: linkedProject,
+            }),
+        [allProjects, selectedEmpreendedor, selectedEmpreendimento, linkedProject],
+    );
 
     const orderedSelectedServices = React.useMemo(
         () => sortSelectedProcessosServices(selectedServices),
@@ -578,8 +623,8 @@ function EditRequestPageContent() {
     );
 
     const selectedProject = React.useMemo(
-        () => filteredProjects.find((p) => p.id === selectedEmpreendimento) ?? null,
-        [filteredProjects, selectedEmpreendimento],
+        () => projectsForSelect.find((p) => p.id === selectedEmpreendimento) ?? linkedProject ?? null,
+        [projectsForSelect, selectedEmpreendimento, linkedProject],
     );
 
     const hasInterventionService = selectedServices.includes(INTERVENTION_SERVICE_LABEL);
@@ -877,7 +922,16 @@ function EditRequestPageContent() {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <Label htmlFor="empreendedor">Empreendedor</Label>
-                                    <Select value={selectedEmpreendedor} onValueChange={setSelectedEmpreendedor} disabled={readOnly || isLoadingEmpreendedores}>
+                                    <Select
+                                        value={selectedEmpreendedor || undefined}
+                                        onValueChange={(v) => {
+                                            if (!isHydratingFromRequestRef.current) {
+                                                setSelectedEmpreendimento('');
+                                            }
+                                            setSelectedEmpreendedor(v);
+                                        }}
+                                        disabled={readOnly || isLoadingEmpreendedores}
+                                    >
                                         <SelectTrigger id="empreendedor">
                                             <SelectValue placeholder={isLoadingEmpreendedores ? "Carregando..." : "Selecione o empreendedor"} />
                                         </SelectTrigger>
@@ -890,12 +944,16 @@ function EditRequestPageContent() {
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="empreendimento">Empreendimento</Label>
-                                    <Select value={selectedEmpreendimento} onValueChange={setSelectedEmpreendimento} disabled={readOnly || !selectedEmpreendedor || isLoadingProjects}>
+                                    <Select
+                                        value={selectedEmpreendimento || undefined}
+                                        onValueChange={setSelectedEmpreendimento}
+                                        disabled={readOnly || !selectedEmpreendedor || isLoadingProjects}
+                                    >
                                         <SelectTrigger id="empreendimento">
-                                            <SelectValue placeholder={!selectedEmpreendedor ? "Selecione um empreendedor primeiro" : "Selecione o empreendimento"} />
+                                            <SelectValue placeholder={!selectedEmpreendedor ? "Selecione um empreendedor primeiro" : isLoadingProjects ? "Carregando empreendimentos…" : "Selecione o empreendimento"} />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            {filteredProjects.map(proj => (
+                                            {projectsForSelect.map(proj => (
                                                 <SelectItem key={proj.id} value={proj.id}>{proj.propertyName}</SelectItem>
                                             ))}
                                         </SelectContent>

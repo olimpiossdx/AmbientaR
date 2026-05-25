@@ -1,12 +1,12 @@
 # Auditoria de Rotas e Menu
 
-Gerado em: 2026-05-22T12:30:56.807Z
+Gerado em: 2026-05-25T14:14:08.675Z
 
 Classificação inicial para limpeza cirúrgica. Rotas órfãs não devem ser removidas automaticamente; precisam de validação funcional antes.
 
 ## Código ativo ou coberto por menu
 
-Total: 205
+Total: 204
 
 | Rota | Arquivo |
 |------|---------|
@@ -16,7 +16,6 @@ Total: 205
 | `/ai-lab/mcp` | `src/app/(app)/ai-lab/mcp/page.tsx` |
 | `/ai-lab/rag` | `src/app/(app)/ai-lab/rag/page.tsx` |
 | `/analise-ambiental` | `src/app/(app)/analise-ambiental/page.tsx` |
-| `/app-campo` | `src/app/(app)/app-campo/page.tsx` |
 | `/audit-log` | `src/app/(app)/audit-log/page.tsx` |
 | `/bank-access` | `src/app/(app)/bank-access/page.tsx` |
 | `/calendar` | `src/app/(app)/calendar/page.tsx` |
@@ -28,6 +27,10 @@ Total: 205
 | `/clients` | `src/app/(app)/clients/page.tsx` |
 | `/clients/[id]/edit` | `src/app/(app)/clients/[id]/edit/page.tsx` |
 | `/clients/new` | `src/app/(app)/clients/new/page.tsx` |
+| `/coleta-campo` | `src/app/(app)/coleta-campo/page.tsx` |
+| `/coleta-campo/[id]` | `src/app/(app)/coleta-campo/[id]/page.tsx` |
+| `/coleta-campo/[id]/parcelas/[parcelaId]` | `src/app/(app)/coleta-campo/[id]/parcelas/[parcelaId]/page.tsx` |
+| `/coleta-campo/nova` | `src/app/(app)/coleta-campo/nova/page.tsx` |
 | `/commercial-proposals` | `src/app/(app)/commercial-proposals/page.tsx` |
 | `/commercial-proposals/[id]/edit` | `src/app/(app)/commercial-proposals/[id]/edit/page.tsx` |
 | `/commercial-proposals/new` | `src/app/(app)/commercial-proposals/new/page.tsx` |
@@ -83,10 +86,6 @@ Total: 205
 | `/inspections/new` | `src/app/(app)/inspections/new/page.tsx` |
 | `/inspections/reports` | `src/app/(app)/inspections/reports/page.tsx` |
 | `/intervencoes` | `src/app/(app)/intervencoes/page.tsx` |
-| `/inventarios` | `src/app/(app)/inventarios/page.tsx` |
-| `/inventarios/[id]` | `src/app/(app)/inventarios/[id]/page.tsx` |
-| `/inventarios/[id]/parcelas/[parcelaId]` | `src/app/(app)/inventarios/[id]/parcelas/[parcelaId]/page.tsx` |
-| `/inventarios/new` | `src/app/(app)/inventarios/new/page.tsx` |
 | `/invoices` | `src/app/(app)/invoices/page.tsx` |
 | `/invoices/[id]/edit` | `src/app/(app)/invoices/(.)[id]/edit/page.tsx` |
 | `/invoices/[id]/edit` | `src/app/(app)/invoices/[id]/edit/page.tsx` |
@@ -218,22 +217,27 @@ Total: 205
 
 ## Rotas dinâmicas sem entrada direta no menu
 
-Total: 3
+Total: 5
 
 | Rota | Arquivo |
 |------|---------|
+| `/inventarios/[id]` | `src/app/(app)/inventarios/[id]/page.tsx` |
+| `/inventarios/[id]/parcelas/[parcelaId]` | `src/app/(app)/inventarios/[id]/parcelas/[parcelaId]/page.tsx` |
 | `/proposals/[id]/edit` | `src/app/(app)/proposals/[id]/edit/page.tsx` |
 | `/studies/intervencao-ambiental/[id]/edit` | `src/app/(app)/studies/intervencao-ambiental/(.)[id]/edit/page.tsx` |
 | `/studies/intervencao-ambiental/[id]/edit` | `src/app/(app)/studies/intervencao-ambiental/[id]/edit/page.tsx` |
 
 ## Rotas estáticas sem entrada direta no menu
 
-Total: 11
+Total: 14
 
 | Rota | Arquivo |
 |------|---------|
+| `/app-campo` | `src/app/(app)/app-campo/page.tsx` |
 | `/autos-infracao-defesa` | `src/app/(app)/autos-infracao-defesa/page.tsx` |
 | `/environmental-company` | `src/app/(app)/environmental-company/page.tsx` |
+| `/inventarios` | `src/app/(app)/inventarios/page.tsx` |
+| `/inventarios/new` | `src/app/(app)/inventarios/new/page.tsx` |
 | `/monitoring` | `src/app/(app)/monitoring/page.tsx` |
 | `/multas-defesas` | `src/app/(app)/multas-defesas/page.tsx` |
 | `/proposals` | `src/app/(app)/proposals/page.tsx` |

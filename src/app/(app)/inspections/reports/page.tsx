@@ -52,6 +52,8 @@ import { buildInspectionFieldReportPdf } from "@/lib/inspection-field-report-pdf
 import {
   brandingUrlsFromLocal,
   createMmBrandedPdfSession,
+  guardBrandingExportFromHook,
+  reportBrandingPdfIssues,
 } from "@/lib/pdf-branding-layout";
 import { useLocalBranding } from "@/hooks/use-local-branding";
 import {
@@ -183,7 +185,12 @@ export default function InspectionReportsListPage() {
     [empreendedores],
   );
 
-  const { data: brandingData } = useLocalBranding();
+  const {
+    data: brandingData,
+    pdfImages,
+    isPdfImagesLoading,
+    hasBrandingUrls,
+  } = useLocalBranding();
 
   const isLoading =
     isLoadingInspections ||
@@ -260,9 +267,25 @@ export default function InspectionReportsListPage() {
   };
 
   const renderInspectionPdf = async (report: Inspection) => {
+    if (
+      !guardBrandingExportFromHook({
+        brandingData,
+        pdfImages,
+        isPdfImagesLoading,
+        hasBrandingUrls,
+        toast,
+        formatLabel: "PDF",
+      })
+    ) {
+      return null;
+    }
+    const brandingUrls = brandingUrlsFromLocal(brandingData);
     const session = await createMmBrandedPdfSession(
-      brandingUrlsFromLocal(brandingData),
+      brandingUrls,
+      undefined,
+      pdfImages,
     );
+    reportBrandingPdfIssues(brandingUrls, session.branding.images, toast);
     await buildInspectionFieldReportPdf(
       session.doc,
       report,
@@ -279,6 +302,7 @@ export default function InspectionReportsListPage() {
 
   const handleViewPdf = async (report: Inspection) => {
     const doc = await renderInspectionPdf(report);
+    if (!doc) return;
     const blobUrl = doc.output("bloburl");
     window.open(blobUrl, "_blank", "noopener,noreferrer");
   };
@@ -286,6 +310,7 @@ export default function InspectionReportsListPage() {
   const handleGeneratePdf = async (report: Inspection) => {
     toast({ title: "Gerando PDF...", description: "Por favor, aguarde." });
     const doc = await renderInspectionPdf(report);
+    if (!doc) return;
     const fileName = `Relatorio_Vistoria_${(projectsMap.get(report.projectId) || "desconhecido").replace(/\s+/g, "_")}.pdf`;
     downloadJsPdf(doc, fileName);
   };

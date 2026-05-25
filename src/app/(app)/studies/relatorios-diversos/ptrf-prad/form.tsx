@@ -33,6 +33,8 @@ import type jsPDF from 'jspdf';
 import {
   brandingUrlsFromLocal,
   createMmBrandedPdfSession,
+  guardBrandingExportFromHook,
+  reportBrandingPdfIssues,
 } from '@/lib/pdf-branding-layout';
 import { useLocalBranding } from '@/hooks/use-local-branding';
 
@@ -199,7 +201,12 @@ function buildPdf(
 export function PtrfPradForm({ onSuccess, onCancel }: PtrfPradFormProps) {
   const [loading, setLoading] = React.useState(false);
   const { toast } = useToast();
-  const { data: brandingData } = useLocalBranding();
+  const {
+    data: brandingData,
+    pdfImages,
+    isPdfImagesLoading,
+    hasBrandingUrls,
+  } = useLocalBranding();
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -225,11 +232,27 @@ export function PtrfPradForm({ onSuccess, onCancel }: PtrfPradFormProps) {
   });
 
   const handleGeneratePdf = form.handleSubmit(async (values) => {
+    if (
+      !guardBrandingExportFromHook({
+        brandingData,
+        pdfImages,
+        isPdfImagesLoading,
+        hasBrandingUrls,
+        toast,
+        formatLabel: 'PDF',
+      })
+    ) {
+      return;
+    }
     try {
       const { default: autoTable } = await import('jspdf-autotable');
+      const brandingUrls = brandingUrlsFromLocal(brandingData);
       const session = await createMmBrandedPdfSession(
-        brandingUrlsFromLocal(brandingData),
+        brandingUrls,
+        undefined,
+        pdfImages,
       );
+      reportBrandingPdfIssues(brandingUrls, session.branding.images, toast);
       const doc = session.doc;
       buildPdf(doc, values, autoTable, session.startY);
       session.finalize();
