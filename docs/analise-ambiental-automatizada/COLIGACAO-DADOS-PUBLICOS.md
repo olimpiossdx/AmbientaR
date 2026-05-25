@@ -282,7 +282,7 @@ Perímetro ─────────────────────┼─
 
 ## Próximo refinamento sugerido (continuar discussão)
 
-1. Fechar lista **exacta** das 8–12 camadas do catálogo MVP (nomes no GeoServer / IDE).
+1. Lista **fechada dos 12 itens** (8 SIG + clima + hipsometria + ADA): [DISCUSSAO-2026-05-25.md](./DISCUSSAO-2026-05-25.md). Validar typeNames no GeoServer / IDE.
 2. Decidir: relatório v1 **só MG** ou já incluir 1 município piloto para ZEE.
 3. Escrever mock de **uma página** do PDF (ex. embargos + hidrografia) com campos fixos.
 

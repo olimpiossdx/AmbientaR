@@ -25,6 +25,22 @@ Lista acordada para consulta no ecossistema **IDE-Sisema** (Minas Gerais), via *
 
 ---
 
+## Os 12 itens do relatório geoespacial completo (2026-05-25)
+
+Alinhado ao **PIA** e à discussão [DISCUSSAO-2026-05-25.md](./DISCUSSAO-2026-05-25.md).
+
+| # | Item | Origem | Produto visual |
+|---|------|--------|----------------|
+| 1–8 | Temas SIG abaixo | IDE-Sisema WFS | Card + % + **mapa QGIS** por tema |
+| 9 | Temperatura mensal | API clima | Gráfico barras (Fig. 1 PIA) |
+| 10 | Precipitação + humidade | API clima | Gráfico combinado (Fig. 2 PIA) |
+| 11 | Topografia / hipsometria | DEM + QGIS | Mapa rampa altitude (Fig. 5 PIA) |
+| 12 | ADA / perímetro | Utilizador | Mapa perímetro (Mapa 1 PIA) |
+
+Itens **1–8** = tabela seguinte. Itens **9–12** = fora do WFS; ver [MAPAS-REFERENCIA-PIA-QGIS.md](./MAPAS-REFERENCIA-PIA-QGIS.md).
+
+---
+
 ## Camadas escolhidas para o MVP (entrada do utilizador)
 
 | # | Tema | Uso no relatório / estudo |

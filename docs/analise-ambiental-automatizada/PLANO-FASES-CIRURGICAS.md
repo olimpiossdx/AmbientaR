@@ -237,11 +237,19 @@ Registar resultado de cada debug em `REGISTRO-TESTES-PRODUCAO.md` (data + políg
 
 | | |
 |---|---|
-| **Ação** | 🔧 Gerar PNG simples (perímetro + camada) só bioma. |
+| **Ação** | 🔧 Gerar PNG simples (perímetro + camada) só bioma — **SVG actual**; evoluir para QGIS (ver [MAPAS-REFERENCIA-PIA-QGIS.md](./MAPAS-REFERENCIA-PIA-QGIS.md)). |
 | **Debug** | ✅ PNG embutido ou anexo no PDF. |
 | **Gate** | M1.13 expandir |
 
-## M1.13 — Mini-mapas restantes | M1.14 — Aprovação M1
+## M1.12b — Worker QGIS (mapas estilo PIA) — após M1.11
+
+| | |
+|---|---|
+| **Ação** | 🔧 Cloud Run + templates `mapa_solos`, `mapa_hidro`, `mapa_ada` — ver [DISCUSSAO-2026-05-25.md](./DISCUSSAO-2026-05-25.md). |
+| **Debug** | ✅ PNG com grade, escala, norte, legenda; legenda de figura com fonte e data. |
+| **Gate** | Itens 12 #1–3, #11–12 dos 12 itens |
+
+## M1.13 — Mini-mapas / figuras restantes | M1.14 — Aprovação M1
 
 | M1.14 | Reunião: “SIG utilizável?” → assinar gate para M2. |
 

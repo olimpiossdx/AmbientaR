@@ -45,7 +45,7 @@ Documento **único** para alinhar equipa antes de implementar. Integra: teste pr
 | 1.2 | Fallback: cache SHP oficial MG (se WFS instável) | 1.1 | Camada indisponível → mensagem + fonte alternativa |
 | 1.3 | `geo_analyses` gravado com `empreendimentoId` | Auth + rules | Etapa 2 lista análise após gerar |
 | 1.4 | PDF factual **branded** (já parcialmente feito) | 0.1 | Igual padrão Financeiro |
-| 1.5 | Mini-mapas PNG por camada (opcional 1.5) | Worker GDAL | 1 figura no PDF por camada OK |
+| 1.5 | Figuras estilo PIA (mapas QGIS + gráficos clima) | Worker QGIS + API clima | Ver [MAPAS-REFERENCIA-PIA-QGIS.md](./MAPAS-REFERENCIA-PIA-QGIS.md); 12 itens em [DISCUSSAO-2026-05-25.md](./DISCUSSAO-2026-05-25.md) |
 
 **Registo teste actual:** 850 ha OK; 8/8 WFS 404 — ver `REGISTRO-TESTES-PRODUCAO.md`.
 

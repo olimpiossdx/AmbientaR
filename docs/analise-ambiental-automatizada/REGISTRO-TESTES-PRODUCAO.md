@@ -111,3 +111,4 @@ Possíveis causas a validar numa próxima sessão técnica:
 
 - 2026-05-21: implementação inicial 8 camadas + deploy.
 - Registo de teste utilizador: 8/8 indisponível (404 WFS), área OK, Etapa 2 sem análise salva.
+- 2026-05-25: push `de63002`; definidos 12 itens e padrão PIA/QGIS — ver [DISCUSSAO-2026-05-25.md](./DISCUSSAO-2026-05-25.md).
