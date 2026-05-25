@@ -6,7 +6,18 @@ Documento vivo para refinamento. **Não substitui código** — regista o que o 
 
 **Correcção técnica (2026-05-22):** endpoint WFS correcto é `https://geoserver.meioambiente.mg.gov.br/ows` (não `/geoserver/ows`). typeNames com prefixo `IDE:`.
 
-**Deploy (2026-05-25):** commit `de63002` em `main` — branding PDF menu IA, minimapas SVG, Etapa 2 inline, catálogo `wave-a-catalog.ts` alinhado. **Re-teste produção obrigatório** antes de declarar 12 itens.
+**Deploy (2026-05-25):** commits em `main` até `2499a0a` (geo-ia, docs 12 itens, PIA). Rollout CLI: `apphosting:rollouts:create ambientar-teste --git-commit 2499a0a` iniciado 25/05 ~14:15 UTC.
+
+**Pré-check automático (25/05):**
+
+| Verificação | Resultado |
+|-------------|-----------|
+| `npm run verify:env` — Gemini | OK |
+| `npm run verify:env` — DeepSeek | OK |
+| WFS GetCapabilities `.../ows` | HTTP **200** |
+| Firebase Admin local (`config/firebase-service-account.json`) | **Falha** (ficheiro em falta; produção usa ADC) |
+| URL produção | https://ambientar-teste--studio-316805764-e4d13.us-east4.hosted.app |
+| Dev local | http://localhost:9002 (porta activa) |
 
 ---
 
