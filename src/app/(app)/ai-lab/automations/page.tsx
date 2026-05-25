@@ -26,6 +26,8 @@ import {
   drawWatermarkOnPage,
 } from "@/lib/pdf-branding-layout";
 import { getAdminApiRequestHeaders } from "@/lib/admin-api-client";
+import { AiProviderBadge } from "@/components/ai/ai-provider-badge";
+import type { AiProviderId } from "@/lib/ai-provider-labels";
 import {
   addDoc,
   collection,
@@ -156,6 +158,8 @@ export default function AiLabAutomationsPage() {
   );
   const [isGenerating, setIsGenerating] = React.useState(false);
   const [reportResult, setReportResult] = React.useState<string>("");
+  const [lastReportProvider, setLastReportProvider] =
+    React.useState<AiProviderId | null>(null);
   const [references, setReferences] = React.useState<string[]>([]);
   const [externalErrors, setExternalErrors] = React.useState<string[]>([]);
   const [lastReportTitle, setLastReportTitle] = React.useState<string>("");
@@ -348,6 +352,7 @@ export default function AiLabAutomationsPage() {
 
     setIsGenerating(true);
     setReportResult("");
+    setLastReportProvider(null);
     setReferences([]);
     setExternalErrors([]);
 
@@ -389,6 +394,11 @@ export default function AiLabAutomationsPage() {
         .filter(Boolean);
 
       setReportResult(generatedReport);
+      setLastReportProvider(
+        data.aiProvider === "gemini" || data.aiProvider === "deepseek"
+          ? data.aiProvider
+          : "deepseek",
+      );
       setReferences(generatedReferences);
       setExternalErrors(
         Array.isArray(data.externalErrors) ? data.externalErrors : [],
@@ -764,7 +774,7 @@ export default function AiLabAutomationsPage() {
             >
               {isGenerating
                 ? "Gerando relatório..."
-                : "Gerar relatório com citações ABNT"}
+                : "Gerar relatório ABNT (DeepSeek)"}
             </Button>
           </CardContent>
         </Card>
@@ -780,6 +790,9 @@ export default function AiLabAutomationsPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              {lastReportProvider ? (
+                <AiProviderBadge provider={lastReportProvider} showHint />
+              ) : null}
               {reportResult && (
                 <div>
                   <Label>Relatório</Label>

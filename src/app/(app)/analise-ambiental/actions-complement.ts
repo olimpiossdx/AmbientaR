@@ -5,9 +5,11 @@ import type {
   GeoAnalysisComplementOutput,
   WaveAAnalysisResult,
 } from "@/lib/types/geo-wave-a";
+import { getLightTaskProvider } from "@/lib/ai-provider-status";
+import type { AiProviderId } from "@/lib/ai-provider-labels";
 
 type ComplementActionResult =
-  | { success: true; result: GeoAnalysisComplementOutput }
+  | { success: true; result: GeoAnalysisComplementOutput; provider: AiProviderId }
   | { success: false; error: string };
 
 export async function handleGeoAnalysisComplement(params: {
@@ -16,7 +18,8 @@ export async function handleGeoAnalysisComplement(params: {
 }): Promise<ComplementActionResult> {
   try {
     const result = await generateGeoAnalysisComplement(params);
-    return { success: true, result };
+    const provider = getLightTaskProvider() ?? "gemini";
+    return { success: true, result, provider };
   } catch (error) {
     return {
       success: false,

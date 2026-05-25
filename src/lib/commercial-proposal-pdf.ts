@@ -1,6 +1,7 @@
 import type jsPDF from 'jspdf';
 import type { Client, CommercialProposal, EnvironmentalCompany } from '@/lib/types';
 import type { LocalBranding } from '@/hooks/use-local-branding';
+import type { BrandingPdfImages } from '@/lib/branding-pdf';
 import { downloadJsPdf } from '@/lib/branding-pdf';
 import {
   brandingUrlsFromLocal,
@@ -82,6 +83,7 @@ export type GenerateCommercialProposalPdfInput = {
   client?: Client | null;
   companyProfile?: Omit<EnvironmentalCompany, 'id'> | null;
   branding?: LocalBranding | null;
+  preloadedImages?: BrandingPdfImages | null;
   onBrandingIssue?: BrandingPdfToastReporter;
 };
 
@@ -90,13 +92,20 @@ export async function generateCommercialProposalPdf({
   client,
   companyProfile,
   branding,
+  preloadedImages,
   onBrandingIssue,
 }: GenerateCommercialProposalPdfInput): Promise<void> {
   const { default: jsPDF } = await import('jspdf');
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
 
   const urls = brandingUrlsFromLocal(branding);
-  const pdfBranding = await loadPdfBranding(doc, urls, PDF_BRANDING_MARGINS_MM);
+  const pdfBranding = await loadPdfBranding(
+    doc,
+    urls,
+    PDF_BRANDING_MARGINS_MM,
+    0.15,
+    preloadedImages,
+  );
   reportBrandingPdfIssues(urls, pdfBranding.images, onBrandingIssue);
 
   const { margins } = pdfBranding;

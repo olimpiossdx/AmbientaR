@@ -57,6 +57,8 @@ import { useLocalBranding } from "@/hooks/use-local-branding";
 import {
   brandingUrlsFromLocal,
   createMmBrandedPdfSession,
+  guardBrandingExportFromHook,
+  reportBrandingPdfIssues,
 } from "@/lib/pdf-branding-layout";
 
 const PERIOD_PRESETS = [
@@ -164,7 +166,12 @@ export default function CrmDashboard({ onAddNew }: CrmDashboardProps) {
   const router = useRouter();
   const firestore = useFirestore();
   const { user } = useAuth();
-  const { data: brandingData } = useLocalBranding();
+  const {
+    data: brandingData,
+    pdfImages,
+    isPdfImagesLoading,
+    hasBrandingUrls,
+  } = useLocalBranding();
 
   const opportunitiesQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
@@ -584,10 +591,24 @@ export default function CrmDashboard({ onAddNew }: CrmDashboardProps) {
             size="sm"
             className="h-9 w-full justify-center sm:w-auto sm:min-w-[9rem]"
             onClick={async () => {
+              if (
+                !guardBrandingExportFromHook({
+                  brandingData,
+                  pdfImages,
+                  isPdfImagesLoading,
+                  hasBrandingUrls,
+                })
+              ) {
+                return;
+              }
               const list = opportunitiesFiltered ?? [];
+              const urls = brandingUrlsFromLocal(brandingData);
               const session = await createMmBrandedPdfSession(
-                brandingUrlsFromLocal(brandingData),
+                urls,
+                undefined,
+                pdfImages,
               );
+              reportBrandingPdfIssues(urls, session.branding.images);
               const { doc, margins } = session;
               const pageWidth = doc.internal.pageSize.getWidth();
               let y = session.startY;

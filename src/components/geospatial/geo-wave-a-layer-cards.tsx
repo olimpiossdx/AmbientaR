@@ -24,9 +24,20 @@ function statusLabel(status: GeoLayerResult["status"]): string {
   return "Indisponível";
 }
 
-export function GeoWaveALayerCards({ layers }: { layers: GeoLayerResult[] }) {
+export function GeoWaveALayerCards({
+  layers,
+  className,
+}: {
+  layers: GeoLayerResult[];
+  className?: string;
+}) {
   return (
-    <div className="grid gap-3">
+    <div
+      className={
+        className ??
+        "grid gap-3 sm:grid-cols-2 xl:grid-cols-2 2xl:grid-cols-4"
+      }
+    >
       {layers.map((layer) => (
         <Card key={layer.layerId} className="overflow-hidden">
           <CardHeader className="pb-2">

@@ -79,6 +79,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { generateContractPdf } from "./contract-pdf";
+import { guardBrandingExportFromHook } from "@/lib/pdf-branding-layout";
 import {
   getContratadaMissingFields,
   isContratadaReadyForPdf,
@@ -263,7 +264,12 @@ export default function ContractsPage() {
   );
   const { data: clients } = useCollection<Client>(clientsQuery);
 
-  const { data: brandingData } = useLocalBranding();
+  const {
+    data: brandingData,
+    pdfImages,
+    isPdfImagesLoading,
+    hasBrandingUrls,
+  } = useLocalBranding();
 
   const handleAddNew = () => {
     setEditingItem(null);
@@ -376,6 +382,17 @@ export default function ContractsPage() {
 
   const handleGeneratePdf = async (contract: Contract, persist = false) => {
     if (generatingPdfId) return;
+    if (
+      !guardBrandingExportFromHook({
+        brandingData,
+        pdfImages,
+        isPdfImagesLoading,
+        hasBrandingUrls,
+        toast,
+      })
+    ) {
+      return;
+    }
     if (!isContratadaReadyForPdf(contract.contratado, contract.responsavelTecnico)) {
       const missing = getContratadaMissingFields(
         contract.contratado,
@@ -397,6 +414,7 @@ export default function ContractsPage() {
             contract.id,
             contract,
             brandingData,
+            pdfImages,
           );
           toast({
             title: "PDF do contrato atualizado",
@@ -405,7 +423,10 @@ export default function ContractsPage() {
           });
         } catch (persistErr) {
           console.warn("[Contratos] persist PDF falhou, download local:", persistErr);
-          await generateContractPdf(contract, brandingData ?? undefined);
+          await generateContractPdf(contract, brandingData ?? undefined, {
+            preloadedImages: pdfImages,
+            onBrandingIssue: toast,
+          });
           toast({
             title: "PDF gerado (download)",
             description:
@@ -417,7 +438,10 @@ export default function ContractsPage() {
           });
         }
       } else {
-        await generateContractPdf(contract, brandingData ?? undefined);
+        await generateContractPdf(contract, brandingData ?? undefined, {
+          preloadedImages: pdfImages,
+          onBrandingIssue: toast,
+        });
         toast({
           title: "PDF gerado",
           description: "O download do contrato para assinatura foi iniciado.",

@@ -12,6 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Bot, DatabaseZap, Workflow } from "lucide-react";
 import { useAuth } from "@/firebase";
+import { AiRoutingInfoCard } from "@/components/ai/ai-provider-badge";
 
 export default function AiLabPage() {
   const { user } = useAuth();
@@ -63,6 +64,7 @@ export default function AiLabPage() {
     <div className="flex flex-col h-full">
       <PageHeader title="Hub IA + MCP + RAG" />
       <main className="flex-1 overflow-auto p-4 md:p-6 space-y-6">
+        <AiRoutingInfoCard />
         <Card>
           <CardHeader>
             <CardTitle>Ambiente central de inovação</CardTitle>

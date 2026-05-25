@@ -7,17 +7,13 @@ const hasGoogleKey =
   !!process.env.GOOGLE_GENAI_API_KEY || !!process.env.GEMINI_API_KEY;
 const hasOpenAIKey = !!process.env.OPENAI_API_KEY;
 const hasOpenAIAliasKey = !!process.env.OPENAI_KEY;
-/** google = só Gemini; openai = só OpenAI; vazio = OpenAI se houver chave, senão Gemini. */
-const providerPref = (process.env.GENKIT_PROVIDER || "").toLowerCase();
+/** google (padrão) = Gemini; openai = só se GENKIT_PROVIDER=openai e houver chave OpenAI. */
+const providerPref = (process.env.GENKIT_PROVIDER || "google").toLowerCase();
 const useOpenAI =
-  providerPref === "google"
-    ? false
-    : providerPref === "openai"
-      ? true
-      : hasOpenAIKey || hasOpenAIAliasKey;
+  providerPref === "openai" && (hasOpenAIKey || hasOpenAIAliasKey);
 
 const googleModelId =
-  process.env.GENKIT_GOOGLE_MODEL?.trim() || "gemini-2.0-flash";
+  process.env.GENKIT_GOOGLE_MODEL?.trim() || "gemini-2.5-flash";
 
 const enabledPlugins = [];
 if (hasOpenAIKey || hasOpenAIAliasKey) {
@@ -35,10 +31,10 @@ export const aiModel = useOpenAI
   : googleAI.model(googleModelId);
 
 /**
- * Estratégia de modelo padrão:
- * - OpenAI se houver OPENAI_API_KEY/OPENAI_KEY e não for forçado Google (GENKIT_PROVIDER=google).
- * - Gemini (Google AI) caso contrário, se houver GOOGLE_GENAI_API_KEY ou GEMINI_API_KEY.
- * - GENKIT_GOOGLE_MODEL: id do modelo (padrão gemini-2.0-flash).
+ * Estratégia de modelo padrão (tarefas leves via Genkit):
+ * - Gemini se houver GOOGLE_GENAI_API_KEY/GEMINI_API_KEY (padrão GENKIT_PROVIDER=google).
+ * - OpenAI só com GENKIT_PROVIDER=openai.
+ * - GENKIT_GOOGLE_MODEL: padrão gemini-2.5-flash.
  */
 export const ai = genkit({
   plugins: enabledPlugins,

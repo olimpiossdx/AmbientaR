@@ -52,6 +52,7 @@ import {
 } from "firebase/firestore";
 import * as React from "react";
 import { generateCommercialProposalPdf } from "@/lib/commercial-proposal-pdf";
+import { guardBrandingExportFromHook } from "@/lib/pdf-branding-layout";
 import { useLocalBranding } from "@/hooks/use-local-branding";
 import type {
   CommercialProposal,
@@ -149,7 +150,12 @@ export default function CommercialProposalsPage() {
 
   const { firestore, auth, user } = useFirebase();
   const { toast } = useToast();
-  const { data: brandingData } = useLocalBranding();
+  const {
+    data: brandingData,
+    pdfImages,
+    isPdfImagesLoading,
+    hasBrandingUrls,
+  } = useLocalBranding();
 
   const [clientIdsForUser, setClientIdsForUser] = useState<string[] | null>(
     null,
@@ -447,6 +453,18 @@ export default function CommercialProposalsPage() {
     }
     if (exportInFlightRef.current) return;
 
+    if (
+      !guardBrandingExportFromHook({
+        brandingData,
+        pdfImages,
+        isPdfImagesLoading,
+        hasBrandingUrls,
+        toast,
+      })
+    ) {
+      return;
+    }
+
     exportInFlightRef.current = true;
     setExportingProposalId(proposal.id);
     try {
@@ -470,6 +488,7 @@ export default function CommercialProposalsPage() {
         client,
         companyProfile,
         branding: brandingData,
+        preloadedImages: pdfImages,
         onBrandingIssue: toast,
       });
 

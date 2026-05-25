@@ -18,7 +18,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, FileDown, FileText } from "lucide-react";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import { Loader2, FileDown, FileText, ChevronDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useFirebase } from "@/firebase";
 import {
@@ -37,13 +42,21 @@ import type {
   WaveAAnalysisResult,
 } from "@/lib/types/geo-wave-a";
 import { handleGeoAnalysisComplement } from "@/app/(app)/analise-ambiental/actions-complement";
+import { AiProviderBadge } from "@/components/ai/ai-provider-badge";
+import type { AiProviderId } from "@/lib/ai-provider-labels";
+import { GeoWaveALayerCards } from "@/components/geospatial/geo-wave-a-layer-cards";
+import { useLocalBranding } from "@/hooks/use-local-branding";
+import {
+  prepareIaMenuBrandedPdfSession,
+  saveIaMenuBrandedPdf,
+} from "@/lib/ia-menu-branded-pdf";
+import { appendGeoAnalysisComplementPdf } from "@/lib/geospatial/export-complement-pdf";
+import { buildComplementDocxBlob } from "@/lib/geospatial/export-complement-docx";
 import {
   brandingUrlsFromLocal,
-  createMmBrandedPdfSession,
-  drawWatermarkOnPage,
+  guardBrandingExportFromHook,
+  reportBrandingPdfIssues,
 } from "@/lib/pdf-branding-layout";
-import { useLocalBranding } from "@/hooks/use-local-branding";
-import { buildComplementDocxBlob } from "@/lib/geospatial/export-complement-docx";
 
 type GeoAnalysisDoc = {
   id: string;
@@ -64,6 +77,40 @@ function downloadBlob(fileName: string, blob: Blob) {
   URL.revokeObjectURL(url);
 }
 
+function createdAtMs(v: unknown): number {
+  if (!v) return 0;
+  if (typeof v === "object" && v !== null && "toMillis" in v) {
+    return (v as { toMillis: () => number }).toMillis();
+  }
+  if (typeof v === "string") return Date.parse(v) || 0;
+  return 0;
+}
+
+function formatAnalysisLabel(a: GeoAnalysisDoc, isSession?: boolean): string {
+  const ha = a.perimeter?.areaHa;
+  const ok = a.layers?.filter((l) => l.status === "ok").length ?? 0;
+  const total = a.layers?.length ?? 8;
+  const date = a.generatedAtUtc?.slice(0, 10) ?? "";
+  const area = ha != null ? `${ha.toFixed(0)} ha` : "— ha";
+  const prefix = isSession ? "Sessão actual · " : "";
+  return `${prefix}${area} · ${ok}/${total} OK${date ? ` · ${date}` : ""}`;
+}
+
+function docToWaveResult(
+  data: Record<string, unknown>,
+  wave: "A" | "ABC",
+): WaveAAnalysisResult {
+  return {
+    wave,
+    generatedAtUtc: (data.generatedAtUtc as string) ?? new Date().toISOString(),
+    perimeter: data.perimeter as WaveAAnalysisResult["perimeter"],
+    layers: data.layers as WaveAAnalysisResult["layers"],
+    factualSummary: (data.factualSummary as string) ?? "",
+    fontesConsultadas:
+      (data.fontesConsultadas as WaveAAnalysisResult["fontesConsultadas"]) ?? [],
+  };
+}
+
 export function GeoAnalysisComplementPanel({
   userId,
   initialGeoAnalysisId,
@@ -76,7 +123,12 @@ export function GeoAnalysisComplementPanel({
   const { firestore } = useFirebase();
   const searchParams = useSearchParams();
   const { toast } = useToast();
-  const { data: brandingData } = useLocalBranding();
+  const {
+    data: brandingData,
+    pdfImages,
+    isPdfImagesLoading,
+    hasBrandingUrls,
+  } = useLocalBranding();
   const [analyses, setAnalyses] = React.useState<GeoAnalysisDoc[]>([]);
   const [selectedId, setSelectedId] = React.useState<string>("");
   const [loadedWave, setLoadedWave] = React.useState<WaveAAnalysisResult | null>(
@@ -84,11 +136,20 @@ export function GeoAnalysisComplementPanel({
   );
   const [complement, setComplement] =
     React.useState<GeoAnalysisComplementOutput | null>(null);
+  const [complementProvider, setComplementProvider] =
+    React.useState<AiProviderId | null>(null);
   const [loadingList, setLoadingList] = React.useState(true);
   const [loadingDoc, setLoadingDoc] = React.useState(false);
+  const [loadingComplement, setLoadingComplement] = React.useState(false);
   const [generating, setGenerating] = React.useState(false);
   const [exportingPdf, setExportingPdf] = React.useState(false);
   const [exportingDocx, setExportingDocx] = React.useState(false);
+  const [factualOpen, setFactualOpen] = React.useState(true);
+
+  const sessionOnly =
+    !!inlineWaveResult &&
+    !!initialGeoAnalysisId &&
+    !analyses.some((a) => a.id === initialGeoAnalysisId);
 
   React.useEffect(() => {
     const load = async () => {
@@ -101,7 +162,7 @@ export function GeoAnalysisComplementPanel({
           query(
             collection(firestore, "geo_analyses"),
             where("createdBy", "==", userId),
-            limit(30),
+            limit(40),
           ),
         );
         const items = snap.docs
@@ -110,12 +171,16 @@ export function GeoAnalysisComplementPanel({
             ...(d.data() as Omit<GeoAnalysisDoc, "id">),
           }))
           .filter((a) => a.wave === "A" || a.wave === "ABC")
+          .sort((a, b) => createdAtMs(b.createdAt) - createdAtMs(a.createdAt))
           .slice(0, 20);
         setAnalyses(items);
         const fromUrl = searchParams?.get("geoAnalysisId");
-        if (fromUrl && items.some((i) => i.id === fromUrl)) {
+        if (fromUrl && (items.some((i) => i.id === fromUrl) || fromUrl === initialGeoAnalysisId)) {
           setSelectedId(fromUrl);
-        } else if (initialGeoAnalysisId && items.some((i) => i.id === initialGeoAnalysisId)) {
+        } else if (
+          initialGeoAnalysisId &&
+          (items.some((i) => i.id === initialGeoAnalysisId) || inlineWaveResult)
+        ) {
           setSelectedId(initialGeoAnalysisId);
         } else if (items[0]) {
           setSelectedId(items[0].id);
@@ -126,14 +191,14 @@ export function GeoAnalysisComplementPanel({
           variant: "destructive",
           title: "Erro ao listar análises",
           description:
-            "Verifique índice Firestore (createdBy + wave + createdAt) ou permissões.",
+            "Verifique permissões Firestore ou tente recarregar a página.",
         });
       } finally {
         setLoadingList(false);
       }
     };
     void load();
-  }, [firestore, userId, searchParams, toast, initialGeoAnalysisId]);
+  }, [firestore, userId, searchParams, toast, initialGeoAnalysisId, inlineWaveResult]);
 
   React.useEffect(() => {
     if (inlineWaveResult && initialGeoAnalysisId) {
@@ -153,7 +218,6 @@ export function GeoAnalysisComplementPanel({
         return;
       }
       setLoadingDoc(true);
-      setComplement(null);
       try {
         const snap = await getDoc(doc(firestore, "geo_analyses", selectedId));
         if (!snap.exists()) {
@@ -165,20 +229,64 @@ export function GeoAnalysisComplementPanel({
           setLoadedWave(null);
           return;
         }
-        setLoadedWave({
-          wave: data.wave === "ABC" ? "ABC" : "A",
-          generatedAtUtc: data.generatedAtUtc ?? new Date().toISOString(),
-          perimeter: data.perimeter,
-          layers: data.layers,
-          factualSummary: data.factualSummary ?? "",
-          fontesConsultadas: data.fontesConsultadas ?? [],
-        });
+        setLoadedWave(
+          docToWaveResult(data, data.wave === "ABC" ? "ABC" : "A"),
+        );
       } finally {
         setLoadingDoc(false);
       }
     };
     void loadOne();
   }, [firestore, selectedId, inlineWaveResult, initialGeoAnalysisId]);
+
+  React.useEffect(() => {
+    const loadSavedComplement = async () => {
+      if (!firestore || !selectedId || !userId) {
+        setComplement(null);
+        return;
+      }
+      setLoadingComplement(true);
+      try {
+        const snap = await getDocs(
+          query(
+            collection(firestore, "geo_analysis_complements"),
+            where("geoAnalysisId", "==", selectedId),
+            limit(15),
+          ),
+        );
+        type ComplementRow = Record<string, unknown> & { id: string };
+        const row = snap.docs
+          .map(
+            (d): ComplementRow => ({
+              id: d.id,
+              ...(d.data() as Record<string, unknown>),
+            }),
+          )
+          .filter((c) => c.createdBy === userId)
+          .sort(
+            (a, b) => createdAtMs(b.createdAt) - createdAtMs(a.createdAt),
+          )[0];
+        if (!row?.sections) {
+          setComplement(null);
+          return;
+        }
+        setComplement({
+          geoAnalysisId: selectedId,
+          sections: row.sections as GeoAnalysisComplementOutput["sections"],
+          resumoExecutivo: row.resumoExecutivo as string,
+          status: (row.status as GeoAnalysisComplementOutput["status"]) ?? "rascunho_ia",
+          generatedAtUtc:
+            (row.generatedAtUtc as string) ?? new Date().toISOString(),
+          disclaimer: row.disclaimer as string,
+        });
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setLoadingComplement(false);
+      }
+    };
+    void loadSavedComplement();
+  }, [firestore, selectedId, userId]);
 
   const handleGenerateComplement = async () => {
     if (!loadedWave || !selectedId) return;
@@ -192,6 +300,7 @@ export function GeoAnalysisComplementPanel({
         throw new Error(result.error);
       }
       setComplement(result.result);
+      setComplementProvider(result.provider);
       if (firestore && userId) {
         const { geoAnalysisId: _gid, ...complementFields } = result.result;
         await addDoc(collection(firestore, "geo_analysis_complements"), {
@@ -203,7 +312,7 @@ export function GeoAnalysisComplementPanel({
       }
       toast({
         title: "Complemento gerado",
-        description: "Rascunho IA salvo. Revise antes de usar em estudos.",
+        description: `Rascunho com ${result.provider === "deepseek" ? "DeepSeek" : "Gemini"}. Revise antes de usar em estudos.`,
       });
     } catch (e) {
       toast({
@@ -220,50 +329,19 @@ export function GeoAnalysisComplementPanel({
     if (!complement || !loadedWave) return;
     setExportingPdf(true);
     try {
-      const session = await createMmBrandedPdfSession(
-        brandingUrlsFromLocal(brandingData),
-      );
-      const { doc, margins } = session;
-      const pageW = doc.internal.pageSize.getWidth();
-      let y = session.startY;
-      const contentW = pageW - margins.left - margins.right;
-      const onPage = () => drawWatermarkOnPage(doc, session.branding);
-
-      doc.setFontSize(14);
-      doc.setFont("helvetica", "bold");
-      doc.text("Complementação técnica (rascunho IA)", pageW / 2, y, {
-        align: "center",
+      const session = await prepareIaMenuBrandedPdfSession({
+        brandingData,
+        pdfImages,
+        isPdfImagesLoading,
+        hasBrandingUrls,
+        toast,
       });
-      y += 10;
-      doc.setFontSize(10);
-      doc.setFont("helvetica", "normal");
-      const resumo = doc.splitTextToSize(complement.resumoExecutivo, contentW);
-      doc.text(resumo, margins.left, y);
-      y += resumo.length * 5 + 6;
+      if (!session) return;
 
-      for (const section of complement.sections) {
-        if (y > 250) {
-          doc.addPage();
-          onPage();
-          y = session.startY;
-        }
-        doc.setFont("helvetica", "bold");
-        doc.text(section.title, margins.left, y);
-        y += 6;
-        doc.setFont("helvetica", "normal");
-        const lines = doc.splitTextToSize(section.bodyMarkdown, contentW);
-        doc.text(lines, margins.left, y);
-        y += lines.length * 4.5 + 6;
-      }
-
-      doc.setFontSize(8);
-      doc.setFont("helvetica", "italic");
-      const disc = doc.splitTextToSize(complement.disclaimer, contentW);
-      doc.text(disc, margins.left, y);
-
-      session.finalize();
-      session.doc.save(
-        `complemento-geoespacial-${new Date().toISOString().slice(0, 10)}.pdf`,
+      appendGeoAnalysisComplementPdf(session, loadedWave, complement);
+      saveIaMenuBrandedPdf(
+        session,
+        `etapa2-geoespacial-${loadedWave.perimeter.areaHa.toFixed(0)}ha-${new Date().toISOString().slice(0, 10)}.pdf`,
       );
     } finally {
       setExportingPdf(false);
@@ -272,14 +350,38 @@ export function GeoAnalysisComplementPanel({
 
   const handleExportDocx = async () => {
     if (!complement || !loadedWave) return;
+    if (
+      !guardBrandingExportFromHook({
+        brandingData,
+        pdfImages,
+        isPdfImagesLoading,
+        hasBrandingUrls,
+        toast,
+        formatLabel: "Word",
+      })
+    ) {
+      return;
+    }
+    const images = pdfImages ?? {
+      headerBase64: null,
+      footerBase64: null,
+      watermarkBase64: null,
+    };
+    reportBrandingPdfIssues(brandingUrlsFromLocal(brandingData), images, toast);
     setExportingDocx(true);
     try {
-      const blob = await buildComplementDocxBlob(complement, {
-        areaHa: loadedWave.perimeter.areaHa,
-        generatedAtUtc: complement.generatedAtUtc,
-      });
+      const blob = await buildComplementDocxBlob(
+        complement,
+        {
+          areaHa: loadedWave.perimeter.areaHa,
+          generatedAtUtc: complement.generatedAtUtc,
+          factualSummary: loadedWave.factualSummary,
+          layers: loadedWave.layers,
+        },
+        images,
+      );
       downloadBlob(
-        `complemento-geoespacial-${new Date().toISOString().slice(0, 10)}.docx`,
+        `etapa2-geoespacial-${new Date().toISOString().slice(0, 10)}.docx`,
         blob,
       );
     } finally {
@@ -287,47 +389,98 @@ export function GeoAnalysisComplementPanel({
     }
   };
 
+  const canShow =
+    analyses.length > 0 || (inlineWaveResult && initialGeoAnalysisId);
+
+  const selectOptions: { id: string; label: string }[] = analyses.map((a) => ({
+    id: a.id,
+    label: formatAnalysisLabel(a),
+  }));
+  if (sessionOnly && initialGeoAnalysisId) {
+    selectOptions.unshift({
+      id: initialGeoAnalysisId,
+      label: formatAnalysisLabel(
+        {
+          id: initialGeoAnalysisId,
+          perimeter: inlineWaveResult!.perimeter,
+          layers: inlineWaveResult!.layers,
+          generatedAtUtc: inlineWaveResult!.generatedAtUtc,
+        },
+        true,
+      ),
+    });
+  }
+
   return (
-    <Card className="mb-6 border-primary/30">
+    <Card id="etapa-2" className="mb-6 border-primary/30">
       <CardHeader>
         <CardTitle>Etapa 2 — Complementação geoespacial (IA)</CardTitle>
         <CardDescription>
-          Carrega uma análise factual Onda A e gera texto técnico para revisão (PDF e Word).
+          Revise os dados factuais (8 camadas SIG), gere o rascunho interpretativo e exporte PDF
+          completo (factual + IA) ou Word.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         {loadingList ? (
           <p className="text-sm text-muted-foreground">Carregando análises...</p>
-        ) : analyses.length === 0 ? (
+        ) : !canShow ? (
           <p className="text-sm text-muted-foreground">
-            Nenhuma análise factual salva. Gere primeiro o relatório factual acima.
+            Nenhuma análise factual salva. Gere primeiro o relatório factual (8 camadas) acima.
           </p>
         ) : (
           <div className="space-y-2">
             <Label>Análise factual</Label>
-            <Select value={selectedId} onValueChange={setSelectedId}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione" />
-              </SelectTrigger>
-              <SelectContent>
-                {analyses.map((a) => (
-                  <SelectItem key={a.id} value={a.id}>
-                    {a.factualSummary?.slice(0, 60) ?? a.id}…
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {selectOptions.length > 1 ? (
+              <Select value={selectedId} onValueChange={setSelectedId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione" />
+                </SelectTrigger>
+                <SelectContent>
+                  {selectOptions.map((o) => (
+                    <SelectItem key={o.id} value={o.id}>
+                      {o.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                {selectOptions[0]?.label ?? "Análise seleccionada"}
+              </p>
+            )}
           </div>
         )}
 
         {loadingDoc ? (
           <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
         ) : loadedWave ? (
-          <p className="text-xs text-muted-foreground">
-            Área             {loadedWave.perimeter.areaHa.toFixed(2)} ha ·{" "}
-            {loadedWave.layers.filter((l) => l.status === "ok").length}/
-            {loadedWave.layers.length} camadas OK
-          </p>
+          <>
+            <p className="text-xs text-muted-foreground">
+              Área {loadedWave.perimeter.areaHa.toFixed(2)} ha ·{" "}
+              {loadedWave.layers.filter((l) => l.status === "ok").length}/
+              {loadedWave.layers.length} camadas OK
+              {loadedWave.perimeter.source === "shp" ? " · SHP" : ""}
+            </p>
+            <Collapsible open={factualOpen} onOpenChange={setFactualOpen}>
+              <CollapsibleTrigger asChild>
+                <Button variant="ghost" size="sm" className="w-full justify-between px-2">
+                  Pré-visualização factual (sem IA)
+                  <ChevronDown
+                    className={`h-4 w-4 transition-transform ${factualOpen ? "rotate-180" : ""}`}
+                  />
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="pt-2">
+                <p className="mb-2 text-xs text-muted-foreground line-clamp-3">
+                  {loadedWave.factualSummary}
+                </p>
+                <GeoWaveALayerCards
+                  layers={loadedWave.layers}
+                  className="grid max-h-[320px] gap-2 overflow-y-auto sm:grid-cols-2"
+                />
+              </CollapsibleContent>
+            </Collapsible>
+          </>
         ) : null}
 
         <Button
@@ -341,12 +494,19 @@ export function GeoAnalysisComplementPanel({
               Gerando complemento...
             </>
           ) : (
-            "Gerar complemento com IA"
+            "Gerar complemento (Gemini)"
           )}
         </Button>
 
+        {loadingComplement ? (
+          <p className="text-xs text-muted-foreground">A carregar complemento salvo...</p>
+        ) : null}
+
         {complement ? (
           <div className="space-y-3 rounded-md border p-3">
+            {complementProvider ? (
+              <AiProviderBadge provider={complementProvider} />
+            ) : null}
             <p className="text-sm font-medium">{complement.resumoExecutivo}</p>
             {complement.sections.map((s) => (
               <div key={s.key}>
@@ -362,7 +522,6 @@ export function GeoAnalysisComplementPanel({
             <div className="flex flex-wrap gap-2">
               <Button
                 size="sm"
-                variant="outline"
                 onClick={handleExportComplementPdf}
                 disabled={exportingPdf}
               >
@@ -371,7 +530,7 @@ export function GeoAnalysisComplementPanel({
                 ) : (
                   <FileDown className="mr-2 h-4 w-4" />
                 )}
-                PDF complemento
+                PDF completo (SIG + IA)
               </Button>
               <Button
                 size="sm"
@@ -388,6 +547,11 @@ export function GeoAnalysisComplementPanel({
               </Button>
             </div>
           </div>
+        ) : loadedWave ? (
+          <p className="text-xs text-muted-foreground">
+            Ainda sem complemento para esta análise. Gere com IA ou seleccione outra análise que já
+            tenha rascunho salvo.
+          </p>
         ) : null}
       </CardContent>
     </Card>

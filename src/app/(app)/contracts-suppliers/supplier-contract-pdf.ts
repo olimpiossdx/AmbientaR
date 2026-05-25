@@ -5,6 +5,7 @@
 
 import type { SupplierContract, CompanySettings } from '@/lib/types';
 import type { LocalBranding } from '@/hooks/use-local-branding';
+import type { BrandingPdfImages } from '@/lib/branding-pdf';
 import type jsPDF from 'jspdf';
 import { downloadJsPdf } from '@/lib/branding-pdf';
 import {
@@ -13,6 +14,8 @@ import {
   finalizePdfBranding,
   getContentStartY,
   loadPdfBranding,
+  reportBrandingPdfIssues,
+  type BrandingPdfToastReporter,
 } from '@/lib/pdf-branding-layout';
 
 const formatCurrency = (value: number) =>
@@ -114,6 +117,10 @@ function safeFilename(prestadorNome: string | undefined, contractNumber: string)
 export async function buildSupplierContractPdfDoc(
   contract: SupplierContract,
   brandingData: SupplierBranding,
+  options?: {
+    preloadedImages?: BrandingPdfImages | null;
+    onBrandingIssue?: BrandingPdfToastReporter;
+  },
 ): Promise<jsPDF> {
   const { default: jsPDF } = await import('jspdf');
   const doc = new jsPDF({ unit: 'cm', format: 'a4' });
@@ -128,12 +135,14 @@ export async function buildSupplierContractPdfDoc(
   const foro = contract.foro ?? { comarca: 'Unaí', uf: 'MG' };
 
   const urls = brandingUrlsFromLocal(brandingData);
-  const pdfBranding = await loadPdfBranding(doc, urls, {
-    left: ML,
-    right: MR,
-    top: MT,
-    bottom: MB,
-  });
+  const pdfBranding = await loadPdfBranding(
+    doc,
+    urls,
+    { left: ML, right: MR, top: MT, bottom: MB },
+    0.15,
+    options?.preloadedImages,
+  );
+  reportBrandingPdfIssues(urls, pdfBranding.images, options?.onBrandingIssue);
   const drawWatermarkOnCurrentPage = () => drawWatermarkOnPage(doc, pdfBranding);
   const pageContentStartY = getContentStartY(pdfBranding);
   drawWatermarkOnCurrentPage();
@@ -427,7 +436,11 @@ export async function buildSupplierContractPdfDoc(
 export async function generateSupplierContractPdf(
   contract: SupplierContract,
   brandingData: SupplierBranding,
+  options?: {
+    preloadedImages?: BrandingPdfImages | null;
+    onBrandingIssue?: BrandingPdfToastReporter;
+  },
 ): Promise<void> {
-  const doc = await buildSupplierContractPdfDoc(contract, brandingData);
+  const doc = await buildSupplierContractPdfDoc(contract, brandingData, options);
   downloadJsPdf(doc, safeFilename(contract.prestador?.nome, contract.contractNumber));
 }

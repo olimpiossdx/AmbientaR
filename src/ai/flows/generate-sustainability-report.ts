@@ -14,9 +14,22 @@ import {
   type GenerateSustainabilityReportOutput,
 } from "@/lib/types";
 
+import { getDeepseekApiKey } from "@/lib/deepseek-env";
+import { generateSustainabilityReportDeepseek } from "@/ai/flows/generate-sustainability-report-deepseek";
+import { hasAiProvider } from "@/ai/genkit";
+
 export async function generateSustainabilityReport(
   input: GenerateSustainabilityReportInput,
 ): Promise<GenerateSustainabilityReportOutput> {
+  const deepseekKey = getDeepseekApiKey();
+  if (deepseekKey) {
+    return generateSustainabilityReportDeepseek(input, deepseekKey);
+  }
+  if (!hasAiProvider) {
+    throw new Error(
+      "Relatório de sustentabilidade requer DEEPSEEK_API_KEY ou GOOGLE_GENAI_API_KEY.",
+    );
+  }
   return generateSustainabilityReportFlow(input);
 }
 

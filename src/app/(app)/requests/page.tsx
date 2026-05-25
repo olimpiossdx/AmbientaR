@@ -70,7 +70,8 @@ import {
 import {
   brandingUrlsFromLocal,
   createMmBrandedPdfSession,
-  guardBrandingPdfExport,
+  guardBrandingExportFromHook,
+  reportBrandingPdfIssues,
 } from '@/lib/pdf-branding-layout';
 import { useLocalBranding } from '@/hooks/use-local-branding';
 import {
@@ -411,8 +412,12 @@ export default function RequestsPage() {
   const { user } = useAuth();
   const { firestore } = useFirebase();
   const { toast } = useToast();
-  const { data: brandingData, isPdfImagesLoading, hasBrandingUrls } =
-    useLocalBranding();
+  const {
+    data: brandingData,
+    pdfImages,
+    isPdfImagesLoading,
+    hasBrandingUrls,
+  } = useLocalBranding();
 
   useEffect(() => {
     if (!firestore || !user) return;
@@ -638,7 +643,9 @@ export default function RequestsPage() {
 
   const handleExportPdf = async (item: Request) => {
     if (
-      !guardBrandingPdfExport({
+      !guardBrandingExportFromHook({
+        brandingData,
+        pdfImages,
         isPdfImagesLoading,
         hasBrandingUrls,
         toast,
@@ -652,9 +659,9 @@ export default function RequestsPage() {
       description: 'Resumo do trâmite com identidade visual da consultoria.',
     });
     try {
-      const session = await createMmBrandedPdfSession(
-        brandingUrlsFromLocal(brandingData),
-      );
+      const urls = brandingUrlsFromLocal(brandingData);
+      const session = await createMmBrandedPdfSession(urls, undefined, pdfImages);
+      reportBrandingPdfIssues(urls, session.branding.images, toast);
       await buildLicenciamentoTramitePdf(
         session.doc,
         ctx,

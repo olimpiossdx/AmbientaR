@@ -49,6 +49,23 @@ O serviço de preenchimento (`src/lib/docx-placeholders.ts`) monta um objeto a p
 | `{{RESUMO_OUTORGAS}}` | Texto resumindo outorgas |
 | `{{RESUMO_INTERVENCOES}}` | Texto resumindo intervenções (DAIA) |
 
+### Dados geoespaciais (Passo 3 — análise SIG + Etapa 2)
+
+Preenchidos quando o laudo importa `geo_analyses` (ver painel **Passo 3** na página do laudo):
+
+| Placeholder | Conteúdo |
+|-------------|----------|
+| `{{GEO_AREA_HA}}` | Área do perímetro (ha) |
+| `{{GEO_RESUMO_FACTUAL}}` | Resumo factual das 8 camadas |
+| `{{GEO_TABELA_CAMADAS}}` | Tabela texto por camada (% / ha / km) |
+| `{{GEO_CAMADAS_OK}}` | Ex.: `7/8` |
+| `{{GEO_DATA_GERACAO}}` | Data UTC da análise |
+| `{{GEO_MAPA_LEGENDA}}` | Referência aos mapas no PDF factual |
+| `{{GEO_COMPLEMENTO_RESUMO}}` | Resumo executivo Etapa 2 (se existir) |
+| `{{GEO_SECAO_HIDROGRAFIA}}` | Secção IA hidrografia (se existir) |
+
+Os blocos `{{BLOCO_MEIO_FISICO}}`, `{{BLOCO_MEIO_BIOTICO_FLORA}}`, etc. recebem texto do complemento IA ou resumos factuais por camada.
+
 ### Blocos IA (Fase 4)
 
 Estes são preenchidos com texto gerado pela IA (RAG + contexto). Se não houver geração, ficam em branco ou com texto padrão.

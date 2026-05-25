@@ -375,13 +375,55 @@ export function guardBrandingPdfExport(
     toast?: BrandingPdfToastReporter;
     /** Rótulo do formato (ex.: PDF, Word). */
     formatLabel?: string;
+    brandingUrls?: BrandingImageUrls | null;
+    pdfImages?: BrandingPdfImages | null;
   },
 ): boolean {
-  if (!opts.isPdfImagesLoading) return true;
-  const label = opts.formatLabel ?? 'PDF';
-  opts.toast?.({
-    title: 'Aguarde',
-    description: `Carregando imagens da identidade visual para o ${label}…`,
-  });
-  return false;
+  if (opts.isPdfImagesLoading) {
+    const label = opts.formatLabel ?? 'PDF';
+    opts.toast?.({
+      title: 'Aguarde',
+      description: `Carregando imagens da identidade visual para o ${label}…`,
+    });
+    return false;
+  }
+
+  if (opts.hasBrandingUrls && opts.brandingUrls && opts.pdfImages != null) {
+    const missing = brandingPdfMissingSlots(opts.brandingUrls, opts.pdfImages);
+    if (missing.length > 0) {
+      opts.toast?.({
+        variant: 'destructive',
+        title: 'Identidade visual indisponível',
+        description: `Não foi possível carregar: ${missing.join(', ')}. Verifique Configurações → Identidade visual, recarregue a página (F5) e tente de novo. Em dev local, confira GOOGLE_APPLICATION_CREDENTIALS se o problema persistir.`,
+      });
+      return false;
+    }
+  }
+
+  return true;
 }
+
+/** Atalho para páginas com `useLocalBranding()`. */
+export function guardBrandingExportFromHook(opts: {
+  brandingData:
+    | { headerImageUrl?: string | null; footerImageUrl?: string | null; watermarkImageUrl?: string | null }
+    | null
+    | undefined;
+  pdfImages?: BrandingPdfImages | null;
+  isPdfImagesLoading: boolean;
+  hasBrandingUrls: boolean;
+  toast?: BrandingPdfToastReporter;
+  formatLabel?: string;
+}): boolean {
+  return guardBrandingPdfExport({
+    isPdfImagesLoading: opts.isPdfImagesLoading,
+    hasBrandingUrls: opts.hasBrandingUrls,
+    toast: opts.toast,
+    formatLabel: opts.formatLabel,
+    brandingUrls: brandingUrlsFromLocal(opts.brandingData),
+    pdfImages: opts.pdfImages,
+  });
+}
+
+/** Alias para PDF e Word (.docx) — mesma pré-carga via `useLocalBranding().pdfImages`. */
+export const guardBrandingDocumentExport = guardBrandingPdfExport;

@@ -58,6 +58,7 @@ import {
   brandingUrlsFromLocal,
   createMmBrandedPdfSession,
   drawWatermarkOnPage,
+  guardBrandingExportFromHook,
   reportBrandingPdfIssues,
 } from "@/lib/pdf-branding-layout";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -221,7 +222,12 @@ export default function UsersPage() {
   const { data: appUsers, isLoading } = useCollection<AppUser>(usersQuery);
   const presenceNow = usePresenceClock();
 
-  const { data: brandingData } = useLocalBranding();
+  const {
+    data: brandingData,
+    pdfImages,
+    isPdfImagesLoading,
+    hasBrandingUrls,
+  } = useLocalBranding();
 
   const getRoleText = (role: AppUser["role"]) => {
     switch (role) {
@@ -537,8 +543,21 @@ export default function UsersPage() {
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
       } else if (format === "pdf") {
+        if (
+          !guardBrandingExportFromHook({
+            brandingData,
+            pdfImages,
+            isPdfImagesLoading,
+            hasBrandingUrls,
+            toast,
+          })
+        ) {
+          return;
+        }
         const session = await createMmBrandedPdfSession(
           brandingUrlsFromLocal(brandingData),
+          undefined,
+          pdfImages,
         );
         reportBrandingPdfIssues(
           brandingUrlsFromLocal(brandingData),

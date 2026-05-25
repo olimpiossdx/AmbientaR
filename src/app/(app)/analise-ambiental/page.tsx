@@ -4,7 +4,7 @@ import * as React from "react";
 import { Suspense } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { StudyGeospatialSplitShell } from "@/components/studies/study-geospatial-split-shell";
+import { StudyGeospatialStackedShell } from "@/components/studies/study-geospatial-stacked-shell";
 import {
   Card,
   CardContent,
@@ -30,10 +30,11 @@ import { useToast } from "@/hooks/use-toast";
 import { useLocalBranding } from "@/hooks/use-local-branding";
 import { ESTUDOS_TECNICOS_MENU_LABEL } from "@/lib/navigation-config";
 import {
-  brandingUrlsFromLocal,
-  createMmBrandedPdfSession,
-  drawWatermarkOnPage,
-} from "@/lib/pdf-branding-layout";
+  prepareIaMenuBrandedPdfSession,
+  saveIaMenuBrandedPdf,
+  writeBrandedPdfParagraph,
+  writeBrandedPdfTitle,
+} from "@/lib/ia-menu-branded-pdf";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -47,7 +48,10 @@ import { handleWaveAAnalysis } from "./actions-wave-a";
 import type { WaveAAnalysisResult } from "@/lib/types/geo-wave-a";
 import { GeoWaveALayerCards } from "@/components/geospatial/geo-wave-a-layer-cards";
 import { appendWaveAFactualPdf } from "@/lib/geospatial/export-wave-a-pdf";
+import { buildFactualMinimaps } from "@/lib/geospatial/render-minimap-client";
 import { GeoAnalysisComplementPanel } from "@/components/geospatial/geo-analysis-complement-panel";
+import { AiProviderBadge } from "@/components/ai/ai-provider-badge";
+import type { AiProviderId } from "@/lib/ai-provider-labels";
 import type { PerimeterParseInput } from "@/lib/geospatial/perimeter";
 import {
   Collapsible,
@@ -67,7 +71,12 @@ export default function AnaliseAmbientalPage() {
   const { firestore, user, auth } = useFirebase();
   const { user: appUser } = useAuth();
   const packageUsage = usePackageUsage(appUser ?? null);
-  const { data: brandingData } = useLocalBranding();
+  const {
+    data: brandingData,
+    pdfImages,
+    isPdfImagesLoading,
+    hasBrandingUrls,
+  } = useLocalBranding();
   const [inputMode, setInputMode] = React.useState<InputMode>("car");
   const [isLoading, setIsLoading] = React.useState(false);
   const [isGeneratingPdf, setIsGeneratingPdf] = React.useState(false);
@@ -75,6 +84,8 @@ export default function AnaliseAmbientalPage() {
   const [isExportingGeojson, setIsExportingGeojson] = React.useState(false);
   const [analysisResult, setAnalysisResult] =
     React.useState<AnaliseAmbientalOutput | null>(null);
+  const [analysisProvider, setAnalysisProvider] =
+    React.useState<AiProviderId | null>(null);
   const [waveAResult, setWaveAResult] = React.useState<WaveAAnalysisResult | null>(
     null,
   );
@@ -271,6 +282,7 @@ export default function AnaliseAmbientalPage() {
 
     setIsLoading(true);
     setAnalysisResult(null);
+    setAnalysisProvider(null);
     setLastPayload(input.data);
 
     try {
@@ -281,11 +293,12 @@ export default function AnaliseAmbientalPage() {
       }
       const result = actionResult.result;
       setAnalysisResult(result);
+      setAnalysisProvider(actionResult.provider);
       await saveAnalysisSnapshot(input, result);
       packageUsage.refresh();
       toast({
         title: "Análise concluída",
-        description: "Relatório pronto para exportação (PDF/CSV/GeoJSON).",
+        description: `Relatório gerado com ${actionResult.provider === "deepseek" ? "DeepSeek" : "Gemini"}. Pronto para exportação.`,
       });
     } catch (error) {
       console.error("Analysis failed:", error);
@@ -348,88 +361,55 @@ export default function AnaliseAmbientalPage() {
     if (!waveAResult && !analysisResult) return;
     setIsGeneratingPdf(true);
     try {
-      const session = await createMmBrandedPdfSession(
-        brandingUrlsFromLocal(brandingData),
-      );
+      const session = await prepareIaMenuBrandedPdfSession({
+        brandingData,
+        pdfImages,
+        isPdfImagesLoading,
+        hasBrandingUrls,
+        toast,
+      });
+      if (!session) return;
 
       if (waveAResult) {
-        appendWaveAFactualPdf(session, waveAResult);
+        let minimaps = null;
+        try {
+          minimaps = await buildFactualMinimaps(waveAResult);
+        } catch (e) {
+          console.warn("Mini-mapas omitidos no PDF:", e);
+        }
+        appendWaveAFactualPdf(session, waveAResult, { minimaps });
       } else if (analysisResult) {
-        const { doc, margins } = session;
+        const { doc } = session;
         const pageW = doc.internal.pageSize.getWidth();
         let y = session.startY;
-        const onPdfPage = () => drawWatermarkOnPage(doc, session.branding);
-
+        y = session.ensureSpace(y, 18);
         doc.setFontSize(16);
         doc.setFont("helvetica", "bold");
         doc.text("Relatório de Análise Ambiental Geoespacial", pageW / 2, y, {
           align: "center",
         });
-        y += 10;
+        y += 12;
 
-        doc.setFontSize(11);
-        doc.setFont("helvetica", "normal");
-        const resumoLines = doc.splitTextToSize(
-          analysisResult.resumoIA,
-          pageW - margins.left - margins.right,
-        );
-        doc.text(resumoLines, margins.left, y);
-        y += resumoLines.length * 6 + 8;
-
-        doc.setFontSize(12);
-        doc.setFont("helvetica", "bold");
-        doc.text("Evidências factuais", margins.left, y);
-        y += 7;
-        doc.setFontSize(10);
-        doc.setFont("helvetica", "normal");
-        analysisResult.factualData.forEach((item, index) => {
-          const line = `${index + 1}. ${item.camada} | ${item.fonte} | ${item.resultado}`;
-          const lines = doc.splitTextToSize(line, pageW - margins.left - margins.right);
-          for (const l of lines) {
-            if (y > 270) {
-              doc.addPage();
-              onPdfPage();
-              y = session.startY;
-            }
-            doc.text(l, margins.left, y);
-            y += 5;
-          }
-        });
-        y += 6;
-
-        const lineHeight = 5;
-        const maxY = 280;
-        analysisResult.analises.forEach((item) => {
-          if (y > maxY - 20) {
-            doc.addPage();
-            onPdfPage();
-            y = session.startY;
-          }
-          doc.setFontSize(12);
-          doc.setFont("helvetica", "bold");
-          doc.text(item.titulo, margins.left, y);
-          y += 7;
-          doc.setFontSize(10);
-          doc.setFont("helvetica", "normal");
-          const lines = doc.splitTextToSize(
-            item.relatorio,
-            pageW - margins.left - margins.right,
+        y = writeBrandedPdfParagraph(session, analysisResult.resumoIA, 11, y);
+        y = writeBrandedPdfTitle(session, "Evidências factuais", 12);
+        for (let index = 0; index < analysisResult.factualData.length; index++) {
+          const item = analysisResult.factualData[index]!;
+          y = writeBrandedPdfParagraph(
+            session,
+            `${index + 1}. ${item.camada} | ${item.fonte} | ${item.resultado}`,
+            10,
+            y,
           );
-          for (const line of lines) {
-            if (y > maxY - 10) {
-              doc.addPage();
-              onPdfPage();
-              y = session.startY;
-            }
-            doc.text(line, margins.left, y);
-            y += lineHeight;
-          }
-          y += 6;
-        });
+        }
+
+        for (const item of analysisResult.analises) {
+          y = writeBrandedPdfTitle(session, item.titulo, 12);
+          y = writeBrandedPdfParagraph(session, item.relatorio, 10, y);
+        }
       }
 
-      session.finalize();
-      session.doc.save(
+      saveIaMenuBrandedPdf(
+        session,
         `relatorio-analise-geoespacial-${new Date().toISOString().slice(0, 10)}.pdf`,
       );
       toast({ title: "PDF gerado", description: "O arquivo foi baixado." });
@@ -504,27 +484,40 @@ export default function AnaliseAmbientalPage() {
     }
   };
 
+  const analysisPreviewValue = React.useMemo(() => {
+    if (inputMode === "shp" && shpFileName) {
+      return `[SHP] ${shpFileName} (${Math.round(shpZipBase64.length * 0.75)} bytes no pacote)`;
+    }
+    const built = buildAnalysisInput();
+    if (!built) return "";
+    if (built.data.length > 2000) {
+      return `${built.data.slice(0, 2000)}… (${built.data.length} caracteres)`;
+    }
+    return built.data;
+  }, [buildAnalysisInput, inputMode, shpFileName, shpZipBase64]);
+
   return (
-    <StudyGeospatialSplitShell
+    <StudyGeospatialStackedShell
       title="Análise Geoespacial (IA)"
-      description="Desenhe o perímetro, execute a Onda A (SIG: hidrografia, bioma, solos) e exporte PDF factual; depois complemente com IA em Relatórios de IA."
+      description="Desenhe o perímetro, execute as 8 camadas SIG (MG) e exporte o PDF factual; depois complemente com IA em Relatórios de IA."
+      topExtras={<PackageUsageBanner usage={packageUsage} showAmbbot />}
       mapPane={
-        <Card className="flex h-full min-h-[420px] min-w-0 flex-1 flex-col overflow-hidden md:min-h-0">
+        <Card className="flex w-full flex-col overflow-hidden">
           <CardHeader className="shrink-0 space-y-1 pb-3">
-            <CardTitle>Captura por coordenada/polígono</CardTitle>
+            <CardTitle>Captura por coordenada / polígono</CardTitle>
             <CardDescription>
-              Desenhe o perímetro no mapa (mesmo basemap que Mapas) ou use as
-              ações abaixo; em seguida confira o modo de entrada na coluna à
-              direita.
+              Mapa em largura total: desenhe o perímetro, capture coordenadas ou
+              carregue SHP no painel abaixo. O mesmo limite alimenta as 8 camadas
+              IDE-Sisema MG.
             </CardDescription>
           </CardHeader>
-          <CardContent className="flex flex-1 flex-col gap-4 pt-0 min-h-0">
-            <div className="relative min-h-[280px] flex-1 basis-0">
+          <CardContent className="flex flex-col gap-4 pt-0">
+            <div className="relative min-h-[360px] w-full md:min-h-[420px] lg:min-h-[480px]">
               <div className="absolute inset-0 overflow-hidden rounded-md border">
                 <LeafletMap polygon={drawnPolygon} onPolygonCreated={setDrawnPolygon} />
               </div>
             </div>
-            <div className="flex shrink-0 flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2">
               <Button type="button" variant="outline" onClick={handleUseCurrentCoordinates}>
                 Capturar coordenada atual
               </Button>
@@ -543,9 +536,8 @@ export default function AnaliseAmbientalPage() {
           </CardContent>
         </Card>
       }
-      sidebar={
+      controlsPane={
         <>
-          <PackageUsageBanner usage={packageUsage} showAmbbot />
           <Collapsible defaultOpen={false} className="group rounded-lg border bg-card shadow-sm">
             <div className="flex items-center gap-2 px-3 py-2">
               <CollapsibleTrigger asChild>
@@ -567,11 +559,9 @@ export default function AnaliseAmbientalPage() {
             </div>
             <CollapsibleContent className="space-y-2 border-t px-3 py-3 text-xs leading-relaxed text-muted-foreground">
               <p>
-                Use o mapa à esquerda para desenhar ou capturar coordenadas;
-                escolha o modo (CAR, coordenadas ou polígono) nos cartões ao lado
-                e gere o relatório com IA. Os dados indicados são enviados à
-                análise — copie do portal público e cole nos campos, se
-                precisar.
+                Desenhe no mapa ou envie SHP/CAR; gere o relatório factual (8
+                camadas) e confira os cartões abaixo. Depois use a Etapa 2 para
+                complemento com IA.
               </p>
               <p>
                 Para o visualizador oficial de camadas do Sisema-MG, abra{" "}
@@ -590,11 +580,13 @@ export default function AnaliseAmbientalPage() {
             <CardHeader>
               <CardTitle className="text-base">Análise geoespacial factual</CardTitle>
               <CardDescription>
-                IDE-Sisema MG: hidrografia, bioma, solos, geologia, geomorfologia, pedologia, vegetação e fauna.
+                IDE-Sisema MG: hidrografia, bioma, solos, geologia, geomorfologia,
+                pedologia, vegetação e fauna.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-2">
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              <div className="space-y-2 md:col-span-1">
                 <Label htmlFor="input-mode">Modo de entrada</Label>
                 <Select
                   value={inputMode}
@@ -612,6 +604,7 @@ export default function AnaliseAmbientalPage() {
                 </Select>
               </div>
 
+              <div className="space-y-2 md:col-span-2">
               {inputMode === "car" && (
                 <div className="space-y-2">
                   <Label htmlFor="car-input">Número do CAR</Label>
@@ -685,22 +678,23 @@ export default function AnaliseAmbientalPage() {
                   ) : null}
                 </div>
               )}
+              </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="analysis-preview">
-                  Prévia do payload a analisar
-                </Label>
+              <div className="space-y-2 md:col-span-3">
+                <Label htmlFor="analysis-preview">Resumo do perímetro enviado</Label>
                 <Textarea
                   id="analysis-preview"
-                  value={buildAnalysisInput()?.data ?? ""}
+                  value={analysisPreviewValue}
                   readOnly
-                  className="min-h-[80px]"
+                  className="min-h-[72px] font-mono text-xs"
                 />
               </div>
+              </div>
+              <div className="flex flex-col gap-2 sm:flex-row">
               <Button
                 onClick={handleStartWaveA}
                 disabled={isWaveALoading || isLoading || !hasValidInput}
-                className="w-full"
+                className="flex-1"
               >
                 {isWaveALoading ? (
                   <>
@@ -718,7 +712,7 @@ export default function AnaliseAmbientalPage() {
                 onClick={handleStartAnalysis}
                 disabled={isLoading || isWaveALoading || !hasValidInput}
                 variant="outline"
-                className="w-full"
+                className="flex-1"
               >
                 {isLoading ? (
                   <>
@@ -728,19 +722,22 @@ export default function AnaliseAmbientalPage() {
                 ) : (
                   <>
                     <Sparkles className="mr-2 h-4 w-4" />
-                    Relatório com IA (legado)
+                    Relatório completo (DeepSeek)
                   </>
                 )}
               </Button>
+              </div>
             </CardContent>
           </Card>
-
-          <Card>
+        </>
+      }
+      resultsPane={
+        <Card>
             <CardHeader>
-              <CardTitle className="text-base">Relatório da Análise</CardTitle>
+              <CardTitle className="text-base">Resultados da análise</CardTitle>
               <CardDescription>
-                Quando o relatório for gerado, ele ficará disponível para download
-                em PDF.
+                Resumo por camada IDE-Sisema MG. Exporte o PDF factual ou avance para a
+                Etapa 2 (complemento IA).
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -749,24 +746,32 @@ export default function AnaliseAmbientalPage() {
                   <Loader2 className="mb-3 h-10 w-10 animate-spin" />
                   <p className="text-sm">
                     {isWaveALoading
-                      ? "Consultando IDE-Sisema (hidrografia, bioma, solos)..."
+                      ? "Consultando 8 camadas no IDE-Sisema MG..."
                       : "Processando dados e gerando análise geoespacial..."}
                   </p>
                 </div>
               ) : waveAResult || analysisResult ? (
-                <div className="space-y-4">
+                <div className="space-y-6">
                   {waveAResult ? (
                     <>
-                      <p className="text-sm text-muted-foreground">
-                        {waveAResult.factualSummary}
-                      </p>
-                      <p className="text-xs font-medium text-primary">
-                        Área: {waveAResult.perimeter.areaHa.toFixed(2)} ha · Ondas A+B+C
-                      </p>
+                      <div className="rounded-lg border bg-muted/30 px-4 py-3">
+                        <p className="text-sm text-muted-foreground">
+                          {waveAResult.factualSummary}
+                        </p>
+                        <p className="mt-2 text-sm font-semibold text-primary">
+                          Área: {waveAResult.perimeter.areaHa.toFixed(2)} ha · Ondas A+B+C
+                          {waveAResult.perimeter.source === "shp"
+                            ? " · perímetro SHP"
+                            : ""}
+                        </p>
+                      </div>
                       <GeoWaveALayerCards layers={waveAResult.layers} />
                     </>
                   ) : analysisResult ? (
                     <>
+                      {analysisProvider ? (
+                        <AiProviderBadge provider={analysisProvider} showHint />
+                      ) : null}
                       <p className="line-clamp-2 text-sm text-muted-foreground">
                         {analysisResult.resumoIA}
                       </p>
@@ -785,11 +790,11 @@ export default function AnaliseAmbientalPage() {
                       </div>
                     </>
                   ) : null}
-                  <div className="flex flex-col gap-2">
+                  <div className="flex flex-wrap gap-2 border-t pt-4">
                     <Button
                       onClick={handleDownloadPdf}
                       disabled={isGeneratingPdf}
-                      className="w-full"
+                      className="min-w-[200px] flex-1"
                     >
                       {isGeneratingPdf ? (
                         <>
@@ -807,7 +812,7 @@ export default function AnaliseAmbientalPage() {
                       variant="outline"
                       onClick={handleDownloadCsv}
                       disabled={isExportingCsv}
-                      className="w-full"
+                      className="min-w-[160px] flex-1"
                     >
                       {isExportingCsv ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Database className="mr-2 h-4 w-4" />}
                       Exportar CSV
@@ -816,12 +821,22 @@ export default function AnaliseAmbientalPage() {
                       variant="outline"
                       onClick={handleDownloadGeoJson}
                       disabled={isExportingGeojson}
-                      className="w-full"
+                      className="min-w-[160px] flex-1"
                     >
                       {isExportingGeojson ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Globe className="mr-2 h-4 w-4" />}
                       Exportar GeoJSON
                     </Button>
-                    <Button asChild variant="outline" className="w-full">
+                    {savedGeoAnalysisId && (
+                      <Button asChild variant="default" className="min-w-[200px] flex-1">
+                        <Link
+                          href={`/laudos/new?tipoEstudo=RCA&geoAnalysisId=${encodeURIComponent(savedGeoAnalysisId)}`}
+                        >
+                          <FileDown className="mr-2 h-4 w-4" />
+                          Iniciar laudo RCA (Passo 3)
+                        </Link>
+                      </Button>
+                    )}
+                    <Button asChild variant="outline" className="min-w-[200px] flex-1">
                       <Link
                         href={`/studies/assistant?tipo=mcp&prompt=${encodeURIComponent(buildFactsPrompt())}`}
                       >
@@ -835,24 +850,24 @@ export default function AnaliseAmbientalPage() {
                 <div className="flex flex-col items-center justify-center py-10 text-center text-muted-foreground">
                   <Globe className="mb-3 h-12 w-12 opacity-50" />
                   <p className="text-sm">
-                    Configure o perímetro e clique em &quot;Gerar relatório factual (Onda A)&quot;.
-                    Depois use &quot;Complementar com IA&quot; em Relatórios de IA.
+                    Configure o perímetro e clique em &quot;Gerar relatório factual (8 camadas MG)&quot;.
+                    Depois avance para a Etapa 2 abaixo.
                   </p>
                 </div>
               )}
             </CardContent>
           </Card>
-
-          {user?.uid && (waveAResult || savedGeoAnalysisId) ? (
-            <Suspense fallback={null}>
-              <GeoAnalysisComplementPanel
-                userId={user.uid}
-                initialGeoAnalysisId={savedGeoAnalysisId}
-                inlineWaveResult={waveAResult}
-              />
-            </Suspense>
-          ) : null}
-        </>
+      }
+      footerPane={
+        user?.uid && (waveAResult || savedGeoAnalysisId) ? (
+          <Suspense fallback={null}>
+            <GeoAnalysisComplementPanel
+              userId={user.uid}
+              initialGeoAnalysisId={savedGeoAnalysisId}
+              inlineWaveResult={waveAResult}
+            />
+          </Suspense>
+        ) : null
       }
     />
   );

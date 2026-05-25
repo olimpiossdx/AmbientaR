@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { getApps } from 'firebase/app';
 import { useFirebase, useDoc, useMemoFirebase } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import {
@@ -55,7 +56,7 @@ export function useLocalBranding() {
   }, [isLoading, data]);
 
   useEffect(() => {
-    if (isLoading) return;
+    if (isLoading || !auth?.currentUser) return;
     const hasUrl =
       Boolean(data.headerImageUrl?.trim()) ||
       Boolean(data.footerImageUrl?.trim()) ||
@@ -67,26 +68,42 @@ export function useLocalBranding() {
     }
     let cancelled = false;
     setIsPdfImagesLoading(true);
-    fetchBrandingImagesForPdf({
-      headerImageUrl: data.headerImageUrl,
-      footerImageUrl: data.footerImageUrl,
-      watermarkImageUrl: data.watermarkImageUrl,
-    })
-      .then((loaded) => {
+
+    const load = async () => {
+      if (typeof getApps === 'function') {
+        for (let i = 0; i < 100 && getApps().length === 0; i++) {
+          await new Promise((r) => setTimeout(r, 80));
+          if (cancelled) return;
+        }
+      }
+      try {
+        const loaded = await fetchBrandingImagesForPdf({
+          headerImageUrl: data.headerImageUrl,
+          footerImageUrl: data.footerImageUrl,
+          watermarkImageUrl: data.watermarkImageUrl,
+        });
         if (!cancelled) setPdfImages(loaded);
-      })
-      .catch(() => {
+      } catch {
         if (!cancelled) {
           setPdfImages({ headerBase64: null, footerBase64: null, watermarkBase64: null });
         }
-      })
-      .finally(() => {
+      } finally {
         if (!cancelled) setIsPdfImagesLoading(false);
-      });
+      }
+    };
+
+    void load();
     return () => {
       cancelled = true;
     };
-  }, [isLoading, data.headerImageUrl, data.footerImageUrl, data.watermarkImageUrl, pdfImagesReloadToken]);
+  }, [
+    isLoading,
+    auth?.currentUser?.uid,
+    data.headerImageUrl,
+    data.footerImageUrl,
+    data.watermarkImageUrl,
+    pdfImagesReloadToken,
+  ]);
 
   const refetch = () => {
     clearBrandingPdfCache();

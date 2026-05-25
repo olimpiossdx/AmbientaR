@@ -14,9 +14,22 @@ import {
   type GenerateFinancialReportOutput,
 } from "@/lib/types";
 
+import { getDeepseekApiKey } from "@/lib/deepseek-env";
+import { generateFinancialReportDeepseek } from "@/ai/flows/generate-financial-report-deepseek";
+import { hasAiProvider } from "@/ai/genkit";
+
 export async function generateFinancialReport(
   input: GenerateFinancialReportInput,
 ): Promise<GenerateFinancialReportOutput> {
+  const deepseekKey = getDeepseekApiKey();
+  if (deepseekKey) {
+    return generateFinancialReportDeepseek(input, deepseekKey);
+  }
+  if (!hasAiProvider) {
+    throw new Error(
+      "Relatório financeiro requer DEEPSEEK_API_KEY ou GOOGLE_GENAI_API_KEY.",
+    );
+  }
   return generateFinancialReportFlow(input);
 }
 

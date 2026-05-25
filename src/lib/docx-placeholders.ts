@@ -5,6 +5,11 @@
  */
 
 import type { AmbientalContext } from '@/lib/types';
+import type { GeoAnalysisComplementOutput, WaveAAnalysisResult } from '@/lib/types/geo-wave-a';
+import {
+  buildGeoPlaceholderData,
+  mergePlaceholderData,
+} from '@/lib/geospatial/geo-placeholders';
 
 function fmt(str: string | undefined | null): string {
   return str != null && String(str).trim() !== '' ? String(str).trim() : '—';
@@ -96,4 +101,17 @@ export function buildPlaceholderDataFromContext(ctx: AmbientalContext): Record<s
     BLOCO_PROGRAMAS_AMBIENTAIS: '',
     BLOCO_CONCLUSAO_TECNICA: '',
   };
+}
+
+/** Contexto + análise SIG (Passo 3) para geração de DOCX de laudos/RCA. */
+export function buildPlaceholderDataForLaudo(
+  ctx: AmbientalContext,
+  geo?: {
+    wave: WaveAAnalysisResult;
+    complement?: GeoAnalysisComplementOutput | null;
+  },
+): Record<string, string> {
+  const base = buildPlaceholderDataFromContext(ctx);
+  if (!geo) return base;
+  return mergePlaceholderData(base, buildGeoPlaceholderData(geo.wave, geo.complement));
 }

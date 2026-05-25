@@ -4,7 +4,7 @@ import { ptBR } from "date-fns/locale/pt-BR";
 import type { WaterPermit } from "@/lib/types";
 import type { ComplianceReport } from "@/lib/water-compliance-engine";
 import type { TelemetryReading } from "@/lib/types";
-import type { BrandingImageUrls } from "@/lib/branding-pdf";
+import type { BrandingImageUrls, BrandingPdfImages } from "@/lib/branding-pdf";
 import {
   createMmBrandedPdfSession,
   drawWatermarkOnPage,
@@ -23,6 +23,7 @@ export async function generateWaterCompliancePDF(
   readings: TelemetryReading[] = [],
   meta?: WaterReportMeta,
   brandingUrls?: BrandingImageUrls | null,
+  preloadedImages?: BrandingPdfImages | null,
 ) {
   const { default: autoTable } = await import("jspdf-autotable");
   const hasBranding =
@@ -30,7 +31,7 @@ export async function generateWaterCompliancePDF(
     Boolean(brandingUrls?.footerImageUrl) ||
     Boolean(brandingUrls?.watermarkImageUrl);
   const session = hasBranding
-    ? await createMmBrandedPdfSession(brandingUrls!)
+    ? await createMmBrandedPdfSession(brandingUrls!, undefined, preloadedImages)
     : null;
   const doc: jsPDF = session?.doc ?? new (await import("jspdf")).default();
   const contentTop = session?.startY ?? 22;

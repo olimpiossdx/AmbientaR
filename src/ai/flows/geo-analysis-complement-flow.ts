@@ -54,17 +54,18 @@ Se faltar dado, diga explicitamente que a camada não retornou interseção ou q
 Resumo factual:
 {{factualSummary}}
 
-Dados por camada (Onda A):
+Dados por camada (8 camadas IDE-Sisema MG — Ondas A, B e C):
 {{layersFacts}}
 
+Mapeie mentalmente as camadas factuais para as secções abaixo (use os títulos das camadas no texto quando citar dados).
 Estruture a saída JSON com:
-- resumoExecutivo: 1 parágrafo
-- sections: array com keys fixas:
-  - key "hidrografia", title "Hidrografia e APP"
-  - key "bioma_vegetacao", title "Bioma, vegetação e inventário florestal"
-  - key "meio_fisico", title "Geologia, geomorfologia, solos e pedologia"
+- resumoExecutivo: 1 parágrafo integrando achados das 8 camadas
+- sections: array com keys fixas (bodyMarkdown em português, 2–4 parágrafos por secção quando houver dados):
+  - key "hidrografia", title "Hidrografia, massas d'água e APP"
+  - key "bioma_vegetacao", title "Bioma, vegetação e cobertura"
+  - key "meio_fisico", title "Solos, geologia e geomorfologia"
   - key "fauna", title "Fauna e ocorrências no perímetro"
-  - key "recomendacoes", title "Recomendações e próximos passos"
+  - key "recomendacoes", title "Recomendações, lacunas e próximos passos"
 - status: sempre "rascunho_ia"
 - disclaimer: aviso de revisão humana obrigatória
 - generatedAtUtc: use timestamp atual em ISO
@@ -84,7 +85,7 @@ const complementFlow = ai.defineFlow(
   async ({ geoAnalysisId, waveResult }) => {
     if (!hasAiProvider) {
       throw new Error(
-        "IA indisponível. Configure OPENAI_API_KEY ou GOOGLE_GENAI_API_KEY.",
+        "Complemento geo (leve) requer GOOGLE_GENAI_API_KEY ou GEMINI_API_KEY.",
       );
     }
 
@@ -105,7 +106,7 @@ const complementFlow = ai.defineFlow(
       generatedAtUtc: new Date().toISOString(),
       disclaimer:
         output.disclaimer ||
-        "Rascunho gerado por IA com base na análise factual (Onda A). Revisão por profissional habilitado é obrigatória antes de uso em estudo ou órgão licenciador.",
+        "Rascunho gerado por IA com base na análise factual (8 camadas SIG). Revisão por profissional habilitado é obrigatória antes de uso em estudo ou órgão licenciador.",
     };
   },
 );

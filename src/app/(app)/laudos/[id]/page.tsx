@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { useMemo, useState, useCallback } from 'react';
+import { useMemo, useState, useCallback, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { PageHeader } from '@/components/page-header';
@@ -20,6 +20,11 @@ import { getBearerApiHeaders } from '@/lib/api-client-auth';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { FileText, Database, Loader2, FileDown, Send } from 'lucide-react';
+import { GeoAnalysisRcaImport } from '@/components/geospatial/geo-analysis-rca-import';
+import {
+  loadGeoAnalysisBundle,
+  type GeoAnalysisBundle,
+} from '@/lib/geospatial/load-geo-analysis-bundle';
 import type { LaudoStatus } from '@/lib/types';
 import {
   Select,
@@ -61,7 +66,7 @@ export default function LaudoDetailPage() {
   const params = useParams();
   const id = params?.id as string;
 
-  const { firestore, auth } = useFirebase();
+  const { firestore, auth, user } = useFirebase();
   const laudoDocRef = useMemoFirebase(
     () => (firestore && id ? doc(firestore, 'laudos', id) : null),
     [firestore, id]
@@ -105,6 +110,16 @@ export default function LaudoDetailPage() {
   const [statusUpdating, setStatusUpdating] = useState(false);
   const [pdfUrlInput, setPdfUrlInput] = useState('');
   const [pdfUrlSaving, setPdfUrlSaving] = useState(false);
+  const [geoBundle, setGeoBundle] = useState<GeoAnalysisBundle | null>(null);
+
+  const handleGeoBundleChange = useCallback((b: GeoAnalysisBundle | null) => {
+    setGeoBundle(b);
+  }, []);
+
+  useEffect(() => {
+    if (!firestore || !user?.uid || !laudo?.geoAnalysisId) return;
+    void loadGeoAnalysisBundle(firestore, laudo.geoAnalysisId, user.uid).then(setGeoBundle);
+  }, [firestore, user?.uid, laudo?.geoAnalysisId]);
 
   const empreendedor = useMemo(() => {
     if (!laudo || !empreendedores) return null;
@@ -206,6 +221,8 @@ export default function LaudoDetailPage() {
           tipoEstudo: laudo.tipoEstudo,
           context: ctx,
           templateUrl: docxTemplates?.[tipoEstudoToTemplateSlug(laudo.tipoEstudo) as keyof DocxTemplatesState]?.url,
+          geoAnalysis: geoBundle?.wave,
+          geoComplement: geoBundle?.complement ?? null,
         }),
       });
       if (!res.ok) {
@@ -226,7 +243,7 @@ export default function LaudoDetailPage() {
     } finally {
       setDocxLoading(false);
     }
-  }, [laudo, ambientalContext, firestore, toast, docxTemplates]);
+  }, [laudo, ambientalContext, firestore, toast, docxTemplates, auth, geoBundle]);
 
   const savePdfUrl = useCallback(async () => {
     if (!firestore || !id) return;
@@ -357,6 +374,16 @@ export default function LaudoDetailPage() {
           </CardContent>
         </Card>
 
+        {user?.uid && laudo.empreendimentoId && (
+          <GeoAnalysisRcaImport
+            userId={user.uid}
+            laudoId={laudo.id}
+            empreendimentoId={laudo.empreendimentoId}
+            initialGeoAnalysisId={(laudo as { geoAnalysisId?: string }).geoAnalysisId}
+            onBundleChange={handleGeoBundleChange}
+          />
+        )}
+
         {laudo.empreendimentoId && (
           <Card>
             <CardHeader>
@@ -388,8 +415,13 @@ export default function LaudoDetailPage() {
                   </p>
                   <Button size="sm" className="mt-2 gap-1" onClick={gerarDocx} disabled={docxLoading}>
                     {docxLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
-                    Gerar DOCX
+                    Gerar DOCX{geoBundle ? ' (com SIG)' : ''}
                   </Button>
+                  {!geoBundle && (
+                    <p className="text-xs text-muted-foreground">
+                      Vincule uma análise geoespacial acima para preencher GEO_* e blocos técnicos.
+                    </p>
+                  )}
                 </div>
               )}
             </CardContent>

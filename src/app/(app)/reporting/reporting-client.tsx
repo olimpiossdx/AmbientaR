@@ -17,6 +17,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Textarea } from '@/components/ui/textarea';
 import { Loader2, Sparkles } from 'lucide-react';
 import { handleGenerateReport } from './actions';
+import { AiProviderBadge } from '@/components/ai/ai-provider-badge';
 import { useToast } from '@/hooks/use-toast';
 import { GenerateSustainabilityReportInputSchema, type GenerateSustainabilityReportInput } from '@/lib/types';
 
@@ -27,6 +28,7 @@ type FormValues = GenerateSustainabilityReportInput;
 export default function ReportingClient() {
   const [loading, setLoading] = React.useState(false);
   const [report, setReport] = React.useState<string | null>(null);
+  const [reportProvider, setReportProvider] = React.useState<string | null>(null);
   const { toast } = useToast();
 
   const form = useForm<FormValues>({
@@ -41,11 +43,13 @@ export default function ReportingClient() {
   async function onSubmit(values: FormValues) {
     setLoading(true);
     setReport(null);
-    
+    setReportProvider(null);
+
     const result = await handleGenerateReport(values);
 
     if (result.success && result.report) {
       setReport(result.report);
+      setReportProvider(result.provider ?? null);
     } else {
       toast({
         variant: 'destructive',
@@ -63,7 +67,7 @@ export default function ReportingClient() {
         <CardHeader>
           <CardTitle>Gerador de Relatório de Sustentabilidade</CardTitle>
           <CardDescription>
-            Insira os dados do projeto e as métricas ambientais para gerar um relatório de sustentabilidade detalhado.
+            Relatório longo — motor DeepSeek quando DEEPSEEK_API_KEY estiver configurada.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -134,7 +138,7 @@ export default function ReportingClient() {
                 ) : (
                   <>
                     <Sparkles className="mr-2 h-4 w-4" />
-                    Gerar Relatório de Sustentabilidade
+                    Gerar relatório (DeepSeek)
                   </>
                 )}
               </Button>
@@ -147,7 +151,10 @@ export default function ReportingClient() {
       {(loading || report) && (
         <Card className="h-full flex flex-col">
           <CardHeader>
-            <CardTitle>Relatório Gerado</CardTitle>
+            <div className="space-y-2">
+              <CardTitle>Relatório Gerado</CardTitle>
+              {reportProvider ? <AiProviderBadge provider={reportProvider} /> : null}
+            </div>
           </CardHeader>
           <CardContent className="flex-1 overflow-auto">
             {loading && (

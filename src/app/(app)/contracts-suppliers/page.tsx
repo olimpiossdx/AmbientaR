@@ -53,6 +53,7 @@ import { CheckCircle, Download, Eye, Loader2, Pencil, PlusCircle, Trash2, Upload
 import { SupplierContractForm } from "./supplier-contract-form";
 import { AttachmentPreviewSection } from "@/components/shared/attachment-preview-section";
 import { generateSupplierContractPdf } from "./supplier-contract-pdf";
+import { guardBrandingExportFromHook } from "@/lib/pdf-branding-layout";
 import { useLocalBranding } from "@/hooks/use-local-branding";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -82,7 +83,12 @@ export default function ContractsSuppliersPage() {
       return `supplier-contracts/signed/${uploadingItem.id}/${Date.now()}-${safe}`;
     },
   });
-  const { data: brandingData } = useLocalBranding();
+  const {
+    data: brandingData,
+    pdfImages,
+    isPdfImagesLoading,
+    hasBrandingUrls,
+  } = useLocalBranding();
 
   const [searchTerm, setSearchTerm] = React.useState("");
   const [isFormOpen, setIsFormOpen] = React.useState(false);
@@ -224,8 +230,22 @@ export default function ContractsSuppliersPage() {
   };
 
   const handleExportPdf = async (item: SupplierContract) => {
+    if (
+      !guardBrandingExportFromHook({
+        brandingData,
+        pdfImages,
+        isPdfImagesLoading,
+        hasBrandingUrls,
+        toast,
+      })
+    ) {
+      return;
+    }
     try {
-      await generateSupplierContractPdf(item, brandingData);
+      await generateSupplierContractPdf(item, brandingData, {
+        preloadedImages: pdfImages,
+        onBrandingIssue: toast,
+      });
       toast({ title: "PDF do contrato gerado com sucesso." });
     } catch (error) {
       console.error(error);

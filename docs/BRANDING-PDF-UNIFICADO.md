@@ -34,9 +34,22 @@ Contratos (unidade `cm`): `loadPdfBranding` + `drawWatermarkOnPage` em `onNewPag
 
 Calibrar com o PDF modelo do utilizador (`exemplo_branding.pdf`): A4, cabeçalho no topo, rodapé centrado, marca d'água central sem cobrir o texto.
 
+## Word (.docx)
+
+- `src/lib/branding-docx.ts` — cabeçalho, marca d'água e rodapé reutilizáveis (ofícios, complemento geoespacial, etc.).
+- Usar `useLocalBranding().pdfImages` + `guardBrandingPdfExport` (ou `guardBrandingDocumentExport`) antes de exportar PDF **ou** Word.
+
 ## Configuração
 
 Configurações → Identidade visual (`companySettings/branding`). URLs `firebasestorage.googleapis.com` e `firebasestorage.app` são aceites em `storagePathFromDownloadUrl`.
+
+## Contratos e propostas
+
+Ao gerar PDF de contrato ou proposta, aguardar `isPdfImagesLoading === false` e passar `pdfImages` pré-carregados para `loadPdfBranding` / `generateContractPdf` — evita PDF sem identidade visual em produção (corrida com o proxy `/api/branding/image`).
+
+## Páginas alinhadas (guard + `pdfImages`)
+
+Contratos, propostas, fornecedores, vistorias (lista + relatórios), CRM, usuários (log PDF), monitoramento hídrico (manual + telemétrico), solicitações/licenciamento, PTRF/PRAD, faturas, DRE, fluxo de caixa, curva ABC, ofícios, complemento geoespacial (PDF + Word), menu IA.
 
 ## CORS no Firebase Storage (erro no console)
 

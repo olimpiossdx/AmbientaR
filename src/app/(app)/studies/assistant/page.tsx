@@ -25,12 +25,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Loader2, Sparkles } from 'lucide-react';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Loader2, Sparkles, Zap } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { handleAskAssistant } from './actions';
 import { IA_MENU_LABEL } from '@/lib/navigation-config';
 import { PageHeader } from '@/components/page-header';
 import { Skeleton } from '@/components/ui/skeleton';
+import { AiProviderBadge, AiRoutingInfoCard } from '@/components/ai/ai-provider-badge';
+import { Label } from '@/components/ui/label';
 
 const TIPOS = ['geral', 'mira', 'financeiro', 'rag', 'mcp'] as const;
 type TipoAssistente = (typeof TIPOS)[number];
@@ -38,6 +41,7 @@ type TipoAssistente = (typeof TIPOS)[number];
 const formSchema = z.object({
   prompt: z.string().min(10, 'Sua pergunta deve ter pelo menos 10 caracteres.'),
   tipo: z.enum(TIPOS),
+  modo: z.enum(['rapido', 'completo']),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -62,6 +66,7 @@ function AssistantPageInner() {
 
   const [loading, setLoading] = React.useState(false);
   const [response, setResponse] = React.useState<string | null>(null);
+  const [lastProvider, setLastProvider] = React.useState<string | null>(null);
   const { toast } = useToast();
 
   const form = useForm<FormValues>({
@@ -69,8 +74,11 @@ function AssistantPageInner() {
     defaultValues: {
       prompt: initialPrompt,
       tipo: initialTipo,
+      modo: 'rapido',
     },
   });
+
+  const modo = form.watch('modo');
 
   React.useEffect(() => {
     const t = parseTipoFromSearch(searchParams?.get('tipo'));
@@ -84,14 +92,17 @@ function AssistantPageInner() {
   async function onSubmit(values: FormValues) {
     setLoading(true);
     setResponse(null);
+    setLastProvider(null);
 
     const result = await handleAskAssistant({
       prompt: values.prompt,
       tipo: values.tipo,
+      modo: values.modo,
     });
 
     if (result.success && result.response) {
       setResponse(result.response);
+      setLastProvider(result.provider ?? null);
     } else {
       toast({
         variant: 'destructive',
@@ -106,20 +117,63 @@ function AssistantPageInner() {
   return (
     <div className="flex h-full flex-col">
       <PageHeader title="Assistente de IA para estudos ambientais" />
-      <main className="flex-1 overflow-auto p-4 md:p-6">
+      <main className="flex-1 overflow-auto p-4 md:p-6 space-y-4">
+        <AiRoutingInfoCard />
         <div className="grid gap-6 lg:grid-cols-2">
           <Card>
             <CardHeader>
               <CardTitle>Consulta</CardTitle>
               <CardDescription>
-                Com <strong className="font-medium text-foreground">DEEPSEEK_API_KEY</strong> no
-                servidor, as respostas usam DeepSeek. Caso contrário, usa-se o fluxo Genkit/Google
-                anterior.
+                <strong className="font-medium text-foreground">Resposta rápida</strong> usa Gemini
+                (barato). <strong className="font-medium text-foreground">Relatório completo</strong>{' '}
+                usa DeepSeek (textos longos e mais elaborados).
               </CardDescription>
             </CardHeader>
             <CardContent>
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                  <FormField
+                    control={form.control}
+                    name="modo"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Tipo de resposta</FormLabel>
+                        <FormControl>
+                          <RadioGroup
+                            onValueChange={field.onChange}
+                            value={field.value}
+                            className="grid gap-3"
+                          >
+                            <div className="flex items-start space-x-3 rounded-md border p-3">
+                              <RadioGroupItem value="rapido" id="modo-rapido" className="mt-1" />
+                              <div className="grid gap-1">
+                                <Label htmlFor="modo-rapido" className="font-medium cursor-pointer">
+                                  <Zap className="inline h-4 w-4 mr-1 text-amber-600" />
+                                  Resposta rápida (Gemini)
+                                </Label>
+                                <p className="text-xs text-muted-foreground">
+                                  Dúvidas, legislação, orientações curtas — menor custo.
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex items-start space-x-3 rounded-md border p-3">
+                              <RadioGroupItem value="completo" id="modo-completo" className="mt-1" />
+                              <div className="grid gap-1">
+                                <Label htmlFor="modo-completo" className="font-medium cursor-pointer">
+                                  <Sparkles className="inline h-4 w-4 mr-1 text-violet-600" />
+                                  Relatório completo (DeepSeek)
+                                </Label>
+                                <p className="text-xs text-muted-foreground">
+                                  Textos longos, capítulos e sínteses extensas — conta DeepSeek.
+                                </p>
+                              </div>
+                            </div>
+                          </RadioGroup>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                   <FormField
                     control={form.control}
                     name="tipo"
@@ -171,10 +225,15 @@ function AssistantPageInner() {
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                         A pensar…
                       </>
-                    ) : (
+                    ) : modo === 'completo' ? (
                       <>
                         <Sparkles className="mr-2 h-4 w-4" />
-                        Perguntar ao assistente
+                        Gerar com DeepSeek
+                      </>
+                    ) : (
+                      <>
+                        <Zap className="mr-2 h-4 w-4" />
+                        Perguntar (Gemini)
                       </>
                     )}
                   </Button>
@@ -186,14 +245,21 @@ function AssistantPageInner() {
           <div className="lg:h-full">
             {(loading || response) && (
               <Card className="flex h-full flex-col">
-                <CardHeader>
+                <CardHeader className="space-y-2">
                   <CardTitle>Resposta</CardTitle>
+                  {lastProvider && !loading ? (
+                    <AiProviderBadge provider={lastProvider} showHint />
+                  ) : null}
                 </CardHeader>
                 <CardContent className="flex-1 overflow-auto">
                   {loading && (
                     <div className="flex h-full flex-col items-center justify-center gap-2 text-muted-foreground">
                       <Loader2 className="h-8 w-8 animate-spin" />
-                      <p>A gerar resposta…</p>
+                      <p>
+                        {modo === 'completo'
+                          ? 'A gerar com DeepSeek…'
+                          : 'A gerar com Gemini…'}
+                      </p>
                     </div>
                   )}
                   {response && (

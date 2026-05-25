@@ -87,17 +87,29 @@ export async function deleteFileAtStoragePath(
   await deleteObject(ref(storage, storagePath));
 }
 
+const STORAGE_URL_HOST_SNIPPETS = [
+  "firebasestorage.googleapis.com",
+  "firebasestorage.app",
+  "storage.googleapis.com",
+] as const;
+
+export function isFirebaseStorageDownloadUrl(url: string): boolean {
+  try {
+    const u = new URL(url);
+    return STORAGE_URL_HOST_SNIPPETS.some((h) => u.hostname.includes(h));
+  } catch {
+    return false;
+  }
+}
+
 /**
- * Extrai o path do objeto a partir da URL pública do Firebase Storage (para DELETE).
+ * Extrai o path do objeto a partir da URL pública do Firebase Storage (para DELETE, getBlob, proxy).
  * Retorna null se não for uma URL reconhecida.
  */
 export function storagePathFromDownloadUrl(url: string): string | null {
   try {
     const u = new URL(url);
-    if (
-      !u.hostname.includes("firebasestorage.googleapis.com") &&
-      !u.hostname.includes("firebasestorage.app")
-    ) {
+    if (!isFirebaseStorageDownloadUrl(url)) {
       return null;
     }
     const parts = u.pathname.split("/");

@@ -9,7 +9,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { promises as fs } from 'fs';
 import path from 'path';
 import type { AmbientalContext } from '@/lib/types';
-import { buildPlaceholderDataFromContext } from '@/lib/docx-placeholders';
+import { buildPlaceholderDataForLaudo } from '@/lib/docx-placeholders';
+import type { GeoAnalysisComplementOutput, WaveAAnalysisResult } from '@/lib/types/geo-wave-a';
 import {
   apiAuthErrorResponse,
   requireAuthenticatedApi,
@@ -65,12 +66,15 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { laudoId, tipoEstudo, context, templateUrl } = body as {
+    const { laudoId, tipoEstudo, context, templateUrl, geoAnalysis, geoComplement } =
+      body as {
       laudoId?: string;
       tipoEstudo?: string;
       context?: AmbientalContext;
       /** URL HTTPS do DOCX no Firebase Storage (Configurações → Templates). */
       templateUrl?: string;
+      geoAnalysis?: WaveAAnalysisResult;
+      geoComplement?: GeoAnalysisComplementOutput | null;
     };
 
     if (!context || typeof tipoEstudo !== 'string') {
@@ -113,7 +117,12 @@ export async function POST(request: NextRequest) {
       linebreaks: true,
     });
 
-    const data = buildPlaceholderDataFromContext(context);
+    const data = buildPlaceholderDataForLaudo(
+      context,
+      geoAnalysis
+        ? { wave: geoAnalysis, complement: geoComplement ?? null }
+        : undefined,
+    );
     doc.render(data);
 
     const buf = doc.getZip().generate({

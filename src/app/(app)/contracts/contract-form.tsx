@@ -215,7 +215,12 @@ export function ContractForm({ currentItem, onSuccess, sourceProposal }: Contrac
   const [loading, setLoading] = React.useState(false);
   const { toast } = useToast();
   const { firestore, user } = useFirebase();
-  const { data: brandingData } = useLocalBranding();
+  const {
+    data: brandingData,
+    pdfImages,
+    isPdfImagesLoading,
+    hasBrandingUrls,
+  } = useLocalBranding();
 
   const clientsQuery = useMemoFirebase(
     () => (firestore ? collection(firestore, "clients") : null),
@@ -583,16 +588,26 @@ export function ContractForm({ currentItem, onSuccess, sourceProposal }: Contrac
 
       if (contractId) {
         try {
-          await persistContractPdfForSignature(
-            firestore,
-            contractId,
-            contractForPdf,
-            brandingData,
-          );
-          toast({
-            title: "PDF do contrato gerado",
-            description: "O documento para assinatura foi atualizado no Storage.",
-          });
+          if (hasBrandingUrls && isPdfImagesLoading) {
+            toast({
+              title: "Contrato salvo",
+              description:
+                "A identidade visual ainda está a carregar. Use «Gerar PDF» na lista para gerar o documento com cabeçalho e rodapé.",
+            });
+          } else {
+            await persistContractPdfForSignature(
+              firestore,
+              contractId,
+              contractForPdf,
+              brandingData,
+              pdfImages,
+            );
+            toast({
+              title: "PDF do contrato gerado",
+              description:
+                "O documento para assinatura foi atualizado no Storage.",
+            });
+          }
         } catch (pdfErr) {
           console.error("Erro ao gerar PDF do contrato:", pdfErr);
           toast({

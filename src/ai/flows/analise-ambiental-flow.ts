@@ -5,7 +5,9 @@
  * - analyseArea - Função que recebe dados geoespaciais e retorna um relatório de análise.
  */
 
+import { analyseAreaWithDeepseek } from "@/ai/flows/analise-ambiental-deepseek";
 import { ai, aiModel, hasAiProvider } from "@/ai/genkit";
+import { getDeepseekApiKey } from "@/lib/deepseek-env";
 import { z } from "genkit";
 import {
   AnaliseAmbientalInputSchema,
@@ -100,7 +102,7 @@ const analiseAmbientalFlow = ai.defineFlow(
   async (input) => {
     if (!hasAiProvider) {
       throw new Error(
-        "Configuração de IA ausente no servidor. Defina OPENAI_API_KEY/OPENAI_KEY ou GOOGLE_GENAI_API_KEY/GEMINI_API_KEY.",
+        "Análise ambiental (legado Genkit) requer GOOGLE_GENAI_API_KEY. Para relatório completo, prefira DEEPSEEK_API_KEY.",
       );
     }
     const factualOverlay = await runGeospatialOverlay(input.data, input.dataType);
@@ -120,5 +122,14 @@ const analiseAmbientalFlow = ai.defineFlow(
 export async function analyseArea(
   input: AnaliseAmbientalInput,
 ): Promise<AnaliseAmbientalOutput> {
-  return await analiseAmbientalFlow(input);
+  const deepseekKey = getDeepseekApiKey();
+  if (deepseekKey) {
+    return analyseAreaWithDeepseek(input, deepseekKey);
+  }
+  if (hasAiProvider) {
+    return await analiseAmbientalFlow(input);
+  }
+  throw new Error(
+    "Análise ambiental requer DEEPSEEK_API_KEY (recomendado, tarefa pesada) ou GOOGLE_GENAI_API_KEY para o fluxo Genkit.",
+  );
 }

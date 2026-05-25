@@ -1,7 +1,9 @@
 "use server";
 
 import { z } from "genkit";
-import { ai, aiModel } from "@/ai/genkit";
+import { ai, aiModel, hasAiProvider } from "@/ai/genkit";
+import { generateAbntReportDeepseek } from "@/ai/flows/generate-abnt-report-deepseek";
+import { getDeepseekApiKey } from "@/lib/deepseek-env";
 
 const SourceSchema = z.object({
   title: z.string(),
@@ -88,5 +90,14 @@ const generateAbntReportFlow = ai.defineFlow(
 export async function generateAbntReport(
   input: GenerateAbntReportInput,
 ): Promise<GenerateAbntReportOutput> {
+  const deepseekKey = getDeepseekApiKey();
+  if (deepseekKey) {
+    return generateAbntReportDeepseek(input, deepseekKey);
+  }
+  if (!hasAiProvider) {
+    throw new Error(
+      "Relatório ABNT requer DEEPSEEK_API_KEY (tarefa pesada) ou GOOGLE_GENAI_API_KEY (Genkit).",
+    );
+  }
   return generateAbntReportFlow(input);
 }

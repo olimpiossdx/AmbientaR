@@ -16,9 +16,17 @@ import {
 } from '@/components/ui/form';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, Sparkles } from 'lucide-react';
+import { FileDown, Loader2, Sparkles } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useLocalBranding } from '@/hooks/use-local-branding';
+import {
+  prepareIaMenuBrandedPdfSession,
+  saveIaMenuBrandedPdf,
+  writeBrandedPdfParagraph,
+  writeBrandedPdfTitle,
+} from '@/lib/ia-menu-branded-pdf';
 import { handleGenerateFinancialReport } from './actions';
+import { AiProviderBadge } from '@/components/ai/ai-provider-badge';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection } from 'firebase/firestore';
 import type { Revenue, Expense } from '@/lib/types';
@@ -38,8 +46,16 @@ type FormValues = z.infer<typeof formSchema>;
 
 export default function FinancialReportingClient() {
   const [loading, setLoading] = React.useState(false);
+  const [exportingPdf, setExportingPdf] = React.useState(false);
   const [report, setReport] = React.useState<string | null>(null);
+  const [reportProvider, setReportProvider] = React.useState<string | null>(null);
   const { toast } = useToast();
+  const {
+    data: brandingData,
+    pdfImages,
+    isPdfImagesLoading,
+    hasBrandingUrls,
+  } = useLocalBranding();
   const firestore = useFirestore();
 
   const revenuesQuery = useMemoFirebase(() => firestore ? collection(firestore, 'revenues') : null, [firestore]);
@@ -57,6 +73,7 @@ export default function FinancialReportingClient() {
   async function onSubmit(values: FormValues) {
     setLoading(true);
     setReport(null);
+    setReportProvider(null);
 
     const filteredRevenues = revenuesData?.filter(r => {
       const date = new Date(r.date);
@@ -86,6 +103,7 @@ export default function FinancialReportingClient() {
 
     if (result.success && result.report) {
       setReport(result.report);
+      setReportProvider(result.provider ?? null);
     } else {
       toast({
         variant: 'destructive',
@@ -97,6 +115,33 @@ export default function FinancialReportingClient() {
     setLoading(false);
   }
 
+  async function handleExportPdf() {
+    if (!report) return;
+    setExportingPdf(true);
+    try {
+      const session = await prepareIaMenuBrandedPdfSession({
+        brandingData,
+        pdfImages,
+        isPdfImagesLoading,
+        hasBrandingUrls,
+        toast,
+      });
+      if (!session) return;
+      let y = writeBrandedPdfTitle(session, "Relatório financeiro (IA)");
+      y = writeBrandedPdfParagraph(session, report, 10, y);
+      saveIaMenuBrandedPdf(
+        session,
+        `relatorio-financeiro-ia-${new Date().toISOString().slice(0, 10)}.pdf`,
+      );
+      toast({
+        title: "PDF gerado",
+        description: "Relatório com cabeçalho, marca d'água e rodapé.",
+      });
+    } finally {
+      setExportingPdf(false);
+    }
+  }
+
   const isLoadingData = isLoadingRevenues || isLoadingExpenses;
 
   return (
@@ -105,7 +150,7 @@ export default function FinancialReportingClient() {
         <CardHeader>
           <CardTitle>Gerador de Relatório Financeiro</CardTitle>
           <CardDescription>
-            Selecione um período para gerar um relatório financeiro e contábil com base nos lançamentos de caixa.
+            Relatório gerado com DeepSeek (tarefa pesada). Configure DEEPSEEK_API_KEY no servidor.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -178,7 +223,7 @@ export default function FinancialReportingClient() {
                 ) : (
                   <>
                     <Sparkles className="mr-2 h-4 w-4" />
-                    Gerar Relatório Financeiro
+                    Gerar relatório (DeepSeek)
                   </>
                 )}
               </Button>
@@ -190,8 +235,27 @@ export default function FinancialReportingClient() {
       <div className="lg:h-full">
       {(loading || report) && (
         <Card className="h-full flex flex-col">
-          <CardHeader>
-            <CardTitle>Relatório Gerado</CardTitle>
+          <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between space-y-0">
+            <div className="space-y-2">
+              <CardTitle>Relatório Gerado</CardTitle>
+              {reportProvider ? <AiProviderBadge provider={reportProvider} /> : null}
+            </div>
+            {report ? (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={exportingPdf}
+                onClick={handleExportPdf}
+              >
+                {exportingPdf ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <FileDown className="mr-2 h-4 w-4" />
+                )}
+                Exportar PDF
+              </Button>
+            ) : null}
           </CardHeader>
           <CardContent className="flex-1 overflow-auto">
             {loading && (

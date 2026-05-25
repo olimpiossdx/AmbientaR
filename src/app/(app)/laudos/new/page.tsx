@@ -44,6 +44,8 @@ export default function NewLaudoPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const consultaIdParam = searchParams?.get('consultaId') ?? '';
+  const geoAnalysisIdParam = searchParams?.get('geoAnalysisId') ?? '';
+  const tipoEstudoParam = searchParams?.get('tipoEstudo') ?? '';
 
   const { toast } = useToast();
   const { firestore } = useFirebase();
@@ -67,6 +69,10 @@ export default function NewLaudoPage() {
       setTipoEstudo(consulta.tipoServico);
     }
   }, [consulta]);
+
+  useEffect(() => {
+    if (tipoEstudoParam) setTipoEstudo(tipoEstudoParam);
+  }, [tipoEstudoParam]);
 
   const empreendedoresQuery = useMemoFirebase(
     () => (firestore ? collection(firestore, 'empreendedores') : null),
@@ -116,6 +122,9 @@ export default function NewLaudoPage() {
         empreendimentoId: empreendimentoId.trim() || undefined,
         tipoEstudo,
         status: 'rascunho' as Laudo['status'],
+        ...(geoAnalysisIdParam.trim()
+          ? { geoAnalysisId: geoAnalysisIdParam.trim() }
+          : {}),
       });
       toast({ title: 'Laudo criado', description: 'O laudo foi registrado. Você pode preencher dados e gerar o documento depois.' });
       router.push(`/laudos/${ref.id}`);
@@ -143,6 +152,11 @@ export default function NewLaudoPage() {
               {fromConsulta
                 ? 'Dados preenchidos a partir da consulta. Ajuste se necessário.'
                 : 'Vincule a uma consulta (opcional) ou preencha empreendedor e tipo de estudo.'}
+              {geoAnalysisIdParam ? (
+                <span className="mt-1 block text-primary">
+                  Análise geoespacial {geoAnalysisIdParam.slice(0, 8)}… será vinculada ao criar o laudo (Passo 3).
+                </span>
+              ) : null}
             </CardDescription>
           </CardHeader>
           <CardContent>

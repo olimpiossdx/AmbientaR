@@ -40,7 +40,7 @@ import { downloadJsPdf } from "@/lib/branding-pdf";
 import {
   brandingUrlsFromLocal,
   createMmBrandedPdfSession,
-  guardBrandingPdfExport,
+  guardBrandingExportFromHook,
   reportBrandingPdfIssues,
 } from "@/lib/pdf-branding-layout";
 import { useLocalBranding } from "@/hooks/use-local-branding";
@@ -546,7 +546,17 @@ export default function InvoicesPage() {
     if (exportingPdfKey) return;
     setExportingPdfKey(`invoice-${invoice.id}`);
     try {
-    if (!guardBrandingPdfExport({ isPdfImagesLoading, hasBrandingUrls, toast })) return;
+    if (
+      !guardBrandingExportFromHook({
+        brandingData,
+        pdfImages,
+        isPdfImagesLoading,
+        hasBrandingUrls,
+        toast,
+      })
+    ) {
+      return;
+    }
     const client = clientsMap.get(invoice.clientId);
     const contract = invoice.contractId
       ? contractsMap.get(invoice.contractId)
@@ -735,7 +745,17 @@ export default function InvoicesPage() {
     if (exportingPdfKey) return;
     setExportingPdfKey("period");
     try {
-    if (!guardBrandingPdfExport({ isPdfImagesLoading, hasBrandingUrls, toast })) return;
+    if (
+      !guardBrandingExportFromHook({
+        brandingData,
+        pdfImages,
+        isPdfImagesLoading,
+        hasBrandingUrls,
+        toast,
+      })
+    ) {
+      return;
+    }
     const brandingUrlsPeriod = brandingUrlsFromLocal(brandingData);
     const session = await createMmBrandedPdfSession(brandingUrlsPeriod, undefined, pdfImages);
     reportBrandingPdfIssues(brandingUrlsPeriod, session.branding.images, toast);

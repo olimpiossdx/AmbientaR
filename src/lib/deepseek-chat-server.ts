@@ -4,7 +4,9 @@
  */
 
 export const DEEPSEEK_CHAT_URL = "https://api.deepseek.com/v1/chat/completions";
-export const DEEPSEEK_DEFAULT_MODEL = "deepseek-chat";
+/** Modelo para tarefas pesadas (relatórios, RAG grande). */
+export const DEEPSEEK_DEFAULT_MODEL =
+  process.env.DEEPSEEK_HEAVY_MODEL?.trim() || "deepseek-v4-flash";
 const MAX_USER_CHARS = 80_000;
 
 export const DEEPSEEK_PRESET_SYSTEM: Record<string, string> = {

@@ -1,10 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isAiRoutesEnabled } from "@/lib/deploy-flags";
-import { getDeepseekApiKey } from "@/lib/deepseek-env";
-import {
-  deepseekChatCompletion,
-  type DeepseekChatInput,
-} from "@/lib/deepseek-chat-server";
+import { routedChatCompletion } from "@/lib/ai-run-chat";
+import type { DeepseekChatInput } from "@/lib/deepseek-chat-server";
 import {
   apiAuthErrorResponse,
   requireAuthenticatedApi,
@@ -19,18 +16,6 @@ export async function POST(request: NextRequest) {
         success: false,
         error:
           "Rotas de IA desativadas (ENABLE_AI_ROUTES). Ative em `.env.local` e reinicie o servidor.",
-      },
-      { status: 503 },
-    );
-  }
-
-  const apiKey = getDeepseekApiKey();
-  if (!apiKey) {
-    return NextResponse.json(
-      {
-        success: false,
-        error:
-          "DEEPSEEK_API_KEY não definida. Configure em `.env.local` e reinicie `npm run dev`.",
       },
       { status: 503 },
     );
@@ -52,7 +37,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const result = await deepseekChatCompletion(body, apiKey);
+  const result = await routedChatCompletion(body);
 
   if (!result.ok) {
     const status = result.httpStatus === 400 ? 400 : 502;
@@ -67,5 +52,6 @@ export async function POST(request: NextRequest) {
     tipo: result.tipo,
     model: result.model,
     reply: result.reply,
+    provider: result.provider,
   });
 }

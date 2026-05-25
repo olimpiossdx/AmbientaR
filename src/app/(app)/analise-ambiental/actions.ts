@@ -14,9 +14,11 @@ import type {
   AnaliseAmbientalInput,
   AnaliseAmbientalOutput,
 } from "@/lib/types/analise-ambiental";
+import { getHeavyTaskProvider } from "@/lib/ai-provider-status";
+import type { AiProviderId } from "@/lib/ai-provider-labels";
 
 type AnalyseAreaActionResult =
-  | { success: true; result: AnaliseAmbientalOutput }
+  | { success: true; result: AnaliseAmbientalOutput; provider: AiProviderId }
   | { success: false; error: string };
 
 export async function handleAnalyseArea(
@@ -46,7 +48,8 @@ export async function handleAnalyseArea(
       }
     }
 
-    return { success: true, result };
+    const provider = getHeavyTaskProvider() ?? "deepseek";
+    return { success: true, result, provider };
   } catch (error) {
     return {
       success: false,

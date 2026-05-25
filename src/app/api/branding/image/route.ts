@@ -1,39 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 import {
   apiAuthErrorResponse,
+  getBearerToken,
   requireAuthenticatedApi,
 } from '@/lib/api-auth';
-
-const ALLOWED_HOST_SNIPPETS = [
-  'firebasestorage.googleapis.com',
-  'firebasestorage.app',
-];
-
-const PROJECT_BUCKET = 'studio-316805764-e4d13';
+import {
+  FirebaseAdminCredentialsError,
+  hasFirebaseAdminCredentials,
+} from '@/lib/firebase-admin';
+import {
+  isFirebaseStorageDownloadUrl,
+  storagePathFromDownloadUrl,
+} from '@/lib/storage-upload';
 
 /** Prefixos do bucket permitidos no proxy same-origin (preview no browser e PDF). */
 const ALLOWED_OBJECT_PREFIXES = ['branding/', 'inspections/'] as const;
 
-function objectPathFromStorageUrl(url: string): string | null {
-  try {
-    const u = new URL(url);
-    if (!ALLOWED_HOST_SNIPPETS.some((h) => u.hostname.includes(h))) {
-      return null;
-    }
-    if (!u.pathname.includes(PROJECT_BUCKET) && !u.hostname.includes(PROJECT_BUCKET)) {
-      return null;
-    }
-    const parts = u.pathname.split('/');
-    const oIdx = parts.indexOf('o');
-    if (oIdx < 0 || !parts[oIdx + 1]) return null;
-    return decodeURIComponent(parts[oIdx + 1]);
-  } catch {
-    return null;
-  }
-}
-
 function isAllowedStorageProxyUrl(url: string): boolean {
-  const objectPath = objectPathFromStorageUrl(url);
+  const objectPath = storagePathFromDownloadUrl(url);
   if (!objectPath) return false;
   return ALLOWED_OBJECT_PREFIXES.some((prefix) => objectPath.startsWith(prefix));
 }
@@ -41,22 +25,46 @@ function isAllowedStorageProxyUrl(url: string): boolean {
 /**
  * Proxy same-origin para ficheiros do Storage (branding, evidências de vistoria, etc.).
  * Evita CORS no browser ao pré-visualizar anexos e gerar PDFs com canvas/jsPDF.
+ *
+ * Em dev local sem Firebase Admin, permite proxy só para `branding/` (leitura pública no Storage).
  */
 export async function GET(request: NextRequest) {
-  try {
-    await requireAuthenticatedApi(request);
-  } catch (e) {
-    return apiAuthErrorResponse(e);
-  }
-
   const rawUrl = request.nextUrl.searchParams.get('url');
   if (!rawUrl?.trim()) {
     return NextResponse.json({ error: 'Parâmetro url é obrigatório.' }, { status: 400 });
   }
 
   const trimmed = rawUrl.trim();
-  if (!isAllowedStorageProxyUrl(trimmed)) {
+  if (!isFirebaseStorageDownloadUrl(trimmed) || !isAllowedStorageProxyUrl(trimmed)) {
     return NextResponse.json({ error: 'URL de Storage não permitida.' }, { status: 403 });
+  }
+
+  const objectPath = storagePathFromDownloadUrl(trimmed)!;
+  const isPublicBranding = objectPath.startsWith('branding/');
+
+  try {
+    await requireAuthenticatedApi(request);
+  } catch (e) {
+    const adminUnavailable =
+      !hasFirebaseAdminCredentials() || e instanceof FirebaseAdminCredentialsError;
+    const hasBearer = Boolean(getBearerToken(request));
+
+    if (adminUnavailable && isPublicBranding) {
+      console.warn(
+        '[api/branding/image] Firebase Admin indisponível; proxy branding/ com token do cliente ou sem auth.',
+      );
+      if (!hasBearer) {
+        return NextResponse.json(
+          {
+            error:
+              'Sessão inválida. Faça login ou configure GOOGLE_APPLICATION_CREDENTIALS para desenvolvimento local.',
+          },
+          { status: 401 },
+        );
+      }
+    } else {
+      return apiAuthErrorResponse(e);
+    }
   }
 
   try {

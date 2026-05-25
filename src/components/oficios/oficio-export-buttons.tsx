@@ -18,7 +18,7 @@ import {
 } from "@/lib/oficio-export";
 import {
   brandingUrlsFromLocal,
-  guardBrandingPdfExport,
+  guardBrandingExportFromHook,
   reportBrandingPdfIssues,
 } from "@/lib/pdf-branding-layout";
 
@@ -46,7 +46,15 @@ export function OficioExportButtons({
   if (!isOficioExportable(oficio)) return null;
 
   const handlePdf = async () => {
-    if (!guardBrandingPdfExport({ isPdfImagesLoading, hasBrandingUrls, toast })) {
+    if (
+      !guardBrandingExportFromHook({
+        brandingData,
+        pdfImages,
+        isPdfImagesLoading,
+        hasBrandingUrls,
+        toast,
+      })
+    ) {
       return;
     }
     setLoading("pdf");
@@ -74,7 +82,9 @@ export function OficioExportButtons({
 
   const handleWord = async () => {
     if (
-      !guardBrandingPdfExport({
+      !guardBrandingExportFromHook({
+        brandingData,
+        pdfImages,
         isPdfImagesLoading,
         hasBrandingUrls,
         toast,

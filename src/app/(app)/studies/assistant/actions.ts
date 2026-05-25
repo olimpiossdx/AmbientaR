@@ -1,50 +1,42 @@
 'use server';
 
-import { askAssistant } from '@/ai/flows/assistant-flow';
 import type { AssistantInput } from '@/lib/types';
-import { getDeepseekApiKey } from '@/lib/deepseek-env';
-import { deepseekChatCompletion } from '@/lib/deepseek-chat-server';
+import { classifyChatTask, type AiTaskKind } from '@/lib/ai-router';
+import { routedChatCompletion } from '@/lib/ai-run-chat';
 
-const STUDY_DEEPSEEK_PREFIX =
+const STUDY_SYSTEM_PREFIX =
   'És o assistente AmbientaR (Pimenta Consultoria). O utilizador elabora estudos ambientais em MG/Brasil (documentos técnicos, licenciamento, relatórios). ';
 
+export type AssistantModo = 'rapido' | 'completo';
+
 export async function handleAskAssistant(
-  data: AssistantInput,
-): Promise<{ success: boolean; response?: string; error?: string }> {
-  const apiKey = getDeepseekApiKey();
-  if (apiKey) {
-    const tipo = data.tipo ?? 'geral';
-    const result = await deepseekChatCompletion(
-      {
-        prompt: data.prompt,
-        tipo,
-        systemPrefix: STUDY_DEEPSEEK_PREFIX,
-        temperature: 0.2,
-        max_tokens: 3072,
-      },
-      apiKey,
-    );
-    if (result.ok) {
-      return { success: true, response: result.reply };
-    }
+  data: AssistantInput & { modo?: AssistantModo },
+): Promise<{ success: boolean; response?: string; error?: string; provider?: string }> {
+  const task: AiTaskKind =
+    data.modo === 'completo'
+      ? 'chat_heavy'
+      : data.modo === 'rapido'
+        ? 'chat_light'
+        : classifyChatTask(data.tipo, data.prompt);
+  const result = await routedChatCompletion({
+    prompt: data.prompt,
+    tipo: data.tipo ?? 'geral',
+    systemPrefix: STUDY_SYSTEM_PREFIX,
+    task,
+    temperature: 0.2,
+    max_tokens: 3072,
+  });
+
+  if (result.ok) {
     return {
-      success: false,
-      error: result.error || 'Falha na resposta DeepSeek.',
+      success: true,
+      response: result.reply,
+      provider: result.provider,
     };
   }
 
-  try {
-    const result = await askAssistant(data);
-    if (result && result.response) {
-      return { success: true, response: result.response };
-    }
-    return {
-      success: false,
-      error: 'Falha ao obter resposta. A resposta da IA estava vazia.',
-    };
-  } catch (e) {
-    console.error(e);
-    const errorMessage = e instanceof Error ? e.message : 'Ocorreu um erro desconhecido.';
-    return { success: false, error: `Falha ao obter resposta: ${errorMessage}` };
-  }
+  return {
+    success: false,
+    error: result.error || 'Falha na resposta da IA.',
+  };
 }

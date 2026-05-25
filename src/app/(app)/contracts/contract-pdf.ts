@@ -6,6 +6,7 @@
 import type { Contract } from '@/lib/types';
 import type { LocalBranding } from '@/hooks/use-local-branding';
 import type jsPDF from 'jspdf';
+import type { BrandingPdfImages } from '@/lib/branding-pdf';
 import { downloadJsPdf } from '@/lib/pdf-export-utils';
 import {
   brandingUrlsFromLocal,
@@ -13,6 +14,8 @@ import {
   finalizePdfBranding,
   getContentStartY,
   loadPdfBranding,
+  reportBrandingPdfIssues,
+  type BrandingPdfToastReporter,
 } from '@/lib/pdf-branding-layout';
 import { formatContratadaContractIntroParagraph } from '@/lib/contract-contratada-intro';
 
@@ -110,6 +113,12 @@ function addClauseTitle(
 
 type ContractBranding = LocalBranding | null | undefined;
 
+export type ContractPdfBrandingOptions = {
+  branding?: ContractBranding;
+  preloadedImages?: BrandingPdfImages | null;
+  onBrandingIssue?: BrandingPdfToastReporter;
+};
+
 function safeContractFilename(contratanteNome: string | undefined): string {
   return `Contrato_Prestacao_Servicos_${(contratanteNome || 'Contratante').replace(/\s+/g, '_')}.pdf`;
 }
@@ -117,7 +126,8 @@ function safeContractFilename(contratanteNome: string | undefined): string {
 /** Monta o jsPDF do contrato (sem gravar nem fazer download). */
 export async function buildContractPdfDoc(
   contract: Contract,
-  brandingData: ContractBranding,
+  brandingData?: ContractBranding,
+  options?: Omit<ContractPdfBrandingOptions, 'branding'>,
 ): Promise<jsPDF> {
   const { default: jsPDF } = await import('jspdf');
   const doc = new jsPDF({ unit: 'cm', format: 'a4' });
@@ -133,24 +143,14 @@ export async function buildContractPdfDoc(
   const foro = contract.foro ?? { comarca: 'Unaí', uf: 'MG' };
 
   const urls = brandingUrlsFromLocal(brandingData);
-  let pdfBranding: Awaited<ReturnType<typeof loadPdfBranding>>;
-  try {
-    pdfBranding = await loadPdfBranding(doc, urls, {
-      left: ML,
-      right: MR,
-      top: MT,
-      bottom: MB,
-    });
-  } catch (brandingErr) {
-    console.warn('[contract-pdf] Identidade visual indisponível; PDF sem cabeçalho/rodapé:', brandingErr);
-    pdfBranding = await loadPdfBranding(
-      doc,
-      {},
-      { left: ML, right: MR, top: MT, bottom: MB },
-      0.15,
-      { headerBase64: null, footerBase64: null, watermarkBase64: null },
-    );
-  }
+  const pdfBranding = await loadPdfBranding(
+    doc,
+    urls,
+    { left: ML, right: MR, top: MT, bottom: MB },
+    0.15,
+    options?.preloadedImages,
+  );
+  reportBrandingPdfIssues(urls, pdfBranding.images, options?.onBrandingIssue);
   const drawWatermarkOnCurrentPage = () => drawWatermarkOnPage(doc, pdfBranding);
   const pageContentStartY = getContentStartY(pdfBranding);
   drawWatermarkOnCurrentPage();
@@ -305,16 +305,18 @@ export async function buildContractPdfDoc(
 
 export async function contractPdfBlob(
   contract: Contract,
-  brandingData: ContractBranding,
+  brandingData?: ContractBranding,
+  options?: Omit<ContractPdfBrandingOptions, 'branding'>,
 ): Promise<Blob> {
-  const doc = await buildContractPdfDoc(contract, brandingData);
+  const doc = await buildContractPdfDoc(contract, brandingData, options);
   return doc.output('blob');
 }
 
 export async function generateContractPdf(
   contract: Contract,
-  brandingData: ContractBranding,
+  brandingData?: ContractBranding,
+  options?: Omit<ContractPdfBrandingOptions, 'branding'>,
 ): Promise<void> {
-  const doc = await buildContractPdfDoc(contract, brandingData);
+  const doc = await buildContractPdfDoc(contract, brandingData, options);
   downloadJsPdf(doc, safeContractFilename(contract.contratante?.nome));
 }

@@ -33,7 +33,21 @@ const BRANDING_CACHE_TTL_MS = 20 * 60 * 1000;
 const PDF_BRANDING_MAX_EDGE_PX = 1000;
 
 function isUsablePngDataUrl(dataUrl: string | null): dataUrl is string {
-  return Boolean(dataUrl && dataUrl.startsWith('data:image') && dataUrl.length > 200);
+  return Boolean(
+    dataUrl &&
+      dataUrl.startsWith('data:image') &&
+      dataUrl.length > 80,
+  );
+}
+
+/** Aguarda Firebase App no browser (evita falha na 1ª carga da página). */
+async function waitForFirebaseAppReady(maxMs = 10_000): Promise<boolean> {
+  if (typeof getApps !== 'function') return true;
+  const start = Date.now();
+  while (getApps().length === 0 && Date.now() - start < maxMs) {
+    await new Promise((r) => setTimeout(r, 80));
+  }
+  return getApps().length > 0;
 }
 
 async function fetchBrandingBlob(url: string): Promise<Blob> {
@@ -202,32 +216,31 @@ async function loadBrandingViaImageElement(url: string): Promise<string | null> 
 
 async function loadImageBlobForBranding(trimmed: string): Promise<Blob> {
   if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
-    if (typeof window !== 'undefined' && isFirebaseStorageHttpsUrl(trimmed)) {
-      try {
-        return await fetchBrandingBlob(trimmed);
-      } catch (proxyErr) {
-        console.warn('[branding-pdf] proxy same-origin falhou:', proxyErr);
-      }
-    }
     const isFirebaseStorage = isFirebaseStorageHttpsUrl(trimmed);
-    const useSdk =
-      isFirebaseStorage &&
-      typeof getApps === 'function' &&
-      getApps().length > 0;
-    if (useSdk) {
+
+    if (isFirebaseStorage) {
+      await waitForFirebaseAppReady();
       const path = storagePathFromDownloadUrl(trimmed);
-      if (path) {
+      if (path && typeof getApps === 'function' && getApps().length > 0) {
         try {
           const storage = getClientFirebaseStorage();
           return await getBlob(ref(storage, path));
         } catch (sdkErr) {
-          console.warn('[branding-pdf] getBlob falhou:', sdkErr);
+          console.warn('[branding-pdf] getBlob falhou:', path, sdkErr);
         }
+      } else if (!path) {
+        console.warn('[branding-pdf] path não extraído da URL:', trimmed);
       }
     }
-    if (typeof window !== 'undefined' && isFirebaseStorageHttpsUrl(trimmed)) {
-      return fetchStorageImageProxyBlob(trimmed);
+
+    if (typeof window !== 'undefined' && isFirebaseStorage) {
+      try {
+        return await fetchStorageImageProxyBlob(trimmed);
+      } catch (proxyErr) {
+        console.warn('[branding-pdf] proxy same-origin falhou:', proxyErr);
+      }
     }
+
     const response = await fetch(trimmed, {
       credentials: 'same-origin',
       cache: 'default',
@@ -263,8 +276,8 @@ async function loadBrandingImageAsBase64Uncached(
     }
 
     if (trimmed.startsWith('https://') || trimmed.startsWith('http://') || trimmed.startsWith('/')) {
-      if (typeof getApps === 'function' && getApps().length === 0 && trimmed.startsWith('https://')) {
-        throw new Error('Firebase não inicializado. Recarregue a página.');
+      if (isFirebaseStorageHttpsUrl(trimmed)) {
+        await waitForFirebaseAppReady();
       }
       const blob = await loadImageBlobForBranding(trimmed);
       const fromBlob = await blobToPngBase64ForPdf(blob);

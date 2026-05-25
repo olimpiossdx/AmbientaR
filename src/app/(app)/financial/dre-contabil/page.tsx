@@ -30,7 +30,7 @@ import { useToast } from '@/hooks/use-toast';
 import {
   brandingUrlsFromLocal,
   createMmBrandedPdfSession,
-  guardBrandingPdfExport,
+  guardBrandingExportFromHook,
   reportBrandingPdfIssues,
 } from '@/lib/pdf-branding-layout';
 import { useLocalBranding } from '@/hooks/use-local-branding';
@@ -95,7 +95,17 @@ export default function DreContabilPage() {
 
   const handleExportPdf = async () => {
     if (!dre) return;
-    if (!guardBrandingPdfExport({ isPdfImagesLoading, hasBrandingUrls, toast })) return;
+    if (
+      !guardBrandingExportFromHook({
+        brandingData,
+        pdfImages,
+        isPdfImagesLoading,
+        hasBrandingUrls,
+        toast,
+      })
+    ) {
+      return;
+    }
     const brandingUrls = brandingUrlsFromLocal(brandingData);
     const session = await createMmBrandedPdfSession(brandingUrls, undefined, pdfImages);
     reportBrandingPdfIssues(brandingUrls, session.branding.images, toast);

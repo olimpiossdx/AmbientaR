@@ -20,7 +20,7 @@ import { useToast } from '@/hooks/use-toast';
 import {
   brandingUrlsFromLocal,
   createMmBrandedPdfSession,
-  guardBrandingPdfExport,
+  guardBrandingExportFromHook,
   reportBrandingPdfIssues,
 } from '@/lib/pdf-branding-layout';
 import { useLocalBranding } from '@/hooks/use-local-branding';
@@ -296,7 +296,17 @@ export default function AbcCurvePage() {
       return;
     }
 
-    if (!guardBrandingPdfExport({ isPdfImagesLoading, hasBrandingUrls, toast })) return;
+    if (
+      !guardBrandingExportFromHook({
+        brandingData,
+        pdfImages,
+        isPdfImagesLoading,
+        hasBrandingUrls,
+        toast,
+      })
+    ) {
+      return;
+    }
     const brandingUrls = brandingUrlsFromLocal(brandingData);
     const abcMargins = { left: 12, right: 12, top: 12, bottom: 28 };
     const session = await createMmBrandedPdfSession(brandingUrls, abcMargins, pdfImages);

@@ -62,7 +62,11 @@ import { Badge } from "@/components/ui/badge";
 import { calculateWaterCompliance } from "@/lib/water-compliance-engine";
 import { generateWaterCompliancePDF } from "@/lib/export-water-report";
 import { useLocalBranding } from "@/hooks/use-local-branding";
-import { brandingUrlsFromLocal } from "@/lib/pdf-branding-layout";
+import { useToast } from "@/hooks/use-toast";
+import {
+  brandingUrlsFromLocal,
+  guardBrandingExportFromHook,
+} from "@/lib/pdf-branding-layout";
 import {
   Select,
   SelectContent,
@@ -215,7 +219,13 @@ export default function TelemetricMonitoringPage() {
 
   const firestore = useFirestore();
   const { user } = useAuth();
-  const { data: brandingData } = useLocalBranding();
+  const { toast } = useToast();
+  const {
+    data: brandingData,
+    pdfImages,
+    isPdfImagesLoading,
+    hasBrandingUrls,
+  } = useLocalBranding();
 
   useEffect(() => {
     if (!firestore || !user) return;
@@ -555,6 +565,17 @@ export default function TelemetricMonitoringPage() {
   };
   const handleExportCompliancePdf = async () => {
     if (!compliancePermit || !compliance) return;
+    if (
+      !guardBrandingExportFromHook({
+        brandingData,
+        pdfImages,
+        isPdfImagesLoading,
+        hasBrandingUrls,
+        toast,
+      })
+    ) {
+      return;
+    }
     const selectedYear = Number(yearFilter);
     const referenceDate =
       monthFilter === "ano_todo"
@@ -571,6 +592,7 @@ export default function TelemetricMonitoringPage() {
         coordinates: empreendimentoCoordinates,
       },
       brandingUrlsFromLocal(brandingData),
+      pdfImages,
     );
   };
 

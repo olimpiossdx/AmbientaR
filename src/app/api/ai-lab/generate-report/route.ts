@@ -3,6 +3,7 @@ import { generateAbntReport } from "@/ai/flows/generate-abnt-report";
 import { formatAbntWebReference } from "@/lib/abnt";
 import { isAiRoutesEnabled } from "@/lib/deploy-flags";
 import { adminApiErrorResponse, requireAdminApiAuth } from "@/lib/api-auth";
+import { getHeavyTaskProvider } from "@/lib/ai-provider-status";
 
 export const maxDuration = 90;
 const MAX_INTERNAL_SOURCES = 8;
@@ -208,6 +209,7 @@ export async function POST(request: NextRequest) {
       usedSources: sources.length,
       estimatedCostBRL,
       estimatedInputChars: totalChars,
+      aiProvider: getHeavyTaskProvider() ?? "deepseek",
       guardrails: {
         maxInternalSources: MAX_INTERNAL_SOURCES,
         maxExternalUrls: MAX_EXTERNAL_URLS,

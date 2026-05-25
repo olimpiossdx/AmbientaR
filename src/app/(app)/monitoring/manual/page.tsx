@@ -59,7 +59,10 @@ import {
 import { calculateWaterCompliance, mapManualLogToTelemetryReading } from "@/lib/water-compliance-engine";
 import { generateWaterCompliancePDF } from "@/lib/export-water-report";
 import { useLocalBranding } from "@/hooks/use-local-branding";
-import { brandingUrlsFromLocal } from "@/lib/pdf-branding-layout";
+import {
+  brandingUrlsFromLocal,
+  guardBrandingExportFromHook,
+} from "@/lib/pdf-branding-layout";
 import {
   Tooltip,
   TooltipContent,
@@ -102,7 +105,12 @@ export default function ManualMonitoringPage() {
   const firestore = useFirestore();
   const { user } = useAuth();
   const { toast } = useToast();
-  const { data: brandingData } = useLocalBranding();
+  const {
+    data: brandingData,
+    pdfImages,
+    isPdfImagesLoading,
+    hasBrandingUrls,
+  } = useLocalBranding();
 
   useEffect(() => {
     if (!firestore || !user) return;
@@ -426,6 +434,17 @@ export default function ManualMonitoringPage() {
 
   const handleExportCompliancePdf = async () => {
     if (!outorga) return;
+    if (
+      !guardBrandingExportFromHook({
+        brandingData,
+        pdfImages,
+        isPdfImagesLoading,
+        hasBrandingUrls,
+        toast,
+      })
+    ) {
+      return;
+    }
     const selectedYear = Number(yearFilter);
     const referenceDate =
       monthFilter === "ano_todo"
@@ -445,6 +464,7 @@ export default function ManualMonitoringPage() {
         coordinates: empreendimentoCoordinates,
       },
       brandingUrlsFromLocal(brandingData),
+      pdfImages,
     );
   };
 

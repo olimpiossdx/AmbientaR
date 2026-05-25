@@ -2,6 +2,7 @@ import { doc, updateDoc } from 'firebase/firestore';
 import type { Firestore } from 'firebase/firestore';
 import type { Contract } from '@/lib/types';
 import type { LocalBranding } from '@/hooks/use-local-branding';
+import type { BrandingPdfImages } from '@/lib/branding-pdf';
 import { contractPdfBlob } from '@/app/(app)/contracts/contract-pdf';
 import { sanitizeStorageFileName, uploadFileToStorage } from '@/lib/storage-upload';
 
@@ -19,11 +20,14 @@ export async function persistContractPdfForSignature(
   contractId: string,
   contract: Contract,
   branding?: LocalBranding | null,
+  preloadedImages?: BrandingPdfImages | null,
 ): Promise<string> {
   if (!contractId?.trim()) {
     throw new Error("ID do contrato inválido para gerar o PDF.");
   }
-  const blob = await contractPdfBlob(contract, branding ?? undefined);
+  const blob = await contractPdfBlob(contract, branding ?? undefined, {
+    preloadedImages,
+  });
   const file = new File([blob], "contrato-para-assinatura.pdf", {
     type: "application/pdf",
   });
