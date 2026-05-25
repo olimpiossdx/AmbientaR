@@ -9,6 +9,8 @@ import { useDoc, useFirebase, useMemoFirebase } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import type { PIA } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
+import { PiaExportButtons } from '@/components/pia/pia-export-buttons';
+import { asPiaRecord } from '@/lib/pia/pia-record';
 
 function EditPiaPageContent() {
     const router = useRouter();
@@ -76,8 +78,13 @@ function EditPiaPageContent() {
                   <CardHeader>
                       <CardTitle>Editar Plano de Intervenção Ambiental ({pia?.type})</CardTitle>
                       <CardDescription>
-                          Atualize os detalhes do PIA abaixo.
+                          Atualize os detalhes do PIA abaixo. Com status Aprovado, exporte Word ou PDF com identidade visual.
                       </CardDescription>
+                      {pia && (
+                        <div className="pt-4">
+                          <PiaExportButtons pia={asPiaRecord(pia)!} />
+                        </div>
+                      )}
                   </CardHeader>
                   <CardContent>
                       <PiaForm

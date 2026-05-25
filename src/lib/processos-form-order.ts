@@ -1,4 +1,8 @@
 import { INTERVENTION_SERVICE_LABEL } from "@/lib/intervention-checklist";
+import {
+  PIA_LICENSING_DOC_ID,
+  PIA_LICENSING_DOC_LABEL,
+} from "@/lib/pia/pia-licensing-doc";
 import { sortByLabelPt, sortByNamePt, sortByPropertyNamePt, sortStringsPt } from "@/lib/sort-pt-br";
 /** Serviços disponíveis ao criar/editar processo (ordem alfabética). */
 export const PROCESSOS_SERVICES = sortStringsPt([
@@ -21,6 +25,14 @@ export const PROCESSOS_STATUS_OPTIONS = sortByLabelPt(
 
 export type LicensingDocTemplate = { id: string; label: string };
 
+export type LicensingDocState = LicensingDocTemplate & {
+  checked: boolean;
+  fileName?: string;
+  fileUrl?: string;
+  source?: string;
+  piaId?: string;
+};
+
 /** Documentos da fase 2 do licenciamento (ordem alfabética por rótulo). */
 export const LICENSING_DOCS_TEMPLATE: LicensingDocTemplate[] = sortByLabelPt(
   [
@@ -32,9 +44,24 @@ export const LICENSING_DOCS_TEMPLATE: LicensingDocTemplate[] = sortByLabelPt(
     { id: "lic_art", label: "ART e responsável técnico" },
     { id: "lic_taxas", label: "Comprovantes de taxas/emolumentos" },
     { id: "lic_estudos", label: "Estudos exigidos (RAS/PCA/RCA/EIA, conforme enquadramento)" },
+    { id: PIA_LICENSING_DOC_ID, label: PIA_LICENSING_DOC_LABEL },
   ],
   (d) => d.label,
 );
+
+/** Garante novos itens do template (ex.: PIA) em processos antigos. */
+export function mergeLicensingDocumentsSaved(
+  saved: LicensingDocState[] | undefined,
+): LicensingDocState[] {
+  const byId = new Map((saved ?? []).map((d) => [d.id, d]));
+  return LICENSING_DOCS_TEMPLATE.map((t) => {
+    const existing = byId.get(t.id);
+    if (existing) {
+      return { ...existing, id: t.id, label: t.label };
+    }
+    return { ...t, checked: false };
+  });
+}
 
 export const LICENSING_SIZE_UNIT_OPTIONS = sortByLabelPt(
   [

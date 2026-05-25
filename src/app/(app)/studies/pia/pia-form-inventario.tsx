@@ -227,7 +227,34 @@ export function PiaFormInventario({ form, clients, isLoadingClients, projects, i
                     </div>
                 </AccordionContent>
             </AccordionItem>
-            {/* Outros módulos podem ser adicionados aqui */}
+            <AccordionItem value="item-5">
+                <AccordionTrigger>Análise de impactos ambientais</AccordionTrigger>
+                <AccordionContent className="space-y-4 p-4">
+                    <FormDescription>
+                        Matriz resumida (seção 8 do PIA). Detalhamento de flora/fauna será ampliado nas próximas versões.
+                    </FormDescription>
+                    <FormField
+                        control={form.control}
+                        name="impactos.0.impacto"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Impacto 1</FormLabel>
+                                <FormControl><Textarea className="min-h-[80px]" {...field} /></FormControl>
+                            </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="impactos.0.medidas"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Medidas mitigadoras / compensatórias</FormLabel>
+                                <FormControl><Textarea className="min-h-[80px]" {...field} /></FormControl>
+                            </FormItem>
+                        )}
+                    />
+                </AccordionContent>
+            </AccordionItem>
        </Accordion>
     )
 }

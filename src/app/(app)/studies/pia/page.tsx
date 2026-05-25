@@ -33,7 +33,9 @@ import {
   DialogClose,
 } from '@/components/ui/dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, PlusCircle, ChevronDown, Pencil, Trash2, Eye, CheckCircle } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, ChevronDown, Pencil, Trash2, Eye, CheckCircle, FileDown } from 'lucide-react';
+import { PiaExportButtons } from '@/components/pia/pia-export-buttons';
+import { asPiaRecord } from '@/lib/pia/pia-record';
 import { useCollection, useFirebase, useMemoFirebase, errorEmitter } from '@/firebase';
 import { collection, doc, deleteDoc, updateDoc } from 'firebase/firestore';
 import type { PIA, PiaType, AppUser } from '@/lib/types';
@@ -273,7 +275,20 @@ export default function PiaPage() {
                           </Badge>
                         </TableCell>
                         <TableCell className="text-right">
-                           <div className="flex items-center justify-end gap-1">
+                           <div className="flex items-center justify-end gap-1 flex-wrap">
+                                <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={() => handleEdit(item)}><Pencil className="h-4 w-4" /></Button></TooltipTrigger><TooltipContent><p>Editar / exportar</p></TooltipContent></Tooltip>
+                                {item.latestExport?.pdf?.downloadUrl && (
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button variant="ghost" size="icon" asChild>
+                                        <a href={item.latestExport.pdf.downloadUrl} target="_blank" rel="noopener noreferrer">
+                                          <FileDown className="h-4 w-4" />
+                                        </a>
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent><p>Último PDF exportado</p></TooltipContent>
+                                  </Tooltip>
+                                )}
                                 <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={() => handleView(item)}><Eye className="h-4 w-4" /></Button></TooltipTrigger><TooltipContent><p>Visualizar detalhes</p></TooltipContent></Tooltip>
                                 {isAdminOrSupervisorRole(user?.role) && (
                                     <Tooltip>
@@ -314,8 +329,11 @@ export default function PiaPage() {
             <div className="max-h-[60vh] overflow-y-auto pr-4 space-y-4">
               <DetailItem label="Requerente" value={itemToView.requerente.nome} />
               <DetailItem label="Empreendimento" value={itemToView.empreendimento.nome} />
+              <DetailItem label="Status" value={itemToView.status} />
               <Separator />
-              <p className="text-sm text-muted-foreground">Mais detalhes em breve...</p>
+              {itemToView.status === 'Aprovado' && asPiaRecord(itemToView) && (
+                <PiaExportButtons pia={asPiaRecord(itemToView)!} />
+              )}
             </div>
           )}
           <DialogFooter>

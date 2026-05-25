@@ -54,6 +54,7 @@ import { fetchEmpreendedorIdsForProcessosPortal } from '@/lib/requests-portal-em
 import {
   LICENSING_CRITERIO_LOCACIONAL_OPTIONS,
   LICENSING_DOCS_TEMPLATE,
+  mergeLicensingDocumentsSaved,
   LICENSING_SIZE_UNIT_OPTIONS,
   PROCESSOS_SERVICES,
   PROCESSOS_STATUS_OPTIONS,
@@ -525,7 +526,7 @@ function EditRequestPageContent() {
                 });
                 setLicensingDocuments(
                     request.licensingData.documents?.length
-                        ? request.licensingData.documents
+                        ? mergeLicensingDocumentsSaved(request.licensingData.documents)
                         : createLicensingDocs(),
                 );
                 setLicensingActivities(

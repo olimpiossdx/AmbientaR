@@ -20,6 +20,9 @@ import { PiaFormInventario } from './pia-form-inventario';
 import { useRouter } from 'next/navigation';
 import { cleanEmptyValues } from '@/lib/utils';
 import _ from 'lodash';
+import { usesInventarioForm } from '@/lib/pia/pia-record';
+import { validatePiaForApproval } from '@/lib/pia/pia-export-validation';
+import type { PiaRecord } from '@/lib/pia/pia-record';
 
 
 const formSchema = z.object({
@@ -82,8 +85,25 @@ export function PiaForm({ currentItem, piaType, onSuccess }: PiaFormProps) {
         setLoading(false);
         return;
     }
-    
+
     const values = form.getValues();
+
+    if (status === 'Aprovado') {
+        const approvalIssues = validatePiaForApproval({
+            ...(currentItem ?? { id: '', type: piaType ?? 'Simplificado', requerente: values.requerente, empreendimento: values.empreendimento }),
+            ...values,
+            status: 'Aprovado',
+        } as PiaRecord);
+        if (approvalIssues.length > 0) {
+            toast({
+                variant: 'destructive',
+                title: 'PIA incompleto',
+                description: approvalIssues.map((i) => i.message).join(' '),
+            });
+            setLoading(false);
+            return;
+        }
+    }
 
     if (!firestore) {
       toast({ variant: 'destructive', title: 'Firebase não inicializado.' });
@@ -136,20 +156,25 @@ export function PiaForm({ currentItem, piaType, onSuccess }: PiaFormProps) {
   };
 
   const renderFormContent = () => {
-    switch (piaType) {
-        case 'Inventário Florestal':
-            return <PiaFormInventario form={form} clients={clients || []} isLoadingClients={isLoadingClients} projects={projects || []} isLoadingProjects={isLoadingProjects} />;
-        case 'Simplificado':
-        case 'Corretivo':
-        case 'Censo Florestal':
-        default:
-            return (
-                <div className="flex items-center justify-center h-40 border-2 border-dashed rounded-lg">
-                    <p className="text-muted-foreground">Formulário para &quot;{piaType}&quot; em construção.</p>
-                </div>
-            );
+    if (usesInventarioForm(piaType)) {
+      return (
+        <PiaFormInventario
+          form={form}
+          clients={clients || []}
+          isLoadingClients={isLoadingClients}
+          projects={projects || []}
+          isLoadingProjects={isLoadingProjects}
+        />
+      );
     }
-  }
+    return (
+      <div className="flex items-center justify-center h-40 border-2 border-dashed rounded-lg">
+        <p className="text-muted-foreground">
+          Formulário para &quot;{piaType}&quot; em construção.
+        </p>
+      </div>
+    );
+  };
 
   return (
     <Form {...form}>

@@ -783,6 +783,15 @@ export type PTRF = {
 
 export type PiaType = 'Simplificado' | 'Corretivo' | 'Inventário Florestal' | 'Censo Florestal';
 
+export type PiaExportRefSummary = {
+    versionId: string;
+    storagePath: string;
+    downloadUrl: string;
+    fileName: string;
+    createdAt: string;
+    sectionManifest: string[];
+};
+
 export type PIA = {
     id: string;
     type: PiaType;
@@ -797,7 +806,18 @@ export type PIA = {
     empreendimento: {
         projectId?: string;
         nome: string;
+        denominacao?: string;
+        car?: string;
+        atividades?: string;
     };
+    /** Histórico de exportações Word/PDF (Storage). */
+    exportVersions?: Array<PiaExportRefSummary & { format: 'docx' | 'pdf'; createdBy?: string }>;
+    latestExport?: {
+        docx?: PiaExportRefSummary;
+        pdf?: PiaExportRefSummary;
+    };
+    /** Campos adicionais do formulário (proprietário, diagnóstico, etc.) persistidos no documento. */
+    [key: string]: unknown;
 }
 
 
