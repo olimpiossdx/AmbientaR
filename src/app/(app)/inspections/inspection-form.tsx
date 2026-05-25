@@ -50,6 +50,8 @@ import {
   doc,
   serverTimestamp,
   DocumentReference,
+  limit,
+  query,
 } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import type {
@@ -229,33 +231,33 @@ export function InspectionForm({ onSuccess, currentItem }: InspectionFormProps) 
   );
 
   const empreendedoresQuery = useMemoFirebase(
-    () => (firestore ? collection(firestore, 'empreendedores') : null),
+    () => (firestore ? query(collection(firestore, 'empreendedores'), limit(200)) : null),
     [firestore],
   );
   const { data: empreendedores, isLoading: isLoadingEmpreendedores } =
     useCollection<Empreendedor>(empreendedoresQuery);
 
   const projectsQuery = useMemoFirebase(
-    () => (firestore ? collection(firestore, 'projects') : null),
+    () => (firestore ? query(collection(firestore, 'projects'), limit(200)) : null),
     [firestore],
   );
   const { data: allProjects, isLoading: isLoadingProjects } =
     useCollection<Project>(projectsQuery);
 
   const licensesQuery = useMemoFirebase(
-    () => (firestore ? collection(firestore, 'licenses') : null),
+    () => (firestore ? query(collection(firestore, 'licenses'), limit(200)) : null),
     [firestore],
   );
   const { data: allLicenses } = useCollection<License>(licensesQuery);
 
   const outorgasQuery = useMemoFirebase(
-    () => (firestore ? collection(firestore, 'outorgas') : null),
+    () => (firestore ? query(collection(firestore, 'outorgas'), limit(200)) : null),
     [firestore],
   );
   const { data: allOutorgas } = useCollection<WaterPermit>(outorgasQuery);
 
   const usosQuery = useMemoFirebase(
-    () => (firestore ? collection(firestore, 'usosInsignificantes') : null),
+    () => (firestore ? query(collection(firestore, 'usosInsignificantes'), limit(200)) : null),
     [firestore],
   );
   const { data: allUsos } = useCollection<InsignificantWaterUse>(usosQuery);

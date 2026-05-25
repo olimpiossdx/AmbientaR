@@ -25,7 +25,9 @@ import { useFirebase, useAuth } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 import type { StudyAreaGeoJSON } from "@/components/maps/study-area-map";
 import type { StacPreviewItem } from "@/lib/study-maps/types";
-import { Loader2, Satellite, FileArchive } from "lucide-react";
+import { Loader2, Satellite, FileArchive, MapPin } from "lucide-react";
+import Link from "next/link";
+import { parseStudyAreaFileText } from "@/lib/study-maps/import-area-file";
 
 const StudyAreaMap = dynamic(
   () =>
@@ -74,8 +76,13 @@ export function MapasWorkbench() {
       setJobs(data.jobs ?? []);
     } catch (e) {
       console.error(e);
+      toast({
+        variant: "destructive",
+        title: "Não foi possível listar jobs",
+        description: e instanceof Error ? e.message : "Erro de rede ou permissão.",
+      });
     }
-  }, [auth, bearer]);
+  }, [auth, bearer, toast]);
 
   React.useEffect(() => {
     if (isInitialized && user) void loadJobs();
@@ -153,14 +160,21 @@ export function MapasWorkbench() {
     if (!f) return;
     const reader = new FileReader();
     reader.onload = () => {
-      try {
-        const text = String(reader.result || "");
-        const gj = JSON.parse(text) as StudyAreaGeoJSON;
-        setPolygon(gj);
-        toast({ title: "GeoJSON carregado." });
-      } catch {
-        toast({ title: "Ficheiro inválido", variant: "destructive" });
+      const text = String(reader.result || "");
+      const gj = parseStudyAreaFileText(text, f.name);
+      if (!gj) {
+        toast({
+          title: "Ficheiro inválido",
+          description: "Use GeoJSON (.json/.geojson) ou KML com polígono válido.",
+          variant: "destructive",
+        });
+        return;
       }
+      setPolygon(gj);
+      toast({
+        title: "Perímetro carregado",
+        description: f.name,
+      });
     };
     reader.readAsText(f);
   };
@@ -183,8 +197,8 @@ export function MapasWorkbench() {
             <CardHeader>
               <CardTitle className="text-base">Perímetro</CardTitle>
               <CardDescription>
-                Mesmo basemap que Análise Geoespacial (IA). Desenhe o polígono
-                ou importe GeoJSON.
+                Mesmo basemap que Análise Geoespacial (IA). Desenhe o polígono,
+                importe GeoJSON ou KML.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
@@ -219,14 +233,20 @@ export function MapasWorkbench() {
                 </Select>
               </div>
               <div className="space-y-1">
-                <Label htmlFor="gj">Importar GeoJSON</Label>
+                <Label htmlFor="gj">Importar GeoJSON ou KML</Label>
                 <Input
                   id="gj"
                   type="file"
-                  accept=".geojson,.json,application/geo+json"
+                  accept=".geojson,.json,.kml,.xml,application/geo+json"
                   onChange={(e) => onImportFile(e.target.files?.[0] ?? null)}
                 />
               </div>
+              <Button type="button" variant="outline" size="sm" className="gap-1 w-full" asChild>
+                <Link href="/analise-ambiental">
+                  <MapPin className="h-4 w-4" />
+                  Análise Geoespacial (camadas IA)
+                </Link>
+              </Button>
               <div className="flex flex-wrap gap-2">
                 <Button type="button" onClick={runExport} disabled={busy}>
                   {busy ? (

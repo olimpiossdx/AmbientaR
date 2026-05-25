@@ -7,9 +7,23 @@ runConfig:
   maxInstances: 1
 
 # Chave pública Web Push (Firebase Console → Cloud Messaging). Pode sobrescrever na consola App Hosting.
+# Outras flags: ver docs/APP-HOSTING-VARIAVEIS.md e src/lib/deploy-flags.ts
 env:
   - variable: NEXT_PUBLIC_FIREBASE_VAPID_KEY
     value: BN07XDzDLZThaAoYogVyfwwmBlmfQ8NCpqITt5nW3Ml4dqZIkTcehy9JEHkYilEvH3eWg-XsGMO8Bleh78qZTKo
     availability:
       - BUILD
       - RUNTIME
+
+  # POST /api/ai-lab/import-reference-files — desativado por omissão (503). Só ative se os ficheiros
+  # existirem no disco do container em produção (pasta no bundle ou path montado).
+  # - variable: ENABLE_AI_LOCAL_IMPORT
+  #   value: "true"
+  #   availability:
+  #     - RUNTIME
+
+  # Rotas /api/* no middleware (em CI/deploy costuma ser true). Descomente se o backend precisar.
+  # - variable: ENABLE_NEXT_API_ROUTES
+  #   value: "true"
+  #   availability:
+  #     - RUNTIME

@@ -20,6 +20,7 @@
 ## Monitorização
 
 - [ ] Em falhas persistentes, verificar CDN, certificado SSL, e logs do hosting (Vercel / Firebase App Hosting / outro).
+- [ ] Erros `firestore.googleapis.com` (QUIC, DNS, IndexedDB / Tracking Prevention) na URL de produção: [`APP-HOSTING-VARIAVEIS.md`](./APP-HOSTING-VARIAVEIS.md).
 
 ## O que este checklist não resolve sozinho
 

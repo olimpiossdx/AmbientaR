@@ -235,7 +235,7 @@ export default function CrmClientsPage() {
             <DialogDescription>Detalhes do cliente. Edite no cadastro completo se necessário.</DialogDescription>
           </DialogHeader>
           {clientToView && (
-            <div className="max-h-[60vh] overflow-y-auto pr-4 space-y-4">
+            <div className="form-scroll-body max-h-[60vh] space-y-4">
               <DetailItem label="Nome / Razão Social" value={clientToView.name} />
               <Separator />
               <div className="grid grid-cols-2 gap-4">

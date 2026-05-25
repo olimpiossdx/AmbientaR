@@ -4,6 +4,8 @@ Documento vivo: bugs encontrados no código e correções aplicadas ao repassar 
 
 **Checklist de rotas:** `docs/auditoria-menus-fase3-checklist.md` (`npm run audit:menus-by-role`).
 
+**Depuração cirúrgica (PEA piloto):** `docs/auditoria-depuracao-cirurgica.md` — `node scripts/verify-pea-route-roles.mjs`.
+
 **Regras de rota:** `src/lib/route-access.ts`, menu: `src/lib/navigation-config.ts`.
 
 ---

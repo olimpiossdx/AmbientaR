@@ -35,7 +35,8 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PlusCircle } from 'lucide-react';
 import { useCollection, useFirebase, useMemoFirebase, errorEmitter } from '@/firebase';
-import { collection, doc, deleteDoc, updateDoc } from 'firebase/firestore';
+import { collection, doc, deleteDoc, updateDoc, limit, query } from 'firebase/firestore';
+import { sortByFirestoreUpdatedAt } from '@/lib/firestore-list-helpers';
 import type { Prada } from '@/lib/types';
 import { isAdminOrSupervisorRole } from '@/lib/role-guards';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -153,13 +154,17 @@ export default function PradaPage() {
 
   const pradasQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
-    return collection(firestore, 'pradas');
+    return query(collection(firestore, 'pradas'), limit(200));
   }, [firestore, user]);
 
-  const { data: pradas, isLoading } = useCollection<Prada>(pradasQuery);
+  const { data: pradasRaw, isLoading } = useCollection<Prada>(pradasQuery);
+
+  const pradas = useMemo(
+    () => sortByFirestoreUpdatedAt(pradasRaw ?? []),
+    [pradasRaw],
+  );
 
   const { draftPradas, approvedPradas } = useMemo(() => {
-    if (!pradas) return { draftPradas: [], approvedPradas: [] };
     const drafts = pradas.filter((p) => p.status !== 'Aprovado');
     const approved = pradas.filter((p) => p.status === 'Aprovado');
     return { draftPradas: drafts, approvedPradas: approved };
@@ -304,7 +309,7 @@ export default function PradaPage() {
             </DialogDescription>
           </DialogHeader>
           {itemToView && (
-            <div className="max-h-[60vh] space-y-4 overflow-y-auto pr-4">
+            <div className="form-scroll-body max-h-[60vh] space-y-4">
               <DetailItem label="Requerente" value={itemToView.requerente.nome} />
               <DetailItem label="Empreendimento" value={itemToView.empreendimento.nome} />
               <DetailItem label="Nº CAR" value={itemToView.empreendimento.car} />

@@ -33,6 +33,7 @@ import {
   documentId,
   query,
   where,
+  limit,
   getDocs,
 } from "firebase/firestore";
 import { resolvePortalAuthUid } from "@/lib/auth-user-id";
@@ -168,16 +169,18 @@ export default function LicensesPage() {
         return query(
           collection(firestore, "licenses"),
           where("empreendedorId", "in", empreendedorIdsForUser),
+          limit(200),
         );
       }
       return query(
         collection(firestore, "licenses"),
         where("empreendedorId", "in", ["invalid-placeholder"]),
+        limit(1),
       );
     }
 
     // For manager roles
-    return collection(firestore, "licenses");
+    return query(collection(firestore, "licenses"), limit(200));
   }, [firestore, user, empreendedorIdsForUser]);
 
   const { data: licenses, isLoading: isLoadingLicenses } =
@@ -200,7 +203,7 @@ export default function LicensesPage() {
         where(documentId(), "in", ids.slice(0, 10)),
       );
     }
-    return collection(firestore, "empreendedores");
+    return query(collection(firestore, "empreendedores"), limit(200));
   }, [firestore, user, empreendedorIdsForUser]);
   const { data: allEmpreendedores, isLoading: isLoadingEmpreendedores } =
     useCollection<Empreendedor>(empreendedoresQuery);
@@ -222,7 +225,7 @@ export default function LicensesPage() {
         where("empreendedorId", "in", ids.slice(0, 10)),
       );
     }
-    return collection(firestore, "projects");
+    return query(collection(firestore, "projects"), limit(200));
   }, [firestore, user, empreendedorIdsForUser]);
   const { data: allProjects, isLoading: isLoadingProjects } =
     useCollection<Project>(projectsQuery);

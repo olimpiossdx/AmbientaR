@@ -34,6 +34,8 @@ import {
   doc,
   updateDoc,
   getDoc,
+  limit,
+  query,
 } from "firebase/firestore";
 import { formatProcessoLicenciamentoDisplay } from "@/lib/field-inspection-atos-vinculados";
 import { inconformidadeCriticalityBadgeClass } from "@/lib/status-display-classes";
@@ -115,14 +117,14 @@ export default function InspectionsListPage() {
   const { toast } = useToast();
 
   const inspectionsQuery = useMemoFirebase(
-    () => (firestore ? collection(firestore, "inspections") : null),
+    () => (firestore ? query(collection(firestore, "inspections"), limit(200)) : null),
     [firestore],
   );
   const { data: inspections, isLoading: isLoadingInspections } =
     useCollection<Inspection>(inspectionsQuery);
 
   const empreendedoresQuery = useMemoFirebase(
-    () => (firestore ? collection(firestore, "empreendedores") : null),
+    () => (firestore ? query(collection(firestore, "empreendedores"), limit(200)) : null),
     [firestore],
   );
   const { data: empreendedores, isLoading: isLoadingEmpreendedores } =
@@ -133,7 +135,7 @@ export default function InspectionsListPage() {
   );
 
   const projectsQuery = useMemoFirebase(
-    () => (firestore ? collection(firestore, "projects") : null),
+    () => (firestore ? query(collection(firestore, "projects"), limit(200)) : null),
     [firestore],
   );
   const { data: projects, isLoading: isLoadingProjects } =
@@ -608,7 +610,7 @@ export default function InspectionsListPage() {
             </DialogDescription>
           </DialogHeader>
           {viewingItem && (
-            <div className="max-h-[60vh] overflow-y-auto pr-4 space-y-4">
+            <div className="form-scroll-body max-h-[60vh] space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <DetailItem
                   label="Empreendedor"

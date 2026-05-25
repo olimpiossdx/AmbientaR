@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import * as React from "react";
 import { z } from "zod";
@@ -429,7 +429,7 @@ export function ComplianceForm({
           onSubmit={form.handleSubmit(onSubmit)}
           className="h-full flex flex-col overflow-hidden"
         >
-          <div className="flex-1 overflow-y-auto pr-6 pl-1 -mr-6 -ml-1 space-y-4">
+          <div className="form-scroll-body space-y-4">
             <FormField
               control={form.control}
               name="referenceId"

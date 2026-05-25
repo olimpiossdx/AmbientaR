@@ -1,4 +1,4 @@
-
+﻿
 'use client';
 
 import * as React from 'react';
@@ -183,7 +183,7 @@ export function PtrfForm({ currentItem, onSuccess }: PtrfFormProps) {
   return (
     <Form {...form}>
       <form onSubmit={(e) => e.preventDefault()} className="h-full flex flex-col overflow-hidden">
-        <div className="flex-1 overflow-y-auto pr-4 -mr-6 space-y-6">
+        <div className="form-scroll-body space-y-6">
             <div className="p-4 border rounded-md space-y-4">
                 <h3 className="text-lg font-medium">1. Identificação</h3>
                 <FormField

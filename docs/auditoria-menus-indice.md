@@ -60,9 +60,15 @@ Correções aplicadas na fase 3:
 | Rotas legadas | `route-access` com aliases; `/autos-infracao-defesa` redirect no servidor |
 | APIs no cliente | `fetchApiWithAuth` em `api-client-auth.ts` |
 
-## Próximo passo (Fase 4 — operacional)
+## Depuração cirúrgica (Fase 4 — 2026-05-25)
 
-1. `npm run deploy:rules` (e `deploy:storage` se necessário).
-2. Validação manual: [auditoria-menus-fase3-checklist.md](./auditoria-menus-fase3-checklist.md) + [auditoria-perfis-interacao.md](./auditoria-perfis-interacao.md).
-3. `git push` e rollout App Hosting; comparar métricas de erro (7 dias).
-4. `npm run apphosting:check` antes do push.
+Registo vivo menu/submenu/rota: [auditoria-depuracao-cirurgica.md](./auditoria-depuracao-cirurgica.md).
+
+- PEA piloto: bugs PEA-1…PEA-6 corrigidos; regras Firestore publicadas.
+- Script: `node scripts/verify-pea-route-roles.mjs`.
+
+## Próximo passo (operacional)
+
+1. Validação manual: [auditoria-menus-fase3-checklist.md](./auditoria-menus-fase3-checklist.md) + [auditoria-perfis-interacao.md](./auditoria-perfis-interacao.md).
+2. `git push` e rollout App Hosting; comparar métricas de erro (7 dias).
+3. `npm run apphosting:check` antes do push.

@@ -25,7 +25,7 @@ import {
   useMemoFirebase,
   errorEmitter,
 } from "@/firebase";
-import { collection, doc, query, where, getDocs } from "firebase/firestore";
+import { collection, doc, query, where, limit, getDocs } from "firebase/firestore";
 import type { WaterPermit, Empreendedor, AppUser, Project } from "@/lib/types";
 import { permitStatusBadgeClassSimple } from "@/lib/status-display-classes";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -152,19 +152,20 @@ export default function OutorgasPage() {
         return query(
           collection(firestore, "outorgas"),
           where("empreendedorId", "in", empreendedorIdsForUser),
+          limit(200),
         );
       }
       return null;
     }
 
-    return collection(firestore, "outorgas");
+    return query(collection(firestore, "outorgas"), limit(200));
   }, [firestore, user, empreendedorIdsForUser]);
 
   const { data: outorgas, isLoading: isLoadingOutorgas } =
     useCollection<WaterPermit>(outorgasQuery);
 
   const empreendedoresQuery = useMemoFirebase(
-    () => (firestore ? collection(firestore, "empreendedores") : null),
+    () => (firestore ? query(collection(firestore, "empreendedores"), limit(200)) : null),
     [firestore],
   );
   const { data: empreendedores, isLoading: isLoadingEmpreendedores } =

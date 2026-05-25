@@ -31,7 +31,7 @@ function tipoEstudoToSlug(tipoEstudo: string): string {
     inventarioflorestal: 'fauna',
     fauna: 'fauna',
     outorgas: 'outorgas',
-    educacaoambiental: 'fauna',
+    educacaoambiental: 'pea',
     relatoriodiverso: 'rca',
     outro: 'rca',
   };

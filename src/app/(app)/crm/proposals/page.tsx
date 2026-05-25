@@ -18,7 +18,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { PlusCircle, ExternalLink, Eye, Pencil, Search } from 'lucide-react';
 import { useCollection, useFirestore, useMemoFirebase, useAuth } from '@/firebase';
-import { collection } from 'firebase/firestore';
+import { collection, limit, query } from 'firebase/firestore';
+import { sortCommercialProposalsByDate } from '@/lib/firestore-list-helpers';
 import type { CommercialProposal, Client } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
@@ -50,15 +51,19 @@ export default function CrmProposalsPage() {
 
   const proposalsQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
-    return collection(firestore, 'commercialProposals');
+    return query(collection(firestore, 'commercialProposals'), limit(200));
   }, [firestore, user]);
 
   const clientsQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
-    return collection(firestore, 'clients');
+    return query(collection(firestore, 'clients'), limit(200));
   }, [firestore, user]);
 
-  const { data: proposals, isLoading: isLoadingProposals } = useCollection<CommercialProposal>(proposalsQuery);
+  const { data: rawProposals, isLoading: isLoadingProposals } = useCollection<CommercialProposal>(proposalsQuery);
+  const proposals = useMemo(
+    () => (rawProposals ? sortCommercialProposalsByDate(rawProposals) : undefined),
+    [rawProposals],
+  );
   const { data: clients, isLoading: isLoadingClients } = useCollection<Client>(clientsQuery);
 
   const clientsMap = useMemo(() => new Map(clients?.map((c) => [c.id, c.name]) ?? []), [clients]);

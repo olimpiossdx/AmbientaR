@@ -19,7 +19,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import { useCollection, useFirestore, useUser, useMemoFirebase, errorEmitter } from '@/firebase';
-import { collection, doc, deleteDoc } from 'firebase/firestore';
+import { collection, doc, deleteDoc, limit, query } from 'firebase/firestore';
 import type { Revenue, Client } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -54,7 +54,7 @@ export function RevenueTable({ revenues: revenuesProp, isLoadingRevenues: isLoad
 
   const revenuesQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
-    return collection(firestore, 'revenues');
+    return query(collection(firestore, 'revenues'), limit(500));
   }, [firestore, user]);
 
   const { data: hookRevenues, isLoading: hookRevenuesLoading } = useCollection<Revenue>(revenuesProp !== undefined ? null : revenuesQuery);
@@ -65,7 +65,10 @@ export function RevenueTable({ revenues: revenuesProp, isLoadingRevenues: isLoad
   const isLoadingRevenues = revenuesProp !== undefined ? (isLoadingRevenuesProp ?? false) : hookRevenuesLoading;
   const canWrite = isAdminOrFinancialRole(user?.role);
 
-  const clientsQuery = useMemoFirebase(() => firestore ? collection(firestore, 'clients') : null, [firestore]);
+  const clientsQuery = useMemoFirebase(
+    () => (firestore ? query(collection(firestore, 'clients'), limit(200)) : null),
+    [firestore],
+  );
   const { data: clients, isLoading: isLoadingClients } = useCollection<Client>(clientsQuery);
   const clientsMap = useMemo(() => new Map(clients?.map(c => [c.id, c.name])), [clients]);
 

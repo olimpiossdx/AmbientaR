@@ -37,7 +37,8 @@ import { MoreHorizontal, PlusCircle, ChevronDown, Pencil, Trash2, Eye, CheckCirc
 import { PiaExportButtons } from '@/components/pia/pia-export-buttons';
 import { asPiaRecord } from '@/lib/pia/pia-record';
 import { useCollection, useFirebase, useMemoFirebase, errorEmitter } from '@/firebase';
-import { collection, doc, deleteDoc, updateDoc } from 'firebase/firestore';
+import { collection, doc, deleteDoc, updateDoc, limit, query } from 'firebase/firestore';
+import { sortByFirestoreUpdatedAt } from '@/lib/firestore-list-helpers';
 import type { PIA, PiaType, AppUser } from '@/lib/types';
 import { isAdminOrSupervisorRole } from '@/lib/role-guards';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -78,15 +79,19 @@ export default function PiaPage() {
 
   const piasQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
-    return collection(firestore, 'pias');
+    return query(collection(firestore, 'pias'), limit(200));
   }, [firestore, user]);
 
-  const { data: pias, isLoading } = useCollection<PIA>(piasQuery);
-  
+  const { data: piasRaw, isLoading } = useCollection<PIA>(piasQuery);
+
+  const pias = useMemo(
+    () => sortByFirestoreUpdatedAt(piasRaw ?? []),
+    [piasRaw],
+  );
+
   const { draftPias, approvedPias } = useMemo(() => {
-    if (!pias) return { draftPias: [], approvedPias: [] };
-    const drafts = pias.filter(p => p.status !== 'Aprovado');
-    const approved = pias.filter(p => p.status === 'Aprovado');
+    const drafts = pias.filter((p) => p.status !== 'Aprovado');
+    const approved = pias.filter((p) => p.status === 'Aprovado');
     return { draftPias: drafts, approvedPias: approved };
   }, [pias]);
 
@@ -339,7 +344,7 @@ export default function PiaPage() {
             <DialogDescription>Detalhes do Plano de Intervenção Ambiental ({itemToView?.type}).</DialogDescription>
           </DialogHeader>
           {itemToView && (
-            <div className="max-h-[60vh] overflow-y-auto pr-4 space-y-4">
+            <div className="form-scroll-body max-h-[60vh] space-y-4">
               <DetailItem label="Requerente" value={itemToView.requerente.nome} />
               <DetailItem label="Empreendimento" value={itemToView.empreendimento.nome} />
               <DetailItem label="Status" value={itemToView.status} />

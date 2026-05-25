@@ -33,6 +33,8 @@ interface FormDefaultProps {
     form: any;
     clients: Empreendedor[];
     isLoadingClients: boolean;
+    /** Quando true, o vínculo fica no bloco "Empreendedor responsável" no topo do formulário. */
+    hideEmpreendedorSelect?: boolean;
 }
 
 const ownerConditions: { value: OwnerCondition, label: string }[] = [
@@ -103,7 +105,7 @@ const dn130Practices = [
     { id: "reserva_legal_preservada", label: "Possui reserva legal preservada com vegetação primária ou em qualquer estágio de regeneração acima do percentual legal" }
 ];
 
-export function FormDefault({ form, clients, isLoadingClients }: FormDefaultProps) {
+export function FormDefault({ form, clients, isLoadingClients, hideEmpreendedorSelect = false }: FormDefaultProps) {
     
     const clientsMap = React.useMemo(() => new Map(clients?.map(c => [c.id, c])), [clients]);
     
@@ -197,16 +199,20 @@ export function FormDefault({ form, clients, isLoadingClients }: FormDefaultProp
 
             <div className="space-y-4 rounded-md border p-4">
                  <h3 className="text-lg font-medium">Proprietário</h3>
+                {!hideEmpreendedorSelect ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FormField control={form.control} name="empreendedorId" render={({ field }) => (
                         <FormItem><FormLabel>Proprietário / Empreendedor</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isLoadingClients}>
+                        <Select onValueChange={field.onChange} value={field.value || ''} disabled={isLoadingClients}>
                             <FormControl><SelectTrigger><SelectValue placeholder={isLoadingClients ? "Carregando..." : "Selecione"} /></SelectTrigger></FormControl>
                             <SelectContent>{clients?.map(client => ( <SelectItem key={client.id} value={client.id}>{client.name}</SelectItem> ))}</SelectContent>
                         </Select><FormMessage /></FormItem>
                     )} />
                     <FormItem><FormLabel>CPF/CNPJ</FormLabel><MaskedInput mask="cpfCnpj" disabled value={clientsMap.get(selectedClientId)?.cpfCnpj || ''} /></FormItem>
                 </div>
+                ) : selectedClientId ? (
+                    <FormItem><FormLabel>CPF/CNPJ do empreendedor responsável</FormLabel><MaskedInput mask="cpfCnpj" disabled value={clientsMap.get(selectedClientId)?.cpfCnpj || ''} /></FormItem>
+                ) : null}
                 <FormField control={form.control} name="ownerCondition" render={() => (
                     <FormItem><FormLabel>Condição do Empreendedor</FormLabel>
                         <div className="flex flex-wrap gap-4">

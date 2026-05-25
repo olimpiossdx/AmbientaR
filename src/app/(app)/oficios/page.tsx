@@ -28,6 +28,7 @@ import {
   runTransaction,
   query,
   where,
+  limit,
   updateDoc,
   deleteField,
 } from "firebase/firestore";
@@ -152,9 +153,10 @@ export default function OficiosPage() {
       return query(
         collection(firestore, "oficios"),
         where("recipient", "==", user.name),
+        limit(200),
       );
     }
-    return collection(firestore, "oficios");
+    return query(collection(firestore, "oficios"), limit(200));
   }, [firestore, user]);
 
   const { data: oficios, isLoading } = useCollection<Oficio>(oficiosQuery);
@@ -618,7 +620,7 @@ export default function OficiosPage() {
             </DialogDescription>
           </DialogHeader>
           {itemToView && (
-            <div className="max-h-[60vh] overflow-y-auto pr-4 space-y-4">
+            <div className="form-scroll-body max-h-[60vh] space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <DetailItem
                   label="Data de criação"

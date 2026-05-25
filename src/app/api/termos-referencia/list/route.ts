@@ -1,8 +1,7 @@
 /**
- * GET /api/termos-referencia/list?study=prada|ptrf
+ * GET /api/termos-referencia/list?study=prada|ptrf|pea|educacao-ambiental
  *
  * Lista arquivos (.pdf, .docx, .dotx) da subpasta de termos de referência vinculada ao estudo.
- * Apenas estudos com vínculo no primeiro momento (prada, ptrf) retornam dados.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -34,7 +33,7 @@ export async function GET(request: NextRequest) {
   const dirPath = getTermosReferenciaPathForStudy(study);
   if (!dirPath) {
     return NextResponse.json(
-      { success: false, error: `Estudo "${study}" não possui vínculo com pasta de termos de referência no primeiro momento.` },
+      { success: false, error: `Estudo "${study}" não possui vínculo com pasta de termos de referência.` },
       { status: 404 }
     );
   }

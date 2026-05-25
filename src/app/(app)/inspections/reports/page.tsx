@@ -41,6 +41,7 @@ import {
   getDocs,
   query,
   where,
+  limit,
   doc,
   updateDoc,
   addDoc,
@@ -122,10 +123,11 @@ export default function InspectionReportsListPage() {
       return query(
         collection(firestore, "projects"),
         where("empreendedorId", "in", empreendedorIdsForUser),
+        limit(200),
       );
     }
     if (!isClientePortalRole(user?.role)) {
-      return collection(firestore, "projects");
+      return query(collection(firestore, "projects"), limit(200));
     }
     return null;
   }, [firestore, user, empreendedorIdsForUser]);
@@ -162,6 +164,7 @@ export default function InspectionReportsListPage() {
     return query(
       collection(firestore, "inspections"),
       where("status", "==", "Aprovada"),
+      limit(200),
     );
   }, [firestore, user, projectIds, empreendedorIdsForUser]);
 
@@ -175,7 +178,7 @@ export default function InspectionReportsListPage() {
   }, [fetchedInspections]);
 
   const empreendedoresQuery = useMemoFirebase(
-    () => (firestore ? collection(firestore, "empreendedores") : null),
+    () => (firestore ? query(collection(firestore, "empreendedores"), limit(200)) : null),
     [firestore],
   );
   const { data: empreendedores, isLoading: isLoadingEmpreendedores } =

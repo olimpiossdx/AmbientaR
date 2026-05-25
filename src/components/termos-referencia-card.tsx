@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { BookOpen, FileText, Loader2, FolderOpen } from 'lucide-react';
-import { getTrFolderForStudy, isStudyLinkedToTr } from '@/lib/termos-referencia-config';
+import { getTrFolderForStudy, isStudyLinkedToTr } from '@/lib/termos-referencia-study-folders';
 import { useFirebase } from '@/firebase';
 import { fetchApiWithAuth } from '@/lib/api-client-auth';
 

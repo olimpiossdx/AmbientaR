@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import * as React from "react";
 import { z } from "zod";
@@ -55,7 +55,7 @@ import {
   buildProjectSelectOptions,
   normalizeEntityId,
 } from "@/lib/empreendedor-project-select";
-import { collection, doc, addDoc, updateDoc } from "firebase/firestore";
+import { collection, doc, addDoc, updateDoc, limit, query } from "firebase/firestore";
 import {
   DialogHeader,
   DialogTitle,
@@ -155,14 +155,14 @@ export function LicenseForm({
   const { firestore, user, auth } = useFirebase();
 
   const empreendedoresQuery = useMemoFirebase(
-    () => (firestore ? collection(firestore, "empreendedores") : null),
+    () => (firestore ? query(collection(firestore, "empreendedores"), limit(200)) : null),
     [firestore],
   );
   const { data: empreendedores, isLoading: isLoadingEmpreendedores } =
     useCollection<Empreendedor>(empreendedoresQuery);
 
   const projectsQuery = useMemoFirebase(
-    () => (firestore ? collection(firestore, "projects") : null),
+    () => (firestore ? query(collection(firestore, "projects"), limit(200)) : null),
     [firestore],
   );
   const { data: allProjects, isLoading: isLoadingProjects } =
@@ -419,7 +419,7 @@ export function LicenseForm({
           onSubmit={form.handleSubmit(onSubmit)}
           className="h-full flex flex-col overflow-hidden"
         >
-          <div className="flex-1 overflow-y-auto pr-6 pl-1 -mr-6 -ml-1 space-y-4">
+          <div className="form-scroll-body space-y-4">
             <FormField
               control={form.control}
               name="empreendedorId"

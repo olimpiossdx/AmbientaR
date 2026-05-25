@@ -331,7 +331,7 @@ export function ProposalForm({ currentItem, onSuccess, onCancel }: ProposalFormP
           onSubmit={form.handleSubmit(onSubmit)}
           className="flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-hidden"
         >
-          <div className="min-h-0 min-w-0 flex-1 space-y-4 overflow-y-auto py-1 pr-2 sm:pr-1">
+          <div className="form-scroll-body space-y-4">
           <FormField
             control={form.control}
             name="clientId"

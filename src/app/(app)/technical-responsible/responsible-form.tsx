@@ -124,7 +124,7 @@ export function ResponsibleForm({ currentItem, onSuccess, onCancel }: Responsibl
     <>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="h-full flex flex-col overflow-hidden">
-          <div className="flex-1 overflow-y-auto pr-4 py-4 space-y-4">
+          <div className="form-scroll-body py-4 space-y-4">
           <FormField control={form.control} name="name" render={({ field }) => (<FormItem><FormLabel>Nome Completo</FormLabel><FormControl><Input placeholder="Nome do profissional" {...field} /></FormControl><FormMessage /></FormItem>)} />
           <FormField control={form.control} name="cpf" render={({ field }) => (<FormItem><FormLabel>CPF</FormLabel><FormControl><MaskedInput mask="cpf" placeholder="000.000.000-00" {...field} /></FormControl><FormMessage /></FormItem>)} />
           <div className="grid grid-cols-2 gap-4">

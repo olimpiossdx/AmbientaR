@@ -26,7 +26,7 @@ import {
   useMemoFirebase,
   errorEmitter,
 } from "@/firebase";
-import { collection, doc, query, where, getDocs } from "firebase/firestore";
+import { collection, doc, query, where, limit, getDocs } from "firebase/firestore";
 import type {
   EnvironmentalIntervention,
   Empreendedor,
@@ -153,21 +153,23 @@ export default function IntervencoesPage() {
         return query(
           collection(firestore, "intervencoes"),
           where("empreendedorId", "in", empreendedorIdsForUser),
+          limit(200),
         );
       }
       return query(
         collection(firestore, "intervencoes"),
         where("empreendedorId", "in", ["invalid-placeholder"]),
+        limit(1),
       );
     }
-    return collection(firestore, "intervencoes");
+    return query(collection(firestore, "intervencoes"), limit(200));
   }, [firestore, user, empreendedorIdsForUser]);
 
   const { data: intervencoes, isLoading: isLoadingIntervencoes } =
     useCollection<EnvironmentalIntervention>(intervencoesQuery);
 
   const empreendedoresQuery = useMemoFirebase(
-    () => (firestore ? collection(firestore, "empreendedores") : null),
+    () => (firestore ? query(collection(firestore, "empreendedores"), limit(200)) : null),
     [firestore],
   );
   const { data: empreendedores, isLoading: isLoadingEmpreendedores } =

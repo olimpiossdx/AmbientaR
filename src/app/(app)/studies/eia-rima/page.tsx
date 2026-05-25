@@ -35,7 +35,7 @@ import {
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { MoreHorizontal, PlusCircle, Pencil, Trash2, Eye, CheckCircle } from 'lucide-react';
 import { useCollection, useFirebase, useMemoFirebase, errorEmitter } from '@/firebase';
-import { collection, doc, deleteDoc, updateDoc } from 'firebase/firestore';
+import { collection, doc, deleteDoc, updateDoc, limit, query } from 'firebase/firestore';
 import type { EiaRima, AppUser, Empreendedor } from '@/lib/types';
 import { isAdminOrSupervisorRole } from '@/lib/role-guards';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -67,7 +67,7 @@ export default function EiaRimaPage() {
 
   const eiaRimasQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
-    return collection(firestore, 'eiaRimas');
+    return query(collection(firestore, 'eiaRimas'), limit(200));
   }, [firestore, user]);
 
   const { data: eiaRimas, isLoading } = useCollection<EiaRima>(eiaRimasQuery);
@@ -286,7 +286,7 @@ export default function EiaRimaPage() {
             <DialogDescription>Detalhes do Estudo de Impacto Ambiental.</DialogDescription>
           </DialogHeader>
           {itemToView && (
-            <div className="max-h-[60vh] overflow-y-auto pr-4 space-y-4">
+            <div className="form-scroll-body max-h-[60vh] space-y-4">
               <DetailItem label="Requerente" value={empreendedoresMap.get(itemToView.requerente.clientId || '') || itemToView.requerente.nome} />
               <DetailItem label="Empreendimento" value={itemToView.empreendimento.nome} />
               <DetailItem label="Nº Processo" value={itemToView.processo} />

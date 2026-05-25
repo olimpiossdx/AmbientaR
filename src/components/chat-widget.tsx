@@ -34,7 +34,9 @@ export default function ChatWidget() {
     const [messageToDelete, setMessageToDelete] = React.useState<ChatMessage | null>(null);
     const [unreadCounts, setUnreadCounts] = React.useState<Record<string, number>>({});
     const [isMuted, setIsMuted] = React.useState(false);
-    
+    /** Total anterior para som de nova mensagem — evita recriar onSnapshot quando contagens mudam. */
+    const prevTotalUnreadRef = React.useRef(0);
+
     const audioRef = React.useRef<HTMLAudioElement | null>(null);
 
     const { firestore, user } = useFirebase();
@@ -57,8 +59,11 @@ export default function ChatWidget() {
     }, [firestore, user]);
 
     React.useEffect(() => {
-        if (!firestore || !user) return;
-        
+        if (!firestore || !user) {
+            prevTotalUnreadRef.current = 0;
+            return;
+        }
+
         const q = query(collection(firestore, 'chats'), where('participants', 'array-contains', user.uid));
 
         const unsubscribe = onSnapshot(q, async (chatsSnapshot) => {
@@ -73,28 +78,29 @@ export default function ChatWidget() {
                         const unreadQuery = query(messagesRef, where('receiverId', '==', user.uid), where('read', '==', false));
                         const messagesSnapshot = await getDocs(unreadQuery);
                         const count = messagesSnapshot.size;
-                        
+
                         const otherParticipantId = chatData.participants.find((p: string) => p !== user.uid);
                         if (otherParticipantId) {
                             newUnreadCounts[otherParticipantId] = count;
                         }
                         totalUnread += count;
-                    } catch (e) {
+                    } catch {
                          console.warn(`Could not fetch unread count for chat ${chatDoc.id}. This might be due to security rules.`);
                     }
                 }
             }
-            const currentTotal = Object.values(unreadCounts).reduce((a, b) => a + b, 0);
-             if (totalUnread > currentTotal && !isMuted && audioRef.current) {
+            const previousTotal = prevTotalUnreadRef.current;
+            if (totalUnread > previousTotal && !isMuted && audioRef.current) {
                 audioRef.current.play().catch(e => console.warn("Audio playback failed:", e));
             }
+            prevTotalUnreadRef.current = totalUnread;
             setUnreadCounts(newUnreadCounts);
         }, (error) => {
              console.error("Error listening to user's chats collection: ", error);
         });
 
         return () => unsubscribe();
-    }, [firestore, user, isMuted, unreadCounts]);
+    }, [firestore, user, isMuted]);
 
     const messagesQuery = useMemoFirebase(() => {
         if (!firestore || !chatId) return null;

@@ -14,7 +14,7 @@ import { Badge } from '@/components/ui/badge';
 import { AlertTriangle, CheckCircle2, Clock, FolderKanban, ClipboardCheck, Droplets, Trees, Eye } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { collection, query, where, getDocs, limit } from 'firebase/firestore';
 import type { Project as EnvironmentalPermit, Condicionante, WaterPermit, EnvironmentalIntervention, Project, Empreendedor, License } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
@@ -47,23 +47,23 @@ export default function EnvironmentalDashboard({ initialPermits, initialLicenses
   // Use initial data if provided (for client dashboard), otherwise fetch all data for manager roles
   const { data: permits, isLoading: isLoadingPermits } = useCollection<EnvironmentalPermit>(useMemoFirebase(() => {
     if (initialPermits !== undefined || !firestore || isClientView) return null;
-    return collection(firestore, 'projects');
+    return query(collection(firestore, 'projects'), limit(200));
   }, [firestore, initialPermits, isClientView]));
 
   const { data: condicionantes, isLoading: isLoadingCondicionantes } = useCollection<Condicionante>(useMemoFirebase(() => {
     if (initialCondicionantes !== undefined || !firestore) return null;
     if (isClientView) return null;
-    return collection(firestore, 'condicionantes');
+    return query(collection(firestore, 'condicionantes'), limit(200));
   }, [firestore, initialCondicionantes, isClientView]));
 
   const { data: outorgas, isLoading: isLoadingOutorgas } = useCollection<WaterPermit>(useMemoFirebase(() => {
     if (initialOutorgas !== undefined || !firestore || isClientView) return null;
-    return collection(firestore, 'outorgas');
+    return query(collection(firestore, 'outorgas'), limit(200));
   }, [firestore, initialOutorgas, isClientView]));
 
   const { data: intervencoes, isLoading: isLoadingIntervencoes } = useCollection<EnvironmentalIntervention>(useMemoFirebase(() => {
     if (initialIntervencoes !== undefined || !firestore || isClientView) return null;
-    return collection(firestore, 'intervencoes');
+    return query(collection(firestore, 'intervencoes'), limit(200));
   }, [firestore, initialIntervencoes, isClientView]));
   
   const finalPermits = initialPermits !== undefined ? initialPermits : permits;
@@ -72,11 +72,17 @@ export default function EnvironmentalDashboard({ initialPermits, initialLicenses
   const finalIntervencoes = initialIntervencoes !== undefined ? initialIntervencoes : intervencoes;
 
 
-  const projectsQuery = useMemoFirebase(() => firestore ? collection(firestore, 'projects') : null, [firestore]);
+  const projectsQuery = useMemoFirebase(
+    () => (firestore ? query(collection(firestore, 'projects'), limit(200)) : null),
+    [firestore],
+  );
   const { data: allProjects, isLoading: isLoadingProjects } = useCollection<Project>(projectsQuery);
   const projectsMap = useMemo(() => new Map(allProjects?.map(p => [p.id, p.propertyName])), [allProjects]);
 
-  const empreendedoresQuery = useMemoFirebase(() => firestore ? collection(firestore, 'empreendedores') : null, [firestore]);
+  const empreendedoresQuery = useMemoFirebase(
+    () => (firestore ? query(collection(firestore, 'empreendedores'), limit(200)) : null),
+    [firestore],
+  );
   const { data: allEmpreendedores, isLoading: isLoadingEmpreendedores } = useCollection<Empreendedor>(empreendedoresQuery);
   const empreendedoresMap = useMemo(() => new Map(allEmpreendedores?.map(e => [e.id, e.name])), [allEmpreendedores]);
 

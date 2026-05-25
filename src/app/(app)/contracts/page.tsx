@@ -43,6 +43,7 @@ import {
   updateDoc,
   query,
   where,
+  limit,
   getDocs,
 } from "firebase/firestore";
 import * as React from "react";
@@ -235,7 +236,7 @@ export default function ContractsPage() {
     if (!firestore || !user) return null;
     // Busca geral; o filtro por perfil é aplicado em memória
     // para suportar contratos legados (clientId) e novos (contratante.clientId).
-    return collection(firestore, "contracts");
+    return query(collection(firestore, "contracts"), limit(200));
   }, [firestore, user]);
 
   const { data: contracts, isLoading: isLoadingContracts } =
@@ -251,6 +252,7 @@ export default function ContractsPage() {
         ? query(
             collection(firestore, "commercialProposals"),
             where("status", "==", "Accepted"),
+            limit(50),
           )
         : null,
     [firestore],
@@ -259,7 +261,7 @@ export default function ContractsPage() {
     acceptedProposalsQuery,
   );
   const clientsQuery = useMemoFirebase(
-    () => (firestore ? collection(firestore, "clients") : null),
+    () => (firestore ? query(collection(firestore, "clients"), limit(200)) : null),
     [firestore],
   );
   const { data: clients } = useCollection<Client>(clientsQuery);
@@ -1163,7 +1165,7 @@ export default function ContractsPage() {
             </DialogDescription>
           </DialogHeader>
           {viewingItem && (
-            <div className="max-h-[60vh] overflow-y-auto pr-4 space-y-4">
+            <div className="form-scroll-body max-h-[60vh] space-y-4">
               <h4 className="font-semibold text-foreground">Contratante</h4>
               <DetailItem
                 label="Nome"

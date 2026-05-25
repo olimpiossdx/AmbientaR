@@ -10,7 +10,7 @@ import type { Appointment as CalendarEvent } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { FileText, ClipboardCheck, Briefcase, PlusCircle, Pencil, Trash2, CalendarClock } from 'lucide-react';
 import { useCollection, useFirebase, useMemoFirebase, errorEmitter } from '@/firebase';
-import { collection, deleteDoc, doc, query, where, getDocs } from 'firebase/firestore';
+import { collection, deleteDoc, doc, query, where, limit, getDocs } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -75,11 +75,19 @@ export default function CalendarPage() {
         user.role === 'diretor_fauna' ||
         user.role === 'advogado'
       ) {
-        queriesToRun.push(getDocs(baseQuery));
+        queriesToRun.push(getDocs(query(baseQuery, limit(500))));
       } else {
-        const publicQuery = query(baseQuery, where('ownerRole', '!=', 'financial'));
+        const publicQuery = query(
+          baseQuery,
+          where('ownerRole', '!=', 'financial'),
+          limit(500),
+        );
         queriesToRun.push(getDocs(publicQuery));
-        const privateQuery = query(baseQuery, where('ownerId', '==', user.uid));
+        const privateQuery = query(
+          baseQuery,
+          where('ownerId', '==', user.uid),
+          limit(500),
+        );
         queriesToRun.push(getDocs(privateQuery));
       }
 

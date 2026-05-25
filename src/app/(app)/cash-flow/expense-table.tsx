@@ -19,7 +19,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import { useCollection, useFirestore, useUser, useMemoFirebase, errorEmitter } from '@/firebase';
-import { collection, doc, deleteDoc } from 'firebase/firestore';
+import { collection, doc, deleteDoc, limit, query } from 'firebase/firestore';
 import type { Expense } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -55,7 +55,7 @@ export function ExpenseTable({ expenses: expensesProp, isLoadingExpenses: isLoad
 
   const expensesQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
-    return collection(firestore, 'expenses');
+    return query(collection(firestore, 'expenses'), limit(500));
   }, [firestore, user]);
 
   const { data: hookExpenses, isLoading: hookLoading } = useCollection<Expense>(expensesProp !== undefined ? null : expensesQuery);

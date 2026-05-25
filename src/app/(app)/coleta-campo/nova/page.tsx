@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/select';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
-import { collection } from 'firebase/firestore';
+import { collection, limit, query } from 'firebase/firestore';
 import type {
   ColetaCampanhaModo,
   ColetaTipoInventario,
@@ -50,13 +50,13 @@ export default function NovaCampanhaPage() {
   const [submitting, setSubmitting] = useState(false);
 
   const projectsQuery = useMemoFirebase(
-    () => (firestore ? collection(firestore, 'projects') : null),
+    () => (firestore ? query(collection(firestore, 'projects'), limit(200)) : null),
     [firestore],
   );
   const { data: projects } = useCollection<Project>(projectsQuery);
 
   const empreendedoresQuery = useMemoFirebase(
-    () => (firestore ? collection(firestore, 'empreendedores') : null),
+    () => (firestore ? query(collection(firestore, 'empreendedores'), limit(200)) : null),
     [firestore],
   );
   const { data: empreendedores } = useCollection<Empreendedor>(empreendedoresQuery);

@@ -917,6 +917,10 @@ service cloud.firestore {
         allow read, write: if isSignedIn();
     }
 
+    match /pea_programs/{peaId} {
+        allow read, write: if isSignedIn();
+    }
+
     /**
      * @description Pagamento anual da plataforma (cadastro titular): o próprio usuário cria o pedido;
      * leitura do próprio ou admin; atualização só admin (confirmação).
@@ -974,6 +978,18 @@ service cloud.firestore {
      */
     match /georef_projects/{projectId} {
       allow read, create, update: if canStudyMapsRole();
+      allow delete: if isAdmin() || isSupervisor();
+    }
+
+    /**
+     * @description Rascunhos de compensação ambiental (checklist por tipo, um doc por utilizador+tipo).
+     * @path /databases/{database}/documents/compensacao_drafts/{draftId}
+     */
+    match /compensacao_drafts/{draftId} {
+      allow read, update: if isSignedIn()
+        && (resource.data.createdBy == request.auth.uid || isAdmin() || isSupervisor());
+      allow create: if isSignedIn()
+        && request.resource.data.createdBy == request.auth.uid;
       allow delete: if isAdmin() || isSupervisor();
     }
 

@@ -7,18 +7,51 @@ import {
   writeBrandedPdfParagraph,
   writeBrandedPdfTitle,
 } from '@/lib/ia-menu-branded-pdf';
-import type { MmBrandedPdfSession } from '@/lib/pdf-branding-layout';
+import {
+  addBrandedPage,
+  drawWatermarkOnPage,
+  getContentStartY,
+  type MmBrandedPdfSession,
+} from '@/lib/pdf-branding-layout';
 import type { ProjetoTecnicoBarragem } from '@/lib/types';
 import { buildBarragemExportBaseName } from '@/lib/barragem/barragem-export-filename';
-import { buildBarragemExportSections } from '@/lib/barragem/barragem-export-sections';
+import {
+  buildBarragemExportSections,
+  type BarragemExportSection,
+} from '@/lib/barragem/barragem-export-sections';
+import {
+  BARRAGEM_COVER_TITLE_TOP_MM,
+  BARRAGEM_REPORT_TITLE,
+  BARRAGEM_TOC_HEADING,
+  buildBarragemCoverMetaLines,
+} from '@/lib/barragem/barragem-export-layout';
 
 export type BarragemPdfExportResult = {
   blob: Blob;
   fileName: string;
 };
 
-function fmt(v: string | undefined | null): string {
-  return v != null && String(v).trim() !== '' ? String(v).trim() : '—';
+type TocEntry = { title: string; page: number };
+
+function renderCover(session: MmBrandedPdfSession, projeto: ProjetoTecnicoBarragem): void {
+  const { doc, margins, contentWidth } = session;
+  const rightX = margins.left + contentWidth;
+
+  let y = BARRAGEM_COVER_TITLE_TOP_MM;
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(16);
+  for (const line of doc.splitTextToSize(BARRAGEM_REPORT_TITLE, contentWidth)) {
+    doc.text(line, margins.left, y);
+    y += 8;
+  }
+
+  y += 14;
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(11);
+  for (const line of buildBarragemCoverMetaLines(projeto)) {
+    doc.text(line, rightX, y, { align: 'right' });
+    y += 7;
+  }
 }
 
 function renderSection(
@@ -32,6 +65,54 @@ function renderSection(
     y = writeBrandedPdfParagraph(session, para.trim(), 10, y);
   }
   return y + 4;
+}
+
+function renderBodySections(
+  session: MmBrandedPdfSession,
+  sections: BarragemExportSection[],
+  startY: number,
+): { endY: number; toc: TocEntry[] } {
+  const toc: TocEntry[] = [];
+  let y = startY;
+
+  for (const sec of sections) {
+    if (sec.pageBreakBefore) {
+      y = addBrandedPage(session.doc, session.branding);
+    }
+    const pageBefore = session.doc.getNumberOfPages();
+    y = session.ensureSpace(y + 6, 36);
+    y = renderSection(session, sec.title, sec.body, y);
+    toc.push({ title: sec.title, page: pageBefore });
+  }
+
+  return { endY: y, toc };
+}
+
+function writeTableOfContents(
+  session: MmBrandedPdfSession,
+  tocPage: number,
+  entries: TocEntry[],
+): void {
+  const { doc, margins, contentWidth } = session;
+  doc.setPage(tocPage);
+  drawWatermarkOnPage(doc, session.branding);
+  let y = getContentStartY(session.branding);
+  y = writeBrandedPdfTitle(session, BARRAGEM_TOC_HEADING, 14, y);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(10);
+
+  for (const entry of entries) {
+    y = session.ensureSpace(y, 6);
+    const title =
+      entry.title.length > 72 ? `${entry.title.slice(0, 69)}…` : entry.title;
+    const dots = '.'.repeat(Math.max(2, 52 - title.length));
+    const line = `${title} ${dots} ${entry.page}`;
+    for (const w of doc.splitTextToSize(line, contentWidth)) {
+      y = session.ensureSpace(y, 5);
+      doc.text(w, margins.left, y);
+      y += 5;
+    }
+  }
 }
 
 export async function generateBarragemExportPdfBlob(
@@ -52,47 +133,21 @@ export async function generateBarragemExportPdfBlob(
     throw new Error('Configure a identidade visual em Configurações para exportar PDF.');
   }
 
-  const { doc } = session;
-  const pageHeight = doc.internal.pageSize.getHeight();
-  let y = pageHeight * 0.28;
+  const sections = buildBarragemExportSections(projeto);
 
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(16);
-  const title = 'PROJETO TÉCNICO DE BARRAGEM';
-  for (const line of doc.splitTextToSize(title, session.contentWidth)) {
-    doc.text(line, session.margins.left, y);
-    y += 8;
-  }
+  renderCover(session, projeto);
 
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(11);
-  y += 6;
-  for (const line of [
-    fmt(projeto.empreendimento?.nome),
-    fmt(projeto.requerente?.nome),
-    [projeto.empreendimento?.municipio, projeto.empreendimento?.uf]
-      .filter(Boolean)
-      .join(' - ') || '—',
-    `Status: ${fmt(projeto.status ?? 'Rascunho')}`,
-    projeto.dataEmissao || new Date().toLocaleDateString('pt-BR'),
-  ]) {
-    doc.text(line, session.margins.left, y);
-    y += 7;
-  }
+  addBrandedPage(session.doc, session.branding);
+  const tocPage = session.doc.getNumberOfPages();
 
-  y = session.ensureSpace(y + 8, 40);
+  addBrandedPage(session.doc, session.branding);
+  const bodyStartY = getContentStartY(session.branding);
+  const { toc } = renderBodySections(session, sections, bodyStartY);
 
-  if (projeto.apresentacao?.trim()) {
-    y = renderSection(session, 'Apresentação', projeto.apresentacao, y);
-  }
+  writeTableOfContents(session, tocPage, toc);
 
-  for (const sec of buildBarragemExportSections(projeto)) {
-    if (sec.title === 'Apresentação') continue;
-    y = session.ensureSpace(y, 30);
-    y = renderSection(session, sec.title, sec.body, y);
-  }
-
-  const blob = doc.output('blob');
+  session.finalize();
+  const blob = session.doc.output('blob');
   return {
     blob,
     fileName: `${buildBarragemExportBaseName(projeto)}.pdf`,

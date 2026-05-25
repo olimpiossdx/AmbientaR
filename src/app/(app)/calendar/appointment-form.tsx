@@ -1,4 +1,4 @@
-
+﻿
 'use client';
 
 import * as React from 'react';
@@ -30,7 +30,7 @@ import { useToast } from '@/hooks/use-toast';
 import type { Appointment, Client, UserRole } from '@/lib/types';
 import { useFirebase, errorEmitter, useCollection, useMemoFirebase } from '@/firebase';
 import { FirestorePermissionError } from '@/firebase/errors';
-import { collection, doc, addDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, doc, addDoc, updateDoc, serverTimestamp, limit, query } from 'firebase/firestore';
 import { DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 
 const formSchema = z.object({
@@ -69,7 +69,10 @@ export function AppointmentForm({ currentItem, onSuccess }: AppointmentFormProps
   const { toast } = useToast();
   const { firestore, user } = useFirebase();
 
-  const clientsQuery = useMemoFirebase(() => firestore ? collection(firestore, 'clients') : null, [firestore]);
+  const clientsQuery = useMemoFirebase(
+    () => (firestore ? query(collection(firestore, 'clients'), limit(200)) : null),
+    [firestore],
+  );
   const { data: clients, isLoading: isLoadingClients } = useCollection<Client>(clientsQuery);
 
   const form = useForm<FormValues>({
@@ -158,7 +161,7 @@ export function AppointmentForm({ currentItem, onSuccess }: AppointmentFormProps
       </DialogHeader>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="h-full flex flex-col overflow-hidden">
-          <div className="flex-1 overflow-y-auto pr-6 pl-1 -mr-6 -ml-1 space-y-4">
+          <div className="form-scroll-body space-y-4">
             <FormField control={form.control} name="description" render={({ field }) => (
                 <FormItem><FormLabel>Descrição</FormLabel><FormControl><Textarea placeholder="Descreva o compromisso..." {...field} /></FormControl><FormMessage /></FormItem>
             )}/>

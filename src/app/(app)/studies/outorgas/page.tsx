@@ -30,6 +30,7 @@ import {
   deleteDoc,
   query,
   where,
+  limit,
   getDocs,
 } from "firebase/firestore";
 import type { WaterPermit, Empreendedor, AppUser, Project } from "@/lib/types";
@@ -149,19 +150,20 @@ export default function OutorgasEstudosPage() {
         return query(
           collection(firestore, "outorgas"),
           where("empreendedorId", "in", empreendedorIdsForUser),
+          limit(200),
         );
       }
       return null; // Don't query if there are no empreendedorIds
     }
 
-    return collection(firestore, "outorgas");
+    return query(collection(firestore, "outorgas"), limit(200));
   }, [firestore, user, empreendedorIdsForUser]);
 
   const { data: outorgas, isLoading: isLoadingOutorgas } =
     useCollection<WaterPermit>(outorgasQuery);
 
   const empreendedoresQuery = useMemoFirebase(
-    () => (firestore ? collection(firestore, "empreendedores") : null),
+    () => (firestore ? query(collection(firestore, "empreendedores"), limit(200)) : null),
     [firestore],
   );
   const { data: empreendedores, isLoading: isLoadingEmpreendedores } =
@@ -172,7 +174,7 @@ export default function OutorgasEstudosPage() {
   );
 
   const projectsQuery = useMemoFirebase(
-    () => (firestore ? collection(firestore, "projects") : null),
+    () => (firestore ? query(collection(firestore, "projects"), limit(200)) : null),
     [firestore],
   );
   const { data: projects, isLoading: isLoadingProjects } =

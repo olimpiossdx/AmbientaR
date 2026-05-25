@@ -1,12 +1,12 @@
 # Auditoria de Rotas e Menu
 
-Gerado em: 2026-05-25T14:14:08.675Z
+Gerado em: 2026-05-25T17:14:02.311Z
 
 Classificação inicial para limpeza cirúrgica. Rotas órfãs não devem ser removidas automaticamente; precisam de validação funcional antes.
 
 ## Código ativo ou coberto por menu
 
-Total: 204
+Total: 211
 
 | Rota | Arquivo |
 |------|---------|
@@ -138,8 +138,15 @@ Total: 204
 | `/studies/analise-socioambiental` | `src/app/(app)/studies/analise-socioambiental/page.tsx` |
 | `/studies/assistant` | `src/app/(app)/studies/assistant/page.tsx` |
 | `/studies/barragem` | `src/app/(app)/studies/barragem/page.tsx` |
+| `/studies/barragem/[id]/edit` | `src/app/(app)/studies/barragem/[id]/edit/page.tsx` |
+| `/studies/barragem/new` | `src/app/(app)/studies/barragem/new/page.tsx` |
 | `/studies/cavidades` | `src/app/(app)/studies/cavidades/page.tsx` |
+| `/studies/compensacao-ambiental` | `src/app/(app)/studies/compensacao-ambiental/page.tsx` |
+| `/studies/compensacao-ambiental/[tipo]` | `src/app/(app)/studies/compensacao-ambiental/[tipo]/page.tsx` |
 | `/studies/educacao-ambiental` | `src/app/(app)/studies/educacao-ambiental/page.tsx` |
+| `/studies/educacao-ambiental/[id]/edit` | `src/app/(app)/studies/educacao-ambiental/[id]/edit/page.tsx` |
+| `/studies/educacao-ambiental/dispensas/[id]` | `src/app/(app)/studies/educacao-ambiental/dispensas/[id]/page.tsx` |
+| `/studies/educacao-ambiental/novo` | `src/app/(app)/studies/educacao-ambiental/novo/page.tsx` |
 | `/studies/educacao-ambiental/solicitar-dispensa` | `src/app/(app)/studies/educacao-ambiental/solicitar-dispensa/page.tsx` |
 | `/studies/eia-rima` | `src/app/(app)/studies/eia-rima/page.tsx` |
 | `/studies/eia-rima/[id]/edit` | `src/app/(app)/studies/eia-rima/(.)[id]/edit/page.tsx` |

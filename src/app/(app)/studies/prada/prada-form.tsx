@@ -1,4 +1,4 @@
-
+﻿
 'use client';
 
 import * as React from 'react';
@@ -473,7 +473,7 @@ export function PradaForm({ currentItem, onSuccess }: PradaFormProps) {
   return (
     <Form {...form}>
       <form onSubmit={(e) => e.preventDefault()} className="h-full flex flex-col overflow-hidden">
-        <div className="flex-1 overflow-y-auto pr-4 -mr-6">
+        <div className="form-scroll-body">
             <Tabs defaultValue="info-gerais" className="w-full">
                 <TabsList className="h-auto flex-wrap justify-start">
                     <TabsTrigger value="info-gerais">1. Informações Gerais</TabsTrigger>

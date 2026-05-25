@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import fs from "node:fs/promises";
-import path from "node:path";
+import fs from "fs/promises";
+import path from "path";
 import mammoth from "mammoth";
 import { isAiLocalImportEnabled } from "@/lib/deploy-flags";
 import { getDefaultAiReferenceImportBasePath } from "@/lib/ai-reference-import-base-path";
+import { getTermosReferenciaPathForStudy } from "@/lib/termos-referencia-config";
 import { adminApiErrorResponse, requireAdminApiAuth } from "@/lib/api-auth";
 
 export const runtime = "nodejs";
@@ -100,12 +101,18 @@ export async function POST(request: NextRequest) {
     await requireAdminApiAuth(request);
     const body = (await request.json().catch(() => ({}))) as {
       basePath?: string;
+      study?: string;
       extensions?: string[];
       modifiedAfter?: string;
       cpfCnpj?: string;
     };
+    const fromStudy = body.study?.trim()
+      ? getTermosReferenciaPathForStudy(body.study.trim())
+      : null;
     const basePath = (
-      body.basePath || getDefaultAiReferenceImportBasePath()
+      body.basePath?.trim() ||
+      fromStudy ||
+      getDefaultAiReferenceImportBasePath()
     ).trim();
     const allowedExtensions =
       Array.isArray(body.extensions) && body.extensions.length > 0

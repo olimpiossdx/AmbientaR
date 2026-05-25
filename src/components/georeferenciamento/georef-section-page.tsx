@@ -25,6 +25,8 @@ type GeorefSectionPageProps = {
   links?: { label: string; href: string }[];
   /** Mostrar atalho para Mapas / campo */
   showMapLink?: boolean;
+  /** Atalho para Análise Geoespacial (8 camadas MG) */
+  showAnaliseLink?: boolean;
 };
 
 export function GeorefSectionPage({
@@ -33,6 +35,7 @@ export function GeorefSectionPage({
   processo,
   links = [],
   showMapLink = false,
+  showAnaliseLink = false,
 }: GeorefSectionPageProps) {
   const storageKey = `georef-checklist-${processo.id}`;
   const [checklist, setChecklist] = React.useState<GeorefChecklistState>({});
@@ -59,7 +62,7 @@ export function GeorefSectionPage({
     <div className="flex h-full flex-col">
       <PageHeader title={title} description={description} />
       <main className="flex-1 space-y-6 overflow-auto p-4 md:p-6">
-        {(links.length > 0 || showMapLink) && (
+        {(links.length > 0 || showMapLink || showAnaliseLink) && (
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-base">Atalhos</CardTitle>
@@ -79,6 +82,14 @@ export function GeorefSectionPage({
                   <Link href="/studies/mapas">
                     <Map className="mr-1 h-3.5 w-3.5" />
                     Abrir Mapas (perímetro / export)
+                  </Link>
+                </Button>
+              ) : null}
+              {showAnaliseLink ? (
+                <Button variant="secondary" size="sm" asChild>
+                  <Link href="/analise-ambiental">
+                    <Map className="mr-1 h-3.5 w-3.5" />
+                    Análise Geoespacial (IDE-Sisema)
                   </Link>
                 </Button>
               ) : null}

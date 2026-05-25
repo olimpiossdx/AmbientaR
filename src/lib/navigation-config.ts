@@ -48,7 +48,6 @@ import {
   Mountain,
   Bird,
   NotebookText,
-  BrainCircuit,
   HardHat,
   MessagesSquare,
   Waves,
@@ -625,6 +624,19 @@ export const allNavItems: NavItem[] = [
     ],
     subItems: [
       {
+        href: "/studies/assistant?tipo=mira",
+        label: "Águas / MIRA-IGAM",
+        icon: Droplets,
+        roles: [
+          "admin",
+          "technical",
+          "gestor",
+          "supervisor",
+          "diretor_fauna",
+          "advogado",
+        ],
+      },
+      {
         href: "/analise-ambiental",
         label: "Análise Geoespacial (IA)",
         icon: Globe,
@@ -651,8 +663,9 @@ export const allNavItems: NavItem[] = [
         ],
       },
       {
-        label: "Assistente de IA",
-        icon: BrainCircuit,
+        href: "/studies/assistant?tipo=mcp",
+        label: "Cruzamento de dados",
+        icon: Workflow,
         roles: [
           "admin",
           "technical",
@@ -661,65 +674,24 @@ export const allNavItems: NavItem[] = [
           "diretor_fauna",
           "advogado",
         ],
-        subItems: [
-          {
-            href: "/studies/assistant?tipo=mira",
-            label: "Águas / MIRA-IGAM",
-            icon: Droplets,
-            roles: [
-              "admin",
-              "technical",
-              "gestor",
-              "supervisor",
-              "diretor_fauna",
-              "advogado",
-            ],
-          },
-          {
-            href: "/studies/assistant?tipo=mcp",
-            label: "Cruzamento de dados",
-            icon: Workflow,
-            roles: [
-              "admin",
-              "technical",
-              "gestor",
-              "supervisor",
-              "diretor_fauna",
-              "advogado",
-            ],
-          },
-          {
-            href: "/studies/assistant?tipo=financeiro",
-            label: "Custos e contratos",
-            icon: BarChart2,
-            roles: ["admin", "technical", "gestor", "supervisor", "diretor_fauna", "advogado"],
-          },
-          {
-            href: "/studies/assistant?tipo=geral",
-            label: "Legislação e estudos",
-            icon: BookOpenCheck,
-            roles: [
-              "admin",
-              "technical",
-              "gestor",
-              "supervisor",
-              "diretor_fauna",
-              "advogado",
-            ],
-          },
-          {
-            href: "/studies/assistant?tipo=rag",
-            label: "Síntese de texto",
-            icon: FileArchive,
-            roles: [
-              "admin",
-              "technical",
-              "gestor",
-              "supervisor",
-              "diretor_fauna",
-              "advogado",
-            ],
-          },
+      },
+      {
+        href: "/studies/assistant?tipo=financeiro",
+        label: "Custos e contratos",
+        icon: BarChart2,
+        roles: ["admin", "technical", "gestor", "supervisor", "diretor_fauna", "advogado"],
+      },
+      {
+        href: "/studies/assistant?tipo=geral",
+        label: "Legislação e estudos",
+        icon: BookOpenCheck,
+        roles: [
+          "admin",
+          "technical",
+          "gestor",
+          "supervisor",
+          "diretor_fauna",
+          "advogado",
         ],
       },
       {
@@ -727,6 +699,19 @@ export const allNavItems: NavItem[] = [
         label: "Relatórios de IA",
         icon: Recycle,
         roles: ["admin", "financial"],
+      },
+      {
+        href: "/studies/assistant?tipo=rag",
+        label: "Síntese de texto",
+        icon: FileArchive,
+        roles: [
+          "admin",
+          "technical",
+          "gestor",
+          "supervisor",
+          "diretor_fauna",
+          "advogado",
+        ],
       },
     ],
   },
@@ -744,7 +729,7 @@ export const allNavItems: NavItem[] = [
     subItems: [
       {
         href: "/studies/educacao-ambiental",
-        label: "Educação Ambiental",
+        label: "Programa de Educação Ambiental",
         icon: BookOpenCheck,
         roles: [
           "admin",
@@ -877,6 +862,49 @@ export const allNavItems: NavItem[] = [
           "supervisor",
           "diretor_fauna",
           "advogado",
+        ],
+      },
+      {
+        label: "Compensação Ambiental",
+        icon: Scale,
+        roles: ["admin", "technical", "gestor", "supervisor", "advogado"],
+        subItems: [
+          {
+            href: "/studies/compensacao-ambiental",
+            label: "Visão geral",
+            icon: Scale,
+            roles: ["admin", "technical", "gestor", "supervisor", "advogado"],
+          },
+          {
+            href: "/studies/compensacao-ambiental/especies",
+            label: "Espécies protegidas",
+            icon: Trees,
+            roles: ["admin", "technical", "gestor", "supervisor", "advogado"],
+          },
+          {
+            href: "/studies/compensacao-ambiental/snuc",
+            label: "SNUC",
+            icon: Scale,
+            roles: ["admin", "technical", "gestor", "supervisor", "advogado"],
+          },
+          {
+            href: "/studies/compensacao-ambiental/mata-atlantica",
+            label: "Mata Atlântica",
+            icon: Leaf,
+            roles: ["admin", "technical", "gestor", "supervisor", "advogado"],
+          },
+          {
+            href: "/studies/compensacao-ambiental/mineraria",
+            label: "Minerária",
+            icon: Building2,
+            roles: ["admin", "technical", "gestor", "supervisor", "advogado"],
+          },
+          {
+            href: "/studies/compensacao-ambiental/app",
+            label: "Intervenção em APP",
+            icon: Droplets,
+            roles: ["admin", "technical", "gestor", "supervisor", "advogado"],
+          },
         ],
       },
       {

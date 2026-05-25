@@ -47,9 +47,11 @@ import {
   deleteDoc,
   query,
   where,
+  limit,
   updateDoc,
   getDoc,
 } from "firebase/firestore";
+import { sortCommercialProposalsByDate } from "@/lib/firestore-list-helpers";
 import * as React from "react";
 import { generateCommercialProposalPdf } from "@/lib/commercial-proposal-pdf";
 import { guardBrandingExportFromHook } from "@/lib/pdf-branding-layout";
@@ -201,18 +203,23 @@ export default function CommercialProposalsPage() {
       return query(
         collection(firestore, "commercialProposals"),
         where("clientId", "in", clientIdsForUser),
+        limit(200),
       );
     }
 
     // Perfis internos: todas.
-    return collection(firestore, "commercialProposals");
+    return query(collection(firestore, "commercialProposals"), limit(200));
   }, [firestore, user, clientIdsForUser]);
 
-  const { data: proposals, isLoading: isLoadingProposals } =
+  const { data: rawProposals, isLoading: isLoadingProposals } =
     useCollection<CommercialProposal>(proposalsQuery);
+  const proposals = useMemo(
+    () => (rawProposals ? sortCommercialProposalsByDate(rawProposals) : undefined),
+    [rawProposals],
+  );
 
   const clientsQuery = useMemoFirebase(
-    () => (firestore ? collection(firestore, "clients") : null),
+    () => (firestore ? query(collection(firestore, "clients"), limit(200)) : null),
     [firestore],
   );
   const { data: clients, isLoading: isLoadingClients } =
@@ -250,7 +257,7 @@ export default function CommercialProposalsPage() {
   }, [proposals, user, userClients, clientIdsForUser]);
 
   const contractsQuery = useMemoFirebase(
-    () => (firestore ? collection(firestore, "contracts") : null),
+    () => (firestore ? query(collection(firestore, "contracts"), limit(200)) : null),
     [firestore],
   );
   const { data: contracts, isLoading: isLoadingContracts } =
@@ -1043,7 +1050,7 @@ export default function CommercialProposalsPage() {
             </DialogDescription>
           </DialogHeader>
           {viewingItem && (
-            <div className="max-h-[60vh] overflow-y-auto pr-4 space-y-4">
+            <div className="form-scroll-body max-h-[60vh] space-y-4">
               <DetailItem
                 label="Cliente"
                 value={clientsMap.get(viewingItem.clientId)?.name}

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import * as React from "react";
 import { z } from "zod";
@@ -848,7 +848,7 @@ export function EmpreendedorForm({
         onSubmit={form.handleSubmit(onSubmit)}
         className="h-full flex flex-col overflow-hidden"
       >
-        <div className="flex-1 overflow-y-auto pr-4 -mr-4 space-y-4 py-4">
+        <div className="form-scroll-body space-y-4 py-4">
           <div className="space-y-4">
             <FormField
               control={form.control}

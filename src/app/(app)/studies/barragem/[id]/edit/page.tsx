@@ -61,7 +61,7 @@ function EditBarragemPageContent() {
             <CardContent className="min-h-[480px]">
               <BarragemForm
                 currentItem={projeto}
-                onSuccess={() => router.push('/studies/barragem')}
+                onCancel={() => router.push('/studies/barragem')}
               />
             </CardContent>
           </Card>

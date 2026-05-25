@@ -25,6 +25,7 @@ import {
   deleteDoc,
   query,
   where,
+  limit,
   getDocs,
 } from "firebase/firestore";
 import type { ManualMonitoringLog, WaterPermit, AppUser, Empreendedor, Project } from "@/lib/types";
@@ -214,9 +215,10 @@ export default function ManualMonitoringPage() {
       return query(
         collection(firestore, "outorgas"),
         where("empreendedorId", "in", empreendedorIdsForUser.slice(0, 10)),
+        limit(200),
       );
     }
-    return collection(firestore, "outorgas");
+    return query(collection(firestore, "outorgas"), limit(200));
   }, [firestore, user, empreendedorIdsForUser]);
 
   const { data: outorgas, isLoading: isLoadingOutorgas } =
@@ -229,12 +231,12 @@ export default function ManualMonitoringPage() {
     [outorgas],
   );
   const empreendedoresQuery = useMemoFirebase(
-    () => (firestore ? collection(firestore, "empreendedores") : null),
+    () => (firestore ? query(collection(firestore, "empreendedores"), limit(200)) : null),
     [firestore],
   );
   const { data: empreendedores } = useCollection<Empreendedor>(empreendedoresQuery);
   const projectsQuery = useMemoFirebase(
-    () => (firestore ? collection(firestore, "projects") : null),
+    () => (firestore ? query(collection(firestore, "projects"), limit(200)) : null),
     [firestore],
   );
   const { data: projects } = useCollection<Project>(projectsQuery);
@@ -259,7 +261,7 @@ export default function ManualMonitoringPage() {
 
   const logsQuery = useMemoFirebase(() => {
     if (!firestore || !user || !selectedPonto) return null;
-    return collection(firestore, "manualMonitoringLogs"); // Simple query for now
+    return query(collection(firestore, "manualMonitoringLogs"), limit(500));
   }, [firestore, user, selectedPonto]);
 
   const { data: logs, isLoading: isLoadingLogs } =

@@ -33,6 +33,7 @@ import {
   deleteDoc,
   query,
   where,
+  limit,
   getDocs,
 } from "firebase/firestore";
 import * as React from "react";
@@ -312,7 +313,7 @@ export default function InvoicesPage() {
 
     // Perfis internos: veem todas as faturas.
     if (user.role === "admin" || user.role === "financial") {
-      return collection(firestore, "invoices");
+      return query(collection(firestore, "invoices"), limit(200));
     }
 
     // Cliente e representante: apenas faturas dos clientes que podem visualizar.
@@ -321,6 +322,7 @@ export default function InvoicesPage() {
       return query(
         collection(firestore, "invoices"),
         where("clientId", "in", clientIdsForUser),
+        limit(200),
       );
     }
 
@@ -344,7 +346,7 @@ export default function InvoicesPage() {
   }, [invoices]);
 
   const clientsQuery = useMemoFirebase(
-    () => (firestore ? collection(firestore, "clients") : null),
+    () => (firestore ? query(collection(firestore, "clients"), limit(200)) : null),
     [firestore],
   );
   const { data: clients, isLoading: isLoadingClients } =
@@ -355,7 +357,7 @@ export default function InvoicesPage() {
   );
 
   const contractsQuery = useMemoFirebase(
-    () => (firestore ? collection(firestore, "contracts") : null),
+    () => (firestore ? query(collection(firestore, "contracts"), limit(200)) : null),
     [firestore],
   );
   const { data: contracts, isLoading: isLoadingContracts } =
@@ -1449,7 +1451,7 @@ export default function InvoicesPage() {
             </DialogDescription>
           </DialogHeader>
           {viewingItem && (
-            <div className="max-h-[60vh] overflow-y-auto pr-4 space-y-4">
+            <div className="form-scroll-body max-h-[60vh] space-y-4">
               <DetailItem
                 label="Cliente"
                 value={clientsMap.get(viewingItem.clientId)?.name}

@@ -9,6 +9,7 @@ import {
   doc,
   query,
   orderBy,
+  limit,
   onSnapshot,
 } from "firebase/firestore";
 import { useFirebase, useAuth } from "@/firebase";
@@ -83,6 +84,7 @@ export function GeorefProjectsPanel() {
     const q = query(
       collection(firestore, "georef_projects"),
       orderBy("updatedAt", "desc"),
+      limit(200),
     );
     const unsub = onSnapshot(
       q,
@@ -90,10 +92,19 @@ export function GeorefProjectsPanel() {
         setItems(snap.docs.map((d) => mapGeorefProjectDoc(d.id, d.data() as Record<string, unknown>)));
         setLoading(false);
       },
-      () => setLoading(false),
+      (err) => {
+        console.error("georef_projects:", err);
+        setLoading(false);
+        toast({
+          variant: "destructive",
+          title: "Não foi possível carregar trâmites",
+          description:
+            "Verifique permissões (perfil técnico/admin) ou execute npm run deploy:rules.",
+        });
+      },
     );
     return () => unsub();
-  }, [firestore]);
+  }, [firestore, toast]);
 
   const createProject = async () => {
     if (!firestore || !user?.id || !title.trim()) {

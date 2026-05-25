@@ -23,6 +23,7 @@ import {
   deleteDoc,
   query,
   where,
+  limit,
   getDocs,
 } from "firebase/firestore";
 import type { Client, Empreendedor } from "@/lib/types";
@@ -125,11 +126,13 @@ export default function EmpreendedoresPage() {
         return query(
           collection(firestore, "empreendedores"),
           where("cpfCnpj", "in", userDocuments),
+          limit(200),
         );
       } else {
         return query(
           collection(firestore, "empreendedores"),
           where("cpfCnpj", "==", "invalid-placeholder-for-empty-query"),
+          limit(1),
         );
       }
     }
@@ -140,10 +143,11 @@ export default function EmpreendedoresPage() {
       return query(
         collection(firestore, "empreendedores"),
         where("approvedUserIds", "array-contains", repUid),
+        limit(200),
       );
     }
 
-    return collection(firestore, "empreendedores");
+    return query(collection(firestore, "empreendedores"), limit(200));
   }, [firestore, user]);
 
   const { data: empreendedores, isLoading } =
@@ -452,7 +456,7 @@ export default function EmpreendedoresPage() {
             </DialogDescription>
           </DialogHeader>
           {itemToView && (
-            <div className="max-h-[60vh] overflow-y-auto pr-4 space-y-4">
+            <div className="form-scroll-body max-h-[60vh] space-y-4">
               <DetailItem label="Nome / Razão Social" value={itemToView.name} />
               <Separator />
               <div className="grid grid-cols-2 gap-4">

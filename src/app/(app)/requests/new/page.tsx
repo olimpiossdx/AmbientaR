@@ -7,7 +7,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useCollection, useFirebase, useMemoFirebase, errorEmitter, useAuth } from '@/firebase';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, limit, query } from 'firebase/firestore';
 import type { Empreendedor, Project } from '@/lib/types';
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
@@ -456,10 +456,16 @@ function NewRequestPageContent() {
     const [licLocAnalysis, setLicLocAnalysis] = React.useState<LocationalAnalysisPayload | null>(null);
     const [loading, setLoading] = React.useState(false);
 
-    const empreendedoresQuery = useMemoFirebase(() => firestore ? collection(firestore, 'empreendedores') : null, [firestore]);
+    const empreendedoresQuery = useMemoFirebase(
+      () => (firestore ? query(collection(firestore, 'empreendedores'), limit(200)) : null),
+      [firestore],
+    );
     const { data: empreendedores, isLoading: isLoadingEmpreendedores } = useCollection<Empreendedor>(empreendedoresQuery);
 
-    const projectsQuery = useMemoFirebase(() => firestore ? collection(firestore, 'projects') : null, [firestore]);
+    const projectsQuery = useMemoFirebase(
+      () => (firestore ? query(collection(firestore, 'projects'), limit(200)) : null),
+      [firestore],
+    );
     const { data: allProjects, isLoading: isLoadingProjects } = useCollection<Project>(projectsQuery);
 
     const empreendedoresOptions = React.useMemo(

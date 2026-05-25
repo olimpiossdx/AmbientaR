@@ -30,6 +30,7 @@ import {
   deleteDoc,
   query,
   where,
+  limit,
   getDocs,
   writeBatch,
 } from "firebase/firestore";
@@ -174,7 +175,7 @@ export default function ClientsPage() {
       user.role === "sales" ||
       user.role === "financial"
     ) {
-      return collection(firestore, "clients");
+      return query(collection(firestore, "clients"), limit(200));
     }
     return null;
   }, [firestore, user]);
@@ -650,7 +651,7 @@ export default function ClientsPage() {
             </DialogDescription>
           </DialogHeader>
           {clientToView && (
-            <div className="max-h-[60vh] overflow-y-auto pr-4 space-y-4">
+            <div className="form-scroll-body max-h-[60vh] space-y-4">
               <DetailItem
                 label="Nome / Razão Social"
                 value={clientToView.name}

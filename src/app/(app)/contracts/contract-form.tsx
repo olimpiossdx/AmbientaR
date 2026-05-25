@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import * as React from "react";
 import { z } from "zod";
@@ -652,7 +652,7 @@ export function ContractForm({ currentItem, onSuccess, sourceProposal }: Contrac
           onSubmit={form.handleSubmit(onSubmit)}
           className="h-full flex flex-col overflow-hidden"
         >
-          <div className="flex-1 overflow-y-auto pr-4 -mr-6">
+          <div className="form-scroll-body">
             <Accordion
               type="multiple"
               defaultValue={["item-1", "item-3"]}

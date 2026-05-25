@@ -23,7 +23,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { MoreHorizontal, PlusCircle, FileText, CheckCircle, Eye, Pencil, Trash2 } from 'lucide-react';
 import { useCollection, useFirebase, useUser, useMemoFirebase, errorEmitter } from '@/firebase';
-import { collection, doc, deleteDoc, updateDoc } from 'firebase/firestore';
+import { collection, doc, deleteDoc, updateDoc, limit, query } from 'firebase/firestore';
+import { sortByFirestoreUpdatedAt } from '@/lib/firestore-list-helpers';
 import type { RCA } from '@/lib/types';
 import { isAdminOrSupervisorRole } from '@/lib/role-guards';
 import { getBearerApiHeaders } from '@/lib/api-client-auth';
@@ -82,15 +83,19 @@ export default function RcaPage() {
 
   const rcasQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
-    return collection(firestore, 'rcas');
+    return query(collection(firestore, 'rcas'), limit(200));
   }, [firestore, user]);
 
-  const { data: rcas, isLoading } = useCollection<RCA>(rcasQuery);
-  
+  const { data: rcasRaw, isLoading } = useCollection<RCA>(rcasQuery);
+
+  const rcas = useMemo(
+    () => sortByFirestoreUpdatedAt(rcasRaw ?? []),
+    [rcasRaw],
+  );
+
   const { draftRcas, approvedRcas } = useMemo(() => {
-    if (!rcas) return { draftRcas: [], approvedRcas: [] };
-    const drafts = rcas.filter(p => p.status !== 'Aprovado');
-    const approved = rcas.filter(p => p.status === 'Aprovado');
+    const drafts = rcas.filter((p) => p.status !== 'Aprovado');
+    const approved = rcas.filter((p) => p.status === 'Aprovado');
     return { draftRcas: drafts, approvedRcas: approved };
   }, [rcas]);
 
@@ -351,7 +356,7 @@ export default function RcaPage() {
             <DialogDescription>Detalhes do Relatório de Controle Ambiental.</DialogDescription>
           </DialogHeader>
           {itemToView && (
-            <div className="max-h-[60vh] overflow-y-auto pr-4 space-y-4">
+            <div className="form-scroll-body max-h-[60vh] space-y-4">
               <DetailItem label="Empreendedor" value={itemToView.empreendedor?.nome} />
               <DetailItem label="Empreendimento" value={itemToView.empreendimento?.nome} />
               <Separator />

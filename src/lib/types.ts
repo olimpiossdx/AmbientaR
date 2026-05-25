@@ -902,45 +902,10 @@ export type PIA = {
 }
 
 
-export type DispensaPEA = {
-    id: string;
-    empreendedorId: string;
-    justificativa: string;
-    createdAt: any;
-    createdBy: string;
-    razaoSocial?: string;
-    nomeFantasia?: string;
-    cnpj?: string;
-    logradouro?: string;
-    numero?: string;
-    complemento?: string;
-    bairro?: string;
-    municipio?: string;
-    uf?: string;
-    cep?: string;
-    telefoneComercial?: string;
-    telefoneCelular?: string;
-    email?: string;
-    coordenadas?: {
-        latitude?: string;
-        longitude?: string;
-    };
-    // New justification fields
-    solicitacaoParcial?: boolean;
-    dispensaParcialCampos?: string[];
-    dispensaParcialOutro?: string;
-    caracterizacaoSocioeconomica?: string;
-    // New Responsible fields
-    responsavel?: {
-        id?: string;
-        nome?: string;
-        documento?: string;
-        formacao?: string;
-        cargo?: string;
-        localData?: string;
-        assinaturaUrl?: string;
-    };
-}
+/** @deprecated Prefer `DispensaPeaRecord` from `@/lib/pea/types`. */
+export type DispensaPEA = import('@/lib/pea/types').DispensaPeaRecord;
+
+export type { PeaProgram, DispensaPeaRecord, PeaMonitoramento, PeaProjeto } from '@/lib/pea/types';
 
 export type ZeeGeofisicoItem = {
     classificacao?: string;
@@ -2268,13 +2233,21 @@ export type Inventario = {
   [key: string]: any;
 };
 
+export type ParcelaCoordenada = {
+  latitude: number;
+  longitude: number;
+};
+
 export type InventarioParcela = {
   id: string;
   inventarioId: string;
   codigo: string;
   area?: number;
+  /** Coordenada central da parcela */
   latitude?: number;
   longitude?: number;
+  /** Quatro vértices da área de amarração (polígono fechado) */
+  areaAmarracao?: ParcelaCoordenada[];
   observacoes?: string;
   /** Inventário multinível */
   up?: string;

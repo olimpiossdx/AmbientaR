@@ -1,4 +1,4 @@
-
+﻿
 'use client';
 
 import * as React from 'react';
@@ -83,7 +83,7 @@ export function LasRasForm() {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="h-full flex flex-col overflow-hidden">
-        <div className="flex-1 overflow-y-auto pr-4 -mr-6 space-y-6">
+        <div className="form-scroll-body space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <FormField
                 control={form.control}

@@ -10,7 +10,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useCollection, useFirebase, useMemoFirebase, useDoc, useAuth } from '@/firebase';
-import { collection, doc, updateDoc } from 'firebase/firestore';
+import { collection, doc, updateDoc, limit, query } from 'firebase/firestore';
 import type { Empreendedor, Project, Request } from '@/lib/types';
 import * as React from 'react';
 import { useToast } from '@/hooks/use-toast';
@@ -483,10 +483,16 @@ function EditRequestPageContent() {
     const [loading, setLoading] = React.useState(false);
     const isHydratingFromRequestRef = React.useRef(false);
 
-    const empreendedoresQuery = useMemoFirebase(() => firestore ? collection(firestore, 'empreendedores') : null, [firestore]);
+    const empreendedoresQuery = useMemoFirebase(
+      () => (firestore ? query(collection(firestore, 'empreendedores'), limit(200)) : null),
+      [firestore],
+    );
     const { data: empreendedores, isLoading: isLoadingEmpreendedores } = useCollection<Empreendedor>(empreendedoresQuery);
 
-    const projectsQuery = useMemoFirebase(() => firestore ? collection(firestore, 'projects') : null, [firestore]);
+    const projectsQuery = useMemoFirebase(
+      () => (firestore ? query(collection(firestore, 'projects'), limit(200)) : null),
+      [firestore],
+    );
     const { data: allProjects, isLoading: isLoadingProjects } = useCollection<Project>(projectsQuery);
 
     const linkedEmpreendedorRef = useMemoFirebase(

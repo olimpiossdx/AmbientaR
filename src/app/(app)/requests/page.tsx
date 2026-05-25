@@ -33,6 +33,7 @@ import {
   updateDoc,
   query,
   where,
+  limit,
 } from 'firebase/firestore';
 import type { Request, Empreendedor, Project, AppUser } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -438,23 +439,31 @@ export default function RequestsPage() {
         return query(
           collection(firestore, 'requests'),
           where('empreendedorId', 'in', empreendedorIdsForUser),
+          limit(200),
         );
       }
       return query(
         collection(firestore, 'requests'),
         where('empreendedorId', 'in', ['invalid-placeholder']),
+        limit(1),
       );
     }
-    return collection(firestore, 'requests');
+    return query(collection(firestore, 'requests'), limit(200));
   }, [firestore, user, empreendedorIdsForUser]);
 
   const { data: requests, isLoading: isLoadingRequests } = useCollection<Request>(requestsQuery);
 
-  const empreendedoresQuery = useMemoFirebase(() => firestore ? collection(firestore, 'empreendedores') : null, [firestore]);
+  const empreendedoresQuery = useMemoFirebase(
+    () => (firestore ? query(collection(firestore, 'empreendedores'), limit(200)) : null),
+    [firestore],
+  );
   const { data: empreendedores, isLoading: isLoadingEmpreendedores } = useCollection<Empreendedor>(empreendedoresQuery);
   const empreendedoresMap = React.useMemo(() => new Map(empreendedores?.map(e => [e.id, e.name])), [empreendedores]);
 
-  const projectsQuery = useMemoFirebase(() => firestore ? collection(firestore, 'projects') : null, [firestore]);
+  const projectsQuery = useMemoFirebase(
+    () => (firestore ? query(collection(firestore, 'projects'), limit(200)) : null),
+    [firestore],
+  );
   const { data: projects, isLoading: isLoadingProjects } = useCollection<Project>(projectsQuery);
   const projectsMap = React.useMemo(() => new Map(projects?.map(p => [p.id, p.propertyName])), [projects]);
 
@@ -863,7 +872,7 @@ export default function RequestsPage() {
                 </DialogDescription>
             </DialogHeader>
             {viewingItem && (
-                <div className="max-h-[60vh] overflow-y-auto pr-4 space-y-4">
+                <div className="form-scroll-body max-h-[60vh] space-y-4">
                     <DetailItem label="Nº do trâmite" value={getSolicitationNumber(viewingItem)} />
                     <DetailItem label="Empreendedor" value={empreendedoresMap.get(viewingItem.empreendedorId)} />
                     <DetailItem label="Empreendimento" value={projectsMap.get(viewingItem.projectId)} />

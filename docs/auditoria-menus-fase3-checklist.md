@@ -1,6 +1,6 @@
 # Checklist Fase 3 — Menus por perfil
 
-Gerado em: 2026-05-22T13:03:44.325Z
+Gerado em: 2026-05-25T16:28:00.272Z
 
 Use com `npm run dev` (porta 9002), utilizador de teste por role, DevTools → Rede + Consola.
 
@@ -15,7 +15,7 @@ Use com `npm run dev` (porta 9002), utilizador de teste por role, DevTools → R
 
 ### Administrador (`admin`)
 
-Itens de menu visíveis: **116**
+Itens de menu visíveis: **121**
 
 | Menu | Rota |
 |------|------|
@@ -31,7 +31,6 @@ Itens de menu visíveis: **116**
 | Análise Geoespacial (IA) | `/analise-ambiental` |
 | Análise socioambiental | `/studies/analise-socioambiental` |
 | Aparência | `/settings/appearance` |
-| App de Campo (planej.) | `/app-campo` |
 | Assistente Financeiro (IA) | `/studies/assistant` |
 | Automações IA | `/ai-lab/automations` |
 | Backup de Dados Apagados | `/settings/deleted-backups` |
@@ -43,6 +42,7 @@ Itens de menu visíveis: **116**
 | CAR / SICAR | `/georeferenciamento/ambiental` |
 | Cartório e registro | `/georeferenciamento/registro` |
 | Clientes | `/clients` |
+| Coleta de campo | `/coleta-campo` |
 | Conciliação Bancária | `/financial/conciliacao` |
 | Condicionantes | `/compliance` |
 | Configurações CRM | `/crm/settings` |
@@ -62,12 +62,12 @@ Itens de menu visíveis: **116**
 | DAIA's | `/intervencoes` |
 | Documentação técnica | `/georeferenciamento/documentos` |
 | DRE Contábil | `/financial/dre-contabil` |
-| Educação Ambiental | `/studies/educacao-ambiental` |
 | EIA/RIMA | `/studies/eia-rima` |
 | Empreendedores | `/empreendedores` |
 | Empreendimentos | `/projects` |
 | Empresas | `/responsible-company` |
 | Equipe & Desempenho | `/crm/team` |
+| Espécies protegidas | `/studies/compensacao-ambiental/especies` |
 | Estudo de Cavidades | `/studies/cavidades` |
 | Estudos de Fauna | `/studies/fauna` |
 | Explorador de Arquivos | `/settings/files` |
@@ -83,8 +83,8 @@ Itens de menu visíveis: **116**
 | IDE-SisemaNet-MG | `/external` |
 | Identidade Visual | `/settings` |
 | Informações da Empresa | `/settings/company` |
+| Intervenção em APP | `/studies/compensacao-ambiental/app` |
 | Inventário Florestal | `/studies/inventario` |
-| Inventários de Campo | `/inventarios` |
 | Lançamento Manual | `/monitoring/manual` |
 | Lançamentos de Caixa | `/cash-flow` |
 | LAS-RAS | `/studies/las-ras` |
@@ -93,8 +93,10 @@ Itens de menu visíveis: **116**
 | Licenças | `/licenses` |
 | Log de Auditoria | `/audit-log` |
 | Mapas | `/studies/mapas` |
+| Mata Atlântica | `/studies/compensacao-ambiental/mata-atlantica` |
 | MCP & Ferramentas IA | `/ai-lab/mcp` |
 | Mídias Sociais | `/social-media` |
+| Minerária | `/studies/compensacao-ambiental/mineraria` |
 | NFe-Eletrônica | `/external` |
 | Nova vistoria | `/inspections/new` |
 | Oportunidades & Pipeline | `/crm/opportunities` |
@@ -110,6 +112,7 @@ Itens de menu visíveis: **116**
 | PCA | `/studies/pca` |
 | PIA | `/studies/pia` |
 | PRADA | `/studies/prada` |
+| Programa de Educação Ambiental | `/studies/educacao-ambiental` |
 | Projeto Técnico de Barragem | `/studies/barragem` |
 | PTRF | `/studies/ptrf` |
 | RCA | `/studies/rca` |
@@ -126,6 +129,7 @@ Itens de menu visíveis: **116**
 | SEI-MG | `/external` |
 | Síntese de texto | `/studies/assistant` |
 | SLA-Ecossistemas/MG | `/external` |
+| SNUC | `/studies/compensacao-ambiental/snuc` |
 | Tabela de Serviços | `/services` |
 | Telemetria (Real-time) | `/monitoring/telemetric` |
 | Templates | `/settings/templates` |
@@ -134,6 +138,7 @@ Itens de menu visíveis: **116**
 | Usuários | `/users` |
 | Validações | `/georeferenciamento/validacoes` |
 | Vendas & Propostas | `/crm/proposals` |
+| Visão geral | `/studies/compensacao-ambiental` |
 | Webmail | `/external` |
 
 <details>
@@ -151,7 +156,6 @@ Itens de menu visíveis: **116**
 - [ ] Análise Geoespacial (IA) — `/analise-ambiental`
 - [ ] Análise socioambiental — `/studies/analise-socioambiental`
 - [ ] Aparência — `/settings/appearance`
-- [ ] App de Campo (planej.) — `/app-campo`
 - [ ] Assistente Financeiro (IA) — `/studies/assistant`
 - [ ] Automações IA — `/ai-lab/automations`
 - [ ] Backup de Dados Apagados — `/settings/deleted-backups`
@@ -163,6 +167,7 @@ Itens de menu visíveis: **116**
 - [ ] CAR / SICAR — `/georeferenciamento/ambiental`
 - [ ] Cartório e registro — `/georeferenciamento/registro`
 - [ ] Clientes — `/clients`
+- [ ] Coleta de campo — `/coleta-campo`
 - [ ] Conciliação Bancária — `/financial/conciliacao`
 - [ ] Condicionantes — `/compliance`
 - [ ] Configurações CRM — `/crm/settings`
@@ -182,12 +187,12 @@ Itens de menu visíveis: **116**
 - [ ] DAIA's — `/intervencoes`
 - [ ] Documentação técnica — `/georeferenciamento/documentos`
 - [ ] DRE Contábil — `/financial/dre-contabil`
-- [ ] Educação Ambiental — `/studies/educacao-ambiental`
 - [ ] EIA/RIMA — `/studies/eia-rima`
 - [ ] Empreendedores — `/empreendedores`
 - [ ] Empreendimentos — `/projects`
 - [ ] Empresas — `/responsible-company`
 - [ ] Equipe & Desempenho — `/crm/team`
+- [ ] Espécies protegidas — `/studies/compensacao-ambiental/especies`
 - [ ] Estudo de Cavidades — `/studies/cavidades`
 - [ ] Estudos de Fauna — `/studies/fauna`
 - [ ] Explorador de Arquivos — `/settings/files`
@@ -203,8 +208,8 @@ Itens de menu visíveis: **116**
 - [ ] IDE-SisemaNet-MG — `/external`
 - [ ] Identidade Visual — `/settings`
 - [ ] Informações da Empresa — `/settings/company`
+- [ ] Intervenção em APP — `/studies/compensacao-ambiental/app`
 - [ ] Inventário Florestal — `/studies/inventario`
-- [ ] Inventários de Campo — `/inventarios`
 - [ ] Lançamento Manual — `/monitoring/manual`
 - [ ] Lançamentos de Caixa — `/cash-flow`
 - [ ] LAS-RAS — `/studies/las-ras`
@@ -213,8 +218,10 @@ Itens de menu visíveis: **116**
 - [ ] Licenças — `/licenses`
 - [ ] Log de Auditoria — `/audit-log`
 - [ ] Mapas — `/studies/mapas`
+- [ ] Mata Atlântica — `/studies/compensacao-ambiental/mata-atlantica`
 - [ ] MCP & Ferramentas IA — `/ai-lab/mcp`
 - [ ] Mídias Sociais — `/social-media`
+- [ ] Minerária — `/studies/compensacao-ambiental/mineraria`
 - [ ] NFe-Eletrônica — `/external`
 - [ ] Nova vistoria — `/inspections/new`
 - [ ] Oportunidades & Pipeline — `/crm/opportunities`
@@ -230,6 +237,7 @@ Itens de menu visíveis: **116**
 - [ ] PCA — `/studies/pca`
 - [ ] PIA — `/studies/pia`
 - [ ] PRADA — `/studies/prada`
+- [ ] Programa de Educação Ambiental — `/studies/educacao-ambiental`
 - [ ] Projeto Técnico de Barragem — `/studies/barragem`
 - [ ] PTRF — `/studies/ptrf`
 - [ ] RCA — `/studies/rca`
@@ -246,6 +254,7 @@ Itens de menu visíveis: **116**
 - [ ] SEI-MG — `/external`
 - [ ] Síntese de texto — `/studies/assistant`
 - [ ] SLA-Ecossistemas/MG — `/external`
+- [ ] SNUC — `/studies/compensacao-ambiental/snuc`
 - [ ] Tabela de Serviços — `/services`
 - [ ] Telemetria (Real-time) — `/monitoring/telemetric`
 - [ ] Templates — `/settings/templates`
@@ -254,13 +263,14 @@ Itens de menu visíveis: **116**
 - [ ] Usuários — `/users`
 - [ ] Validações — `/georeferenciamento/validacoes`
 - [ ] Vendas & Propostas — `/crm/proposals`
+- [ ] Visão geral — `/studies/compensacao-ambiental`
 - [ ] Webmail — `/external`
 
 </details>
 
 ### Gestor (`gestor`)
 
-Itens de menu visíveis: **70**
+Itens de menu visíveis: **76**
 
 | Menu | Rota |
 |------|------|
@@ -277,6 +287,7 @@ Itens de menu visíveis: **70**
 | CAR | `/car` |
 | CAR / SICAR | `/georeferenciamento/ambiental` |
 | Cartório e registro | `/georeferenciamento/registro` |
+| Coleta de campo | `/coleta-campo` |
 | Condicionantes | `/compliance` |
 | Consulta Intervenção Ambiental | `/external` |
 | Consulta Licenciamento | `/external` |
@@ -288,24 +299,26 @@ Itens de menu visíveis: **70**
 | Custos e contratos | `/studies/assistant` |
 | DAIA's | `/intervencoes` |
 | Documentação técnica | `/georeferenciamento/documentos` |
-| Educação Ambiental | `/studies/educacao-ambiental` |
 | EIA/RIMA | `/studies/eia-rima` |
 | Empreendedores | `/empreendedores` |
 | Empreendimentos | `/projects` |
 | Empresas | `/responsible-company` |
+| Espécies protegidas | `/studies/compensacao-ambiental/especies` |
 | Estudo de Cavidades | `/studies/cavidades` |
 | Estudos de Fauna | `/studies/fauna` |
 | Fauna | `/fauna` |
 | IDE-SisemaNet | `/studies/ide-sisemanet` |
 | IDE-SisemaNet-MG | `/external` |
+| Intervenção em APP | `/studies/compensacao-ambiental/app` |
 | Inventário Florestal | `/studies/inventario` |
-| Inventários de Campo | `/inventarios` |
 | Lançamento Manual | `/monitoring/manual` |
 | LAS-RAS | `/studies/las-ras` |
 | Laudos | `/laudos` |
 | Legislação e estudos | `/studies/assistant` |
 | Licenças | `/licenses` |
 | Mapas | `/studies/mapas` |
+| Mata Atlântica | `/studies/compensacao-ambiental/mata-atlantica` |
+| Minerária | `/studies/compensacao-ambiental/mineraria` |
 | Nova vistoria | `/inspections/new` |
 | Outorgas | `/outorgas` |
 | Outorgas | `/studies/outorgas` |
@@ -314,6 +327,7 @@ Itens de menu visíveis: **70**
 | PCA | `/studies/pca` |
 | PIA | `/studies/pia` |
 | PRADA | `/studies/prada` |
+| Programa de Educação Ambiental | `/studies/educacao-ambiental` |
 | Projeto Técnico de Barragem | `/studies/barragem` |
 | PTRF | `/studies/ptrf` |
 | RCA | `/studies/rca` |
@@ -328,11 +342,13 @@ Itens de menu visíveis: **70**
 | SEI-MG | `/external` |
 | Síntese de texto | `/studies/assistant` |
 | SLA-Ecossistemas/MG | `/external` |
+| SNUC | `/studies/compensacao-ambiental/snuc` |
 | Telemetria (Real-time) | `/monitoring/telemetric` |
 | Urbano (cartório) | `/georeferenciamento/urbano` |
 | Usos Insignificantes | `/usos-insignificantes` |
 | Usuários | `/users` |
 | Validações | `/georeferenciamento/validacoes` |
+| Visão geral | `/studies/compensacao-ambiental` |
 | Webmail | `/external` |
 
 <details>
@@ -351,6 +367,7 @@ Itens de menu visíveis: **70**
 - [ ] CAR — `/car`
 - [ ] CAR / SICAR — `/georeferenciamento/ambiental`
 - [ ] Cartório e registro — `/georeferenciamento/registro`
+- [ ] Coleta de campo — `/coleta-campo`
 - [ ] Condicionantes — `/compliance`
 - [ ] Consulta Intervenção Ambiental — `/external`
 - [ ] Consulta Licenciamento — `/external`
@@ -362,24 +379,26 @@ Itens de menu visíveis: **70**
 - [ ] Custos e contratos — `/studies/assistant`
 - [ ] DAIA's — `/intervencoes`
 - [ ] Documentação técnica — `/georeferenciamento/documentos`
-- [ ] Educação Ambiental — `/studies/educacao-ambiental`
 - [ ] EIA/RIMA — `/studies/eia-rima`
 - [ ] Empreendedores — `/empreendedores`
 - [ ] Empreendimentos — `/projects`
 - [ ] Empresas — `/responsible-company`
+- [ ] Espécies protegidas — `/studies/compensacao-ambiental/especies`
 - [ ] Estudo de Cavidades — `/studies/cavidades`
 - [ ] Estudos de Fauna — `/studies/fauna`
 - [ ] Fauna — `/fauna`
 - [ ] IDE-SisemaNet — `/studies/ide-sisemanet`
 - [ ] IDE-SisemaNet-MG — `/external`
+- [ ] Intervenção em APP — `/studies/compensacao-ambiental/app`
 - [ ] Inventário Florestal — `/studies/inventario`
-- [ ] Inventários de Campo — `/inventarios`
 - [ ] Lançamento Manual — `/monitoring/manual`
 - [ ] LAS-RAS — `/studies/las-ras`
 - [ ] Laudos — `/laudos`
 - [ ] Legislação e estudos — `/studies/assistant`
 - [ ] Licenças — `/licenses`
 - [ ] Mapas — `/studies/mapas`
+- [ ] Mata Atlântica — `/studies/compensacao-ambiental/mata-atlantica`
+- [ ] Minerária — `/studies/compensacao-ambiental/mineraria`
 - [ ] Nova vistoria — `/inspections/new`
 - [ ] Outorgas — `/outorgas`
 - [ ] Outorgas — `/studies/outorgas`
@@ -388,6 +407,7 @@ Itens de menu visíveis: **70**
 - [ ] PCA — `/studies/pca`
 - [ ] PIA — `/studies/pia`
 - [ ] PRADA — `/studies/prada`
+- [ ] Programa de Educação Ambiental — `/studies/educacao-ambiental`
 - [ ] Projeto Técnico de Barragem — `/studies/barragem`
 - [ ] PTRF — `/studies/ptrf`
 - [ ] RCA — `/studies/rca`
@@ -402,18 +422,20 @@ Itens de menu visíveis: **70**
 - [ ] SEI-MG — `/external`
 - [ ] Síntese de texto — `/studies/assistant`
 - [ ] SLA-Ecossistemas/MG — `/external`
+- [ ] SNUC — `/studies/compensacao-ambiental/snuc`
 - [ ] Telemetria (Real-time) — `/monitoring/telemetric`
 - [ ] Urbano (cartório) — `/georeferenciamento/urbano`
 - [ ] Usos Insignificantes — `/usos-insignificantes`
 - [ ] Usuários — `/users`
 - [ ] Validações — `/georeferenciamento/validacoes`
+- [ ] Visão geral — `/studies/compensacao-ambiental`
 - [ ] Webmail — `/external`
 
 </details>
 
 ### Supervisor (`supervisor`)
 
-Itens de menu visíveis: **81**
+Itens de menu visíveis: **87**
 
 | Menu | Rota |
 |------|------|
@@ -432,6 +454,7 @@ Itens de menu visíveis: **81**
 | CAR | `/car` |
 | CAR / SICAR | `/georeferenciamento/ambiental` |
 | Cartório e registro | `/georeferenciamento/registro` |
+| Coleta de campo | `/coleta-campo` |
 | Condicionantes | `/compliance` |
 | Configurações CRM | `/crm/settings` |
 | Consulta Intervenção Ambiental | `/external` |
@@ -444,20 +467,20 @@ Itens de menu visíveis: **81**
 | Custos e contratos | `/studies/assistant` |
 | DAIA's | `/intervencoes` |
 | Documentação técnica | `/georeferenciamento/documentos` |
-| Educação Ambiental | `/studies/educacao-ambiental` |
 | EIA/RIMA | `/studies/eia-rima` |
 | Empreendedores | `/empreendedores` |
 | Empreendimentos | `/projects` |
 | Empresas | `/responsible-company` |
 | Equipe & Desempenho | `/crm/team` |
+| Espécies protegidas | `/studies/compensacao-ambiental/especies` |
 | Estudo de Cavidades | `/studies/cavidades` |
 | Estudos de Fauna | `/studies/fauna` |
 | Fauna | `/fauna` |
 | Gestão de Clientes | `/crm/clients` |
 | IDE-SisemaNet | `/studies/ide-sisemanet` |
 | IDE-SisemaNet-MG | `/external` |
+| Intervenção em APP | `/studies/compensacao-ambiental/app` |
 | Inventário Florestal | `/studies/inventario` |
-| Inventários de Campo | `/inventarios` |
 | Lançamento Manual | `/monitoring/manual` |
 | LAS-RAS | `/studies/las-ras` |
 | Laudos | `/laudos` |
@@ -465,7 +488,9 @@ Itens de menu visíveis: **81**
 | Licenças | `/licenses` |
 | Log de Auditoria | `/audit-log` |
 | Mapas | `/studies/mapas` |
+| Mata Atlântica | `/studies/compensacao-ambiental/mata-atlantica` |
 | Mídias Sociais | `/social-media` |
+| Minerária | `/studies/compensacao-ambiental/mineraria` |
 | Nova vistoria | `/inspections/new` |
 | Oportunidades & Pipeline | `/crm/opportunities` |
 | Outorgas | `/outorgas` |
@@ -476,6 +501,7 @@ Itens de menu visíveis: **81**
 | PCA | `/studies/pca` |
 | PIA | `/studies/pia` |
 | PRADA | `/studies/prada` |
+| Programa de Educação Ambiental | `/studies/educacao-ambiental` |
 | Projeto Técnico de Barragem | `/studies/barragem` |
 | PTRF | `/studies/ptrf` |
 | RCA | `/studies/rca` |
@@ -491,12 +517,14 @@ Itens de menu visíveis: **81**
 | SEI-MG | `/external` |
 | Síntese de texto | `/studies/assistant` |
 | SLA-Ecossistemas/MG | `/external` |
+| SNUC | `/studies/compensacao-ambiental/snuc` |
 | Telemetria (Real-time) | `/monitoring/telemetric` |
 | Urbano (cartório) | `/georeferenciamento/urbano` |
 | Usos Insignificantes | `/usos-insignificantes` |
 | Usuários | `/users` |
 | Validações | `/georeferenciamento/validacoes` |
 | Vendas & Propostas | `/crm/proposals` |
+| Visão geral | `/studies/compensacao-ambiental` |
 | Webmail | `/external` |
 
 <details>
@@ -517,6 +545,7 @@ Itens de menu visíveis: **81**
 - [ ] CAR — `/car`
 - [ ] CAR / SICAR — `/georeferenciamento/ambiental`
 - [ ] Cartório e registro — `/georeferenciamento/registro`
+- [ ] Coleta de campo — `/coleta-campo`
 - [ ] Condicionantes — `/compliance`
 - [ ] Configurações CRM — `/crm/settings`
 - [ ] Consulta Intervenção Ambiental — `/external`
@@ -529,20 +558,20 @@ Itens de menu visíveis: **81**
 - [ ] Custos e contratos — `/studies/assistant`
 - [ ] DAIA's — `/intervencoes`
 - [ ] Documentação técnica — `/georeferenciamento/documentos`
-- [ ] Educação Ambiental — `/studies/educacao-ambiental`
 - [ ] EIA/RIMA — `/studies/eia-rima`
 - [ ] Empreendedores — `/empreendedores`
 - [ ] Empreendimentos — `/projects`
 - [ ] Empresas — `/responsible-company`
 - [ ] Equipe & Desempenho — `/crm/team`
+- [ ] Espécies protegidas — `/studies/compensacao-ambiental/especies`
 - [ ] Estudo de Cavidades — `/studies/cavidades`
 - [ ] Estudos de Fauna — `/studies/fauna`
 - [ ] Fauna — `/fauna`
 - [ ] Gestão de Clientes — `/crm/clients`
 - [ ] IDE-SisemaNet — `/studies/ide-sisemanet`
 - [ ] IDE-SisemaNet-MG — `/external`
+- [ ] Intervenção em APP — `/studies/compensacao-ambiental/app`
 - [ ] Inventário Florestal — `/studies/inventario`
-- [ ] Inventários de Campo — `/inventarios`
 - [ ] Lançamento Manual — `/monitoring/manual`
 - [ ] LAS-RAS — `/studies/las-ras`
 - [ ] Laudos — `/laudos`
@@ -550,7 +579,9 @@ Itens de menu visíveis: **81**
 - [ ] Licenças — `/licenses`
 - [ ] Log de Auditoria — `/audit-log`
 - [ ] Mapas — `/studies/mapas`
+- [ ] Mata Atlântica — `/studies/compensacao-ambiental/mata-atlantica`
 - [ ] Mídias Sociais — `/social-media`
+- [ ] Minerária — `/studies/compensacao-ambiental/mineraria`
 - [ ] Nova vistoria — `/inspections/new`
 - [ ] Oportunidades & Pipeline — `/crm/opportunities`
 - [ ] Outorgas — `/outorgas`
@@ -561,6 +592,7 @@ Itens de menu visíveis: **81**
 - [ ] PCA — `/studies/pca`
 - [ ] PIA — `/studies/pia`
 - [ ] PRADA — `/studies/prada`
+- [ ] Programa de Educação Ambiental — `/studies/educacao-ambiental`
 - [ ] Projeto Técnico de Barragem — `/studies/barragem`
 - [ ] PTRF — `/studies/ptrf`
 - [ ] RCA — `/studies/rca`
@@ -576,19 +608,21 @@ Itens de menu visíveis: **81**
 - [ ] SEI-MG — `/external`
 - [ ] Síntese de texto — `/studies/assistant`
 - [ ] SLA-Ecossistemas/MG — `/external`
+- [ ] SNUC — `/studies/compensacao-ambiental/snuc`
 - [ ] Telemetria (Real-time) — `/monitoring/telemetric`
 - [ ] Urbano (cartório) — `/georeferenciamento/urbano`
 - [ ] Usos Insignificantes — `/usos-insignificantes`
 - [ ] Usuários — `/users`
 - [ ] Validações — `/georeferenciamento/validacoes`
 - [ ] Vendas & Propostas — `/crm/proposals`
+- [ ] Visão geral — `/studies/compensacao-ambiental`
 - [ ] Webmail — `/external`
 
 </details>
 
 ### Técnico (`technical`)
 
-Itens de menu visíveis: **59**
+Itens de menu visíveis: **65**
 
 | Menu | Rota |
 |------|------|
@@ -601,6 +635,7 @@ Itens de menu visíveis: **59**
 | Análise socioambiental | `/studies/analise-socioambiental` |
 | Aparência | `/settings/appearance` |
 | CAR | `/car` |
+| Coleta de campo | `/coleta-campo` |
 | Condicionantes | `/compliance` |
 | Consulta Intervenção Ambiental | `/external` |
 | Consulta Licenciamento | `/external` |
@@ -611,24 +646,26 @@ Itens de menu visíveis: **59**
 | CTF/IBAMA | `/external` |
 | Custos e contratos | `/studies/assistant` |
 | DAIA's | `/intervencoes` |
-| Educação Ambiental | `/studies/educacao-ambiental` |
 | EIA/RIMA | `/studies/eia-rima` |
 | Empreendedores | `/empreendedores` |
 | Empreendimentos | `/projects` |
 | Empresas | `/responsible-company` |
+| Espécies protegidas | `/studies/compensacao-ambiental/especies` |
 | Estudo de Cavidades | `/studies/cavidades` |
 | Estudos de Fauna | `/studies/fauna` |
 | Fauna | `/fauna` |
 | IDE-SisemaNet | `/studies/ide-sisemanet` |
 | IDE-SisemaNet-MG | `/external` |
+| Intervenção em APP | `/studies/compensacao-ambiental/app` |
 | Inventário Florestal | `/studies/inventario` |
-| Inventários de Campo | `/inventarios` |
 | Lançamento Manual | `/monitoring/manual` |
 | LAS-RAS | `/studies/las-ras` |
 | Laudos | `/laudos` |
 | Legislação e estudos | `/studies/assistant` |
 | Licenças | `/licenses` |
 | Mapas | `/studies/mapas` |
+| Mata Atlântica | `/studies/compensacao-ambiental/mata-atlantica` |
+| Minerária | `/studies/compensacao-ambiental/mineraria` |
 | Nova vistoria | `/inspections/new` |
 | Outorgas | `/outorgas` |
 | Outorgas | `/studies/outorgas` |
@@ -636,6 +673,7 @@ Itens de menu visíveis: **59**
 | PCA | `/studies/pca` |
 | PIA | `/studies/pia` |
 | PRADA | `/studies/prada` |
+| Programa de Educação Ambiental | `/studies/educacao-ambiental` |
 | Projeto Técnico de Barragem | `/studies/barragem` |
 | PTRF | `/studies/ptrf` |
 | RCA | `/studies/rca` |
@@ -647,9 +685,11 @@ Itens de menu visíveis: **59**
 | SEI-MG | `/external` |
 | Síntese de texto | `/studies/assistant` |
 | SLA-Ecossistemas/MG | `/external` |
+| SNUC | `/studies/compensacao-ambiental/snuc` |
 | Telemetria (Real-time) | `/monitoring/telemetric` |
 | Usos Insignificantes | `/usos-insignificantes` |
 | Usuários | `/users` |
+| Visão geral | `/studies/compensacao-ambiental` |
 | Webmail | `/external` |
 
 <details>
@@ -664,6 +704,7 @@ Itens de menu visíveis: **59**
 - [ ] Análise socioambiental — `/studies/analise-socioambiental`
 - [ ] Aparência — `/settings/appearance`
 - [ ] CAR — `/car`
+- [ ] Coleta de campo — `/coleta-campo`
 - [ ] Condicionantes — `/compliance`
 - [ ] Consulta Intervenção Ambiental — `/external`
 - [ ] Consulta Licenciamento — `/external`
@@ -674,24 +715,26 @@ Itens de menu visíveis: **59**
 - [ ] CTF/IBAMA — `/external`
 - [ ] Custos e contratos — `/studies/assistant`
 - [ ] DAIA's — `/intervencoes`
-- [ ] Educação Ambiental — `/studies/educacao-ambiental`
 - [ ] EIA/RIMA — `/studies/eia-rima`
 - [ ] Empreendedores — `/empreendedores`
 - [ ] Empreendimentos — `/projects`
 - [ ] Empresas — `/responsible-company`
+- [ ] Espécies protegidas — `/studies/compensacao-ambiental/especies`
 - [ ] Estudo de Cavidades — `/studies/cavidades`
 - [ ] Estudos de Fauna — `/studies/fauna`
 - [ ] Fauna — `/fauna`
 - [ ] IDE-SisemaNet — `/studies/ide-sisemanet`
 - [ ] IDE-SisemaNet-MG — `/external`
+- [ ] Intervenção em APP — `/studies/compensacao-ambiental/app`
 - [ ] Inventário Florestal — `/studies/inventario`
-- [ ] Inventários de Campo — `/inventarios`
 - [ ] Lançamento Manual — `/monitoring/manual`
 - [ ] LAS-RAS — `/studies/las-ras`
 - [ ] Laudos — `/laudos`
 - [ ] Legislação e estudos — `/studies/assistant`
 - [ ] Licenças — `/licenses`
 - [ ] Mapas — `/studies/mapas`
+- [ ] Mata Atlântica — `/studies/compensacao-ambiental/mata-atlantica`
+- [ ] Minerária — `/studies/compensacao-ambiental/mineraria`
 - [ ] Nova vistoria — `/inspections/new`
 - [ ] Outorgas — `/outorgas`
 - [ ] Outorgas — `/studies/outorgas`
@@ -699,6 +742,7 @@ Itens de menu visíveis: **59**
 - [ ] PCA — `/studies/pca`
 - [ ] PIA — `/studies/pia`
 - [ ] PRADA — `/studies/prada`
+- [ ] Programa de Educação Ambiental — `/studies/educacao-ambiental`
 - [ ] Projeto Técnico de Barragem — `/studies/barragem`
 - [ ] PTRF — `/studies/ptrf`
 - [ ] RCA — `/studies/rca`
@@ -710,9 +754,11 @@ Itens de menu visíveis: **59**
 - [ ] SEI-MG — `/external`
 - [ ] Síntese de texto — `/studies/assistant`
 - [ ] SLA-Ecossistemas/MG — `/external`
+- [ ] SNUC — `/studies/compensacao-ambiental/snuc`
 - [ ] Telemetria (Real-time) — `/monitoring/telemetric`
 - [ ] Usos Insignificantes — `/usos-insignificantes`
 - [ ] Usuários — `/users`
+- [ ] Visão geral — `/studies/compensacao-ambiental`
 - [ ] Webmail — `/external`
 
 </details>
@@ -1076,6 +1122,7 @@ Itens de menu visíveis: **40**
 | Campo e levantamento | `/georeferenciamento/campo` |
 | CAR / SICAR | `/georeferenciamento/ambiental` |
 | Cartório e registro | `/georeferenciamento/registro` |
+| Coleta de campo | `/coleta-campo` |
 | Consulta Intervenção Ambiental | `/external` |
 | Consulta Licenciamento | `/external` |
 | Consulta Outorgas | `/external` |
@@ -1083,7 +1130,6 @@ Itens de menu visíveis: **40**
 | CTF/IBAMA | `/external` |
 | Custos e contratos | `/studies/assistant` |
 | Documentação técnica | `/georeferenciamento/documentos` |
-| Educação Ambiental | `/studies/educacao-ambiental` |
 | Empreendedores | `/empreendedores` |
 | Empreendimentos | `/projects` |
 | Empresas | `/responsible-company` |
@@ -1091,10 +1137,10 @@ Itens de menu visíveis: **40**
 | Estudos de Fauna | `/studies/fauna` |
 | Fauna | `/fauna` |
 | IDE-SisemaNet-MG | `/external` |
-| Inventários de Campo | `/inventarios` |
 | Legislação e estudos | `/studies/assistant` |
 | Painel | `/` |
 | Painel | `/georeferenciamento` |
+| Programa de Educação Ambiental | `/studies/educacao-ambiental` |
 | Referências normativas | `/georeferenciamento/referencias` |
 | Relatórios Diversos | `/studies/relatorios-diversos` |
 | Rural (SIGEF/INCRA) | `/georeferenciamento/rural` |
@@ -1120,6 +1166,7 @@ Itens de menu visíveis: **40**
 - [ ] Campo e levantamento — `/georeferenciamento/campo`
 - [ ] CAR / SICAR — `/georeferenciamento/ambiental`
 - [ ] Cartório e registro — `/georeferenciamento/registro`
+- [ ] Coleta de campo — `/coleta-campo`
 - [ ] Consulta Intervenção Ambiental — `/external`
 - [ ] Consulta Licenciamento — `/external`
 - [ ] Consulta Outorgas — `/external`
@@ -1127,7 +1174,6 @@ Itens de menu visíveis: **40**
 - [ ] CTF/IBAMA — `/external`
 - [ ] Custos e contratos — `/studies/assistant`
 - [ ] Documentação técnica — `/georeferenciamento/documentos`
-- [ ] Educação Ambiental — `/studies/educacao-ambiental`
 - [ ] Empreendedores — `/empreendedores`
 - [ ] Empreendimentos — `/projects`
 - [ ] Empresas — `/responsible-company`
@@ -1135,10 +1181,10 @@ Itens de menu visíveis: **40**
 - [ ] Estudos de Fauna — `/studies/fauna`
 - [ ] Fauna — `/fauna`
 - [ ] IDE-SisemaNet-MG — `/external`
-- [ ] Inventários de Campo — `/inventarios`
 - [ ] Legislação e estudos — `/studies/assistant`
 - [ ] Painel — `/`
 - [ ] Painel — `/georeferenciamento`
+- [ ] Programa de Educação Ambiental — `/studies/educacao-ambiental`
 - [ ] Referências normativas — `/georeferenciamento/referencias`
 - [ ] Relatórios Diversos — `/studies/relatorios-diversos`
 - [ ] Rural (SIGEF/INCRA) — `/georeferenciamento/rural`
@@ -1155,7 +1201,7 @@ Itens de menu visíveis: **40**
 
 ### Advogado (`advogado`)
 
-Itens de menu visíveis: **67**
+Itens de menu visíveis: **73**
 
 | Menu | Rota |
 |------|------|
@@ -1183,22 +1229,25 @@ Itens de menu visíveis: **67**
 | Custos e contratos | `/studies/assistant` |
 | DAIA's | `/intervencoes` |
 | Documentação técnica | `/georeferenciamento/documentos` |
-| Educação Ambiental | `/studies/educacao-ambiental` |
 | EIA/RIMA | `/studies/eia-rima` |
 | Empreendedores | `/empreendedores` |
 | Empreendimentos | `/projects` |
 | Empresas | `/responsible-company` |
+| Espécies protegidas | `/studies/compensacao-ambiental/especies` |
 | Estudo de Cavidades | `/studies/cavidades` |
 | Estudos de Fauna | `/studies/fauna` |
 | Fauna | `/fauna` |
 | IDE-SisemaNet | `/studies/ide-sisemanet` |
 | IDE-SisemaNet-MG | `/external` |
+| Intervenção em APP | `/studies/compensacao-ambiental/app` |
 | Inventário Florestal | `/studies/inventario` |
 | Lançamento Manual | `/monitoring/manual` |
 | LAS-RAS | `/studies/las-ras` |
 | Legislação e estudos | `/studies/assistant` |
 | Licenças | `/licenses` |
 | Mapas | `/studies/mapas` |
+| Mata Atlântica | `/studies/compensacao-ambiental/mata-atlantica` |
+| Minerária | `/studies/compensacao-ambiental/mineraria` |
 | Nova vistoria | `/inspections/new` |
 | Outorgas | `/outorgas` |
 | Outorgas | `/studies/outorgas` |
@@ -1207,6 +1256,7 @@ Itens de menu visíveis: **67**
 | PCA | `/studies/pca` |
 | PIA | `/studies/pia` |
 | PRADA | `/studies/prada` |
+| Programa de Educação Ambiental | `/studies/educacao-ambiental` |
 | Projeto Técnico de Barragem | `/studies/barragem` |
 | PTRF | `/studies/ptrf` |
 | RCA | `/studies/rca` |
@@ -1220,11 +1270,13 @@ Itens de menu visíveis: **67**
 | SEI-MG | `/external` |
 | Síntese de texto | `/studies/assistant` |
 | SLA-Ecossistemas/MG | `/external` |
+| SNUC | `/studies/compensacao-ambiental/snuc` |
 | Telemetria (Real-time) | `/monitoring/telemetric` |
 | Urbano (cartório) | `/georeferenciamento/urbano` |
 | Usos Insignificantes | `/usos-insignificantes` |
 | Usuários | `/users` |
 | Validações | `/georeferenciamento/validacoes` |
+| Visão geral | `/studies/compensacao-ambiental` |
 | Webmail | `/external` |
 
 <details>
@@ -1254,22 +1306,25 @@ Itens de menu visíveis: **67**
 - [ ] Custos e contratos — `/studies/assistant`
 - [ ] DAIA's — `/intervencoes`
 - [ ] Documentação técnica — `/georeferenciamento/documentos`
-- [ ] Educação Ambiental — `/studies/educacao-ambiental`
 - [ ] EIA/RIMA — `/studies/eia-rima`
 - [ ] Empreendedores — `/empreendedores`
 - [ ] Empreendimentos — `/projects`
 - [ ] Empresas — `/responsible-company`
+- [ ] Espécies protegidas — `/studies/compensacao-ambiental/especies`
 - [ ] Estudo de Cavidades — `/studies/cavidades`
 - [ ] Estudos de Fauna — `/studies/fauna`
 - [ ] Fauna — `/fauna`
 - [ ] IDE-SisemaNet — `/studies/ide-sisemanet`
 - [ ] IDE-SisemaNet-MG — `/external`
+- [ ] Intervenção em APP — `/studies/compensacao-ambiental/app`
 - [ ] Inventário Florestal — `/studies/inventario`
 - [ ] Lançamento Manual — `/monitoring/manual`
 - [ ] LAS-RAS — `/studies/las-ras`
 - [ ] Legislação e estudos — `/studies/assistant`
 - [ ] Licenças — `/licenses`
 - [ ] Mapas — `/studies/mapas`
+- [ ] Mata Atlântica — `/studies/compensacao-ambiental/mata-atlantica`
+- [ ] Minerária — `/studies/compensacao-ambiental/mineraria`
 - [ ] Nova vistoria — `/inspections/new`
 - [ ] Outorgas — `/outorgas`
 - [ ] Outorgas — `/studies/outorgas`
@@ -1278,6 +1333,7 @@ Itens de menu visíveis: **67**
 - [ ] PCA — `/studies/pca`
 - [ ] PIA — `/studies/pia`
 - [ ] PRADA — `/studies/prada`
+- [ ] Programa de Educação Ambiental — `/studies/educacao-ambiental`
 - [ ] Projeto Técnico de Barragem — `/studies/barragem`
 - [ ] PTRF — `/studies/ptrf`
 - [ ] RCA — `/studies/rca`
@@ -1291,11 +1347,13 @@ Itens de menu visíveis: **67**
 - [ ] SEI-MG — `/external`
 - [ ] Síntese de texto — `/studies/assistant`
 - [ ] SLA-Ecossistemas/MG — `/external`
+- [ ] SNUC — `/studies/compensacao-ambiental/snuc`
 - [ ] Telemetria (Real-time) — `/monitoring/telemetric`
 - [ ] Urbano (cartório) — `/georeferenciamento/urbano`
 - [ ] Usos Insignificantes — `/usos-insignificantes`
 - [ ] Usuários — `/users`
 - [ ] Validações — `/georeferenciamento/validacoes`
+- [ ] Visão geral — `/studies/compensacao-ambiental`
 - [ ] Webmail — `/external`
 
 </details>

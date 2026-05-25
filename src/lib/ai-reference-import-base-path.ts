@@ -1,4 +1,5 @@
-import path from "node:path";
+import "server-only";
+import path from "path";
 import { DEFAULT_AI_LOCAL_SOURCE_PATH } from "@/lib/ai-local-source-defaults";
 
 /**

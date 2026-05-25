@@ -13,6 +13,34 @@ const projectRoot = fs.realpathSync.native(
 );
 const nm = (...segments) => path.join(projectRoot, "node_modules", ...segments);
 
+/** React do Next (canary) exporta `cache`, exigido pelo dedupe-fetch em 14.2.x. */
+const nextCompiledReact = (production) =>
+  nm(
+    "next",
+    "dist",
+    "compiled",
+    "react",
+    "cjs",
+    production ? "react.production.min.js" : "react.development.js",
+  );
+const nextCompiledReactDom = (production) =>
+  nm(
+    "next",
+    "dist",
+    "compiled",
+    "react-dom",
+    "cjs",
+    production ? "react-dom.production.min.js" : "react-dom.development.js",
+  );
+
+/** Subpaths do React (ex.: react-day-picker) — o alias de `react` acima é um .js, não o pacote. */
+const nextCompiledJsxRuntime = () =>
+  nm("next", "dist", "compiled", "react", "jsx-runtime.js");
+const nextCompiledJsxDevRuntime = () =>
+  nm("next", "dist", "compiled", "react", "jsx-dev-runtime.js");
+
+const pdfjsServerStub = path.join(projectRoot, "src/lib/pdfjs-server-stub.js");
+
 if (process.cwd() !== projectRoot) {
   process.chdir(projectRoot);
 }
@@ -30,10 +58,9 @@ const nextConfig = {
   /** `standalone` em dev quebra error components / App Router no Next 14. */
   ...(process.env.NODE_ENV === "production" ? { output: "standalone" } : {}),
   experimental: {
-    /** Evita empacotar pdf.js no bundle do servidor (DOMMatrix/canvas em build). */
+    /** Evita empacotar pdf-parse no bundle do servidor. */
     serverComponentsExternalPackages: [
       "pdf-parse",
-      "pdfjs-dist",
       "@napi-rs/canvas",
       "genkit",
       "@genkit-ai/core",
@@ -42,18 +69,45 @@ const nextConfig = {
       "@genkit-ai/compat-oai",
     ],
   },
-  webpack: (config, { dev }) => {
+  webpack: (config, { dev, isServer }) => {
     if (dev && config.output) {
       config.output.chunkLoadTimeout = 180000;
     }
+
+    const production = !dev;
+    /** Um único React com `cache` (bundle do Next) — evita react.cache is not a function no RSC. */
+    /** `$` = só `import … from "react"`; subpaths (jsx-runtime) usam o pacote em node_modules. */
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      "react$": nextCompiledReact(production),
+      "react-dom$": nextCompiledReactDom(production),
+      "react/jsx-runtime": nextCompiledJsxRuntime(),
+      "react/jsx-dev-runtime": nextCompiledJsxDevRuntime(),
+      ...(isServer
+        ? {
+            "pdfjs-dist$": pdfjsServerStub,
+            "pdfjs-dist/webpack.mjs": pdfjsServerStub,
+            "pdfjs-dist/build/pdf.mjs": pdfjsServerStub,
+            "pdfjs-dist/build/pdf.min.mjs": pdfjsServerStub,
+          }
+        : {}),
+      ...(dev && process.platform === "win32" ? { next: nm("next") } : {}),
+    };
+
     if (dev && process.platform === "win32") {
       /** Evita cache com caminhos D:\A vs d:\A duplicando módulos do Next/React. */
       config.cache = false;
-      config.resolve.alias = {
-        ...config.resolve.alias,
-        next: nm("next"),
-        react: nm("react"),
-        "react-dom": nm("react-dom"),
+      /** Evita o watcher varrer lixo na raiz do volume (ex. E:\found.000). Só globs string — função quebra o schema do Webpack 5. */
+      config.watchOptions = {
+        ...config.watchOptions,
+        ignored: [
+          "**/node_modules/**",
+          "**/.git/**",
+          "**/.next/**",
+          "**/found.*/**",
+          "**/System Volume Information/**",
+          "**/$RECYCLE.BIN/**",
+        ],
       };
     }
     return config;

@@ -6,6 +6,7 @@ import {
   setDoc,
   type Firestore,
 } from 'firebase/firestore';
+import { stripUndefinedDeep } from '@/lib/firestore-payload';
 import { enqueueOutboxOperation } from '@/lib/offline/sync-engine';
 import { getOfflineDb } from '@/lib/offline/db';
 
@@ -72,12 +73,12 @@ export async function setColetaDoc(
 ): Promise<string> {
   const id = docId ?? newLocalId();
   const path = `${collectionName}/${id}`;
-  const payload = {
+  const payload = stripUndefinedDeep({
     ...data,
     id,
     updatedAt: serverTimestamp(),
     sincronizado: false,
-  };
+  });
 
   if (isOfflineNow()) {
     await enqueueOutboxOperation({
@@ -113,11 +114,14 @@ export async function addColetaDoc(
     });
   }
 
-  const ref = await addDoc(collection(firestore, collectionName), {
-    ...data,
-    sincronizado: false,
-    createdAt: serverTimestamp(),
-    updatedAt: serverTimestamp(),
-  });
+  const ref = await addDoc(
+    collection(firestore, collectionName),
+    stripUndefinedDeep({
+      ...data,
+      sincronizado: false,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    }),
+  );
   return ref.id;
 }

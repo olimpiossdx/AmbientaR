@@ -2,41 +2,26 @@
  * Configuração da pasta "termos de referencia" e vínculo com estudos (Estudos Técnicos).
  *
  * - A pasta base E:\AmbientaR\termos de referencia (ou TERMOS_REFERENCIA_DIR) é carregada como um todo para RAG/indexação.
- * - No primeiro momento apenas dois estudos têm vínculo direto com uma subpasta:
+ * - Estudos com vínculo direto a subpasta:
  *   - PRADA → subpasta PRADA
  *   - PTRF  → subpasta PTRF
+ *   - PEA (educação ambiental) → subpasta PEA
  * - Demais pastas/estudos ficam aguardando comando específico de montagem para serem vinculados.
  */
 
+import 'server-only';
 import path from 'path';
 
-/** Slug do estudo na rota (ex.: prada, ptrf). */
-export type StudySlug = string;
+import type { StudySlug } from '@/lib/termos-referencia-study-folders';
+import {
+  STUDY_TR_FOLDER,
+  LINKED_STUDIES,
+  getTrFolderForStudy,
+  isStudyLinkedToTr,
+} from '@/lib/termos-referencia-study-folders';
 
-/** Subpasta dentro de "termos de referencia" vinculada a um estudo. */
-export const STUDY_TR_FOLDER: Record<string, string> = {
-  prada: 'PRADA',
-  ptrf: 'PTRF',
-};
-
-/** Estudos que já possuem vínculo com subpasta de TR no primeiro momento. */
-export const LINKED_STUDIES: StudySlug[] = ['prada', 'ptrf'];
-
-/**
- * Retorna o nome da subpasta de termos de referência vinculada ao estudo, ou null se não houver vínculo.
- */
-export function getTrFolderForStudy(studySlug: string): string | null {
-  const normalized = studySlug?.toLowerCase().trim() || '';
-  return STUDY_TR_FOLDER[normalized] ?? null;
-}
-
-/**
- * Retorna true se o estudo tem vínculo com uma subpasta de TR no primeiro momento.
- */
-export function isStudyLinkedToTr(studySlug: string): boolean {
-  return LINKED_STUDIES.includes(studySlug?.toLowerCase().trim() || '');
-}
-
+export type { StudySlug };
+export { STUDY_TR_FOLDER, LINKED_STUDIES, getTrFolderForStudy, isStudyLinkedToTr };
 /**
  * Caminho base da pasta "termos de referencia".
  * Em servidor: process.env.TERMOS_REFERENCIA_DIR ou process.cwd() + 'termos de referencia'.

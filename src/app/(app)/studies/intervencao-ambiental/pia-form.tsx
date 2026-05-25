@@ -1,4 +1,4 @@
-
+﻿
 'use client';
 
 import * as React from 'react';
@@ -193,7 +193,7 @@ export function PiaForm({ currentItem, piaType, onSuccess, linkContext }: PiaFor
   return (
     <Form {...form}>
       <form onSubmit={(e) => e.preventDefault()} className="h-full flex flex-col overflow-hidden">
-        <div className="flex-1 overflow-y-auto pr-4 -mr-2">
+        <div className="form-scroll-body">
             {renderFormContent()}
         </div>
 

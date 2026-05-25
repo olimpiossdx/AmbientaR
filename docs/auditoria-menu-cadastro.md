@@ -19,3 +19,8 @@
 ## Typecheck
 
 Sem erros conhecidos neste módulo.
+
+## Depuração (2026-05-25)
+
+- Listagens admin/internas: `limit(200)` em `empreendedores`, `projects`, `clients` (portal mantém `where` por CPF/titular/representante).
+- Import dialog empreendedores: mesmos limites em `clients` / `empreendedores`.

@@ -35,7 +35,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PlusCircle } from 'lucide-react';
 import { useCollection, useFirebase, useMemoFirebase, errorEmitter } from '@/firebase';
-import { collection, doc, deleteDoc, updateDoc } from 'firebase/firestore';
+import { collection, doc, deleteDoc, updateDoc, limit, query } from 'firebase/firestore';
 import type { ProjetoTecnicoBarragem } from '@/lib/types';
 import { isAdminOrSupervisorRole } from '@/lib/role-guards';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -149,12 +149,12 @@ export default function BarragemPage() {
   const { firestore, user } = useFirebase();
   const { toast } = useToast();
 
-  const query = useMemoFirebase(() => {
+  const projetosQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
-    return collection(firestore, 'projetosTecnicosBarragem');
+    return query(collection(firestore, 'projetosTecnicosBarragem'), limit(200));
   }, [firestore, user]);
 
-  const { data: projetos, isLoading } = useCollection<ProjetoTecnicoBarragem>(query);
+  const { data: projetos, isLoading } = useCollection<ProjetoTecnicoBarragem>(projetosQuery);
 
   const { drafts, approved } = useMemo(() => {
     if (!projetos) return { drafts: [], approved: [] };
@@ -286,7 +286,7 @@ export default function BarragemPage() {
             <DialogDescription>Projeto técnico de barragem — memorial descritivo.</DialogDescription>
           </DialogHeader>
           {itemToView && (
-            <div className="max-h-[60vh] space-y-4 overflow-y-auto pr-4">
+            <div className="form-scroll-body max-h-[60vh] space-y-4">
               <DetailItem label="Proprietário" value={itemToView.requerente.nome} />
               <DetailItem
                 label="Localização"

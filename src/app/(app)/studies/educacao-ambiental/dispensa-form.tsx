@@ -20,10 +20,12 @@ import { BrDateFormControl } from '@/components/form/br-date-input';
 import { MaskedInput } from '@/components/ui/masked-input';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import type { DispensaPEA, Empreendedor, TechnicalResponsible } from '@/lib/types';
+import type { Empreendedor, TechnicalResponsible } from '@/lib/types';
+import type { DispensaPeaRecord } from '@/lib/pea/types';
 import { useFirebase, errorEmitter, useCollection, useMemoFirebase } from '@/firebase';
 import { FirestorePermissionError } from '@/firebase/errors';
-import { collection, doc, addDoc, updateDoc } from 'firebase/firestore';
+import { collection, doc, addDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { uploadFileToStorage, sanitizeStorageFileName } from '@/lib/storage-upload';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -32,6 +34,11 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale/pt-BR';
 import { SignaturePad } from '@/components/ui/signature-pad';
+import { PeaGeoLinkPanel } from '@/components/pea/pea-geo-link-panel';
+import {
+  sanitizeGeoAnalysisId,
+  sanitizeGeoVinculo,
+} from '@/lib/pea/sanitize-geo-payload';
 
 
 const formSchema = z.object({
@@ -97,6 +104,7 @@ const formSchema = z.object({
   dispensaParcialCampos: z.array(z.string()).optional(),
   dispensaParcialOutro: z.string().optional(),
   caracterizacaoSocioeconomica: z.string().optional(),
+  geoAnalysisId: z.string().optional(),
 
   // Responsável pelo preenchimento
   responsavel: z.object({
@@ -113,7 +121,7 @@ const formSchema = z.object({
 type FormValues = z.infer<typeof formSchema>;
 
 interface DispensaFormProps {
-  currentItem?: DispensaPEA | null;
+  currentItem?: DispensaPeaRecord | null;
   onSuccess?: () => void;
   onCancel?: () => void;
 }
@@ -142,8 +150,12 @@ const dispensaParcialOptions = [
 
 export function DispensaForm({ currentItem, onSuccess, onCancel }: DispensaFormProps) {
   const [loading, setLoading] = React.useState(false);
+  const [anexoFiles, setAnexoFiles] = React.useState<File[]>([]);
   const { toast } = useToast();
-  const { firestore } = useFirebase();
+  const { firestore, user } = useFirebase();
+  const [geoVinculoDispensa, setGeoVinculoDispensa] = React.useState(
+    currentItem?.geoVinculo,
+  );
 
   const empreendedoresQuery = useMemoFirebase(() => firestore ? collection(firestore, 'empreendedores') : null, [firestore]);
   const { data: empreendedores, isLoading: isLoadingEmpreendedores } = useCollection<Empreendedor>(empreendedoresQuery);
@@ -153,11 +165,53 @@ export function DispensaForm({ currentItem, onSuccess, onCancel }: DispensaFormP
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: currentItem || {
-        empreendedorId: '',
-        justificativa: '',
+    defaultValues: {
+      empreendedorId: '',
+      justificativa: '',
+      responsavel: { nome: '', documento: '', formacao: '', cargo: '', localData: '' },
     },
   });
+
+  React.useEffect(() => {
+    if (!currentItem) return;
+    form.reset({
+      empreendedorId: currentItem.empreendedorId,
+      justificativa: currentItem.justificativa ?? '',
+      razaoSocial: currentItem.razaoSocial,
+      nomeFantasia: currentItem.nomeFantasia,
+      cnpj: currentItem.cnpj,
+      logradouro: currentItem.logradouro,
+      numero: currentItem.numero,
+      complemento: currentItem.complemento,
+      bairro: currentItem.bairro,
+      municipio: currentItem.municipio,
+      uf: currentItem.uf,
+      cep: currentItem.cep,
+      telefoneComercial: currentItem.telefoneComercial,
+      telefoneCelular: currentItem.telefoneCelular,
+      email: currentItem.email,
+      coordenadas: currentItem.coordenadas,
+      processoAdministrativo: currentItem.processoAdministrativo,
+      solicitacaoLicenciamento: currentItem.solicitacaoLicenciamento,
+      faseProcesso: currentItem.faseProcesso,
+      ampliacaoAlteracao: currentItem.ampliacaoAlteracao,
+      classeEmpreendimento: currentItem.classeEmpreendimento as FormValues['classeEmpreendimento'],
+      porteEmpreendimento: currentItem.porteEmpreendimento as FormValues['porteEmpreendimento'],
+      codigoTipologia: currentItem.codigoTipologia,
+      tipologia: currentItem.tipologia,
+      possuiLicenca: currentItem.possuiLicenca,
+      licencaAnterior: currentItem.licencaAnterior,
+      possuiPea: currentItem.possuiPea,
+      peaConformeDN: currentItem.peaConformeDN,
+      solicitacaoParcial: currentItem.solicitacaoParcial,
+      dispensaParcialCampos: currentItem.dispensaParcialCampos,
+      dispensaParcialOutro: currentItem.dispensaParcialOutro,
+      caracterizacaoSocioeconomica: currentItem.caracterizacaoSocioeconomica,
+      geoAnalysisId: currentItem.geoAnalysisId ?? '',
+      responsavel: currentItem.responsavel ?? { nome: '', documento: '', formacao: '', cargo: '', localData: '' },
+    });
+    setGeoVinculoDispensa(currentItem.geoVinculo);
+  }, [currentItem, form]);
   
   const selectedEmpreendedorId = form.watch('empreendedorId');
   const selectedResponsibleId = form.watch('responsavel.id');
@@ -200,14 +254,103 @@ export function DispensaForm({ currentItem, onSuccess, onCancel }: DispensaFormP
 
 
   async function onSubmit(values: FormValues) {
+    if (!firestore || !user?.uid) {
+      toast({
+        variant: 'destructive',
+        title: 'Sessão inválida',
+        description: 'Faça login novamente para salvar a solicitação.',
+      });
+      return;
+    }
+
     setLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    toast({
-      title: 'Solicitação de Dispensa Enviada!',
-      description: 'Sua solicitação foi registrada com sucesso.',
-    });
-    setLoading(false);
-    onSuccess?.();
+    try {
+      const anexos: { nome: string; url: string; tipo?: string }[] = [
+        ...(currentItem?.anexos ?? []),
+      ];
+      for (const file of anexoFiles) {
+        const safe = sanitizeStorageFileName(file.name);
+        const path = `pea/dispensa/${currentItem?.id ?? user.uid}/${Date.now()}_${safe}`;
+        const url = await uploadFileToStorage(file, path);
+        anexos.push({ nome: file.name, url, tipo: file.type });
+      }
+
+      const payload: Record<string, unknown> = {
+        empreendedorId: values.empreendedorId,
+        justificativa: values.justificativa,
+        razaoSocial: values.razaoSocial || values.razaoSocialEmpreendedor,
+        nomeFantasia: values.nomeFantasia || values.nomeFantasiaEmpreendedor,
+        cnpj: values.cnpj || values.cnpjEmpreendedor,
+        logradouro: values.logradouro || values.logradouroEmpreendedor,
+        numero: values.numero || values.numeroEmpreendedor,
+        complemento: values.complemento || values.complementoEmpreendedor,
+        bairro: values.bairro || values.bairroEmpreendedor,
+        municipio: values.municipio || values.municipioEmpreendedor,
+        uf: values.uf || values.ufEmpreendedor,
+        cep: values.cep || values.cepEmpreendedor,
+        telefoneComercial: values.telefoneComercial || values.telefoneComercialEmpreendedor,
+        telefoneCelular: values.telefoneCelular || values.telefoneCelularEmpreendedor,
+        email: values.email || values.emailEmpreendedor,
+        coordenadas: values.coordenadas,
+        processoAdministrativo: values.processoAdministrativo,
+        solicitacaoLicenciamento: values.solicitacaoLicenciamento,
+        faseProcesso: values.faseProcesso,
+        ampliacaoAlteracao: values.ampliacaoAlteracao,
+        classeEmpreendimento: values.classeEmpreendimento,
+        porteEmpreendimento: values.porteEmpreendimento,
+        codigoTipologia: values.codigoTipologia,
+        tipologia: values.tipologia,
+        possuiLicenca: values.possuiLicenca,
+        licencaAnterior: values.licencaAnterior,
+        possuiPea: values.possuiPea,
+        peaConformeDN: values.peaConformeDN,
+        solicitacaoParcial: values.solicitacaoParcial,
+        dispensaParcialCampos: values.dispensaParcialCampos,
+        dispensaParcialOutro: values.dispensaParcialOutro,
+        caracterizacaoSocioeconomica: values.caracterizacaoSocioeconomica,
+        responsavel: values.responsavel,
+        geoAnalysisId: sanitizeGeoAnalysisId(values.geoAnalysisId) ?? null,
+        geoVinculo: sanitizeGeoVinculo(geoVinculoDispensa) ?? null,
+        anexos,
+        status: 'Enviado',
+        updatedAt: serverTimestamp(),
+        createdBy: currentItem?.createdBy ?? user.uid,
+      };
+
+      const collectionRef = collection(firestore, 'dispensaPea');
+
+      if (currentItem?.id) {
+        await updateDoc(doc(firestore, 'dispensaPea', currentItem.id), payload);
+        toast({
+          title: 'Solicitação atualizada',
+          description: 'A dispensa do PEA foi salva com sucesso.',
+        });
+      } else {
+        await addDoc(collectionRef, {
+          ...payload,
+          createdAt: serverTimestamp(),
+        });
+        toast({
+          title: 'Solicitação de dispensa enviada',
+          description: 'O formulário foi registrado com sucesso.',
+        });
+      }
+      setAnexoFiles([]);
+      onSuccess?.();
+    } catch (e) {
+      const permissionError = new FirestorePermissionError({
+        path: 'dispensaPea',
+        operation: currentItem?.id ? 'update' : 'create',
+      });
+      errorEmitter.emit('permission-error', permissionError);
+      toast({
+        variant: 'destructive',
+        title: 'Erro ao salvar',
+        description: e instanceof Error ? e.message : 'Não foi possível registrar a solicitação.',
+      });
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -446,6 +589,29 @@ export function DispensaForm({ currentItem, onSuccess, onCancel }: DispensaFormP
                     </div>
                 )}
                 
+                {user?.uid && (
+                  <div className="pt-4 border-t">
+                    <PeaGeoLinkPanel
+                      userId={user.uid}
+                      initialGeoAnalysisId={form.watch('geoAnalysisId') || currentItem?.geoAnalysisId}
+                      initialVinculo={geoVinculoDispensa ?? currentItem?.geoVinculo}
+                      currentAbea={form.watch('caracterizacaoSocioeconomica')}
+                      currentAda={form.watch('dispensaParcialOutro')}
+                      onGeoAnalysisIdChange={(id) => form.setValue('geoAnalysisId', id)}
+                      onVinculoChange={setGeoVinculoDispensa}
+                      onApplyTexts={(texts) => {
+                        form.setValue('caracterizacaoSocioeconomica', texts.abeaDescricao);
+                        const adaNote = texts.adaGeometriaNotas;
+                        const prev = form.getValues('dispensaParcialOutro')?.trim();
+                        form.setValue(
+                          'dispensaParcialOutro',
+                          prev ? `${prev}\n\n${adaNote}` : adaNote,
+                        );
+                      }}
+                    />
+                  </div>
+                )}
+
                 <FormField
                     control={form.control}
                     name="caracterizacaoSocioeconomica"
@@ -590,6 +756,35 @@ export function DispensaForm({ currentItem, onSuccess, onCancel }: DispensaFormP
             </CardContent>
         </Card>
 
+
+        <Card>
+            <CardHeader>
+                <CardTitle>Anexos (KML/SHP, diagnóstico, mapas)</CardTitle>
+                <CardDescription>Arquivos complementares à solicitação (ABEA/ADA, quando aplicável).</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-2">
+                <Input
+                    type="file"
+                    multiple
+                    accept=".pdf,.doc,.docx,.kml,.kmz,.zip,.shp"
+                    onChange={(e) => {
+                        const list = e.target.files ? Array.from(e.target.files) : [];
+                        setAnexoFiles(list);
+                    }}
+                />
+                {currentItem?.anexos && currentItem.anexos.length > 0 && (
+                    <ul className="text-sm text-muted-foreground list-disc pl-5">
+                        {currentItem.anexos.map((a) => (
+                            <li key={a.url}>
+                                <a href={a.url} target="_blank" rel="noopener noreferrer" className="underline">
+                                    {a.nome}
+                                </a>
+                            </li>
+                        ))}
+                    </ul>
+                )}
+            </CardContent>
+        </Card>
 
         <div className="flex justify-end space-x-2">
             <Button type="button" variant="outline" onClick={onCancel} disabled={loading}>

@@ -10,6 +10,7 @@ export default function GeorefAmbientalPage() {
       description="Inscrição georreferenciada no SICAR (Lei 12.651/2012): perímetro, APP, Reserva Legal e análise pelo órgão estadual. Em MG, consulte também o IDE-SisemaNet."
       processo={PROCESSO_AMBIENTAL_CAR}
       showMapLink
+      showAnaliseLink
       links={[
         { label: "SICAR", href: "https://www.car.gov.br/" },
         {

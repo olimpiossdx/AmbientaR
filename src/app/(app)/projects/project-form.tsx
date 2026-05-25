@@ -1,4 +1,4 @@
-
+﻿
 'use client';
 
 import * as React from 'react';
@@ -9,26 +9,29 @@ import { Button } from '@/components/ui/button';
 import {
   Form,
 } from '@/components/ui/form';
-import { Loader2, ArrowLeft } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import type { Project, Empreendedor, AppUser } from '@/lib/types';
+import type { Project, Empreendedor } from '@/lib/types';
 import { useFirebase, errorEmitter, useCollection, useMemoFirebase, useAuth } from '@/firebase';
 import { assertCanCreateEmpreendimentoAction } from '@/app/(app)/projects/package-actions';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { collection, doc, addDoc, updateDoc } from 'firebase/firestore';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { FormDefault } from './form-default';
-import { useRouter } from 'next/navigation';
 import { cleanEmptyValues } from '@/lib/utils';
 import _ from 'lodash';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
-import { isClientePortalRole } from '@/lib/role-guards';
+import { isClienteAutonomo, isClientePortalRole } from '@/lib/role-guards';
+import { resolvePortalAuthUid } from '@/lib/auth-user-id';
+import { usePortalEmpreendedorIds } from '@/hooks/use-portal-empreendedor-ids';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 
 const formSchema = z.object({
-  empreendedorId: z.string().min(1, 'Selecione um empreendedor.'),
-  userId: z.string().min(1, 'Selecione um usuário cliente responsável.'),
+  empreendedorId: z.string().min(1, 'Selecione um empreendedor responsável.'),
+  userId: z.string().optional(),
   activity: z.string().min(1, 'A atividade principal é obrigatória.'),
   subActivity: z.string().optional(),
   propertyName: z.string().min(1, "O nome da propriedade é obrigatório."),
@@ -124,21 +127,80 @@ export function ProjectForm({ currentItem, onSuccess, onCancel }: ProjectFormPro
   const { toast } = useToast();
   const { firestore, auth } = useFirebase();
   const { user } = useAuth();
-  const router = useRouter();
-
 
   const empreendedoresQuery = useMemoFirebase(() => firestore ? collection(firestore, 'empreendedores') : null, [firestore]);
   const { data: clients, isLoading: isLoadingClients } = useCollection<Empreendedor>(empreendedoresQuery);
 
-  const usersQuery = useMemoFirebase(() => firestore ? collection(firestore, 'users') : null, [firestore]);
-  const { data: users, isLoading: isLoadingUsers } = useCollection<AppUser>(usersQuery);
+  const portalEmpreendedorIds = usePortalEmpreendedorIds();
+  const isAutonomo = isClienteAutonomo(user?.role);
+  /** Admin, gestor, supervisor, etc.: vínculo centralizado no topo; autônomo: preenchimento automático. */
+  const usesCentralEmpreendedorResponsavel =
+    Boolean(user) && (!isClientePortalRole(user?.role) || isAutonomo);
+
+  const empreendedoresSorted = React.useMemo(
+    () => [...(clients || [])].sort((a, b) => a.name.localeCompare(b.name, 'pt-BR')),
+    [clients],
+  );
+
+  const empreendedoresMap = React.useMemo(
+    () => new Map(empreendedoresSorted.map((e) => [e.id, e])),
+    [empreendedoresSorted],
+  );
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: getInitialValues(currentItem),
   });
 
+  const applyEmpreendedorLink = React.useCallback(
+    (empreendedorId: string) => {
+      form.setValue('empreendedorId', empreendedorId, { shouldValidate: true });
+      const emp = empreendedoresMap.get(empreendedorId);
+      form.setValue('userId', emp?.userId?.trim() || '', { shouldValidate: false });
+    },
+    [form, empreendedoresMap],
+  );
+
+  React.useEffect(() => {
+    if (!isAutonomo || !user || portalEmpreendedorIds === undefined) return;
+    if (currentItem?.empreendedorId) return;
+
+    const authUid = resolvePortalAuthUid(user);
+    if (authUid) {
+      form.setValue('userId', authUid, { shouldValidate: false });
+    }
+
+    const validIds = portalEmpreendedorIds.filter(
+      (id) => id && !id.startsWith('invalid-placeholder'),
+    );
+    if (validIds.length === 1) {
+      applyEmpreendedorLink(validIds[0]);
+    } else if (validIds.length > 1) {
+      const preferred =
+        empreendedoresSorted.find((e) => validIds.includes(e.id))?.id ?? validIds[0];
+      applyEmpreendedorLink(preferred);
+    }
+  }, [
+    isAutonomo,
+    user,
+    portalEmpreendedorIds,
+    currentItem?.empreendedorId,
+    form,
+    applyEmpreendedorLink,
+    empreendedoresSorted,
+  ]);
+
   async function onSubmit(values: FormValues) {
+    if (isAutonomo && !values.empreendedorId?.trim()) {
+      toast({
+        variant: 'destructive',
+        title: 'Empreendedor não vinculado',
+        description:
+          'Cadastre seu empreendedor em Cadastro → Empreendedores antes de salvar o empreendimento.',
+      });
+      return;
+    }
+
     setLoading(true);
 
     if (!firestore) {
@@ -221,10 +283,21 @@ export function ProjectForm({ currentItem, onSuccess, onCancel }: ProjectFormPro
     }
   }
   
+  const selectedEmpreendedorId = form.watch('empreendedorId');
+  const autonomoEmpreendedor = selectedEmpreendedorId
+    ? empreendedoresMap.get(selectedEmpreendedorId)
+    : undefined;
+  const autonomoMissingEmpreendedor =
+    isAutonomo &&
+    portalEmpreendedorIds !== undefined &&
+    (portalEmpreendedorIds.length === 0 ||
+      portalEmpreendedorIds.every((id) => id.startsWith('invalid-placeholder')));
+
   const formProps = {
     form,
     clients: clients || [],
     isLoadingClients,
+    hideEmpreendedorSelect: usesCentralEmpreendedorResponsavel,
   };
 
   return (
@@ -243,33 +316,86 @@ export function ProjectForm({ currentItem, onSuccess, onCancel }: ProjectFormPro
                   <TabsTrigger value="listagem-g" onClick={() => form.setValue('activity', 'LISTAGEM G – AGROSSILVIPASTORIS')}>Listagem G</TabsTrigger>
                   <TabsTrigger value="listagem-h" onClick={() => form.setValue('activity', 'LISTAGEM H – OUTRAS ATIVIDADES')}>Listagem H</TabsTrigger>
               </TabsList>
-              <div className="flex-1 mt-4 pr-2 -mr-6 overflow-y-auto">
-                   <div className="space-y-4 rounded-md border p-4 mb-4">
-                     <h3 className="text-lg font-medium">Responsável pelo Projeto</h3>
-                     <FormField
-                        control={form.control}
-                        name="userId"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Usuário Cliente Responsável</FormLabel>
-                             <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isLoadingUsers}>
+              <div className="form-scroll-body mt-4">
+                   {usesCentralEmpreendedorResponsavel ? (
+                     <div className="space-y-4 rounded-md border p-4 mb-4">
+                       <h3 className="text-lg font-medium">Responsável pelo Projeto</h3>
+                       {isAutonomo ? (
+                         <>
+                           {autonomoMissingEmpreendedor ? (
+                             <Alert variant="destructive">
+                               <AlertDescription>
+                                 Não encontramos seu cadastro de empreendedor. Conclua o cadastro em
+                                 Empreendedores antes de lançar um empreendimento.
+                               </AlertDescription>
+                             </Alert>
+                           ) : (
+                             <FormItem>
+                               <FormLabel>Empreendedor responsável</FormLabel>
                                <FormControl>
-                                 <SelectTrigger>
-                                   <SelectValue placeholder={isLoadingUsers ? "Carregando..." : "Selecione um usuário cliente"} />
-                                 </SelectTrigger>
+                                 <Input
+                                   readOnly
+                                   disabled
+                                   value={
+                                     autonomoEmpreendedor?.name ||
+                                     user?.name ||
+                                     'Carregando...'
+                                   }
+                                 />
                                </FormControl>
-                               <SelectContent>
-                                 {users?.filter(u => isClientePortalRole(u.role)).map(user => (
-                                   <SelectItem key={user.id} value={user.id}>{user.name}</SelectItem>
-                                 ))}
-                               </SelectContent>
-                             </Select>
-                            <FormDescription>Associe este projeto a um usuário cliente para notificações.</FormDescription>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                   </div>
+                               <FormDescription>
+                                 Vinculado automaticamente ao seu perfil de cliente autônomo.
+                               </FormDescription>
+                             </FormItem>
+                           )}
+                           <FormField
+                             control={form.control}
+                             name="empreendedorId"
+                             render={() => <FormMessage />}
+                           />
+                         </>
+                       ) : (
+                         <FormField
+                           control={form.control}
+                           name="empreendedorId"
+                           render={({ field }) => (
+                             <FormItem>
+                               <FormLabel>Empreendedor responsável</FormLabel>
+                               <Select
+                                 onValueChange={applyEmpreendedorLink}
+                                 value={field.value || ''}
+                                 disabled={isLoadingClients}
+                               >
+                                 <FormControl>
+                                   <SelectTrigger>
+                                     <SelectValue
+                                       placeholder={
+                                         isLoadingClients
+                                           ? 'Carregando...'
+                                           : 'Selecione um empreendedor'
+                                       }
+                                     />
+                                   </SelectTrigger>
+                                 </FormControl>
+                                 <SelectContent>
+                                   {empreendedoresSorted.map((emp) => (
+                                     <SelectItem key={emp.id} value={emp.id}>
+                                       {emp.name}
+                                     </SelectItem>
+                                   ))}
+                                 </SelectContent>
+                               </Select>
+                               <FormDescription>
+                                 Associe este empreendimento ao empreendedor cadastrado. As
+                                 notificações serão enviadas à conta vinculada a ele, quando existir.
+                               </FormDescription>
+                               <FormMessage />
+                             </FormItem>
+                           )}
+                         />
+                       )}
+                     </div>
+                   ) : null}
                    <TabsContent value="default" className="mt-4">
                        <FormDefault {...formProps} />
                    </TabsContent>
@@ -310,7 +436,10 @@ export function ProjectForm({ currentItem, onSuccess, onCancel }: ProjectFormPro
                   >
                       Cancelar
                   </Button>
-                  <Button type="submit" disabled={loading}>
+                  <Button
+                    type="submit"
+                    disabled={loading || (isAutonomo && autonomoMissingEmpreendedor)}
+                  >
                       {loading ? (
                       <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />

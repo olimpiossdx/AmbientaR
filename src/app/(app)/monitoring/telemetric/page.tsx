@@ -329,20 +329,21 @@ export default function TelemetricMonitoringPage() {
       return query(
         collection(firestore, "outorgas"),
         where("empreendedorId", "in", empreendedorIdsForUser.slice(0, 10)),
+        limit(200),
       );
     }
-    return collection(firestore, "outorgas");
+    return query(collection(firestore, "outorgas"), limit(200));
   }, [firestore, user, empreendedorIdsForUser]);
 
   const { data: allOutorgas, isLoading: isLoadingOutorgas } =
     useCollection<WaterPermit>(outorgasQuery);
   const empreendedoresQuery = useMemoFirebase(
-    () => (firestore ? collection(firestore, "empreendedores") : null),
+    () => (firestore ? query(collection(firestore, "empreendedores"), limit(200)) : null),
     [firestore],
   );
   const { data: empreendedores } = useCollection<Empreendedor>(empreendedoresQuery);
   const projectsQuery = useMemoFirebase(
-    () => (firestore ? collection(firestore, "projects") : null),
+    () => (firestore ? query(collection(firestore, "projects"), limit(200)) : null),
     [firestore],
   );
   const { data: projects } = useCollection<Project>(projectsQuery);
@@ -363,9 +364,10 @@ export default function TelemetricMonitoringPage() {
       return query(
         collection(firestore, "usosInsignificantes"),
         where("empreendedorId", "in", empreendedorIdsForUser.slice(0, 10)),
+        limit(200),
       );
     }
-    return collection(firestore, "usosInsignificantes");
+    return query(collection(firestore, "usosInsignificantes"), limit(200));
   }, [firestore, user, empreendedorIdsForUser]);
 
   const { data: allUsosInsignificantes, isLoading: isLoadingUsos } =

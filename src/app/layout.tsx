@@ -9,6 +9,7 @@ import { AuthThemeEnforcer } from "@/components/auth-theme-enforcer";
 import { IframeRedirectBanner } from "@/components/iframe-redirect-banner";
 import { SuppressExtensionErrors } from "@/components/suppress-extension-errors";
 import { UnregisterServiceWorkerDev } from "@/components/unregister-service-worker-dev";
+import { DEV_CLEAR_PWA_SW_SNIPPET } from "@/lib/dev-clear-pwa-sw-snippet";
 
 export const metadata: Metadata = {
   title: "AmbientaR",
@@ -35,6 +36,11 @@ export default function RootLayout({
       <head>
         <meta charSet="utf-8" />
         <meta name="mobile-web-app-capable" content="yes" />
+        {process.env.NODE_ENV === "development" ? (
+          <script
+            dangerouslySetInnerHTML={{ __html: DEV_CLEAR_PWA_SW_SNIPPET }}
+          />
+        ) : null}
       </head>
       <body
         className={cn("min-h-screen bg-background font-body antialiased")}

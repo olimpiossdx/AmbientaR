@@ -238,7 +238,7 @@ export default function TechnicalResponsiblePage() {
                     </DialogDescription>
                 </DialogHeader>
                 {viewingItem && (
-                    <div className="max-h-[60vh] overflow-y-auto pr-4 space-y-4">
+                    <div className="form-scroll-body max-h-[60vh] space-y-4">
                         <DetailItem label="Nome Completo" value={viewingItem.name} />
                         <Separator />
                         <div className="grid grid-cols-2 gap-4">

@@ -11,8 +11,15 @@ import {
   fetchStorageImageProxyBlob,
   isFirebaseStorageHttpsUrl,
 } from '@/lib/storage-image-proxy-client';
-import { loadPdfJsForBrowser } from '@/lib/pdfjs-worker';
-import type { PDFPageProxy } from 'pdfjs-dist';
+/** Evita resolver o pacote ESM `pdfjs-dist` no grafo do bundler (só tipos). */
+type PdfJsPageProxy = {
+  getViewport: (params: { scale: number }) => { width: number; height: number };
+  render: (params: {
+    canvasContext: CanvasRenderingContext2D;
+    viewport: { width: number; height: number };
+    canvas: HTMLCanvasElement;
+  }) => { promise: Promise<void> };
+};
 
 /** Imagens (incl. extensão sem MIME no celular) e PDF para evidências de vistoria. */
 export function isAllowedInspectionUploadFile(file: File): boolean {
@@ -135,7 +142,7 @@ export type InspectionPdfPageImage = {
  * Rasteriza até {@link PDF_REPORT_MAX_PAGES_EMBED} páginas de um blob PDF.
  */
 async function rasterizePdfPageToJpeg(
-  page: PDFPageProxy,
+  page: PdfJsPageProxy,
   targetWidthPx: number,
 ): Promise<string | null> {
   const baseViewport = page.getViewport({ scale: 1 });
@@ -160,6 +167,7 @@ export async function renderPdfPagesFromBlob(
   }
   const targetWidths = [PDF_REPORT_RENDER_TARGET_PX, 1600, 1200, 900];
   try {
+    const { loadPdfJsForBrowser } = await import('@/lib/pdfjs-worker');
     const pdfjs = await loadPdfJsForBrowser();
     const data = new Uint8Array(await blob.arrayBuffer());
     const pdf = await pdfjs.getDocument({ data }).promise;
@@ -173,7 +181,10 @@ export async function renderPdfPagesFromBlob(
       let dataUrl: string | null = null;
       for (const targetPx of targetWidths) {
         try {
-          dataUrl = await rasterizePdfPageToJpeg(page, targetPx);
+          dataUrl = await rasterizePdfPageToJpeg(
+            page as unknown as PdfJsPageProxy,
+            targetPx,
+          );
           if (dataUrl) break;
         } catch {
           /* tenta resolução menor (limite de canvas no dev local) */

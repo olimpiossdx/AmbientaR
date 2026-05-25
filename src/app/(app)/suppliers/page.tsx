@@ -22,7 +22,7 @@ import {
   Search,
 } from 'lucide-react';
 import { useCollection, useFirebase, useMemoFirebase, errorEmitter } from '@/firebase';
-import { collection, doc, deleteDoc } from 'firebase/firestore';
+import { collection, doc, deleteDoc, limit, query } from 'firebase/firestore';
 import type { Fornecedor } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
@@ -45,7 +45,7 @@ export default function SuppliersPage() {
 
   const suppliersQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
-    return collection(firestore, 'fornecedores');
+    return query(collection(firestore, 'fornecedores'), limit(200));
   }, [firestore, user]);
 
   const { data: suppliers, isLoading } = useCollection<Fornecedor>(suppliersQuery);

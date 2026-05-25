@@ -21,7 +21,7 @@ import { useToast } from '@/hooks/use-toast';
 import type { Oficio, AppUser } from '@/lib/types';
 import { useFirebase, errorEmitter, useCollection, useMemoFirebase } from '@/firebase';
 import { FirestorePermissionError } from '@/firebase/errors';
-import { collection, doc, addDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, doc, addDoc, updateDoc, serverTimestamp, limit, query } from 'firebase/firestore';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale/pt-BR';
@@ -105,7 +105,7 @@ export function OficioForm({ currentItem, onSuccess, onCancel }: OficioFormProps
   const { firestore, user } = useFirebase();
 
   const usersQuery = useMemoFirebase(
-    () => (firestore ? collection(firestore, 'users') : null),
+    () => (firestore ? query(collection(firestore, 'users'), limit(100)) : null),
     [firestore],
   );
   const { data: users, isLoading: isLoadingUsers } = useCollection<AppUser>(usersQuery);
@@ -290,7 +290,7 @@ export function OficioForm({ currentItem, onSuccess, onCancel }: OficioFormProps
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleSave)} className="h-full flex flex-col">
-        <div className="flex-1 overflow-y-auto pr-1 space-y-6">
+        <div className="form-scroll-body space-y-6">
           <section className="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-3">
             <h3 className="text-base font-semibold text-foreground">Modelo consolidado</h3>
             <p className="text-sm text-muted-foreground">

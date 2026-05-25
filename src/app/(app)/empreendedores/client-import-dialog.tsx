@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
-import { collection, doc, writeBatch } from 'firebase/firestore';
+import { collection, doc, writeBatch, limit, query } from 'firebase/firestore';
 import type { Client, Empreendedor } from '@/lib/types';
 import { normalizeDocumentDigits } from '@/lib/document-lookup';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -35,10 +35,16 @@ export function ClientImportDialog({ isOpen, onOpenChange, onImportSuccess }: Cl
   const [loading, setLoading] = React.useState(false);
   const [cpfFilter, setCpfFilter] = React.useState('');
 
-  const clientsQuery = useMemoFirebase(() => firestore ? collection(firestore, 'clients') : null, [firestore]);
+  const clientsQuery = useMemoFirebase(
+    () => (firestore ? query(collection(firestore, 'clients'), limit(200)) : null),
+    [firestore],
+  );
   const { data: clients, isLoading: isLoadingClients } = useCollection<Client>(clientsQuery);
-  
-  const empreendedoresQuery = useMemoFirebase(() => firestore ? collection(firestore, 'empreendedores') : null, [firestore]);
+
+  const empreendedoresQuery = useMemoFirebase(
+    () => (firestore ? query(collection(firestore, 'empreendedores'), limit(200)) : null),
+    [firestore],
+  );
   const { data: empreendedores, isLoading: isLoadingEmpreendedores } = useCollection<Empreendedor>(empreendedoresQuery);
 
   const isLoading = isLoadingClients || isLoadingEmpreendedores;

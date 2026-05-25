@@ -39,6 +39,7 @@ import {
   doc,
   query,
   where,
+  limit,
   getDocs,
 } from "firebase/firestore";
 import type {
@@ -234,9 +235,10 @@ export default function CompliancePage() {
       return query(
         collection(firestore, "projects"),
         where("empreendedorId", "in", empreendedorIdsForUser),
+        limit(200),
       );
     }
-    return collection(firestore, "projects");
+    return query(collection(firestore, "projects"), limit(200));
   }, [firestore, isClientLike, empreendedorIdsForUser]);
   const { data: projects, isLoading: isLoadingProjects } =
     useCollection<Project>(projectsQuery);
@@ -249,9 +251,10 @@ export default function CompliancePage() {
       return query(
         collection(firestore, "licenses"),
         where("empreendedorId", "in", empreendedorIdsForUser),
+        limit(200),
       );
     }
-    return collection(firestore, "licenses");
+    return query(collection(firestore, "licenses"), limit(200));
   }, [firestore, isClientLike, empreendedorIdsForUser]);
   const { data: licenses, isLoading: isLoadingLicenses } =
     useCollection<License>(licensesQuery);
@@ -349,7 +352,7 @@ export default function CompliancePage() {
       }
       return null;
     }
-    return collection(firestore, "condicionantes");
+    return query(collection(firestore, "condicionantes"), limit(200));
   }, [firestore, isClientLike, referenceIdsForClient, empreendedorIdsForUser]);
 
   const {
@@ -486,9 +489,10 @@ export default function CompliancePage() {
       return query(
         collection(firestore, "outorgas"),
         where("empreendedorId", "in", empreendedorIdsForUser),
+        limit(200),
       );
     }
-    return collection(firestore, "outorgas");
+    return query(collection(firestore, "outorgas"), limit(200));
   }, [firestore, isClientLike, empreendedorIdsForUser]);
   const { data: outorgas, isLoading: isLoadingOutorgas } =
     useCollection<WaterPermit>(outorgasQuery);
@@ -501,9 +505,10 @@ export default function CompliancePage() {
       return query(
         collection(firestore, "intervencoes"),
         where("empreendedorId", "in", empreendedorIdsForUser),
+        limit(200),
       );
     }
-    return collection(firestore, "intervencoes");
+    return query(collection(firestore, "intervencoes"), limit(200));
   }, [firestore, isClientLike, empreendedorIdsForUser]);
   const { data: intervencoes, isLoading: isLoadingIntervencoes } =
     useCollection<EnvironmentalIntervention>(intervencoesQuery);

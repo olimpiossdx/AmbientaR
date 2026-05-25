@@ -1,4 +1,4 @@
-
+﻿
 'use client';
 
 import * as React from 'react';
@@ -173,7 +173,7 @@ export function ResgateForm({ currentItem, onSave }: ResgateFormProps) {
   return (
     <Form {...form}>
       <form onSubmit={(e) => e.preventDefault()} className="h-full flex flex-col overflow-hidden">
-        <div className="flex-1 overflow-y-auto pr-4 -mr-6">
+        <div className="form-scroll-body">
             <Accordion type="multiple" defaultValue={['item-1', 'item-7']} className="w-full">
             <AccordionItem value="item-1">
                 <AccordionTrigger>1. & 2. Identificação e Caracterização</AccordionTrigger>

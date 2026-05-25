@@ -3,6 +3,7 @@
 import { PageHeader } from '@/components/page-header';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { DispensaForm } from '../dispensa-form';
+import { PeaReferencePanel } from '@/components/pea/pea-reference-panel';
 import { useRouter } from 'next/navigation';
 import { Suspense } from 'react';
 
@@ -18,7 +19,8 @@ function SolicitarDispensaPageContent() {
       <div className="flex flex-col h-full">
         <PageHeader title="Solicitação de Dispensa do Programa de Educação Ambiental" />
         <main className="flex-1 overflow-auto p-4 md:p-6">
-          <div className="max-w-4xl mx-auto">
+          <div className="max-w-4xl mx-auto space-y-6">
+               <PeaReferencePanel />
                <Card>
                   <CardHeader>
                       <CardTitle>Formulário de Solicitação de Dispensa</CardTitle>

@@ -316,7 +316,7 @@ export default function ResponsibleCompanyPage() {
                     </DialogDescription>
                 </DialogHeader>
                 {viewingItem && (
-                    <div className="max-h-[60vh] overflow-y-auto pr-4 space-y-4">
+                    <div className="form-scroll-body max-h-[60vh] space-y-4">
                         <DetailItem label="Razão Social" value={viewingItem.name} />
                         <DetailItem label="Nome Fantasia" value={viewingItem.fantasyName} />
                         <DetailItem label="CNPJ" value={viewingItem.cnpj} />

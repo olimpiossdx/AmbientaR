@@ -42,7 +42,7 @@ function normalizeToFeaturePolygon(geometry: Geometry): Feature<Polygon> | null 
   return null;
 }
 
-function parseGeoJsonObject(raw: unknown): Feature<Polygon> | null {
+export function parseGeoJsonObject(raw: unknown): Feature<Polygon> | null {
   if (!raw || typeof raw !== "object") return null;
   const obj = raw as Record<string, unknown>;
   if (obj.type === "Feature") {
@@ -160,6 +160,9 @@ export async function parsePerimeterPolygon(
         feature = parseWktPolygon(trimmed);
       }
     }
+  } else if (input.dataType === "kml") {
+    const { parseKmlTextToFeaturePolygon } = await import("@/lib/geospatial/parse-kml-text");
+    feature = parseKmlTextToFeaturePolygon(trimmed);
   }
 
   if (!feature) return null;

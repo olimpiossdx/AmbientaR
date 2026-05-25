@@ -22,7 +22,7 @@ import {
   Search,
 } from 'lucide-react';
 import { useCollection, useFirebase, useMemoFirebase, errorEmitter } from '@/firebase';
-import { collection, doc, deleteDoc } from 'firebase/firestore';
+import { collection, doc, deleteDoc, limit, query } from 'firebase/firestore';
 import type { Service } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
@@ -43,7 +43,7 @@ export default function ServicesPage() {
 
   const servicesQuery = useMemoFirebase(() => {
     if (!firestore) return null;
-    return collection(firestore, 'services');
+    return query(collection(firestore, 'services'), limit(200));
   }, [firestore]);
 
   const { data: services, isLoading } = useCollection<Service>(servicesQuery);

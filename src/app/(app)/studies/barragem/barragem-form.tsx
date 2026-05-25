@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import * as React from 'react';
 import { z } from 'zod';
@@ -31,10 +31,21 @@ import {
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import {
   BARRAGEM_APRESENTACAO_MODELO,
   BARRAGEM_CONSERVACAO_MODELO,
   BARRAGEM_INFO_TOPOGRAFICAS_MODELO,
 } from './barragem-defaults';
+import {
+  BarragemMemorialSection,
+  BARRAGEM_MEMORIAL_TEXTAREA_CLASS,
+} from './barragem-memorial-section';
 
 const nivelSchema = z.object({
   cota: z.string().optional(),
@@ -121,7 +132,9 @@ type BarragemFormValues = z.infer<typeof formSchema>;
 
 interface BarragemFormProps {
   currentItem?: ProjetoTecnicoBarragem | null;
-  onSuccess?: () => void;
+  /** Chamado após o primeiro salvamento (novo projeto), com o id do documento criado. */
+  onCreated?: (id: string) => void;
+  onCancel?: () => void;
 }
 
 function emptyDefaults(): BarragemFormValues {
@@ -189,7 +202,7 @@ function emptyDefaults(): BarragemFormValues {
   };
 }
 
-export function BarragemForm({ currentItem, onSuccess }: BarragemFormProps) {
+export function BarragemForm({ currentItem, onCreated, onCancel }: BarragemFormProps) {
   const [loading, setLoading] = React.useState(false);
   const { toast } = useToast();
   const { firestore } = useFirebase();
@@ -264,14 +277,14 @@ export function BarragemForm({ currentItem, onSuccess }: BarragemFormProps) {
     }
   }, [selectedProjectId, projects, form]);
 
-  async function handleSave(status: 'Rascunho' | 'Aprovado') {
+  async function handleSave() {
     setLoading(true);
     const isValid = await form.trigger();
-    if (!isValid && status === 'Aprovado') {
+    if (!isValid) {
       toast({
         variant: 'destructive',
         title: 'Formulário inválido',
-        description: 'Corrija os erros antes de concluir.',
+        description: 'Corrija os campos obrigatórios antes de salvar.',
       });
       setLoading(false);
       return;
@@ -284,14 +297,16 @@ export function BarragemForm({ currentItem, onSuccess }: BarragemFormProps) {
       return;
     }
 
-    const dataToSave = { ...values, status };
+    const dataToSave = {
+      ...values,
+      status: (currentItem?.status === 'Aprovado' ? 'Aprovado' : 'Rascunho') as 'Rascunho' | 'Aprovado',
+    };
 
     if (currentItem) {
       const docRef = doc(firestore, 'projetosTecnicosBarragem', currentItem.id);
       updateDoc(docRef, dataToSave)
         .then(() => {
           toast({ title: 'Projeto atualizado', description: 'Salvo com sucesso.' });
-          if (status === 'Aprovado') onSuccess?.();
         })
         .catch(() => {
           errorEmitter.emit(
@@ -307,13 +322,12 @@ export function BarragemForm({ currentItem, onSuccess }: BarragemFormProps) {
     } else {
       const collectionRef = collection(firestore, 'projetosTecnicosBarragem');
       addDoc(collectionRef, dataToSave)
-        .then(() => {
+        .then((docRef) => {
           toast({
             title: 'Projeto criado',
             description: `Memorial para ${values.empreendimento.nome} registrado.`,
           });
-          form.reset(emptyDefaults());
-          if (status === 'Aprovado') onSuccess?.();
+          onCreated?.(docRef.id);
         })
         .catch(() => {
           errorEmitter.emit(
@@ -335,15 +349,23 @@ export function BarragemForm({ currentItem, onSuccess }: BarragemFormProps) {
         <Tabs defaultValue="identificacao" className="flex min-h-0 flex-1 flex-col">
           <TabsList className="flex h-auto w-full flex-wrap justify-start gap-1">
             <TabsTrigger value="identificacao">Identificação</TabsTrigger>
+            <TabsTrigger value="apresentacao">Apresentação</TabsTrigger>
             <TabsTrigger value="memorial">Memorial 1–3</TabsTrigger>
             <TabsTrigger value="estruturas">Aterro 4–8</TabsTrigger>
             <TabsTrigger value="hidrologia">Hidrologia 9–11</TabsTrigger>
             <TabsTrigger value="fechamento">Implantação 12–16</TabsTrigger>
           </TabsList>
 
-          <div className="-mr-6 flex-1 space-y-6 overflow-y-auto pr-4">
-            <TabsContent value="identificacao" className="space-y-4 border rounded-md p-4 mt-4">
-              <h3 className="text-lg font-medium">Identificação e apresentação</h3>
+          <div className="form-scroll-body space-y-6">
+            <TabsContent value="identificacao" className="mt-4 space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Identificação e vínculos</CardTitle>
+                  <CardDescription>
+                    Proprietário, empreendimento cadastrado e código do arquivo (exportação Word).
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
               <div className="grid gap-4 md:grid-cols-2">
                 <FormField
                   control={form.control}
@@ -431,6 +453,14 @@ export function BarragemForm({ currentItem, onSuccess }: BarragemFormProps) {
                   )}
                 />
               </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Dados do empreendimento</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
               <div className="grid gap-4 md:grid-cols-2">
                 <FormField
                   control={form.control}
@@ -496,19 +526,6 @@ export function BarragemForm({ currentItem, onSuccess }: BarragemFormProps) {
                   )}
                 />
               </div>
-              <FormField
-                control={form.control}
-                name="apresentacao"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Apresentação</FormLabel>
-                    <FormControl>
-                      <Textarea rows={6} className="min-h-[120px]" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
               <div className="grid gap-4 md:grid-cols-3">
                 <FormField
                   control={form.control}
@@ -550,7 +567,18 @@ export function BarragemForm({ currentItem, onSuccess }: BarragemFormProps) {
                   )}
                 />
               </div>
-              <h4 className="font-medium pt-2">Responsável técnico</h4>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Responsável técnico</CardTitle>
+                  <CardDescription>
+                    Dados obrigatórios do RT. Local e data de emissão ficam na seção 15 (aba
+                    Implantação 12–16).
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
               <div className="grid gap-4 md:grid-cols-2">
                 <FormField
                   control={form.control}
@@ -604,43 +632,55 @@ export function BarragemForm({ currentItem, onSuccess }: BarragemFormProps) {
                   )}
                 />
               </div>
-              <div className="grid gap-4 md:grid-cols-2">
-                <FormField
-                  control={form.control}
-                  name="localEmissao"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Local de emissão</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Ex.: Brasília - DF" {...field} />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="dataEmissao"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Data de emissão</FormLabel>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-              </div>
+                </CardContent>
+              </Card>
             </TabsContent>
 
-            <TabsContent value="memorial" className="space-y-4 border rounded-md p-4 mt-4">
+            <TabsContent value="apresentacao" className="mt-4 space-y-4">
+              <BarragemMemorialSection
+                title="Apresentação"
+                description="Texto introdutório do memorial (exportado na sequência do sumário, antes da identificação detalhada)."
+              >
+                <FormField
+                  control={form.control}
+                  name="apresentacao"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormControl>
+                        <Textarea
+                          rows={8}
+                          className={BARRAGEM_MEMORIAL_TEXTAREA_CLASS}
+                          placeholder={BARRAGEM_APRESENTACAO_MODELO.slice(0, 120) + '…'}
+                          {...field}
+                          value={field.value ?? ''}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Descreva o objetivo do projeto, uso pretendido e escopo do memorial. O modelo
+                        padrão é carregado em projetos novos.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </BarragemMemorialSection>
+            </TabsContent>
+
+            <TabsContent value="memorial" className="mt-4 space-y-4">
+              <BarragemMemorialSection title="1. Informações básicas">
               <FormField
                 control={form.control}
                 name="informacoesBasicas.topograficas"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>1. Informações básicas — topográficas</FormLabel>
+                    <FormLabel>Informações topográficas</FormLabel>
                     <FormControl>
-                      <Textarea rows={5} {...field} value={field.value ?? ''} />
+                      <Textarea
+                        rows={5}
+                        className={BARRAGEM_MEMORIAL_TEXTAREA_CLASS}
+                        {...field}
+                        value={field.value ?? ''}
+                      />
                     </FormControl>
                   </FormItem>
                 )}
@@ -683,26 +723,41 @@ export function BarragemForm({ currentItem, onSuccess }: BarragemFormProps) {
                   )}
                 />
               </div>
+              </BarragemMemorialSection>
+
+              <BarragemMemorialSection title="2. Definição da barragem">
               <FormField
                 control={form.control}
                 name="definicaoBarragem"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>2. Definição da barragem</FormLabel>
                     <FormControl>
-                      <Textarea rows={5} {...field} value={field.value ?? ''} />
+                      <Textarea
+                        rows={5}
+                        className={BARRAGEM_MEMORIAL_TEXTAREA_CLASS}
+                        {...field}
+                        value={field.value ?? ''}
+                      />
                     </FormControl>
                   </FormItem>
                 )}
               />
+              </BarragemMemorialSection>
+
+              <BarragemMemorialSection title="3. Capacidade do reservatório">
               <FormField
                 control={form.control}
                 name="capacidadeReservatorio.descricao"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>3. Capacidade do reservatório — descrição</FormLabel>
+                    <FormLabel>Descrição</FormLabel>
                     <FormControl>
-                      <Textarea rows={4} {...field} value={field.value ?? ''} />
+                      <Textarea
+                        rows={4}
+                        className={BARRAGEM_MEMORIAL_TEXTAREA_CLASS}
+                        {...field}
+                        value={field.value ?? ''}
+                      />
                     </FormControl>
                   </FormItem>
                 )}
@@ -807,228 +862,311 @@ export function BarragemForm({ currentItem, onSuccess }: BarragemFormProps) {
                   </div>
                 ))}
               </div>
+              </BarragemMemorialSection>
             </TabsContent>
 
-            <TabsContent value="estruturas" className="space-y-4 border rounded-md p-4 mt-4">
-              <FormField
-                control={form.control}
-                name="aterro"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>4. Aterro</FormLabel>
-                    <FormControl>
-                      <Textarea rows={5} {...field} value={field.value ?? ''} />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="taludesAterro"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>5. Taludes do aterro</FormLabel>
-                    <FormControl>
-                      <Textarea rows={4} {...field} value={field.value ?? ''} />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="fundacao"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>6. Fundação</FormLabel>
-                    <FormControl>
-                      <Textarea rows={4} {...field} value={field.value ?? ''} />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="drenoPe"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>7. Dreno de pé</FormLabel>
-                    <FormControl>
-                      <Textarea rows={3} {...field} value={field.value ?? ''} />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="descargaFundo"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>8. Descarga de fundo</FormLabel>
-                    <FormControl>
-                      <Textarea rows={4} {...field} value={field.value ?? ''} />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
+            <TabsContent value="estruturas" className="mt-4 space-y-4">
+              {(
+                [
+                  { name: 'aterro' as const, title: '4. Aterro', rows: 5 },
+                  { name: 'taludesAterro' as const, title: '5. Taludes do aterro', rows: 4 },
+                  { name: 'fundacao' as const, title: '6. Fundação', rows: 4 },
+                  { name: 'drenoPe' as const, title: '7. Dreno de pé', rows: 3 },
+                  { name: 'descargaFundo' as const, title: '8. Descarga de fundo', rows: 4 },
+                ] as const
+              ).map((sec) => (
+                <BarragemMemorialSection key={sec.name} title={sec.title}>
+                  <FormField
+                    control={form.control}
+                    name={sec.name}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormControl>
+                          <Textarea
+                            rows={sec.rows}
+                            className={BARRAGEM_MEMORIAL_TEXTAREA_CLASS}
+                            {...field}
+                            value={field.value ?? ''}
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                </BarragemMemorialSection>
+              ))}
             </TabsContent>
 
-            <TabsContent value="hidrologia" className="space-y-4 border rounded-md p-4 mt-4">
-              <FormField
-                control={form.control}
-                name="calculosHidrologicos.caracteristicasBacia"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>9.1 Características da bacia</FormLabel>
-                    <FormControl>
-                      <Textarea rows={4} {...field} value={field.value ?? ''} />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="calculosHidrologicos.tempoConcentracao"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>9.2 Tempo de concentração</FormLabel>
-                    <FormControl>
-                      <Textarea rows={3} {...field} value={field.value ?? ''} />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="calculosHidrologicos.intensidadeChuva"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>9.3 Intensidade da chuva</FormLabel>
-                    <FormControl>
-                      <Textarea rows={3} {...field} value={field.value ?? ''} />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="calculosHidrologicos.coeficienteEscoamento"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>9.4 Coeficiente de escoamento</FormLabel>
-                    <FormControl>
-                      <Textarea rows={3} {...field} value={field.value ?? ''} />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="calculosHidrologicos.vazaoCheia"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>9.5 Vazão de cheia</FormLabel>
-                    <FormControl>
-                      <Textarea rows={3} {...field} value={field.value ?? ''} />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="dimensionamentoCapacidadeCheia"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>10. Dimensionamento capacidade de cheia</FormLabel>
-                    <FormControl>
-                      <Textarea rows={4} {...field} value={field.value ?? ''} />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="extravasor"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>11. Extravasor</FormLabel>
-                    <FormControl>
-                      <Textarea rows={5} {...field} value={field.value ?? ''} />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
+            <TabsContent value="hidrologia" className="mt-4 space-y-4">
+              <BarragemMemorialSection title="9. Cálculos hidrológicos">
+                {(
+                  [
+                    {
+                      name: 'calculosHidrologicos.caracteristicasBacia' as const,
+                      label: '9.1 Características da bacia',
+                      rows: 4,
+                    },
+                    {
+                      name: 'calculosHidrologicos.tempoConcentracao' as const,
+                      label: '9.2 Tempo de concentração',
+                      rows: 3,
+                    },
+                    {
+                      name: 'calculosHidrologicos.intensidadeChuva' as const,
+                      label: '9.3 Intensidade da chuva',
+                      rows: 3,
+                    },
+                    {
+                      name: 'calculosHidrologicos.coeficienteEscoamento' as const,
+                      label: '9.4 Coeficiente de escoamento',
+                      rows: 3,
+                    },
+                    {
+                      name: 'calculosHidrologicos.vazaoCheia' as const,
+                      label: '9.5 Vazão de cheia',
+                      rows: 3,
+                    },
+                  ] as const
+                ).map((sec) => (
+                  <FormField
+                    key={sec.name}
+                    control={form.control}
+                    name={sec.name}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{sec.label}</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            rows={sec.rows}
+                            className={BARRAGEM_MEMORIAL_TEXTAREA_CLASS}
+                            {...field}
+                            value={field.value ?? ''}
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                ))}
+              </BarragemMemorialSection>
+              <BarragemMemorialSection title="10. Dimensionamento da capacidade de cheia">
+                <FormField
+                  control={form.control}
+                  name="dimensionamentoCapacidadeCheia"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormControl>
+                        <Textarea
+                          rows={4}
+                          className={BARRAGEM_MEMORIAL_TEXTAREA_CLASS}
+                          {...field}
+                          value={field.value ?? ''}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+              </BarragemMemorialSection>
+              <BarragemMemorialSection title="11. Extravasor">
+                <FormField
+                  control={form.control}
+                  name="extravasor"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormControl>
+                        <Textarea
+                          rows={5}
+                          className={BARRAGEM_MEMORIAL_TEXTAREA_CLASS}
+                          {...field}
+                          value={field.value ?? ''}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+              </BarragemMemorialSection>
             </TabsContent>
 
-            <TabsContent value="fechamento" className="space-y-4 border rounded-md p-4 mt-4">
-              <FormField
-                control={form.control}
-                name="implantacaoProjeto"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>12. Implantação do projeto</FormLabel>
-                    <FormControl>
-                      <Textarea rows={4} {...field} value={field.value ?? ''} />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="conservacaoManutencao"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>13. Conservação e manutenção</FormLabel>
-                    <FormControl>
-                      <Textarea rows={5} {...field} value={field.value ?? ''} />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="literaturaConsultada"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>14. Literatura consultada</FormLabel>
-                    <FormControl>
-                      <Textarea rows={6} {...field} value={field.value ?? ''} />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="anexosDescricao"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>16. Anexos (plantas, detalhes, dimensionamento)</FormLabel>
-                    <FormControl>
-                      <Textarea rows={4} {...field} value={field.value ?? ''} />
-                    </FormControl>
-                    <FormDescription>
-                      Descreva os anexos; arquivos podem ser anexados na versão futura com Storage.
-                    </FormDescription>
-                  </FormItem>
-                )}
-              />
+            <TabsContent value="fechamento" className="mt-4 space-y-4">
+              <BarragemMemorialSection
+                title="12. Implantação do projeto"
+                description="Plano de implantação e obras civis."
+              >
+                <FormField
+                  control={form.control}
+                  name="implantacaoProjeto"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormControl>
+                        <Textarea
+                          rows={4}
+                          className={BARRAGEM_MEMORIAL_TEXTAREA_CLASS}
+                          {...field}
+                          value={field.value ?? ''}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+              </BarragemMemorialSection>
+              <BarragemMemorialSection
+                title="13. Conservação e manutenção da barragem"
+                description="Vigilância, inspeções e manutenção após a construção."
+              >
+                <FormField
+                  control={form.control}
+                  name="conservacaoManutencao"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormControl>
+                        <Textarea
+                          rows={5}
+                          className={BARRAGEM_MEMORIAL_TEXTAREA_CLASS}
+                          {...field}
+                          value={field.value ?? ''}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+              </BarragemMemorialSection>
+              <BarragemMemorialSection title="14. Literatura consultada">
+                <FormField
+                  control={form.control}
+                  name="literaturaConsultada"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormControl>
+                        <Textarea
+                          rows={6}
+                          className={BARRAGEM_MEMORIAL_TEXTAREA_CLASS}
+                          {...field}
+                          value={field.value ?? ''}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+              </BarragemMemorialSection>
+              <BarragemMemorialSection
+                title="15. Responsabilidade técnica"
+                description="Fechamento do memorial exportado em PDF/Word (nome, registro, local e data)."
+              >
+                <div className="grid gap-4 md:grid-cols-2">
+                  <FormField
+                    control={form.control}
+                    name="responsavelTecnico.nome"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Responsável técnico</FormLabel>
+                        <FormControl>
+                          <Input {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="responsavelTecnico.registroConselho"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>CREA / registro profissional</FormLabel>
+                        <FormControl>
+                          <Input {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="responsavelTecnico.formacao"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Formação</FormLabel>
+                        <FormControl>
+                          <Input {...field} />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="responsavelTecnico.art"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>ART</FormLabel>
+                        <FormControl>
+                          <Input {...field} />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="localEmissao"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Local de emissão</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Ex.: Brasília - DF" {...field} />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="dataEmissao"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Data de emissão</FormLabel>
+                        <FormControl>
+                          <Input {...field} />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </BarragemMemorialSection>
+              <BarragemMemorialSection title="16. Anexos">
+                <FormField
+                  control={form.control}
+                  name="anexosDescricao"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormControl>
+                        <Textarea
+                          rows={4}
+                          className={BARRAGEM_MEMORIAL_TEXTAREA_CLASS}
+                          {...field}
+                          value={field.value ?? ''}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Descreva os anexos; arquivos podem ser anexados na versão futura com Storage.
+                      </FormDescription>
+                    </FormItem>
+                  )}
+                />
+              </BarragemMemorialSection>
             </TabsContent>
           </div>
         </Tabs>
 
-        <div className="flex shrink-0 gap-2 border-t pt-4 mt-4">
+        <div className="flex shrink-0 flex-wrap gap-2 border-t pt-4 mt-4">
           <Button
             type="button"
             variant="outline"
             disabled={loading}
-            onClick={() => handleSave('Rascunho')}
+            onClick={() => handleSave()}
           >
             {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
             Salvar rascunho
           </Button>
-          <Button type="button" disabled={loading} onClick={() => handleSave('Aprovado')}>
-            {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-            Concluir e aprovar
-          </Button>
+          {onCancel && (
+            <Button type="button" variant="secondary" onClick={onCancel} disabled={loading}>
+              Retornar
+            </Button>
+          )}
         </div>
       </form>
     </Form>

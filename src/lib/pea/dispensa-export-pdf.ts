@@ -1,0 +1,77 @@
+'use client';
+
+import type { BrandingPdfImages } from '@/lib/branding-pdf';
+import type { LocalBranding } from '@/hooks/use-local-branding';
+import {
+  prepareIaMenuBrandedPdfSession,
+  writeBrandedPdfParagraph,
+  writeBrandedPdfTitle,
+} from '@/lib/ia-menu-branded-pdf';
+import type { MmBrandedPdfSession } from '@/lib/pdf-branding-layout';
+import type { DispensaPeaRecord } from '@/lib/pea/types';
+import {
+  buildDispensaExportBaseName,
+  buildDispensaExportSections,
+} from '@/lib/pea/pea-export-sections';
+
+export type DispensaPdfExportResult = {
+  blob: Blob;
+  fileName: string;
+};
+
+function renderSection(
+  session: MmBrandedPdfSession,
+  title: string,
+  body: string,
+  startY: number,
+): number {
+  let y = writeBrandedPdfTitle(session, title, 12, startY);
+  for (const line of body.split(/\n+/).filter((p) => p.trim())) {
+    y = writeBrandedPdfParagraph(session, line, 10, y);
+  }
+  return y + 4;
+}
+
+export async function generateDispensaPeaExportPdfBlob(
+  record: DispensaPeaRecord,
+  brandingData: LocalBranding | null | undefined,
+  pdfImages?: BrandingPdfImages | null,
+): Promise<DispensaPdfExportResult> {
+  const session = await prepareIaMenuBrandedPdfSession({
+    brandingData,
+    pdfImages,
+    hasBrandingUrls: !!(
+      brandingData?.headerImageUrl ||
+      brandingData?.footerImageUrl ||
+      brandingData?.watermarkImageUrl
+    ),
+  });
+  if (!session) {
+    throw new Error('Configure a identidade visual em Configurações para exportar PDF.');
+  }
+
+  const { doc } = session;
+  const pageHeight = doc.internal.pageSize.getHeight();
+  let y = pageHeight * 0.28;
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(15);
+  const title = 'SOLICITAÇÃO DE DISPENSA DO PEA';
+  for (const line of doc.splitTextToSize(title, session.contentWidth)) {
+    doc.text(line, session.margins.left, y);
+    y += 8;
+  }
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(11);
+  y += 8;
+
+  const sections = buildDispensaExportSections(record);
+  for (const sec of sections) {
+    y = session.ensureSpace(y + 6, 36);
+    y = renderSection(session, sec.title, sec.body, y);
+  }
+
+  const blob = doc.output('blob');
+  return { blob, fileName: `${buildDispensaExportBaseName(record)}.pdf` };
+}

@@ -24,6 +24,7 @@ import {
   deleteDoc,
   query,
   where,
+  limit,
   getDocs,
 } from "firebase/firestore";
 import type { Project, Empreendedor } from "@/lib/types";
@@ -226,22 +227,25 @@ function ProjectsPageContent() {
         return query(
           collection(firestore, "projects"),
           where("empreendedorId", "in", ["invalid-placeholder"]),
+          limit(1),
         );
       }
       return query(
         collection(firestore, "projects"),
         where("empreendedorId", "in", empreendedorIdsForUser),
+        limit(200),
       );
     }
 
-    return collection(firestore, "projects");
+    return query(collection(firestore, "projects"), limit(200));
   }, [firestore, user, empreendedorIdsForUser]);
 
   const { data: allProjects, isLoading: isLoadingProjects } =
     useCollection<Project>(projectsQuery);
 
   const empreendedoresQuery = useMemoFirebase(
-    () => (firestore ? collection(firestore, "empreendedores") : null),
+    () =>
+      firestore ? query(collection(firestore, "empreendedores"), limit(200)) : null,
     [firestore],
   );
   const { data: empreendedores, isLoading: isLoadingEmpreendedores } =
@@ -473,7 +477,7 @@ function ProjectsPageContent() {
             <DialogDescription>Detalhes do empreendimento.</DialogDescription>
           </DialogHeader>
           {itemToView && (
-            <div className="max-h-[60vh] overflow-y-auto pr-4 space-y-4">
+            <div className="form-scroll-body max-h-[60vh] space-y-4">
               <DetailItem
                 label="Nome da Propriedade"
                 value={itemToView.propertyName}

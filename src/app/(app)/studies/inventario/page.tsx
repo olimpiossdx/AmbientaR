@@ -18,7 +18,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { InventarioForm } from './inventario-form';
 import { useCollection, useFirebase, useMemoFirebase, errorEmitter } from '@/firebase';
-import { collection, doc, deleteDoc } from 'firebase/firestore';
+import { collection, doc, deleteDoc, limit, query } from 'firebase/firestore';
 import type { InventoryProject } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { FirestorePermissionError } from '@/firebase/errors';
@@ -36,7 +36,7 @@ export default function InventarioFlorestalPage() {
   
   const inventoriesQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
-    return collection(firestore, 'inventories');
+    return query(collection(firestore, 'inventories'), limit(200));
     // If you only want users to see their own, you would add:
     // return query(collection(firestore, 'inventories'), where('ownerId', '==', user.uid));
   }, [firestore, user]);

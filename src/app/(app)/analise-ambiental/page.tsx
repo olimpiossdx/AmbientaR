@@ -65,7 +65,7 @@ import {
 
 const LeafletMap = dynamic(() => import("./leaflet-map"), { ssr: false });
 
-type InputMode = "car" | "coordinates" | "polygon" | "shp";
+type InputMode = "car" | "coordinates" | "polygon" | "shp" | "kml";
 type GeoJSONLike = {
   type: string;
   [key: string]: unknown;
@@ -103,19 +103,32 @@ export default function AnaliseAmbientalPage() {
   const [drawnPolygon, setDrawnPolygon] = React.useState<GeoJSONLike | null>(null);
   const [shpZipBase64, setShpZipBase64] = React.useState("");
   const [shpFileName, setShpFileName] = React.useState("");
+  const [kmlText, setKmlText] = React.useState("");
+  const [kmlFileName, setKmlFileName] = React.useState("");
+  const [empreendimentoId, setEmpreendimentoId] = React.useState("");
   const [lastPayload, setLastPayload] = React.useState("");
   const { toast } = useToast();
+
+  React.useEffect(() => {
+    if (typeof window === "undefined") return;
+    const id =
+      new URLSearchParams(window.location.search).get("empreendimentoId")?.trim() ??
+      "";
+    setEmpreendimentoId(id);
+  }, []);
 
   const hasValidInput = React.useMemo(() => {
     if (inputMode === "car") return carNumber.trim().length > 3;
     if (inputMode === "coordinates") return coordinateInput.trim().length > 3;
     if (inputMode === "shp") return shpZipBase64.length > 20;
+    if (inputMode === "kml") return kmlText.trim().length > 20;
     return polygonInput.trim().length > 3 || !!drawnPolygon;
   }, [
     carNumber,
     coordinateInput,
     drawnPolygon,
     inputMode,
+    kmlText,
     polygonInput,
     shpZipBase64,
   ]);
@@ -138,8 +151,11 @@ export default function AnaliseAmbientalPage() {
     if (inputMode === "shp" && shpZipBase64) {
       return { dataType: "shp", data: shpZipBase64 };
     }
+    if (inputMode === "kml" && kmlText.trim()) {
+      return { dataType: "kml", data: kmlText.trim() };
+    }
     return null;
-  }, [carNumber, coordinateInput, inputMode, serializedPolygon, shpZipBase64]);
+  }, [carNumber, coordinateInput, inputMode, kmlText, serializedPolygon, shpZipBase64]);
 
   const buildFactsPrompt = React.useCallback(() => {
     if (!analysisResult) return "";
@@ -170,6 +186,7 @@ export default function AnaliseAmbientalPage() {
           wave: "ABC",
           inputMode: input.dataType,
           inputData: input.data,
+          ...(empreendimentoId ? { empreendimentoId } : {}),
           perimeter: result.perimeter,
           layers: result.layers,
           factualSummary: result.factualSummary,
@@ -188,7 +205,7 @@ export default function AnaliseAmbientalPage() {
         return null;
       }
     },
-    [firestore, toast, user?.uid],
+    [empreendimentoId, firestore, toast, user?.uid],
   );
 
   const saveAnalysisSnapshot = React.useCallback(
@@ -201,6 +218,7 @@ export default function AnaliseAmbientalPage() {
           wave: "legacy_ia",
           inputMode: input.dataType,
           inputData: input.data,
+          ...(empreendimentoId ? { empreendimentoId } : {}),
           summary: output.resumoIA,
           factualData: output.factualData,
           fontesConsultadas: output.fontesConsultadas,
@@ -210,7 +228,7 @@ export default function AnaliseAmbientalPage() {
         console.error("Falha ao persistir geo_analyses:", error);
       }
     },
-    [firestore, user?.uid],
+    [empreendimentoId, firestore, user?.uid],
   );
 
   const handleStartWaveA = async () => {
@@ -219,7 +237,7 @@ export default function AnaliseAmbientalPage() {
       toast({
         variant: "destructive",
         title: "Dados insuficientes",
-        description: "Preencha CAR, coordenadas ou polígono para iniciar a análise.",
+        description: "Preencha CAR, coordenadas, polígono, KML ou SHP para iniciar a análise.",
       });
       return;
     }
@@ -279,7 +297,7 @@ export default function AnaliseAmbientalPage() {
       toast({
         variant: "destructive",
         title: "Dados insuficientes",
-        description: "Preencha CAR, coordenadas ou polígono para iniciar a análise.",
+        description: "Preencha CAR, coordenadas, polígono, KML ou SHP para iniciar a análise.",
       });
       return;
     }
@@ -504,7 +522,18 @@ export default function AnaliseAmbientalPage() {
     <StudyGeospatialStackedShell
       title="Análise Geoespacial (IA)"
       description="Desenhe o perímetro, execute as 8 camadas SIG (MG) e exporte o PDF factual; depois complemente com IA em Relatórios de IA."
-      topExtras={<PackageUsageBanner usage={packageUsage} showAmbbot />}
+      topExtras={
+        <>
+          <PackageUsageBanner usage={packageUsage} showAmbbot />
+          {empreendimentoId ? (
+            <p className="rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-sm text-muted-foreground">
+              Empreendimento vinculado:{" "}
+              <span className="font-mono text-xs">{empreendimentoId}</span>. A análise
+              gravada ficará disponível no PEA deste projeto.
+            </p>
+          ) : null}
+        </>
+      }
       mapPane={
         <Card className="flex w-full flex-col overflow-hidden">
           <CardHeader className="shrink-0 space-y-1 pb-3">
@@ -603,6 +632,7 @@ export default function AnaliseAmbientalPage() {
                     <SelectItem value="car">Número do CAR</SelectItem>
                     <SelectItem value="coordinates">Coordenadas</SelectItem>
                     <SelectItem value="polygon">Polígono (WKT/GeoJSON)</SelectItem>
+                    <SelectItem value="kml">Perímetro KML (.kml)</SelectItem>
                     <SelectItem value="shp">Perímetro SHP (.zip)</SelectItem>
                   </SelectContent>
                 </Select>
@@ -643,6 +673,47 @@ export default function AnaliseAmbientalPage() {
                     onChange={(e) => setPolygonInput(e.target.value)}
                     className="min-h-[100px]"
                   />
+                </div>
+              )}
+
+              {inputMode === "kml" && (
+                <div className="space-y-2">
+                  <Label htmlFor="kml-upload">Arquivo KML</Label>
+                  <Input
+                    id="kml-upload"
+                    type="file"
+                    accept=".kml,.xml,text/xml,application/vnd.google-earth.kml+xml"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      if (file.size > 4 * 1024 * 1024) {
+                        toast({
+                          variant: "destructive",
+                          title: "Arquivo grande demais",
+                          description: "Use um KML até 4 MB ou extraia o .kml de um KMZ.",
+                        });
+                        return;
+                      }
+                      const name = file.name.toLowerCase();
+                      if (name.endsWith(".kmz")) {
+                        toast({
+                          variant: "destructive",
+                          title: "KMZ não suportado aqui",
+                          description:
+                            "Extraia o ficheiro .kml do KMZ (ZIP) e carregue o .kml, ou use Mapas / PEA.",
+                        });
+                        return;
+                      }
+                      const text = await file.text();
+                      setKmlText(text);
+                      setKmlFileName(file.name);
+                    }}
+                  />
+                  {kmlFileName ? (
+                    <p className="text-xs text-muted-foreground">
+                      Carregado: {kmlFileName}. O perímetro será lido do Placemark/Polygon no KML.
+                    </p>
+                  ) : null}
                 </div>
               )}
 
@@ -849,6 +920,16 @@ export default function AnaliseAmbientalPage() {
                         Enviar para Cruzamento de dados
                       </Link>
                     </Button>
+                    {empreendimentoId ? (
+                      <Button asChild variant="outline" className="min-w-[200px] flex-1">
+                        <Link
+                          href={`/studies/educacao-ambiental/novo?empreendimentoId=${encodeURIComponent(empreendimentoId)}${savedGeoAnalysisId && !isSessionGeoAnalysisId(savedGeoAnalysisId) ? `&geoAnalysisId=${encodeURIComponent(savedGeoAnalysisId)}` : ""}`}
+                        >
+                          <Sparkles className="mr-2 h-4 w-4" />
+                          Criar PEA do empreendimento
+                        </Link>
+                      </Button>
+                    ) : null}
                   </div>
                 </div>
               ) : (

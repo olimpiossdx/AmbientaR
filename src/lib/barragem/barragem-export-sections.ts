@@ -1,6 +1,11 @@
 import type { ProjetoTecnicoBarragem } from '@/lib/types';
 
-export type BarragemExportSection = { title: string; body: string };
+export type BarragemExportSection = {
+  title: string;
+  body: string;
+  /** Nova página antes da seção no PDF/Word exportado. */
+  pageBreakBefore?: boolean;
+};
 
 function fmt(str: string | undefined | null): string {
   return str != null && String(str).trim() !== '' ? String(str).trim() : '';
@@ -31,9 +36,15 @@ export function buildBarragemExportSections(
   const info = projeto.informacoesBasicas;
 
   const sections: BarragemExportSection[] = [];
+  let hasApresentacao = false;
 
   if (fmt(projeto.apresentacao)) {
-    sections.push({ title: 'Apresentação', body: fmt(projeto.apresentacao) });
+    sections.push({
+      title: 'Apresentação',
+      body: fmt(projeto.apresentacao),
+      pageBreakBefore: false,
+    });
+    hasApresentacao = true;
   }
 
   const identificacao = [
@@ -55,8 +66,17 @@ export function buildBarragemExportSections(
     .filter(Boolean)
     .join('\n\n');
   if (identificacao) {
-    sections.push({ title: 'Identificação', body: identificacao });
+    sections.push({
+      title: 'Identificação',
+      body: identificacao,
+      pageBreakBefore: hasApresentacao,
+    });
   }
+
+  const pushSection = (title: string, body: string) => {
+    if (!fmt(body)) return;
+    sections.push({ title, body: fmt(body) });
+  };
 
   const infoBasicas = [
     block('Informações topográficas', info?.topograficas),
@@ -70,9 +90,7 @@ export function buildBarragemExportSections(
     sections.push({ title: '1. Informações básicas', body: infoBasicas });
   }
 
-  if (fmt(projeto.definicaoBarragem)) {
-    sections.push({ title: '2. Definição da barragem', body: fmt(projeto.definicaoBarragem) });
-  }
+  pushSection('2. Definição da barragem', projeto.definicaoBarragem ?? '');
 
   const capacidade = [
     block('Descrição', cap?.descricao),
@@ -96,7 +114,7 @@ export function buildBarragemExportSections(
     { title: '8. Descarga de fundo', body: projeto.descargaFundo },
   ];
   for (const e of engineering) {
-    if (fmt(e.body)) sections.push({ title: e.title, body: fmt(e.body) });
+    pushSection(e.title, e.body ?? '');
   }
 
   const hidrologia = [
@@ -112,45 +130,26 @@ export function buildBarragemExportSections(
     sections.push({ title: '9. Cálculos hidrológicos', body: hidrologia });
   }
 
-  if (fmt(projeto.dimensionamentoCapacidadeCheia)) {
-    sections.push({
-      title: '10. Dimensionamento da capacidade de cheia',
-      body: fmt(projeto.dimensionamentoCapacidadeCheia),
-    });
-  }
-  if (fmt(projeto.extravasor)) {
-    sections.push({ title: '11. Extravasor', body: fmt(projeto.extravasor) });
-  }
-  if (fmt(projeto.implantacaoProjeto)) {
-    sections.push({
-      title: '12. Implantação do projeto',
-      body: fmt(projeto.implantacaoProjeto),
-    });
-  }
-  if (fmt(projeto.conservacaoManutencao)) {
-    sections.push({
-      title: '13. Conservação e manutenção da barragem',
-      body: fmt(projeto.conservacaoManutencao),
-    });
-  }
-  if (fmt(projeto.literaturaConsultada)) {
-    sections.push({
-      title: '14. Literatura consultada',
-      body: fmt(projeto.literaturaConsultada),
-    });
-  }
-  if (fmt(projeto.anexosDescricao)) {
-    sections.push({ title: '16. Anexos', body: fmt(projeto.anexosDescricao) });
-  }
+  pushSection(
+    '10. Dimensionamento da capacidade de cheia',
+    projeto.dimensionamentoCapacidadeCheia ?? '',
+  );
+  pushSection('11. Extravasor', projeto.extravasor ?? '');
+  pushSection('12. Implantação do projeto', projeto.implantacaoProjeto ?? '');
+  pushSection('13. Conservação e manutenção da barragem', projeto.conservacaoManutencao ?? '');
+  pushSection('14. Literatura consultada', projeto.literaturaConsultada ?? '');
+  pushSection('16. Anexos', projeto.anexosDescricao ?? '');
 
   const rt = [
-    `Responsável técnico: ${fmt(projeto.responsavelTecnico?.nome)}`,
-    fmt(projeto.responsavelTecnico?.registroConselho),
-    fmt(projeto.localEmissao) ? `Local: ${fmt(projeto.localEmissao)}` : '',
-    fmt(projeto.dataEmissao) ? `Data: ${fmt(projeto.dataEmissao)}` : '',
+    block('Responsável técnico', projeto.responsavelTecnico?.nome),
+    block('Formação', projeto.responsavelTecnico?.formacao),
+    block('Registro no conselho', projeto.responsavelTecnico?.registroConselho),
+    block('ART', projeto.responsavelTecnico?.art),
+    block('Local de emissão', projeto.localEmissao),
+    block('Data de emissão', projeto.dataEmissao),
   ]
     .filter(Boolean)
-    .join('\n');
+    .join('\n\n');
   sections.push({ title: '15. Responsabilidade técnica', body: rt });
 
   return sections;

@@ -2043,7 +2043,7 @@ export default function UsersPage() {
             </DialogDescription>
           </DialogHeader>
           {viewingUser && (
-            <div className="max-h-[60vh] overflow-y-auto pr-4 space-y-4">
+            <div className="form-scroll-body max-h-[60vh] space-y-4">
               <DetailItem label="Nome Completo" value={viewingUser.name} />
               <DetailItem label="Email" value={viewingUser.email} />
               <Separator />

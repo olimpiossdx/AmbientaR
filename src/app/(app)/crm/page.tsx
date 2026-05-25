@@ -8,7 +8,8 @@ import { Button } from '@/components/ui/button';
 import { PlusCircle } from 'lucide-react';
 import type { Opportunity, OpportunityStage, Client, AppUser } from '@/lib/types';
 import { useCollection, useFirestore, useMemoFirebase, useUser, errorEmitter } from '@/firebase';
-import { collection, doc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { collection, doc, updateDoc, deleteDoc, limit, query } from 'firebase/firestore';
+import { sortOpportunitiesByCloseDate } from '@/lib/firestore-list-helpers';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -43,13 +44,17 @@ export default function CrmPage() {
 
   const opportunitiesQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
-    return collection(firestore, 'opportunities');
+    return query(collection(firestore, 'opportunities'), limit(200));
   }, [firestore, user]);
-  const { data: opportunities, isLoading: isLoadingOpps } = useCollection<Opportunity>(opportunitiesQuery);
-  
+  const { data: rawOpportunities, isLoading: isLoadingOpps } = useCollection<Opportunity>(opportunitiesQuery);
+  const opportunities = React.useMemo(
+    () => (rawOpportunities ? sortOpportunitiesByCloseDate(rawOpportunities) : undefined),
+    [rawOpportunities],
+  );
+
   const clientsQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
-    return collection(firestore, 'clients');
+    return query(collection(firestore, 'clients'), limit(200));
   }, [firestore, user]);
   const { data: clients, isLoading: isLoadingClients } = useCollection<Client>(clientsQuery);
   

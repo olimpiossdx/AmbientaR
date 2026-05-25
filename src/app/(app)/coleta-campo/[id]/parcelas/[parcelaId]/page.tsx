@@ -23,6 +23,7 @@ import type { Inventario, InventarioIndividuo, InventarioParcela } from '@/lib/t
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, PlusCircle } from 'lucide-react';
+import { Separator } from '@/components/ui/separator';
 import { ColetaOfflineBanner } from '@/components/coleta-campo/coleta-offline-banner';
 import { COLETA_CAMPO_BASE } from '@/lib/coleta-campo/constants';
 import { addColetaDoc } from '@/lib/coleta-campo/offline-write';
@@ -165,13 +166,27 @@ export default function ColetaParcelaPage() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-base">Parcela {parcela.codigo}</CardTitle>
-            <CardDescription>
-              {parcela.area != null ? `Área: ${parcela.area} m² · ` : ''}
-              {parcela.latitude != null ? `Lat ${parcela.latitude} ` : ''}
-              {parcela.longitude != null ? `Long ${parcela.longitude}` : ''}
+            <CardDescription className="space-y-1">
+              {parcela.area != null ? <span>Área: {parcela.area} m²</span> : null}
+              {(parcela.latitude != null || parcela.longitude != null) && (
+                <span>
+                  Central: {parcela.latitude ?? '—'}, {parcela.longitude ?? '—'}
+                </span>
+              )}
+              {parcela.areaAmarracao?.length ? (
+                <span>
+                  Amarração:{' '}
+                  {parcela.areaAmarracao
+                    .map((v, i) => `V${i + 1} (${v.latitude}, ${v.longitude})`)
+                    .join(' · ')}
+                </span>
+              ) : null}
               {campanha?.tipoInventario === 'multinivel' &&
-                (parcela.up || parcela.us || parcela.ni) &&
-                ` · UP ${parcela.up ?? '—'} US ${parcela.us ?? '—'} NI ${parcela.ni ?? '—'}`}
+                (parcela.up || parcela.us || parcela.ni) && (
+                  <span>
+                    UP {parcela.up ?? '—'} · US {parcela.us ?? '—'} · NI {parcela.ni ?? '—'}
+                  </span>
+                )}
             </CardDescription>
           </CardHeader>
         </Card>
@@ -181,25 +196,41 @@ export default function ColetaParcelaPage() {
             <CardTitle>Árvores ({sortedInd.length})</CardTitle>
             <CardDescription>CAP em centímetros. Sem limite de registros por parcela.</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-3">
-            {!sortedInd.length ? (
-              <p className="text-sm text-muted-foreground">Nenhuma árvore. Toque em Nova árvore.</p>
-            ) : (
-              sortedInd.map((ind) => (
-                <div
-                  key={ind.id}
-                  className="rounded-lg border p-3 text-sm flex flex-col gap-1"
-                >
-                  <div className="font-medium">
-                    nº {ind.numero ?? '—'} · {ind.nomeComum || ind.nomeCientifico || ind.especie || '—'}
-                  </div>
-                  <div className="text-muted-foreground">
-                    CAP {ind.cap ?? '—'} cm · Alt. {ind.altura ?? '—'} m
-                    {ind.altComercial != null ? ` · Alt. com. ${ind.altComercial} m` : ''}
-                  </div>
+          <CardContent>
+            <div className="space-y-4">
+              {!sortedInd.length ? (
+                <div className="flex h-24 items-center justify-center rounded-md border-2 border-dashed border-muted-foreground/25 text-sm text-muted-foreground">
+                  Nenhuma árvore. Toque em Nova árvore.
                 </div>
-              ))
-            )}
+              ) : (
+                sortedInd.map((ind) => (
+                  <Card
+                    key={ind.id}
+                    className="overflow-hidden border-border/80 shadow-sm"
+                  >
+                    <CardContent className="p-4 sm:p-5">
+                      <div className="min-w-0 space-y-1.5">
+                        <h3 className="text-base font-semibold leading-snug text-foreground">
+                          nº {ind.numero ?? '—'} ·{' '}
+                          {ind.nomeComum || ind.nomeCientifico || ind.especie || '—'}
+                        </h3>
+                        {ind.nomeCientifico && ind.nomeComum ? (
+                          <p className="text-sm text-muted-foreground italic">
+                            {ind.nomeCientifico}
+                          </p>
+                        ) : null}
+                        <Separator className="bg-border/60 my-2" />
+                        <p className="text-sm text-muted-foreground">
+                          CAP {ind.cap ?? '—'} cm · Alt. {ind.altura ?? '—'} m
+                          {ind.altComercial != null ? ` · Alt. com. ${ind.altComercial} m` : ''}
+                          {ind.familia ? ` · ${ind.familia}` : ''}
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
+              )}
+            </div>
           </CardContent>
         </Card>
 

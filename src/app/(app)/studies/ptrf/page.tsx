@@ -282,7 +282,7 @@ export default function PtrfPage() {
             <DialogDescription>Detalhes do Projeto Técnico de Recomposição de Flora.</DialogDescription>
           </DialogHeader>
           {itemToView && (
-            <div className="max-h-[60vh] overflow-y-auto pr-4 space-y-4">
+            <div className="form-scroll-body max-h-[60vh] space-y-4">
               <DetailItem label="Requerente" value={itemToView.requerente.nome} />
               <DetailItem label="Empreendimento" value={itemToView.empreendimento.nome} />
               <DetailItem label="Nº CAR" value={itemToView.empreendimento.car} />

@@ -19,7 +19,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
-import { collection } from 'firebase/firestore';
+import { collection, limit, query } from 'firebase/firestore';
 import type { Revenue, Expense, Transaction } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -28,11 +28,11 @@ export function CashFlowChart() {
   const { user } = useUser();
   const revenuesQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
-    return collection(firestore, 'revenues');
+    return query(collection(firestore, 'revenues'), limit(500));
   }, [firestore, user]);
   const expensesQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
-    return collection(firestore, 'expenses');
+    return query(collection(firestore, 'expenses'), limit(500));
   }, [firestore, user]);
 
   const { data: revenuesData, isLoading: isLoadingRevenues } =

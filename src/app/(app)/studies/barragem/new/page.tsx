@@ -24,7 +24,11 @@ function NewBarragemPageContent() {
               </CardDescription>
             </CardHeader>
             <CardContent className="min-h-[480px]">
-              <BarragemForm currentItem={null} onSuccess={() => router.push('/studies/barragem')} />
+              <BarragemForm
+                currentItem={null}
+                onCreated={(id) => router.push(`/studies/barragem/${id}/edit`)}
+                onCancel={() => router.push('/studies/barragem')}
+              />
             </CardContent>
           </Card>
         </div>

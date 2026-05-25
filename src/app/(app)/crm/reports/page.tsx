@@ -12,7 +12,8 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import type { AppUser, Client, Opportunity, OpportunityStage } from '@/lib/types';
 import { useAuth, useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection } from 'firebase/firestore';
+import { collection, limit, query } from 'firebase/firestore';
+import { sortOpportunitiesByCloseDate } from '@/lib/firestore-list-helpers';
 import { BarChart3, PieChart, TrendingUp } from 'lucide-react';
 import {
   BarChart,
@@ -50,20 +51,24 @@ export default function CrmReportsPage() {
 
   const opportunitiesQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
-    return collection(firestore, 'opportunities');
+    return query(collection(firestore, 'opportunities'), limit(200));
   }, [firestore, user]);
 
   const clientsQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
-    return collection(firestore, 'clients');
+    return query(collection(firestore, 'clients'), limit(200));
   }, [firestore, user]);
 
   const usersQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
-    return collection(firestore, 'users');
+    return query(collection(firestore, 'users'), limit(100));
   }, [firestore, user]);
 
-  const { data: opportunities, isLoading: isLoadingOpps } = useCollection<Opportunity>(opportunitiesQuery);
+  const { data: rawOpportunities, isLoading: isLoadingOpps } = useCollection<Opportunity>(opportunitiesQuery);
+  const opportunities = useMemo(
+    () => (rawOpportunities ? sortOpportunitiesByCloseDate(rawOpportunities) : undefined),
+    [rawOpportunities],
+  );
   const { data: clients, isLoading: isLoadingClients } = useCollection<Client>(clientsQuery);
   const { data: users, isLoading: isLoadingUsers } = useCollection<AppUser>(usersQuery);
 

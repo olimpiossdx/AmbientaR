@@ -43,7 +43,7 @@ import {
   useMemoFirebase,
   useFirestore,
 } from "@/firebase";
-import { collection, orderBy, query } from "firebase/firestore";
+import { collection, orderBy, query, limit } from "firebase/firestore";
 import { restoreDeletedBackup } from "@/lib/deleted-data-backup";
 
 type DeletedBackup = {
@@ -95,6 +95,7 @@ export default function DeletedBackupsPage() {
     return query(
       collection(firestore, "deleted_data_backups"),
       orderBy("deletedAt", "desc"),
+      limit(100),
     );
   }, [firestore]);
   const { data: backups, isLoading } =

@@ -1,4 +1,4 @@
-
+﻿
 'use client';
 
 import * as React from 'react';
@@ -514,7 +514,7 @@ export function UserForm({ currentUser, onSuccess, representativeRequestedCpf, r
     <>
         <Form {...form}>
             <form id="user-form" onSubmit={form.handleSubmit(onSubmit)} className="flex-1 flex flex-col overflow-hidden">
-                <div className="flex-1 overflow-y-auto pr-6 pl-1 -mr-6 -ml-1 space-y-4">
+                <div className="form-scroll-body space-y-4">
                     <div className="space-y-4 rounded-md border p-4 bg-muted/30">
                         <h3 className="text-sm font-medium">Checagem inicial — CPF</h3>
                         <p className="text-xs text-muted-foreground">Informe o CPF pessoal do usuário (documento de identificação). Representantes informam depois os CPFs/CNPJs ao qual solicitam acesso.</p>

@@ -3,7 +3,8 @@
 import * as React from 'react';
 import { useMemo, useState } from 'react';
 import { useCollection, useFirestore, useUser, useMemoFirebase } from '@/firebase';
-import { collection } from 'firebase/firestore';
+import { collection, limit, query } from 'firebase/firestore';
+import { sortByIsoDateField } from '@/lib/firestore-list-helpers';
 import type { Revenue, Expense, Client } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { downloadJsPdf } from '@/lib/branding-pdf';
@@ -61,12 +62,36 @@ export default function CashFlowPage() {
   const [filterDescricao, setFilterDescricao] = useState('');
   const [isExportingPdf, setIsExportingPdf] = useState(false);
 
-  const revenuesQuery = useMemoFirebase(() => (firestore && user ? collection(firestore, 'revenues') : null), [firestore, user]);
-  const { data: allRevenues, isLoading: isLoadingRevenues } = useCollection<Revenue>(revenuesQuery);
-  const expensesQuery = useMemoFirebase(() => (firestore && user ? collection(firestore, 'expenses') : null), [firestore, user]);
-  const { data: allExpenses, isLoading: isLoadingExpenses } = useCollection<Expense>(expensesQuery);
-  const clientsQuery = useMemoFirebase(() => (firestore ? collection(firestore, 'clients') : null), [firestore]);
+  const revenuesQuery = useMemoFirebase(
+    () =>
+      firestore && user
+        ? query(collection(firestore, 'revenues'), limit(500))
+        : null,
+    [firestore, user],
+  );
+  const { data: rawRevenues, isLoading: isLoadingRevenues } = useCollection<Revenue>(revenuesQuery);
+  const expensesQuery = useMemoFirebase(
+    () =>
+      firestore && user
+        ? query(collection(firestore, 'expenses'), limit(500))
+        : null,
+    [firestore, user],
+  );
+  const { data: rawExpenses, isLoading: isLoadingExpenses } = useCollection<Expense>(expensesQuery);
+  const clientsQuery = useMemoFirebase(
+    () => (firestore ? query(collection(firestore, 'clients'), limit(200)) : null),
+    [firestore],
+  );
   const { data: clients } = useCollection<Client>(clientsQuery);
+
+  const allRevenues = useMemo(
+    () => (rawRevenues ? sortByIsoDateField(rawRevenues, 'date') : undefined),
+    [rawRevenues],
+  );
+  const allExpenses = useMemo(
+    () => (rawExpenses ? sortByIsoDateField(rawExpenses, 'date') : undefined),
+    [rawExpenses],
+  );
   const clientsMap = useMemo(() => new Map(clients?.map(c => [c.id, c.name])), [clients]);
 
   const { start: periodStart, end: periodEnd } = getPeriodBounds(periodType, periodDay, periodMonth, periodYear);

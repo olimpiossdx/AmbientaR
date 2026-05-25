@@ -12,6 +12,12 @@ import { getBearerApiHeaders } from '@/lib/api-client-auth';
 import type { ProjetoTecnicoBarragem } from '@/lib/types';
 import { buildBarragemExportBaseName } from '@/lib/barragem/barragem-export-filename';
 import { buildBarragemExportSections } from '@/lib/barragem/barragem-export-sections';
+import {
+  BARRAGEM_COVER_TITLE_TOP_MM,
+  BARRAGEM_REPORT_TITLE,
+  BARRAGEM_TOC_HEADING,
+  buildBarragemCoverMetaLines,
+} from '@/lib/barragem/barragem-export-layout';
 
 export type BarragemDocxExportResult = {
   blob: Blob;
@@ -22,34 +28,45 @@ function coverParagraphs(
   Paragraph: typeof import('docx').Paragraph,
   TextRun: typeof import('docx').TextRun,
   AlignmentType: typeof import('docx').AlignmentType,
+  convertMillimetersToTwip: typeof import('docx').convertMillimetersToTwip,
   projeto: ProjetoTecnicoBarragem,
 ): InstanceType<typeof Paragraph>[] {
-  const center = { alignment: AlignmentType.CENTER };
   const font = DOCX_BRANDING_FONT;
-  const lines = [
-    'PROJETO TÉCNICO DE BARRAGEM',
-    '',
-    projeto.requerente?.nome || '—',
-    projeto.empreendimento?.nome || '—',
-    [projeto.empreendimento?.municipio, projeto.empreendimento?.uf].filter(Boolean).join(' - ') ||
-      '—',
-    projeto.dataEmissao || new Date().toLocaleDateString('pt-BR'),
+  const marginTopMm = 15;
+  const titleBeforeMm = Math.max(0, BARRAGEM_COVER_TITLE_TOP_MM - marginTopMm);
+
+  const children: InstanceType<typeof Paragraph>[] = [
+    new Paragraph({
+      alignment: AlignmentType.LEFT,
+      spacing: { before: convertMillimetersToTwip(titleBeforeMm), after: 280 },
+      children: [
+        new TextRun({
+          text: BARRAGEM_REPORT_TITLE,
+          font,
+          size: 32,
+          bold: true,
+        }),
+      ],
+    }),
   ];
-  return lines.map(
-    (text) =>
+
+  for (const text of buildBarragemCoverMetaLines(projeto)) {
+    children.push(
       new Paragraph({
-        ...center,
-        spacing: { after: 200 },
+        alignment: AlignmentType.RIGHT,
+        spacing: { after: 160 },
         children: [
           new TextRun({
             text,
             font,
-            size: text === lines[0] ? 32 : 24,
-            bold: text === lines[0],
+            size: 22,
           }),
         ],
       }),
-  );
+    );
+  }
+
+  return children;
 }
 
 /** Word com cabeçalho, rodapé e marca d'água (identidade visual da consultoria). */
@@ -64,19 +81,26 @@ export async function generateBarragemExportDocxBlobBranded(
     PageBreak,
     Paragraph,
     TextRun,
+    convertMillimetersToTwip,
   } = await import('docx');
 
   const sections = buildBarragemExportSections(projeto);
   const branded = await buildBrandedDocxSectionSetup(pdfImages);
 
   const children: InstanceType<typeof Paragraph>[] = [
-    ...coverParagraphs(Paragraph, TextRun, AlignmentType, projeto),
+    ...coverParagraphs(
+      Paragraph,
+      TextRun,
+      AlignmentType,
+      convertMillimetersToTwip,
+      projeto,
+    ),
     new Paragraph({ children: [new PageBreak()] }),
     new Paragraph({
       spacing: { after: 240 },
       children: [
         new TextRun({
-          text: 'Índice',
+          text: BARRAGEM_TOC_HEADING,
           font: DOCX_BRANDING_FONT,
           size: 28,
           bold: true,
@@ -103,9 +127,12 @@ export async function generateBarragemExportDocxBlobBranded(
   children.push(new Paragraph({ children: [new PageBreak()] }));
 
   for (const sec of sections) {
+    if (sec.pageBreakBefore) {
+      children.push(new Paragraph({ children: [new PageBreak()] }));
+    }
     children.push(
       new Paragraph({
-        spacing: { after: 160 },
+        spacing: { before: sec.pageBreakBefore ? 0 : undefined, after: 160 },
         children: [
           new TextRun({
             text: sec.title,
