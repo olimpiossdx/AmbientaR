@@ -798,6 +798,9 @@ export type PIA = {
     status?: 'Rascunho' | 'Aprovado';
     /** Processo (`requests`) que originou ou vincula este PIA. */
     requestId?: string;
+    /** Inventário florestal (`inventories`) para seção 5. */
+    inventoryId?: string;
+    floraResumo?: string;
     requerente: {
         clientId?: string;
         nome: string;

@@ -16,6 +16,7 @@
     "audit:routes": "node scripts/menu-route-audit.mjs",
     "audit:menus-by-role": "node scripts/menu-role-audit.mjs",
     "audit:uploads": "node scripts/upload-usage-audit.mjs",
+    "verify:env": "node scripts/verify-local-env.mjs",
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",

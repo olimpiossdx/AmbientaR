@@ -15,8 +15,9 @@ import { useFirebase } from '@/firebase';
 import { guardBrandingExportFromHook } from '@/lib/pdf-branding-layout';
 import { asPiaRecord, type PiaRecord } from '@/lib/pia/pia-record';
 import { validatePiaForExport } from '@/lib/pia/pia-export-validation';
-import { downloadPiaExportPdf } from '@/lib/pia/pia-export-pdf';
-import { downloadPiaExportDocx, generatePiaExportDocxBlob } from '@/lib/pia/pia-export-docx';
+import { loadPiaInventorySnapshot } from '@/lib/pia/pia-inventory-snapshot';
+import { generatePiaExportPdfBlob } from '@/lib/pia/pia-export-pdf';
+import { generatePiaExportDocxBlob } from '@/lib/pia/pia-export-docx';
 import {
   attachPiaPdfToRequestLicensing,
   persistPiaExportVersion,
@@ -120,18 +121,41 @@ export function PiaExportButtons({
     }
   };
 
+  const resolveInventory = async () => {
+    if (!firestore || !record?.inventoryId?.trim()) return null;
+    return loadPiaInventorySnapshot(firestore, record.inventoryId);
+  };
+
   const handleExportPdf = async (persist: boolean) => {
     if (!record || !runValidation() || !guardBranding('PDF')) return;
     setBusy('pdf');
     try {
-      const result = await downloadPiaExportPdf(record, brandingData, pdfImages);
+      const inventory = await resolveInventory();
+      const result = await generatePiaExportPdfBlob(
+        record,
+        brandingData,
+        pdfImages,
+        inventory,
+      );
+      const url = URL.createObjectURL(result.blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = result.fileName;
+      link.rel = 'noopener';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 0);
+
       if (persist && firestore) {
-        const attach =
-          !!record.requestId &&
-          window.confirm(
-            'Deseja anexar o PDF ao processo de licenciamento vinculado?',
-          );
-        await afterExport('pdf', result.blob, result.fileName, result.sectionManifest, attach);
+        const attach = !!record.requestId?.trim();
+        await afterExport(
+          'pdf',
+          result.blob,
+          result.fileName,
+          result.sectionManifest,
+          attach,
+        );
       } else {
         toast({ title: 'PDF gerado', description: result.fileName });
       }
@@ -151,7 +175,17 @@ export function PiaExportButtons({
     if (!record || !runValidation() || !pdfImages || !guardBranding('Word')) return;
     setBusy('docx');
     try {
-      const result = await downloadPiaExportDocx(record, pdfImages);
+      const inventory = await resolveInventory();
+      const result = await generatePiaExportDocxBlob(record, pdfImages, inventory);
+      const url = URL.createObjectURL(result.blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = result.fileName;
+      link.rel = 'noopener';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 0);
       if (persist && firestore) {
         await afterExport('docx', result.blob, result.fileName, result.sectionManifest, false);
       } else {

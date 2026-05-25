@@ -29,6 +29,7 @@ import { PlusCircle, Trash2 } from 'lucide-react';
 import { BrDateFormControl } from '@/components/form/br-date-input';
 import type { Empreendedor as Client } from '@/lib/types';
 import { Label } from '@/components/ui/label';
+import { PiaVinculosFields } from '@/components/pia/pia-vinculos-fields';
 
 interface PiaFormInventarioProps {
     form: any;
@@ -84,7 +85,13 @@ export function PiaFormInventario({ form, clients, isLoadingClients, projects, i
     }, [selectedProjectId, projects, form]);
 
     return (
-       <Accordion type="multiple" defaultValue={['item-1', 'item-2', 'item-3']} className="w-full">
+       <Accordion type="multiple" defaultValue={['item-0', 'item-1', 'item-2', 'item-3']} className="w-full">
+            <AccordionItem value="item-0">
+                <AccordionTrigger>Vínculos (processo e inventário)</AccordionTrigger>
+                <AccordionContent>
+                    <PiaVinculosFields />
+                </AccordionContent>
+            </AccordionItem>
             <AccordionItem value="item-1">
                 <AccordionTrigger>Informações Gerais</AccordionTrigger>
                 <AccordionContent className="space-y-6">

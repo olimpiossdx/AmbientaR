@@ -11,6 +11,12 @@ function NewPiaPageContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const piaType = searchParams?.get('type') as PiaType | null;
+    const linkContext = {
+      requestId: searchParams?.get('requestId') ?? undefined,
+      projectId: searchParams?.get('projectId') ?? undefined,
+      inventoryId: searchParams?.get('inventoryId') ?? undefined,
+      empreendedorId: searchParams?.get('empreendedorId') ?? undefined,
+    };
 
     const handleSuccess = () => {
       router.push('/studies/pia');
@@ -32,6 +38,7 @@ function NewPiaPageContent() {
                       <PiaForm
                           currentItem={null}
                           piaType={piaType}
+                          linkContext={linkContext}
                           onSuccess={handleSuccess}
                       />
                   </CardContent>

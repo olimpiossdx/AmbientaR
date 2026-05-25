@@ -5,7 +5,10 @@ import type { FirebaseApp } from "firebase/app";
 import type { Auth } from "firebase/auth";
 import type { Firestore } from "firebase/firestore";
 import { FirebaseProvider } from "@/firebase/provider";
-import { getInstances } from "@/firebase/load-firebase-client";
+import {
+  clearFirebaseClientInstancesCache,
+  getInstances,
+} from "@/firebase/load-firebase-client";
 import { firebaseConfig } from "@/firebase/config";
 
 interface FirebaseClientProviderProps {
@@ -18,18 +21,33 @@ type FirebaseInstances = {
   firestore: Firestore;
 };
 
+function readInstances(): FirebaseInstances | null {
+  try {
+    const { app, auth, firestore } = getInstances(firebaseConfig);
+    return {
+      firebaseApp: app as unknown as FirebaseApp,
+      auth: auth as unknown as Auth,
+      firestore: firestore as unknown as Firestore,
+    };
+  } catch {
+    return null;
+  }
+}
+
 export function FirebaseClientProvider({
   children,
 }: FirebaseClientProviderProps) {
-  const [instances, setInstances] = useState<FirebaseInstances | null>(null);
+  const [instances, setInstances] = useState<FirebaseInstances | null>(
+    () => readInstances(),
+  );
   const [error, setError] = useState<string | null>(null);
-  const [retryKey, setRetryKey] = useState(0);
 
   useEffect(() => {
+    if (instances) return;
+
     let isDisposed = false;
     let didInitialize = false;
     setError(null);
-    setInstances(null);
 
     const timeout = window.setTimeout(() => {
       if (!isDisposed && !didInitialize) {
@@ -41,15 +59,11 @@ export function FirebaseClientProvider({
     }, 10000);
 
     try {
-      const { app, auth, firestore } = getInstances(firebaseConfig);
-      if (!isDisposed) {
+      const loaded = readInstances();
+      if (!isDisposed && loaded) {
         didInitialize = true;
         window.clearTimeout(timeout);
-        setInstances({
-          firebaseApp: app as unknown as FirebaseApp,
-          auth: auth as unknown as Auth,
-          firestore: firestore as unknown as Firestore,
-        });
+        setInstances(loaded);
       }
     } catch (err) {
       console.error("Firebase load error:", err);
@@ -62,7 +76,7 @@ export function FirebaseClientProvider({
       isDisposed = true;
       window.clearTimeout(timeout);
     };
-  }, [retryKey]);
+  }, [instances]);
 
   if (error) {
     return (
@@ -72,7 +86,10 @@ export function FirebaseClientProvider({
           <p className="text-sm mt-2">{error}</p>
           <button
             type="button"
-            onClick={() => setRetryKey((k) => k + 1)}
+            onClick={() => {
+              clearFirebaseClientInstancesCache();
+              window.location.reload();
+            }}
             className="mt-4 rounded-md border border-destructive px-3 py-1 text-sm hover:bg-destructive/10"
           >
             Tentar novamente

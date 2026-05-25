@@ -16,14 +16,16 @@ export function buildAiaModuleHref(
   if (params.requestId) q.set("requestId", params.requestId);
   if (params.projectId) q.set("projectId", params.projectId);
   if (params.empreendedorId) q.set("empreendedorId", params.empreendedorId);
+  if (params.linked?.inventoryId) q.set("inventoryId", params.linked.inventoryId);
   const qs = q.toString();
   const suffix = qs ? `?${qs}` : "";
 
   switch (linkKey) {
     case "pia": {
       const piaId = params.linked?.piaId;
-      if (piaId) return `/studies/intervencao-ambiental/${piaId}/edit${suffix}`;
-      return `/studies/intervencao-ambiental/new?type=Simplificado${qs ? `&${qs}` : ""}`;
+      if (piaId) return `/studies/pia/${piaId}/edit${suffix}`;
+      const typeQ = 'type=Corretivo';
+      return `/studies/pia/new?${typeQ}${qs ? `&${qs}` : ''}`;
     }
     case "inventory": {
       const invId = params.linked?.inventoryId;

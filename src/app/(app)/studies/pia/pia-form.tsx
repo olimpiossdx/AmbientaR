@@ -6,9 +6,7 @@ import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/button';
-import {
-  Form,
-} from '@/components/ui/form';
+import { Form } from '@/components/ui/form';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { PIA, Empreendedor as Client, Project, PiaType } from '@/lib/types';
@@ -17,92 +15,138 @@ import { FirestorePermissionError } from '@/firebase/errors';
 import { collection, doc, addDoc, updateDoc } from 'firebase/firestore';
 import { DialogFooter } from '@/components/ui/dialog';
 import { PiaFormInventario } from './pia-form-inventario';
-import { useRouter } from 'next/navigation';
-import { cleanEmptyValues } from '@/lib/utils';
-import _ from 'lodash';
 import { usesInventarioForm } from '@/lib/pia/pia-record';
 import { validatePiaForApproval } from '@/lib/pia/pia-export-validation';
 import type { PiaRecord } from '@/lib/pia/pia-record';
-
+import { syncPiaLinksToRequest } from '@/lib/pia/pia-request-sync';
 
 const formSchema = z.object({
-    type: z.enum(['Simplificado', 'Corretivo', 'Inventário Florestal', 'Censo Florestal']),
-    status: z.enum(['Rascunho', 'Aprovado']).optional(),
-    requerente: z.object({
-        clientId: z.string().optional(),
-        nome: z.string().min(1, "O nome do requerente é obrigatório."),
-        cpfCnpj: z.string().min(1, "O CPF/CNPJ do requerente é obrigatório."),
-    }),
-    empreendimento: z.object({
-        projectId: z.string().optional(),
-        nome: z.string().min(1, "O nome do empreendimento é obrigatório."),
-    }),
-}).passthrough(); // Permite campos extras que serão validados pelo schema específico
+  type: z.enum(['Simplificado', 'Corretivo', 'Inventário Florestal', 'Censo Florestal']),
+  status: z.enum(['Rascunho', 'Aprovado']).optional(),
+  requestId: z.string().optional(),
+  inventoryId: z.string().optional(),
+  floraResumo: z.string().optional(),
+  requerente: z.object({
+    clientId: z.string().optional(),
+    nome: z.string().min(1, 'O nome do requerente é obrigatório.'),
+    cpfCnpj: z.string().min(1, 'O CPF/CNPJ do requerente é obrigatório.'),
+  }),
+  empreendimento: z.object({
+    projectId: z.string().optional(),
+    nome: z.string().min(1, 'O nome do empreendimento é obrigatório.'),
+  }),
+}).passthrough();
 
 type PiaFormValues = z.infer<typeof formSchema>;
+
+export type PiaLinkContext = {
+  requestId?: string;
+  projectId?: string;
+  inventoryId?: string;
+  empreendedorId?: string;
+};
 
 interface PiaFormProps {
   currentItem?: PIA | null;
   piaType: PiaType | null;
   onSuccess?: () => void;
+  linkContext?: PiaLinkContext;
 }
 
-export function PiaForm({ currentItem, piaType, onSuccess }: PiaFormProps) {
+export function PiaForm({ currentItem, piaType, onSuccess, linkContext }: PiaFormProps) {
   const [loading, setLoading] = React.useState(false);
   const { toast } = useToast();
   const { firestore } = useFirebase();
-  const router = useRouter();
 
-
-  const clientsQuery = useMemoFirebase(() => firestore ? collection(firestore, 'clients') : null, [firestore]);
+  const clientsQuery = useMemoFirebase(
+    () => (firestore ? collection(firestore, 'clients') : null),
+    [firestore],
+  );
   const { data: clients, isLoading: isLoadingClients } = useCollection<Client>(clientsQuery);
-  const projectsQuery = useMemoFirebase(() => firestore ? collection(firestore, 'projects') : null, [firestore]);
+  const projectsQuery = useMemoFirebase(
+    () => (firestore ? collection(firestore, 'projects') : null),
+    [firestore],
+  );
   const { data: projects, isLoading: isLoadingProjects } = useCollection<Project>(projectsQuery);
 
   const form = useForm<PiaFormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: currentItem ? {
-      ...currentItem,
-      type: currentItem.type || piaType,
-    } : {
-      type: piaType || 'Simplificado',
-      status: 'Rascunho',
-      requerente: { clientId: '', nome: '', cpfCnpj: '' },
-      empreendimento: { projectId: '', nome: '' },
-    },
+    defaultValues: currentItem
+      ? {
+          ...currentItem,
+          type: currentItem.type || piaType,
+        }
+      : {
+          type: piaType || 'Simplificado',
+          status: 'Rascunho',
+          requestId: linkContext?.requestId ?? '',
+          inventoryId: linkContext?.inventoryId ?? '',
+          floraResumo: '',
+          requerente: {
+            clientId: linkContext?.empreendedorId ?? '',
+            nome: '',
+            cpfCnpj: '',
+          },
+          empreendimento: {
+            projectId: linkContext?.projectId ?? '',
+            nome: '',
+          },
+        },
   });
+
+  React.useEffect(() => {
+    if (!linkContext?.projectId || !projects?.length) return;
+    const proj = projects.find((p) => p.id === linkContext.projectId);
+    if (proj) {
+      form.setValue('empreendimento.projectId', proj.id);
+      form.setValue('empreendimento.nome', proj.propertyName ?? proj.fantasyName ?? '');
+    }
+  }, [linkContext?.projectId, projects, form]);
+
+  async function syncRequestLinks(piaId: string, requestId?: string, inventoryId?: string) {
+    if (!firestore || !requestId?.trim()) return;
+    await syncPiaLinksToRequest(firestore, requestId, {
+      piaId,
+      ...(inventoryId?.trim() ? { inventoryId: inventoryId.trim() } : {}),
+    });
+  }
 
   async function handleSave(status: 'Rascunho' | 'Aprovado') {
     setLoading(true);
 
     const isValid = await form.trigger();
     if (!isValid && status === 'Aprovado') {
-        toast({
-            variant: 'destructive',
-            title: 'Formulário Inválido',
-            description: 'Por favor, corrija os erros antes de concluir.',
-        });
-        setLoading(false);
-        return;
+      toast({
+        variant: 'destructive',
+        title: 'Formulário Inválido',
+        description: 'Por favor, corrija os erros antes de concluir.',
+      });
+      setLoading(false);
+      return;
     }
 
     const values = form.getValues();
 
     if (status === 'Aprovado') {
-        const approvalIssues = validatePiaForApproval({
-            ...(currentItem ?? { id: '', type: piaType ?? 'Simplificado', requerente: values.requerente, empreendimento: values.empreendimento }),
-            ...values,
-            status: 'Aprovado',
-        } as PiaRecord);
-        if (approvalIssues.length > 0) {
-            toast({
-                variant: 'destructive',
-                title: 'PIA incompleto',
-                description: approvalIssues.map((i) => i.message).join(' '),
-            });
-            setLoading(false);
-            return;
-        }
+      const approvalIssues = validatePiaForApproval({
+        ...(currentItem ?? {
+          id: '',
+          type: piaType ?? 'Simplificado',
+          requerente: values.requerente,
+          empreendimento: values.empreendimento,
+        }),
+        ...values,
+        status: 'Aprovado',
+      } as PiaRecord);
+      if (approvalIssues.length > 0) {
+        toast({
+          variant: 'destructive',
+          title: 'PIA incompleto',
+          description: approvalIssues.map((i) => i.message).join(' '),
+        });
+        setLoading(false);
+        return;
+      }
     }
 
     if (!firestore) {
@@ -110,50 +154,59 @@ export function PiaForm({ currentItem, piaType, onSuccess }: PiaFormProps) {
       setLoading(false);
       return;
     }
-    
+
+    const resolvedRequestId =
+      values.requestId?.trim() ||
+      currentItem?.requestId ||
+      linkContext?.requestId ||
+      '';
+
     const dataToSave = {
-        ...values,
-        status,
+      ...values,
+      status,
+      ...(resolvedRequestId ? { requestId: resolvedRequestId } : {}),
     };
 
     try {
-        if (currentItem) {
-          const docRef = doc(firestore, 'pias', currentItem.id);
-          await updateDoc(docRef, dataToSave);
-          toast({
-            title: 'PIA atualizado!',
-            description: `O formulário foi salvo como ${status.toLowerCase()}.`,
-          });
-        } else {
-          const collectionRef = collection(firestore, 'pias');
-          await addDoc(collectionRef, dataToSave);
-          toast({
-            title: 'PIA criado!',
-            description: `O formulário para ${values.empreendimento.nome} foi criado com sucesso.`,
-          });
-          form.reset();
-        }
-        onSuccess?.();
-    } catch (error) {
-        console.error("Error saving PIA:", error);
-        const permissionError = new FirestorePermissionError({
-            path: currentItem ? `pias/${currentItem.id}` : 'pias',
-            operation: currentItem ? 'update' : 'create',
-            requestResourceData: dataToSave,
+      if (currentItem) {
+        const docRef = doc(firestore, 'pias', currentItem.id);
+        await updateDoc(docRef, dataToSave);
+        await syncRequestLinks(
+          currentItem.id,
+          resolvedRequestId,
+          values.inventoryId,
+        );
+        toast({
+          title: 'PIA atualizado!',
+          description: `O formulário foi salvo como ${status.toLowerCase()}.`,
         });
-        errorEmitter.emit('permission-error', permissionError);
+      } else {
+        const collectionRef = collection(firestore, 'pias');
+        const created = await addDoc(collectionRef, dataToSave);
+        await syncRequestLinks(
+          created.id,
+          resolvedRequestId,
+          values.inventoryId,
+        );
+        toast({
+          title: 'PIA criado!',
+          description: `O formulário para ${values.empreendimento.nome} foi criado com sucesso.`,
+        });
+        form.reset();
+      }
+      onSuccess?.();
+    } catch (error) {
+      console.error('Error saving PIA:', error);
+      const permissionError = new FirestorePermissionError({
+        path: currentItem ? `pias/${currentItem.id}` : 'pias',
+        operation: currentItem ? 'update' : 'create',
+        requestResourceData: dataToSave,
+      });
+      errorEmitter.emit('permission-error', permissionError);
     } finally {
-        setLoading(false);
+      setLoading(false);
     }
   }
-  
-  const formProps = {
-    form,
-    clients: clients || [],
-    isLoadingClients,
-    projects: projects || [],
-    isLoadingProjects
-  };
 
   const renderFormContent = () => {
     if (usesInventarioForm(piaType)) {
@@ -178,18 +231,35 @@ export function PiaForm({ currentItem, piaType, onSuccess }: PiaFormProps) {
 
   return (
     <Form {...form}>
-      <form onSubmit={(e) => e.preventDefault()} className="h-full flex flex-col overflow-hidden">
-        <div className="flex-1 overflow-y-auto pr-4 -mr-2">
-            {renderFormContent()}
-        </div>
+      <form
+        onSubmit={(e) => e.preventDefault()}
+        className="h-full flex flex-col overflow-hidden"
+      >
+        <div className="flex-1 overflow-y-auto pr-4 -mr-2">{renderFormContent()}</div>
 
         <DialogFooter>
-             <Button variant="secondary" onClick={() => handleSave('Rascunho')} disabled={loading}>
-                {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Salvando...</> : 'Salvar Rascunho'}
-            </Button>
-            <Button onClick={() => handleSave('Aprovado')} disabled={loading}>
-                {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Concluindo...</> : 'Concluir e Aprovar'}
-            </Button>
+          <Button
+            variant="secondary"
+            onClick={() => handleSave('Rascunho')}
+            disabled={loading}
+          >
+            {loading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Salvando...
+              </>
+            ) : (
+              'Salvar Rascunho'
+            )}
+          </Button>
+          <Button onClick={() => handleSave('Aprovado')} disabled={loading}>
+            {loading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Concluindo...
+              </>
+            ) : (
+              'Concluir e Aprovar'
+            )}
+          </Button>
         </DialogFooter>
       </form>
     </Form>

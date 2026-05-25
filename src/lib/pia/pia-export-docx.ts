@@ -5,10 +5,8 @@ import {
   buildBrandedDocxSectionSetup,
   DOCX_BRANDING_FONT,
 } from '@/lib/branding-docx';
-import {
-  buildPiaExportSections,
-  buildSectionManifest,
-} from '@/lib/pia/pia-export-manifest';
+import { buildPiaExportBundle } from '@/lib/pia/pia-export-context';
+import type { PiaInventorySnapshot } from '@/lib/pia/pia-inventory-snapshot';
 import { buildPiaExportBaseName } from '@/lib/pia/pia-export-filename';
 import type { PiaRecord } from '@/lib/pia/pia-record';
 
@@ -55,6 +53,7 @@ function coverParagraphs(
 export async function generatePiaExportDocxBlob(
   record: PiaRecord,
   pdfImages: BrandingPdfImages,
+  inventory?: PiaInventorySnapshot | null,
 ): Promise<PiaDocxExportResult> {
   const {
     AlignmentType,
@@ -65,8 +64,10 @@ export async function generatePiaExportDocxBlob(
     TextRun,
   } = await import('docx');
 
-  const sections = buildPiaExportSections(record);
-  const manifest = buildSectionManifest(sections);
+  const { sections, sectionManifest: manifest } = buildPiaExportBundle({
+    record,
+    inventory: inventory ?? null,
+  });
   const branded = await buildBrandedDocxSectionSetup(pdfImages);
 
   const children: InstanceType<typeof Paragraph>[] = [
@@ -132,6 +133,35 @@ export async function generatePiaExportDocxBlob(
         }),
       );
     }
+    if (sec.id === '5' && inventory && inventory.species.length > 0) {
+      children.push(
+        new Paragraph({
+          spacing: { before: 200, after: 120 },
+          children: [
+            new TextRun({
+              text: 'Tabela — composição florística (inventário vinculado)',
+              font: DOCX_BRANDING_FONT,
+              size: 22,
+              bold: true,
+            }),
+          ],
+        }),
+      );
+      for (const row of inventory.species.slice(0, 80)) {
+        children.push(
+          new Paragraph({
+            spacing: { after: 80 },
+            children: [
+              new TextRun({
+                text: `${row.nomeCientifico} | ${row.nomeComum} | ${row.familia} | N=${row.nIndividuos}`,
+                font: DOCX_BRANDING_FONT,
+                size: 20,
+              }),
+            ],
+          }),
+        );
+      }
+    }
   }
 
   const doc = new Document({
@@ -155,8 +185,9 @@ export async function generatePiaExportDocxBlob(
 export async function downloadPiaExportDocx(
   record: PiaRecord,
   pdfImages: BrandingPdfImages,
+  inventory?: PiaInventorySnapshot | null,
 ): Promise<PiaDocxExportResult> {
-  const result = await generatePiaExportDocxBlob(record, pdfImages);
+  const result = await generatePiaExportDocxBlob(record, pdfImages, inventory);
   const url = URL.createObjectURL(result.blob);
   const link = document.createElement('a');
   link.href = url;

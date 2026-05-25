@@ -92,12 +92,12 @@ async function renderFloraSpeciesTable(
   return (doc.lastAutoTable?.finalY ?? y) + 8;
 }
 
-function renderBodySections(
+async function renderBodySections(
   session: MmBrandedPdfSession,
   sections: PiaExportSection[],
   startY: number,
   inventory: PiaInventorySnapshot | null,
-): { endY: number; toc: TocEntry[] } {
+): Promise<{ endY: number; toc: TocEntry[] }> {
   const toc: TocEntry[] = [];
   let y = startY;
 
@@ -107,7 +107,7 @@ function renderBodySections(
     toc.push({ title: section.title, page: pageBefore, level: section.level });
     y = writeBrandedPdfParagraph(session, section.body, 10, y);
     if (section.id === '5' && inventory && inventory.species.length > 0) {
-      // tabela assíncrona tratada no caller
+      y = await renderFloraSpeciesTable(session, inventory, y);
     }
     y += 4;
   }
@@ -162,18 +162,21 @@ export async function generatePiaExportPdfBlob(
   if (!session) {
     const urls = brandingUrlsFromLocal(branding);
     const fallback = await createMmBrandedPdfSession(urls, undefined, preloadedImages);
-    return generateWithSession(record, fallback);
+    return generateWithSession(record, fallback, inventory ?? null);
   }
 
-  return generateWithSession(record, session);
+  return generateWithSession(record, session, inventory ?? null);
 }
 
 async function generateWithSession(
   record: PiaRecord,
   session: MmBrandedPdfSession,
+  inventory: PiaInventorySnapshot | null,
 ): Promise<PiaPdfExportResult> {
-  const sections = buildPiaExportSections(record);
-  const manifest = buildSectionManifest(sections);
+  const { sections, sectionManifest: manifest } = buildPiaExportBundle({
+    record,
+    inventory,
+  });
 
   renderCover(session, record);
 
@@ -184,7 +187,7 @@ async function generateWithSession(
   session.doc.addPage();
   drawWatermarkOnPage(session.doc, session.branding);
   const bodyStartY = getContentStartY(session.branding);
-  const { toc } = renderBodySections(session, sections, bodyStartY);
+  const { toc } = await renderBodySections(session, sections, bodyStartY, inventory);
 
   writeTableOfContents(session, tocPage, toc);
 
@@ -200,8 +203,14 @@ export async function downloadPiaExportPdf(
   record: PiaRecord,
   branding?: LocalBranding | null,
   preloadedImages?: BrandingPdfImages | null,
+  inventory?: PiaInventorySnapshot | null,
 ): Promise<PiaPdfExportResult> {
-  const result = await generatePiaExportPdfBlob(record, branding, preloadedImages);
+  const result = await generatePiaExportPdfBlob(
+    record,
+    branding,
+    preloadedImages,
+    inventory,
+  );
   const url = URL.createObjectURL(result.blob);
   const link = document.createElement('a');
   link.href = url;
