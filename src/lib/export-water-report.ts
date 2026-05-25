@@ -5,6 +5,8 @@ import type { WaterPermit } from "@/lib/types";
 import type { ComplianceReport } from "@/lib/water-compliance-engine";
 import type { TelemetryReading } from "@/lib/types";
 import type { BrandingImageUrls, BrandingPdfImages } from "@/lib/branding-pdf";
+import { BRANDING_REQUIRED_MESSAGE } from "@/lib/branding/requirements";
+import { hasCompleteBrandingUrls } from "@/lib/branding/requirements";
 import {
   createMmBrandedPdfSession,
   drawWatermarkOnPage,
@@ -26,19 +28,18 @@ export async function generateWaterCompliancePDF(
   preloadedImages?: BrandingPdfImages | null,
 ) {
   const { default: autoTable } = await import("jspdf-autotable");
-  const hasBranding =
-    Boolean(brandingUrls?.headerImageUrl) ||
-    Boolean(brandingUrls?.footerImageUrl) ||
-    Boolean(brandingUrls?.watermarkImageUrl);
-  const session = hasBranding
-    ? await createMmBrandedPdfSession(brandingUrls!, undefined, preloadedImages)
-    : null;
-  const doc: jsPDF = session?.doc ?? new (await import("jspdf")).default();
-  const contentTop = session?.startY ?? 22;
+  if (!brandingUrls || !hasCompleteBrandingUrls(brandingUrls)) {
+    throw new Error(BRANDING_REQUIRED_MESSAGE);
+  }
+  const session = await createMmBrandedPdfSession(
+    brandingUrls,
+    undefined,
+    preloadedImages,
+  );
+  const doc: jsPDF = session.doc;
+  const contentTop = session.startY;
   const yShift = contentTop - 22;
-  const onPdfPage = session
-    ? () => drawWatermarkOnPage(doc, session.branding)
-    : undefined;
+  const onPdfPage = () => drawWatermarkOnPage(doc, session.branding);
   const dateStr = format(period, "MMMM 'de' yyyy", { locale: ptBR });
   const emitDate = format(new Date(), "dd/MM/yyyy HH:mm");
   const year = period.getFullYear();
@@ -222,21 +223,7 @@ export async function generateWaterCompliancePDF(
     doc.text("Nenhuma irregularidade detectada no período analisado.", 14, nextY + 10);
   }
 
-  if (session) {
-    session.finalize();
-  } else {
-    const pageCount = doc.getNumberOfPages();
-    for (let i = 1; i <= pageCount; i += 1) {
-      doc.setPage(i);
-      doc.setFontSize(8);
-      doc.text(
-        "Documento gerado automaticamente pelo sistema de gestão ambiental.",
-        doc.internal.pageSize.getWidth() / 2,
-        doc.internal.pageSize.getHeight() - 10,
-        { align: "center" },
-      );
-    }
-  }
+  session.finalize();
 
   const fileName = `Relatorio_Hidrico_${permit.permitNumber || "outorga"}_${format(period, "yyyy-MM")}.pdf`;
   doc.save(fileName);

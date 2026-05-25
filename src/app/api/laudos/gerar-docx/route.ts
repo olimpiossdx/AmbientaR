@@ -15,6 +15,10 @@ import {
   apiAuthErrorResponse,
   requireAuthenticatedApi,
 } from '@/lib/api-auth';
+import {
+  brandingApiErrorResponse,
+  finalizeOfficialDocxBuffer,
+} from '@/lib/branding/finalize-server-docx';
 
 const TEMPLATE_SLUGS = [
   'rca', 'ptrf', 'prada', 'pia', 'eia-rima', 'las-ras', 'pca', 'pea',
@@ -125,11 +129,13 @@ export async function POST(request: NextRequest) {
     );
     doc.render(data);
 
-    const buf = doc.getZip().generate({
+    const rawBuf = doc.getZip().generate({
       type: 'nodebuffer',
       compression: 'DEFLATE',
       compressionOptions: { level: 9 },
     }) as Buffer;
+
+    const buf = await finalizeOfficialDocxBuffer(rawBuf);
 
     const fileName = `laudo_${slug}_${laudoId ?? Date.now()}.docx`;
     return new NextResponse(buf as unknown as BodyInit, {
@@ -141,9 +147,13 @@ export async function POST(request: NextRequest) {
     });
   } catch (e) {
     console.error('POST /api/laudos/gerar-docx:', e);
+    const brandedErr = brandingApiErrorResponse(e);
+    if (brandedErr.status !== 500) {
+      return NextResponse.json(brandedErr.body, { status: brandedErr.status });
+    }
     return NextResponse.json(
       { success: false, error: (e as Error).message ?? 'Erro ao gerar DOCX.' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

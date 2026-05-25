@@ -10,6 +10,7 @@ import {
   warmBrandingPdfCache,
   type BrandingPdfImages,
 } from '@/lib/branding-pdf';
+import { hasCompleteBrandingUrls } from '@/lib/branding/requirements';
 
 export type LocalBranding = {
   headerImageUrl: string | null;
@@ -57,10 +58,7 @@ export function useLocalBranding() {
 
   useEffect(() => {
     if (isLoading || !auth?.currentUser) return;
-    const hasUrl =
-      Boolean(data.headerImageUrl?.trim()) ||
-      Boolean(data.footerImageUrl?.trim()) ||
-      Boolean(data.watermarkImageUrl?.trim());
+    const hasUrl = hasCompleteBrandingUrls(data);
     if (!hasUrl) {
       setPdfImages({ headerBase64: null, footerBase64: null, watermarkBase64: null });
       setIsPdfImagesLoading(false);
@@ -111,10 +109,8 @@ export function useLocalBranding() {
     setPdfImagesReloadToken((n) => n + 1);
   };
 
-  const hasBrandingUrls =
-    Boolean(data.headerImageUrl?.trim()) ||
-    Boolean(data.footerImageUrl?.trim()) ||
-    Boolean(data.watermarkImageUrl?.trim());
+  /** Três imagens obrigatórias (cabeçalho, rodapé, marca d'água). */
+  const hasBrandingUrls = hasCompleteBrandingUrls(data);
 
   return {
     data: data ?? empty,

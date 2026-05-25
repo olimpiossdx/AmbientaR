@@ -41,7 +41,15 @@ Calibrar com o PDF modelo do utilizador (`exemplo_branding.pdf`): A4, cabeçalho
 
 ## Configuração
 
-Configurações → Identidade visual (`companySettings/branding`). URLs `firebasestorage.googleapis.com` e `firebasestorage.app` são aceites em `storagePathFromDownloadUrl`.
+Configurações → Identidade visual (`companySettings/branding`). **Obrigatório:** cabeçalho, rodapé e marca d'água — sem as três imagens, exportações oficiais (PDF e Word) são bloqueadas.
+
+## Servidor (Word por template)
+
+- `src/lib/branding/branding-server.ts` — carrega imagens via Firebase Admin.
+- `src/lib/branding/branding-docx-merge.ts` — aplica o mesmo cabeçalho/rodapé/marca d'água após Docxtemplater.
+- APIs: `POST /api/laudos/gerar-docx`, `/api/pradas/export-docx`, `/api/barragens/export-docx`.
+
+URLs `firebasestorage.googleapis.com` e `firebasestorage.app` são aceites em `storagePathFromDownloadUrl`.
 
 ## Contratos e propostas
 

@@ -2,6 +2,7 @@
 
 import type { BrandingPdfImages } from '@/lib/branding-pdf';
 import type { LocalBranding } from '@/hooks/use-local-branding';
+import { hasCompleteBrandingUrls } from '@/lib/branding/requirements';
 import {
   prepareIaMenuBrandedPdfSession,
   writeBrandedPdfParagraph,
@@ -59,11 +60,7 @@ export async function generatePeaExportPdfBlob(
   const session = await prepareIaMenuBrandedPdfSession({
     brandingData,
     pdfImages,
-    hasBrandingUrls: !!(
-      brandingData?.headerImageUrl ||
-      brandingData?.footerImageUrl ||
-      brandingData?.watermarkImageUrl
-    ),
+    hasBrandingUrls: hasCompleteBrandingUrls(brandingData),
   });
   if (!session) {
     throw new Error('Configure a identidade visual em Configurações para exportar PDF.');

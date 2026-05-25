@@ -76,6 +76,10 @@ import {
 } from "@/lib/upload-limits";
 import { NOTIFICATION_LINKS, NOTIFICATION_SOURCE } from "@/lib/notification-events";
 import { notifyEmpreendedorPortalUsers } from "@/lib/notifications";
+import { useLocalBranding } from "@/hooks/use-local-branding";
+import { guardBrandingExportFromHook } from "@/lib/pdf-branding-layout";
+import { generateDefesaExportPdfBlob } from "@/lib/defesa/defesa-export-pdf";
+import { generateDefesaExportDocxBlob } from "@/lib/defesa/defesa-export-docx";
 
 type TipoDefesa = "Defesa em 1º Instância / Administrativa" | "Defesa em 2º Instância / Administrativa";
 
@@ -396,6 +400,15 @@ function formatDefesaDocContent(defesa: AutoInfracaoDefesa, empreendedorNome: st
 export default function MultasDefesasPage() {
   const { firestore, user } = useFirebase();
   const { toast } = useToast();
+  const {
+    data: brandingData,
+    pdfImages,
+    isPdfImagesLoading,
+    hasBrandingUrls,
+  } = useLocalBranding();
+  const [exportingDefesaKey, setExportingDefesaKey] = React.useState<string | null>(
+    null,
+  );
   const { prepareFile, dialogProps } = usePreparedUpload({
     storagePathPrefix: "autos-infracao-defesa/",
   });
@@ -1042,31 +1055,99 @@ export default function MultasDefesasPage() {
     }
   };
 
-  const exportDocxFor = (defesa: AutoInfracaoDefesa) => {
-    const empreendedorNome = empreendedorNameMap.get(defesa.empreendedorId) || "N/A";
-    const empreendimentoNome = projectNameMap.get(defesa.projectId) || "N/A";
-    const content = formatDefesaDocContent(defesa, empreendedorNome, empreendimentoNome);
-    const blob = new Blob([content], {
-      type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `defesa-${defesa.processNumber.replace("/", "-")}.docx`;
-    a.click();
-    URL.revokeObjectURL(url);
+  const exportDocxFor = async (defesa: AutoInfracaoDefesa) => {
+    const key = `docx-${defesa.id}`;
+    if (exportingDefesaKey) return;
+    if (
+      !guardBrandingExportFromHook({
+        brandingData,
+        pdfImages,
+        isPdfImagesLoading,
+        hasBrandingUrls,
+        toast,
+        formatLabel: "Word",
+      })
+    ) {
+      return;
+    }
+    setExportingDefesaKey(key);
+    try {
+      const empreendedorNome = empreendedorNameMap.get(defesa.empreendedorId) || "N/A";
+      const empreendimentoNome = projectNameMap.get(defesa.projectId) || "N/A";
+      const content = formatDefesaDocContent(defesa, empreendedorNome, empreendimentoNome);
+      const result = await generateDefesaExportDocxBlob(
+        content,
+        defesa,
+        pdfImages!,
+      );
+      const url = URL.createObjectURL(result.blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = result.fileName;
+      a.rel = "noopener";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 0);
+      toast({ title: "Word gerado", description: result.fileName });
+    } catch (e) {
+      console.error(e);
+      toast({
+        variant: "destructive",
+        title: "Erro ao gerar Word",
+        description: e instanceof Error ? e.message : "Falha na exportação.",
+      });
+    } finally {
+      setExportingDefesaKey(null);
+    }
   };
 
-  const exportPdfFor = (defesa: AutoInfracaoDefesa) => {
-    const empreendedorNome = empreendedorNameMap.get(defesa.empreendedorId) || "N/A";
-    const empreendimentoNome = projectNameMap.get(defesa.projectId) || "N/A";
-    const content = formatDefesaDocContent(defesa, empreendedorNome, empreendimentoNome).replace(/\n/g, "<br/>");
-    const w = window.open("", "_blank");
-    if (!w) return;
-    w.document.write(`<html><head><title>Defesa ${defesa.processNumber}</title></head><body style="font-family:Arial,sans-serif;padding:24px;">${content}</body></html>`);
-    w.document.close();
-    w.focus();
-    w.print();
+  const exportPdfFor = async (defesa: AutoInfracaoDefesa) => {
+    const key = `pdf-${defesa.id}`;
+    if (exportingDefesaKey) return;
+    if (
+      !guardBrandingExportFromHook({
+        brandingData,
+        pdfImages,
+        isPdfImagesLoading,
+        hasBrandingUrls,
+        toast,
+        formatLabel: "PDF",
+      })
+    ) {
+      return;
+    }
+    setExportingDefesaKey(key);
+    try {
+      const empreendedorNome = empreendedorNameMap.get(defesa.empreendedorId) || "N/A";
+      const empreendimentoNome = projectNameMap.get(defesa.projectId) || "N/A";
+      const content = formatDefesaDocContent(defesa, empreendedorNome, empreendimentoNome);
+      const result = await generateDefesaExportPdfBlob(
+        content,
+        defesa,
+        brandingData,
+        pdfImages,
+      );
+      const url = URL.createObjectURL(result.blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = result.fileName;
+      a.rel = "noopener";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 0);
+      toast({ title: "PDF gerado", description: result.fileName });
+    } catch (e) {
+      console.error(e);
+      toast({
+        variant: "destructive",
+        title: "Erro ao gerar PDF",
+        description: e instanceof Error ? e.message : "Falha na exportação.",
+      });
+    } finally {
+      setExportingDefesaKey(null);
+    }
   };
 
   const exportDocx = () => {

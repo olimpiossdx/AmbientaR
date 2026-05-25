@@ -1168,7 +1168,7 @@ export const allNavItems: NavItem[] = [
         roles: ["admin", "technical", "gestor", "supervisor", "diretor_fauna", "advogado"],
       },
       {
-        href: "/external?url=https%3A%2F%2Fwww.ibama.gov.br%2Fsei&title=SEI-IBAMA&newTab=true",
+        href: "/external?url=https%3A%2F%2Fsei.ibama.gov.br%2Fcontrolador_externo.php%3Facao%3Dusuario_externo_logar%26id_orgao_acesso_externo%3D0&title=SEI-IBAMA&newTab=true",
         label: "SEI-IBAMA",
         icon: LinkIcon,
         roles: [

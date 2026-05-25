@@ -11,7 +11,14 @@ import {
   fetchBrandingImagesForPdf,
   getImageDimensions,
 } from '@/lib/branding-pdf';
-import type { LocalBranding } from '@/hooks/use-local-branding';
+import { brandingUrlsFromLocal } from '@/lib/branding/urls';
+import {
+  BRANDING_REQUIRED_MESSAGE,
+  BRANDING_SETUP_PATH,
+  getBrandingMissingSlots,
+  hasCompleteBrandingImages,
+  hasCompleteBrandingUrls,
+} from '@/lib/branding/requirements';
 
 export type PdfUnit = 'mm' | 'cm';
 
@@ -109,19 +116,7 @@ async function computeFooterSize(
   };
 }
 
-export function brandingUrlsFromLocal(
-  branding:
-    | LocalBranding
-    | { headerImageUrl?: string | null; footerImageUrl?: string | null; watermarkImageUrl?: string | null }
-    | null
-    | undefined,
-): BrandingImageUrls {
-  return {
-    headerImageUrl: branding?.headerImageUrl,
-    footerImageUrl: branding?.footerImageUrl,
-    watermarkImageUrl: branding?.watermarkImageUrl,
-  };
-}
+export { brandingUrlsFromLocal } from '@/lib/branding/urls';
 
 /** Carrega imagens e calcula tamanhos para o documento. */
 export async function loadPdfBranding(
@@ -367,37 +362,59 @@ export function reportBrandingPdfIssues(
   return missing;
 }
 
-/** Bloqueia exportação enquanto o branding ainda carrega (evita PDF sem identidade visual). */
+/** Bloqueia exportação oficial sem identidade visual completa (fail-closed). */
 export function guardBrandingPdfExport(
   opts: {
     isPdfImagesLoading: boolean;
-    hasBrandingUrls: boolean;
+    hasBrandingUrls?: boolean;
     toast?: BrandingPdfToastReporter;
-    /** Rótulo do formato (ex.: PDF, Word). */
     formatLabel?: string;
     brandingUrls?: BrandingImageUrls | null;
     pdfImages?: BrandingPdfImages | null;
+    brandingData?: {
+      headerImageUrl?: string | null;
+      footerImageUrl?: string | null;
+      watermarkImageUrl?: string | null;
+    } | null;
   },
 ): boolean {
+  const formatLabel = opts.formatLabel ?? 'PDF';
+  const urls =
+    opts.brandingUrls ??
+    (opts.brandingData ? brandingUrlsFromLocal(opts.brandingData) : null);
+
   if (opts.isPdfImagesLoading) {
-    const label = opts.formatLabel ?? 'PDF';
     opts.toast?.({
       title: 'Aguarde',
-      description: `Carregando imagens da identidade visual para o ${label}…`,
+      description: `Carregando imagens da identidade visual para o ${formatLabel}…`,
     });
     return false;
   }
 
-  if (opts.hasBrandingUrls && opts.brandingUrls && opts.pdfImages != null) {
-    const missing = brandingPdfMissingSlots(opts.brandingUrls, opts.pdfImages);
-    if (missing.length > 0) {
-      opts.toast?.({
-        variant: 'destructive',
-        title: 'Identidade visual indisponível',
-        description: `Não foi possível carregar: ${missing.join(', ')}. Verifique Configurações → Identidade visual, recarregue a página (F5) e tente de novo. Em dev local, confira GOOGLE_APPLICATION_CREDENTIALS se o problema persistir.`,
-      });
-      return false;
-    }
+  if (!urls || !hasCompleteBrandingUrls(urls)) {
+    opts.toast?.({
+      variant: 'destructive',
+      title: 'Identidade visual obrigatória',
+      description: BRANDING_REQUIRED_MESSAGE,
+    });
+    return false;
+  }
+
+  if (!opts.pdfImages || !hasCompleteBrandingImages(opts.pdfImages)) {
+    const missing = getBrandingMissingSlots(urls, opts.pdfImages ?? {
+      headerBase64: null,
+      footerBase64: null,
+      watermarkBase64: null,
+    });
+    opts.toast?.({
+      variant: 'destructive',
+      title: 'Identidade visual indisponível',
+      description:
+        missing.length > 0
+          ? `Não foi possível carregar: ${missing.join(', ')}. Verifique ${BRANDING_SETUP_PATH}, recarregue a página (F5) e tente de novo. Em dev local, confira GOOGLE_APPLICATION_CREDENTIALS se o problema persistir.`
+          : BRANDING_REQUIRED_MESSAGE,
+    });
+    return false;
   }
 
   return true;
@@ -411,16 +428,15 @@ export function guardBrandingExportFromHook(opts: {
     | undefined;
   pdfImages?: BrandingPdfImages | null;
   isPdfImagesLoading: boolean;
-  hasBrandingUrls: boolean;
+  hasBrandingUrls?: boolean;
   toast?: BrandingPdfToastReporter;
   formatLabel?: string;
 }): boolean {
   return guardBrandingPdfExport({
     isPdfImagesLoading: opts.isPdfImagesLoading,
-    hasBrandingUrls: opts.hasBrandingUrls,
     toast: opts.toast,
     formatLabel: opts.formatLabel,
-    brandingUrls: brandingUrlsFromLocal(opts.brandingData),
+    brandingData: opts.brandingData,
     pdfImages: opts.pdfImages,
   });
 }

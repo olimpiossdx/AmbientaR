@@ -363,10 +363,10 @@ export default function SettingsPage() {
                     </CardTitle>
                     <CardDescription>
                       Personalize contratos, estudos, ofícios e relatórios com a
-                      sua marca. Faça upload do cabeçalho, rodapé e marca
-                      d&apos;água; eles serão usados nos PDFs gerados pelo
-                      sistema. Se não carregar alguma imagem, o espaço
-                      correspondente ficará em branco nos documentos.
+                      sua marca. São obrigatórios o cabeçalho, o rodapé e a marca
+                      d&apos;água — todos os PDFs e documentos Word exportados pelo
+                      sistema usam estas imagens. Sem as três imagens configuradas,
+                      a exportação oficial fica bloqueada.
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">

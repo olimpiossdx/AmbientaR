@@ -2,6 +2,7 @@
 
 import type { BrandingPdfImages } from '@/lib/branding-pdf';
 import type { LocalBranding } from '@/hooks/use-local-branding';
+import { hasCompleteBrandingUrls } from '@/lib/branding/requirements';
 import {
   drawWatermarkOnPage,
   getContentStartY,
@@ -150,11 +151,7 @@ export async function generatePiaExportPdfBlob(
   const session = await prepareIaMenuBrandedPdfSession({
     brandingData: branding,
     pdfImages: preloadedImages,
-    hasBrandingUrls: !!(
-      branding?.headerImageUrl ||
-      branding?.footerImageUrl ||
-      branding?.watermarkImageUrl
-    ),
+    hasBrandingUrls: hasCompleteBrandingUrls(branding),
   });
 
   if (!session) {

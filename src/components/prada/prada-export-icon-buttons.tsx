@@ -95,6 +95,18 @@ export function PradaExportIconButtons({ prada }: PradaExportIconButtonsProps) {
 
   const handleExportDocx = async () => {
     if (!runValidation() || !firestore) return;
+    if (
+      !guardBrandingExportFromHook({
+        brandingData,
+        pdfImages,
+        isPdfImagesLoading,
+        hasBrandingUrls,
+        toast,
+        formatLabel: 'Word',
+      })
+    ) {
+      return;
+    }
     setBusy('docx');
     try {
       const result = await generatePradaExportDocxBlob({
