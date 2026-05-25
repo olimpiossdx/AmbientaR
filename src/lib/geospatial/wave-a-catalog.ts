@@ -12,6 +12,10 @@ export type WaveACatalogEntry = {
   typeNames: string[];
   labelFields: string[];
   wfsBaseUrls: string[];
+  /** Margem extra no bbox WFS (graus). Útil para camadas pontuais esparsas. */
+  bboxMarginDegrees?: number;
+  /** Limite de feições por GetFeature (camadas pesadas, ex. bioma IBGE). */
+  maxWfsFeatures?: number;
 };
 
 /** Endpoints WFS válidos no GeoServer MG (raiz do host, não /geoserver/). */
@@ -52,6 +56,7 @@ export const WAVE_A_LAYERS: WaveACatalogEntry[] = [
     wave: "A",
     geometryKind: "polygon",
     typeNames: ["IDE:ide_0302_mg_limite_biomas_ibge_pol"],
+    maxWfsFeatures: 200,
     labelFields: [
       "bioma",
       "BIOMA",
@@ -148,9 +153,12 @@ export const WAVE_C_LAYERS: WaveACatalogEntry[] = [
     wave: "C",
     geometryKind: "point",
     typeNames: [
+      "IDE:ide_1802_mg_ocorrencia_especies_avifauna_geral_pol",
+      "IDE:ide_1801_mg_especies_catalogadas_pol",
       "IDE:ide_1801_mg_ocorrencia_especies_pto",
       "IDE:ide_1805_mg_pesquisa_especies_ameacadas_pto",
     ],
+    bboxMarginDegrees: 0.06,
     labelFields: ["especie", "ESPECIE", "grupo", "GRUPO", "nome", "NOME", "familia"],
     wfsBaseUrls: GEOSERVER_BASES,
   },

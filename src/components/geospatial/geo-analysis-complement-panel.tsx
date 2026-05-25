@@ -57,6 +57,10 @@ import {
   guardBrandingExportFromHook,
   reportBrandingPdfIssues,
 } from "@/lib/pdf-branding-layout";
+import {
+  SESSION_GEO_ANALYSIS_ID,
+  isSessionGeoAnalysisId,
+} from "@/lib/geospatial/geo-analysis-session";
 
 type GeoAnalysisDoc = {
   id: string;
@@ -148,8 +152,8 @@ export function GeoAnalysisComplementPanel({
 
   const sessionOnly =
     !!inlineWaveResult &&
-    !!initialGeoAnalysisId &&
-    !analyses.some((a) => a.id === initialGeoAnalysisId);
+    isSessionGeoAnalysisId(selectedId || initialGeoAnalysisId) &&
+    !analyses.some((a) => a.id === selectedId);
 
   React.useEffect(() => {
     const load = async () => {
@@ -177,11 +181,10 @@ export function GeoAnalysisComplementPanel({
         const fromUrl = searchParams?.get("geoAnalysisId");
         if (fromUrl && (items.some((i) => i.id === fromUrl) || fromUrl === initialGeoAnalysisId)) {
           setSelectedId(fromUrl);
-        } else if (
-          initialGeoAnalysisId &&
-          (items.some((i) => i.id === initialGeoAnalysisId) || inlineWaveResult)
-        ) {
+        } else if (initialGeoAnalysisId) {
           setSelectedId(initialGeoAnalysisId);
+        } else if (inlineWaveResult) {
+          setSelectedId(SESSION_GEO_ANALYSIS_ID);
         } else if (items[0]) {
           setSelectedId(items[0].id);
         }
@@ -209,7 +212,11 @@ export function GeoAnalysisComplementPanel({
 
   React.useEffect(() => {
     const loadOne = async () => {
-      if (inlineWaveResult && selectedId === initialGeoAnalysisId) {
+      if (
+        inlineWaveResult &&
+        (selectedId === initialGeoAnalysisId ||
+          isSessionGeoAnalysisId(selectedId))
+      ) {
         setLoadedWave(inlineWaveResult);
         return;
       }
@@ -241,7 +248,12 @@ export function GeoAnalysisComplementPanel({
 
   React.useEffect(() => {
     const loadSavedComplement = async () => {
-      if (!firestore || !selectedId || !userId) {
+      if (
+        !firestore ||
+        !selectedId ||
+        !userId ||
+        isSessionGeoAnalysisId(selectedId)
+      ) {
         setComplement(null);
         return;
       }
@@ -301,7 +313,7 @@ export function GeoAnalysisComplementPanel({
       }
       setComplement(result.result);
       setComplementProvider(result.provider);
-      if (firestore && userId) {
+      if (firestore && userId && !isSessionGeoAnalysisId(selectedId)) {
         const { geoAnalysisId: _gid, ...complementFields } = result.result;
         await addDoc(collection(firestore, "geo_analysis_complements"), {
           createdAt: serverTimestamp(),
@@ -389,19 +401,18 @@ export function GeoAnalysisComplementPanel({
     }
   };
 
-  const canShow =
-    analyses.length > 0 || (inlineWaveResult && initialGeoAnalysisId);
+  const canShow = analyses.length > 0 || !!inlineWaveResult;
 
   const selectOptions: { id: string; label: string }[] = analyses.map((a) => ({
     id: a.id,
     label: formatAnalysisLabel(a),
   }));
-  if (sessionOnly && initialGeoAnalysisId) {
+  if (sessionOnly) {
     selectOptions.unshift({
-      id: initialGeoAnalysisId,
+      id: selectedId || SESSION_GEO_ANALYSIS_ID,
       label: formatAnalysisLabel(
         {
-          id: initialGeoAnalysisId,
+          id: selectedId || SESSION_GEO_ANALYSIS_ID,
           perimeter: inlineWaveResult!.perimeter,
           layers: inlineWaveResult!.layers,
           generatedAtUtc: inlineWaveResult!.generatedAtUtc,

@@ -3,6 +3,11 @@ import type { Feature, FeatureCollection } from "geojson";
 const WFS_TIMEOUT_MS = 45_000;
 const MAX_FEATURES = 500;
 
+const WFS_HEADERS: HeadersInit = {
+  Accept: "application/json, application/geo+json;q=0.9, */*;q=0.1",
+  "User-Agent": "AmbientaR/1.0 (consultoria ambiental MG; WFS cliente)",
+};
+
 function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
   return new Promise((resolve, reject) => {
     const id = setTimeout(() => reject(new Error("Tempo limite WFS excedido.")), ms);
@@ -22,6 +27,7 @@ function buildGetFeatureUrl(params: {
   baseUrl: string;
   typeName: string;
   bbox: [number, number, number, number];
+  maxFeatures?: number;
 }): string {
   const [minX, minY, maxX, maxY] = params.bbox;
   const url = new URL(params.baseUrl);
@@ -32,7 +38,7 @@ function buildGetFeatureUrl(params: {
   url.searchParams.set("outputFormat", "application/json");
   url.searchParams.set("srsName", "EPSG:4326");
   url.searchParams.set("bbox", `${minX},${minY},${maxX},${maxY},EPSG:4326`);
-  url.searchParams.set("maxFeatures", String(MAX_FEATURES));
+  url.searchParams.set("maxFeatures", String(params.maxFeatures ?? MAX_FEATURES));
   return url.toString();
 }
 
@@ -65,67 +71,125 @@ export type WfsFetchResult = {
   typeName?: string;
   baseUrl?: string;
   error?: string;
+  /** Todas as tentativas responderam, mas sem feições no bbox (serviço OK). */
+  noFeaturesInExtent?: boolean;
 };
+
+function isNoFeaturesInExtentError(msg: string): boolean {
+  return msg.includes("sem feições no recorte");
+}
+
+function isRetryableNetworkError(msg: string): boolean {
+  const m = msg.toLowerCase();
+  return (
+    m.includes("fetch failed") ||
+    m.includes("terminated") ||
+    m.includes("tempo limite") ||
+    m.includes("econnreset") ||
+    m.includes("socket")
+  );
+}
+
+async function fetchOneTypeName(params: {
+  baseUrl: string;
+  typeName: string;
+  bbox: [number, number, number, number];
+  maxFeatures: number;
+}): Promise<{ ok: true; features: Feature[] } | { ok: false; error: string }> {
+  const url = buildGetFeatureUrl({
+    baseUrl: params.baseUrl,
+    typeName: params.typeName,
+    bbox: params.bbox,
+    maxFeatures: params.maxFeatures,
+  });
+
+  const maxAttempts = 3;
+  let lastError = "falha de rede";
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      const response = await withTimeout(
+        fetch(url, {
+          method: "GET",
+          cache: "no-store",
+          headers: WFS_HEADERS,
+        }),
+        WFS_TIMEOUT_MS,
+      );
+
+      if (!response.ok) {
+        lastError = `HTTP ${response.status}`;
+        if (response.status >= 500 && attempt < maxAttempts) {
+          await new Promise((r) => setTimeout(r, 800 * attempt));
+          continue;
+        }
+        return { ok: false, error: `${params.typeName}@${params.baseUrl}: ${lastError}` };
+      }
+
+      const text = await response.text();
+      if (text.trim().startsWith("<") || text.includes("ExceptionReport")) {
+        return { ok: false, error: `${params.typeName}: resposta XML/erro OGC` };
+      }
+
+      const fc = parseFeatureCollection(text);
+      if (!fc) {
+        return { ok: false, error: `${params.typeName}: JSON inválido` };
+      }
+
+      if (fc.features.length === 0) {
+        return { ok: false, error: `${params.typeName}: sem feições no recorte` };
+      }
+
+      return { ok: true, features: fc.features };
+    } catch (e) {
+      lastError = e instanceof Error ? e.message : "falha de rede";
+      if (isRetryableNetworkError(lastError) && attempt < maxAttempts) {
+        await new Promise((r) => setTimeout(r, 1000 * attempt));
+        continue;
+      }
+      return { ok: false, error: `${params.typeName}: ${lastError}` };
+    }
+  }
+
+  return { ok: false, error: `${params.typeName}: ${lastError}` };
+}
 
 export async function fetchWfsFeaturesInBbox(params: {
   baseUrls: string[];
   typeNames: string[];
   bbox: [number, number, number, number];
+  maxFeatures?: number;
 }): Promise<WfsFetchResult> {
   const errors: string[] = [];
+  const maxFeatures = params.maxFeatures ?? MAX_FEATURES;
 
   for (const baseUrl of params.baseUrls) {
     for (const typeName of params.typeNames) {
-      const url = buildGetFeatureUrl({ baseUrl, typeName, bbox: params.bbox });
-      try {
-        const response = await withTimeout(
-          fetch(url, {
-            method: "GET",
-            cache: "no-store",
-            headers: { Accept: "application/json" },
-          }),
-          WFS_TIMEOUT_MS,
-        );
-
-        if (!response.ok) {
-          errors.push(`${typeName}@${baseUrl}: HTTP ${response.status}`);
-          continue;
-        }
-
-        const text = await response.text();
-        if (text.trim().startsWith("<") || text.includes("ExceptionReport")) {
-          errors.push(`${typeName}: resposta XML/erro OGC`);
-          continue;
-        }
-
-        const fc = parseFeatureCollection(text);
-        if (!fc) {
-          errors.push(`${typeName}: JSON inválido`);
-          continue;
-        }
-
-        if (fc.features.length === 0) {
-          errors.push(`${typeName}: sem feições no recorte`);
-          continue;
-        }
-
+      const result = await fetchOneTypeName({
+        baseUrl,
+        typeName,
+        bbox: params.bbox,
+        maxFeatures,
+      });
+      if (result.ok) {
         return {
           ok: true,
-          features: fc.features,
+          features: result.features,
           typeName,
           baseUrl,
         };
-      } catch (e) {
-        errors.push(
-          `${typeName}: ${e instanceof Error ? e.message : "falha de rede"}`,
-        );
       }
+      errors.push(result.error);
     }
   }
+
+  const noFeaturesInExtent =
+    errors.length > 0 && errors.every((e) => isNoFeaturesInExtentError(e));
 
   return {
     ok: false,
     features: [],
     error: errors.slice(0, 3).join("; ") || "WFS indisponível",
+    noFeaturesInExtent,
   };
 }

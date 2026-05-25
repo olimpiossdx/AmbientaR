@@ -54,6 +54,10 @@ import { AiProviderBadge } from "@/components/ai/ai-provider-badge";
 import type { AiProviderId } from "@/lib/ai-provider-labels";
 import type { PerimeterParseInput } from "@/lib/geospatial/perimeter";
 import {
+  SESSION_GEO_ANALYSIS_ID,
+  isSessionGeoAnalysisId,
+} from "@/lib/geospatial/geo-analysis-session";
+import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
@@ -243,7 +247,7 @@ export default function AnaliseAmbientalPage() {
       }
       setWaveAResult(actionResult.result);
       const docId = await saveWaveASnapshot(perimeterInput, actionResult.result);
-      if (docId) setSavedGeoAnalysisId(docId);
+      setSavedGeoAnalysisId(docId ?? SESSION_GEO_ANALYSIS_ID);
       const okCount = actionResult.result.layers.filter((l) => l.status === "ok").length;
       const partialCount = actionResult.result.layers.filter(
         (l) => l.status === "partial",
@@ -252,7 +256,7 @@ export default function AnaliseAmbientalPage() {
         title: "Análise factual concluída",
         description: docId
           ? `${okCount} camada(s) OK, ${partialCount} parcial/indisponível. Salva para Etapa 2. Exporte o PDF ou complemente com IA.`
-          : `${okCount} camada(s) OK. Não foi possível salvar para Etapa 2 — veja o alerta acima.`,
+          : `${okCount} camada(s) OK. Etapa 2 disponível nesta sessão (não gravou no Firestore — veja o alerta).`,
       });
     } catch (error) {
       console.error("Wave A failed:", error);
@@ -826,7 +830,8 @@ export default function AnaliseAmbientalPage() {
                       {isExportingGeojson ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Globe className="mr-2 h-4 w-4" />}
                       Exportar GeoJSON
                     </Button>
-                    {savedGeoAnalysisId && (
+                    {savedGeoAnalysisId &&
+                      !isSessionGeoAnalysisId(savedGeoAnalysisId) && (
                       <Button asChild variant="default" className="min-w-[200px] flex-1">
                         <Link
                           href={`/laudos/new?tipoEstudo=RCA&geoAnalysisId=${encodeURIComponent(savedGeoAnalysisId)}`}

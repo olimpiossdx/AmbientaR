@@ -19,7 +19,7 @@ Documento vivo para refinamento. **Não substitui código** — regista o que o 
 | 10 | Gráfico precipitação/humidade | — | Não implementado |
 | 11 | Mapa hipsometria | — | Não implementado |
 | 12 | Mapa ADA/perímetro QGIS | — | Não implementado |
-| — | `geo_analyses` + Etapa 2 | Após gerar factual | ☐ |
+| — | `geo_analyses` + Etapa 2 | Após gerar factual (incl. sessão sem Firestore) | ☐ |
 | — | PDF branded + figuras | Download PDF | ☐ |
 
 ---
@@ -82,7 +82,8 @@ Mensagem: *“Nenhuma análise factual salva. Gere primeiro o relatório factual
 Possíveis causas a validar numa próxima sessão técnica:
 
 - `geo_analyses` não gravou (regras Firestore, utilizador não autenticado, erro silencioso no cliente).
-- Gravação com `wave: "ABC"` mas listagem da Etapa 2 filtra só `wave === "A"` (verificar consistência quando for corrigir código).
+- ~~Gravação com `wave: "ABC"` mas listagem da Etapa 2 filtra só `wave === "A"`~~ — listagem já aceita `ABC` (2026-05-25).
+- **Corrigido (2026-05-25):** se `geo_analyses` não gravar, Etapa 2 usa modo sessão (`SESSION_GEO_ANALYSIS_ID`) com dados em memória — antes mostrava “Nenhuma análise factual salva” mesmo com relatório gerado.
 - Sessão / projeto diferente entre geração e painel Etapa 2.
 
 **Impacto:** sem pacote salvo, **Passo 3** (estudos automáticos) não tem âncora `geoAnalysisId`.

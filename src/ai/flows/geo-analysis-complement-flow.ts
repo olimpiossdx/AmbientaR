@@ -35,6 +35,7 @@ function layersToFactsText(layers: GeoLayerResult[]): string {
 
 const complementPrompt = ai.definePrompt({
   name: "geoAnalysisComplementPrompt",
+  model: aiModel,
   input: {
     schema: z.object({
       factualSummary: z.string(),
@@ -89,11 +90,14 @@ const complementFlow = ai.defineFlow(
       );
     }
 
-    const { output } = await complementPrompt({
-      factualSummary: waveResult.factualSummary,
-      areaHa: waveResult.perimeter.areaHa,
-      layersFacts: layersToFactsText(waveResult.layers),
-    });
+    const { output } = await complementPrompt(
+      {
+        factualSummary: waveResult.factualSummary,
+        areaHa: waveResult.perimeter.areaHa,
+        layersFacts: layersToFactsText(waveResult.layers),
+      },
+      { model: aiModel },
+    );
 
     if (!output) {
       throw new Error("A IA não gerou o complemento.");

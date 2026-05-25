@@ -1,4 +1,4 @@
-import type { Feature, Polygon } from "geojson";
+import type { Feature, Geometry, Polygon } from "geojson";
 import type { GeoLayerResult, WaveAAnalysisResult } from "@/lib/types/geo-wave-a";
 import {
   expandBbox,
@@ -19,6 +19,36 @@ import {
   buildFactualSummary,
 } from "@/lib/geospatial/layer-stats";
 
+function geometryKindFromFeatures(
+  features: Feature[],
+  fallback: WaveACatalogEntry["geometryKind"],
+): WaveACatalogEntry["geometryKind"] {
+  const g = features[0]?.geometry?.type as Geometry["type"] | undefined;
+  if (g === "Point" || g === "MultiPoint") return "point";
+  if (g === "LineString" || g === "MultiLineString") return "line";
+  if (g === "Polygon" || g === "MultiPolygon") return "polygon";
+  return fallback;
+}
+
+function layerUnavailableSummary(entry: WaveACatalogEntry, wfs: {
+  noFeaturesInExtent?: boolean;
+  ok: boolean;
+}): string {
+  if (wfs.noFeaturesInExtent) {
+    if (entry.layerId === "mg_fauna") {
+      return "Nenhuma ocorrência de fauna registrada no perímetro na base IDE-Sisema (consulta WFS concluída).";
+    }
+    if (entry.layerId === "mg_bioma") {
+      return "Nenhum limite de bioma intersectou o perímetro no recorte WFS (confira no Geosisemanet/IBGE).";
+    }
+    return "Nenhuma feição no recorte WFS (serviço respondeu; confira no IDE-Sisema).";
+  }
+  if (wfs.ok) {
+    return "Nenhuma feição intersectada no recorte (confira no IDE-Sisema/Geosisemanet).";
+  }
+  return "Serviço WFS indisponível ou camada não encontrada.";
+}
+
 async function analyzeCatalogLayer(params: {
   perimeter: Feature<Polygon>;
   perimeterAreaHa: number;
@@ -26,25 +56,28 @@ async function analyzeCatalogLayer(params: {
   entry: WaveACatalogEntry;
 }): Promise<GeoLayerResult> {
   const queriedAtUtc = new Date().toISOString();
-  const expandedBbox = expandBbox(params.bbox);
+  const margin =
+    params.entry.bboxMarginDegrees ??
+    (params.entry.geometryKind === "point" ? 0.05 : 0.02);
+  const expandedBbox = expandBbox(params.bbox, margin);
 
   const wfs = await fetchWfsFeaturesInBbox({
     baseUrls: params.entry.wfsBaseUrls,
     typeNames: params.entry.typeNames,
     bbox: expandedBbox,
+    maxFeatures: params.entry.maxWfsFeatures,
   });
 
   if (!wfs.ok || wfs.features.length === 0) {
+    const status =
+      wfs.ok || wfs.noFeaturesInExtent ? "partial" : "unavailable";
     return {
       layerId: params.entry.layerId,
       title: params.entry.title,
-      status: wfs.ok ? "partial" : "unavailable",
+      status,
       stats: [],
-      summary:
-        wfs.ok
-          ? "Nenhuma feição intersectada no recorte (confira no IDE-Sisema/Geosisemanet)."
-          : "Serviço WFS indisponível ou camada não encontrada.",
-      errorMessage: wfs.error,
+      summary: layerUnavailableSummary(params.entry, wfs),
+      errorMessage: wfs.noFeaturesInExtent ? undefined : wfs.error,
       source: wfs.baseUrl
         ? {
             name: "IDE-Sisema GeoServer MG",
@@ -57,14 +90,15 @@ async function analyzeCatalogLayer(params: {
     };
   }
 
+  const geomKind = geometryKindFromFeatures(wfs.features, params.entry.geometryKind);
   const stats =
-    params.entry.geometryKind === "line"
+    geomKind === "line"
       ? aggregateLineLayerStats({
           perimeter: params.perimeter,
           features: wfs.features,
           labelFields: params.entry.labelFields,
         })
-      : params.entry.geometryKind === "point"
+      : geomKind === "point"
         ? aggregatePointLayerStats({
             perimeter: params.perimeter,
             features: wfs.features,
@@ -85,7 +119,7 @@ async function analyzeCatalogLayer(params: {
   } else if (params.entry.geometryKind === "line") {
     const totalKm = stats.reduce((s, x) => s + (x.lengthKm ?? 0), 0);
     summary = `${stats.length} feição(ões) hídrica(s); extensão total no recorte ~${totalKm.toFixed(2)} km.`;
-  } else if (params.entry.geometryKind === "point") {
+  } else if (geomKind === "point") {
     const total = stats.reduce((s, x) => s + (x.count ?? 0), 0);
     summary = `${total} ocorrência(s) de fauna no perímetro.`;
   } else {
@@ -123,17 +157,16 @@ export async function runWaveAAnalysis(
     // Permitido com buffer, mas aviso no summary
   }
 
-  const layerResults: GeoLayerResult[] = [];
-  for (const entry of SIG_MG_ALL_LAYERS) {
-    layerResults.push(
-      await analyzeCatalogLayer({
+  const layerResults = await Promise.all(
+    SIG_MG_ALL_LAYERS.map((entry) =>
+      analyzeCatalogLayer({
         perimeter: parsed.polygon,
         perimeterAreaHa: parsed.areaHa,
         bbox: parsed.bbox,
         entry,
       }),
-    );
-  }
+    ),
+  );
 
   const generatedAtUtc = new Date().toISOString();
   const factualSummary = buildFactualSummary(
