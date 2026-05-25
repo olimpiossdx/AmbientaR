@@ -711,6 +711,14 @@ service cloud.firestore {
     }
 
     /**
+     * @description Projeto Técnico de Barragem.
+     * @path /databases/{database}/documents/projetosTecnicosBarragem/{docId}
+     */
+    match /projetosTecnicosBarragem/{docId} {
+      allow read, write: if isSignedIn();
+    }
+
+    /**
      * @description Allows any authenticated user to manage RCA forms.
      * @path /databases/{database}/documents/rcas/{rcaId}
      */

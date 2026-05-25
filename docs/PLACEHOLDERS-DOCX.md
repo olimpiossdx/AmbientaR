@@ -87,6 +87,22 @@ Estes são preenchidos com texto gerado pela IA (RAG + contexto). Se não houver
 - O upload é feito em **Configurações > Templates** (ou via API `POST /api/templates/[type]`).
 - Tipos aceitos: rca, pia, pca, prada, ptrf, eia-rima, las-ras, pea, reserva-legal, fauna, outorgas, barragens.
 
+### Projeto Técnico de Barragem (slug `barragens`)
+
+Além dos placeholders de contexto ambiental (`EMPREENDIMENTO_*`, `EMPREENDEDOR_*`, etc.), use:
+
+| Placeholder | Conteúdo |
+|-------------|----------|
+| `{{APRESENTACAO}}` | Texto de apresentação |
+| `{{USO_PRETENDIDO}}` | Uso da barragem |
+| `{{DEFINICAO_BARRAGEM}}` | Seção 2 |
+| `{{ATERRO}}` … `{{EXTRAVASOR}}` | Seções 4–11 |
+| `{{HID_BACIA}}` … `{{HID_VAZAO_CHEIA}}` | Subitens hidrológicos |
+| `{{TABELA_NIVEIS_RESERVATORIO}}` | Tabela cota/área/volume |
+| `{{RT_NOME}}`, `{{RT_ART}}` | Responsável técnico |
+
+Lista completa em `src/lib/barragem/barragem-placeholders.ts`. Sem template personalizado, a app gera Word com cabeçalho, rodapé e marca d'água via `buildBrandedDocxSectionSetup` (igual PIA).
+
 ## Exemplo de frase no Word
 
 > O empreendimento **{{EMPREENDIMENTO_NOME}}**, localizado no município de **{{EMPREENDIMENTO_MUNICIPIO}}**/{{EMPREENDIMENTO_UF}}, de titularidade de **{{EMPREENDEDOR_NOME}}** ({{EMPREENDEDOR_CPF_CNPJ}}), é objeto do presente estudo.

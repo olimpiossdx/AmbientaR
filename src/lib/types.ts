@@ -757,6 +757,84 @@ export type Prada = {
   referenciasBibliograficas?: string;
 };
 
+/** Nível de cota do reservatório (tabela de capacidade). */
+export type BarragemNivelCota = {
+  cota?: string;
+  areaM2?: string;
+  alturaM?: string;
+  volumeM3?: string;
+  volumeAcumuladoM3?: string;
+};
+
+/** Projeto Técnico de Barragem (memorial descritivo + exportação DOCX/PDF). */
+export type ProjetoTecnicoBarragem = {
+  id: string;
+  status?: 'Rascunho' | 'Aprovado';
+  arquivoCodigo?: string;
+  apresentacao?: string;
+  requerente: {
+    clientId?: string;
+    nome: string;
+    cpfCnpj: string;
+  };
+  empreendimento: {
+    projectId?: string;
+    nome: string;
+    denominacao?: string;
+    municipio?: string;
+    uf?: string;
+    car?: string;
+    matricula?: string;
+  };
+  responsavelTecnico: {
+    nome: string;
+    cpf?: string;
+    email?: string;
+    telefone?: string;
+    formacao: string;
+    registroConselho: string;
+    art?: string;
+  };
+  usoPretendido?: string;
+  espelhoDaguaM2?: string;
+  capacidadeArmazenamentoM3?: string;
+  localEmissao?: string;
+  dataEmissao?: string;
+  informacoesBasicas?: {
+    topograficas?: string;
+    latitude?: string;
+    longitude?: string;
+    altitude?: string;
+  };
+  definicaoBarragem?: string;
+  capacidadeReservatorio?: {
+    descricao?: string;
+    cotaEspelhoDagua?: string;
+    cotaTerrenoNatural?: string;
+    areaEspelhoM2?: string;
+    volumeArmazenadoM3?: string;
+    tabelaNiveis?: BarragemNivelCota[];
+  };
+  aterro?: string;
+  taludesAterro?: string;
+  fundacao?: string;
+  drenoPe?: string;
+  descargaFundo?: string;
+  calculosHidrologicos?: {
+    caracteristicasBacia?: string;
+    tempoConcentracao?: string;
+    intensidadeChuva?: string;
+    coeficienteEscoamento?: string;
+    vazaoCheia?: string;
+  };
+  dimensionamentoCapacidadeCheia?: string;
+  extravasor?: string;
+  implantacaoProjeto?: string;
+  conservacaoManutencao?: string;
+  literaturaConsultada?: string;
+  anexosDescricao?: string;
+};
+
 export type PTRF = {
   id: string;
   status?: 'Rascunho' | 'Aprovado';
