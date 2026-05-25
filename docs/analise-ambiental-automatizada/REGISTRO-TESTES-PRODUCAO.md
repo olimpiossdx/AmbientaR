@@ -4,7 +4,23 @@ Documento vivo para refinamento. **Não substitui código** — regista o que o 
 
 Última entrada: teste com polígono ~**850,52 ha** (Ondas A+B+C).
 
-**Correcção técnica (2026-05-22):** endpoint WFS correcto é `https://geoserver.meioambiente.mg.gov.br/ows` (não `/geoserver/ows`). typeNames com prefixo `IDE:`. Re-testar em produção após deploy.
+**Correcção técnica (2026-05-22):** endpoint WFS correcto é `https://geoserver.meioambiente.mg.gov.br/ows` (não `/geoserver/ows`). typeNames com prefixo `IDE:`.
+
+**Deploy (2026-05-25):** commit `de63002` em `main` — branding PDF menu IA, minimapas SVG, Etapa 2 inline, catálogo `wave-a-catalog.ts` alinhado. **Re-teste produção obrigatório** antes de declarar 12 itens.
+
+---
+
+## Checklist pós-`de63002` (12 itens — pendente)
+
+| # | Item | Teste | Resultado |
+|---|------|-------|-----------|
+| 1–8 | Camadas SIG | Gerar factual 8 camadas, polígono ~850 ha | ☐ |
+| 9 | Gráfico temperatura | — | Não implementado |
+| 10 | Gráfico precipitação/humidade | — | Não implementado |
+| 11 | Mapa hipsometria | — | Não implementado |
+| 12 | Mapa ADA/perímetro QGIS | — | Não implementado |
+| — | `geo_analyses` + Etapa 2 | Após gerar factual | ☐ |
+| — | PDF branded + figuras | Download PDF | ☐ |
 
 ---
 

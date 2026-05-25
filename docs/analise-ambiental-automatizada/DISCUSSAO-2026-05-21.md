@@ -156,3 +156,12 @@ Roteiro replicável: [ROTEIRO-REPLICAR-SAAS.md](./ROTEIRO-REPLICAR-SAAS.md).
 - Plano repartido em **~33 micro-ações** (M0–M4): cada uma termina com **checklist de debug** antes da seguinte.
 - Documento operacional: [PLANO-FASES-CIRURGICAS.md](./PLANO-FASES-CIRURGICAS.md).
 - Sprint mínimo definido (M0.1, M1.2–M1.4, M1.7–M1.8, M1.10–M1.11, M2.2–M2.5, M3.1, M3.4–M3.5, M3.10) se for preciso cortar escopo.
+
+---
+
+## Continuação — 2026-05-25 (12 itens + QGIS + anexos PIA)
+
+- Fechada a lista dos **12 itens** de saída (8 camadas IDE-Sisema + 2 gráficos clima + hipsometria + mapa ADA/perímetro).
+- Anexos PIA definem o **padrão cartográfico** (grade UTM, escala, norte, legenda, figuras numeradas) — não o mini-mapa SVG actual.
+- Decisão: **Turf/WFS no Next** para números; **worker QGIS** para figuras; ver [DISCUSSAO-2026-05-25.md](./DISCUSSAO-2026-05-25.md) e [MAPAS-REFERENCIA-PIA-QGIS.md](./MAPAS-REFERENCIA-PIA-QGIS.md).
+- Código em produção a validar após push `de63002` (branding, minimapas esquemáticos, Etapa 2 inline).
