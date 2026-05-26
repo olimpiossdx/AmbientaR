@@ -35,14 +35,14 @@ type OAuthTokenResponse = {
 
 function getClientId(): string {
   const clientId = process.env.MICROSOFT_GRAPH_CLIENT_ID?.trim();
-  if (!clientId) throw new Error("MICROSOFT_GRAPH_CLIENT_ID n„o configurado.");
+  if (!clientId) throw new Error("MICROSOFT_GRAPH_CLIENT_ID n√£o configurado.");
   return clientId;
 }
 
 function getClientSecret(): string {
   const clientSecret = process.env.MICROSOFT_GRAPH_CLIENT_SECRET?.trim();
   if (!clientSecret) {
-    throw new Error("MICROSOFT_GRAPH_CLIENT_SECRET n„o configurado.");
+    throw new Error("MICROSOFT_GRAPH_CLIENT_SECRET n√£o configurado.");
   }
   return clientSecret;
 }
@@ -108,7 +108,7 @@ export async function consumeOneDriveAuthState(
   const snap = await ref.get();
   await ref.delete().catch(() => undefined);
   if (!snap.exists) {
-    throw new Error("Estado OAuth inv·lido ou expirado.");
+    throw new Error("Estado OAuth inv√°lido ou expirado.");
   }
   const doc = snap.data() as PendingOAuthStateDoc;
   if (Date.now() > doc.expiresAtMs) {
@@ -176,7 +176,7 @@ export async function getDelegatedGraphAccessToken(): Promise<string> {
   const current = await getDelegatedTokenDoc();
   if (!current) {
     throw new Error(
-      "OneDrive pessoal n„o conectado. Use 'Ligar conta Microsoft' na Biblioteca IA.",
+      "OneDrive pessoal n√£o conectado. Use 'Ligar conta Microsoft' na Biblioteca IA.",
     );
   }
 
