@@ -19,14 +19,20 @@ const DEFAULT_SERVICE_ACCOUNT_PATH = resolve(
 
 /** Erro amigável quando não há credenciais no ambiente local. */
 export class FirebaseAdminCredentialsError extends Error {
-  constructor() {
+  constructor(detail?: string) {
+    const credPath = process.env.GOOGLE_APPLICATION_CREDENTIALS?.trim();
+    const defaultPath = DEFAULT_SERVICE_ACCOUNT_PATH;
     super(
-      "Credenciais do Firebase Admin não configuradas neste ambiente. " +
-        "Para desenvolvimento local, adicione ao .env.local uma destas opções: " +
-        "GOOGLE_APPLICATION_CREDENTIALS com o caminho do JSON da conta de serviço, " +
-        'ou FIREBASE_SERVICE_ACCOUNT_KEY com o JSON completo (uma linha). ' +
-        "Alternativa: coloque o ficheiro em config/firebase-service-account.json " +
-        "(não versionar). Em Firebase App Hosting / Cloud Run o ADC costuma funcionar automaticamente.",
+      detail ||
+        "Credenciais do Firebase Admin não configuradas neste ambiente. " +
+          "No .env.local não basta o caminho: é obrigatório o ficheiro JSON no disco. " +
+          (credPath
+            ? `Caminho configurado (inexistente?): ${credPath}. `
+            : "") +
+          `Copie a chave da Firebase Console para ${defaultPath} ` +
+          "(Contas de serviço → Gerar nova chave privada). " +
+          'Alternativa: FIREBASE_SERVICE_ACCOUNT_KEY={"type":"service_account",...} numa linha. ' +
+          "Depois reinicie npm run dev. Ver config/README.md.",
     );
     this.name = "FirebaseAdminCredentialsError";
   }
@@ -62,18 +68,20 @@ export function resolveServiceAccount(): ServiceAccount | null {
   }
 
   const credPath = process.env.GOOGLE_APPLICATION_CREDENTIALS?.trim();
-  if (credPath) {
-    const fromEnv = loadServiceAccountFromDisk(credPath);
-    if (fromEnv) return fromEnv;
-    throw new Error(
-      `GOOGLE_APPLICATION_CREDENTIALS aponta para um ficheiro inexistente: ${credPath}`,
-    );
+  const pathsToTry = [
+    ...(credPath ? [credPath] : []),
+    DEFAULT_SERVICE_ACCOUNT_PATH,
+  ].filter((p, i, arr) => arr.indexOf(p) === i);
+
+  for (const filePath of pathsToTry) {
+    const fromDisk = loadServiceAccountFromDisk(filePath);
+    if (fromDisk) return fromDisk;
   }
 
-  if (existsSync(DEFAULT_SERVICE_ACCOUNT_PATH)) {
-    return parseServiceAccountJson(
-      readFileSync(DEFAULT_SERVICE_ACCOUNT_PATH, "utf8"),
-      "config/firebase-service-account.json",
+  if (credPath) {
+    throw new FirebaseAdminCredentialsError(
+      `GOOGLE_APPLICATION_CREDENTIALS aponta para um ficheiro que não existe: ${credPath}. ` +
+        "Descarregue o JSON em Firebase Console → Contas de serviço → Gerar nova chave e copie para esse caminho.",
     );
   }
 

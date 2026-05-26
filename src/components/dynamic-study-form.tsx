@@ -28,6 +28,17 @@ import type { StudyFormSchema, Section, Field } from '@/lib/study-form-schema';
 import { useCollection, useMemoFirebase, useFirebase } from '@/firebase';
 import { collection } from 'firebase/firestore';
 import type { Empreendedor as Client, Project } from '@/lib/types';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
+import { Progress } from '@/components/ui/progress';
+import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
+import { filterProjectsByEmpreendedorId } from '@/lib/processos-form-order';
+import { LISTAGEM_SHORT_BY_CODE } from '@/lib/listagem-activities';
 
 export type DynamicFormValues = Record<string, unknown>;
 
@@ -37,9 +48,73 @@ interface DynamicStudyFormProps {
   studySlug: string;
   onSuccess?: (values: DynamicFormValues) => void | Promise<void>;
   submitLabel?: string;
-  /** Se true, salva no Firestore (pradas/ptrfs); senão apenas chama onSuccess com valores */
+  /** Se true, salva no Firestore; senão apenas chama onSuccess com valores */
   persist?: boolean;
   currentId?: string | null;
+  /** Quando o empreendimento muda, informa a listagem (activity) do cadastro */
+  onProjectActivityChange?: (activity: string | null) => void;
+}
+
+function normalizeKey(input: string): string {
+  return input
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '');
+}
+
+function collectSchemaFieldPaths(schema: StudyFormSchema): string[] {
+  const paths: string[] = [];
+  for (const section of schema.sections) {
+    const fields = section.fields || section.itemFields || [];
+    for (const field of fields) {
+      if (section.type === 'object' || section.fields) {
+        paths.push(`${section.id}.${field.id}`);
+      } else {
+        paths.push(`${section.id}.${field.id}`);
+      }
+    }
+  }
+  return paths;
+}
+
+function countFilledFields(values: DynamicFormValues, paths: string[]): number {
+  let filled = 0;
+  for (const path of paths) {
+    const parts = path.split('.');
+    let cur: unknown = values;
+    for (const p of parts) {
+      if (cur == null || typeof cur !== 'object') {
+        cur = undefined;
+        break;
+      }
+      cur = (cur as Record<string, unknown>)[p];
+    }
+    if (cur !== undefined && cur !== null && cur !== '') {
+      if (typeof cur === 'boolean' || typeof cur === 'number') filled += 1;
+      else if (typeof cur === 'string' && cur.trim()) filled += 1;
+      else if (Array.isArray(cur) && cur.length > 0) filled += 1;
+    }
+  }
+  return filled;
+}
+
+function defaultOpenSections(schema: StudyFormSchema): string[] {
+  const ids = schema.sections.map((s) => s.id);
+  const preferred = ['requerente', 'empreendimento', 'responsavelTecnico'];
+  const open = preferred.filter((p) => ids.some((id) => id.toLowerCase().includes(p.toLowerCase())));
+  if (open.length < 2 && ids[0]) open.push(ids[0]);
+  return open.slice(0, 3);
+}
+
+function getListagemCode(activity?: string): string {
+  if (!activity) return '';
+  const normalized = activity
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+  const match = normalized.match(/\blistagem\s+([a-h])\b/);
+  return match?.[1]?.toUpperCase() ?? '';
 }
 
 function buildDefaultValuesFromSchema(schema: StudyFormSchema): DynamicFormValues {
@@ -84,6 +159,16 @@ function mergeDefaults(schema: StudyFormSchema, initial?: DynamicFormValues): Dy
   return merge(base, initial);
 }
 
+const FIRESTORE_COLLECTION_BY_SLUG: Record<string, string | null> = {
+  prada: 'pradas',
+  ptrf: 'ptrfs',
+  rca: 'rcas',
+  pca: 'pcas',
+  'eia-rima': 'eiaRimas',
+  'las-ras': 'lasRas',
+  reanalise: 'reanalises',
+};
+
 export function DynamicStudyForm({
   schema,
   defaultValues,
@@ -92,11 +177,12 @@ export function DynamicStudyForm({
   submitLabel = 'Salvar',
   persist = false,
   currentId = null,
+  onProjectActivityChange,
 }: DynamicStudyFormProps) {
   const [loading, setLoading] = React.useState(false);
   const { firestore } = useFirebase();
   const clientsQuery = useMemoFirebase(
-    () => (firestore ? collection(firestore, 'clients') : null),
+    () => (firestore ? collection(firestore, 'empreendedores') : null),
     [firestore]
   );
   const { data: clients } = useCollection<Client>(clientsQuery);
@@ -117,6 +203,27 @@ export function DynamicStudyForm({
 
   const clientId = form.watch('requerente.clientId');
   const projectId = form.watch('empreendimento.projectId');
+  const schemaFieldPaths = React.useMemo(() => collectSchemaFieldPaths(schema), [schema]);
+  const formValues = form.watch();
+  const fillProgress = React.useMemo(() => {
+    if (schemaFieldPaths.length === 0) return 0;
+    return Math.round(
+      (countFilledFields(formValues, schemaFieldPaths) / schemaFieldPaths.length) * 100,
+    );
+  }, [formValues, schemaFieldPaths]);
+
+  const projectsForSelect = React.useMemo(
+    () => filterProjectsByEmpreendedorId(projects, clientId as string | undefined),
+    [projects, clientId],
+  );
+
+  React.useEffect(() => {
+    const pid = form.getValues('empreendimento.projectId') as string | undefined;
+    if (pid && projectsForSelect.length > 0 && !projectsForSelect.some((p) => p.id === pid)) {
+      form.setValue('empreendimento.projectId' as never, '' as never);
+    }
+  }, [clientId, projectsForSelect, form]);
+
   React.useEffect(() => {
     if (clientId && clients?.length) {
       const c = clients.find((x) => x.id === clientId);
@@ -130,6 +237,8 @@ export function DynamicStudyForm({
     if (projectId && projects?.length) {
       const p = projects.find((x) => x.id === projectId);
       if (p) {
+        onProjectActivityChange?.(p.activity ?? null);
+        const listagemCode = getListagemCode(p.activity);
         form.setValue('empreendimento.nome' as any, (p.fantasyName || p.propertyName) ?? '');
         form.setValue('empreendimento.denominacao' as any, p.propertyName ?? '');
         const carVal = typeof p.car === 'object' && p.car && 'receiptNumber' in p.car
@@ -137,18 +246,56 @@ export function DynamicStudyForm({
           : (p as Record<string, unknown>).car as string | undefined;
         form.setValue('empreendimento.car' as any, carVal ?? '');
         form.setValue('empreendimento.matricula' as any, p.matricula ?? '');
-      }
-    }
-  }, [projectId, projects, form]);
 
-  const collectionName = studySlug === 'prada' ? 'pradas' : studySlug === 'ptrf' ? 'ptrfs' : null;
+        const autoByFieldId: Record<string, string | undefined> = {
+          nome: (p.fantasyName || p.propertyName) ?? '',
+          denominacao: p.propertyName ?? '',
+          atividade: p.activity ?? '',
+          activity: p.activity ?? '',
+          listagem: p.activity ?? '',
+          listagemcodigo: listagemCode,
+          cnpj: p.cnpj ?? '',
+          endereco: p.address ?? '',
+          address: p.address ?? '',
+          municipio: p.municipio ?? '',
+          uf: p.uf ?? '',
+          cep: p.cep ?? '',
+          inscricaoestadual: p.inscricaoEstadual ?? '',
+          inscricaomunicipal: p.inscricaoMunicipal ?? '',
+          matricula: p.matricula ?? '',
+          comarca: p.comarca ?? '',
+          distrito: p.district ?? '',
+          zona: p.zoneType ?? '',
+        };
+
+        for (const pathName of schemaFieldPaths) {
+          const fieldId = normalizeKey(pathName.split('.').pop() || '');
+          const mappedValue = autoByFieldId[fieldId];
+          if (mappedValue == null || mappedValue === '') continue;
+          const current = form.getValues(pathName as any);
+          if (current == null || current === '') {
+            form.setValue(pathName as any, mappedValue);
+          }
+        }
+      }
+    } else {
+      onProjectActivityChange?.(null);
+    }
+  }, [projectId, projects, form, schemaFieldPaths, onProjectActivityChange]);
+
+  const collectionName = FIRESTORE_COLLECTION_BY_SLUG[studySlug] ?? null;
 
   async function handleSubmit(values: DynamicFormValues) {
     setLoading(true);
     try {
       if (persist && collectionName && firestore) {
         const { addDoc, updateDoc, doc } = await import('firebase/firestore');
-        const payload = { ...values, status: 'Rascunho', updatedAt: new Date().toISOString() };
+        const payload = {
+          ...values,
+          status: 'Rascunho',
+          formSource: 'dynamic',
+          updatedAt: new Date().toISOString(),
+        };
         if (currentId) {
           await updateDoc(doc(firestore, collectionName, currentId), payload);
         } else {
@@ -164,19 +311,48 @@ export function DynamicStudyForm({
     }
   }
 
+  const openSections = React.useMemo(() => defaultOpenSections(schema), [schema]);
+
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
-        {schema.sections.map((section) => (
-          <SectionBlock
-            key={section.id}
-            section={section}
-            form={form}
-            clients={clients ?? []}
-            projects={projects ?? []}
-          />
-        ))}
-        <div className="flex gap-2">
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+        <div className="rounded-lg border bg-muted/30 p-4 space-y-2">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-sm font-medium">Progresso do preenchimento</p>
+            <span className="text-sm text-muted-foreground">{fillProgress}%</span>
+          </div>
+          <Progress value={fillProgress} className="h-2" />
+          {schema.listagemCode && (
+            <p className="text-xs text-muted-foreground flex flex-wrap items-center gap-2">
+              Listagem{' '}
+              <Badge variant="outline" className="font-mono">
+                {schema.listagemCode}
+              </Badge>
+              {LISTAGEM_SHORT_BY_CODE[schema.listagemCode] && (
+                <span>{LISTAGEM_SHORT_BY_CODE[schema.listagemCode]}</span>
+              )}
+            </p>
+          )}
+          <p className="text-xs text-muted-foreground">
+            Comece por empreendedor e empreendimento; as demais seções seguem a estrutura do
+            termo de referência.
+          </p>
+        </div>
+
+        <Accordion type="multiple" defaultValue={openSections} className="space-y-2">
+          {schema.sections.map((section) => (
+            <SectionBlock
+              key={section.id}
+              section={section}
+              form={form}
+              clients={clients ?? []}
+              projects={projectsForSelect}
+              allProjects={projects ?? []}
+            />
+          ))}
+        </Accordion>
+
+        <div className="sticky bottom-0 z-10 flex gap-2 border-t bg-background/95 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/80">
           <Button type="submit" disabled={loading}>
             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {submitLabel}
@@ -192,56 +368,70 @@ function SectionBlock({
   form,
   clients,
   projects,
+  allProjects,
 }: {
   section: Section;
   form: ReturnType<typeof useForm<DynamicFormValues>>;
   clients: Client[];
   projects: Project[];
+  allProjects: Project[];
 }) {
   const isArray = section.type === 'array' && section.itemFields?.length;
   const fields = section.fields || section.itemFields || [];
+  const projectList =
+    section.id === 'empreendimento' ? projects : allProjects;
 
   if (isArray) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">{section.title}</CardTitle>
-          {section.description && (
-            <CardDescription>{section.description}</CardDescription>
-          )}
-        </CardHeader>
-        <CardContent>
-          <ArraySection
-            name={section.id}
-            itemFields={section.itemFields!}
-            form={form}
-          />
-        </CardContent>
-      </Card>
+      <AccordionItem value={section.id} className="rounded-lg border px-4">
+        <AccordionTrigger className="text-left hover:no-underline py-4">
+          <span>
+            <span className="font-semibold">{section.title}</span>
+            {section.description && (
+              <span className="mt-1 block text-xs font-normal text-muted-foreground">
+                {section.description}
+              </span>
+            )}
+          </span>
+        </AccordionTrigger>
+        <AccordionContent>
+          <ArraySection name={section.id} itemFields={section.itemFields!} form={form} />
+        </AccordionContent>
+      </AccordionItem>
     );
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-base">{section.title}</CardTitle>
-        {section.description && (
-          <CardDescription>{section.description}</CardDescription>
-        )}
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {fields.map((field) => (
-          <FieldRender
-            key={field.id}
-            field={field}
-            namePrefix={section.id}
-            form={form}
-            clients={clients}
-            projects={projects}
-          />
-        ))}
-      </CardContent>
-    </Card>
+    <AccordionItem value={section.id} className="rounded-lg border px-4">
+      <AccordionTrigger className="text-left hover:no-underline py-4">
+        <span>
+          <span className="font-semibold">{section.title}</span>
+          {section.description && (
+            <span className="mt-1 block text-xs font-normal text-muted-foreground line-clamp-2">
+              {section.description}
+            </span>
+          )}
+        </span>
+      </AccordionTrigger>
+      <AccordionContent>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-4">
+          {fields.map((field) => (
+            <div
+              key={field.id}
+              className={cn(field.uiWidth !== 'half' && 'md:col-span-2')}
+            >
+              <FieldRender
+                field={field}
+                namePrefix={section.id}
+                form={form}
+                clients={clients}
+                projects={projectList}
+              />
+            </div>
+          ))}
+        </div>
+      </AccordionContent>
+    </AccordionItem>
   );
 }
 
@@ -267,14 +457,17 @@ function FieldRender({
         name={name}
         render={({ field: f }) => (
           <FormItem>
-            <FormLabel>{field.label}</FormLabel>
+            <FormLabel>
+              {field.label}
+              {field.required && <span className="text-destructive ml-0.5">*</span>}
+            </FormLabel>
             <Select
               value={(f.value as string) || ''}
               onValueChange={f.onChange}
             >
               <FormControl>
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecione um cliente" />
+                  <SelectValue placeholder="Selecione o empreendedor" />
                 </SelectTrigger>
               </FormControl>
               <SelectContent>
@@ -300,14 +493,23 @@ function FieldRender({
         name={name}
         render={({ field: f }) => (
           <FormItem>
-            <FormLabel>{field.label}</FormLabel>
+            <FormLabel>
+              {field.label}
+              {field.required && <span className="text-destructive ml-0.5">*</span>}
+            </FormLabel>
             <Select
               value={(f.value as string) || ''}
               onValueChange={f.onChange}
             >
               <FormControl>
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecione um empreendimento" />
+                  <SelectValue
+                    placeholder={
+                      projects.length === 0
+                        ? 'Selecione o empreendedor primeiro'
+                        : 'Selecione o empreendimento'
+                    }
+                  />
                 </SelectTrigger>
               </FormControl>
               <SelectContent>
@@ -333,7 +535,10 @@ function FieldRender({
         name={name}
         render={({ field: f }) => (
           <FormItem>
-            <FormLabel>{field.label}</FormLabel>
+            <FormLabel>
+              {field.label}
+              {field.required && <span className="text-destructive ml-0.5">*</span>}
+            </FormLabel>
             <FormControl>
               <Textarea
                 {...f}
@@ -357,7 +562,10 @@ function FieldRender({
         name={name}
         render={({ field: f }) => (
           <FormItem>
-            <FormLabel>{field.label}</FormLabel>
+            <FormLabel>
+              {field.label}
+              {field.required && <span className="text-destructive ml-0.5">*</span>}
+            </FormLabel>
             <FormControl>
               <Input
                 type="number"
@@ -382,7 +590,10 @@ function FieldRender({
         name={name}
         render={({ field: f }) => (
           <FormItem>
-            <FormLabel>{field.label}</FormLabel>
+            <FormLabel>
+              {field.label}
+              {field.required && <span className="text-destructive ml-0.5">*</span>}
+            </FormLabel>
             <FormControl>
               <BrDateFormControl
                 value={typeof f.value === 'string' ? f.value : ''}
@@ -405,7 +616,10 @@ function FieldRender({
       name={name}
       render={({ field: f }) => (
         <FormItem>
-          <FormLabel>{field.label}</FormLabel>
+          <FormLabel>
+            {field.label}
+            {field.required && <span className="text-destructive ml-0.5">*</span>}
+          </FormLabel>
           <FormControl>
             <Input
               {...f}

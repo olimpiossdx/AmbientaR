@@ -34,7 +34,17 @@ import { FirestorePermissionError } from '@/firebase/errors';
 import {
   createUserWithEmailAndPassword
 } from 'firebase/auth';
-import { doc, setDoc, updateDoc, collection, query, where, getDocs, addDoc } from 'firebase/firestore';
+import {
+  doc,
+  setDoc,
+  updateDoc,
+  collection,
+  query,
+  where,
+  getDocs,
+  addDoc,
+  type Firestore,
+} from 'firebase/firestore';
 import { Label } from '@/components/ui/label';
 import { DialogFooter } from '@/components/ui/dialog';
 import { logUserAction } from '@/lib/audit-log';
@@ -80,13 +90,13 @@ const createFormSchema = baseSchema
   )
   .refine(
     (data) => {
-      if (data.role !== 'client' && data.role !== 'cliente_autonomo') return true;
-      const digits = (data.cpf || '').replace(/\D/g, '');
-      return digits.length === 11 || digits.length === 14;
+      if (data.role !== 'cliente_autonomo') return true;
+      const digits = normalizeDocumentDigits(data.userCpf);
+      return digits.length === 11;
     },
     {
-      message: 'Informe o CPF ou CNPJ vinculado ao cliente/empreendedor.',
-      path: ['cpf'],
+      message: 'Informe o CPF do usuário para vincular automaticamente ao empreendedor.',
+      path: ['userCpf'],
     },
   );
 
@@ -126,13 +136,13 @@ const editFormSchema = baseSchema
   )
   .refine(
     (data) => {
-      if (data.role !== 'client' && data.role !== 'cliente_autonomo') return true;
-      const digits = (data.cpf || '').replace(/\D/g, '');
-      return digits.length === 11 || digits.length === 14;
+      if (data.role !== 'cliente_autonomo') return true;
+      const digits = normalizeDocumentDigits(data.userCpf);
+      return digits.length === 11;
     },
     {
-      message: 'Informe o CPF ou CNPJ vinculado ao cliente/empreendedor.',
-      path: ['cpf'],
+      message: 'Informe o CPF do usuário para vincular automaticamente ao empreendedor.',
+      path: ['userCpf'],
     },
   );
 
@@ -176,10 +186,94 @@ const roles: { value: UserRole; label: string }[] = [
 const isTitularRole = (role: UserRole | undefined) =>
   role === 'client' || role === 'cliente_autonomo';
 
-const normalizeDocument = normalizeDocumentDigits;
+const isClienteAutonomoRole = (role: UserRole | undefined) =>
+  role === 'cliente_autonomo';
+
+/** Documento usado no portal: autônomo usa CPF pessoal; gestão usa o mesmo para casar com cadastro existente. */
+const resolvePortalDocument = (
+  role: UserRole,
+  cpf: string | undefined,
+  userCpf: string | undefined,
+): string => {
+  const fromCpf = normalizeDocumentDigits(cpf);
+  if (fromCpf.length === 11 || fromCpf.length === 14) return fromCpf;
+  if (role === 'client' || role === 'cliente_autonomo') {
+    const fromUser = normalizeDocumentDigits(userCpf);
+    if (fromUser.length === 11 || fromUser.length === 14) return fromUser;
+  }
+  return '';
+};
 
 const getEntityTypeFromDocument = (value: string) =>
-  normalizeDocument(value).length === 14 ? 'Pessoa Jurídica' as const : 'Pessoa Física' as const;
+  normalizeDocumentDigits(value).length === 14 ? 'Pessoa Jurídica' as const : 'Pessoa Física' as const;
+
+/** Vincula `userId` em clientes/empreendedores já cadastrados (perfil Cliente Gestão). */
+async function linkClientGestaoToExistingRecords(
+  firestore: Firestore,
+  userId: string,
+  portalDocument: string,
+  profile: { name: string; email: string },
+  linkedClientId: string | null,
+  linkedEmpreendedorId: string | null,
+): Promise<{ linkedClientId: string | null; linkedEmpreendedorId: string | null }> {
+  if (portalDocument.length !== 11 && portalDocument.length !== 14) {
+    return { linkedClientId, linkedEmpreendedorId };
+  }
+
+  const { client, empreendedor } = await lookupClientAndEmpreendedorByDocument(
+    firestore,
+    portalDocument,
+  );
+  const clientDocId = linkedClientId || client?.id;
+  const empreendedorDocId = linkedEmpreendedorId || empreendedor?.id;
+
+  if (!clientDocId && !empreendedorDocId) {
+    return { linkedClientId, linkedEmpreendedorId };
+  }
+
+  const entityType = getEntityTypeFromDocument(portalDocument);
+  const linkedData = {
+    name: profile.name,
+    email: profile.email,
+    cpfCnpj: portalDocument,
+    entityType,
+    userId,
+  };
+  const linkedEmpreendedorData = {
+    name: profile.name,
+    email: profile.email,
+    cpfCnpj: portalDocument,
+    entityType: [entityType],
+    userId,
+  };
+
+  if (clientDocId) {
+    await setDoc(doc(firestore, 'clients', clientDocId), linkedData, { merge: true });
+  }
+  if (empreendedorDocId) {
+    await setDoc(doc(firestore, 'empreendedores', empreendedorDocId), linkedEmpreendedorData, {
+      merge: true,
+    });
+  }
+
+  const existingClients = await getDocs(
+    query(collection(firestore, 'clients'), where('userId', '==', userId)),
+  );
+  const existingEmpreendedores = await getDocs(
+    query(collection(firestore, 'empreendedores'), where('userId', '==', userId)),
+  );
+  for (const snap of existingClients.docs) {
+    await updateDoc(doc(firestore, 'clients', snap.id), linkedData);
+  }
+  for (const snap of existingEmpreendedores.docs) {
+    await updateDoc(doc(firestore, 'empreendedores', snap.id), linkedEmpreendedorData);
+  }
+
+  return {
+    linkedClientId: clientDocId ?? linkedClientId,
+    linkedEmpreendedorId: empreendedorDocId ?? linkedEmpreendedorId,
+  };
+}
 
 export function UserForm({ currentUser, onSuccess, representativeRequestedCpf, representativesForThisClient, representativeRequestedCpfsCnpjs }: UserFormProps) {
   const [loading, setLoading] = React.useState(false);
@@ -233,15 +327,19 @@ export function UserForm({ currentUser, onSuccess, representativeRequestedCpf, r
     form.setValue('userCpf', value, { shouldValidate: true });
   };
 
-  const handleTitularCpfBlur = async () => {
-    if (!firestore || !isTitularRole(selectedRole)) return;
-    const titularDoc = normalizeDocument(form.getValues('cpf'));
-    if (titularDoc.length !== 11 && titularDoc.length !== 14) return;
+  const handleUserCpfBlur = async () => {
+    if (!firestore || (selectedRole !== 'client' && !isClienteAutonomoRole(selectedRole))) return;
+    const portalDoc = resolvePortalDocument(
+      selectedRole,
+      form.getValues('cpf'),
+      form.getValues('userCpf'),
+    );
+    if (portalDoc.length !== 11 && portalDoc.length !== 14) return;
 
     try {
       const { client, empreendedor } = await lookupClientAndEmpreendedorByDocument(
         firestore,
-        titularDoc,
+        portalDoc,
       );
       if (!client && !empreendedor) return;
 
@@ -254,10 +352,12 @@ export function UserForm({ currentUser, onSuccess, representativeRequestedCpf, r
       toast({
         title: 'Cadastro existente encontrado',
         description:
-          'Os dados foram preenchidos a partir do Cliente/Empreendedor já cadastrado. Ao salvar, sua conta será vinculada sem criar duplicatas.',
+          selectedRole === 'client'
+            ? 'Cliente/Empreendedor já cadastrado pela consultoria. Ao salvar, a conta será vinculada pelo CPF informado.'
+            : 'Os dados foram preenchidos a partir do cadastro existente. Ao salvar, sua conta será vinculada automaticamente.',
       });
     } catch (e) {
-      console.warn('Busca por CPF/CNPJ no perfil:', e);
+      console.warn('Busca por CPF no perfil:', e);
     }
   };
   
@@ -285,9 +385,13 @@ export function UserForm({ currentUser, onSuccess, representativeRequestedCpf, r
       return;
     }
     
-    const cnpjsArray = values.cnpjs?.map(c => normalizeDocument(c.value)).filter(v => v.length === 14) || [];
-    const cpfsArray = (values.cpfs || []).map(c => normalizeDocument(c.value)).filter(v => v.length === 11);
-    const titularCpfCnpj = normalizeDocument(values.cpf);
+    const cnpjsArray = values.cnpjs?.map(c => normalizeDocumentDigits(c.value)).filter(v => v.length === 14) || [];
+    const cpfsArray = (values.cpfs || []).map(c => normalizeDocumentDigits(c.value)).filter(v => v.length === 11);
+    const portalDocument = resolvePortalDocument(values.role, values.cpf, values.userCpf);
+    const storedCpf =
+      values.role === 'representative'
+        ? cpfsArray[0] || ''
+        : portalDocument;
 
     if (currentUser) {
       // --- Update existing user logic ---
@@ -295,12 +399,12 @@ export function UserForm({ currentUser, onSuccess, representativeRequestedCpf, r
       const updateData: Partial<AppUser> = {
         name: values.name,
         email: values.email,
-        userCpf: normalizeDocument(values.userCpf),
-        cpf: values.role === 'representative' ? (cpfsArray[0] || '') : titularCpfCnpj,
+        userCpf: normalizeDocumentDigits(values.userCpf),
+        cpf: storedCpf,
         cnpjs: values.role === 'representative'
           ? cnpjsArray
-          : titularCpfCnpj.length === 14
-            ? [titularCpfCnpj]
+          : storedCpf.length === 14
+            ? [storedCpf]
             : cnpjsArray,
         photoURL: values.photoURL || '',
         dataNascimento: values.dataNascimento?.toISOString() || '',
@@ -316,21 +420,34 @@ export function UserForm({ currentUser, onSuccess, representativeRequestedCpf, r
 
       updateDoc(userRef, updateData)
         .then(async () => {
-          if (isTitularRole(values.role) && currentUser.id && (titularCpfCnpj.length === 11 || titularCpfCnpj.length === 14)) {
-            const entityType = getEntityTypeFromDocument(titularCpfCnpj);
+          if (values.role === 'client' && currentUser.id) {
+            await linkClientGestaoToExistingRecords(
+              firestore,
+              currentUser.id,
+              portalDocument,
+              { name: values.name, email: values.email },
+              linkedClientId,
+              linkedEmpreendedorId,
+            );
+          } else if (
+            isClienteAutonomoRole(values.role) &&
+            currentUser.id &&
+            (portalDocument.length === 11 || portalDocument.length === 14)
+          ) {
+            const entityType = getEntityTypeFromDocument(portalDocument);
             const clientDocId = linkedClientId || currentUser.linkedClientId || currentUser.id;
             const empreendedorDocId = linkedEmpreendedorId || currentUser.linkedEmpreendedorId || currentUser.id;
             const linkedData = {
               name: values.name,
               email: values.email,
-              cpfCnpj: titularCpfCnpj,
+              cpfCnpj: portalDocument,
               entityType,
               userId: currentUser.id,
             };
             const linkedEmpreendedorData = {
               name: values.name,
               email: values.email,
-              cpfCnpj: titularCpfCnpj,
+              cpfCnpj: portalDocument,
               entityType: [entityType],
               userId: currentUser.id,
             };
@@ -350,7 +467,7 @@ export function UserForm({ currentUser, onSuccess, representativeRequestedCpf, r
             const existingSet = new Set((representativeRequestedCpfsCnpjs || []).map(v => (v || '').replace(/\D/g, '')));
             const allCpfCnpj = [...cpfsArray, ...cnpjsArray];
             for (const cpfOuCnpj of allCpfCnpj) {
-              const normalized = normalizeDocument(cpfOuCnpj);
+              const normalized = normalizeDocumentDigits(cpfOuCnpj);
               const digits = normalized;
               if (digits.length < 11 || existingSet.has(digits)) continue;
               existingSet.add(digits);
@@ -422,12 +539,12 @@ export function UserForm({ currentUser, onSuccess, representativeRequestedCpf, r
                 email: values.email,
                 role: values.role,
                 status: values.status,
-                userCpf: normalizeDocument(values.userCpf),
-                cpf: values.role === 'representative' ? (cpfsArray[0] || '') : titularCpfCnpj,
+                userCpf: normalizeDocumentDigits(values.userCpf),
+                cpf: storedCpf,
                 cnpjs: values.role === 'representative'
                   ? cnpjsArray
-                  : titularCpfCnpj.length === 14
-                    ? [titularCpfCnpj]
+                  : storedCpf.length === 14
+                    ? [storedCpf]
                     : cnpjsArray,
                 photoURL: values.photoURL || '',
                 dataNascimento: values.dataNascimento?.toISOString() || '',
@@ -437,33 +554,78 @@ export function UserForm({ currentUser, onSuccess, representativeRequestedCpf, r
             await setDoc(doc(firestore, 'users', newUserId), userDocData);
             logUserAction(firestore, auth, 'create_user', { newUserId: newUserId, newUserName: values.name });
 
-            // Titular (Cliente Gestão ou Autônomo): criar Cliente + Empreendedor pelo próprio CPF.
-            if (isTitularRole(values.role)) {
-                if (titularCpfCnpj.length === 11 || titularCpfCnpj.length === 14) {
-                    try {
-                        const entityType = getEntityTypeFromDocument(titularCpfCnpj);
-                        const clientData = {
-                            name: values.name,
-                            cpfCnpj: titularCpfCnpj,
-                            entityType,
-                            email: values.email,
-                            userId: newUserId,
-                        };
-                        const empreendedorData = {
-                            name: values.name,
-                            email: values.email,
-                            phone: '',
-                            address: '',
-                            cpfCnpj: titularCpfCnpj,
-                            entityType: [entityType],
-                            userId: newUserId,
-                        };
-                        await setDoc(doc(firestore, 'clients', newUserId), clientData, { merge: true });
-                        await setDoc(doc(firestore, 'empreendedores', newUserId), empreendedorData, { merge: true });
-                    } catch (e) {
-                        console.error('Erro ao criar cliente/empreendedor automático:', e);
-                    }
+            if (values.role === 'client') {
+              try {
+                const linked = await linkClientGestaoToExistingRecords(
+                  firestore,
+                  newUserId,
+                  portalDocument,
+                  { name: values.name, email: values.email },
+                  null,
+                  null,
+                );
+                if (linked.linkedClientId || linked.linkedEmpreendedorId) {
+                  await updateDoc(doc(firestore, 'users', newUserId), {
+                    ...(linked.linkedClientId ? { linkedClientId: linked.linkedClientId } : {}),
+                    ...(linked.linkedEmpreendedorId
+                      ? { linkedEmpreendedorId: linked.linkedEmpreendedorId }
+                      : {}),
+                  });
                 }
+              } catch (e) {
+                console.error('Erro ao vincular Cliente Gestão a cadastros existentes:', e);
+              }
+            } else if (
+              isClienteAutonomoRole(values.role) &&
+              (portalDocument.length === 11 || portalDocument.length === 14)
+            ) {
+              try {
+                const { client, empreendedor } = await lookupClientAndEmpreendedorByDocument(
+                  firestore,
+                  portalDocument,
+                );
+                const entityType = getEntityTypeFromDocument(portalDocument);
+                const linkedData = {
+                  name: values.name,
+                  cpfCnpj: portalDocument,
+                  entityType,
+                  email: values.email,
+                  userId: newUserId,
+                };
+                const linkedEmpreendedorData = {
+                  name: values.name,
+                  email: values.email,
+                  phone: '',
+                  address: '',
+                  cpfCnpj: portalDocument,
+                  entityType: [entityType],
+                  userId: newUserId,
+                };
+
+                if (client?.id || empreendedor?.id) {
+                  const linked = await linkClientGestaoToExistingRecords(
+                    firestore,
+                    newUserId,
+                    portalDocument,
+                    { name: values.name, email: values.email },
+                    client?.id ?? null,
+                    empreendedor?.id ?? null,
+                  );
+                  await updateDoc(doc(firestore, 'users', newUserId), {
+                    ...(linked.linkedClientId ? { linkedClientId: linked.linkedClientId } : {}),
+                    ...(linked.linkedEmpreendedorId
+                      ? { linkedEmpreendedorId: linked.linkedEmpreendedorId }
+                      : {}),
+                  });
+                } else {
+                  await setDoc(doc(firestore, 'clients', newUserId), linkedData, { merge: true });
+                  await setDoc(doc(firestore, 'empreendedores', newUserId), linkedEmpreendedorData, {
+                    merge: true,
+                  });
+                }
+              } catch (e) {
+                console.error('Erro ao criar cliente/empreendedor automático:', e);
+              }
             }
 
             // Representante: criar um pedido de acesso por CPF/CNPJ informado (titular aprovará em Meu Perfil).
@@ -471,7 +633,7 @@ export function UserForm({ currentUser, onSuccess, representativeRequestedCpf, r
                 const accessRequestsRef = collection(firestore, 'access_requests');
                 const allCpfCnpj = [...cpfsArray, ...cnpjsArray];
                 for (const cpfOuCnpj of allCpfCnpj) {
-                    const normalized = normalizeDocument(cpfOuCnpj);
+                    const normalized = normalizeDocumentDigits(cpfOuCnpj);
                     if (normalized.length !== 11 && normalized.length !== 14) continue;
                     try {
                         await addDoc(accessRequestsRef, {
@@ -517,7 +679,15 @@ export function UserForm({ currentUser, onSuccess, representativeRequestedCpf, r
                 <div className="form-scroll-body space-y-4">
                     <div className="space-y-4 rounded-md border p-4 bg-muted/30">
                         <h3 className="text-sm font-medium">Checagem inicial — CPF</h3>
-                        <p className="text-xs text-muted-foreground">Informe o CPF pessoal do usuário (documento de identificação). Representantes informam depois os CPFs/CNPJs ao qual solicitam acesso.</p>
+                        <p className="text-xs text-muted-foreground">
+                          {selectedRole === 'representative'
+                            ? 'Informe o CPF pessoal do representante. Os CPFs/CNPJs dos titulares são informados mais abaixo.'
+                            : selectedRole === 'cliente_autonomo'
+                              ? 'O CPF pessoal vincula automaticamente a conta ao cadastro de empreendedor com o mesmo documento.'
+                              : selectedRole === 'client'
+                                ? 'O CPF pessoal identifica o usuário e casa com empreendedores já cadastrados pela consultoria (sem campo extra de vínculo).'
+                                : 'Informe o CPF pessoal do usuário (documento de identificação).'}
+                        </p>
                     <FormField
                     control={form.control}
                     name="userCpf"
@@ -525,9 +695,26 @@ export function UserForm({ currentUser, onSuccess, representativeRequestedCpf, r
                         <FormItem>
                         <FormLabel>CPF do Usuário (pessoal)</FormLabel>
                         <FormControl>
-                            <MaskedInput mask="cpf" placeholder="000.000.000-00" {...field} onChange={handleUserCpfChange} />
+                            <MaskedInput
+                              mask="cpf"
+                              placeholder="000.000.000-00"
+                              {...field}
+                              onChange={handleUserCpfChange}
+                              onBlur={() => {
+                                field.onBlur();
+                                void handleUserCpfBlur();
+                              }}
+                            />
                         </FormControl>
-                        <FormDescription>Documento de identificação do próprio usuário. Não é usado para vincular acesso a dados de terceiros.</FormDescription>
+                        <FormDescription>
+                          {selectedRole === 'representative'
+                            ? 'Documento do próprio usuário. O vínculo a titulares é feito na seção de CPFs/CNPJs abaixo.'
+                            : selectedRole === 'cliente_autonomo'
+                              ? 'Usado para criar ou ligar Cliente e Empreendedor ao salvar.'
+                              : selectedRole === 'client'
+                                ? 'Deve coincidir com o CPF/CNPJ do empreendedor já cadastrado na consultoria.'
+                                : 'Documento de identificação do usuário.'}
+                        </FormDescription>
                         <FormMessage />
                         </FormItem>
                     )}
@@ -656,32 +843,6 @@ export function UserForm({ currentUser, onSuccess, representativeRequestedCpf, r
                                 <FormMessage />
                             </FormItem>
                         )}
-                    />
-                    )}
-                    {isTitularRole(selectedRole) && (
-                    <FormField
-                      control={form.control}
-                      name="cpf"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>CPF/CNPJ vinculado ao cliente/empreendedor</FormLabel>
-                          <FormControl>
-                            <MaskedInput
-                              mask="cpfCnpj"
-                              placeholder="000.000.000-00 ou 00.000.000/0000-00"
-                              {...field}
-                              onBlur={() => {
-                                field.onBlur();
-                                void handleTitularCpfBlur();
-                              }}
-                            />
-                          </FormControl>
-                          <FormDescription>
-                            Documento usado para ligar o usuário aos registros de Clientes, Empreendedores e pedidos de representantes.
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
                     />
                     )}
                     {isTitularRole(selectedRole) && (

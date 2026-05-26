@@ -1,26 +1,23 @@
-
 'use client';
-import { useState } from 'react';
-import { PageHeader } from '@/components/page-header';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { LasRasForm } from './las-ras-form';
 
-export default function LasRasPage() {
+import { StudyDocumentsListPage } from '@/components/studies/study-documents-list-page';
+
+export default function LasRasListPage() {
   return (
-    <div className="flex flex-col h-full">
-      <PageHeader title="Licenciamento Ambiental Simplificado (LAS/RAS)" />
-      <main className="flex-1 overflow-auto p-4 md:p-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Relatório Ambiental Simplificado (RAS)</CardTitle>
-            <CardDescription>Preencha os campos abaixo para gerar o relatório.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <LasRasForm />
-          </CardContent>
-        </Card>
-      </main>
-    </div>
+    <StudyDocumentsListPage
+      collectionName="lasRas"
+      templateSlug="las-ras"
+      studySlug="las-ras"
+      studyLabel="LAS-RAS"
+      pageTitle="Licenciamento Ambiental Simplificado (LAS/RAS)"
+      addButtonLabel="Novo LAS/RAS"
+      newHref="/studies/las-ras/new"
+      editHref={(id) => `/studies/las-ras/${id}/edit`}
+      draftCardTitle="LAS/RAS em elaboração"
+      approvedCardTitle="LAS/RAS aprovados"
+      emptyDraft="Nenhum LAS/RAS em elaboração."
+      emptyApproved="Nenhum LAS/RAS aprovado."
+      viewDialogDescription="Detalhes do Relatório Ambiental Simplificado."
+    />
   );
 }

@@ -20,6 +20,8 @@ export interface FieldOption {
 
 export type OptionsSource = 'clients' | 'projects';
 
+export type FieldUiWidth = 'full' | 'half';
+
 export interface Field {
   id: string;
   label: string;
@@ -30,6 +32,10 @@ export interface Field {
   defaultFromMcp?: string;
   options?: FieldOption[];
   optionsSource?: OptionsSource;
+  /** Largura na grade do formulário (metade em telas médias+). */
+  uiWidth?: FieldUiWidth;
+  /** Ordem relativa dentro da seção (menor primeiro). */
+  uiOrder?: number;
   /** Para type array: campos de cada item */
   itemFields?: Field[];
   /** Para type object: campos aninhados */
@@ -50,6 +56,9 @@ export interface StudyFormSchema {
   studySlug: string;
   sourceFile?: string;
   processedAt?: string;
+  /** Listagem DN 217 (A–H) aplicada ao schema. */
+  listagemCode?: string | null;
+  listagemLabel?: string | null;
   sections: Section[];
 }
 

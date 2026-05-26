@@ -87,6 +87,8 @@ import {
   FileSpreadsheet,
   BookOpen,
   Smartphone,
+  CloudUpload,
+  Cloud,
 } from "lucide-react";
 
 /** Rótulo do grupo de menu (licenças, CAR, outorgas, fauna, monitoramento, etc.). */
@@ -443,6 +445,18 @@ export const allNavItems: NavItem[] = [
           "supervisor",
           "technical",
           "advogado",
+        ],
+      },
+      {
+        href: "/documentos-ambientais/pasta-cliente",
+        label: "Pasta do cliente",
+        icon: Folder,
+        roles: [
+          "admin",
+          "technical",
+          "gestor",
+          "supervisor",
+          "financial",
         ],
       },
       {
@@ -819,6 +833,12 @@ export const allNavItems: NavItem[] = [
       {
         href: "/studies/las-ras",
         label: "LAS-RAS",
+        icon: FileSignature,
+        roles: ["admin", "technical", "gestor", "supervisor", "advogado"],
+      },
+      {
+        href: "/studies/reanalise",
+        label: "Reanálise",
         icon: FileSignature,
         roles: ["admin", "technical", "gestor", "supervisor", "advogado"],
       },
@@ -1282,6 +1302,12 @@ export const allNavItems: NavItem[] = [
         roles: ["admin"],
       },
       {
+        href: "/ai-lab/cloud-library",
+        label: "Biblioteca IA (OneDrive)",
+        icon: Cloud,
+        roles: ["admin"],
+      },
+      {
         href: "/settings/files",
         label: "Explorador de Arquivos",
         icon: Folder,
@@ -1345,6 +1371,12 @@ export const allNavItems: NavItem[] = [
         href: "/settings/ai-local-source",
         label: "Pasta Base IA (Local)",
         icon: Folder,
+        roles: ["admin"],
+      },
+      {
+        href: "/settings/onedrive-integration",
+        label: "Integração OneDrive",
+        icon: CloudUpload,
         roles: ["admin"],
       },
       {

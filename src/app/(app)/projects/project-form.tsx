@@ -18,6 +18,15 @@ import { FirestorePermissionError } from '@/firebase/errors';
 import { collection, doc, addDoc, updateDoc } from 'firebase/firestore';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { FormDefault } from './form-default';
+import { FormListagemA } from './form-listagem-a';
+import { FormListagemB } from './form-listagem-b';
+import { FormListagemC } from './form-listagem-c';
+import { FormListagemD } from './form-listagem-d';
+import { FormListagemE } from './form-listagem-e';
+import { FormListagemF } from './form-listagem-f';
+import { FormListagemG } from './form-listagem-g';
+import { FormListagemH } from './form-listagem-h';
+import { onListagemTabSelect } from './listagem-form-registry-index';
 import { cleanEmptyValues } from '@/lib/utils';
 import _ from 'lodash';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -307,14 +316,14 @@ export function ProjectForm({ currentItem, onSuccess, onCancel }: ProjectFormPro
            <Tabs defaultValue="default" className="flex flex-col flex-1 overflow-hidden">
               <TabsList className="h-auto flex-wrap justify-start">
                   <TabsTrigger value="default" onClick={() => form.setValue('activity', 'Dados Gerais')}>Dados Gerais</TabsTrigger>
-                  <TabsTrigger value="listagem-a" onClick={() => form.setValue('activity', 'LISTAGEM A – ATIVIDADES MINERÁRIAS')}>Listagem A</TabsTrigger>
-                  <TabsTrigger value="listagem-b" onClick={() => form.setValue('activity', 'LISTAGEM B – ATIVIDADES INDUSTRIAIS')}>Listagem B</TabsTrigger>
-                  <TabsTrigger value="listagem-c" onClick={() => form.setValue('activity', 'LISTAGEM C – INDÚSTRIA QUÍMICA')}>Listagem C</TabsTrigger>
-                  <TabsTrigger value="listagem-d" onClick={() => form.setValue('activity', 'LISTAGEM D – INDÚSTRIA ALIMENTÍCIA')}>Listagem D</TabsTrigger>
-                  <TabsTrigger value="listagem-e" onClick={() => form.setValue('activity', 'LISTAGEM E – INFRAESTRUTURA')}>Listagem E</TabsTrigger>
-                  <TabsTrigger value="listagem-f" onClick={() => form.setValue('activity', 'LISTAGEM F – RESÍDUOS E SERVIÇOS')}>Listagem F</TabsTrigger>
-                  <TabsTrigger value="listagem-g" onClick={() => form.setValue('activity', 'LISTAGEM G – AGROSSILVIPASTORIS')}>Listagem G</TabsTrigger>
-                  <TabsTrigger value="listagem-h" onClick={() => form.setValue('activity', 'LISTAGEM H – OUTRAS ATIVIDADES')}>Listagem H</TabsTrigger>
+                  <TabsTrigger value="listagem-a" onClick={() => onListagemTabSelect(form, 'A')}>Listagem A</TabsTrigger>
+                  <TabsTrigger value="listagem-b" onClick={() => onListagemTabSelect(form, 'B')}>Listagem B</TabsTrigger>
+                  <TabsTrigger value="listagem-c" onClick={() => onListagemTabSelect(form, 'C')}>Listagem C</TabsTrigger>
+                  <TabsTrigger value="listagem-d" onClick={() => onListagemTabSelect(form, 'D')}>Listagem D</TabsTrigger>
+                  <TabsTrigger value="listagem-e" onClick={() => onListagemTabSelect(form, 'E')}>Listagem E</TabsTrigger>
+                  <TabsTrigger value="listagem-f" onClick={() => onListagemTabSelect(form, 'F')}>Listagem F</TabsTrigger>
+                  <TabsTrigger value="listagem-g" onClick={() => onListagemTabSelect(form, 'G')}>Listagem G</TabsTrigger>
+                  <TabsTrigger value="listagem-h" onClick={() => onListagemTabSelect(form, 'H')}>Listagem H</TabsTrigger>
               </TabsList>
               <div className="form-scroll-body mt-4">
                    {usesCentralEmpreendedorResponsavel ? (
@@ -400,28 +409,28 @@ export function ProjectForm({ currentItem, onSuccess, onCancel }: ProjectFormPro
                        <FormDefault {...formProps} />
                    </TabsContent>
                    <TabsContent value="listagem-a" className="mt-0">
-                      <FormDefault {...formProps} />
+                      <FormListagemA form={form} />
                    </TabsContent>
                    <TabsContent value="listagem-b" className="mt-0">
-                      <FormDefault {...formProps} />
+                      <FormListagemB form={form} />
                    </TabsContent>
                    <TabsContent value="listagem-c" className="mt-0">
-                      <FormDefault {...formProps} />
+                      <FormListagemC form={form} />
                    </TabsContent>
                    <TabsContent value="listagem-d" className="mt-0">
-                      <FormDefault {...formProps} />
+                      <FormListagemD form={form} />
                    </TabsContent>
                    <TabsContent value="listagem-e" className="mt-0">
-                      <FormDefault {...formProps} />
+                      <FormListagemE form={form} />
                    </TabsContent>
                    <TabsContent value="listagem-f" className="mt-0">
-                      <FormDefault {...formProps} />
+                      <FormListagemF form={form} />
                    </TabsContent>
                    <TabsContent value="listagem-g" className="mt-0">
-                      <FormDefault {...formProps} />
+                      <FormListagemG form={form} />
                    </TabsContent>
                    <TabsContent value="listagem-h" className="mt-0">
-                      <FormDefault {...formProps} />
+                      <FormListagemH form={form} />
                    </TabsContent>
               </div>
               <div className="flex justify-end space-x-2 pt-4 mt-auto border-t">

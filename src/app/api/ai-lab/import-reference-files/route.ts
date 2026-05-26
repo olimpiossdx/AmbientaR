@@ -4,7 +4,7 @@ import path from "path";
 import mammoth from "mammoth";
 import { isAiLocalImportEnabled } from "@/lib/deploy-flags";
 import { getDefaultAiReferenceImportBasePath } from "@/lib/ai-reference-import-base-path";
-import { getTermosReferenciaPathForStudy } from "@/lib/termos-referencia-config";
+import { getTermosReferenciaPathForStudy } from "@/lib/termos-referencia-config.server";
 import { adminApiErrorResponse, requireAdminApiAuth } from "@/lib/api-auth";
 
 export const runtime = "nodejs";
@@ -85,13 +85,17 @@ async function readSafeText(filePath: string) {
   );
 }
 
+/**
+ * @deprecated Preferir `/api/cloud-rag/*` (biblioteca OneDrive). Mantido como fallback
+ * quando `ENABLE_AI_LOCAL_IMPORT=true`. Será descontinuado após estabilização da nuvem.
+ */
 export async function POST(request: NextRequest) {
   if (!isAiLocalImportEnabled()) {
     return NextResponse.json(
       {
         success: false,
         error:
-          "Importação local de referências está desativada temporariamente para estabilização do deploy.",
+          "Importação local desativada. Use a biblioteca OneDrive (ONEDRIVE_RAG_ENABLED) em /api/cloud-rag ou AI Lab → Biblioteca IA (OneDrive).",
       },
       { status: 503 },
     );

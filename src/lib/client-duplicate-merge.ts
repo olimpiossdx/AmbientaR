@@ -32,6 +32,8 @@ export const CLIENT_ID_REFERENCE_QUERIES: ReadonlyArray<{
   { collection: "contracts", field: "contratante.clientId" },
   { collection: "georef_projects", field: "clientId" },
   { collection: "eiaRimas", field: "requerente.clientId" },
+  { collection: "lasRas", field: "requerente.clientId" },
+  { collection: "reanalises", field: "requerente.clientId" },
 ];
 
 export function findDuplicateClientGroups(

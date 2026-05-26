@@ -40,6 +40,17 @@ No App Hosting (exemplo comentado em `apphosting.yaml`):
 
 Sem `true`, a UI que chama `/api/ai-lab/import-reference-files` verá **503** — comportamento esperado, não falha de Firestore.
 
+### Biblioteca IA OneDrive (cloud-rag)
+
+| Variável | Omissão | Efeito |
+|----------|---------|--------|
+| `ONEDRIVE_RAG_ENABLED` | `false` | `/api/cloud-rag/*` desativado (503). |
+| `ONEDRIVE_RAG_SEARCH_ENABLED` | `true` | Pesquisa desligada. |
+| `ONEDRIVE_LIBRARY_ROOT_PATH` | hint drive | Raiz da árvore a sincronizar. |
+| `MICROSOFT_GRAPH_*` | — | Obrigatório (token Graph). |
+
+Documentação: [`docs/CLOUD-RAG-ONEDRIVE.md`](./CLOUD-RAG-ONEDRIVE.md).
+
 ## Push FCM (PWA / celular)
 
 | Variável | Onde | Efeito se ausente/incorreta |

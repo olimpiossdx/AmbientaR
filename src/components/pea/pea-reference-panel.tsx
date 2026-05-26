@@ -111,26 +111,25 @@ export function PeaReferencePanel() {
   const indexPeaFolderToRag = async () => {
     setIndexingRag(true);
     try {
-      const res = await fetchApiWithAuth(auth, '/api/ai-lab/import-reference-files', {
+      const res = await fetchApiWithAuth(auth, '/api/cloud-rag/index', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          study: 'pea',
-          extensions: ['.pdf', '.docx', '.dotx', '.txt', '.md'],
-        }),
+        body: JSON.stringify({ limit: 40 }),
       });
       const data = await res.json();
       if (!res.ok || !data.success) {
-        throw new Error(data.error || 'Falha ao indexar referências.');
+        throw new Error(data.error || 'Falha ao indexar biblioteca OneDrive.');
       }
       toast({
-        title: 'Base jurídica atualizada',
-        description: `${data.imported ?? data.files?.length ?? 0} trecho(s) importados da pasta PEA.`,
+        title: 'Biblioteca OneDrive indexada',
+        description:
+          data.message ||
+          `${data.indexed ?? 0} ficheiro(s) indexados (lote). Execute sync na Biblioteca IA se necessário.`,
       });
     } catch (e) {
       toast({
         variant: 'destructive',
-        title: 'Indexação RAG',
+        title: 'Indexação RAG (nuvem)',
         description: (e as Error).message,
       });
     } finally {

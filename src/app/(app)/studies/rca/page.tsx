@@ -21,13 +21,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, PlusCircle, FileText, CheckCircle, Eye, Pencil, Trash2 } from 'lucide-react';
+import { PlusCircle } from 'lucide-react';
 import { useCollection, useFirebase, useUser, useMemoFirebase, errorEmitter } from '@/firebase';
 import { collection, doc, deleteDoc, updateDoc, limit, query } from 'firebase/firestore';
 import { sortByFirestoreUpdatedAt } from '@/lib/firestore-list-helpers';
 import type { RCA } from '@/lib/types';
 import { isAdminOrSupervisorRole } from '@/lib/role-guards';
-import { getBearerApiHeaders } from '@/lib/api-client-auth';
+import { StudyDocumentRowActions } from '@/components/studies/study-document-row-actions';
+import { StudyBrandedExportButtons } from '@/components/studies/study-branded-export-buttons';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   Dialog,
@@ -50,11 +51,10 @@ import {
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { FirestorePermissionError } from '@/firebase/errors';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
+import { TooltipProvider } from '@/components/ui/tooltip';
 import { Separator } from '@/components/ui/separator';
 
 const DetailItem = ({ label, value }: { label: string, value?: string | null }) => (
@@ -66,19 +66,13 @@ const DetailItem = ({ label, value }: { label: string, value?: string | null }) 
 
 
 export default function RcaPage() {
-  const [isGenerateOpen, setIsGenerateOpen] = useState(false);
   const [isAlertOpen, setIsAlertOpen] = useState(false);
   const [isViewOpen, setIsViewOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
-  const [itemToGenerate, setItemToGenerate] = useState<RCA | null>(null);
   const [itemToView, setItemToView] = useState<RCA | null>(null);
-  const [selectedFormat, setSelectedFormat] = useState<'docx' | 'pdf'>('docx');
-  const [iaLoading, setIaLoading] = useState(false);
-  const [iaRascunho, setIaRascunho] = useState<{ conteudo: string; resumo?: string } | null>(null);
-  const [iaDialogOpen, setIaDialogOpen] = useState(false);
 
   const router = useRouter();
-  const { firestore, user, auth } = useFirebase();
+  const { firestore, user } = useFirebase();
   const { toast } = useToast();
 
   const rcasQuery = useMemoFirebase(() => {
@@ -124,56 +118,6 @@ export default function RcaPage() {
     }
   };
   
-  const handleOpenGenerateDialog = (item: RCA) => {
-    setItemToGenerate(item);
-    setIsGenerateOpen(true);
-  };
-
-  const handleGenerate = () => {
-    if (!itemToGenerate) return;
-    toast({
-      title: "Funcionalidade em desenvolvimento",
-      description: `A lógica para gerar o ${selectedFormat.toUpperCase()} para "${itemToGenerate.empreendimento?.nome}" será implementada.`,
-    });
-    // Lógica para chamar a cloud function virá aqui.
-    setIsGenerateOpen(false);
-  };
-
-  const handleGerarRascunhoIA = async () => {
-    if (!itemToGenerate) return;
-    setIaLoading(true);
-    setIaRascunho(null);
-    try {
-      const headers = await getBearerApiHeaders(auth, {
-        'Content-Type': 'application/json',
-      });
-      const res = await fetch('/api/ai/preencher-relatorio', {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          tipoDocumento: 'RCA',
-          empreendimentoNome: itemToGenerate.empreendimento?.nome ?? '',
-          empreendedorNome: itemToGenerate.empreendedor?.nome,
-          municipio: itemToGenerate.empreendimento?.municipio,
-          uf: itemToGenerate.empreendimento?.uf,
-          atividade: itemToGenerate.activity,
-        }),
-      });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error || 'Erro ao gerar rascunho');
-      if (json.success && json.conteudo) {
-        setIaRascunho({ conteudo: json.conteudo, resumo: json.resumo });
-        setIaDialogOpen(true);
-      } else {
-        throw new Error('Resposta inválida');
-      }
-    } catch (err) {
-      toast({ variant: 'destructive', title: 'Erro', description: (err as Error).message });
-    } finally {
-      setIaLoading(false);
-    }
-  };
-
   const openDeleteConfirm = (itemId: string) => {
     setItemToDelete(itemId);
     setIsAlertOpen(true);
@@ -258,13 +202,16 @@ export default function RcaPage() {
                           </Badge>
                         </TableCell>
                         <TableCell className="text-right">
-                           <div className="flex items-center justify-end gap-1">
-                                <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={() => handleView(item)}><Eye className="h-4 w-4" /></Button></TooltipTrigger><TooltipContent><p>Visualizar detalhes</p></TooltipContent></Tooltip>
-                                <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={() => handleEdit(item)}><Pencil className="h-4 w-4" /></Button></TooltipTrigger><TooltipContent><p>Editar RCA</p></TooltipContent></Tooltip>
-                                <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={() => handleOpenGenerateDialog(item)}><FileText className="h-4 w-4" /></Button></TooltipTrigger><TooltipContent><p>Gerar Documento</p></TooltipContent></Tooltip>
-                                <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={() => handleApprove(item.id)}><CheckCircle className="h-4 w-4 text-green-500" /></Button></TooltipTrigger><TooltipContent><p>Aprovar RCA</p></TooltipContent></Tooltip>
-                                <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => openDeleteConfirm(item.id)} disabled={!canDelete(item)}><Trash2 className="h-4 w-4" /></Button></TooltipTrigger><TooltipContent><p>Deletar RCA</p></TooltipContent></Tooltip>
-                            </div>
+                          <StudyDocumentRowActions
+                            item={item}
+                            templateSlug="rca"
+                            onView={handleView}
+                            onEdit={handleEdit}
+                            onApprove={handleApprove}
+                            onDelete={openDeleteConfirm}
+                            canDelete={canDelete(item)}
+                            showApprove
+                          />
                         </TableCell>
                       </TableRow>
                     ))}
@@ -317,20 +264,18 @@ export default function RcaPage() {
                           </Badge>
                         </TableCell>
                         <TableCell className="text-right">
-                           <div className="flex items-center justify-end gap-1">
-                                <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={() => handleView(item)}><Eye className="h-4 w-4" /></Button></TooltipTrigger><TooltipContent><p>Visualizar detalhes</p></TooltipContent></Tooltip>
-                                <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={() => handleOpenGenerateDialog(item)}><FileText className="h-4 w-4" /></Button></TooltipTrigger><TooltipContent><p>Gerar Documento</p></TooltipContent></Tooltip>
-                                {isAdminOrSupervisorRole(user?.role) && (
-                                    <Tooltip>
-                                        <TooltipTrigger asChild>
-                                            <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => openDeleteConfirm(item.id)}>
-                                                <Trash2 className="h-4 w-4" />
-                                            </Button>
-                                        </TooltipTrigger>
-                                        <TooltipContent><p>Deletar RCA</p></TooltipContent>
-                                    </Tooltip>
-                                )}
-                            </div>
+                          <StudyDocumentRowActions
+                            item={item}
+                            templateSlug="rca"
+                            onView={handleView}
+                            onEdit={handleEdit}
+                            onDelete={
+                              isAdminOrSupervisorRole(user?.role)
+                                ? openDeleteConfirm
+                                : undefined
+                            }
+                            canDelete={canDelete(item)}
+                          />
                         </TableCell>
                       </TableRow>
                     ))}
@@ -366,80 +311,17 @@ export default function RcaPage() {
               <h4 className="font-semibold text-foreground">Termo de Referência</h4>
               <DetailItem label="Título" value={itemToView.termoReferencia?.titulo} />
               <DetailItem label="Processo" value={itemToView.termoReferencia?.processo} />
+              <Separator />
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Exportar documento</Label>
+                <StudyBrandedExportButtons record={itemToView} templateSlug="rca" />
+              </div>
             </div>
           )}
           <DialogFooter>
             <DialogClose asChild>
               <Button type="button" variant="outline">Fechar</Button>
             </DialogClose>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={isGenerateOpen} onOpenChange={setIsGenerateOpen}>
-        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-hidden flex flex-col">
-          <DialogHeader>
-            <DialogTitle>Gerar Documento</DialogTitle>
-            <DialogDescription>
-              Selecione o formato para exportar o relatório para <span className="font-semibold">{itemToGenerate?.empreendimento?.nome}</span>.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-2">
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-              <Button
-                type="button"
-                variant="outline"
-                className="gap-2"
-                onClick={handleGerarRascunhoIA}
-                disabled={iaLoading}
-              >
-                {iaLoading ? (
-                  <>Gerando...</>
-                ) : (
-                  <>
-                    <FileText className="h-4 w-4" />
-                    Gerar rascunho com IA
-                  </>
-                )}
-              </Button>
-              <span className="text-xs text-muted-foreground">Preenche caracterização com base nos dados do RCA.</span>
-            </div>
-            <Separator />
-            <Label>Formato de exportação</Label>
-            <RadioGroup defaultValue="docx" onValueChange={(value: 'docx' | 'pdf') => setSelectedFormat(value)}>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="docx" id="docx" />
-                <Label htmlFor="docx">Word (.docx)</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="pdf" id="pdf" />
-                <Label htmlFor="pdf">PDF</Label>
-              </div>
-            </RadioGroup>
-          </div>
-          <DialogFooter>
-            <DialogClose asChild>
-              <Button variant="outline">Cancelar</Button>
-            </DialogClose>
-            <Button onClick={handleGenerate}>
-              <FileText className="mr-2 h-4 w-4" />
-              Gerar
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={iaDialogOpen} onOpenChange={setIaDialogOpen}>
-        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
-          <DialogHeader>
-            <DialogTitle>Rascunho gerado pela IA</DialogTitle>
-            <DialogDescription>{iaRascunho?.resumo}</DialogDescription>
-          </DialogHeader>
-          <div className="flex-1 min-h-0 overflow-auto rounded-md border bg-muted/30 p-3">
-            <pre className="whitespace-pre-wrap text-sm font-sans">{iaRascunho?.conteudo}</pre>
-          </div>
-          <DialogFooter>
-            <Button onClick={() => setIaDialogOpen(false)}>Fechar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

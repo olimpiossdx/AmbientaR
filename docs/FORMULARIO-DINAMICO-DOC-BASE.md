@@ -54,6 +54,19 @@ Os **campos dos formulários de cada estudo** (submenus como PRADA, PTRF, etc.) 
 - `select`: dropdown; opções em `options` ou `optionsSource`.
 - `array`: lista de itens; estrutura do item em `itemFields` da seção ou em campo aninhado.
 - `object`: grupo de campos; campos filhos em `fields` (array de Field).
+- `uiWidth`: `"full"` \| `"half"` — largura na grade do formulário (opcional).
+- `uiOrder`: número — ordem do campo na seção (opcional).
+
+### 1.5 Enriquecimento por listagem (A–H)
+
+Após extrair o DOCX, o módulo `study-form-schema-enhance.ts`:
+
+- Garante seções de **empreendedor**, **empreendimento** e **responsável técnico** (sem remover campos do documento).
+- Infere tipos (`text`, `date`, `number`), placeholders e dicas a partir do rótulo.
+- Ordena seções (identificação primeiro, depois conteúdo do TR).
+- Anota `listagemCode` / `listagemLabel` no schema quando a listagem A–H é conhecida.
+
+Para aplicar melhorias em caches antigos: `npm run tr:sync-forms` ou abrir o formulário com **Atualizar a partir do documento**.
 
 ### 1.4 Exemplo mínimo (PRADA – requerente e empreendimento)
 

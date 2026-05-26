@@ -5,7 +5,11 @@ import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { BookOpen, FileText, Loader2, FolderOpen } from 'lucide-react';
-import { getTrFolderForStudy, isStudyLinkedToTr } from '@/lib/termos-referencia-study-folders';
+import {
+  getStudyDynamicFormHref,
+  getTrFolderForStudy,
+  isStudyLinkedToTr,
+} from '@/lib/termos-referencia-study-folders';
 import { useFirebase } from '@/firebase';
 import { fetchApiWithAuth } from '@/lib/api-client-auth';
 
@@ -65,7 +69,7 @@ export function TermosReferenciaCard({ studySlug, studyLabel }: Props) {
         </CardTitle>
         <CardDescription>
           Pasta <strong>{folderName}</strong> em &quot;termos de referencia&quot; está vinculada ao estudo {studyLabel}.
-          Use a Base Jurídica para indexar esses arquivos (RAG). O preenchimento dos campos deste formulário é manual; a IA entra na geração de documentos/laudos (template DOCX), não neste cadastro.
+          O sistema usa esses documentos para o formulário dinâmico do estudo e prioriza o termo mais aderente ao tipo/listagem/subatividade; quando não houver específico, aplica fallback para o documento mais completo.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
@@ -99,7 +103,7 @@ export function TermosReferenciaCard({ studySlug, studyLabel }: Props) {
           </Button>
           {isStudyLinkedToTr(studySlug) && (
             <Button variant="outline" size="sm" asChild>
-              <Link href={`/studies/${studySlug}/new?form=dynamic`}>
+              <Link href={getStudyDynamicFormHref(studySlug)}>
                 Novo com formulário do documento
               </Link>
             </Button>

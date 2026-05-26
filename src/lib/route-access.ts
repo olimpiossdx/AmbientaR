@@ -218,6 +218,7 @@ export function isRoleAllowedForPath(
  * Ordem = preferência do atalho mobile (primeiro path a que o papel tem acesso).
  */
 export const DOCUMENTOS_AMBIENTAIS_MOBILE_HREF_ORDER = [
+  '/documentos-ambientais/pasta-cliente',
   '/licenses',
   '/outorgas',
   '/usos-insignificantes',

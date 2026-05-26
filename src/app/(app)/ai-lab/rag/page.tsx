@@ -27,6 +27,7 @@ import {
 } from "firebase/firestore";
 import { DEFAULT_AI_LOCAL_SOURCE_PATH } from "@/lib/ai-local-source-defaults";
 import { getAdminApiRequestHeaders } from "@/lib/admin-api-client";
+import { parseApiJsonResponse } from "@/lib/parse-api-json";
 
 type RagSource = {
   id: string;
@@ -86,6 +87,7 @@ export default function AiLabRagPage() {
   const [tags, setTags] = React.useState("");
   const [isSaving, setIsSaving] = React.useState(false);
   const [isImportingFiles, setIsImportingFiles] = React.useState(false);
+  const [isCloudIndexing, setIsCloudIndexing] = React.useState(false);
   const [isImportingInternalDb, setIsImportingInternalDb] =
     React.useState(false);
   const [sources, setSources] = React.useState<RagSource[]>([]);
@@ -358,6 +360,54 @@ export default function AiLabRagPage() {
     }
   };
 
+  const handleCloudLibrarySyncAndIndex = async () => {
+    setIsCloudIndexing(true);
+    try {
+      const headers = await getAdminApiRequestHeaders(auth);
+      const syncRes = await fetch("/api/cloud-rag/sync", {
+        method: "POST",
+        headers: { ...headers, "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      const syncData = await parseApiJsonResponse<{
+        success?: boolean;
+        error?: string;
+        itemsProcessed?: number;
+      }>(syncRes);
+      if (!syncRes.ok || !syncData.success) {
+        throw new Error(syncData.error || "Falha ao sincronizar OneDrive.");
+      }
+
+      const indexRes = await fetch("/api/cloud-rag/index", {
+        method: "POST",
+        headers: { ...headers, "Content-Type": "application/json" },
+        body: JSON.stringify({ limit: 50 }),
+      });
+      const indexData = await parseApiJsonResponse<{
+        success?: boolean;
+        error?: string;
+        indexed?: number;
+      }>(indexRes);
+      if (!indexRes.ok || !indexData.success) {
+        throw new Error(indexData.error || "Falha ao indexar OneDrive.");
+      }
+
+      toast({
+        title: "Biblioteca OneDrive",
+        description: `Sync: ${syncData.itemsProcessed ?? 0} itens. Indexação: ${indexData.indexed ?? 0} ficheiro(s). Pesquise em AI Lab → Biblioteca IA (OneDrive).`,
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Erro na biblioteca nuvem",
+        description:
+          error instanceof Error ? error.message : "Falha inesperada.",
+      });
+    } finally {
+      setIsCloudIndexing(false);
+    }
+  };
+
   const handleImportInternalDatabase = async () => {
     if (!firestore) {
       toast({
@@ -509,7 +559,7 @@ export default function AiLabRagPage() {
             <Button type="button" onClick={handleAddSource} disabled={isSaving}>
               {isSaving ? "Salvando..." : "Adicionar fonte interna"}
             </Button>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 pt-2">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-2 pt-2">
               <Button
                 type="button"
                 variant="outline"
@@ -518,7 +568,17 @@ export default function AiLabRagPage() {
               >
                 {isImportingFiles
                   ? "Importando pasta..."
-                  : "Importar pasta Termos de Referência"}
+                  : "Importar pasta local (legado)"}
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={handleCloudLibrarySyncAndIndex}
+                disabled={isCloudIndexing}
+              >
+                {isCloudIndexing
+                  ? "OneDrive..."
+                  : "Sync + indexar OneDrive"}
               </Button>
               <Button
                 type="button"
@@ -532,8 +592,9 @@ export default function AiLabRagPage() {
               </Button>
             </div>
             <p className="text-xs text-muted-foreground">
-              Importação automática com limites para custo controlado:
-              amostragem por coleção e truncamento de conteúdo.
+              Preferência: biblioteca na nuvem (`ONEDRIVE_RAG_ENABLED`). Import
+              local será descontinuado. Bancada completa em Biblioteca IA
+              (OneDrive).
             </p>
           </CardContent>
         </Card>

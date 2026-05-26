@@ -1,3 +1,4 @@
+import { NextResponse } from "next/server";
 import { ADMIN_CREDENTIALS_ERROR_CODE } from "@/lib/admin/firebase-admin-setup";
 import { FirebaseAdminCredentialsError } from "@/lib/firebase-admin";
 
@@ -33,4 +34,17 @@ export function adminApiErrorResponse(err: unknown): {
     message,
     status: adminApiErrorStatus(message),
   };
+}
+
+/** Resposta JSON para rotas API (evita retornar só o objeto de erro). */
+export function adminApiErrorNextResponse(err: unknown): NextResponse {
+  const { message, status, code } = adminApiErrorResponse(err);
+  return NextResponse.json(
+    {
+      success: false,
+      error: message,
+      ...(code ? { code } : {}),
+    },
+    { status },
+  );
 }

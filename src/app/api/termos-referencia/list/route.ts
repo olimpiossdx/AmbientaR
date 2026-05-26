@@ -7,7 +7,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { promises as fs } from 'fs';
 import path from 'path';
-import { getTermosReferenciaPathForStudy } from '@/lib/termos-referencia-config';
+import { getTermosReferenciaPathForStudy } from '@/lib/termos-referencia-config.server';
 import {
   apiAuthErrorResponse,
   requireAuthenticatedApi,

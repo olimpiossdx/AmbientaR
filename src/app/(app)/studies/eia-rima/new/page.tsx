@@ -3,15 +3,32 @@
 import { PageHeader } from '@/components/page-header';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { EiaRimaForm } from '../eia-rima-form';
-import { useRouter } from 'next/navigation';
+import { StudyDynamicCreationPage } from '@/components/studies/study-dynamic-creation-page';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 
 function NewEiaRimaPageContent() {
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const isDynamic = searchParams?.get('form') === 'dynamic';
 
     const handleSuccess = () => {
       router.push('/studies/eia-rima');
     };
+
+    if (isDynamic) {
+      return (
+        <StudyDynamicCreationPage
+          studySlug="eia-rima"
+          studyLabel="EIA/RIMA"
+          pageTitle="Novo EIA/RIMA (formulário do documento)"
+          cardTitle="Adicionar novo EIA/RIMA"
+          listagemVariant="project"
+          staticFormHref="/studies/eia-rima/new"
+          onSuccess={handleSuccess}
+        />
+      );
+    }
   
     return (
       <div className="flex flex-col h-full">
@@ -45,5 +62,3 @@ export default function NewEiaRimaPage() {
         </Suspense>
     )
 }
-
-    

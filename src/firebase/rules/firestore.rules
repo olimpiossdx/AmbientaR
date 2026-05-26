@@ -787,6 +787,22 @@ service cloud.firestore {
     }
 
     /**
+     * @description LAS/RAS (formulário estático ou dinâmico a partir de TR).
+     * @path /databases/{database}/documents/lasRas/{lasRasId}
+     */
+    match /lasRas/{lasRasId} {
+      allow read, write: if isSignedIn();
+    }
+
+    /**
+     * @description Reanálise de processo (formulário dinâmico a partir de TR).
+     * @path /databases/{database}/documents/reanalises/{reanaliseId}
+     */
+    match /reanalises/{reanaliseId} {
+      allow read, write: if isSignedIn();
+    }
+
+    /**
      * @description Allows financial team and admins to manage invoices. Others can read.
      * @path /databases/{database}/documents/invoices/{invoiceId}
      */
@@ -990,6 +1006,26 @@ service cloud.firestore {
     }
 
     /**
+     * @description Biblioteca IA OneDrive (cloud-rag): escrita via Admin SDK; leitura admin.
+     */
+    match /cloud_rag_files/{fileId} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+    match /cloud_rag_chunks/{chunkId} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+    match /cloud_rag_jobs/{jobId} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+    match /cloud_rag_library_state/{stateId} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
+    /**
      * @description Hub IA (histórico): somente admins podem ler/escrever.
      * @path /databases/{database}/documents/ai_lab_reports/{reportId}
      */
@@ -1070,6 +1106,19 @@ service cloud.firestore {
      */
     match /deleted_data_backups/{backupId} {
       allow read, write: if isManager();
+    }
+
+    /**
+     * @description Integração OneDrive — catálogo e vínculos (beta: admin via API Admin SDK; leitura portal depois).
+     */
+    match /onedrive_sync_sources/{sourceId} {
+      allow read, write: if isAdmin();
+    }
+    match /client_folder_links/{linkId} {
+      allow read, write: if isAdmin();
+    }
+    match /onedrive_catalog_entries/{entryId} {
+      allow read, write: if isAdmin();
     }
 
     /**

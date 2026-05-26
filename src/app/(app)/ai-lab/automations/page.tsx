@@ -28,6 +28,7 @@ import {
   reportBrandingPdfIssues,
 } from "@/lib/pdf-branding-layout";
 import { getAdminApiRequestHeaders } from "@/lib/admin-api-client";
+import { searchReferences } from "@/lib/reference-search/client";
 import { AiProviderBadge } from "@/components/ai/ai-provider-badge";
 import type { AiProviderId } from "@/lib/ai-provider-labels";
 import {
@@ -364,13 +365,26 @@ export default function AiLabAutomationsPage() {
     setExternalErrors([]);
 
     try {
+      let additionalInstructions = instructions.trim();
+      try {
+        const cloud = await searchReferences(auth, {
+          query: `${reportTitle.trim()} ${objective.trim()}`,
+          maxResults: 8,
+        });
+        if (cloud.contextText) {
+          additionalInstructions += `\n\n--- Biblioteca OneDrive ---\n${cloud.contextText}`;
+        }
+      } catch {
+        // contexto cloud opcional
+      }
+
       const res = await fetch("/api/ai-lab/generate-report", {
         method: "POST",
         headers: await getAdminApiRequestHeaders(auth),
         body: JSON.stringify({
           reportTitle: reportTitle.trim(),
           objective: objective.trim(),
-          additionalInstructions: instructions.trim(),
+          additionalInstructions,
           internalSources: selectedSources.map((s) => ({
             id: s.id,
             title: s.title,

@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { verifyAdminBearer, type VerifiedAdmin } from "@/lib/admin/verify-admin";
-import { adminApiErrorResponse } from "@/lib/admin/admin-api-error";
 import { verifyIdTokenAndLoadUser } from "@/lib/package-enforcement-server";
 import type { AppUser } from "@/lib/types";
 
@@ -38,4 +37,4 @@ export function apiAuthErrorResponse(err: unknown) {
   return NextResponse.json({ error: message }, { status: 401 });
 }
 
-export { adminApiErrorResponse };
+export { adminApiErrorResponse, adminApiErrorNextResponse } from "@/lib/admin/admin-api-error";

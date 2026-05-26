@@ -12,7 +12,7 @@ import {
   getFeamCatalogItem,
   type FeamTrCatalogItem,
 } from '@/lib/pea/feam-tr-catalog';
-import { getTermosReferenciaPathForStudy } from '@/lib/termos-referencia-config';
+import { getTermosReferenciaPathForStudy } from '@/lib/termos-referencia-config.server';
 import {
   apiAuthErrorResponse,
   requireAuthenticatedApi,

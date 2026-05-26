@@ -32,6 +32,10 @@ function tipoEstudoToSlug(tipoEstudo: string): string {
     pia: 'pia',
     pca: 'pca',
     prada: 'prada',
+    ptrf: 'ptrf',
+    eiarima: 'eia-rima',
+    lasras: 'las-ras',
+    reanalise: 'rca',
     inventarioflorestal: 'fauna',
     fauna: 'fauna',
     outorgas: 'outorgas',
@@ -39,7 +43,11 @@ function tipoEstudoToSlug(tipoEstudo: string): string {
     relatoriodiverso: 'rca',
     outro: 'rca',
   };
-  return slugMap[normalized] ?? 'rca';
+  if (slugMap[normalized]) return slugMap[normalized];
+  if (TEMPLATE_SLUGS.includes(normalized as (typeof TEMPLATE_SLUGS)[number])) {
+    return normalized;
+  }
+  return 'rca';
 }
 
 function getTemplatePath(slug: string): string {

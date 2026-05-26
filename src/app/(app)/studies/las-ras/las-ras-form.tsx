@@ -17,15 +17,14 @@ import {
 import { Input } from '@/components/ui/input';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import type { Empreendedor as Client, Project } from '@/lib/types';
+import type { Empreendedor as Client, LasRas, Project } from '@/lib/types';
 import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
-import { collection } from 'firebase/firestore';
+import { addDoc, collection, doc, updateDoc } from 'firebase/firestore';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useRouter } from 'next/navigation';
 import { filterProjectsByEmpreendedorId } from '@/lib/processos-form-order';
 
-// Simplified schema for LAS-RAS
 const formSchema = z.object({
     empreendedorId: z.string().min(1, 'Selecione um empreendedor.'),
     projectId: z.string().min(1, 'Selecione um empreendimento.'),
@@ -38,7 +37,32 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
-export function LasRasForm() {
+type LasRasFormProps = {
+  currentItem?: LasRas | null;
+  onSuccess?: () => void;
+};
+
+function lasRasToFormValues(item: LasRas): FormValues {
+  const ras = item.ras ?? {};
+  return {
+    empreendedorId: item.requerente?.clientId ?? '',
+    projectId: item.empreendimento?.projectId ?? '',
+    caracterizacaoEmpreendimento:
+      ras.caracterizacaoEmpreendimento ??
+      (item as Record<string, string>).caracterizacaoEmpreendimento ??
+      '',
+    caracterizacaoArea:
+      ras.caracterizacaoArea ?? (item as Record<string, string>).caracterizacaoArea ?? '',
+    diagnosticoAmbiental:
+      ras.diagnosticoAmbiental ?? (item as Record<string, string>).diagnosticoAmbiental ?? '',
+    impactosAmbientais:
+      ras.impactosAmbientais ?? (item as Record<string, string>).impactosAmbientais ?? '',
+    medidasControle:
+      ras.medidasControle ?? (item as Record<string, string>).medidasControle ?? '',
+  };
+}
+
+export function LasRasForm({ currentItem = null, onSuccess }: LasRasFormProps) {
   const [loading, setLoading] = React.useState(false);
   const { toast } = useToast();
   const router = useRouter();
@@ -51,15 +75,17 @@ export function LasRasForm() {
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-        empreendedorId: '',
-        projectId: '',
-        caracterizacaoEmpreendimento: '',
-        caracterizacaoArea: '',
-        diagnosticoAmbiental: '',
-        impactosAmbientais: '',
-        medidasControle: '',
-    },
+    defaultValues: currentItem
+      ? lasRasToFormValues(currentItem)
+      : {
+          empreendedorId: '',
+          projectId: '',
+          caracterizacaoEmpreendimento: '',
+          caracterizacaoArea: '',
+          diagnosticoAmbiental: '',
+          impactosAmbientais: '',
+          medidasControle: '',
+        },
   });
 
   const selectedClientId = form.watch('empreendedorId');
@@ -70,14 +96,57 @@ export function LasRasForm() {
   );
 
   async function onSubmit(values: FormValues) {
+    if (!firestore) return;
     setLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    toast({
-      title: 'RAS Salvo com Sucesso!',
-      description: 'Seu Relatório Ambiental Simplificado foi salvo.',
-    });
-    setLoading(false);
-    // Optionally redirect or clear form
+    try {
+      const client = clients?.find((c) => c.id === values.empreendedorId);
+      const project = projects?.find((p) => p.id === values.projectId);
+      const payload: Omit<LasRas, 'id'> = {
+        status: currentItem?.status ?? 'Rascunho',
+        formSource: 'static',
+        requerente: {
+          clientId: values.empreendedorId,
+          nome: client?.name ?? '',
+        },
+        empreendimento: {
+          projectId: values.projectId,
+          nome: (project?.fantasyName || project?.propertyName) ?? '',
+          activity: project?.activity ?? '',
+        },
+        ras: {
+          caracterizacaoEmpreendimento: values.caracterizacaoEmpreendimento,
+          caracterizacaoArea: values.caracterizacaoArea,
+          diagnosticoAmbiental: values.diagnosticoAmbiental,
+          impactosAmbientais: values.impactosAmbientais,
+          medidasControle: values.medidasControle,
+        },
+        updatedAt: new Date().toISOString(),
+      };
+
+      if (currentItem?.id) {
+        await updateDoc(doc(firestore, 'lasRas', currentItem.id), payload);
+        toast({ title: 'LAS/RAS atualizado', description: 'Alterações salvas com sucesso.' });
+      } else {
+        await addDoc(collection(firestore, 'lasRas'), {
+          ...payload,
+          createdAt: new Date().toISOString(),
+        });
+        toast({
+          title: 'LAS/RAS salvo',
+          description: 'Relatório Ambiental Simplificado registrado.',
+        });
+      }
+      onSuccess?.();
+    } catch (e) {
+      console.error(e);
+      toast({
+        variant: 'destructive',
+        title: 'Erro ao salvar',
+        description: 'Não foi possível gravar o LAS/RAS.',
+      });
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -90,7 +159,7 @@ export function LasRasForm() {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Empreendedor</FormLabel>
-                <Select onValueChange={(value) => { field.onChange(value); form.resetField('projectId'); }} defaultValue={field.value} disabled={isLoadingClients}>
+                <Select onValueChange={(value) => { field.onChange(value); form.resetField('projectId'); }} value={field.value} disabled={isLoadingClients}>
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder={isLoadingClients ? "Carregando..." : "Selecione o empreendedor"} />
@@ -201,7 +270,7 @@ export function LasRasForm() {
                 Cancelar
             </Button>
             <Button type="submit" disabled={loading}>
-            {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Salvando...</> : 'Salvar RAS'}
+            {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Salvando...</> : (currentItem ? 'Salvar alterações' : 'Salvar RAS')}
             </Button>
         </div>
       </form>

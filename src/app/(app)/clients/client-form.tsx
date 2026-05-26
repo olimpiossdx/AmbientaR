@@ -46,6 +46,8 @@ import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { DEFAULT_AI_LOCAL_SOURCE_PATH } from "@/lib/ai-local-source-defaults";
 import { getAdminApiRequestHeaders } from "@/lib/admin-api-client";
+import { searchReferences } from "@/lib/reference-search/client";
+import { fetchOnedriveAutofillContext } from "@/lib/autofill/fetch-onedrive-context";
 
 const formSchema = z.object({
   name: z.string().min(2, "O nome é obrigatório."),
@@ -499,100 +501,54 @@ export function ClientForm({
       let localEvidenceCitations: string[] = [];
       let localMatchedByCpfCount = 0;
       try {
-        const requestLocalImport = async (modifiedAfter?: string) => {
-          const res = await fetch("/api/ai-lab/import-reference-files", {
-            method: "POST",
-            headers: await getAdminApiRequestHeaders(auth),
-            body: JSON.stringify({
-              basePath: configuredPath,
-              extensions:
-                configuredExtensions.length > 0
-                  ? configuredExtensions
-                  : DEFAULT_AI_LOCAL_SOURCE_EXTENSIONS,
-              cpfCnpj: digits,
-              modifiedAfter: modifiedAfter || undefined,
-            }),
-          });
-          const data = await res.json();
-          return { res, data };
-        };
-
-        let { res: localRes, data: localData } = await requestLocalImport(
-          configuredModifiedAfter || undefined,
-        );
-        if (
-          configuredModifiedAfter &&
-          localRes.ok &&
-          localData?.success &&
-          Array.isArray(localData.imported) &&
-          localData.imported.length === 0
-        ) {
-          // Fallback: se o filtro de data esvaziar a busca, tenta novamente sem data.
-          const retried = await requestLocalImport(undefined);
-          localRes = retried.res;
-          localData = retried.data;
-        }
-
-        if (
-          localRes.ok &&
-          localData?.success &&
-          Array.isArray(localData.imported)
-        ) {
-          localMatchedByCpfCount = Number(localData?.matchedByCpfCount || 0);
-          const docVariants = buildDocumentVariants(cpfCnpj).map((v) =>
-            normalizeDocument(v),
-          );
-          const matchedLocal = localData.imported
-            .filter(
-              (item: {
-                content?: string;
-                title?: string;
-                sourcePath?: string;
-              }) => {
-                const normalizedContent = normalizeDocument(item.content || "");
-                const normalizedTitle = normalizeDocument(item.title || "");
-                const normalizedSourcePath = normalizeDocument(
-                  item.sourcePath || "",
-                );
-                return docVariants.some(
-                  (variant) =>
-                    variant &&
-                    (normalizedContent.includes(variant) ||
-                      normalizedTitle.includes(variant) ||
-                      normalizedSourcePath.includes(variant)),
-                );
-              },
-            )
-            .slice(0, 8);
-          localEvidenceCitations = matchedLocal.map(
-            (item: { sourcePath?: string; title?: string }) =>
-              `local:${item.sourcePath || item.title || "arquivo_local"}`,
-          );
-          localEvidenceText = matchedLocal
-            .map(
-              (item: {
-                title?: string;
-                sourcePath?: string;
-                content?: string;
-              }) =>
-                `[Arquivo Local] ${item.title || "sem_titulo"} (${item.sourcePath || "sem_caminho"})\n${(item.content || "").slice(0, 1200)}`,
-            )
-            .join("\n\n");
-        }
+        const searchResult = await searchReferences(auth, {
+          cpfCnpj: digits,
+          basePath: configuredPath,
+          extensions:
+            configuredExtensions.length > 0
+              ? configuredExtensions
+              : DEFAULT_AI_LOCAL_SOURCE_EXTENSIONS,
+          modifiedAfter: configuredModifiedAfter || undefined,
+          maxResults: 8,
+        });
+        localMatchedByCpfCount =
+          searchResult.matchedByCpfCount ?? searchResult.hits.length;
+        localEvidenceCitations = searchResult.citations;
+        localEvidenceText = searchResult.contextText;
       } catch (error) {
-        console.warn("Falha ao buscar evidências locais (clientes):", error);
+        console.warn("Falha ao buscar evidências (biblioteca IA):", error);
+      }
+
+      let onedriveEvidenceText = "";
+      let onedriveCitations: string[] = [];
+      let onedriveExtractedCount = 0;
+      let onedriveCatalogCount = 0;
+      const onedriveHints: string[] = [];
+      const od = await fetchOnedriveAutofillContext(auth, digits);
+      if (od.success) {
+        onedriveEvidenceText = od.evidenceText || "";
+        onedriveCitations = od.citations || [];
+        onedriveExtractedCount = od.extractedFileCount ?? 0;
+        onedriveCatalogCount = od.catalogFileCount ?? 0;
+        if (od.hints?.length) onedriveHints.push(...od.hints);
+      } else {
+        if (od.error) onedriveHints.push(od.error);
+        if (od.hints?.length) onedriveHints.push(...od.hints);
+        console.warn("OneDrive autofill:", od.error, od.diagnostics);
       }
 
       if (
         !matchedClient &&
         !matchedEmp &&
         hardSuggestions.length === 0 &&
-        !localEvidenceText
+        !localEvidenceText &&
+        !onedriveEvidenceText
       ) {
         toast({
           title: "Sem contexto encontrado",
           description:
-            "Nenhum cadastro vinculado a este CPF/CNPJ na base interna ou pasta local.",
+            onedriveHints[0] ||
+            "Nenhum cadastro vinculado a este CPF/CNPJ na base interna, pasta OneDrive ou biblioteca local.",
         });
         return;
       }
@@ -609,7 +565,8 @@ export function ClientForm({
         .filter(Boolean)
         .map((x) => JSON.stringify(x, null, 2))
         .join("\n\n")
-        .concat(localEvidenceText ? `\n\n${localEvidenceText}` : "");
+        .concat(localEvidenceText ? `\n\n${localEvidenceText}` : "")
+        .concat(onedriveEvidenceText ? `\n\n${onedriveEvidenceText}` : "");
 
       const llmRes = await fetch("/api/ai-lab/autofill-empreendedor", {
         method: "POST",
@@ -636,17 +593,27 @@ export function ClientForm({
       softSuggestions.forEach((s) => {
         if (!merged.some((m) => m.field === s.field)) merged.push(s);
       });
-      if (localEvidenceCitations.length > 0) {
+      const allCitations = [
+        ...localEvidenceCitations,
+        ...onedriveCitations,
+      ];
+      if (allCitations.length > 0) {
         merged.forEach((s) => {
           s.sourceCitations = Array.from(
-            new Set([...(s.sourceCitations || []), ...localEvidenceCitations]),
+            new Set([...(s.sourceCitations || []), ...allCitations]),
           );
         });
       }
       setAutofillSuggestions(merged);
+      const onedrivePart =
+        onedriveCatalogCount > 0
+          ? ` OneDrive: ${onedriveExtractedCount} ficheiro(s) lidos (${onedriveCatalogCount} no catálogo).`
+          : "";
       toast({
         title: "Sugestões prontas",
-        description: `${merged.length} sugestão(ões) para revisão. Arquivos locais com CPF/CNPJ: ${localMatchedByCpfCount}.`,
+        description: `${merged.length} sugestão(ões) para revisão. Locais: ${localMatchedByCpfCount}.${onedrivePart}${
+          onedriveHints[0] ? ` ${onedriveHints[0]}` : ""
+        }`,
       });
     } catch (error) {
       console.error("Autofill clientes falhou:", error);
@@ -778,7 +745,7 @@ export function ClientForm({
                   >
                     {isAutofilling
                       ? "Buscando contexto..."
-                      : "Prenchimento automático"}
+                      : "Preenchimento automático (CPF + OneDrive)"}
                   </Button>
                 </div>
                 <FormMessage />

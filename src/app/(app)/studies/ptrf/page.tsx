@@ -31,7 +31,9 @@ import {
   DialogFooter,
   DialogClose,
 } from '@/components/ui/dialog';
-import { MoreHorizontal, PlusCircle, Pencil, Trash2, Eye, CheckCircle } from 'lucide-react';
+import { PlusCircle } from 'lucide-react';
+import { StudyDocumentRowActions } from '@/components/studies/study-document-row-actions';
+import { StudyBrandedExportButtons } from '@/components/studies/study-branded-export-buttons';
 import { useCollection, useFirebase, useMemoFirebase, errorEmitter } from '@/firebase';
 import { collection, doc, deleteDoc, updateDoc } from 'firebase/firestore';
 import type { PTRF, AppUser } from '@/lib/types';
@@ -40,7 +42,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { useAuth } from '@/firebase';
-import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
+import { TooltipProvider } from '@/components/ui/tooltip';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
@@ -186,12 +188,16 @@ export default function PtrfPage() {
                           </Badge>
                         </TableCell>
                         <TableCell className="text-right">
-                          <div className="flex items-center justify-end gap-1">
-                            <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={() => handleView(item)}><Eye className="h-4 w-4" /></Button></TooltipTrigger><TooltipContent><p>Visualizar detalhes</p></TooltipContent></Tooltip>
-                            <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={() => handleEdit(item)}><Pencil className="h-4 w-4" /></Button></TooltipTrigger><TooltipContent><p>Editar PTRF</p></TooltipContent></Tooltip>
-                            <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={() => handleApprove(item.id)}><CheckCircle className="h-4 w-4 text-green-500" /></Button></TooltipTrigger><TooltipContent><p>Aprovar PTRF</p></TooltipContent></Tooltip>
-                            <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => openDeleteConfirm(item.id)} disabled={!canDelete(item)}><Trash2 className="h-4 w-4" /></Button></TooltipTrigger><TooltipContent><p>Deletar PTRF</p></TooltipContent></Tooltip>
-                          </div>
+                          <StudyDocumentRowActions
+                            item={item}
+                            templateSlug="ptrf"
+                            onView={handleView}
+                            onEdit={handleEdit}
+                            onApprove={handleApprove}
+                            onDelete={openDeleteConfirm}
+                            canDelete={canDelete(item)}
+                            showApprove
+                          />
                         </TableCell>
                       </TableRow>
                     ))}
@@ -244,19 +250,18 @@ export default function PtrfPage() {
                           </Badge>
                         </TableCell>
                         <TableCell className="text-right">
-                           <div className="flex items-center justify-end gap-1">
-                                <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={() => handleView(item)}><Eye className="h-4 w-4" /></Button></TooltipTrigger><TooltipContent><p>Visualizar detalhes</p></TooltipContent></Tooltip>
-                                {isAdminOrSupervisorRole(user?.role) && (
-                                    <Tooltip>
-                                        <TooltipTrigger asChild>
-                                            <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => openDeleteConfirm(item.id)}>
-                                                <Trash2 className="h-4 w-4" />
-                                            </Button>
-                                        </TooltipTrigger>
-                                        <TooltipContent><p>Deletar PTRF</p></TooltipContent>
-                                    </Tooltip>
-                                )}
-                            </div>
+                          <StudyDocumentRowActions
+                            item={item}
+                            templateSlug="ptrf"
+                            onView={handleView}
+                            onEdit={handleEdit}
+                            onDelete={
+                              isAdminOrSupervisorRole(user?.role)
+                                ? openDeleteConfirm
+                                : undefined
+                            }
+                            canDelete={canDelete(item)}
+                          />
                         </TableCell>
                       </TableRow>
                     ))}
@@ -294,6 +299,11 @@ export default function PtrfPage() {
               <DetailItem label="Nome" value={itemToView.responsavelTecnico.nome} />
               <DetailItem label="Formação" value={itemToView.responsavelTecnico.formacao} />
               <DetailItem label="Registro" value={itemToView.responsavelTecnico.registroConselho} />
+              <Separator />
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Exportar documento</Label>
+                <StudyBrandedExportButtons record={itemToView} templateSlug="ptrf" />
+              </div>
             </div>
           )}
           <DialogFooter>

@@ -2,15 +2,32 @@
 import { PageHeader } from '@/components/page-header';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { RcaForm } from '../rca-form';
-import { useRouter } from 'next/navigation';
+import { StudyDynamicCreationPage } from '@/components/studies/study-dynamic-creation-page';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 
 function NewRcaPageContent() {
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const isDynamic = searchParams?.get('form') === 'dynamic';
 
     const handleSuccess = () => {
       router.push('/studies/rca');
     };
+
+    if (isDynamic) {
+      return (
+        <StudyDynamicCreationPage
+          studySlug="rca"
+          studyLabel="RCA"
+          pageTitle="Novo RCA (formulário do documento)"
+          cardTitle="Adicionar novo RCA"
+          listagemVariant="rca"
+          staticFormHref="/studies/rca/new"
+          onSuccess={handleSuccess}
+        />
+      );
+    }
   
     return (
       <div className="flex flex-col h-full">

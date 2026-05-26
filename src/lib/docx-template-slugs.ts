@@ -36,12 +36,16 @@ export function tipoEstudoToTemplateSlug(tipoEstudo: string): string {
     pia: "pia",
     pca: "pca",
     prada: "prada",
+    ptrf: "ptrf",
+    eiarima: "eia-rima",
+    lasras: "las-ras",
+    reanalise: "rca",
     inventarioflorestal: "fauna",
     fauna: "fauna",
     outorgas: "outorgas",
-    educacaoambiental: "fauna",
+    educacaoambiental: "pea",
     relatoriodiverso: "rca",
     outro: "rca",
   };
-  return slugMap[normalized] ?? "rca";
+  return slugMap[normalized] ?? (normalized || "rca");
 }

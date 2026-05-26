@@ -2408,6 +2408,54 @@ export type EiaRima = {
   [key: string]: any;
 };
 
+/** LAS/RAS — formulário estático ou dinâmico (coleção `lasRas`). */
+export type LasRas = {
+  id: string;
+  status?: 'Rascunho' | 'Aprovado';
+  formSource?: 'dynamic' | 'static';
+  requerente?: {
+    clientId?: string;
+    nome?: string;
+  };
+  empreendimento?: {
+    projectId?: string;
+    nome?: string;
+    activity?: string;
+    [key: string]: unknown;
+  };
+  ras?: {
+    caracterizacaoEmpreendimento?: string;
+    caracterizacaoArea?: string;
+    diagnosticoAmbiental?: string;
+    impactosAmbientais?: string;
+    medidasControle?: string;
+  };
+  createdAt?: string;
+  updatedAt?: string;
+  [key: string]: unknown;
+};
+
+/** Reanálise de processo — formulário dinâmico (coleção `reanalises`). */
+export type Reanalise = {
+  id: string;
+  status?: 'Rascunho' | 'Aprovado';
+  formSource?: 'dynamic' | 'static';
+  requerente?: {
+    clientId?: string;
+    nome?: string;
+  };
+  empreendimento?: {
+    projectId?: string;
+    nome?: string;
+    activity?: string;
+    [key: string]: unknown;
+  };
+  processo?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  [key: string]: unknown;
+};
+
 export type InventarioStatus = 'rascunho' | 'em_campo' | 'sincronizado' | 'concluida';
 
 /** Resumo gravado ao consolidar planilha Excel da campanha. */
