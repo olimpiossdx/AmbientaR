@@ -10,7 +10,12 @@ export function SuppressExtensionErrors() {
   useEffect(() => {
     const isFromExtension = (message: string, source?: string, stack?: string) => {
       const str = [message, source, stack].filter(Boolean).join(' ');
-      return /chrome-extension:\/\//i.test(str) || /metamask/i.test(str) || /Failed to connect to MetaMask/i.test(str);
+      return (
+        /chrome-extension:\/\//i.test(str) ||
+        /metamask/i.test(str) ||
+        /Failed to connect to MetaMask/i.test(str) ||
+        /RegisterClientLocalizationsError/i.test(str)
+      );
     };
 
     const onError = (event: ErrorEvent) => {

@@ -6,6 +6,7 @@ import {
   hasCompleteBrandingImages,
   hasCompleteBrandingUrls,
 } from '@/lib/branding/requirements';
+import { bufferToImageDataUrl } from '@/lib/branding/image-data-url';
 
 export type CompanyBrandingSettings = {
   headerImageUrl: string | null;
@@ -63,10 +64,6 @@ async function downloadBrandingUrl(url: string): Promise<Buffer> {
   return Buffer.from(ab);
 }
 
-function bufferToPngDataUrl(buf: Buffer): string {
-  return `data:image/png;base64,${buf.toString('base64')}`;
-}
-
 /** Carrega imagens de branding no servidor (APIs DOCX/PDF). */
 export async function fetchBrandingImagesForServer(
   urls: BrandingImageUrls,
@@ -84,9 +81,9 @@ export async function fetchBrandingImagesForServer(
   ]);
 
   return {
-    headerBase64: headerBuf ? bufferToPngDataUrl(headerBuf) : null,
-    footerBase64: footerBuf ? bufferToPngDataUrl(footerBuf) : null,
-    watermarkBase64: watermarkBuf ? bufferToPngDataUrl(watermarkBuf) : null,
+    headerBase64: headerBuf ? bufferToImageDataUrl(headerBuf) : null,
+    footerBase64: footerBuf ? bufferToImageDataUrl(footerBuf) : null,
+    watermarkBase64: watermarkBuf ? bufferToImageDataUrl(watermarkBuf) : null,
   };
 }
 

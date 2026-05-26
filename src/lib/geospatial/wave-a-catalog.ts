@@ -164,9 +164,40 @@ export const WAVE_C_LAYERS: WaveACatalogEntry[] = [
   },
 ];
 
-/** Todas as camadas acordadas (Ondas A + B + C) */
+/** Onda D — patrimônio espeleológico (licenciamento MG / CECAV) */
+export const WAVE_D_LAYERS: WaveACatalogEntry[] = [
+  {
+    layerId: "mg_potencial_cavidades",
+    title: "Potencialidade de ocorrência de cavidades (CECAV / DN 217)",
+    wave: "C",
+    geometryKind: "polygon",
+    typeNames: ["IDE:ide_2002_mg_potencialidade_cavidades_pol"],
+    labelFields: [
+      "potencial",
+      "POTENCIAL",
+      "potencialidade",
+      "POTENCIALIDADE",
+      "grau",
+      "GRAU",
+      "classe",
+      "CLASSE",
+      "legenda",
+      "LEGENDA",
+      "descricao",
+      "DESCRICAO",
+      "nome",
+      "NOME",
+    ],
+    wfsBaseUrls: GEOSERVER_BASES,
+  },
+];
+
+/** Todas as camadas acordadas (Ondas A + B + C + espeleologia) */
 export const SIG_MG_ALL_LAYERS: WaveACatalogEntry[] = [
   ...WAVE_A_LAYERS,
   ...WAVE_B_LAYERS,
   ...WAVE_C_LAYERS,
+  ...WAVE_D_LAYERS,
 ];
+
+export const SIG_MG_LAYER_COUNT = SIG_MG_ALL_LAYERS.length;

@@ -33,6 +33,7 @@ import {
 } from '@/lib/coleta-campo/constants';
 import { addColetaDoc } from '@/lib/coleta-campo/offline-write';
 import { downloadCampanhaExcel } from '@/lib/coleta-campo/export-excel';
+import { consolidateCampanhaToStorage } from '@/lib/coleta-campo/consolidate-campanha';
 import {
   buildAreaAmarracaoFromInputs,
   emptyVerticesForm,
@@ -68,6 +69,7 @@ export default function CampanhaDetailPage() {
   const [observacoes, setObservacoes] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [consolidating, setConsolidating] = useState(false);
 
   const campanhaRef = useMemoFirebase(
     () => (firestore && id ? doc(firestore, 'inventarios', id) : null),
@@ -200,18 +202,58 @@ export default function CampanhaDetailPage() {
     toast,
   ]);
 
+  const runConsolidacao = useCallback(
+    async (markConcluida: boolean) => {
+      if (!firestore || !campanha || !parcelas || !individuos) return null;
+      setConsolidating(true);
+      try {
+        const result = await consolidateCampanhaToStorage(
+          firestore,
+          { campanha, parcelas, individuos },
+          { markConcluida },
+        );
+        const errors = result.issues.filter((i) => i.level === 'error');
+        if (errors.length) {
+          toast({
+            title: markConcluida ? 'Não foi possível concluir' : 'Consolidação bloqueada',
+            description: errors[0].message,
+            variant: 'destructive',
+          });
+          return null;
+        }
+        const warns = result.issues.filter((i) => i.level === 'warn');
+        if (warns.length) {
+          toast({ title: 'Planilha consolidada', description: warns[0].message });
+        }
+        return result;
+      } catch (err) {
+        toast({ title: 'Erro', description: (err as Error).message, variant: 'destructive' });
+        return null;
+      } finally {
+        setConsolidating(false);
+      }
+    },
+    [firestore, campanha, parcelas, individuos, toast],
+  );
+
   const marcarConcluida = useCallback(async () => {
-    if (!firestore || !campanha) return;
-    try {
-      await updateDoc(doc(firestore, 'inventarios', campanha.id), {
-        status: 'concluida',
-        updatedAt: serverTimestamp(),
-      });
-      toast({ title: 'Campanha concluída' });
-    } catch (err) {
-      toast({ title: 'Erro', description: (err as Error).message, variant: 'destructive' });
-    }
-  }, [firestore, campanha, toast]);
+    const result = await runConsolidacao(true);
+    if (!result) return;
+    toast({
+      title: 'Campanha concluída',
+      description:
+        'Planilha Excel consolidada e salva. Importe em Inventário Florestal (planilha ou Carregar da Coleta).',
+    });
+  }, [runConsolidacao, toast]);
+
+  const reconsolidarPlanilha = useCallback(async () => {
+    const result = await runConsolidacao(false);
+    if (!result) return;
+    toast({
+      title: 'Planilha atualizada',
+      description: 'Arquivo consolidado salvo no módulo para importação no escritório.',
+    });
+  }, [runConsolidacao, toast]);
 
   const exportarExcel = useCallback(async () => {
     if (!campanha || !parcelas || !individuos) return;
@@ -227,13 +269,23 @@ export default function CampanhaDetailPage() {
         toast({ title: 'Exportação bloqueada', description: errors[0].message, variant: 'destructive' });
         return;
       }
+      if (campanha.status === 'concluida' && firestore) {
+        await consolidateCampanhaToStorage(
+          firestore,
+          { campanha, parcelas, individuos },
+          { markConcluida: false },
+        );
+      }
       const warns = issues.filter((i) => i.level === 'warn');
       if (warns.length) {
         toast({ title: 'Excel gerado', description: warns[0].message });
       } else {
         toast({
           title: 'Excel gerado',
-          description: 'Importe em Inventário Florestal → Importar planilha.',
+          description:
+            campanha.status === 'concluida'
+              ? 'Download local e cópia consolidada atualizada no módulo.'
+              : 'Importe em Inventário Florestal → Importar planilha ou conclua a campanha para salvar no módulo.',
         });
       }
     } catch (err) {
@@ -241,7 +293,7 @@ export default function CampanhaDetailPage() {
     } finally {
       setExporting(false);
     }
-  }, [campanha, parcelas, individuos, toast]);
+  }, [campanha, parcelas, individuos, firestore, toast]);
 
   if (isLoading || !campanha) {
     return (
@@ -291,7 +343,7 @@ export default function CampanhaDetailPage() {
               variant="secondary"
               className="min-h-11 gap-2"
               onClick={() => void exportarExcel()}
-              disabled={exporting}
+              disabled={exporting || consolidating}
             >
               {exporting ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -300,17 +352,50 @@ export default function CampanhaDetailPage() {
               )}
               Exportar Excel
             </Button>
-            <Button variant="outline" className="min-h-11 gap-2" onClick={() => void marcarConcluida()}>
-              <CheckCircle2 className="h-4 w-4" />
-              Marcar concluída
-            </Button>
+            {campanha.status === 'concluida' ? (
+              <Button
+                variant="outline"
+                className="min-h-11 gap-2"
+                onClick={() => void reconsolidarPlanilha()}
+                disabled={consolidating || exporting}
+              >
+                {consolidating ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <CheckCircle2 className="h-4 w-4" />
+                )}
+                Atualizar planilha consolidada
+              </Button>
+            ) : (
+              <Button
+                variant="outline"
+                className="min-h-11 gap-2"
+                onClick={() => void marcarConcluida()}
+                disabled={consolidating || exporting}
+              >
+                {consolidating ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <CheckCircle2 className="h-4 w-4" />
+                )}
+                Marcar concluída e consolidar
+              </Button>
+            )}
+            {campanha.exportConsolidatedAt && campanha.exportSummary ? (
+              <p className="w-full text-xs text-muted-foreground pt-1">
+                Planilha salva no módulo: {campanha.exportSummary.totalTrees} árvores,{' '}
+                {campanha.exportSummary.totalParcels} parcelas — disponível para importação no
+                Inventário Florestal.
+              </p>
+            ) : null}
           </CardContent>
         </Card>
 
         <Alert>
           <AlertDescription className="text-sm">
-            Termine cada parcela (árvores) e use <strong>Nova parcela</strong> para a seguinte. O Excel
-            reúne todas as linhas para importação em <strong>Inventário Florestal</strong>.
+            Termine cada parcela (árvores) e use <strong>Nova parcela</strong> para a seguinte. Ao{' '}
+            <strong>Marcar concluída e consolidar</strong>, a planilha Excel fica salva neste módulo para
+            importação em <strong>Inventário Florestal</strong> (planilha ou carregamento direto).
           </AlertDescription>
         </Alert>
 

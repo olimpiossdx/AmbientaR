@@ -182,11 +182,16 @@ export function canWriteProcessosInternal(
   ]);
 }
 
-/** Defesa de auto de infração (Firestore: admin e advogado). */
+/** Defesa de auto de infração — elaboração e gestão (equipa interna + advogado). */
 export function canManageAutoInfracaoDefesa(
   role: UserRole | undefined | null,
 ): boolean {
-  return hasAnyRoleOrAdmin(role, ["advogado"]);
+  return hasAnyRoleOrAdmin(role, [
+    "advogado",
+    "technical",
+    "gestor",
+    "supervisor",
+  ]);
 }
 
 /**

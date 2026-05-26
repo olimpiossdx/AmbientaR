@@ -47,6 +47,8 @@ import { handleAnalyseArea } from "./actions";
 import { handleWaveAAnalysis } from "./actions-wave-a";
 import type { WaveAAnalysisResult } from "@/lib/types/geo-wave-a";
 import { GeoWaveALayerCards } from "@/components/geospatial/geo-wave-a-layer-cards";
+import { GeoCavidadesBridge } from "@/components/geospatial/geo-cavidades-bridge";
+import { SIG_MG_LAYER_COUNT } from "@/lib/geospatial/wave-a-catalog";
 import { appendWaveAFactualPdf } from "@/lib/geospatial/export-wave-a-pdf";
 import { buildFactualMinimaps } from "@/lib/geospatial/render-minimap-client";
 import { GeoAnalysisComplementPanel } from "@/components/geospatial/geo-analysis-complement-panel";
@@ -521,7 +523,7 @@ export default function AnaliseAmbientalPage() {
   return (
     <StudyGeospatialStackedShell
       title="Análise Geoespacial (IA)"
-      description="Desenhe o perímetro, execute as 8 camadas SIG (MG) e exporte o PDF factual; depois complemente com IA em Relatórios de IA."
+      description={`Desenhe o perímetro, execute as ${SIG_MG_LAYER_COUNT} camadas SIG (MG, incl. potencialidade CECAV) e exporte o PDF factual; depois complemente com IA em Relatórios de IA.`}
       topExtras={
         <>
           <PackageUsageBanner usage={packageUsage} showAmbbot />
@@ -540,8 +542,8 @@ export default function AnaliseAmbientalPage() {
             <CardTitle>Captura por coordenada / polígono</CardTitle>
             <CardDescription>
               Mapa em largura total: desenhe o perímetro, capture coordenadas ou
-              carregue SHP no painel abaixo. O mesmo limite alimenta as 8 camadas
-              IDE-Sisema MG.
+              carregue SHP no painel abaixo.               O mesmo limite alimenta as {SIG_MG_LAYER_COUNT} camadas
+              IDE-Sisema MG (incl. cavidades / CECAV).
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-4 pt-0">
@@ -614,7 +616,7 @@ export default function AnaliseAmbientalPage() {
               <CardTitle className="text-base">Análise geoespacial factual</CardTitle>
               <CardDescription>
                 IDE-Sisema MG: hidrografia, bioma, solos, geologia, geomorfologia,
-                pedologia, vegetação e fauna.
+                pedologia, vegetação, fauna e potencialidade de cavidades (CECAV).
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -779,7 +781,7 @@ export default function AnaliseAmbientalPage() {
                 ) : (
                   <>
                     <Globe className="mr-2 h-4 w-4" />
-                    Gerar relatório factual (8 camadas MG)
+                    Gerar relatório factual ({SIG_MG_LAYER_COUNT} camadas MG)
                   </>
                 )}
               </Button>
@@ -821,7 +823,7 @@ export default function AnaliseAmbientalPage() {
                   <Loader2 className="mb-3 h-10 w-10 animate-spin" />
                   <p className="text-sm">
                     {isWaveALoading
-                      ? "Consultando 8 camadas no IDE-Sisema MG..."
+                      ? `Consultando ${SIG_MG_LAYER_COUNT} camadas no IDE-Sisema MG...`
                       : "Processando dados e gerando análise geoespacial..."}
                   </p>
                 </div>
@@ -834,12 +836,14 @@ export default function AnaliseAmbientalPage() {
                           {waveAResult.factualSummary}
                         </p>
                         <p className="mt-2 text-sm font-semibold text-primary">
-                          Área: {waveAResult.perimeter.areaHa.toFixed(2)} ha · Ondas A+B+C
+                          Área: {waveAResult.perimeter.areaHa.toFixed(2)} ha · Análise SIG MG (
+                          {SIG_MG_LAYER_COUNT} camadas)
                           {waveAResult.perimeter.source === "shp"
                             ? " · perímetro SHP"
                             : ""}
                         </p>
                       </div>
+                      <GeoCavidadesBridge wave={waveAResult} />
                       <GeoWaveALayerCards layers={waveAResult.layers} />
                     </>
                   ) : analysisResult ? (
@@ -936,7 +940,7 @@ export default function AnaliseAmbientalPage() {
                 <div className="flex flex-col items-center justify-center py-10 text-center text-muted-foreground">
                   <Globe className="mb-3 h-12 w-12 opacity-50" />
                   <p className="text-sm">
-                    Configure o perímetro e clique em &quot;Gerar relatório factual (8 camadas MG)&quot;.
+                    Configure o perímetro e clique em &quot;Gerar relatório factual ({SIG_MG_LAYER_COUNT} camadas MG)&quot;.
                     Depois avance para a Etapa 2 abaixo.
                   </p>
                 </div>

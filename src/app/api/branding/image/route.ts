@@ -51,16 +51,10 @@ export async function GET(request: NextRequest) {
 
     if (adminUnavailable && isPublicBranding) {
       console.warn(
-        '[api/branding/image] Firebase Admin indisponível; proxy branding/ com token do cliente ou sem auth.',
+        '[api/branding/image] Firebase Admin indisponível; proxy branding/ (leitura pública no Storage).',
       );
       if (!hasBearer) {
-        return NextResponse.json(
-          {
-            error:
-              'Sessão inválida. Faça login ou configure GOOGLE_APPLICATION_CREDENTIALS para desenvolvimento local.',
-          },
-          { status: 401 },
-        );
+        // branding/* tem allow read: if true — não exige Bearer para o proxy same-origin.
       }
     } else {
       return apiAuthErrorResponse(e);

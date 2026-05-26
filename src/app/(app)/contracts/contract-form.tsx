@@ -426,10 +426,9 @@ export function ContractForm({ currentItem, onSuccess, sourceProposal }: Contrac
     syncContratadaFromCadastro();
   }, [
     currentItem,
-    activePlatformCompany?.id,
-    companyProfile?.name,
-    companyProfile?.cnpj,
-    platformPublic?.activeCompanyId,
+    activePlatformCompany,
+    companyProfile,
+    platformPublic,
     syncContratadaFromCadastro,
   ]);
 
@@ -592,7 +591,7 @@ export function ContractForm({ currentItem, onSuccess, sourceProposal }: Contrac
             toast({
               title: "Contrato salvo",
               description:
-                "A identidade visual ainda está a carregar. Use «Gerar PDF» na lista para gerar o documento com cabeçalho e rodapé.",
+                "A identidade visual ainda está a carregar. Use «Exportar PDF» na lista para gerar o documento com cabeçalho e rodapé.",
             });
           } else {
             await persistContractPdfForSignature(
@@ -614,7 +613,7 @@ export function ContractForm({ currentItem, onSuccess, sourceProposal }: Contrac
             variant: "destructive",
             title: "Contrato salvo, mas falhou o PDF",
             description:
-              "Use «Gerar PDF» na lista de contratos para tentar novamente.",
+              "Use «Exportar PDF» na lista de contratos para tentar novamente.",
           });
         }
       }

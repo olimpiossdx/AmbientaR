@@ -18,6 +18,10 @@ import {
   aggregatePolygonLayerStats,
   buildFactualSummary,
 } from "@/lib/geospatial/layer-stats";
+import {
+  CAVIDADES_POTENCIAL_LAYER_ID,
+  enrichPotencialCavidadesLayerSummary,
+} from "@/lib/geospatial/cavidades-potencial";
 
 function geometryKindFromFeatures(
   features: Feature[],
@@ -40,6 +44,9 @@ function layerUnavailableSummary(entry: WaveACatalogEntry, wfs: {
     }
     if (entry.layerId === "mg_bioma") {
       return "Nenhum limite de bioma intersectou o perímetro no recorte WFS (confira no Geosisemanet/IBGE).";
+    }
+    if (entry.layerId === CAVIDADES_POTENCIAL_LAYER_ID) {
+      return "Sem polígono de potencialidade CECAV no recorte WFS — confira no Geovisualizador IDE-Sisema (mapa 1:2.500.000) e na prospecção de campo (IS 08/2017).";
     }
     return "Nenhuma feição no recorte WFS (serviço respondeu; confira no IDE-Sisema).";
   }
@@ -125,6 +132,13 @@ async function analyzeCatalogLayer(params: {
   } else {
     const top = stats[0];
     summary = `Classe predominante: ${top.label} (${top.pctOfPerimeter ?? 0}% do empreendimento).`;
+    if (params.entry.layerId === CAVIDADES_POTENCIAL_LAYER_ID) {
+      summary = enrichPotencialCavidadesLayerSummary(
+        stats,
+        summary,
+        params.perimeterAreaHa,
+      );
+    }
   }
 
   return {

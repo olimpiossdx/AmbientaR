@@ -386,7 +386,7 @@ export function guardBrandingPdfExport(
   if (opts.isPdfImagesLoading) {
     opts.toast?.({
       title: 'Aguarde',
-      description: `Carregando imagens da identidade visual para o ${formatLabel}…`,
+      description: `Carregando imagens da identidade visual para o ${formatLabel}… Recarregue a página (F5) se demorar mais de alguns segundos.`,
     });
     return false;
   }

@@ -66,7 +66,7 @@ export function appendWaveAFactualPdf(
     y += 8;
     doc.setFontSize(10);
     doc.setFont("helvetica", "normal");
-    doc.text("IDE-Sisema MG · Ondas A, B e C (8 camadas)", pageW / 2, y, {
+    doc.text("IDE-Sisema MG · Análise SIG (9 camadas, incl. CECAV/cavidades)", pageW / 2, y, {
       align: "center",
     });
     y += 10;

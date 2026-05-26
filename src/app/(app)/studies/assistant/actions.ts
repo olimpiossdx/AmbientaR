@@ -7,6 +7,9 @@ import { routedChatCompletion } from '@/lib/ai-run-chat';
 const STUDY_SYSTEM_PREFIX =
   'És o assistente AmbientaR (Pimenta Consultoria). O utilizador elabora estudos ambientais em MG/Brasil (documentos técnicos, licenciamento, relatórios). ';
 
+const OUTORGA_SYSTEM_PREFIX =
+  `${STUDY_SYSTEM_PREFIX}Foco: outorga de recursos hídricos em Minas Gerais (Decreto 47.705/2019, Portaria IGAM 48/2019, Tabela 01 de modos de uso, SOUT/EcoSistemas). Cite códigos de modo de uso e documentos do checklist quando relevante. `;
+
 export type AssistantModo = 'rapido' | 'completo';
 
 export async function handleAskAssistant(
@@ -21,7 +24,8 @@ export async function handleAskAssistant(
   const result = await routedChatCompletion({
     prompt: data.prompt,
     tipo: data.tipo ?? 'geral',
-    systemPrefix: STUDY_SYSTEM_PREFIX,
+    systemPrefix:
+      data.tipo === 'outorga' ? OUTORGA_SYSTEM_PREFIX : STUDY_SYSTEM_PREFIX,
     task,
     temperature: 0.2,
     max_tokens: 3072,

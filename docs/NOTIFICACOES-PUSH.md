@@ -24,14 +24,15 @@ Destinatários: titular do empreendedor/cliente + representantes em `approvedUse
 
 1. [Firebase Console](https://console.firebase.google.com/) → projeto `studio-316805764-e4d13` → **Build** → **Cloud Messaging**.
 2. Aba **Web Push certificates** → **Generate key pair** (VAPID).
-3. Copie a **chave pública** para `.env.local`:
+3. **Google Cloud Console** (mesmo projeto) → **APIs e serviços** → ativar **Firebase Cloud Messaging API**.
+4. Copie a **chave pública** para `.env.local`:
 
 ```env
 NEXT_PUBLIC_FIREBASE_VAPID_KEY=Bxxxxxxxx...
 ```
 
-4. Reinicie o dev server: `npm run dev`.
-5. No telemóvel: abra o site → instale **Adicionar à tela inicial** → aceite **Notificações** quando o browser pedir.
+5. Reinicie o dev server: `npm run dev`.
+6. No telemóvel: abra o site → instale **Adicionar à tela inicial** → aceite **Notificações** quando o browser pedir.
 
 ## Publicar regras Firestore
 
@@ -66,6 +67,10 @@ Em dev, abra a consola do browser no celular (Chrome remoto) ou no PC se testar 
 ## Produção (App Hosting)
 
 A chave VAPID está em `apphosting.yaml`. Após `git push`, o próximo rollout usa-a no build. Pode também definir a mesma variável na consola Firebase → App Hosting → ambiente → Secrets/variáveis (sobrescreve o ficheiro).
+
+O ficheiro `public/firebase-messaging-sw.js` deve usar a **mesma versão** do SDK Firebase que `package.json` (ex.: 12.13.0). Versões diferentes entre SW e app causam falha ao subscrever token (401 na consola).
+
+Detalhes de variáveis e erros: [`docs/APP-HOSTING-VARIAVEIS.md`](./APP-HOSTING-VARIAVEIS.md).
 
 ## Teste rápido (desktop)
 

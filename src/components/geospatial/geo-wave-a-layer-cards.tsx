@@ -1,6 +1,7 @@
 "use client";
 
 import type { GeoLayerResult } from "@/lib/types/geo-wave-a";
+import { CAVIDADES_POTENCIAL_LAYER_ID } from "@/lib/geospatial/cavidades-potencial";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -39,7 +40,14 @@ export function GeoWaveALayerCards({
       }
     >
       {layers.map((layer) => (
-        <Card key={layer.layerId} className="overflow-hidden">
+        <Card
+          key={layer.layerId}
+          className={
+            layer.layerId === CAVIDADES_POTENCIAL_LAYER_ID
+              ? "overflow-hidden border-primary/40"
+              : "overflow-hidden"
+          }
+        >
           <CardHeader className="pb-2">
             <div className="flex flex-wrap items-start justify-between gap-2">
               <CardTitle className="text-sm font-semibold">{layer.title}</CardTitle>

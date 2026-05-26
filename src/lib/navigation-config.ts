@@ -7,7 +7,13 @@ import {
   LICENCIAMENTO_MENU_LABEL,
   LICENCIAMENTO_NEW_SUBITEM_LABEL,
 } from "@/lib/licenciamento-menu";
-import { MULTAS_E_DEFESAS_MENU_LABEL, MULTAS_DEFESAS_PATH } from "@/lib/multas-defesas";
+import {
+  MULTAS_DEFESAS_LIST_LABEL,
+  MULTAS_DEFESAS_NOVA_LABEL,
+  MULTAS_DEFESAS_NOVA_PATH,
+  MULTAS_DEFESAS_PATH,
+  MULTAS_E_DEFESAS_MENU_LABEL,
+} from "@/lib/multas-defesas-menu";
 import { OFICIOS_MENU_LABEL } from "@/lib/oficios-menu";
 import {
   LayoutDashboard,
@@ -533,10 +539,23 @@ export const allNavItems: NavItem[] = [
     ],
   },
   {
-    href: MULTAS_DEFESAS_PATH,
     label: MULTAS_E_DEFESAS_MENU_LABEL,
     icon: Scale,
-    roles: ["admin", "advogado"],
+    roles: ["admin", "advogado", "technical", "gestor", "supervisor"],
+    subItems: [
+      {
+        href: MULTAS_DEFESAS_PATH,
+        label: MULTAS_DEFESAS_LIST_LABEL,
+        icon: List,
+        roles: ["admin", "advogado", "technical", "gestor", "supervisor"],
+      },
+      {
+        href: MULTAS_DEFESAS_NOVA_PATH,
+        label: MULTAS_DEFESAS_NOVA_LABEL,
+        icon: PlusSquare,
+        roles: ["admin", "advogado", "technical", "gestor", "supervisor"],
+      },
+    ],
   },
   {
     label: VISTORIA_TECNICA_MENU_LABEL,
@@ -810,10 +829,23 @@ export const allNavItems: NavItem[] = [
         roles: ["admin", "technical", "gestor", "supervisor", "advogado"],
       },
       {
-        href: "/studies/outorgas",
-        label: "Outorgas",
+        label: "Outorgas (processos)",
         icon: Droplets,
         roles: ["admin", "technical", "gestor", "supervisor", "advogado"],
+        subItems: [
+          {
+            href: "/studies/outorgas",
+            label: "Processos",
+            icon: ClipboardList,
+            roles: ["admin", "technical", "gestor", "supervisor", "advogado"],
+          },
+          {
+            href: "/studies/outorgas/new",
+            label: "Nova outorga",
+            icon: PlusSquare,
+            roles: ["admin", "technical", "gestor", "supervisor", "advogado"],
+          },
+        ],
       },
       {
         href: "/studies/pca",

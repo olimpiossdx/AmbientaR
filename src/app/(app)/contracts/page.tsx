@@ -79,13 +79,16 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { FirestorePermissionError } from "@/firebase/errors";
-import { generateContractPdf } from "./contract-pdf";
+import {
+  contractPdfBlob,
+  downloadContractPdfBlob,
+} from "./contract-pdf";
 import { guardBrandingExportFromHook } from "@/lib/pdf-branding-layout";
 import {
   getContratadaMissingFields,
   isContratadaReadyForPdf,
 } from "@/lib/contract-contratada-intro";
-import { persistContractPdfForSignature } from "@/lib/persist-contract-pdf";
+import { persistContractPdfBlob } from "@/lib/persist-contract-pdf";
 import { ptBR } from "date-fns/locale/pt-BR";
 import { format } from "date-fns";
 import { ContractForm } from "./contract-form";
@@ -382,7 +385,10 @@ export default function ContractsPage() {
       });
   };
 
-  const handleGeneratePdf = async (contract: Contract, persist = false) => {
+  const handleExportContractPdf = async (
+    contract: Contract,
+    options?: { persistToStorage?: boolean },
+  ) => {
     if (generatingPdfId) return;
     if (
       !guardBrandingExportFromHook({
@@ -407,30 +413,32 @@ export default function ContractsPage() {
       });
       return;
     }
+    const persistToStorage = options?.persistToStorage ?? false;
     setGeneratingPdfId(contract.id);
     try {
-      if (persist && firestore) {
+      const blob = await contractPdfBlob(contract, brandingData ?? undefined, {
+        preloadedImages: pdfImages,
+        onBrandingIssue: toast,
+      });
+      if (persistToStorage && firestore) {
         try {
-          await persistContractPdfForSignature(
+          await persistContractPdfBlob(
             firestore,
             contract.id,
             contract,
-            brandingData,
-            pdfImages,
+            blob,
           );
+          downloadContractPdfBlob(blob, contract.contratante?.nome);
           toast({
-            title: "PDF do contrato atualizado",
+            title: "PDF exportado",
             description:
-              "O documento para assinatura foi gerado e salvo no Storage.",
+              "Contrato gerado com identidade visual, salvo para assinatura e transferido para o seu computador.",
           });
         } catch (persistErr) {
           console.warn("[Contratos] persist PDF falhou, download local:", persistErr);
-          await generateContractPdf(contract, brandingData ?? undefined, {
-            preloadedImages: pdfImages,
-            onBrandingIssue: toast,
-          });
+          downloadContractPdfBlob(blob, contract.contratante?.nome);
           toast({
-            title: "PDF gerado (download)",
+            title: "PDF exportado (apenas download)",
             description:
               persistErr instanceof Error &&
               (persistErr.message.includes("permissão") ||
@@ -440,19 +448,16 @@ export default function ContractsPage() {
           });
         }
       } else {
-        await generateContractPdf(contract, brandingData ?? undefined, {
-          preloadedImages: pdfImages,
-          onBrandingIssue: toast,
-        });
+        downloadContractPdfBlob(blob, contract.contratante?.nome);
         toast({
-          title: "PDF gerado",
-          description: "O download do contrato para assinatura foi iniciado.",
+          title: "PDF exportado",
+          description: "O download do contrato foi iniciado.",
         });
       }
     } catch (err) {
       console.error(err);
       toast({
-        title: "Erro ao gerar PDF",
+        title: "Erro ao exportar PDF",
         description:
           err instanceof Error
             ? err.message
@@ -571,10 +576,41 @@ export default function ContractsPage() {
 
   const renderContractPdfActions = (
     item: Contract,
-    options?: { persistOnGenerate?: boolean },
+    options?: { unifiedExport?: boolean },
   ) => {
-    const persistOnGenerate = options?.persistOnGenerate ?? false;
+    const unifiedExport = options?.unifiedExport ?? false;
     const busy = generatingPdfId === item.id;
+
+    if (unifiedExport) {
+      return (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9 shrink-0"
+              type="button"
+              disabled={busy}
+              aria-busy={busy}
+              onClick={() =>
+                handleExportContractPdf(item, { persistToStorage: true })
+              }
+            >
+              {busy ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <FileText className="h-4 w-4 text-primary" />
+              )}
+              <span className="sr-only">Exportar PDF do contrato</span>
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Exportar PDF do contrato (com identidade visual)</p>
+          </TooltipContent>
+        </Tooltip>
+      );
+    }
+
     return (
       <>
         {item.contractPdfUrl ? (
@@ -606,19 +642,21 @@ export default function ContractsPage() {
               type="button"
               disabled={busy}
               aria-busy={busy}
-              onClick={() => handleGeneratePdf(item, persistOnGenerate)}
+              onClick={() => handleExportContractPdf(item)}
             >
-              <FileText className="h-4 w-4" />
-              <span className="sr-only">Gerar PDF do contrato</span>
+              {busy ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <FileText className="h-4 w-4" />
+              )}
+              <span className="sr-only">Exportar PDF do contrato</span>
             </Button>
           </TooltipTrigger>
           <TooltipContent>
             <p>
-              {persistOnGenerate
-                ? "Gerar e salvar PDF para assinatura"
-                : item.contractPdfUrl
-                  ? "Baixar PDF novamente"
-                  : "Gerar PDF do contrato"}
+              {item.contractPdfUrl
+                ? "Exportar PDF novamente"
+                : "Exportar PDF do contrato"}
             </p>
           </TooltipContent>
         </Tooltip>
@@ -773,7 +811,7 @@ export default function ContractsPage() {
                                   </TooltipContent>
                                 </Tooltip>
                                 {renderContractPdfActions(item, {
-                                  persistOnGenerate: isAdminOrFinancialRole(
+                                  unifiedExport: isAdminOrFinancialRole(
                                     user?.role,
                                   ),
                                 })}
@@ -963,7 +1001,9 @@ export default function ContractsPage() {
                                 </TooltipContent>
                               </Tooltip>
                               {renderContractPdfActions(item, {
-                                persistOnGenerate: canWriteContractsCommercial(user?.role),
+                                unifiedExport: canWriteContractsCommercial(
+                                  user?.role,
+                                ),
                               })}
                               {item.fileUrl ? (
                                 <Tooltip>

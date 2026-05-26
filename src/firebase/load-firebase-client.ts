@@ -82,10 +82,24 @@ function createFirestore(app: FirebaseApp): Firestore {
       return getFirestore(app);
     }
     console.warn(
-      "[Firebase] Cache persistente do Firestore indisponível; usando instância padrão.",
+      "[Firebase] Cache persistente (IndexedDB) indisponível; Firestore em memória.",
       e,
     );
-    return getFirestore(app);
+    try {
+      return initializeFirestore(app, {
+        localCache: memoryLocalCache(),
+      });
+    } catch (memErr) {
+      const memCode = (memErr as { code?: string })?.code;
+      if (
+        memCode === "failed-precondition" ||
+        memCode === "already-exists" ||
+        String(memErr).includes("already")
+      ) {
+        return getFirestore(app);
+      }
+      return getFirestore(app);
+    }
   }
 }
 

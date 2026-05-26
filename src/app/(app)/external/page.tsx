@@ -79,7 +79,7 @@ function ExternalPageShell({
   headerAction?: React.ReactNode;
 }) {
   return (
-    <div className="flex h-full min-w-0 flex-col overflow-hidden">
+    <div className="external-embed-shell flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-hidden">
       <PageHeader title={title}>{headerAction}</PageHeader>
       {children}
     </div>
@@ -161,7 +161,7 @@ function ExternalPageContent() {
       cancelled = true;
       window.clearTimeout(timeout);
     };
-  }, [url, openInNewTab, iframeKey]);
+  }, [url, openInNewTab, iframeKey, auth]);
 
   if (openInNewTab) {
     return (
@@ -191,7 +191,7 @@ function ExternalPageContent() {
 
   return (
     <ExternalPageShell title={pageTitle} headerAction={openInNewTabButton}>
-      <main className="relative min-h-0 min-w-0 flex-1 overflow-hidden">
+      <main className="external-embed-main relative min-h-0 min-w-0 flex-1 overflow-hidden">
         {iframeBlocked ? (
           <ExternalFallbackMessage
             heading="Não foi possível exibir aqui"
@@ -217,7 +217,7 @@ function ExternalPageContent() {
             <iframe
               key={iframeKey}
               src={url}
-              className="h-[calc(100dvh-4rem)] min-h-[520px] w-full max-w-full border-0 md:h-full md:min-h-0"
+              className="absolute inset-0 h-full w-full max-w-full border-0"
               title={pageTitle}
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen
@@ -238,9 +238,9 @@ export default function ExternalPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex h-full min-w-0 flex-col overflow-hidden">
+        <div className="external-embed-shell flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-hidden">
           <PageHeader title="Carregando..." />
-          <main className="min-w-0 flex-1 overflow-auto p-4 md:p-6">
+          <main className="external-embed-main min-w-0 flex-1 overflow-hidden p-4 md:p-6">
             <Skeleton className="h-full w-full" />
           </main>
         </div>

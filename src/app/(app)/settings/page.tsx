@@ -63,6 +63,7 @@ import {
 import { AppearanceForm } from "./appearance-form";
 import { Label } from "@/components/ui/label";
 import { BrandingImageUploader } from "./branding-uploader";
+import { BrandingExportStatus } from "@/components/branding-export-status";
 import { useLocalBranding } from "@/hooks/use-local-branding";
 import { Switch } from "@/components/ui/switch";
 
@@ -370,6 +371,7 @@ export default function SettingsPage() {
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
+                    <BrandingExportStatus />
                     {isLoadingBranding ? (
                       <Skeleton className="h-48 w-full" />
                     ) : (

@@ -4,7 +4,20 @@ import { PageHeader } from '@/components/page-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from 'recharts';
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  ComposedChart,
+  Legend,
+  Line,
+  ReferenceLine,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts';
+import { getAbcBadgeClass, getAbcBarColor, truncateAbcLabel } from '@/lib/abc-analysis';
 import { Button } from '@/components/ui/button';
 import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
 import { collection } from 'firebase/firestore';
@@ -237,14 +250,28 @@ export default function AbcCurvePage() {
     return filtered.slice(0, limit);
   }, [abcData.tableData, classFilter, rankingLimit]);
 
-  const getClassificationVariant = (classification: 'A' | 'B' | 'C') => {
-    switch (classification) {
-      case 'A': return 'bg-emerald-500/20 text-emerald-700 border-emerald-500/30';
-      case 'B': return 'bg-yellow-500/20 text-yellow-700 border-yellow-500/30';
-      case 'C': return 'bg-red-500/20 text-red-700 border-red-500/30';
-      default: return 'bg-slate-500/20 text-slate-700 border-slate-500/30';
-    }
-  };
+  const paretoChartData = useMemo(
+    () =>
+      displayTableData.slice(0, 12).map((item) => ({
+        name: truncateAbcLabel(item.clientName, 28),
+        fullName: item.clientName,
+        valor: item.totalRevenue,
+        acc: parseFloat(item.cumulativeRevenuePercentage.toFixed(1)),
+        classe: item.classification,
+      })),
+    [displayTableData]
+  );
+
+  const topClientsBarData = useMemo(
+    () =>
+      displayTableData.slice(0, 8).map((item) => ({
+        name: truncateAbcLabel(item.clientName, 32),
+        fullName: item.clientName,
+        valor: item.totalRevenue,
+        fill: getAbcBarColor(item.classification),
+      })),
+    [displayTableData]
+  );
 
   const periodLabel = useMemo(() => {
     if (periodMode === 'year') return `Ano ${selectedYear}`;
@@ -554,51 +581,105 @@ export default function AbcCurvePage() {
           })}
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Gráfico da Curva ABC</CardTitle>
-            <CardDescription>
-              Ordenação por receita decrescente com percentual acumulado (método de Pareto). Perfil ativo: {abcProfileLabel}.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {isLoading ? <Skeleton className="h-[400px] w-full" /> : (
-              <ResponsiveContainer width="100%" height={400}>
-                <AreaChart
-                  data={displayTableData.map((item) => ({
-                    name: item.clientName,
-                    'Receita Acumulada (%)': parseFloat(item.cumulativeRevenuePercentage.toFixed(2)),
-                  }))}
-                  margin={{
-                    top: 10, right: 30, left: 20, bottom: 50,
-                  }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis 
-                    dataKey="name" 
-                    angle={-30}
-                    textAnchor="end"
-                    interval={0}
-                    tick={{ fontSize: 10 }}
-                    height={80}
-                  />
-                  <YAxis 
-                    label={{ value: 'Receita Acumulada (%)', angle: -90, position: 'insideLeft', offset: -10 }}
-                    tickFormatter={(value) => `${value}%`}
-                  />
-                  <Tooltip
-                    formatter={(value, name) => [`${value}%`, name]}
-                    labelFormatter={(label) => `Cliente: ${label}`}
-                  />
-                  <Legend verticalAlign="top" height={36}/>
-                  <ReferenceLine y={cutoffA} stroke="hsl(var(--chart-2))" strokeDasharray="4 4" label={`Corte A (${cutoffA}%)`} />
-                  <ReferenceLine y={cutoffB} stroke="hsl(var(--chart-3))" strokeDasharray="4 4" label={`Corte B (${cutoffB}%)`} />
-                  <Area type="monotone" dataKey="Receita Acumulada (%)" stroke="hsl(var(--primary))" fill="hsl(var(--primary) / 0.2)" />
-                </AreaChart>
-              </ResponsiveContainer>
-            )}
-          </CardContent>
-        </Card>
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Curva de Pareto (ABC)</CardTitle>
+              <CardDescription>
+                Barras = receita por cliente · Linha = % acumulado. Perfil: {abcProfileLabel}.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {isLoading ? (
+                <Skeleton className="h-[380px] w-full" />
+              ) : displayTableData.length === 0 ? (
+                <div className="h-[380px] flex items-center justify-center text-sm text-muted-foreground">
+                  Nenhum dado para o gráfico.
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height={380}>
+                  <ComposedChart data={paretoChartData} margin={{ top: 12, right: 12, left: 4, bottom: 56 }}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis
+                      dataKey="name"
+                      angle={-35}
+                      textAnchor="end"
+                      interval={0}
+                      tick={{ fontSize: 10 }}
+                      height={72}
+                    />
+                    <YAxis
+                      yAxisId="valor"
+                      tickFormatter={(v) => (v >= 1000 ? `R$ ${(v / 1000).toFixed(0)}k` : `R$ ${v}`)}
+                      tick={{ fontSize: 11 }}
+                    />
+                    <YAxis
+                      yAxisId="acc"
+                      orientation="right"
+                      domain={[0, 100]}
+                      tickFormatter={(v) => `${v}%`}
+                      tick={{ fontSize: 11 }}
+                    />
+                    <Tooltip
+                      formatter={(value: number, name: string) => {
+                        if (name === 'acc' || name === '% acumulado') return [`${value}%`, '% acumulado'];
+                        return [formatCurrency(value), 'Receita'];
+                      }}
+                      labelFormatter={(_, payload) => {
+                        const item = payload?.[0]?.payload as { fullName?: string } | undefined;
+                        return item?.fullName ? `Cliente: ${item.fullName}` : '';
+                      }}
+                    />
+                    <Legend verticalAlign="top" height={36} />
+                    <ReferenceLine yAxisId="acc" y={cutoffA} stroke="hsl(142 76% 36%)" strokeDasharray="4 4" />
+                    <ReferenceLine yAxisId="acc" y={cutoffB} stroke="hsl(38 92% 50%)" strokeDasharray="4 4" />
+                    <Bar yAxisId="valor" dataKey="valor" name="Receita" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                    <Line
+                      yAxisId="acc"
+                      type="monotone"
+                      dataKey="acc"
+                      name="% acumulado"
+                      stroke="hsl(var(--chart-2))"
+                      strokeWidth={2}
+                      dot={{ r: 3 }}
+                    />
+                  </ComposedChart>
+                </ResponsiveContainer>
+              )}
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle>Top clientes por receita</CardTitle>
+              <CardDescription>Comparativo horizontal (top 8).</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {isLoading ? (
+                <Skeleton className="h-[380px] w-full" />
+              ) : topClientsBarData.length === 0 ? (
+                <div className="h-[380px] flex items-center justify-center text-sm text-muted-foreground">
+                  Nenhum dado para o gráfico.
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height={380}>
+                  <BarChart data={topClientsBarData} layout="vertical" margin={{ top: 8, right: 16, left: 8, bottom: 8 }}>
+                    <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                    <XAxis type="number" tickFormatter={(v) => formatCurrency(v)} tick={{ fontSize: 10 }} />
+                    <YAxis type="category" dataKey="name" width={120} tick={{ fontSize: 10 }} />
+                    <Tooltip
+                      formatter={(value: number) => [formatCurrency(value), 'Receita']}
+                      labelFormatter={(_, payload) => {
+                        const item = payload?.[0]?.payload as { fullName?: string } | undefined;
+                        return item?.fullName ?? '';
+                      }}
+                    />
+                    <Bar dataKey="valor" name="Receita" radius={[0, 4, 4, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
+            </CardContent>
+          </Card>
+        </div>
         <Card>
           <CardHeader>
             <CardTitle>Tabela de Detalhes da Curva ABC por Cliente</CardTitle>
@@ -622,7 +703,7 @@ export default function AbcCurvePage() {
                   <CardContent className="p-4 space-y-2">
                     <div className="flex items-start justify-between gap-3">
                       <p className="font-medium">{item.clientName}</p>
-                      <Badge variant="outline" className={cn("font-bold", getClassificationVariant(item.classification))}>
+                      <Badge variant="outline" className={cn("font-bold", getAbcBadgeClass(item.classification))}>
                         {item.classification}
                       </Badge>
                     </div>
@@ -647,7 +728,7 @@ export default function AbcCurvePage() {
                 <TableRow>
                   <TableHead>Cliente</TableHead>
                   <TableHead className="text-right">Receita Total</TableHead>
-                  <TableHead className="text-right">% da Receita</TableHead>
+                  <TableHead>Participação</TableHead>
                   <TableHead className="text-right">% Acumulada</TableHead>
                   <TableHead className="text-center">Classificação</TableHead>
                 </TableRow>
@@ -666,10 +747,25 @@ export default function AbcCurvePage() {
                   <TableRow key={item.clientId}>
                     <TableCell className="font-medium">{item.clientName}</TableCell>
                     <TableCell className="text-right">{formatCurrency(item.totalRevenue)}</TableCell>
-                    <TableCell className="text-right">{item.revenuePercentage.toFixed(2)}%</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2 min-w-[140px]">
+                        <div className="h-2 flex-1 rounded-full bg-muted overflow-hidden">
+                          <div
+                            className="h-full rounded-full"
+                            style={{
+                              width: `${Math.min(item.revenuePercentage, 100)}%`,
+                              backgroundColor: getAbcBarColor(item.classification),
+                            }}
+                          />
+                        </div>
+                        <span className="text-xs tabular-nums text-muted-foreground w-12 text-right">
+                          {item.revenuePercentage.toFixed(1)}%
+                        </span>
+                      </div>
+                    </TableCell>
                     <TableCell className="text-right">{item.cumulativeRevenuePercentage.toFixed(2)}%</TableCell>
                     <TableCell className="text-center">
-                        <Badge variant="outline" className={cn("font-bold", getClassificationVariant(item.classification))}>
+                        <Badge variant="outline" className={cn("font-bold", getAbcBadgeClass(item.classification))}>
                             {item.classification}
                         </Badge>
                     </TableCell>

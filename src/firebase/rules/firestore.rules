@@ -252,6 +252,16 @@ service cloud.firestore {
         role == 'supervisor' || role == 'diretor_fauna' || role == 'advogado'
       );
     }
+
+    /** Processos de outorga em tramitação (Estudos Técnicos → Outorgas). */
+    function canWriteOutorgaProcesso() {
+      let role = getRole();
+      return request.auth != null && (
+        isAdmin() || isManager() ||
+        role == 'technical' || role == 'gestor' || role == 'supervisor' ||
+        role == 'diretor_fauna' || role == 'advogado' || role == 'cliente_autonomo'
+      );
+    }
     
     /**
      * @description Checks if the user is authorized to perform technical inspections.
@@ -593,11 +603,11 @@ service cloud.firestore {
 
     /**
      * @description Processo interno de defesa de auto de infração.
-     * Administrador e advogado (elaboração/gestão da defesa).
+     * Admin e equipa interna (advogado, técnico, gestor, supervisor).
      * @path /databases/{database}/documents/autoInfracaoDefesas/{defesaId}
      */
     match /autoInfracaoDefesas/{defesaId} {
-      allow read, write: if isAdmin() || (isSignedIn() && getRole() == 'advogado');
+      allow read, write: if isAdmin() || (isSignedIn() && getRole() in ['advogado', 'technical', 'gestor', 'supervisor']);
     }
     
     /**
@@ -609,6 +619,22 @@ service cloud.firestore {
         canClienteAutonomoManageEmpreendedor(request.resource.data.empreendedorId);
       allow update, delete: if isManager() || isAdmin() ||
         canClienteAutonomoManageEmpreendedor(resource.data.empreendedorId);
+    }
+
+    /**
+     * @description Processos de outorga em tramitação (pedido até portaria).
+     * @path /databases/{database}/documents/outorga_processos/{processoId}
+     */
+    match /outorga_processos/{processoId} {
+      allow read: if request.auth != null;
+      allow create: if canWriteOutorgaProcesso();
+      allow update: if canWriteOutorgaProcesso() ||
+        (resource.data.empreendedorId is string && resource.data.empreendedorId.size() > 0 &&
+          canClienteAutonomoManageEmpreendedor(resource.data.empreendedorId));
+      allow delete: if isManager() || isAdmin() ||
+        (resource.data.empreendedorId is string && resource.data.empreendedorId.size() > 0 &&
+          canClienteAutonomoManageEmpreendedor(resource.data.empreendedorId)) ||
+        (resource.data.empreendedorId == "" && canWriteOutorgaProcesso());
     }
 
     /**
@@ -715,6 +741,14 @@ service cloud.firestore {
      * @path /databases/{database}/documents/projetosTecnicosBarragem/{docId}
      */
     match /projetosTecnicosBarragem/{docId} {
+      allow read, write: if isSignedIn();
+    }
+
+    /**
+     * @description Estudos espeleológicos (cavidades) — licenciamento MG.
+     * @path /databases/{database}/documents/estudosCavidades/{docId}
+     */
+    match /estudosCavidades/{docId} {
       allow read, write: if isSignedIn();
     }
 

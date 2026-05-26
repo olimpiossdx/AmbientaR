@@ -563,7 +563,7 @@ export function InspectionForm({ onSuccess, currentItem }: InspectionFormProps) 
         setUploadingIncIndex(null);
       }
     },
-    [currentItem?.id, form, toast, uploadToStorage],
+    [currentItem?.id, toast, uploadToStorage],
   );
 
   const handleChecklistFiles = React.useCallback(

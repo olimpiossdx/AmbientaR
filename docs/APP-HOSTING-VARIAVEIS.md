@@ -40,6 +40,27 @@ No App Hosting (exemplo comentado em `apphosting.yaml`):
 
 Sem `true`, a UI que chama `/api/ai-lab/import-reference-files` verá **503** — comportamento esperado, não falha de Firestore.
 
+## Push FCM (PWA / celular)
+
+| Variável | Onde | Efeito se ausente/incorreta |
+|----------|------|-----------------------------|
+| `NEXT_PUBLIC_FIREBASE_VAPID_KEY` | [`apphosting.yaml`](../apphosting.yaml) (BUILD + RUNTIME) ou consola App Hosting | Push com app fechado **não regista** token; sem erro visível na UI (sino Firestore continua). |
+
+Checklist no projeto Firebase `studio-316805764-e4d13`:
+
+1. **Cloud Messaging** → **Web Push certificates** → par VAPID (chave **pública** na variável acima).
+2. **Google Cloud Console** → APIs → **Firebase Cloud Messaging API** ativada.
+3. Service worker [`public/firebase-messaging-sw.js`](../public/firebase-messaging-sw.js) na **mesma versão** do SDK (`firebase` no `package.json`, hoje 12.x).
+4. Credencial **Admin** no runtime para envio server-side — ver [`docs/NOTIFICACOES-PUSH.md`](./NOTIFICACOES-PUSH.md).
+
+Erro `fcmregistrations.googleapis.com` **401** / `messaging/token-subscribe-failed` em produção: quase sempre VAPID errada, API FCM desativada ou rollout antigo sem a variável.
+
+## Branding (imagens no Storage)
+
+URLs `firebasestorage.googleapis.com` / `*.firebasestorage.app` **não** devem ser carregadas direto no browser (CORS). A app usa proxy same-origin [`/api/branding/image`](../src/app/api/branding/image/route.ts) — ver [`src/lib/storage-image-proxy-client.ts`](../src/lib/storage-image-proxy-client.ts).
+
+Se no DevTools ainda aparecer CORS em `branding/...png`, confirme que o deploy inclui essas alterações e faça *hard refresh* (Ctrl+F5).
+
 ## Firestore no browser (produção)
 
 Erros no DevTools como `ERR_QUIC_PROTOCOL_ERROR`, `ERR_HTTP2_PING_FAILED`, `ERR_NAME_NOT_RESOLVED` em `firestore.googleapis.com` indicam **rede ou transporte** entre o utilizador e o Google, não regras Firestore no projeto `studio-316805764-e4d13`.

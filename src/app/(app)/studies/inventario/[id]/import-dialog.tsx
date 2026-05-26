@@ -47,9 +47,12 @@ import {
   TableHead,
   TableRow,
 } from "@/components/ui/table";
-import { useFirebase } from "@/firebase";
-import { doc, serverTimestamp, updateDoc } from "firebase/firestore";
+import { useCollection, useFirebase, useMemoFirebase } from "@/firebase";
+import { collection, doc, limit, query, serverTimestamp, updateDoc, where } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
+import type { Inventario } from "@/lib/types";
+import { COLLECTION_CAMPANHAS } from "@/lib/coleta-campo/constants";
+import { fetchAndParseConsolidatedExcel } from "@/lib/coleta-campo/load-consolidated-excel";
 
 const steps = [
   { label: "Carregar Arquivo", icon: Upload },
@@ -171,10 +174,33 @@ export function ImportDialog({ isOpen, onOpenChange, projectId }: ImportDialogPr
   const [fillFilterColumn, setFillFilterColumn] = React.useState<"parcela" | "up" | "us" | "ni">("parcela");
   const [fillFilterValue, setFillFilterValue] = React.useState("");
   const [isImportingNow, setIsImportingNow] = React.useState(false);
+  const [selectedColetaId, setSelectedColetaId] = React.useState<string>("");
+  const [loadingColetaPlanilha, setLoadingColetaPlanilha] = React.useState(false);
   const { firestore } = useFirebase();
   const { toast } = useToast();
 
+  const campanhasColetaQuery = useMemoFirebase(
+    () =>
+      firestore
+        ? query(
+            collection(firestore, COLLECTION_CAMPANHAS),
+            where("status", "==", "concluida"),
+            limit(100),
+          )
+        : null,
+    [firestore],
+  );
+  const { data: campanhasColeta } = useCollection<Inventario>(campanhasColetaQuery);
+  const campanhasComPlanilha = React.useMemo(
+    () =>
+      (campanhasColeta ?? []).filter((c) => c.exportExcelUrl && c.exportConsolidatedAt),
+    [campanhasColeta],
+  );
+
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  const coletaCampanhaLabel = (c: Inventario) =>
+    c.nomeEmpreendimentoManual?.trim() || `Campanha ${c.id.slice(0, 8)}`;
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const inputEl = event.currentTarget;
@@ -229,6 +255,48 @@ export function ImportDialog({ isOpen, onOpenChange, projectId }: ImportDialogPr
 
   const handleUploadClick = () => {
     fileInputRef.current?.click();
+  };
+
+  const handleLoadColetaPlanilha = async () => {
+    const campanha = campanhasComPlanilha.find((c) => c.id === selectedColetaId);
+    if (!campanha?.exportExcelUrl) {
+      toast({
+        variant: "destructive",
+        title: "Campanha inválida",
+        description: "Selecione uma campanha com planilha consolidada.",
+      });
+      return;
+    }
+    setLoadingColetaPlanilha(true);
+    try {
+      const parsed = await fetchAndParseConsolidatedExcel(campanha.exportExcelUrl);
+      const sheetName =
+        parsed.sheetNames.find((n) => n.toUpperCase() === "IMPORTAR") ??
+        parsed.sheetNames[0];
+      if (!sheetName) {
+        throw new Error("Planilha sem abas.");
+      }
+      setFileName(`${coletaCampanhaLabel(campanha)}.xlsx`);
+      setWorkbook(parsed.workbook);
+      setSheetNames(parsed.sheetNames);
+      setSelectedSheet(sheetName);
+      setSheetHeaders(parsed.headers);
+      setSheetData(parsed.rows as Record<string, unknown>[]);
+      setAssociations({});
+      setCurrentStep(0);
+      toast({
+        title: "Planilha da Coleta de campo carregada",
+        description: "Revise os dados e use Prosseguir para associar colunas.",
+      });
+    } catch (err) {
+      toast({
+        variant: "destructive",
+        title: "Erro ao carregar planilha",
+        description: (err as Error).message,
+      });
+    } finally {
+      setLoadingColetaPlanilha(false);
+    }
   };
 
   const handleNext = () => {
@@ -624,6 +692,7 @@ export function ImportDialog({ isOpen, onOpenChange, projectId }: ImportDialogPr
           totalSpecies: importedSpecies.length,
           totalParcels: importedParcels.length,
           totalTrees: importedTrees.length,
+          source: 'excel',
         },
         updatedAt: serverTimestamp(),
       });
@@ -728,6 +797,50 @@ export function ImportDialog({ isOpen, onOpenChange, projectId }: ImportDialogPr
                       </SelectContent>
                     </Select>
                   </div>
+                </div>
+                <div className="mt-3 rounded-sm border border-dashed p-3 space-y-2">
+                  <h3 className="text-sm font-semibold">
+                    Ou planilha consolidada (Coleta de campo)
+                  </h3>
+                  <p className="text-xs text-muted-foreground">
+                    Use o Excel gerado ao marcar a campanha como concluída — mesmo fluxo do
+                    arquivo manual abaixo.
+                  </p>
+                  {campanhasComPlanilha.length === 0 ? (
+                    <p className="text-xs text-muted-foreground">
+                      Nenhuma campanha com planilha salva. Conclua e consolide em Coleta de campo.
+                    </p>
+                  ) : (
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <Select
+                        value={selectedColetaId || undefined}
+                        onValueChange={setSelectedColetaId}
+                      >
+                        <SelectTrigger className="rounded-sm sm:flex-1">
+                          <SelectValue placeholder="Escolha a campanha" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {campanhasComPlanilha.map((c) => (
+                            <SelectItem key={c.id} value={c.id}>
+                              {coletaCampanhaLabel(c)}
+                              {c.exportSummary
+                                ? ` (${c.exportSummary.totalTrees} árvores)`
+                                : ""}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        className="shrink-0"
+                        disabled={!selectedColetaId || loadingColetaPlanilha}
+                        onClick={() => void handleLoadColetaPlanilha()}
+                      >
+                        {loadingColetaPlanilha ? "Carregando…" : "Carregar planilha"}
+                      </Button>
+                    </div>
+                  )}
                 </div>
                 <div className="mt-3 flex-1 border rounded-sm overflow-hidden flex flex-col">
                   <div className="px-3 py-2 bg-muted/40 border-b text-sm font-medium">

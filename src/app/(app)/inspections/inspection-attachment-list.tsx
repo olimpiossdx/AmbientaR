@@ -3,6 +3,7 @@
 
 
 import * as React from 'react';
+import Image from 'next/image';
 
 import { Button } from '@/components/ui/button';
 
@@ -228,15 +229,17 @@ export function InspectionAttachmentList({
 
                     {isImg ? (
 
-                      // eslint-disable-next-line @next/next/no-img-element
-
-                      <img
+                      <Image
 
                         src={displayUrl}
 
-                        alt=""
+                        alt={`Anexo ${uidx + 1}`}
 
-                        className="h-full w-full object-cover"
+                        fill
+
+                        className="object-cover"
+
+                        sizes="64px"
 
                       />
 
@@ -370,17 +373,21 @@ export function InspectionAttachmentList({
 
               ) : (
 
-                <div className="flex justify-center p-2">
+                <div className="relative flex justify-center p-2 min-h-[200px] w-full">
 
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-
-                  <img
+                  <Image
 
                     src={preview.url}
 
                     alt="Pré-visualização do anexo"
 
+                    width={1200}
+
+                    height={900}
+
                     className="max-h-[70vh] w-auto max-w-full object-contain rounded"
+
+                    style={{ width: 'auto', height: 'auto', maxHeight: '70vh' }}
 
                   />
 

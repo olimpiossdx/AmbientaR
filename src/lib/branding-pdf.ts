@@ -32,11 +32,11 @@ const BRANDING_CACHE_TTL_MS = 20 * 60 * 1000;
 /** Maior aresta em px antes de redimensionar (cabeçalho/rodapé/marca d'água no PDF). */
 const PDF_BRANDING_MAX_EDGE_PX = 1000;
 
-function isUsablePngDataUrl(dataUrl: string | null): dataUrl is string {
+function isUsableImageDataUrl(dataUrl: string | null): dataUrl is string {
   return Boolean(
     dataUrl &&
       dataUrl.startsWith('data:image') &&
-      dataUrl.length > 80,
+      dataUrl.length > 48,
   );
 }
 
@@ -73,7 +73,7 @@ async function blobToPngBase64ForPdf(blob: Blob): Promise<string | null> {
   });
   const png = await imageDataUrlToPngDataUrl(rawDataUrl);
   const sized = await resizeDataUrlForPdf(png);
-  return isUsablePngDataUrl(sized) ? sized : null;
+  return isUsableImageDataUrl(sized) ? sized : null;
 }
 
 type CacheEntry = { base64: string; expiresAt: number };
@@ -174,7 +174,7 @@ export async function resizeDataUrlForPdf(
 /**
  * Carrega blob de uma URL HTTPS (Storage ou outra) ou path legado no Storage.
  */
-/** Fallback quando getBlob/fetch falham — tenta decodificar via canvas. */
+/** Fallback quando fetch falha — tenta decodificar via canvas (só URLs same-origin ou proxy). */
 async function loadBrandingViaImageElement(url: string): Promise<string | null> {
   if (typeof window !== 'undefined' && isFirebaseStorageHttpsUrl(url)) {
     try {
@@ -186,7 +186,8 @@ async function loadBrandingViaImageElement(url: string): Promise<string | null> 
     }
   }
 
-  const sameOrigin = url.startsWith('/');
+  const sameOrigin =
+    url.startsWith('/') || url.startsWith('/api/branding/image');
   return new Promise((resolve) => {
     const img = new Image();
     if (!sameOrigin) img.crossOrigin = 'anonymous';
@@ -214,51 +215,40 @@ async function loadBrandingViaImageElement(url: string): Promise<string | null> 
   });
 }
 
-async function loadImageBlobForBranding(trimmed: string): Promise<Blob> {
-  if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
-    const isFirebaseStorage = isFirebaseStorageHttpsUrl(trimmed);
-
-    if (isFirebaseStorage) {
-      await waitForFirebaseAppReady();
-      const path = storagePathFromDownloadUrl(trimmed);
-      if (path && typeof getApps === 'function' && getApps().length > 0) {
-        try {
-          const storage = getClientFirebaseStorage();
-          return await getBlob(ref(storage, path));
-        } catch (sdkErr) {
-          console.warn('[branding-pdf] getBlob falhou:', path, sdkErr);
-        }
-      } else if (!path) {
-        console.warn('[branding-pdf] path não extraído da URL:', trimmed);
-      }
-    }
-
-    if (typeof window !== 'undefined' && isFirebaseStorage) {
-      try {
-        return await fetchStorageImageProxyBlob(trimmed);
-      } catch (proxyErr) {
-        console.warn('[branding-pdf] proxy same-origin falhou:', proxyErr);
-      }
-    }
-
-    const response = await fetch(trimmed, {
-      credentials: 'same-origin',
-      cache: 'default',
-    });
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    return response.blob();
+async function resolveBrandingStorageUrl(trimmed: string): Promise<string> {
+  const t = trimmed.trim();
+  if (t.startsWith('http://') || t.startsWith('https://') || t.startsWith('/') || t.startsWith('data:')) {
+    return t;
   }
-  if (trimmed.startsWith('/')) {
-    const origin = typeof window !== 'undefined' ? window.location.origin : '';
-    const urlToFetch = origin ? origin + trimmed : trimmed;
-    const response = await fetch(urlToFetch, { mode: 'cors', credentials: 'same-origin' });
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    return response.blob();
-  }
+  await waitForFirebaseAppReady();
   const storage = getClientFirebaseStorage();
-  const imageRef = ref(storage, trimmed);
-  const urlToFetch = await getDownloadURL(imageRef);
-  return fetchBrandingBlob(urlToFetch);
+  return getDownloadURL(ref(storage, t));
+}
+
+async function loadImageBlobForBranding(trimmed: string): Promise<Blob> {
+  const resolved = await resolveBrandingStorageUrl(trimmed);
+
+  // Browser: nunca getBlob/fetch direto ao Storage (CORS). Só proxy same-origin.
+  if (typeof window !== 'undefined') {
+    return fetchBrandingBlob(resolved);
+  }
+
+  // Servidor (SSR/API): SDK ou fetch upstream
+  if (isFirebaseStorageHttpsUrl(resolved)) {
+    const path = storagePathFromDownloadUrl(resolved);
+    if (path && typeof getApps === 'function' && getApps().length > 0) {
+      try {
+        const storage = getClientFirebaseStorage();
+        return await getBlob(ref(storage, path));
+      } catch (sdkErr) {
+        if (process.env.NODE_ENV === 'development') {
+          console.warn('[branding-pdf] getBlob (servidor) falhou:', path, sdkErr);
+        }
+      }
+    }
+  }
+
+  return fetchBrandingBlob(resolved);
 }
 
 async function loadBrandingImageAsBase64Uncached(
@@ -272,7 +262,7 @@ async function loadBrandingImageAsBase64Uncached(
     if (trimmed.startsWith('data:image')) {
       const png = await imageDataUrlToPngDataUrl(trimmed);
       const sized = await resizeDataUrlForPdf(png);
-      return isUsablePngDataUrl(sized) ? sized : null;
+      return isUsableImageDataUrl(sized) ? sized : null;
     }
 
     if (trimmed.startsWith('https://') || trimmed.startsWith('http://') || trimmed.startsWith('/')) {
@@ -284,11 +274,13 @@ async function loadBrandingImageAsBase64Uncached(
       if (fromBlob) return fromBlob;
     }
   } catch (error) {
-    console.warn('[branding-pdf] blob/fetch falhou, tentando via <img>:', trimmed, error);
+    if (process.env.NODE_ENV === 'development') {
+      console.warn('[branding-pdf] blob/fetch falhou, tentando via <img>:', trimmed, error);
+    }
   }
 
   const viaImg = await loadBrandingViaImageElement(trimmed);
-  if (isUsablePngDataUrl(viaImg)) return viaImg;
+  if (isUsableImageDataUrl(viaImg)) return viaImg;
   console.error('[branding-pdf] Não foi possível carregar imagem para PDF:', trimmed);
   return null;
 }

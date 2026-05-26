@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Loader2, CloudUpload, Trash2 } from 'lucide-react';
 import Image from 'next/image';
+import { brandingImageDisplayUrl } from '@/lib/storage-image-proxy-client';
 import { useToast } from '@/hooks/use-toast';
 import { useUploadBrandingImage } from '@/hooks/use-branding-upload';
 import { useFirebase } from '@/firebase';
@@ -115,6 +116,9 @@ export function BrandingImageUploader({
   };
 
   const hasImage = Boolean(previewUrl);
+  const imageSrc = brandingImageDisplayUrl(previewUrl) ?? previewUrl;
+  const useUnoptimized =
+    Boolean(imageSrc?.startsWith('/api/branding/image'));
 
   return (
     <>
@@ -122,7 +126,14 @@ export function BrandingImageUploader({
         <Label className="font-semibold">{label}</Label>
         {previewUrl ? (
           <div className="flex justify-center p-2 border rounded-md bg-muted/50">
-            <Image src={previewUrl} alt={`${label} Preview`} width={200} height={80} className="object-contain rounded-md" />
+            <Image
+              src={imageSrc ?? previewUrl!}
+              alt={`${label} Preview`}
+              width={200}
+              height={80}
+              className="object-contain rounded-md"
+              unoptimized={useUnoptimized}
+            />
           </div>
         ) : (
           <div className="flex justify-center items-center h-24 border rounded-md bg-muted/50 text-sm text-muted-foreground">

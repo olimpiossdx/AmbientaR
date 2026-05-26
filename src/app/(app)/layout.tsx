@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import Image from "next/image";
+import { brandingImageDisplayUrl } from "@/lib/storage-image-proxy-client";
 import {
   SidebarProvider,
   Sidebar,
@@ -249,16 +250,13 @@ const AppLayoutClient = ({ children }: { children: React.ReactNode }) => {
 
         if (path) {
           try {
-            if (path.startsWith("https://") || path.startsWith("http://")) {
-              setLogoUrl(path);
-            } else if (path.startsWith("/")) {
-              setLogoUrl(path);
-            } else {
+            let resolved = path;
+            if (!path.startsWith("https://") && !path.startsWith("http://") && !path.startsWith("/")) {
               const storage = getStorage();
               const storageRef = ref(storage, path);
-              const url = await getDownloadURL(storageRef);
-              setLogoUrl(url);
+              resolved = await getDownloadURL(storageRef);
             }
+            setLogoUrl(brandingImageDisplayUrl(resolved) ?? resolved);
           } catch (error) {
             console.error("Error fetching logo URL for layout:", error);
             setLogoUrl(null);
@@ -424,6 +422,7 @@ const AppLayoutClient = ({ children }: { children: React.ReactNode }) => {
                 width={280}
                 height={64}
                 priority
+                unoptimized={logoUrl.startsWith("/api/branding/image")}
                 className="h-12 w-auto max-w-[min(280px,55vw)] object-contain sm:h-14"
               />
             ) : (
@@ -626,10 +625,21 @@ const AppLayoutClient = ({ children }: { children: React.ReactNode }) => {
           </SidebarContent>
         </Sidebar>
         <SidebarResizeHandle />
-        <SidebarInset className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden pb-20 md:pb-0">
+        <SidebarInset
+          className={cn(
+            "min-h-0 min-w-0 flex-1 overflow-x-hidden pb-20 md:pb-0",
+            pathname === "/external"
+              ? "flex flex-col overflow-hidden"
+              : "overflow-y-auto",
+          )}
+        >
           <div
             key={pathname}
-            className="app-scroll-region animate-page-fade-in relative min-w-0 max-w-full"
+            className={cn(
+              "app-scroll-region animate-page-fade-in relative min-w-0 max-w-full",
+              pathname === "/external" &&
+                "flex min-h-0 flex-1 flex-col overflow-hidden",
+            )}
           >
             {children}
           </div>

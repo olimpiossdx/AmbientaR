@@ -55,12 +55,12 @@ Se faltar dado, diga explicitamente que a camada não retornou interseção ou q
 Resumo factual:
 {{factualSummary}}
 
-Dados por camada (8 camadas IDE-Sisema MG — Ondas A, B e C):
+Dados por camada (9 camadas IDE-Sisema MG — Ondas A, B, C e potencialidade CECAV):
 {{layersFacts}}
 
 Mapeie mentalmente as camadas factuais para as secções abaixo (use os títulos das camadas no texto quando citar dados).
 Estruture a saída JSON com:
-- resumoExecutivo: 1 parágrafo integrando achados das 8 camadas
+- resumoExecutivo: 1 parágrafo integrando achados das camadas SIG (incl. cavidades/CECAV quando houver)
 - sections: array com keys fixas (bodyMarkdown em português, 2–4 parágrafos por secção quando houver dados):
   - key "hidrografia", title "Hidrografia, massas d'água e APP"
   - key "bioma_vegetacao", title "Bioma, vegetação e cobertura"

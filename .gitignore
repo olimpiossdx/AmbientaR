@@ -26,6 +26,9 @@ functions/node_modules
 # production
 /build
 
+# referências de defesa (PDFs de clientes — só uso local)
+/docs/referencias/*.pdf
+
 # misc
 .DS_Store
 *.pem

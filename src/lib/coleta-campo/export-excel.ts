@@ -41,7 +41,6 @@ export function validateCampanhaForExport(input: ExportCampanhaInput): ExportVal
 export function buildCampanhaExcelRows(input: ExportCampanhaInput): string[][] {
   const tipo = input.campanha.tipoInventario === 'multinivel' ? 'multinivel' : 'simples';
   const headers = excelHeadersForTipo(tipo);
-  const parcelaMap = new Map(input.parcelas.map((p) => [p.id, p]));
   const sortedParcelas = [...input.parcelas].sort(sortParcelas);
 
   const rows: string[][] = [headers];
@@ -87,20 +86,35 @@ function rowForIndividuo(
   return base;
 }
 
-export function downloadCampanhaExcel(input: ExportCampanhaInput, filename?: string): ExportValidationIssue[] {
-  const issues = validateCampanhaForExport(input);
-  if (issues.some((i) => i.level === 'error')) return issues;
+export function suggestCampanhaExcelFilename(campanha: Inventario): string {
+  const slug =
+    campanha.nomeEmpreendimentoManual?.slice(0, 24) ||
+    campanha.id.slice(0, 8) ||
+    'campanha';
+  const date = new Date().toISOString().slice(0, 10);
+  return `Coleta_${slug}_${date}.xlsx`;
+}
 
+export function buildCampanhaExcelWorkbook(input: ExportCampanhaInput): XLSX.WorkBook {
   const rows = buildCampanhaExcelRows(input);
   const ws = XLSX.utils.aoa_to_sheet(rows);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'IMPORTAR');
+  return wb;
+}
 
-  const slug =
-    input.campanha.nomeEmpreendimentoManual?.slice(0, 24) ||
-    input.campanha.id.slice(0, 8) ||
-    'campanha';
-  const date = new Date().toISOString().slice(0, 10);
-  XLSX.writeFile(wb, filename ?? `Coleta_${slug}_${date}.xlsx`);
+/** Gera bytes `.xlsx` para upload no Storage. */
+export function buildCampanhaExcelArrayBuffer(input: ExportCampanhaInput): ArrayBuffer {
+  const wb = buildCampanhaExcelWorkbook(input);
+  const out = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+  return out.buffer.slice(out.byteOffset, out.byteOffset + out.byteLength) as ArrayBuffer;
+}
+
+export function downloadCampanhaExcel(input: ExportCampanhaInput, filename?: string): ExportValidationIssue[] {
+  const issues = validateCampanhaForExport(input);
+  if (issues.some((i) => i.level === 'error')) return issues;
+
+  const wb = buildCampanhaExcelWorkbook(input);
+  XLSX.writeFile(wb, filename ?? suggestCampanhaExcelFilename(input.campanha));
   return issues;
 }

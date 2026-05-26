@@ -151,16 +151,36 @@
    * Uma única barra vertical: o shell da app (SidebarInset) faz scroll.
    * Páginas com `flex h-full` + `main overflow-auto` não devem criar scroll aninhado.
    */
-  .app-scroll-region .flex.h-full.flex-col > main,
-  .app-scroll-region .flex.flex-col.h-full > main {
+  .app-scroll-region .flex.h-full.flex-col:not(.external-embed-shell) > main,
+  .app-scroll-region .flex.flex-col.h-full:not(.external-embed-shell) > main {
     overflow: visible !important;
     flex: 1 1 auto !important;
     min-height: 0;
   }
-  .app-scroll-region .flex.h-full.flex-col,
-  .app-scroll-region .flex.flex-col.h-full {
+  .app-scroll-region .flex.h-full.flex-col:not(.external-embed-shell),
+  .app-scroll-region .flex.flex-col.h-full:not(.external-embed-shell) {
     height: auto !important;
     min-height: 0;
+  }
+
+  /*
+   * Acessos governamentais (/external): Intervenção, Licenciamento, Outorgas, etc.
+   * Preenche o SidebarInset (já abaixo da barra h-16) via flex — evita iframe achatado.
+   */
+  .app-scroll-region.flex .external-embed-shell {
+    flex: 1 1 0 !important;
+    height: auto !important;
+    max-height: none !important;
+    min-height: 0 !important;
+  }
+  .app-scroll-region .external-embed-shell > header {
+    flex-shrink: 0;
+  }
+  .app-scroll-region .external-embed-shell > .external-embed-main,
+  .app-scroll-region .external-embed-shell > main.external-embed-main {
+    flex: 1 1 0 !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
   }
 
   /* Corpo rolável de formulários: padding simétrico, sem margens negativas que cortam inputs */

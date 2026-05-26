@@ -1,5 +1,6 @@
 import type { BrandingPdfImages } from '@/lib/branding-pdf';
 import { calcPdfImageSize } from '@/lib/branding-pdf';
+import { docxImageTypeFromDataUrl } from '@/lib/branding/image-data-url';
 import {
   getImageDimensionsFromDataUrl,
   type ImageDimensions,
@@ -122,7 +123,7 @@ export async function buildBrandedDocxSectionSetup(
         spacing: { after: 80 },
         children: [
           new ImageRun({
-            type: 'png',
+            type: docxImageTypeFromDataUrl(pdfImages.headerBase64),
             data: pngDataUrlToUint8Array(pdfImages.headerBase64),
             transformation: headerSize,
           }),
@@ -136,7 +137,7 @@ export async function buildBrandedDocxSectionSetup(
       new Paragraph({
         children: [
           new ImageRun({
-            type: 'png',
+            type: docxImageTypeFromDataUrl(watermarkUrl),
             data: pngDataUrlToUint8Array(watermarkUrl),
             transformation: watermarkSize,
             floating: {
@@ -165,7 +166,7 @@ export async function buildBrandedDocxSectionSetup(
         spacing: { after: 60 },
         children: [
           new ImageRun({
-            type: 'png',
+            type: docxImageTypeFromDataUrl(pdfImages.footerBase64),
             data: pngDataUrlToUint8Array(pdfImages.footerBase64),
             transformation: footerSize,
           }),

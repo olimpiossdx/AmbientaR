@@ -553,6 +553,109 @@ export type WaterPermit = {
   dailyHoursLimit?: number;
   /** Limite máximo de dias com captação no mês. */
   maxDaysPerMonth?: number;
+  /** Código Tabela 01 IGAM (ex.: "01", "18") */
+  modoUsoCodigo?: string;
+  /** ID do processo em `outorga_processos` que originou a portaria */
+  outorgaProcessoId?: string;
+};
+
+export type OutorgaTipoServico =
+  | 'outorga'
+  | 'renovacao'
+  | 'retificacao'
+  | 'preventiva'
+  | 'drdh'
+  | 'coletiva'
+  | 'uso_insignificante'
+  | 'uso_isento'
+  | 'autorizacao_perfuracao'
+  | 'emergencial';
+
+export type OutorgaEtapaProcesso =
+  | 'rascunho'
+  | 'elaboracao_estudos'
+  | 'documentacao'
+  | 'taxa_paga'
+  | 'protocolado'
+  | 'analise'
+  | 'exigencia'
+  | 'deferido'
+  | 'indeferido'
+  | 'publicado';
+
+export type OutorgaChecklistDocumento = {
+  id: string;
+  label: string;
+  obrigatorio: boolean;
+  cumprido: boolean;
+  anexoUrl?: string;
+};
+
+export type OutorgaHistoricoEtapa = {
+  etapa: OutorgaEtapaProcesso;
+  em: string;
+  nota?: string;
+};
+
+export type OutorgaTaxaServico = {
+  codigo: string;
+  valorBrl?: number;
+  exercicio: number;
+  ufemg: number;
+  comprovanteUrl?: string;
+};
+
+export type OutorgaLinksExternos = {
+  /** PDF do termo de referência do código (IGAM). */
+  trPdfUrl?: string;
+  trTitulo?: string;
+  /** Portal de formulários e TRs — igam.mg.gov.br/outorga/formularios */
+  formularios?: string;
+  custosOutorga?: string;
+  taxasProcessos?: string;
+  tabelasApoio?: string;
+  sout?: string;
+  sei?: string;
+  /** Lista pública de outorgas — SEMAD / licenciamento MG */
+  consultaPublica?: string;
+  legislacaoDecreto?: string;
+  portariaTabela01?: string;
+};
+
+/** Campos editáveis do estudo técnico / formulário (TR convertido em rascunho). */
+export type OutorgaEstudoTr = Record<string, string>;
+
+/** Pedido de outorga em tramitação (coleção `outorga_processos`). */
+export type OutorgaProcesso = {
+  id: string;
+  empreendedorId: string;
+  projectId?: string;
+  modoUsoCodigo: string;
+  modoUsoLabel: string;
+  tipoServico: OutorgaTipoServico;
+  etapaProcesso: OutorgaEtapaProcesso;
+  historicoEtapas: OutorgaHistoricoEtapa[];
+  checklistDocumentos: OutorgaChecklistDocumento[];
+  taxaServico?: OutorgaTaxaServico;
+  linksExternos?: OutorgaLinksExternos;
+  /** Rascunho editável do estudo técnico para o pedido de outorga. */
+  estudoTr?: OutorgaEstudoTr;
+  finalidade?: string;
+  processNumber?: string;
+  municipio?: string;
+  coordenadas?: string;
+  vazaoRequerida?: string;
+  monthlyLimitM3?: number;
+  dailyLimitM3?: number;
+  dailyHoursLimit?: number;
+  maxDaysPerMonth?: number;
+  condicionanteFlowLimitM3s?: number;
+  miraStationId?: string;
+  /** Portaria vinculada após publicação */
+  outorgaId?: string;
+  createdBy?: string;
+  createdAt: string;
+  updatedAt: string;
 };
 
 /** Tipos de uso insignificante de água (submenu Usos Insignificantes). */
@@ -833,6 +936,101 @@ export type ProjetoTecnicoBarragem = {
   conservacaoManutencao?: string;
   literaturaConsultada?: string;
   anexosDescricao?: string;
+};
+
+/** Nível de complexidade do estudo espeleológico (IS SISEMA 08/2017). */
+export type EstudoCavidadeNivel =
+  | 'triagem'
+  | 'laudo_urbano'
+  | 'laudo_prospecao'
+  | 'avaliacao_impacto'
+  | 'relevancia_compensacao'
+  | 'criterio_locacional';
+
+export type EstudoCavidadePotencialCecav =
+  | 'nao_aplicavel'
+  | 'baixo'
+  | 'medio'
+  | 'alto'
+  | 'muito_alto'
+  | 'misto';
+
+export type EstudoCavidadeCavidadeRegistro = {
+  codigo?: string;
+  denominacao?: string;
+  tipo?: 'caverna' | 'abismo' | 'abrigo' | 'outro';
+  latitude?: string;
+  longitude?: string;
+  desenvolvimentoLinearM?: string;
+  litologia?: string;
+  grauRelevancia?: 'maximo' | 'alto' | 'medio' | 'baixo' | 'nao_classificado';
+  naAda?: boolean;
+  observacoes?: string;
+};
+
+/** Estudo espeleológico / cavidades para licenciamento MG. */
+export type EstudoCavidade = {
+  id: string;
+  status?: 'Rascunho' | 'Aprovado';
+  nivelEstudo?: EstudoCavidadeNivel;
+  requerente: {
+    clientId?: string;
+    nome: string;
+    cpfCnpj: string;
+  };
+  empreendimento: {
+    projectId?: string;
+    nome: string;
+    municipio?: string;
+    uf?: string;
+    car?: string;
+  };
+  responsavelTecnico: {
+    /** ID em `technicalResponsibles` (Configurações → Responsáveis técnicos). */
+    technicalResponsibleId?: string;
+    nome: string;
+    formacao: string;
+    registroConselho: string;
+    art?: string;
+  };
+  processo?: {
+    sla?: string;
+    sei?: string;
+    supram?: string;
+    modalidadeSugerida?: string;
+    classeAtividade?: string;
+  };
+  triagem?: {
+    potencialCecav?: EstudoCavidadePotencialCecav;
+    criterioLocacionalIncide?: boolean;
+    adaUrbanizada?: boolean;
+    observacoesIde?: string;
+    pedidoNaoIncidenciaCriterio?: boolean;
+    justificativaNaoIncidencia?: string;
+  };
+  prospecao?: {
+    kmCaminhamento?: string;
+    areaAdaHa?: string;
+    conclusaoSemCavidades?: boolean;
+    mapaPotencialNotas?: string;
+    memorialProspecao?: string;
+  };
+  impactos?: {
+    haImpactoIrreversivel?: boolean;
+    medidasMitigadoras?: string;
+    areaInfluenciaNotas?: string;
+    compensacaoNotas?: string;
+  };
+  cavidadesRegistradas?: EstudoCavidadeCavidadeRegistro[];
+  apresentacao?: string;
+  memorialCriterioLocacional?: string;
+  checklistIs08?: Record<string, boolean>;
+  linksUteis?: {
+    ecosistemasUrl?: string;
+    ideSisemaNotas?: string;
+  };
+  createdAt?: string;
+  updatedAt?: string;
 };
 
 export type PTRF = {
@@ -1666,6 +1864,8 @@ export type InventoryProject = {
         nomeCientifico: string;
         cap: string;
         altTotal: string;
+        /** Altura comercial (m); preenchida ao importar da Coleta de campo. */
+        altComercial?: string;
         dap: string;
         areaParcela: string;
     }>;
@@ -1674,6 +1874,9 @@ export type InventoryProject = {
         totalSpecies?: number;
         totalParcels?: number;
         totalTrees?: number;
+        /** Origem do último import (`excel` | `coleta_campo`). */
+        source?: 'excel' | 'coleta_campo';
+        coletaCampanhaId?: string;
     };
     /** Grupos de parcela (níveis de inclusão, estratos, unidades primárias). */
     plotGroups?: InventoryPlotGroups;
@@ -2207,6 +2410,14 @@ export type EiaRima = {
 
 export type InventarioStatus = 'rascunho' | 'em_campo' | 'sincronizado' | 'concluida';
 
+/** Resumo gravado ao consolidar planilha Excel da campanha. */
+export type ColetaExportSummary = {
+  totalParcels: number;
+  totalTrees: number;
+  totalSpecies: number;
+  excelRowCount: number;
+};
+
 /** Campanha de coleta de campo (coleção `inventarios`). */
 export type ColetaCampanhaModo = 'vinculada' | 'solta';
 export type ColetaTipoInventario = 'simples' | 'multinivel';
@@ -2228,6 +2439,11 @@ export type Inventario = {
   sincronizado?: boolean;
   /** Referência opcional a projeto de inventário florestal (somente metadado). */
   projectIdInventario?: string;
+  /** Planilha consolidada no Storage (gerada ao concluir ou reconsolidar). */
+  exportExcelStoragePath?: string;
+  exportExcelUrl?: string;
+  exportConsolidatedAt?: any;
+  exportSummary?: ColetaExportSummary;
   createdAt?: any;
   updatedAt?: any;
   [key: string]: any;
@@ -2510,7 +2726,7 @@ export type GenerateFinancialReportOutput = z.infer<typeof GenerateFinancialRepo
 export const AssistantInputSchema = z.object({
   prompt: z.string().describe('A pergunta do usuário para o assistente.'),
   /** Modo DeepSeek (menu Estudos Técnicos → Assistente IA). */
-  tipo: z.enum(['geral', 'mira', 'financeiro', 'rag', 'mcp']).optional(),
+  tipo: z.enum(['geral', 'mira', 'outorga', 'financeiro', 'rag', 'mcp']).optional(),
 });
 export type AssistantInput = z.infer<typeof AssistantInputSchema>;
 

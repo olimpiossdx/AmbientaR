@@ -91,7 +91,6 @@ const nextConfig = {
             "pdfjs-dist/build/pdf.min.mjs": pdfjsServerStub,
           }
         : {}),
-      ...(dev && process.platform === "win32" ? { next: nm("next") } : {}),
     };
 
     if (dev && process.platform === "win32") {

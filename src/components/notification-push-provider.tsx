@@ -40,11 +40,8 @@ export function NotificationPushProvider() {
     if (!canUseBrowserNotifications()) return;
     void (async () => {
       const perm = await requestBrowserNotificationPermission();
-      if (perm === "granted") {
-        const ok = await registerDeviceFcmToken();
-        if (process.env.NODE_ENV === "development") {
-          console.info(ok ? "[FCM] Token registado no perfil." : "[FCM] Falha ao registar token (ver consola).");
-        }
+      if (perm === "granted" && process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY?.trim()) {
+        await registerDeviceFcmToken();
       }
     })();
   }, [user, profileAligned]);

@@ -127,3 +127,15 @@ export function formatPrazoDefesaLabel(
   if (restantes === 0) return "Último dia do prazo (20 dias corridos)";
   return `${restantes} dia(s) corridos restantes`;
 }
+
+/** Limite indicativo para exigência de taxa de expediente (Decreto 47.383/2018, art. 60). */
+export const TAXA_EXPEDIENTE_UFEMG_LIMITE = 1661;
+
+export const ORGAOS_AMBIENTAIS_MG = [
+  { value: "SEMAD" as const, label: "SEMAD" },
+  { value: "FEAM" as const, label: "FEAM" },
+  { value: "IGAM" as const, label: "IGAM" },
+  { value: "IEF" as const, label: "IEF" },
+] as const;
+
+export type { AutoInfracaoDefesaRecord } from "@/lib/multas-defesas/types";

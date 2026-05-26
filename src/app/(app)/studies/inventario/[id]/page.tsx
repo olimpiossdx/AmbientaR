@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import {
   Import,
+  MapPin,
   Copy,
   Camera,
   Pencil,
@@ -20,6 +21,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import { ImportDialog } from './import-dialog';
+import { ColetaCampanhaImportDialog } from './coleta-campanha-import-dialog';
 import { ProjectPhotosDialog } from './project-photos-dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
@@ -68,6 +70,7 @@ export default function InventarioProjectPage() {
   const router = useRouter();
   const projectId = (params?.id as string | undefined) ?? '';
   const [isImporting, setIsImporting] = React.useState(false);
+  const [isColetaImportOpen, setIsColetaImportOpen] = React.useState(false);
   const [isDuplicateAlertOpen, setIsDuplicateAlertOpen] = React.useState(false);
   const [isDuplicating, setIsDuplicating] = React.useState(false);
   const [isEditing, setIsEditing] = React.useState(false);
@@ -277,6 +280,7 @@ export default function InventarioProjectPage() {
           <h1 className="text-lg font-semibold md:text-xl">{project.nome}</h1>
           <div className="flex flex-wrap items-center gap-2">
             <Button variant="outline" size="sm" onClick={() => setIsImporting(true)}><Import className="mr-2 h-4 w-4"/>Importar Planilha</Button>
+            <Button variant="outline" size="sm" onClick={() => setIsColetaImportOpen(true)}><MapPin className="mr-2 h-4 w-4"/>Carregar da Coleta de Campo</Button>
              <AlertDialog open={isDuplicateAlertOpen} onOpenChange={setIsDuplicateAlertOpen}>
                 <AlertDialogTrigger asChild>
                     <Button variant="outline" size="sm"><Copy className="mr-2 h-4 w-4"/>Duplicar Projeto</Button>
@@ -446,6 +450,12 @@ export default function InventarioProjectPage() {
         </>
       )}
       <ImportDialog isOpen={isImporting} onOpenChange={setIsImporting} projectId={projectId} />
+      <ColetaCampanhaImportDialog
+        isOpen={isColetaImportOpen}
+        onOpenChange={setIsColetaImportOpen}
+        projectId={projectId}
+        project={project ?? null}
+      />
       <ProjectPhotosDialog
         open={isPhotosOpen && !!project}
         onOpenChange={setIsPhotosOpen}

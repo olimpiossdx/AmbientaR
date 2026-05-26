@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { PageHeader } from "@/components/page-header";
@@ -21,6 +21,16 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -35,14 +45,16 @@ import {
   CheckCircle,
   ExternalLink,
   FileText,
+  Trash2,
 } from "lucide-react";
 import {
   useCollection,
   useFirebase,
   useMemoFirebase,
   errorEmitter,
+  useAuth,
 } from "@/firebase";
-import { collection, doc, updateDoc } from "firebase/firestore";
+import { collection, doc, deleteDoc, updateDoc } from "firebase/firestore";
 import type { FaunaStudy, Empreendedor } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
@@ -55,6 +67,8 @@ import {
 } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
 import { FirestorePermissionError } from "@/firebase/errors";
+import { isAdminOrSupervisorRole } from "@/lib/role-guards";
+import { FaunaExportIconButtons } from "@/components/fauna/fauna-export-icon-buttons";
 import {
   FAUNA_STUDY_ADD_ACTIONS,
   getFaunaRelatorioCreatePathFromProjeto,
@@ -84,20 +98,25 @@ function StudyRowActions({
   study,
   onEdit,
   onComplete,
+  onDelete,
+  canDelete,
   showComplete,
 }: {
   study: FaunaStudy;
   onEdit: (s: FaunaStudy) => void;
   onComplete: (s: FaunaStudy) => void;
+  onDelete: (id: string) => void;
+  canDelete: boolean;
   showComplete?: boolean;
 }) {
   return (
-    <div className="flex items-center justify-end gap-1">
+    <div className="flex items-center justify-end gap-1 flex-wrap">
       <Tooltip>
         <TooltipTrigger asChild>
           <Button
             variant="ghost"
             size="icon"
+            className="h-9 w-9 shrink-0"
             onClick={() => onEdit(study)}
             aria-label="Editar"
           >
@@ -106,10 +125,11 @@ function StudyRowActions({
         </TooltipTrigger>
         <TooltipContent>Editar</TooltipContent>
       </Tooltip>
+      <FaunaExportIconButtons study={study} />
       {isFaunaProjetoStudyType(study.studyType) && (
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button variant="ghost" size="icon" asChild>
+            <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0" asChild>
               <Link
                 href={getFaunaRelatorioCreatePathFromProjeto(study)!}
                 aria-label="Elaborar relatório"
@@ -127,6 +147,7 @@ function StudyRowActions({
             <Button
               variant="ghost"
               size="icon"
+              className="h-9 w-9 shrink-0"
               onClick={() => onComplete(study)}
               aria-label="Concluir"
             >
@@ -141,7 +162,7 @@ function StudyRowActions({
       {study.status === "completed" && (
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button variant="ghost" size="icon" asChild>
+            <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0" asChild>
               <Link href="/fauna" aria-label="Ver no portal do cliente">
                 <ExternalLink className="h-4 w-4" />
               </Link>
@@ -150,6 +171,24 @@ function StudyRowActions({
           <TooltipContent>Ver em Documentos Ambientais</TooltipContent>
         </Tooltip>
       )}
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span className="inline-flex">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9 shrink-0 text-destructive hover:text-destructive"
+              type="button"
+              disabled={!canDelete}
+              onClick={() => onDelete(study.id)}
+              aria-label="Excluir"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </span>
+        </TooltipTrigger>
+        <TooltipContent>Excluir estudo</TooltipContent>
+      </Tooltip>
     </div>
   );
 }
@@ -160,6 +199,8 @@ function StudyTable({
   empreendedorMap,
   onEdit,
   onComplete,
+  onDelete,
+  canDeleteStudy,
   showComplete,
   emptyMessage,
 }: {
@@ -168,6 +209,8 @@ function StudyTable({
   empreendedorMap: Map<string, string>;
   onEdit: (s: FaunaStudy) => void;
   onComplete: (s: FaunaStudy) => void;
+  onDelete: (id: string) => void;
+  canDeleteStudy: (study: FaunaStudy) => boolean;
   showComplete?: boolean;
   emptyMessage: string;
 }) {
@@ -195,7 +238,7 @@ function StudyTable({
                 <Skeleton className="h-6 w-24 rounded-full" />
               </TableCell>
               <TableCell className="text-right">
-                <Skeleton className="h-8 w-24 ml-auto" />
+                <Skeleton className="h-8 w-32 ml-auto" />
               </TableCell>
             </TableRow>
           ))}
@@ -223,6 +266,8 @@ function StudyTable({
                   study={study}
                   onEdit={onEdit}
                   onComplete={onComplete}
+                  onDelete={onDelete}
+                  canDelete={canDeleteStudy(study)}
                   showComplete={showComplete}
                 />
               </TableCell>
@@ -247,6 +292,9 @@ export default function StudiesFaunaPage() {
   const router = useRouter();
   const { toast } = useToast();
   const { firestore } = useFirebase();
+  const { user } = useAuth();
+  const [isAlertOpen, setIsAlertOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<string | null>(null);
 
   const studiesQuery = useMemoFirebase(
     () => (firestore ? collection(firestore, "faunaStudies") : null),
@@ -281,8 +329,45 @@ export default function StudiesFaunaPage() {
     };
   }, [internalStudies]);
 
+  const canDeleteStudy = (study: FaunaStudy) => {
+    if (!user) return false;
+    if (isAdminOrSupervisorRole(user.role)) return true;
+    if (study.status !== "completed") return true;
+    return false;
+  };
+
   const handleEdit = (study: FaunaStudy) => {
     router.push(getFaunaStudyEditPath(study));
+  };
+
+  const openDeleteConfirm = (itemId: string) => {
+    setItemToDelete(itemId);
+    setIsAlertOpen(true);
+  };
+
+  const handleDelete = () => {
+    if (!firestore || !itemToDelete) return;
+    const docRef = doc(firestore, "faunaStudies", itemToDelete);
+    deleteDoc(docRef)
+      .then(() => {
+        toast({
+          title: "Estudo excluído",
+          description: "O documento foi removido com sucesso.",
+        });
+      })
+      .catch(() => {
+        errorEmitter.emit(
+          "permission-error",
+          new FirestorePermissionError({
+            path: docRef.path,
+            operation: "delete",
+          }),
+        );
+      })
+      .finally(() => {
+        setIsAlertOpen(false);
+        setItemToDelete(null);
+      });
   };
 
   const handleComplete = async (study: FaunaStudy) => {
@@ -316,74 +401,96 @@ export default function StudiesFaunaPage() {
   const loading = isLoading || isLoadingEmpreendedores;
 
   return (
-    <div className="flex flex-col h-full">
-      <PageHeader title="Estudos de Fauna">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button size="sm" className="gap-1">
-              <PlusCircle className="h-4 w-4" />
-              Novo estudo
-              <ChevronDown className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-64">
-            <DropdownMenuLabel>Tipo de documento</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            {FAUNA_STUDY_ADD_ACTIONS.map((action) => (
-              <DropdownMenuItem
-                key={action.href}
-                onClick={() => router.push(action.href)}
-              >
-                {action.label}
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </PageHeader>
-      <main className="flex-1 overflow-auto p-4 md:p-6 space-y-8">
-        <Card>
-          <CardHeader>
-            <CardTitle>Em elaboração</CardTitle>
-            <CardDescription>
-              Rascunhos da equipe técnica. Ao concluir, o documento passa a
-              aparecer em Documentos Ambientais → Fauna.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <TooltipProvider>
-              <StudyTable
-                items={draftStudies}
-                loading={loading}
-                empreendedorMap={empreendedorMap}
-                onEdit={handleEdit}
-                onComplete={handleComplete}
-                showComplete
-                emptyMessage="Nenhum estudo em elaboração."
-              />
-            </TooltipProvider>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>Concluídos pela consultoria</CardTitle>
-            <CardDescription>
-              Estudos finalizados, visíveis no portal do cliente em Fauna.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <TooltipProvider>
-              <StudyTable
-                items={completedStudies}
-                loading={loading}
-                empreendedorMap={empreendedorMap}
-                onEdit={handleEdit}
-                onComplete={handleComplete}
-                emptyMessage="Nenhum estudo concluído ainda."
-              />
-            </TooltipProvider>
-          </CardContent>
-        </Card>
-      </main>
-    </div>
+    <>
+      <div className="flex flex-col h-full">
+        <PageHeader title="Estudos de Fauna">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="sm" className="gap-1">
+                <PlusCircle className="h-4 w-4" />
+                Novo estudo
+                <ChevronDown className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-64">
+              <DropdownMenuLabel>Tipo de documento</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {FAUNA_STUDY_ADD_ACTIONS.map((action) => (
+                <DropdownMenuItem
+                  key={action.href}
+                  onClick={() => router.push(action.href)}
+                >
+                  {action.label}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </PageHeader>
+        <main className="flex-1 overflow-auto p-4 md:p-6 space-y-8">
+          <Card>
+            <CardHeader>
+              <CardTitle>Em elaboração</CardTitle>
+              <CardDescription>
+                Rascunhos da equipe técnica. Ao concluir, o documento passa a
+                aparecer em Documentos Ambientais → Fauna.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <TooltipProvider>
+                <StudyTable
+                  items={draftStudies}
+                  loading={loading}
+                  empreendedorMap={empreendedorMap}
+                  onEdit={handleEdit}
+                  onComplete={handleComplete}
+                  onDelete={openDeleteConfirm}
+                  canDeleteStudy={canDeleteStudy}
+                  showComplete
+                  emptyMessage="Nenhum estudo em elaboração."
+                />
+              </TooltipProvider>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle>Concluídos pela consultoria</CardTitle>
+              <CardDescription>
+                Estudos finalizados, visíveis no portal do cliente em Fauna.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <TooltipProvider>
+                <StudyTable
+                  items={completedStudies}
+                  loading={loading}
+                  empreendedorMap={empreendedorMap}
+                  onEdit={handleEdit}
+                  onComplete={handleComplete}
+                  onDelete={openDeleteConfirm}
+                  canDeleteStudy={canDeleteStudy}
+                  emptyMessage="Nenhum estudo concluído ainda."
+                />
+              </TooltipProvider>
+            </CardContent>
+          </Card>
+        </main>
+      </div>
+
+      <AlertDialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir estudo de fauna?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação não pode ser desfeita. O documento será removido
+              permanentemente.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete}>Excluir</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }

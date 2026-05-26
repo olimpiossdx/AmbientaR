@@ -35,7 +35,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { AiProviderBadge, AiRoutingInfoCard } from '@/components/ai/ai-provider-badge';
 import { Label } from '@/components/ui/label';
 
-const TIPOS = ['geral', 'mira', 'financeiro', 'rag', 'mcp'] as const;
+const TIPOS = ['geral', 'mira', 'outorga', 'financeiro', 'rag', 'mcp'] as const;
 type TipoAssistente = (typeof TIPOS)[number];
 
 const formSchema = z.object({
@@ -49,6 +49,7 @@ type FormValues = z.infer<typeof formSchema>;
 const LABEL_TIPO: Record<TipoAssistente, string> = {
   geral: 'Legislação e estudos',
   mira: 'Águas / MIRA-IGAM',
+  outorga: 'Outorga MG (IGAM / SOUT)',
   financeiro: 'Custos e contratos',
   rag: 'Síntese de texto',
   mcp: 'Cruzamento de dados',

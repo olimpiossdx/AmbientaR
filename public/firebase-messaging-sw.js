@@ -1,9 +1,10 @@
 /* Service worker para Firebase Cloud Messaging (push com app fechado). */
+/* Versão alinhada ao SDK da app (package.json → firebase). */
 importScripts(
-  "https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js",
+  "https://www.gstatic.com/firebasejs/12.13.0/firebase-app-compat.js",
 );
 importScripts(
-  "https://www.gstatic.com/firebasejs/10.14.1/firebase-messaging-compat.js",
+  "https://www.gstatic.com/firebasejs/12.13.0/firebase-messaging-compat.js",
 );
 
 firebase.initializeApp({
@@ -37,15 +38,23 @@ messaging.onBackgroundMessage((payload) => {
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
   const link = event.notification.data?.link || "/";
+  const targetUrl = new URL(link, self.location.origin).href;
+
   event.waitUntil(
-    clients.matchAll({ type: "window", includeUncontrolled: true }).then((list) => {
-      for (const client of list) {
+    clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
+      for (const client of clientList) {
+        if (!client.url.startsWith(self.location.origin)) continue;
         if ("focus" in client) {
-          client.navigate(link);
-          return client.focus();
+          return client.focus().then((focused) => {
+            if (focused && "navigate" in focused) {
+              return focused.navigate(targetUrl);
+            }
+          });
         }
       }
-      if (clients.openWindow) return clients.openWindow(link);
+      if (clients.openWindow) {
+        return clients.openWindow(targetUrl);
+      }
     }),
   );
 });

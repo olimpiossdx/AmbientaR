@@ -10,7 +10,11 @@ import {
   warmBrandingPdfCache,
   type BrandingPdfImages,
 } from '@/lib/branding-pdf';
-import { hasCompleteBrandingUrls } from '@/lib/branding/requirements';
+import {
+  getBrandingMissingSlots,
+  hasCompleteBrandingImages,
+  hasCompleteBrandingUrls,
+} from '@/lib/branding/requirements';
 
 export type LocalBranding = {
   headerImageUrl: string | null;
@@ -27,6 +31,34 @@ const empty: LocalBranding = {
   logoUsage: 'pdf_only',
   systemLogoSource: 'header',
 };
+
+const BRANDING_LOAD_RETRIES = 2;
+const BRANDING_RETRY_DELAY_MS = 600;
+
+async function loadBrandingWithRetries(urls: {
+  headerImageUrl: string | null;
+  footerImageUrl: string | null;
+  watermarkImageUrl: string | null;
+}): Promise<BrandingPdfImages> {
+  let last: BrandingPdfImages = {
+    headerBase64: null,
+    footerBase64: null,
+    watermarkBase64: null,
+  };
+  for (let attempt = 0; attempt <= BRANDING_LOAD_RETRIES; attempt++) {
+    if (attempt > 0) {
+      clearBrandingPdfCache();
+      await new Promise((r) => setTimeout(r, BRANDING_RETRY_DELAY_MS * attempt));
+    }
+    last = await fetchBrandingImagesForPdf({
+      headerImageUrl: urls.headerImageUrl,
+      footerImageUrl: urls.footerImageUrl,
+      watermarkImageUrl: urls.watermarkImageUrl,
+    });
+    if (hasCompleteBrandingImages(last)) return last;
+  }
+  return last;
+}
 
 export function useLocalBranding() {
   const { firestore, auth } = useFirebase();
@@ -48,8 +80,29 @@ export function useLocalBranding() {
   }), [brandingData]);
 
   const [pdfImages, setPdfImages] = useState<BrandingPdfImages | null>(null);
-  const [isPdfImagesLoading, setIsPdfImagesLoading] = useState(false);
+  const [isFetchingPdfImages, setIsFetchingPdfImages] = useState(false);
   const [pdfImagesReloadToken, setPdfImagesReloadToken] = useState(0);
+
+  const hasBrandingUrls = hasCompleteBrandingUrls(data);
+  const isSessionReady = Boolean(auth?.currentUser);
+  const isPdfImagesLoading = isLoading || !isSessionReady || isFetchingPdfImages;
+  const isBrandingReady =
+    hasBrandingUrls && Boolean(pdfImages) && hasCompleteBrandingImages(pdfImages!);
+  const brandingMissingSlots = useMemo(() => {
+    if (!hasBrandingUrls) return [] as string[];
+    return getBrandingMissingSlots(
+      {
+        headerImageUrl: data.headerImageUrl,
+        footerImageUrl: data.footerImageUrl,
+        watermarkImageUrl: data.watermarkImageUrl,
+      },
+      pdfImages ?? {
+        headerBase64: null,
+        footerBase64: null,
+        watermarkBase64: null,
+      },
+    );
+  }, [hasBrandingUrls, data, pdfImages]);
 
   useEffect(() => {
     if (isLoading) return;
@@ -57,15 +110,22 @@ export function useLocalBranding() {
   }, [isLoading, data]);
 
   useEffect(() => {
-    if (isLoading || !auth?.currentUser) return;
-    const hasUrl = hasCompleteBrandingUrls(data);
-    if (!hasUrl) {
-      setPdfImages({ headerBase64: null, footerBase64: null, watermarkBase64: null });
-      setIsPdfImagesLoading(false);
+    if (isLoading) return;
+
+    if (!isSessionReady) {
+      setPdfImages(null);
+      setIsFetchingPdfImages(hasBrandingUrls);
       return;
     }
+
+    if (!hasBrandingUrls) {
+      setPdfImages({ headerBase64: null, footerBase64: null, watermarkBase64: null });
+      setIsFetchingPdfImages(false);
+      return;
+    }
+
     let cancelled = false;
-    setIsPdfImagesLoading(true);
+    setIsFetchingPdfImages(true);
 
     const load = async () => {
       if (typeof getApps === 'function') {
@@ -75,18 +135,14 @@ export function useLocalBranding() {
         }
       }
       try {
-        const loaded = await fetchBrandingImagesForPdf({
-          headerImageUrl: data.headerImageUrl,
-          footerImageUrl: data.footerImageUrl,
-          watermarkImageUrl: data.watermarkImageUrl,
-        });
+        const loaded = await loadBrandingWithRetries(data);
         if (!cancelled) setPdfImages(loaded);
       } catch {
         if (!cancelled) {
           setPdfImages({ headerBase64: null, footerBase64: null, watermarkBase64: null });
         }
       } finally {
-        if (!cancelled) setIsPdfImagesLoading(false);
+        if (!cancelled) setIsFetchingPdfImages(false);
       }
     };
 
@@ -94,14 +150,7 @@ export function useLocalBranding() {
     return () => {
       cancelled = true;
     };
-  }, [
-    isLoading,
-    auth?.currentUser?.uid,
-    data.headerImageUrl,
-    data.footerImageUrl,
-    data.watermarkImageUrl,
-    pdfImagesReloadToken,
-  ]);
+  }, [isLoading, isSessionReady, hasBrandingUrls, data, pdfImagesReloadToken]);
 
   const refetch = () => {
     clearBrandingPdfCache();
@@ -109,15 +158,14 @@ export function useLocalBranding() {
     setPdfImagesReloadToken((n) => n + 1);
   };
 
-  /** Três imagens obrigatórias (cabeçalho, rodapé, marca d'água). */
-  const hasBrandingUrls = hasCompleteBrandingUrls(data);
-
   return {
     data: data ?? empty,
     isLoading,
     pdfImages,
     isPdfImagesLoading,
     hasBrandingUrls,
+    isBrandingReady,
+    brandingMissingSlots,
     refetch,
   };
 }

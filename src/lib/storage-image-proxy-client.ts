@@ -1,6 +1,7 @@
 "use client";
 
 import { getAuth } from "firebase/auth";
+import { storagePathFromDownloadUrl } from "@/lib/storage-upload";
 
 const STORAGE_HOST_SNIPPETS = [
   "firebasestorage.googleapis.com",
@@ -16,20 +17,47 @@ export function storageImageProxyUrl(storageUrl: string): string {
   return `/api/branding/image?url=${encodeURIComponent(storageUrl)}`;
 }
 
-/** Obtém blob via proxy autenticado (evita CORS no canvas/jsPDF). */
+/**
+ * URL segura para `<Image>` / preview no browser (evita CORS do Storage).
+ * URLs do Firebase Storage passam pelo proxy `/api/branding/image`.
+ */
+export function brandingImageDisplayUrl(
+  url: string | null | undefined,
+): string | null {
+  if (!url?.trim()) return null;
+  const trimmed = url.trim();
+  if (trimmed.startsWith('/') || trimmed.startsWith('data:')) return trimmed;
+  if (isFirebaseStorageHttpsUrl(trimmed)) return storageImageProxyUrl(trimmed);
+  return trimmed;
+}
+
+function isBrandingStorageUrl(storageUrl: string): boolean {
+  const path = storagePathFromDownloadUrl(storageUrl);
+  return Boolean(path?.startsWith("branding/"));
+}
+
+/** Obtém blob via proxy same-origin (evita CORS no canvas/jsPDF). */
 export async function fetchStorageImageProxyBlob(
   storageUrl: string,
 ): Promise<Blob> {
+  const proxyUrl = storageImageProxyUrl(storageUrl);
   const token = await getAuth().currentUser?.getIdToken();
-  if (!token) {
-    throw new Error("Sessão expirada. Faça login novamente.");
-  }
-  const res = await fetch(storageImageProxyUrl(storageUrl), {
-    headers: { Authorization: `Bearer ${token}` },
+  const headers: HeadersInit = token ? { Authorization: `Bearer ${token}` } : {};
+
+  let res = await fetch(proxyUrl, {
+    headers,
     credentials: "same-origin",
     cache: "default",
   });
+
+  if (!res.ok && res.status === 401 && isBrandingStorageUrl(storageUrl)) {
+    res = await fetch(proxyUrl, { credentials: "same-origin", cache: "default" });
+  }
+
   if (!res.ok) {
+    if (!token && !isBrandingStorageUrl(storageUrl)) {
+      throw new Error("Sessão expirada. Faça login novamente.");
+    }
     throw new Error(`HTTP ${res.status}`);
   }
   const blob = await res.blob();

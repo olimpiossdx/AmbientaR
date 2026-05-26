@@ -43,6 +43,15 @@ Calibrar com o PDF modelo do utilizador (`exemplo_branding.pdf`): A4, cabeçalho
 
 Configurações → Identidade visual (`companySettings/branding`). **Obrigatório:** cabeçalho, rodapé e marca d'água — sem as três imagens, exportações oficiais (PDF e Word) são bloqueadas.
 
+O card **Pronto para exportar** / **Imagens não carregaram** (`BrandingExportStatus`) indica se a pré-carga no browser concluiu. Se as URLs existem mas o PDF/Word continua bloqueado, use **Recarregar imagens** ou F5.
+
+### Exportação não inicia (checklist)
+
+1. As **três** imagens estão enviadas e o card mostra **Pronto para exportar**.
+2. Aguarde o spinner **Preparando exportações** (sessão Firebase + download das imagens).
+3. Dev local: `GOOGLE_APPLICATION_CREDENTIALS` ou `FIREBASE_SERVICE_ACCOUNT_KEY` no `.env.local` (APIs Word por template no servidor).
+4. Consola do browser: erros CORS em `firebasestorage` → o proxy `/api/branding/image` deve resolver; confirme login ativo.
+
 ## Servidor (Word por template)
 
 - `src/lib/branding/branding-server.ts` — carrega imagens via Firebase Admin.

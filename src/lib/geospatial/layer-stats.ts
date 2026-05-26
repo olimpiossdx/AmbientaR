@@ -378,7 +378,7 @@ export function buildFactualSummary(
   layers: { title: string; stats: GeoLayerStat[]; status: string }[],
 ): string {
   const parts: string[] = [
-    `Área do empreendimento: ${perimeterAreaHa.toFixed(2)} ha (IDE-Sisema MG — Ondas A+B+C).`,
+    `Área do empreendimento: ${perimeterAreaHa.toFixed(2)} ha (IDE-Sisema MG — análise SIG MG, incl. potencialidade CECAV).`,
   ];
   for (const layer of layers) {
     if (layer.status !== "ok" || layer.stats.length === 0) {

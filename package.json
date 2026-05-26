@@ -25,6 +25,7 @@
     "typecheck": "tsc --noEmit",
     "check:uploads": "node scripts/check-upload-patterns.cjs",
     "deploy:rules": "npx firebase deploy --only firestore:rules",
+    "seed:outorga-knowledge": "node scripts/seed-outorga-knowledge-sources.mjs",
     "deploy:storage": "npx firebase deploy --only storage",
     "cap:sync": "npx cap sync",
     "cap:sync:deploy": "node scripts/cap-sync-deploy.cjs",
@@ -35,7 +36,8 @@
     "format:check": "prettier --check .",
     "prepare": "husky",
     "copy:pdf-worker": "node scripts/copy-pdf-worker.mjs",
-    "postinstall": "npm run copy:pdf-worker"
+    "generate:icons": "node scripts/generate-pwa-icons.mjs",
+    "postinstall": "npm run copy:pdf-worker && npm run generate:icons"
   },
   "overrides": {
     "browserslist": "^4.23.0",

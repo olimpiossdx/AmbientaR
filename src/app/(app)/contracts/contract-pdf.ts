@@ -320,3 +320,19 @@ export async function generateContractPdf(
   const doc = await buildContractPdfDoc(contract, brandingData, options);
   downloadJsPdf(doc, safeContractFilename(contract.contratante?.nome));
 }
+
+/** Inicia o download de um blob de PDF do contrato no navegador. */
+export function downloadContractPdfBlob(
+  blob: Blob,
+  contratanteNome?: string,
+): void {
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = safeContractFilename(contratanteNome);
+  anchor.rel = "noopener";
+  document.body.appendChild(anchor);
+  anchor.click();
+  document.body.removeChild(anchor);
+  URL.revokeObjectURL(url);
+}

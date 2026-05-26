@@ -12,6 +12,33 @@ function contractPdfStoragePath(contractId: string, contratanteNome?: string): s
 }
 
 /**
+ * Envia o blob ao Storage e grava `contractPdfUrl` no Firestore.
+ * Não altera `fileUrl` (reservado ao PDF assinado).
+ */
+export async function persistContractPdfBlob(
+  firestore: Firestore,
+  contractId: string,
+  contract: Contract,
+  blob: Blob,
+): Promise<string> {
+  if (!contractId?.trim()) {
+    throw new Error("ID do contrato inválido para gerar o PDF.");
+  }
+  const file = new File([blob], "contrato-para-assinatura.pdf", {
+    type: "application/pdf",
+  });
+  const storagePath = contractPdfStoragePath(
+    contractId.trim(),
+    contract.contratante?.nome,
+  );
+  const downloadUrl = await uploadFileToStorage(file, storagePath);
+  await updateDoc(doc(firestore, "contracts", contractId), {
+    contractPdfUrl: downloadUrl,
+  });
+  return downloadUrl;
+}
+
+/**
  * Gera o PDF do contrato, envia ao Storage e grava `contractPdfUrl` no Firestore.
  * Não altera `fileUrl` (reservado ao PDF assinado).
  */
@@ -22,20 +49,8 @@ export async function persistContractPdfForSignature(
   branding?: LocalBranding | null,
   preloadedImages?: BrandingPdfImages | null,
 ): Promise<string> {
-  if (!contractId?.trim()) {
-    throw new Error("ID do contrato inválido para gerar o PDF.");
-  }
   const blob = await contractPdfBlob(contract, branding ?? undefined, {
     preloadedImages,
   });
-  const file = new File([blob], "contrato-para-assinatura.pdf", {
-    type: "application/pdf",
-  });
-  const storagePath = contractPdfStoragePath(
-    contractId.trim(),
-    contract.contratante?.nome,
-  );
-  const downloadUrl = await uploadFileToStorage(file, storagePath);
-  await updateDoc(doc(firestore, 'contracts', contractId), { contractPdfUrl: downloadUrl });
-  return downloadUrl;
+  return persistContractPdfBlob(firestore, contractId, contract, blob);
 }

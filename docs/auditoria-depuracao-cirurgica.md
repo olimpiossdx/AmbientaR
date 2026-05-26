@@ -15,7 +15,7 @@ Registo vivo da depuração **menu → submenu → rota → função**. Compleme
 | `npm run typecheck` | 2026-05-25 | OK |
 | `npm run lint` | 2026-05-25 | OK (avisos hooks/img pré-existentes) |
 | HTTP smoke (dev :9002) | 2026-05-25 | Rotas principais 200 (ver tabela abaixo) |
-| `npm run apphosting:check` | — | Correr localmente antes de deploy na nuvem |
+| `npm run apphosting:check` | 2026-05-25 18:39 UTC | **OK** — `status=0` (~3 min; ESLint só warnings) |
 
 ## Legenda
 
@@ -130,7 +130,7 @@ Script: `npm run verify:pea-roles`. Detalhe: [`auditoria-perfis-interacao.md`](.
 4. **Ofícios** — fluxo aprovar/rejeitar por perfil.
 5. **ai-lab** — só admin; sem mudança de produto.
 6. **Formulários dinâmicos** EIA/PTRF/laudos — smoke por rota, sem refactor.
-7. **`apphosting:check`** antes de rollout Firebase App Hosting.
+7. **`apphosting:check`** — OK em 2026-05-25; repetir antes de cada rollout App Hosting.
 8. **Comparar erros produção** 7 dias pós-deploy regras.
 
 ## Compensação
