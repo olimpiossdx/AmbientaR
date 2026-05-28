@@ -1043,6 +1043,32 @@ service cloud.firestore {
     }
 
     /**
+     * @description MCA — Motor Cartográfico Automatizado (projetos e layers).
+     */
+    match /mca_projects/{projectId} {
+      allow read: if canStudyMapsRole() && resource.data.uid == request.auth.uid;
+      allow create: if canStudyMapsRole()
+        && request.resource.data.uid == request.auth.uid;
+      allow update: if canStudyMapsRole()
+        && resource.data.uid == request.auth.uid
+        && request.resource.data.uid == request.auth.uid;
+      allow delete: if isAdmin();
+      match /layers/{layerId} {
+        allow read, write: if canStudyMapsRole();
+      }
+    }
+
+    match /mca_agent_runs/{runId} {
+      allow read: if canStudyMapsRole() && resource.data.uid == request.auth.uid;
+      allow create, update, delete: if false;
+    }
+
+    match /mca_reviews/{reviewId} {
+      allow read: if canStudyMapsRole() && resource.data.uid == request.auth.uid;
+      allow create, update, delete: if false;
+    }
+
+    /**
      * @description Processos de georreferenciamento (consultoria).
      * @path /databases/{database}/documents/georef_projects/{projectId}
      */

@@ -34,6 +34,11 @@ class ExportBody(BaseModel):
     target_crs: str = "EPSG:31983"  # SIRGAS 2000 / UTM 23S — MG comum; pode ser 4326
 
 
+class CadIngestBody(BaseModel):
+    input_gcs_uri: str = Field(..., description="gs://bucket/path/file.dwg|.dxf")
+    target_crs: str = "EPSG:31983"
+
+
 def _require_secret(x_worker_secret: str | None) -> None:
     expected = os.environ.get("WORKER_SHARED_SECRET", "")
     if not expected or (x_worker_secret or "") != expected:
@@ -131,9 +136,105 @@ def run_ogr(args: list[str]) -> None:
         raise RuntimeError(f"ogr2ogr failed: {r.stderr or r.stdout}")
 
 
+def list_gpkg_layers(gpkg_path: Path) -> list[str]:
+    r = subprocess.run(
+        ["ogrinfo", "-json", str(gpkg_path)],
+        capture_output=True,
+        text=True,
+    )
+    if r.returncode != 0:
+        return []
+    try:
+        data = json.loads(r.stdout)
+        return [l["name"] for l in data.get("layers", []) if l.get("name")]
+    except json.JSONDecodeError:
+        return []
+
+
+def cad_to_layers_dict(cad_path: Path, target_crs: str) -> dict[str, Any]:
+    """DWG/DXF → dict[layerName, FeatureCollection] via GPKG intermédio."""
+    gpkg_path = cad_path.parent / "cad.gpkg"
+    run_ogr(
+        [
+            "ogr2ogr",
+            "-f",
+            "GPKG",
+            str(gpkg_path),
+            str(cad_path),
+            "-t_srs",
+            target_crs,
+            "-skipfailures",
+        ]
+    )
+    layers: dict[str, Any] = {}
+    for layer_name in list_gpkg_layers(gpkg_path):
+        geo_path = cad_path.parent / f"{layer_name.replace(' ', '_')}.geojson"
+        run_ogr(
+            [
+                "ogr2ogr",
+                "-f",
+                "GeoJSON",
+                str(geo_path),
+                str(gpkg_path),
+                layer_name,
+                "-t_srs",
+                target_crs,
+            ]
+        )
+        if not geo_path.exists():
+            continue
+        fc = json.loads(geo_path.read_text(encoding="utf-8"))
+        if not fc.get("features"):
+            continue
+        if layer_name in layers:
+            layers[layer_name]["features"].extend(fc["features"])
+        else:
+            layers[layer_name] = fc
+    return layers
+
+
 @app.get("/health")
 def health() -> dict[str, str]:
-    return {"status": "ok"}
+    return {"status": "ok", "cad_ingest": True}
+
+
+@app.post("/v1/cad/ingest")
+def cad_ingest(
+    body: CadIngestBody,
+    x_worker_secret: str | None = Header(default=None, alias="X-Worker-Secret"),
+) -> dict[str, Any]:
+    """Extrai layers GeoJSON de DWG/DXF no GCS (uso MCA)."""
+    _require_secret(x_worker_secret)
+
+    in_bucket, in_key = _parse_gs_uri(body.input_gcs_uri)
+    client = storage.Client()
+    tmp = Path(tempfile.mkdtemp(prefix="cadingest_"))
+    try:
+        ext = Path(in_key).suffix.lower() or ".dwg"
+        cad_path = tmp / f"input{ext}"
+        blob = client.bucket(in_bucket).blob(in_key)
+        if not blob.exists():
+            raise HTTPException(status_code=404, detail="CAD object not found")
+        cad_path.write_bytes(blob.download_as_bytes())
+
+        layers = cad_to_layers_dict(cad_path, body.target_crs)
+        if not layers:
+            return {
+                "ok": False,
+                "layers": {},
+                "layer_names": [],
+                "message": "Nenhuma layer com geometria no CAD.",
+            }
+        return {
+            "ok": True,
+            "layers": layers,
+            "layer_names": list(layers.keys()),
+            "message": f"{len(layers)} layer(s) extraída(s).",
+        }
+    except RuntimeError as ex:
+        raise HTTPException(status_code=422, detail=str(ex)) from ex
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
 
 
 @app.post("/v1/export")

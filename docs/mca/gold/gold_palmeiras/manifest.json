@@ -1,0 +1,24 @@
+{
+  "id": "gold_palmeiras",
+  "propertyName": "Fazenda Palmeiras",
+  "ownerName": "Célio Fontana",
+  "municipality": "Unaí-MG",
+  "areaTotalHa": 1747.9104,
+  "scale": "1:12000",
+  "matriculas": ["37.666", "37.667"],
+  "car": "MG-3170404-8063.A469.8E47.450D.AF96.72D7.7CE4.F581",
+  "expected": {
+    "hydroNamedCourses": ["Córrego Guaribas", "Córrego Soberbo"],
+    "pivoCountMin": 0,
+    "appPolygonCountMin": 0
+  },
+  "visualChecklist": [
+    "mapa_localizacao",
+    "grade_utm",
+    "north_arrow",
+    "scale_bar",
+    "quadro_informacoes",
+    "carimbo_crea"
+  ],
+  "notes": "Mapa mais simples; foco E05 layout e hidro nomeada."
+}

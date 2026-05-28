@@ -1,5 +1,5 @@
-import { MapasWorkbench } from "./mapas-workbench";
+import { McaWorkbench } from "./mca-workbench";
 
 export default function StudiesMapasPage() {
-  return <MapasWorkbench />;
+  return <McaWorkbench />;
 }

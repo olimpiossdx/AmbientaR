@@ -1,0 +1,42 @@
+# MCA Behavior Registry v2 (esqueleto)
+# Consumido em v2+ pelo orquestrador stateful e cache invalidation.
+
+MCA_APP_Buffer_From_Hydro:
+  tier: spatial
+  semantic_role: derive_app_from_hydro
+  depends_on:
+    - MCA_Hydro_Corrego
+    - MCA_Hydro_Vereda_Nome
+  invalidates:
+    - AMB_APP
+    - AMB_RL_GLEBA
+  produces: AMB_APP_BUFFER
+  cacheable: true
+
+MCA_APP_Polygon:
+  tier: spatial
+  semantic_role: APP_HIDRICA
+  legal_role: buffer_from_hydro
+  depends_on:
+    - MCA_APP_Buffer_From_Hydro
+  invalidates:
+    - AMB_RL_GLEBA
+  produces: AMB_APP
+  style_profile: pimenta_app
+
+MCA_Hydro_Corrego:
+  tier: spatial
+  semantic_role: hydro_line
+  invalidates:
+    - AMB_APP_BUFFER
+    - AMB_APP
+  produces: HYD_CORREGO
+  cacheable: true
+
+MCA_Fund_Limite_Propriedade:
+  tier: spatial
+  semantic_role: property_boundary
+  invalidates:
+    - FUND_MATRICULA
+    - FUND_CONFRONTANTE
+  produces: FUND_LIMITE

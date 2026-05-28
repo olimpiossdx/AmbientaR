@@ -5,8 +5,9 @@ Imagem Docker com **GDAL** (`ogr2ogr`) e **FastAPI**, pensada para **Google Clou
 ## O que faz
 
 - `POST /v1/export` — lê `input.geojson` no GCS, gera **ZIP (Shapefile)**, **DXF**, **GPKG** (reprojetáveis via `target_crs`, por omissão `EPSG:31983`).
+- `POST /v1/cad/ingest` — lê **DWG/DXF** no GCS e devolve **GeoJSON por layer** (usado pelo MCA em App Hosting sem GDAL local).
 - Opcional: `fetch_osm: true` — consulta **Overpass**, recorta vias/edificações/hidrografia ao polígono e publica `osm_context.geojson` junto dos outros artefactos.
-- `GET /health` — readiness.
+- `GET /health` — readiness (`cad_ingest: true`).
 
 ## Segurança
 

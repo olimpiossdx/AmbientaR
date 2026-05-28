@@ -1,0 +1,63 @@
+{
+  "description": "Exemplo mínimo para testar import-layers (região Unaí-MG aproximada). Substitua por export real do DWG Pimenta.",
+  "layers": {
+    "LAVOURA": {
+      "type": "FeatureCollection",
+      "features": [
+        {
+          "type": "Feature",
+          "properties": { "class": "Lavoura" },
+          "geometry": {
+            "type": "Polygon",
+            "coordinates": [
+              [
+                [-46.12, -16.38],
+                [-46.1, -16.38],
+                [-46.1, -16.36],
+                [-46.12, -16.36],
+                [-46.12, -16.38]
+              ]
+            ]
+          }
+        }
+      ]
+    },
+    "PIVO": {
+      "type": "FeatureCollection",
+      "features": [
+        {
+          "type": "Feature",
+          "properties": { "class": "Pivô" },
+          "geometry": {
+            "type": "Polygon",
+            "coordinates": [
+              [
+                [-46.115, -16.375],
+                [-46.105, -16.375],
+                [-46.105, -16.365],
+                [-46.115, -16.365],
+                [-46.115, -16.375]
+              ]
+            ]
+          }
+        }
+      ]
+    },
+    "CORREGO": {
+      "type": "FeatureCollection",
+      "features": [
+        {
+          "type": "Feature",
+          "properties": { "nome": "Córrego exemplo" },
+          "geometry": {
+            "type": "LineString",
+            "coordinates": [
+              [-46.125, -16.37],
+              [-46.095, -16.365]
+            ]
+          }
+        }
+      ]
+    }
+  }
+}

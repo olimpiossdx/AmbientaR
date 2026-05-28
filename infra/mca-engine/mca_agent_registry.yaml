@@ -1,0 +1,438 @@
+# MCA micro-agent registry — 48 agentes
+agents:
+  MCA_Orchestrator_Master:
+    family: orchestration
+    mode: deterministic
+    etapa_min: 3
+    depends_on: []
+    produces: META_ORCHESTRATION
+  MCA_DAG_Resolver:
+    family: orchestration
+    mode: deterministic
+    etapa_min: 3
+    depends_on: []
+    produces: META_DAG
+  MCA_Conflict_Merger:
+    family: orchestration
+    mode: deterministic
+    etapa_min: 10
+    depends_on: [MCA_Uso_Lavoura, MCA_APP_Polygon, MCA_RL_Gleba_Polygon]
+    produces: QA_CONFLITOS
+  MCA_Score_Aggregator:
+    family: orchestration
+    mode: deterministic
+    etapa_min: 15
+    depends_on: [MCA_QA_Topology, MCA_QA_Visual_Fidelity]
+    produces: META_SCORE
+  MCA_QA_Topology:
+    family: qa
+    mode: deterministic
+    etapa_min: 5
+    depends_on: [MCA_CRS_SIRGAS_UTM]
+    produces: QA_TOPOLOGY
+  MCA_QA_Visual_Fidelity:
+    family: qa
+    mode: deterministic
+    etapa_min: 15
+    depends_on: [MCA_Layout_Export_PDF]
+    produces: QA_VISUAL
+  MCA_Ingest_Perimeter:
+    family: ingest
+    mode: deterministic
+    etapa_min: 5
+    depends_on: []
+    produces: BASE_PERIMETRO
+  MCA_Ingest_KML_SHP:
+    family: ingest
+    mode: deterministic
+    etapa_min: 5
+    depends_on: []
+    produces: BASE_PERIMETRO
+  MCA_Learn_DWG_Ingest:
+    family: learn
+    mode: deterministic
+    etapa_min: 6
+    depends_on: [MCA_Ingest_Perimeter]
+    produces: DWG_IMPORT
+  MCA_CRS_SIRGAS_UTM:
+    family: ingest
+    mode: deterministic
+    etapa_min: 5
+    depends_on: [MCA_Ingest_Perimeter]
+    produces: BASE_PERIMETRO
+  MCA_Tile_Splitter:
+    family: ingest
+    mode: deterministic
+    etapa_min: 14
+    depends_on: [MCA_Base_Satellite]
+    produces: IA_TILES
+  MCA_Fund_Limite_Propriedade:
+    family: fund
+    mode: deterministic
+    etapa_min: 7
+    depends_on: [MCA_CRS_SIRGAS_UTM]
+    produces: FUND_LIMITE
+  MCA_Fund_Limite_Matricula:
+    family: fund
+    mode: deterministic
+    etapa_min: 7
+    depends_on: [MCA_Fund_Limite_Propriedade]
+    produces: FUND_MATRICULA
+  MCA_Fund_Label_Matricula:
+    family: fund
+    mode: deterministic
+    etapa_min: 7
+    depends_on: [MCA_Fund_Limite_Matricula]
+    produces: FUND_LABEL_MAT
+  MCA_Fund_Quadro_Matriculas:
+    family: fund
+    mode: deterministic
+    etapa_min: 7
+    depends_on: [MCA_Fund_Limite_Matricula]
+    produces: META_QUADRO_MAT
+  MCA_Fund_Confrontante_Label:
+    family: fund
+    mode: deterministic
+    etapa_min: 7
+    depends_on: [MCA_Fund_Limite_Propriedade]
+    produces: FUND_CONFRONTANTE
+  MCA_Fund_CAR_Metadata:
+    family: fund
+    mode: deterministic
+    etapa_min: 7
+    depends_on: []
+    produces: META_CAR
+  MCA_Fund_Area_Total:
+    family: fund
+    mode: deterministic
+    etapa_min: 7
+    depends_on: [MCA_Fund_Limite_Propriedade]
+    produces: META_AREA_TOTAL
+  MCA_Hydro_Ribeirao:
+    family: hydro
+    mode: deterministic
+    etapa_min: 8
+    depends_on: [MCA_Base_Satellite]
+    produces: HYD_RIBEIRAO
+  MCA_Hydro_Corrego:
+    family: hydro
+    mode: deterministic
+    etapa_min: 8
+    depends_on: [MCA_Base_Satellite]
+    produces: HYD_CORREGO
+  MCA_Hydro_Vereda_Nome:
+    family: hydro
+    mode: deterministic
+    etapa_min: 8
+    depends_on: [MCA_Base_Satellite]
+    produces: HYD_VEREDA
+  MCA_Hydro_Grota:
+    family: hydro
+    mode: deterministic
+    etapa_min: 8
+    depends_on: [MCA_Base_Satellite]
+    produces: HYD_GROTA
+  MCA_Hydro_Barragem:
+    family: hydro
+    mode: deterministic
+    etapa_min: 8
+    depends_on: [MCA_Base_Satellite]
+    produces: HYD_BARRAGEM
+  MCA_Hydro_Cascaleira:
+    family: hydro
+    mode: deterministic
+    etapa_min: 8
+    depends_on: [MCA_Base_Satellite]
+    produces: HYD_CASCALEIRA
+  MCA_Hydro_Lagoa:
+    family: hydro
+    mode: deterministic
+    etapa_min: 8
+    depends_on: [MCA_Base_Satellite]
+    produces: HYD_LAGOA
+  MCA_Hydro_Label_Generico:
+    family: hydro
+    mode: deterministic
+    etapa_min: 8
+    depends_on: [MCA_Hydro_Corrego]
+    produces: META_HYD_LABELS
+  MCA_Uso_Lavoura:
+    family: uso
+    mode: ia_assisted
+    etapa_min: 9
+    depends_on: [MCA_Fund_Limite_Propriedade, MCA_Learn_DWG_Ingest]
+    produces: USO_LAVOURA
+  MCA_Uso_Pasto:
+    family: uso
+    mode: ia_assisted
+    etapa_min: 9
+    depends_on: [MCA_Fund_Limite_Propriedade]
+    produces: USO_PASTO
+  MCA_Uso_Eucalipto:
+    family: uso
+    mode: ia_assisted
+    etapa_min: 9
+    depends_on: [MCA_Fund_Limite_Propriedade]
+    produces: USO_EUCALIPTO
+  MCA_Uso_Pivo:
+    family: uso
+    mode: ia_assisted
+    etapa_min: 9
+    depends_on: [MCA_Fund_Limite_Propriedade]
+    produces: USO_PIVO
+  MCA_Uso_Vereda_Poligono:
+    family: uso
+    mode: deterministic
+    etapa_min: 9
+    depends_on: [MCA_Hydro_Vereda_Nome]
+    produces: USO_VEREDA
+  MCA_Uso_IA_Prior_MapBiomas:
+    family: uso
+    mode: ia_assisted
+    etapa_min: 14
+    depends_on: [MCA_Base_Satellite]
+    produces: IA_MAPBIOMAS
+  MCA_Uso_Segment_SAM:
+    family: uso
+    mode: ia_assisted
+    etapa_min: 14
+    depends_on: [MCA_Tile_Splitter]
+    produces: IA_SEGMENT
+  MCA_Uso_Area_Label:
+    family: uso
+    mode: deterministic
+    etapa_min: 11
+    depends_on: [MCA_Uso_Lavoura]
+    produces: META_AREA_LABELS
+  MCA_Uso_Tabela_Resumo:
+    family: uso
+    mode: deterministic
+    etapa_min: 9
+    depends_on: [MCA_Uso_Lavoura, MCA_Uso_Pivo, MCA_Uso_Pasto]
+    produces: META_TABELA_USO
+  MCA_Uso_Legend_Group:
+    family: uso
+    mode: deterministic
+    etapa_min: 12
+    depends_on: [MCA_Uso_Tabela_Resumo]
+    produces: META_LEGEND_USO
+  MCA_APP_Buffer_From_Hydro:
+    family: amb
+    mode: deterministic
+    etapa_min: 10
+    depends_on: [MCA_Hydro_Corrego, MCA_Hydro_Ribeirao]
+    produces: AMB_APP_BUFFER
+  MCA_APP_Polygon:
+    family: amb
+    mode: deterministic
+    etapa_min: 10
+    depends_on: [MCA_APP_Buffer_From_Hydro]
+    produces: AMB_APP
+  MCA_APP_Area_Label:
+    family: amb
+    mode: deterministic
+    etapa_min: 10
+    depends_on: [MCA_APP_Polygon]
+    produces: META_APP_LABELS
+  MCA_APP_Tabela:
+    family: amb
+    mode: deterministic
+    etapa_min: 10
+    depends_on: [MCA_APP_Polygon]
+    produces: META_TABELA_APP
+  MCA_RL_Gleba_Polygon:
+    family: amb
+    mode: deterministic
+    etapa_min: 10
+    depends_on: [MCA_Fund_Limite_Matricula]
+    produces: AMB_RL_GLEBA
+  MCA_RL_Compensada_Flag:
+    family: amb
+    mode: deterministic
+    etapa_min: 10
+    depends_on: [MCA_RL_Gleba_Polygon]
+    produces: AMB_RL_META
+  MCA_RL_Matricula_Gleba_Label:
+    family: amb
+    mode: deterministic
+    etapa_min: 10
+    depends_on: [MCA_RL_Gleba_Polygon]
+    produces: META_RL_LABELS
+  MCA_RL_Tabela_Detalhada:
+    family: amb
+    mode: deterministic
+    etapa_min: 10
+    depends_on: [MCA_RL_Gleba_Polygon]
+    produces: META_TABELA_RL
+  MCA_RL_Legend_Block:
+    family: amb
+    mode: deterministic
+    etapa_min: 12
+    depends_on: [MCA_RL_Tabela_Detalhada]
+    produces: META_LEGEND_RL
+  MCA_Infra_Sede:
+    family: infra
+    mode: ia_assisted
+    etapa_min: 11
+    depends_on: [MCA_Fund_Limite_Propriedade]
+    produces: INFRA_SEDE
+  MCA_Infra_Patio:
+    family: infra
+    mode: deterministic
+    etapa_min: 11
+    depends_on: [MCA_Fund_Limite_Propriedade]
+    produces: INFRA_PATIO
+  MCA_Infra_Curral:
+    family: infra
+    mode: deterministic
+    etapa_min: 11
+    depends_on: [MCA_Fund_Limite_Propriedade]
+    produces: INFRA_CURRAL
+  MCA_Infra_Silos:
+    family: infra
+    mode: deterministic
+    etapa_min: 11
+    depends_on: [MCA_Fund_Limite_Propriedade]
+    produces: INFRA_SILOS
+  MCA_Infra_Pista_Pouso:
+    family: infra
+    mode: deterministic
+    etapa_min: 11
+    depends_on: [MCA_Fund_Limite_Propriedade]
+    produces: INFRA_PISTA
+  MCA_Infra_Usina_Solar:
+    family: infra
+    mode: deterministic
+    etapa_min: 11
+    depends_on: [MCA_Fund_Limite_Propriedade]
+    produces: INFRA_USINA
+  MCA_Infra_Piscinao:
+    family: infra
+    mode: deterministic
+    etapa_min: 11
+    depends_on: [MCA_Fund_Limite_Propriedade]
+    produces: INFRA_PISCINAO
+  MCA_Infra_Rede_Eletrica:
+    family: infra
+    mode: deterministic
+    etapa_min: 11
+    depends_on: [MCA_Fund_Limite_Propriedade]
+    produces: INFRA_REDE
+  MCA_Amb_DAIA_Corretiva:
+    family: amb
+    mode: deterministic
+    etapa_min: 11
+    depends_on: [MCA_APP_Polygon]
+    produces: AMB_DAIA
+  MCA_Ctx_Compensacao_Florestal:
+    family: infra
+    mode: deterministic
+    etapa_min: 11
+    depends_on: []
+    produces: META_COMPENSACAO
+  MCA_Ctx_Rodovia:
+    family: infra
+    mode: deterministic
+    etapa_min: 11
+    depends_on: [MCA_Base_Satellite]
+    produces: CTX_RODOVIA
+  MCA_Base_Satellite:
+    family: base
+    mode: deterministic
+    etapa_min: 8
+    depends_on: [MCA_Fund_Limite_Propriedade]
+    produces: BASE_SATELLITE
+  MCA_Layout_Title_Uso_Ocupacao:
+    family: layout
+    mode: layout_only
+    etapa_min: 12
+    depends_on: [MCA_Fund_CAR_Metadata]
+    produces: LAYOUT_TITLE
+  MCA_Layout_Info_Gerais:
+    family: layout
+    mode: layout_only
+    etapa_min: 12
+    depends_on: [MCA_Fund_Area_Total, MCA_Fund_CAR_Metadata]
+    produces: LAYOUT_INFO
+  MCA_Layout_Coordenadas_Sede:
+    family: layout
+    mode: layout_only
+    etapa_min: 12
+    depends_on: [MCA_Infra_Sede]
+    produces: LAYOUT_SEDE_COORD
+  MCA_Layout_Carimbo_CREA:
+    family: layout
+    mode: layout_only
+    etapa_min: 12
+    depends_on: []
+    produces: LAYOUT_CARIMBO
+  MCA_Layout_Logo_Consultoria:
+    family: layout
+    mode: layout_only
+    etapa_min: 12
+    depends_on: []
+    produces: LAYOUT_LOGO
+  MCA_Layout_Assinaturas:
+    family: layout
+    mode: layout_only
+    etapa_min: 12
+    depends_on: []
+    produces: LAYOUT_ASSINATURAS
+  MCA_Layout_North_Arrow:
+    family: layout
+    mode: layout_only
+    etapa_min: 12
+    depends_on: []
+    produces: LAYOUT_NORTE
+  MCA_Layout_Scale_Bar:
+    family: layout
+    mode: layout_only
+    etapa_min: 12
+    depends_on: [MCA_Fund_Area_Total]
+    produces: LAYOUT_ESCALA
+  MCA_Layout_UTM_Grid:
+    family: layout
+    mode: layout_only
+    etapa_min: 12
+    depends_on: [MCA_CRS_SIRGAS_UTM]
+    produces: LAYOUT_GRID
+  MCA_Layout_Inset_Localizacao:
+    family: layout
+    mode: layout_only
+    etapa_min: 12
+    depends_on: [MCA_Fund_Limite_Propriedade]
+    produces: LAYOUT_INSET
+  MCA_Layout_Folha_Numero:
+    family: layout
+    mode: layout_only
+    etapa_min: 12
+    depends_on: []
+    produces: LAYOUT_FOLHA
+  MCA_Layout_Export_PDF:
+    family: layout
+    mode: layout_only
+    etapa_min: 13
+    depends_on:
+      - MCA_Layout_Title_Uso_Ocupacao
+      - MCA_Layout_Info_Gerais
+      - MCA_Uso_Tabela_Resumo
+      - MCA_RL_Tabela_Detalhada
+    produces: LAYOUT_PDF
+  MCA_CAD_Layer_Export:
+    family: cad
+    mode: deterministic
+    etapa_min: 15
+    depends_on: [MCA_Conflict_Merger]
+    produces: CAD_DXF
+  MCA_CAD_DWG_2010:
+    family: cad
+    mode: deterministic
+    etapa_min: 15
+    depends_on: [MCA_CAD_Layer_Export]
+    produces: CAD_DWG
+  MCA_CAD_QGZ_Project:
+    family: cad
+    mode: deterministic
+    etapa_min: 15
+    depends_on: [MCA_CAD_Layer_Export]
+    produces: CAD_QGZ
