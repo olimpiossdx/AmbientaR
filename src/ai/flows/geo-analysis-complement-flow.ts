@@ -7,6 +7,7 @@ import {
   type GeoLayerResult,
   type WaveAAnalysisResult,
 } from "@/lib/types/geo-wave-a";
+import { WAVE_ALL_LAYER_COUNT } from "@/lib/geospatial/run-wave-a-analysis";
 
 function layersToFactsText(layers: GeoLayerResult[]): string {
   return layers
@@ -55,7 +56,7 @@ Se faltar dado, diga explicitamente que a camada não retornou interseção ou q
 Resumo factual:
 {{factualSummary}}
 
-Dados por camada (9 camadas IDE-Sisema MG — Ondas A, B, C e potencialidade CECAV):
+Dados por camada (${WAVE_ALL_LAYER_COUNT} camadas — IDE-Sisema MG, SICAR e embargos IBAMA):
 {{layersFacts}}
 
 Mapeie mentalmente as camadas factuais para as secções abaixo (use os títulos das camadas no texto quando citar dados).
@@ -110,7 +111,7 @@ const complementFlow = ai.defineFlow(
       generatedAtUtc: new Date().toISOString(),
       disclaimer:
         output.disclaimer ||
-        "Rascunho gerado por IA com base na análise factual (8 camadas SIG). Revisão por profissional habilitado é obrigatória antes de uso em estudo ou órgão licenciador.",
+        "Rascunho gerado por IA com base na análise factual (SIG MG). Revisão por profissional habilitado é obrigatória antes de uso em estudo ou órgão licenciador.",
     };
   },
 );

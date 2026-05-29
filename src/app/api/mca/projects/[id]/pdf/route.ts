@@ -2,14 +2,21 @@ import { NextRequest, NextResponse } from "next/server";
 import { verifyBearerUid } from "@/lib/mca/verify-user";
 import { loadMcaProject } from "@/lib/mca/orchestrator";
 import { buildMcaLayoutPdf } from "@/lib/mca/layout-pdf";
-import { loadMcaProjectLayers } from "@/lib/mca/load-project-layers";
+import { loadMcaPdfBuildOptions } from "@/lib/mca/pdf-build-options";
+import { resolveMcaPdfMapImage } from "@/lib/mca/resolve-pdf-map-image-server";
 import { listProjectReviews, reviewsReadyForExport } from "@/lib/mca/review/review-queue";
 
 export const maxDuration = 60;
 
-type PdfBody = { mapImageDataUrl?: string; preview?: boolean };
+type PdfBody = { mapImageDataUrl?: string; preview?: boolean; includeSatellite?: boolean };
 
-async function buildPdfResponse(projectId: string, uid: string, body?: PdfBody, preview = false) {
+async function buildPdfResponse(
+  projectId: string,
+  uid: string,
+  body?: PdfBody,
+  preview = false,
+  includeSatelliteQuery = false,
+) {
   const project = await loadMcaProject(projectId, uid);
   if (!project) {
     return NextResponse.json({ success: false, error: "Não encontrado." }, { status: 404 });
@@ -26,17 +33,28 @@ async function buildPdfResponse(projectId: string, uid: string, body?: PdfBody, 
       { status: 428 },
     );
   }
-  const layers = await loadMcaProjectLayers(projectId);
+  const pdfOptions = await loadMcaPdfBuildOptions(projectId);
   const mapImage =
     typeof body?.mapImageDataUrl === "string" && body.mapImageDataUrl.startsWith("data:image")
       ? body.mapImageDataUrl
       : null;
-  const buf = buildMcaLayoutPdf(project, { layers, mapImageDataUrl: mapImage });
+  const includeSatellite = Boolean(body?.includeSatellite ?? includeSatelliteQuery);
+  const mapResolved = await resolveMcaPdfMapImage({
+    project,
+    layers: pdfOptions.layers ?? {},
+    clientMapImageDataUrl: mapImage,
+    includeSatellite,
+  });
+  const buf = buildMcaLayoutPdf(project, {
+    ...pdfOptions,
+    mapImageDataUrl: mapResolved.mapImageDataUrl,
+  });
   return new NextResponse(new Uint8Array(buf), {
     headers: {
       "Content-Type": "application/pdf",
       "Content-Disposition": `attachment; filename="mca-${projectId}.pdf"`,
       "X-MCA-Export-Ready": exportReady ? "true" : "false",
+      "X-MCA-Map-Mode": mapResolved.mode,
     },
   });
 }
@@ -48,7 +66,8 @@ export async function GET(
   try {
     const user = await verifyBearerUid(req.headers.get("authorization"));
     const preview = req.nextUrl.searchParams.get("preview") === "1";
-    return await buildPdfResponse(params.id, user.uid, undefined, preview);
+    const satellite = req.nextUrl.searchParams.get("satellite") === "1";
+    return await buildPdfResponse(params.id, user.uid, undefined, preview, satellite);
   } catch (e) {
     return NextResponse.json(
       { success: false, error: e instanceof Error ? e.message : "PDF falhou" },

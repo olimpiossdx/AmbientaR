@@ -1,0 +1,9 @@
+services:
+  mca-qgis-worker:
+    build: .
+    ports:
+      - "8091:8091"
+    environment:
+      WORKER_SHARED_SECRET: ${WORKER_SHARED_SECRET:-dev-secret}
+      MCA_QGIS_RENDERER: reportlab-bridge
+      MCA_PYQGIS: "0"

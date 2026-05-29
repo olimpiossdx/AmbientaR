@@ -4,7 +4,7 @@ import { resolveAgentOrder } from "./dag";
 import { runMcaAgent } from "./agents/run-agent";
 import { loadMcaRegistry, listAgentsForEtapa } from "./registry";
 import { buildAppTable, buildRlTable, buildUsoTable, extractRlRowsFromLayers } from "./tables";
-import { persistAgentLayer } from "./persist-layer";
+import { persistAgentLayer, persistAgentLayers } from "./persist-layer";
 import { ensureProjectGeometry } from "./geometry-build";
 import { buildLayoutJson } from "./layout/build-layout-json";
 import { getInvalidatedLayerKeys } from "./behavior/invalidation";
@@ -125,6 +125,18 @@ export async function runMcaPipeline(opts: {
     });
   }
 
+  await persistAgentLayers(opts.projectId, ctx.layers, "MCA_Pipeline");
+
+  const pipelineLayerKeys = [...ctx.layers.keys()].filter(
+    (k) => !["BASE_PERIMETRO", "FUND_LIMITE"].includes(k),
+  );
+  if (pipelineLayerKeys.length && !(project.meta.importedLayerKeys?.length ?? 0)) {
+    ctx.project.meta = {
+      ...ctx.project.meta,
+      pipelineLayerKeys,
+    };
+  }
+
   const perim = toFeatureCollection(project.perimeterGeoJson);
   const totalHa = project.meta.areaTotalHa ?? (perim ? perimeterAreaHa(perim) : 0);
   const tables = {
@@ -169,6 +181,13 @@ export async function runMcaPipeline(opts: {
 
   const layoutJson = buildLayoutJson({ ...project, tables: { ...tables, rl: buildRlTable(extractRlRowsFromLayers(ctx.layers, project.meta.matriculas)) }, layoutMeta }, ctx.layers);
 
+  const updateMeta: Record<string, unknown> = {
+    "meta.behaviorRegistryCount": Object.keys(loadBehaviorRegistry()).length,
+  };
+  if (ctx.project.meta.pipelineLayerKeys?.length) {
+    updateMeta["meta.pipelineLayerKeys"] = ctx.project.meta.pipelineLayerKeys;
+  }
+
   await studyMapsAdminDb().collection(PROJECTS).doc(opts.projectId).update({
     tables: {
       ...tables,
@@ -180,7 +199,7 @@ export async function runMcaPipeline(opts: {
     lastJobId: jobId,
     currentEtapa: maxEtapa,
     etapaStatus,
-    "meta.behaviorRegistryCount": Object.keys(loadBehaviorRegistry()).length,
+    ...updateMeta,
     updatedAt: FieldValue.serverTimestamp(),
   });
 

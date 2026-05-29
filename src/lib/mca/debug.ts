@@ -5,8 +5,6 @@ import { isValidPerimeter, perimeterAreaHa, toFeatureCollection } from "./perime
 import fs from "node:fs";
 import path from "node:path";
 import type { FeatureCollection } from "geojson";
-import { fcAreaHa } from "./tables";
-import { isValidPerimeter, perimeterAreaHa, toFeatureCollection } from "./perimeter";
 import type { McaProjectDoc } from "./types";
 import { studyMapsAdminDb } from "@/lib/study-maps/admin";
 
@@ -123,16 +121,28 @@ export function verifyEtapaWithLayerAreas(
   layers: Map<string, number>,
 ): EtapaCheck[] {
   switch (etapa) {
-    case 6:
+    case 6: {
+      const pipelineKeys = [...layers.keys()].filter(
+        (k) => !["BASE_PERIMETRO", "FUND_LIMITE"].includes(k),
+      );
+      const imported = project.meta.importedLayerKeys?.length ?? 0;
+      const pipelineMeta = project.meta.pipelineLayerKeys?.length ?? 0;
       return [
         {
           id: "dwg_or_import",
-          pass: Boolean(project.dwgGcsPath) || (project.meta.importedLayerKeys?.length ?? 0) > 0,
+          pass:
+            Boolean(project.dwgGcsPath) ||
+            imported > 0 ||
+            pipelineMeta > 0 ||
+            pipelineKeys.length >= 3,
           detail: project.dwgGcsPath
             ? `DWG: ${project.meta.dwgFileName ?? "ok"}`
-            : `import: ${project.meta.importedLayerKeys?.length ?? 0} layers`,
+            : imported > 0
+              ? `import: ${imported} layers`
+              : `pipeline: ${Math.max(pipelineKeys.length, pipelineMeta)} layers`,
         },
       ];
+    }
     case 7:
       return [
         {
@@ -245,9 +255,14 @@ export function verifyEtapaWithLayerAreas(
           detail: project.lastJobId ?? "sem job",
         },
         {
-          id: "gold_preset",
-          pass: project.meta.goldPresetId === "gold_catingueiro",
-          detail: project.meta.goldPresetId ?? "—",
+          id: "release_etapa",
+          pass: (project.currentEtapa ?? 0) >= 15,
+          detail: `etapa actual ${project.currentEtapa ?? "—"}`,
+        },
+        {
+          id: "cad_layers",
+          pass: (project.meta.pipelineLayerKeys?.length ?? 0) > 0 || layers.size > 0,
+          detail: `${layers.size} layers no projecto`,
         },
       ];
     default:

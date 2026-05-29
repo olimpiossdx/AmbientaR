@@ -11,19 +11,21 @@ import { BRANDING_SETUP_PATH } from '@/lib/branding/requirements';
 export function BrandingExportStatus() {
   const {
     hasBrandingUrls,
-    isPdfImagesLoading,
+    isFirestoreLoading,
+    isFetchingPdfImages,
     isBrandingReady,
     brandingMissingSlots,
     refetch,
+    syncFromServer,
   } = useLocalBranding();
 
-  if (isPdfImagesLoading) {
+  if (isFirestoreLoading) {
     return (
       <Alert>
         <Loader2 className="h-4 w-4 animate-spin" />
-        <AlertTitle>Preparando exportações</AlertTitle>
+        <AlertTitle>Carregando configuração</AlertTitle>
         <AlertDescription>
-          Carregando cabeçalho, rodapé e marca d&apos;água para PDF e Word…
+          A ler identidade visual da consultoria…
         </AlertDescription>
       </Alert>
     );
@@ -34,9 +36,48 @@ export function BrandingExportStatus() {
       <Alert variant="destructive">
         <AlertTriangle className="h-4 w-4" />
         <AlertTitle>Exportação bloqueada</AlertTitle>
-        <AlertDescription>
-          Envie as três imagens abaixo. Sem elas, relatórios e documentos oficiais não
-          podem ser exportados ({BRANDING_SETUP_PATH}).
+        <AlertDescription className="space-y-2">
+          <p>
+            Envie as três imagens abaixo. Sem elas, relatórios e documentos oficiais não
+            podem ser exportados ({BRANDING_SETUP_PATH}).
+          </p>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => void syncFromServer()}
+          >
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Atualizar do servidor
+          </Button>
+          <p className="text-xs text-muted-foreground">
+            No telemóvel, se já configurou noutro aparelho, use este botão ou limpe os dados
+            do site no Firefox antes de recarregar.
+          </p>
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
+  if (isFetchingPdfImages && !isBrandingReady) {
+    return (
+      <Alert className="border-blue-500/30 bg-blue-500/5">
+        <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
+        <AlertTitle className="flex items-center gap-2">
+          Imagens configuradas
+          <Badge variant="outline" className="text-blue-700 border-blue-500/40">
+            A preparar PDF
+          </Badge>
+        </AlertTitle>
+        <AlertDescription className="space-y-2">
+          <p>
+            Cabeçalho, rodapé e marca d&apos;água estão guardados. A preparar pré-visualização
+            para exportação (em redes móveis pode demorar até ~30 s).
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Pode enviar ou substituir imagens abaixo enquanto isso. Se ficar preso, use
+            &quot;Recarregar imagens&quot;.
+          </p>
         </AlertDescription>
       </Alert>
     );
@@ -63,7 +104,7 @@ export function BrandingExportStatus() {
   return (
     <Alert variant="destructive">
       <AlertTriangle className="h-4 w-4" />
-      <AlertTitle>Imagens não carregaram</AlertTitle>
+      <AlertTitle>Imagens não carregaram para exportação</AlertTitle>
       <AlertDescription className="space-y-2">
         <p>
           URLs configuradas, mas o sistema não conseguiu ler:{' '}
@@ -72,17 +113,26 @@ export function BrandingExportStatus() {
         </p>
         <ul className="list-disc pl-5 text-sm space-y-1">
           <li>Confirme que os ficheiros abrem na pré-visualização acima.</li>
-          <li>Recarregue a página (F5) ou clique em &quot;Recarregar imagens&quot;.</li>
+          <li>Recarregue a página ou clique em &quot;Recarregar imagens&quot;.</li>
           <li>
-            Em desenvolvimento local, configure{' '}
-            <code className="text-xs">GOOGLE_APPLICATION_CREDENTIALS</code> se o erro
-            persistir.
+            No Firefox no telemóvel: desative bloqueio de rastreamento para{' '}
+            <strong>ambientar.ia.br</strong> ou limpe dados do site.
           </li>
         </ul>
-        <Button type="button" variant="outline" size="sm" onClick={() => refetch()}>
-          <RefreshCw className="h-4 w-4 mr-2" />
-          Recarregar imagens
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button type="button" variant="outline" size="sm" onClick={() => refetch()}>
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Recarregar imagens
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => void syncFromServer()}
+          >
+            Atualizar do servidor
+          </Button>
+        </div>
       </AlertDescription>
     </Alert>
   );

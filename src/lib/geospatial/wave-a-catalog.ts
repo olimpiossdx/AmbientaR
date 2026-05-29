@@ -7,7 +7,7 @@
 export type WaveACatalogEntry = {
   layerId: string;
   title: string;
-  wave: "A" | "B" | "C";
+  wave: "A" | "B" | "C" | "E" | "F" | "G";
   geometryKind: "polygon" | "line" | "point";
   typeNames: string[];
   labelFields: string[];
@@ -16,6 +16,8 @@ export type WaveACatalogEntry = {
   bboxMarginDegrees?: number;
   /** Limite de feições por GetFeature (camadas pesadas, ex. bioma IBGE). */
   maxWfsFeatures?: number;
+  /** Camada ArcGIS REST (FeatureServer/MapServer) — ex.: PAMGIA IBAMA. */
+  arcgisLayerUrl?: string;
 };
 
 /** Endpoints WFS válidos no GeoServer MG (raiz do host, não /geoserver/). */
@@ -35,7 +37,49 @@ export const WAVE_A_FONTES = [
     url: "https://idesisema.meioambiente.mg.gov.br/geonetwork",
     tipo: "catalogo" as const,
   },
+  {
+    nome: "IBGE / bases federais (biomas, limites)",
+    url: "https://www.ibge.gov.br/",
+    tipo: "catalogo" as const,
+  },
 ];
+
+/** Campos típicos das malhas de diagnóstico ambiental (ide_2401_*). */
+const DIAGNOSTICO_LABEL_FIELDS = [
+  "indicador",
+  "INDICADOR",
+  "classe",
+  "CLASSE",
+  "legenda",
+  "LEGENDA",
+  "categoria",
+  "CATEGORIA",
+  "grau",
+  "GRAU",
+  "gridcode",
+  "descricao",
+  "DESCRICAO",
+  "nome",
+  "NOME",
+];
+
+function diagnosticoLayer(
+  layerId: string,
+  title: string,
+  typeName: string,
+  maxWfsFeatures = 350,
+): WaveACatalogEntry {
+  return {
+    layerId,
+    title,
+    wave: "E",
+    geometryKind: "polygon",
+    typeNames: [typeName],
+    labelFields: DIAGNOSTICO_LABEL_FIELDS,
+    wfsBaseUrls: GEOSERVER_BASES,
+    maxWfsFeatures,
+  };
+}
 
 export const WAVE_A_LAYERS: WaveACatalogEntry[] = [
   {
@@ -192,12 +236,170 @@ export const WAVE_D_LAYERS: WaveACatalogEntry[] = [
   },
 ];
 
-/** Todas as camadas acordadas (Ondas A + B + C + espeleologia) */
+/** Onda E — diagnóstico ambiental estadual (malhas ide_2401, estilo GeoSIG/Pimenta). */
+export const WAVE_E_LAYERS: WaveACatalogEntry[] = [
+  diagnosticoLayer(
+    "mg_qualidade_ambiental",
+    "Qualidade ambiental (diagnóstico MG)",
+    "IDE:ide_2401_mg_qualidade_ambiental_pol",
+  ),
+  diagnosticoLayer(
+    "mg_risco_ambiental",
+    "Risco ambiental (diagnóstico MG)",
+    "IDE:ide_2401_mg_risco_ambiental_pol",
+  ),
+  diagnosticoLayer(
+    "mg_vulnerabilidade_erosao",
+    "Vulnerabilidade dos solos à erosão",
+    "IDE:ide_2401_mg_vulnerabilidade_solos_erosao_pol",
+  ),
+  diagnosticoLayer(
+    "mg_vulnerabilidade_natural",
+    "Vulnerabilidade natural",
+    "IDE:ide_2401_mg_vulnerabilidade_natural_pol",
+  ),
+  diagnosticoLayer(
+    "mg_vulnerabilidade_solo",
+    "Vulnerabilidade do solo",
+    "IDE:ide_2401_mg_vulnerabilidade_solo_pol",
+  ),
+  diagnosticoLayer(
+    "mg_vulnerabilidade_contaminacao",
+    "Vulnerabilidade do solo à contaminação",
+    "IDE:ide_2401_mg_vulnerabilidade_contaminacao_ambiental_uso_solo_pol",
+  ),
+  diagnosticoLayer(
+    "mg_integridade_flora",
+    "Integridade ponderada da flora",
+    "IDE:ide_2401_mg_integridade_ponderada_flora_pol",
+  ),
+  diagnosticoLayer(
+    "mg_integridade_fauna_diag",
+    "Integridade da fauna (diagnóstico MG)",
+    "IDE:ide_2401_mg_integridade_fauna_pol",
+  ),
+  diagnosticoLayer(
+    "mg_vulnerabilidade_hidrica",
+    "Vulnerabilidade natural dos recursos hídricos",
+    "IDE:ide_2401_mg_vulnerabilidade_natural_recursos_hidricos_pol",
+  ),
+  diagnosticoLayer(
+    "mg_erosao_atual",
+    "Erosão atual (MG)",
+    "IDE:ide_2401_mg_erosao_atual_pol",
+  ),
+];
+
+/** Onda F — clima, declividade e aptidão (IDE-Sisema + IBGE/NCB). */
+export const WAVE_F_LAYERS: WaveACatalogEntry[] = [
+  diagnosticoLayer(
+    "mg_temperatura_media",
+    "Temperatura média anual (MG)",
+    "IDE:ide_2401_mg_temperatura_media_anual_pol",
+  ),
+  diagnosticoLayer(
+    "mg_precipitacao_media",
+    "Precipitação média anual (MG)",
+    "IDE:ide_2401_mg_precipitacao_media_anual",
+  ),
+  diagnosticoLayer(
+    "mg_zoneamento_climatico",
+    "Zoneamento climático (MG)",
+    "IDE:ide_2401_mg_zoneamento_climatico_pol",
+  ),
+  diagnosticoLayer(
+    "mg_indice_umidade",
+    "Índice de umidade (Thornthwaite)",
+    "IDE:ide_1601_mg_indice_umidade_thornthwaite_pol",
+  ),
+  diagnosticoLayer(
+    "mg_declividade",
+    "Declividade (MG)",
+    "IDE:ide_2401_mg_declividade_pol",
+  ),
+  diagnosticoLayer(
+    "mg_potencialidade_social",
+    "Potencialidade social (MG)",
+    "IDE:ide_2401_mg_potencialidade_social_pol",
+  ),
+  {
+    layerId: "mg_aptidao_agricola",
+    title: "Aptidão agrícola dos solos (MG)",
+    wave: "F",
+    geometryKind: "polygon",
+    typeNames: ["IDE:ide_1504_mg_solos_aptidao_agricola_pol"],
+    labelFields: [
+      "aptidao",
+      "APTIDAO",
+      "classe",
+      "CLASSE",
+      "legenda",
+      "LEGENDA",
+      "indicador",
+      "INDICADOR",
+    ],
+    wfsBaseUrls: GEOSERVER_BASES,
+    maxWfsFeatures: 300,
+  },
+];
+
+/** Onda G — conservação, APP/hidro complementar e massas d'água. */
+export const WAVE_G_LAYERS: WaveACatalogEntry[] = [
+  diagnosticoLayer(
+    "mg_areas_prioritarias_conservacao",
+    "Áreas prioritárias para conservação",
+    "IDE:ide_2401_mg_areas_prioritarias_conservacao_pol",
+  ),
+  diagnosticoLayer(
+    "mg_areas_prioritarias_recuperacao",
+    "Áreas prioritárias para recuperação",
+    "IDE:ide_2401_mg_areas_prioritarias_recuperacao_pol",
+  ),
+  {
+    layerId: "mg_unidades_conservacao",
+    title: "Unidades de conservação (estaduais e federais MG)",
+    wave: "G",
+    geometryKind: "polygon",
+    typeNames: [
+      "IDE:ide_2010_mg_unidades_conservacao_estaduais_pol",
+      "IDE:ide_2010_mg_unidades_conservacao_federais_pol",
+      "IDE:ide_2010_mg_unidades_conservacao_municipais_pol",
+    ],
+    labelFields: ["nome", "NOME", "categoria", "CATEGORIA", "grupo", "GRUPO", "classe", "CLASSE"],
+    wfsBaseUrls: GEOSERVER_BASES,
+    maxWfsFeatures: 200,
+  },
+  {
+    layerId: "mg_massas_dagua",
+    title: "Massas d'água (FBDS MG)",
+    wave: "G",
+    geometryKind: "polygon",
+    typeNames: ["IDE:ide_240904_mg_massas_dagua_fbds_pol"],
+    labelFields: ["nome", "NOME", "tipo", "TIPO", "classe", "CLASSE"],
+    wfsBaseUrls: GEOSERVER_BASES,
+    maxWfsFeatures: 200,
+  },
+  {
+    layerId: "mg_hidrografia_classe_especial",
+    title: "Hidrografia enquadrada em classe especial",
+    wave: "G",
+    geometryKind: "line",
+    typeNames: ["IDE:ide_2008_mg_trecho_enquadrada_classe_especial_lin"],
+    labelFields: ["nome", "NOME", "classe", "CLASSE", "categoria", "CATEGORIA"],
+    wfsBaseUrls: GEOSERVER_BASES,
+    maxWfsFeatures: 200,
+  },
+];
+
+/** Todas as camadas (Ondas A–G + espeleologia). */
 export const SIG_MG_ALL_LAYERS: WaveACatalogEntry[] = [
   ...WAVE_A_LAYERS,
   ...WAVE_B_LAYERS,
   ...WAVE_C_LAYERS,
   ...WAVE_D_LAYERS,
+  ...WAVE_E_LAYERS,
+  ...WAVE_F_LAYERS,
+  ...WAVE_G_LAYERS,
 ];
 
 export const SIG_MG_LAYER_COUNT = SIG_MG_ALL_LAYERS.length;

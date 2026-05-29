@@ -1,3 +1,10 @@
+/**
+ * PDF cartográfico — módulo Mapas / MCA (Estudos Técnicos).
+ * Rota: /studies/mapas · Código: src/lib/mca/*
+ *
+ * Independente de Análise Geoespacial (IA): src/lib/geospatial/*, /analise-ambiental.
+ */
+
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import type { Feature, FeatureCollection } from "geojson";
@@ -5,15 +12,21 @@ import type { McaProjectDoc } from "./types";
 import { formatAreaBr } from "./tables";
 import {
   drawMcaCartouche,
+  drawMcaConsultancyFooter,
   drawMcaLegend,
   drawMcaMapPanel,
+  drawMcaMapRasterFrame,
   type McaPdfMapRect,
 } from "./map-preview-pdf";
+import type { McaConsultancyBranding } from "./company-branding-server";
+import type { BrandingPdfImages } from "@/lib/branding-pdf";
 
 export type McaLayoutPdfOptions = {
   layers?: Record<string, FeatureCollection>;
   /** PNG/JPEG data URL do mapa Leaflet (opcional, substitui desenho vetorial). */
   mapImageDataUrl?: string | null;
+  branding?: McaConsultancyBranding;
+  brandingImages?: BrandingPdfImages | null;
 };
 
 function toFeatureCollection(
@@ -70,20 +83,32 @@ export function buildMcaLayoutPdf(
     h: 118,
   };
 
-  doc.setFontSize(16);
-  doc.text("Uso e Ocupação do Solo", 14, 18);
-  doc.setFontSize(10);
-  doc.text("Sistema de Coordenadas Planas - UTM — SIRGAS 2000", 14, 26);
+  const branding = options?.branding ?? {
+    companyName: "Pimenta Consultoria Ambiental",
+    address: "Unaí — MG",
+    email: "pimentambiental@hotmail.com",
+  };
+
+  doc.setDrawColor(15, 23, 42);
+  doc.setLineWidth(0.35);
+  const titleW = 118;
+  const titleX = (pageW - titleW) / 2;
+  doc.rect(titleX, 10, titleW, 10, "S");
+  doc.setFontSize(14);
+  doc.setTextColor(15, 23, 42);
+  doc.text("USO E OCUPAÇÃO DO SOLO", pageW / 2, 16.5, { align: "center" });
+  doc.setFontSize(8);
+  doc.text("Sistema de Coordenadas Planas — UTM · SIRGAS 2000 (EPSG:31983)", 14, 24);
 
   const layers = options?.layers ?? {};
   const perimeter = toFeatureCollection(project.perimeterGeoJson);
 
   let mapDrawn = false;
   if (options?.mapImageDataUrl) {
-    doc.setDrawColor(203, 213, 225);
-    doc.setFillColor(248, 250, 252);
-    doc.roundedRect(mapRect.x, mapRect.y, mapRect.w, mapRect.h, 2, 2, "FD");
     mapDrawn = addMapImage(doc, options.mapImageDataUrl, mapRect);
+    if (mapDrawn) {
+      drawMcaMapRasterFrame(doc, mapRect, perimeter, layers);
+    }
   }
   if (!mapDrawn) {
     mapDrawn = drawMcaMapPanel(doc, mapRect, perimeter, layers);
@@ -108,6 +133,17 @@ export function buildMcaLayoutPdf(
     legendKeys.unshift("BASE_PERIMETRO");
   }
   drawMcaLegend(doc, mapRect.x + 4, mapRect.y + mapRect.h - 52, legendKeys);
+
+  drawMcaConsultancyFooter(doc, mapRect.x, pageH - 22, mapRect.w, branding);
+
+  const footerImg = options?.brandingImages?.footerBase64;
+  if (footerImg) {
+    try {
+      doc.addImage(footerImg, "PNG", 14, pageH - 18, pageW - mapRect.w - 28, 12);
+    } catch {
+      /* opcional */
+    }
+  }
 
   const info = [
     ["Propriedade", m.propertyName ?? project.title],
@@ -203,7 +239,7 @@ export function buildMcaLayoutPdf(
   doc.setFontSize(7);
   doc.setTextColor(100, 116, 139);
   doc.text(
-    `MCA — Motor Cartográfico | ${project.id ?? ""} | ${new Date().toLocaleDateString("pt-BR")}`,
+    `${branding.companyName} · MCA E13 · ${project.id ?? ""} · ${new Date().toLocaleDateString("pt-BR")}`,
     14,
     pageH - 5,
   );

@@ -39,6 +39,37 @@ export const GeoPerimeterSchema = z.object({
 
 export type GeoPerimeter = z.infer<typeof GeoPerimeterSchema>;
 
+export const GeoInfluenceAreaConfigSchema = z.object({
+  aidMode: z.enum(["buffer", "manual", "none"]),
+  aiiMode: z.enum(["buffer", "manual", "none"]),
+  aidBufferKm: z.number(),
+  aiiBufferKm: z.number(),
+  aidManualGeojson: z.record(z.unknown()).nullable().optional(),
+  aiiManualGeojson: z.record(z.unknown()).nullable().optional(),
+});
+
+export type GeoInfluenceAreaConfig = z.infer<typeof GeoInfluenceAreaConfigSchema>;
+
+export const GeoInfluenceAreaPolygonSchema = z.object({
+  key: z.enum(["ada", "aid", "aii"]),
+  title: z.string(),
+  geojson: z.record(z.unknown()),
+  areaHa: z.number(),
+  bbox: z.tuple([z.number(), z.number(), z.number(), z.number()]),
+  source: z.enum(["perimeter", "buffer", "manual"]),
+});
+
+export type GeoInfluenceAreaPolygon = z.infer<typeof GeoInfluenceAreaPolygonSchema>;
+
+export const GeoInfluenceAreasSchema = z.object({
+  ada: GeoInfluenceAreaPolygonSchema,
+  aid: GeoInfluenceAreaPolygonSchema.nullable(),
+  aii: GeoInfluenceAreaPolygonSchema.nullable(),
+  config: GeoInfluenceAreaConfigSchema,
+});
+
+export type GeoInfluenceAreas = z.infer<typeof GeoInfluenceAreasSchema>;
+
 export const WaveAAnalysisResultSchema = z.object({
   wave: z.enum(["A", "ABC"]),
   generatedAtUtc: z.string(),
@@ -52,6 +83,7 @@ export const WaveAAnalysisResultSchema = z.object({
       tipo: z.enum(["ogc", "api", "catalogo", "download"]),
     }),
   ),
+  influenceAreas: GeoInfluenceAreasSchema.optional(),
 });
 
 export type WaveAAnalysisResult = z.infer<typeof WaveAAnalysisResultSchema>;

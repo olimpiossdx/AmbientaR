@@ -5,7 +5,6 @@
  */
 import * as React from "react";
 import dynamic from "next/dynamic";
-import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -33,7 +32,7 @@ import { useFirebase, useAuth } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 import type { StudyAreaGeoJSON } from "@/components/maps/study-area-map";
 import type { StacPreviewItem } from "@/lib/study-maps/types";
-import { Loader2, Satellite, FileArchive, MapPin, ChevronDown } from "lucide-react";
+import { Loader2, Satellite, FileArchive, ChevronDown } from "lucide-react";
 import { parseStudyAreaFileText } from "@/lib/study-maps/import-area-file";
 
 const StudyAreaMap = dynamic(
@@ -203,12 +202,6 @@ export function MapasLegacyExport({ polygon, onPolygonChange }: MapasLegacyExpor
               </Button>
               <Button type="button" variant="secondary" size="sm" onClick={runStacPreview} disabled={stacBusy}>
                 {stacBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Satellite className="h-4 w-4" />}
-              </Button>
-              <Button type="button" variant="outline" size="sm" asChild>
-                <Link href="/analise-ambiental">
-                  <MapPin className="mr-1 h-4 w-4" />
-                  Análise geo
-                </Link>
               </Button>
             </div>
             {stacItems.length > 0 ? (

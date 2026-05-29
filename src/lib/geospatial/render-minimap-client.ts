@@ -1,6 +1,18 @@
 "use client";
 
+/**
+ * Preview e mini-mapas — módulo Análise Geoespacial (IA).
+ * Não partilhar com src/lib/mca/* (Mapas / Estudos Técnicos).
+ */
+
+import {
+  CARTOGRAPHIC_PAGE_SIZE,
+} from "@/lib/geospatial/cartographic-layout";
 import { perimeterToMinimapSvg } from "@/lib/geospatial/render-minimap";
+import {
+  resolveWaveCartographicSheets,
+  type ResolveCartographicSheetsOptions,
+} from "@/lib/geospatial/resolve-cartographic-sheets";
 import type { GeoLayerResult, WaveAAnalysisResult } from "@/lib/types/geo-wave-a";
 
 export async function svgStringToPngDataUrl(
@@ -66,4 +78,31 @@ export async function buildFactualMinimaps(
 
 export function minimapLabelForLayer(layer: GeoLayerResult): string {
   return `${layer.title} [${layer.status}]`;
+}
+
+export type CartographicPngMap = Record<string, string>;
+
+/** Folhas cartográficas GeoSIG (SVG→PNG) indexadas por layerId. */
+export async function buildCartographicPngMap(
+  wave: WaveAAnalysisResult,
+  options?: ResolveCartographicSheetsOptions & {
+    layerId?: string | "all";
+  },
+): Promise<CartographicPngMap> {
+  const sheets = await resolveWaveCartographicSheets(wave, options);
+
+  const filtered =
+    options?.layerId && options.layerId !== "all"
+      ? sheets.filter((sheet) => sheet.layerId === options.layerId)
+      : sheets;
+
+  const pngMap: CartographicPngMap = {};
+  for (const sheet of filtered) {
+    pngMap[sheet.layerId] = await svgStringToPngDataUrl(
+      sheet.svg,
+      CARTOGRAPHIC_PAGE_SIZE.width,
+      CARTOGRAPHIC_PAGE_SIZE.height,
+    );
+  }
+  return pngMap;
 }

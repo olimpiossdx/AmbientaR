@@ -27,8 +27,25 @@ export async function POST(req: Request) {
     }
 
     const overlay = await runGeospatialOverlay(body.data, body.dataType);
-    const carData =
-      body.dataType === "car" ? await fetchCarData(body.data) : null;
+    let carData = null;
+    if (body.dataType === "car") {
+      try {
+        carData = await fetchCarData(body.data);
+      } catch {
+        carData = null;
+      }
+    } else if (overlay.carImoveis?.length === 1) {
+      carData = {
+        codImovel: overlay.carImoveis[0].codImovel,
+        areaTotal: overlay.carImoveis[0].areaHa,
+        situacao: overlay.carImoveis[0].situacao,
+        statusCodigo: overlay.carImoveis[0].statusCodigo,
+        condicao: overlay.carImoveis[0].condicao,
+        municipio: overlay.carImoveis[0].municipio,
+        uf: overlay.carImoveis[0].uf,
+        fonte: "sicar-wfs-publico" as const,
+      };
+    }
 
     return NextResponse.json(
       {
@@ -39,6 +56,7 @@ export async function POST(req: Request) {
           data: body.data,
         },
         carData,
+        carImoveis: overlay.carImoveis ?? [],
         overlay,
       },
       { status: 200 },

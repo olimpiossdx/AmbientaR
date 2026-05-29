@@ -21,6 +21,9 @@ import {
   Database,
   Share2,
   ChevronDown,
+  Map,
+  FileImage,
+  FileType,
 } from "lucide-react";
 import type {
   AnaliseAmbientalOutput,
@@ -37,20 +40,52 @@ import {
 } from "@/lib/ia-menu-branded-pdf";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useFirebase, useAuth } from "@/firebase";
 import { usePackageUsage } from "@/hooks/use-package-usage";
 import { PackageUsageBanner } from "@/components/package-usage-banner";
-import { addDoc, collection, serverTimestamp } from "firebase/firestore";
+import { addDoc, collection, doc, getDoc, getDocs, limit, query, serverTimestamp } from "firebase/firestore";
+import type { Project } from "@/lib/types";
+import { sortByPropertyNamePt } from "@/lib/sort-pt-br";
+import {
+  projectHasPerimetroReferencia,
+  resolvePerimetroReferenciaFromProject,
+} from "@/lib/project-perimetro-referencia";
+
+function formatAnalysisFetchError(error: unknown, kind: "factual" | "ia"): string {
+  const msg = error instanceof Error ? error.message : "";
+  if (/failed to fetch|networkerror|load failed/i.test(msg)) {
+    if (kind === "factual") {
+      return "Sem resposta do servidor (análise factual demora 1–3 min com 37 camadas). Confirme que npm run dev está activo em http://localhost:9002 e tente de novo.";
+    }
+    return "Sem resposta do servidor. Confirme que npm run dev está activo em http://localhost:9002 e tente de novo.";
+  }
+  return msg || (kind === "factual"
+    ? "Não foi possível consultar as camadas IDE-Sisema."
+    : "Ocorreu um erro ao processar os dados.");
+}
 import { handleAnalyseArea } from "./actions";
 import { handleWaveAAnalysis } from "./actions-wave-a";
 import type { WaveAAnalysisResult } from "@/lib/types/geo-wave-a";
+import type { GeoInfluenceAreaConfig } from "@/lib/types/geo-wave-a";
 import { GeoWaveALayerCards } from "@/components/geospatial/geo-wave-a-layer-cards";
 import { GeoCavidadesBridge } from "@/components/geospatial/geo-cavidades-bridge";
-import { SIG_MG_LAYER_COUNT } from "@/lib/geospatial/wave-a-catalog";
+import {
+  GeoInfluenceAreasPanel,
+  DEFAULT_INFLUENCE_CONFIG,
+  type InfluenceDrawTarget,
+} from "@/components/geospatial/geo-influence-areas-panel";
+import { WAVE_ALL_LAYER_COUNT } from "@/lib/geospatial/run-wave-a-analysis";
 import { appendWaveAFactualPdf } from "@/lib/geospatial/export-wave-a-pdf";
-import { buildFactualMinimaps } from "@/lib/geospatial/render-minimap-client";
+import { buildCartographicPngMap } from "@/lib/geospatial/render-minimap-client";
+import {
+  exportAllCartographicPngs,
+  exportCartographicFromWaveA,
+  type CartographicExportFormat,
+} from "@/lib/geospatial/export-cartographic-client";
+import { buildCartographicDocxBlob } from "@/lib/geospatial/export-cartographic-docx";
 import { GeoAnalysisComplementPanel } from "@/components/geospatial/geo-analysis-complement-panel";
 import { AiProviderBadge } from "@/components/ai/ai-provider-badge";
 import type { AiProviderId } from "@/lib/ai-provider-labels";
@@ -88,6 +123,19 @@ export default function AnaliseAmbientalPage() {
   const [isGeneratingPdf, setIsGeneratingPdf] = React.useState(false);
   const [isExportingCsv, setIsExportingCsv] = React.useState(false);
   const [isExportingGeojson, setIsExportingGeojson] = React.useState(false);
+  const [isExportingCarto, setIsExportingCarto] = React.useState(false);
+  const [cartoFormat, setCartoFormat] =
+    React.useState<CartographicExportFormat | "docx">("pdf");
+  const [cartoLayerId, setCartoLayerId] = React.useState<string>("all");
+  const [cartoPropertyName, setCartoPropertyName] = React.useState("");
+  const [cartoProjectAuthor, setCartoProjectAuthor] = React.useState("");
+  const [influenceConfig, setInfluenceConfig] =
+    React.useState<GeoInfluenceAreaConfig>(DEFAULT_INFLUENCE_CONFIG);
+  const [influenceDrawTarget, setInfluenceDrawTarget] =
+    React.useState<InfluenceDrawTarget>("ada");
+  const [includeSatelliteBackground, setIncludeSatelliteBackground] =
+    React.useState(false);
+  const [includeThematicWfs, setIncludeThematicWfs] = React.useState(true);
   const [analysisResult, setAnalysisResult] =
     React.useState<AnaliseAmbientalOutput | null>(null);
   const [analysisProvider, setAnalysisProvider] =
@@ -100,6 +148,8 @@ export default function AnaliseAmbientalPage() {
   );
   const [isWaveALoading, setIsWaveALoading] = React.useState(false);
   const [carNumber, setCarNumber] = React.useState("");
+  const [sicarPreview, setSicarPreview] = React.useState<string | null>(null);
+  const [isConsultingSicar, setIsConsultingSicar] = React.useState(false);
   const [coordinateInput, setCoordinateInput] = React.useState("");
   const [polygonInput, setPolygonInput] = React.useState("");
   const [drawnPolygon, setDrawnPolygon] = React.useState<GeoJSONLike | null>(null);
@@ -108,8 +158,40 @@ export default function AnaliseAmbientalPage() {
   const [kmlText, setKmlText] = React.useState("");
   const [kmlFileName, setKmlFileName] = React.useState("");
   const [empreendimentoId, setEmpreendimentoId] = React.useState("");
+  const [linkedProject, setLinkedProject] = React.useState<
+    Pick<Project, "id" | "propertyName" | "perimetroReferencia"> | null
+  >(null);
+  const [loadingLinkedProject, setLoadingLinkedProject] = React.useState(false);
+  const [loadingProjectPerimetro, setLoadingProjectPerimetro] = React.useState(false);
   const [lastPayload, setLastPayload] = React.useState("");
   const { toast } = useToast();
+
+  const [projectsSorted, setProjectsSorted] = React.useState<
+    Pick<Project, "id" | "propertyName">[]
+  >([]);
+  const [loadingProjects, setLoadingProjects] = React.useState(false);
+  const projectsLoadedRef = React.useRef(false);
+
+  const ensureProjectsLoaded = React.useCallback(async () => {
+    if (!firestore || projectsLoadedRef.current) return;
+    setLoadingProjects(true);
+    try {
+      const snap = await getDocs(query(collection(firestore, "projects"), limit(200)));
+      const items = snap.docs.map(
+        (d) =>
+          ({
+            id: d.id,
+            propertyName: (d.data() as Project).propertyName,
+          }) as Pick<Project, "id" | "propertyName">,
+      );
+      setProjectsSorted(sortByPropertyNamePt(items));
+      projectsLoadedRef.current = true;
+    } catch (e) {
+      console.error("Falha ao listar empreendimentos:", e);
+    } finally {
+      setLoadingProjects(false);
+    }
+  }, [firestore]);
 
   React.useEffect(() => {
     if (typeof window === "undefined") return;
@@ -118,6 +200,35 @@ export default function AnaliseAmbientalPage() {
       "";
     setEmpreendimentoId(id);
   }, []);
+
+  React.useEffect(() => {
+    if (!firestore || !empreendimentoId) {
+      setLinkedProject(null);
+      return;
+    }
+    let cancelled = false;
+    setLoadingLinkedProject(true);
+    void getDoc(doc(firestore, "projects", empreendimentoId))
+      .then((snap) => {
+        if (cancelled) return;
+        if (!snap.exists()) {
+          setLinkedProject(null);
+          return;
+        }
+        const data = snap.data() as Project;
+        setLinkedProject({
+          id: snap.id,
+          propertyName: data.propertyName,
+          perimetroReferencia: data.perimetroReferencia,
+        });
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingLinkedProject(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [firestore, empreendimentoId]);
 
   const hasValidInput = React.useMemo(() => {
     if (inputMode === "car") return carNumber.trim().length > 3;
@@ -159,6 +270,37 @@ export default function AnaliseAmbientalPage() {
     return null;
   }, [carNumber, coordinateInput, inputMode, kmlText, serializedPolygon, shpZipBase64]);
 
+  const buildPerimeterInput = React.useCallback((): PerimeterParseInput | null => {
+    const input = buildAnalysisInput();
+    if (!input) return null;
+    return { dataType: input.dataType, data: input.data };
+  }, [buildAnalysisInput]);
+
+  const perimeterInput = React.useMemo(
+    () => buildPerimeterInput(),
+    [buildPerimeterInput],
+  );
+
+  const handleAidManualChange = React.useCallback(
+    (geo: GeoJSONLike | null) => {
+      setInfluenceConfig((prev) => ({
+        ...prev,
+        aidManualGeojson: geo,
+      }));
+    },
+    [],
+  );
+
+  const handleAiiManualChange = React.useCallback(
+    (geo: GeoJSONLike | null) => {
+      setInfluenceConfig((prev) => ({
+        ...prev,
+        aiiManualGeojson: geo,
+      }));
+    },
+    [],
+  );
+
   const buildFactsPrompt = React.useCallback(() => {
     if (!analysisResult) return "";
     const facts = analysisResult.factualData
@@ -194,6 +336,8 @@ export default function AnaliseAmbientalPage() {
           factualSummary: result.factualSummary,
           fontesConsultadas: result.fontesConsultadas,
           generatedAtUtc: result.generatedAtUtc,
+          influenceConfig,
+          ...(result.influenceAreas ? { influenceAreas: result.influenceAreas } : {}),
         });
         return ref.id;
       } catch (error) {
@@ -207,7 +351,7 @@ export default function AnaliseAmbientalPage() {
         return null;
       }
     },
-    [empreendimentoId, firestore, toast, user?.uid],
+    [empreendimentoId, firestore, influenceConfig, toast, user?.uid],
   );
 
   const saveAnalysisSnapshot = React.useCallback(
@@ -261,7 +405,7 @@ export default function AnaliseAmbientalPage() {
         dataType: input.dataType,
         data: input.data,
       };
-      const actionResult = await handleWaveAAnalysis(perimeterInput);
+      const actionResult = await handleWaveAAnalysis(perimeterInput, influenceConfig);
       if (!actionResult.success) {
         throw new Error(actionResult.error);
       }
@@ -283,10 +427,7 @@ export default function AnaliseAmbientalPage() {
       toast({
         variant: "destructive",
         title: "Erro na análise factual",
-        description:
-          error instanceof Error
-            ? error.message
-            : "Não foi possível consultar as camadas IDE-Sisema.",
+        description: formatAnalysisFetchError(error, "factual"),
       });
     } finally {
       setIsWaveALoading(false);
@@ -329,13 +470,72 @@ export default function AnaliseAmbientalPage() {
       toast({
         variant: "destructive",
         title: "Erro na Análise",
-        description:
-          error instanceof Error
-            ? error.message
-            : "Ocorreu um erro ao processar os dados.",
+        description: formatAnalysisFetchError(error, "ia"),
       });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleConsultSicar = async () => {
+    const input = buildAnalysisInput();
+    if (!input) {
+      toast({
+        variant: "destructive",
+        title: "Dados insuficientes",
+        description: "Informe CAR, coordenadas ou perímetro para consultar o SICAR.",
+      });
+      return;
+    }
+
+    setIsConsultingSicar(true);
+    setSicarPreview(null);
+    try {
+      const idToken = await auth?.currentUser?.getIdToken();
+      if (!idToken) {
+        throw new Error("Sessão expirada. Faça login novamente.");
+      }
+
+      const body =
+        input.dataType === "car"
+          ? { codImovel: input.data }
+          : { dataType: input.dataType, data: input.data };
+
+      const res = await fetch("/api/geospatial/car", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${idToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+      });
+      const json = (await res.json()) as {
+        resumo?: string;
+        error?: string;
+        imoveis?: Array<{ codImovel: string; situacao: string }>;
+      };
+
+      if (!res.ok || !json.imoveis?.length) {
+        throw new Error(json.error || json.resumo || "Nenhum CAR encontrado.");
+      }
+
+      setSicarPreview(json.resumo ?? json.imoveis[0].situacao);
+      if (input.dataType === "car" && json.imoveis[0]?.codImovel) {
+        setCarNumber(json.imoveis[0].codImovel);
+      }
+      toast({
+        title: "Consulta SICAR",
+        description: json.resumo ?? "Imóvel localizado na base pública.",
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Erro na consulta SICAR",
+        description:
+          error instanceof Error ? error.message : "Serviço indisponível.",
+      });
+    } finally {
+      setIsConsultingSicar(false);
     }
   };
 
@@ -395,13 +595,19 @@ export default function AnaliseAmbientalPage() {
       if (!session) return;
 
       if (waveAResult) {
-        let minimaps = null;
+        let cartographicPngs = null;
         try {
-          minimaps = await buildFactualMinimaps(waveAResult);
+          cartographicPngs = await buildCartographicPngMap(waveAResult, {
+            ...cartoExportOptions,
+            layerId: "all",
+          });
         } catch (e) {
-          console.warn("Mini-mapas omitidos no PDF:", e);
+          console.warn("Mapas cartográficos omitidos no PDF:", e);
         }
-        appendWaveAFactualPdf(session, waveAResult, { minimaps });
+        appendWaveAFactualPdf(session, waveAResult, {
+          cartographicPngs,
+          layerId: "all",
+        });
       } else if (analysisResult) {
         const { doc } = session;
         const pageW = doc.internal.pageSize.getWidth();
@@ -434,15 +640,68 @@ export default function AnaliseAmbientalPage() {
 
       saveIaMenuBrandedPdf(
         session,
-        `relatorio-analise-geoespacial-${new Date().toISOString().slice(0, 10)}.pdf`,
+        `relatorio-geoespacial-completo-${new Date().toISOString().slice(0, 10)}.pdf`,
       );
-      toast({ title: "PDF gerado", description: "O arquivo foi baixado." });
+      toast({
+        title: "PDF gerado",
+        description: "Relatório completo com mapas cartográficos e dados SIG.",
+      });
     } catch (error) {
       console.error("Failed to generate PDF:", error);
       toast({
         variant: "destructive",
         title: "Erro ao gerar PDF",
         description: "Não foi possível gerar o relatório. Tente novamente.",
+      });
+    } finally {
+      setIsGeneratingPdf(false);
+    }
+  };
+
+  const handleDownloadLayerPdf = async () => {
+    if (isGeneratingPdf || !waveAResult || cartoLayerId === "all") return;
+    setIsGeneratingPdf(true);
+    try {
+      const session = await prepareIaMenuBrandedPdfSession({
+        brandingData,
+        pdfImages,
+        isPdfImagesLoading,
+        hasBrandingUrls,
+        toast,
+      });
+      if (!session) return;
+
+      const cartographicPngs = await buildCartographicPngMap(waveAResult, cartoExportOptions);
+      appendWaveAFactualPdf(session, waveAResult, {
+        cartographicPngs,
+        layerId: cartoLayerId,
+        includeReportTitle: true,
+        closingNote: null,
+      });
+
+      const layerTitle =
+        waveAResult.layers.find((l) => l.layerId === cartoLayerId)?.title ??
+        cartoLayerId;
+      const slug = layerTitle
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-zA-Z0-9]+/g, "-")
+        .slice(0, 32)
+        .toLowerCase();
+      saveIaMenuBrandedPdf(
+        session,
+        `camada-${slug}-${new Date().toISOString().slice(0, 10)}.pdf`,
+      );
+      toast({
+        title: "PDF da camada",
+        description: `Mapa + dados: ${layerTitle}`,
+      });
+    } catch (error) {
+      console.error("Failed to generate layer PDF:", error);
+      toast({
+        variant: "destructive",
+        title: "Erro ao gerar PDF da camada",
+        description: "Verifique o perímetro e tente novamente.",
       });
     } finally {
       setIsGeneratingPdf(false);
@@ -474,6 +733,94 @@ export default function AnaliseAmbientalPage() {
       toast({ title: "CSV exportado", description: "Tabela factual baixada com sucesso." });
     } finally {
       setIsExportingCsv(false);
+    }
+  };
+
+  const cartoExportOptions = React.useMemo(
+    () => ({
+      propertyName: cartoPropertyName.trim() || undefined,
+      projectAuthor: cartoProjectAuthor.trim() || undefined,
+      layerId: cartoLayerId,
+      includeSatelliteBackground,
+      includeThematicWfs,
+      influenceAreas: waveAResult?.influenceAreas,
+    }),
+    [
+      cartoLayerId,
+      cartoProjectAuthor,
+      cartoPropertyName,
+      includeSatelliteBackground,
+      includeThematicWfs,
+      waveAResult?.influenceAreas,
+    ],
+  );
+
+  const handleExportCartographic = async () => {
+    if (!waveAResult || isExportingCarto) return;
+    setIsExportingCarto(true);
+    try {
+      if (cartoFormat === "docx") {
+        const blob = await buildCartographicDocxBlob(waveAResult, cartoExportOptions);
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement("a");
+        anchor.href = url;
+        anchor.download = `mapas-cartograficos-${new Date().toISOString().slice(0, 10)}.docx`;
+        anchor.click();
+        URL.revokeObjectURL(url);
+        toast({
+          title: "Word gerado",
+          description: "Documento com folhas cartográficas (layout Pimenta).",
+        });
+        return;
+      }
+      const { fileName, sheetCount } = await exportCartographicFromWaveA(
+        waveAResult,
+        cartoFormat,
+        cartoExportOptions,
+      );
+      toast({
+        title: "Mapas exportados",
+        description:
+          cartoFormat === "pdf"
+            ? `${sheetCount} folha(s) em ${fileName}`
+            : `Arquivo ${fileName} baixado.`,
+      });
+    } catch (error) {
+      console.error(error);
+      toast({
+        variant: "destructive",
+        title: "Erro na exportação cartográfica",
+        description:
+          error instanceof Error ? error.message : "Não foi possível gerar o arquivo.",
+      });
+    } finally {
+      setIsExportingCarto(false);
+    }
+  };
+
+  const handleExportAllCartoPng = async () => {
+    if (!waveAResult || isExportingCarto) return;
+    setIsExportingCarto(true);
+    try {
+      const count = await exportAllCartographicPngs(waveAResult, {
+        propertyName: cartoExportOptions.propertyName,
+        projectAuthor: cartoExportOptions.projectAuthor,
+        includeSatelliteBackground: cartoExportOptions.includeSatelliteBackground,
+        influenceAreas: cartoExportOptions.influenceAreas,
+      });
+      toast({
+        title: "PNG exportados",
+        description: `${count} mapa(s) cartográfico(s) baixado(s).`,
+      });
+    } catch (error) {
+      console.error(error);
+      toast({
+        variant: "destructive",
+        title: "Erro ao exportar PNG",
+        description: "Verifique o perímetro e tente novamente.",
+      });
+    } finally {
+      setIsExportingCarto(false);
     }
   };
 
@@ -520,18 +867,61 @@ export default function AnaliseAmbientalPage() {
     return built.data;
   }, [buildAnalysisInput, inputMode, shpFileName, shpZipBase64]);
 
+  const handleUseProjectPerimetro = async () => {
+    const perimetro = linkedProject?.perimetroReferencia;
+    if (!perimetro) {
+      toast({
+        variant: "destructive",
+        title: "Sem perímetro no cadastro",
+        description: "Este empreendimento não tem perímetro de referência salvo.",
+      });
+      return;
+    }
+    setLoadingProjectPerimetro(true);
+    try {
+      const resolved = await resolvePerimetroReferenciaFromProject(perimetro);
+      if (!resolved) {
+        throw new Error("Não foi possível interpretar o perímetro de referência.");
+      }
+      setInputMode("polygon");
+      setDrawnPolygon(resolved.polygon as unknown as GeoJSONLike);
+      setPolygonInput(JSON.stringify(resolved.polygon.geometry));
+      setCarNumber("");
+      setCoordinateInput("");
+      setKmlText("");
+      setKmlFileName("");
+      setShpZipBase64("");
+      setShpFileName("");
+      toast({
+        title: "Perímetro carregado do cadastro",
+        description: `${resolved.areaHa.toFixed(2)} ha — você pode editar no mapa antes de analisar.`,
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Falha ao carregar perímetro",
+        description: error instanceof Error ? error.message : "Tente outro modo de entrada.",
+      });
+    } finally {
+      setLoadingProjectPerimetro(false);
+    }
+  };
+
   return (
     <StudyGeospatialStackedShell
       title="Análise Geoespacial (IA)"
-      description={`Desenhe o perímetro, execute as ${SIG_MG_LAYER_COUNT} camadas SIG (MG, incl. potencialidade CECAV) e exporte o PDF factual; depois complemente com IA em Relatórios de IA.`}
+      description={`Desenhe o perímetro, execute as ${WAVE_ALL_LAYER_COUNT} camadas SIG (MG, incl. potencialidade CECAV), exporte mapas no layout Pimenta (PDF, PNG, JPEG ou Word) e complemente com IA em Relatórios de IA.`}
       topExtras={
         <>
           <PackageUsageBanner usage={packageUsage} showAmbbot />
           {empreendimentoId ? (
             <p className="rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-sm text-muted-foreground">
               Empreendimento vinculado:{" "}
-              <span className="font-mono text-xs">{empreendimentoId}</span>. A análise
-              gravada ficará disponível no PEA deste projeto.
+              <span className="font-medium text-foreground">
+                {linkedProject?.propertyName ?? empreendimentoId}
+              </span>
+              {loadingLinkedProject ? " (carregando…)" : null}. A análise gravada ficará
+              disponível no PEA deste projeto.
             </p>
           ) : null}
         </>
@@ -542,14 +932,26 @@ export default function AnaliseAmbientalPage() {
             <CardTitle>Captura por coordenada / polígono</CardTitle>
             <CardDescription>
               Mapa em largura total: desenhe o perímetro, capture coordenadas ou
-              carregue SHP no painel abaixo.               O mesmo limite alimenta as {SIG_MG_LAYER_COUNT} camadas
+              carregue SHP no painel abaixo.               O mesmo limite alimenta as {WAVE_ALL_LAYER_COUNT} camadas
               IDE-Sisema MG (incl. cavidades / CECAV).
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-4 pt-0">
-            <div className="relative min-h-[360px] w-full md:min-h-[420px] lg:min-h-[480px]">
+            <div className="relative min-h-[680px] w-full md:min-h-[800px] lg:min-h-[920px]">
               <div className="absolute inset-0 overflow-hidden rounded-md border">
-                <LeafletMap polygon={drawnPolygon} onPolygonCreated={setDrawnPolygon} />
+                <LeafletMap
+                  adaPolygon={drawnPolygon}
+                  onAdaChange={setDrawnPolygon}
+                  aidPolygon={
+                    influenceConfig.aidManualGeojson as GeoJSONLike | null | undefined
+                  }
+                  onAidChange={handleAidManualChange}
+                  aiiPolygon={
+                    influenceConfig.aiiManualGeojson as GeoJSONLike | null | undefined
+                  }
+                  onAiiChange={handleAiiManualChange}
+                  drawTarget={influenceDrawTarget}
+                />
               </div>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -615,11 +1017,68 @@ export default function AnaliseAmbientalPage() {
             <CardHeader>
               <CardTitle className="text-base">Análise geoespacial factual</CardTitle>
               <CardDescription>
-                IDE-Sisema MG: hidrografia, bioma, solos, geologia, geomorfologia,
-                pedologia, vegetação, fauna e potencialidade de cavidades (CECAV).
+                IDE-Sisema MG + SICAR + IBAMA (embargos, UC, TI) + PRODES INPE.
+                ADA/AID/AII configuradas acima.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              <div className="space-y-2 rounded-md border border-dashed p-3">
+                <Label htmlFor="aa-empreendimento">Empreendimento (opcional)</Label>
+                <Select
+                  value={empreendimentoId || "_none"}
+                  onOpenChange={(open) => {
+                    if (open) void ensureProjectsLoaded();
+                  }}
+                  onValueChange={(value) =>
+                    setEmpreendimentoId(value === "_none" ? "" : value)
+                  }
+                >
+                  <SelectTrigger id="aa-empreendimento">
+                    <SelectValue placeholder="Nenhum — análise avulsa" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="_none">Nenhum — análise avulsa</SelectItem>
+                    {loadingProjects ? (
+                      <SelectItem value="_loading" disabled>
+                        Carregando empreendimentos…
+                      </SelectItem>
+                    ) : null}
+                    {projectsSorted.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.propertyName || p.id}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {linkedProject && projectHasPerimetroReferencia(linkedProject) ? (
+                  <div className="flex flex-wrap items-center gap-2 pt-1">
+                    <p className="text-xs text-muted-foreground">
+                      Perímetro de referência:{" "}
+                      {linkedProject.perimetroReferencia?.fileName ?? "arquivo"}{" "}
+                      {typeof linkedProject.perimetroReferencia?.areaHa === "number"
+                        ? `(${linkedProject.perimetroReferencia.areaHa.toFixed(2)} ha)`
+                        : ""}
+                    </p>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      disabled={loadingProjectPerimetro || loadingLinkedProject}
+                      onClick={() => void handleUseProjectPerimetro()}
+                    >
+                      {loadingProjectPerimetro ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : null}
+                      Usar perímetro do cadastro
+                    </Button>
+                  </div>
+                ) : empreendimentoId && !loadingLinkedProject ? (
+                  <p className="text-xs text-muted-foreground">
+                    Este empreendimento não tem perímetro de referência no cadastro.
+                  </p>
+                ) : null}
+              </div>
+
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               <div className="space-y-2 md:col-span-1">
                 <Label htmlFor="input-mode">Modo de entrada</Label>
@@ -767,7 +1226,31 @@ export default function AnaliseAmbientalPage() {
                 />
               </div>
               </div>
+              {sicarPreview ? (
+                <p className="text-sm text-muted-foreground">
+                  <strong>SICAR:</strong> {sicarPreview}
+                </p>
+              ) : null}
               <div className="flex flex-col gap-2 sm:flex-row">
+              <Button
+                type="button"
+                variant="secondary"
+                disabled={isConsultingSicar || !hasValidInput}
+                onClick={() => void handleConsultSicar()}
+                className="sm:w-auto"
+              >
+                {isConsultingSicar ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Consultando SICAR…
+                  </>
+                ) : (
+                  <>
+                    <Database className="mr-2 h-4 w-4" />
+                    Consultar CAR (SICAR)
+                  </>
+                )}
+              </Button>
               <Button
                 onClick={handleStartWaveA}
                 disabled={isWaveALoading || isLoading || !hasValidInput}
@@ -781,7 +1264,7 @@ export default function AnaliseAmbientalPage() {
                 ) : (
                   <>
                     <Globe className="mr-2 h-4 w-4" />
-                    Gerar relatório factual ({SIG_MG_LAYER_COUNT} camadas MG)
+                    Gerar relatório factual ({WAVE_ALL_LAYER_COUNT} camadas MG + federal)
                   </>
                 )}
               </Button>
@@ -806,6 +1289,16 @@ export default function AnaliseAmbientalPage() {
               </div>
             </CardContent>
           </Card>
+
+          <GeoInfluenceAreasPanel
+            perimeterInput={perimeterInput}
+            config={influenceConfig}
+            onConfigChange={setInfluenceConfig}
+            drawTarget={influenceDrawTarget}
+            onDrawTargetChange={setInfluenceDrawTarget}
+            includeSatelliteBackground={includeSatelliteBackground}
+            onIncludeSatelliteChange={setIncludeSatelliteBackground}
+          />
         </>
       }
       resultsPane={
@@ -813,8 +1306,8 @@ export default function AnaliseAmbientalPage() {
             <CardHeader>
               <CardTitle className="text-base">Resultados da análise</CardTitle>
               <CardDescription>
-                Resumo por camada IDE-Sisema MG. Exporte o PDF factual ou avance para a
-                Etapa 2 (complemento IA).
+                Resumo por camada IDE-Sisema MG. Exporte mapas cartográficos (layout
+                consultoria) ou o PDF textual; depois avance à Etapa 2 (complemento IA).
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -823,7 +1316,7 @@ export default function AnaliseAmbientalPage() {
                   <Loader2 className="mb-3 h-10 w-10 animate-spin" />
                   <p className="text-sm">
                     {isWaveALoading
-                      ? `Consultando ${SIG_MG_LAYER_COUNT} camadas no IDE-Sisema MG...`
+                      ? `Consultando ${WAVE_ALL_LAYER_COUNT} camadas (IDE-Sisema MG + SICAR + IBAMA)…`
                       : "Processando dados e gerando análise geoespacial..."}
                   </p>
                 </div>
@@ -837,7 +1330,7 @@ export default function AnaliseAmbientalPage() {
                         </p>
                         <p className="mt-2 text-sm font-semibold text-primary">
                           Área: {waveAResult.perimeter.areaHa.toFixed(2)} ha · Análise SIG MG (
-                          {SIG_MG_LAYER_COUNT} camadas)
+                          {WAVE_ALL_LAYER_COUNT} camadas)
                           {waveAResult.perimeter.source === "shp"
                             ? " · perímetro SHP"
                             : ""}
@@ -869,6 +1362,161 @@ export default function AnaliseAmbientalPage() {
                       </div>
                     </>
                   ) : null}
+                  {waveAResult ? (
+                    <Collapsible defaultOpen className="rounded-lg border bg-muted/20">
+                      <CollapsibleTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          className="flex w-full items-center justify-between px-4 py-3"
+                        >
+                          <span className="flex items-center gap-2 text-sm font-medium">
+                            <Map className="h-4 w-4" />
+                            Exportação cartográfica (SIG / consultoria)
+                          </span>
+                          <ChevronDown className="h-4 w-4" />
+                        </Button>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent className="space-y-4 border-t px-4 py-4">
+                        <p className="text-xs text-muted-foreground">
+                          Folhas cartográficas de consultoria (título, mapa principal com
+                          grade UTM, localização, legenda, metadados). Módulo autónomo —
+                          distinto de Estudos Técnicos → Mapas (MCA). Exporte em PDF, PNG,
+                          JPEG ou Word após o relatório factual SIG.
+                        </p>
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          <div className="space-y-1.5">
+                            <Label htmlFor="carto-property">Nome do empreendimento</Label>
+                            <Input
+                              id="carto-property"
+                              placeholder="Ex.: CF Agrícola / Fazenda Brejinho"
+                              value={cartoPropertyName}
+                              onChange={(e) => setCartoPropertyName(e.target.value)}
+                            />
+                          </div>
+                          <div className="space-y-1.5">
+                            <Label htmlFor="carto-author">Responsável (projeto)</Label>
+                            <Input
+                              id="carto-author"
+                              placeholder="Ex.: Andrew Fernandes"
+                              value={cartoProjectAuthor}
+                              onChange={(e) => setCartoProjectAuthor(e.target.value)}
+                            />
+                          </div>
+                          <div className="space-y-1.5">
+                            <Label htmlFor="carto-format">Formato</Label>
+                            <Select
+                              value={cartoFormat}
+                              onValueChange={(v) =>
+                                setCartoFormat(v as CartographicExportFormat | "docx")
+                              }
+                            >
+                              <SelectTrigger id="carto-format">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="pdf">
+                                  PDF — todas ou camada seleccionada
+                                </SelectItem>
+                                <SelectItem value="png">PNG — camada selecionada</SelectItem>
+                                <SelectItem value="jpeg">JPEG — camada selecionada</SelectItem>
+                                <SelectItem value="docx">Word (.docx) — pacote de mapas</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="space-y-1.5">
+                            <Label htmlFor="carto-layer">Camada (PNG/JPEG ou PDF individual)</Label>
+                            <Select
+                              value={cartoLayerId}
+                              onValueChange={setCartoLayerId}
+                              disabled={cartoFormat === "docx"}
+                            >
+                              <SelectTrigger id="carto-layer">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="all">Todas (só PDF/Word)</SelectItem>
+                                <SelectItem value="_localizacao">Localização</SelectItem>
+                                {waveAResult.influenceAreas ? (
+                                  <>
+                                    <SelectItem value="_ada">ADA — área diretamente afetada</SelectItem>
+                                    {waveAResult.influenceAreas.aid ? (
+                                      <SelectItem value="_aid">AID — influência direta</SelectItem>
+                                    ) : null}
+                                    {waveAResult.influenceAreas.aii ? (
+                                      <SelectItem value="_aii">AII — influência indireta</SelectItem>
+                                    ) : null}
+                                  </>
+                                ) : null}
+                                {waveAResult.layers.map((layer) => (
+                                  <SelectItem key={layer.layerId} value={layer.layerId}>
+                                    {layer.title.slice(0, 56)}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                        <div className="flex flex-col gap-2 rounded-md border px-3 py-2">
+                          <div className="flex items-center gap-2">
+                            <Checkbox
+                              id="carto-satellite"
+                              checked={includeSatelliteBackground}
+                              onCheckedChange={(v) => setIncludeSatelliteBackground(v === true)}
+                            />
+                            <Label htmlFor="carto-satellite" className="text-xs font-normal cursor-pointer">
+                              Fundo satélite Esri no mapa principal
+                            </Label>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Checkbox
+                              id="carto-wfs"
+                              checked={includeThematicWfs}
+                              onCheckedChange={(v) => setIncludeThematicWfs(v === true)}
+                            />
+                            <Label htmlFor="carto-wfs" className="text-xs font-normal cursor-pointer">
+                              Overlay temático WFS (feições SIG por camada)
+                            </Label>
+                          </div>
+                          <p className="text-[11px] text-muted-foreground leading-snug">
+                            Insetos duplos: regional + Minas Gerais. WFS reconsulta o IDE-Sisema no
+                            recorte do perímetro (requer rede).
+                          </p>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          <Button
+                            type="button"
+                            onClick={handleExportCartographic}
+                            disabled={isExportingCarto}
+                            className="min-w-[200px] flex-1"
+                          >
+                            {isExportingCarto ? (
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            ) : cartoFormat === "docx" ? (
+                              <FileType className="mr-2 h-4 w-4" />
+                            ) : (
+                              <Map className="mr-2 h-4 w-4" />
+                            )}
+                            Exportar mapas
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={handleExportAllCartoPng}
+                            disabled={isExportingCarto}
+                            className="min-w-[180px] flex-1"
+                          >
+                            {isExportingCarto ? (
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            ) : (
+                              <FileImage className="mr-2 h-4 w-4" />
+                            )}
+                            Baixar todos PNG
+                          </Button>
+                        </div>
+                      </CollapsibleContent>
+                    </Collapsible>
+                  ) : null}
                   <div className="flex flex-wrap gap-2 border-t pt-4">
                     <Button
                       onClick={handleDownloadPdf}
@@ -883,10 +1531,25 @@ export default function AnaliseAmbientalPage() {
                       ) : (
                         <>
                           <FileDown className="mr-2 h-4 w-4" />
-                          Baixar PDF
+                          PDF completo (mapas + SIG)
                         </>
                       )}
                     </Button>
+                    {cartoLayerId !== "all" ? (
+                      <Button
+                        variant="secondary"
+                        onClick={handleDownloadLayerPdf}
+                        disabled={isGeneratingPdf}
+                        className="min-w-[200px] flex-1"
+                      >
+                        {isGeneratingPdf ? (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : (
+                          <FileDown className="mr-2 h-4 w-4" />
+                        )}
+                        PDF desta camada
+                      </Button>
+                    ) : null}
                     <Button
                       variant="outline"
                       onClick={handleDownloadCsv}
@@ -940,7 +1603,7 @@ export default function AnaliseAmbientalPage() {
                 <div className="flex flex-col items-center justify-center py-10 text-center text-muted-foreground">
                   <Globe className="mb-3 h-12 w-12 opacity-50" />
                   <p className="text-sm">
-                    Configure o perímetro e clique em &quot;Gerar relatório factual ({SIG_MG_LAYER_COUNT} camadas MG)&quot;.
+                    Configure o perímetro e clique em &quot;Gerar relatório factual ({WAVE_ALL_LAYER_COUNT} camadas MG)&quot;.
                     Depois avance para a Etapa 2 abaixo.
                   </p>
                 </div>
@@ -955,6 +1618,7 @@ export default function AnaliseAmbientalPage() {
               userId={user.uid}
               initialGeoAnalysisId={savedGeoAnalysisId}
               inlineWaveResult={waveAResult}
+              cartographicMeta={cartoExportOptions}
             />
           </Suspense>
         ) : null

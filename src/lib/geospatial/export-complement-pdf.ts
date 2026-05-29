@@ -9,15 +9,24 @@ import type {
   GeoAnalysisComplementOutput,
   WaveAAnalysisResult,
 } from "@/lib/types/geo-wave-a";
+import type { CartographicPngMap } from "@/lib/geospatial/render-minimap-client";
+
+export type AppendGeoAnalysisComplementPdfOptions = {
+  cartographicPngs?: CartographicPngMap | null;
+  /** Exportar só uma camada factual (+ complemento completo se `all`). */
+  layerId?: string | "all";
+};
 
 /** PDF Etapa 2: anexo factual (SIG) + complemento interpretativo (IA). */
 export function appendGeoAnalysisComplementPdf(
   session: MmBrandedPdfSession,
   wave: WaveAAnalysisResult,
   complement: GeoAnalysisComplementOutput,
+  options?: AppendGeoAnalysisComplementPdfOptions,
 ): void {
   const { doc } = session;
   const pageW = doc.internal.pageSize.getWidth();
+  const layerId = options?.layerId ?? "all";
   let y = session.startY;
 
   y = session.ensureSpace(y, 20);
@@ -28,7 +37,9 @@ export function appendGeoAnalysisComplementPdf(
   doc.setFontSize(10);
   doc.setFont("helvetica", "normal");
   doc.text(
-    "Anexo A: dados factuais (SIG) · Anexo B: complementação técnica (rascunho IA)",
+    layerId === "all"
+      ? "Anexo A: dados factuais (SIG) · Anexo B: complementação técnica (rascunho IA)"
+      : `Camada: ${wave.layers.find((l) => l.layerId === layerId)?.title ?? layerId}`,
     pageW / 2,
     y,
     { align: "center" },
@@ -38,15 +49,22 @@ export function appendGeoAnalysisComplementPdf(
   y = writeBrandedPdfTitle(session, "Anexo A — Dados factuais (IDE-Sisema MG)", 13, y);
   y = writeBrandedPdfParagraph(
     session,
-    "Percentagens e áreas abaixo provêm exclusivamente da interseção automática. A secção B não altera estes números.",
+    "Mapas cartográficos (layout consultoria) seguidos dos dados de interseção automática. A secção B não altera estes números.",
     9,
     y,
   );
 
-  appendWaveAFactualPdf(session, wave, {
+  y = appendWaveAFactualPdf(session, wave, {
     includeReportTitle: false,
     closingNote: null,
+    startY: y,
+    cartographicPngs: options?.cartographicPngs,
+    layerId,
   });
+
+  if (layerId !== "all") {
+    return;
+  }
 
   y = brandedPdfNewPage(session);
   y = writeBrandedPdfTitle(session, "Anexo B — Complementação técnica (rascunho IA)", 13, y);

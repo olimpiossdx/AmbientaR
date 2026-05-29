@@ -1,23 +1,17 @@
 "use client";
 
 import { jsPDF } from "jspdf";
+import { CARTOGRAPHIC_PAGE_SIZE } from "@/lib/geospatial/cartographic-layout";
 import {
-  buildWaveACartographicSheets,
-  CARTOGRAPHIC_PAGE_SIZE,
-  type CartographicBranding,
-  type CartographicSheetMeta,
-} from "@/lib/geospatial/cartographic-layout";
+  resolveWaveCartographicSheets,
+  type ResolveCartographicSheetsOptions,
+} from "@/lib/geospatial/resolve-cartographic-sheets";
 import { svgStringToPngDataUrl } from "@/lib/geospatial/render-minimap-client";
 import type { WaveAAnalysisResult } from "@/lib/types/geo-wave-a";
 
 export type CartographicExportFormat = "pdf" | "png" | "jpeg";
 
-export type CartographicExportOptions = {
-  propertyName?: string;
-  projectAuthor?: string;
-  branding?: CartographicBranding;
-  meta?: CartographicSheetMeta;
-  /** Camada única (png/jpeg) ou todas no PDF. */
+export type CartographicExportOptions = ResolveCartographicSheetsOptions & {
   layerId?: string | "all";
 };
 
@@ -44,14 +38,7 @@ export async function exportCartographicFromWaveA(
   options?: CartographicExportOptions,
 ): Promise<{ fileName: string; sheetCount: number }> {
   const date = new Date().toISOString().slice(0, 10);
-  const sheets = buildWaveACartographicSheets(wave, {
-    propertyName: options?.propertyName,
-    branding: options?.branding,
-    meta: {
-      ...options?.meta,
-      projectAuthor: options?.projectAuthor ?? options?.meta?.projectAuthor,
-    },
-  });
+  const sheets = await resolveWaveCartographicSheets(wave, options);
 
   if (!sheets.length) {
     throw new Error("Não foi possível gerar folhas cartográficas (perímetro inválido).");
@@ -135,14 +122,7 @@ export async function exportAllCartographicPngs(
 ): Promise<number> {
   const date = new Date().toISOString().slice(0, 10);
   const baseName = slugify(options?.propertyName ?? "empreendimento") || "mapa";
-  const sheets = buildWaveACartographicSheets(wave, {
-    propertyName: options?.propertyName,
-    branding: options?.branding,
-    meta: {
-      ...options?.meta,
-      projectAuthor: options?.projectAuthor ?? options?.meta?.projectAuthor,
-    },
-  });
+  const sheets = await resolveWaveCartographicSheets(wave, options);
 
   let count = 0;
   for (const sheet of sheets) {

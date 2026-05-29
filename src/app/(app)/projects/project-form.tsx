@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/form';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import type { Project, Empreendedor } from '@/lib/types';
+import type { Project, Empreendedor, ProjectPerimetroReferencia } from '@/lib/types';
 import { useFirebase, errorEmitter, useCollection, useMemoFirebase, useAuth } from '@/firebase';
 import { assertCanCreateEmpreendimentoAction } from '@/app/(app)/projects/package-actions';
 import { FirestorePermissionError } from '@/firebase/errors';
@@ -36,6 +36,10 @@ import { isClienteAutonomo, isClientePortalRole } from '@/lib/role-guards';
 import { resolvePortalAuthUid } from '@/lib/auth-user-id';
 import { usePortalEmpreendedorIds } from '@/hooks/use-portal-empreendedor-ids';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import {
+  ProjectPerimetroReferenciaSection,
+  finalizePendingPerimetroReferencia,
+} from '@/components/projects/project-perimetro-referencia-section';
 
 
 const formSchema = z.object({
@@ -133,6 +137,10 @@ const getInitialValues = (currentItem?: Project | null): FormValues => {
 
 export function ProjectForm({ currentItem, onSuccess, onCancel }: ProjectFormProps) {
   const [loading, setLoading] = React.useState(false);
+  const [perimetroReferencia, setPerimetroReferencia] = React.useState<
+    ProjectPerimetroReferencia | undefined
+  >(currentItem?.perimetroReferencia);
+  const pendingPerimetroFileRef = React.useRef<File | null>(null);
   const { toast } = useToast();
   const { firestore, auth } = useFirebase();
   const { user } = useAuth();
@@ -160,6 +168,11 @@ export function ProjectForm({ currentItem, onSuccess, onCancel }: ProjectFormPro
     resolver: zodResolver(formSchema),
     defaultValues: getInitialValues(currentItem),
   });
+
+  React.useEffect(() => {
+    setPerimetroReferencia(currentItem?.perimetroReferencia);
+    pendingPerimetroFileRef.current = null;
+  }, [currentItem?.id, currentItem?.perimetroReferencia]);
 
   const applyEmpreendedorLink = React.useCallback(
     (empreendedorId: string) => {
@@ -218,7 +231,10 @@ export function ProjectForm({ currentItem, onSuccess, onCancel }: ProjectFormPro
       return;
     }
     
-    const dataToSave = cleanEmptyValues(values);
+    const dataToSave = cleanEmptyValues({
+      ...values,
+      perimetroReferencia: perimetroReferencia ?? undefined,
+    });
 
 
     if (currentItem) {
@@ -270,12 +286,36 @@ export function ProjectForm({ currentItem, onSuccess, onCancel }: ProjectFormPro
 
       const collectionRef = collection(firestore, 'projects');
       addDoc(collectionRef, dataToSave)
-        .then(() => {
+        .then(async (ref) => {
+          if (pendingPerimetroFileRef.current && perimetroReferencia) {
+            try {
+              const finalPerimetro = await finalizePendingPerimetroReferencia(
+                ref.id,
+                perimetroReferencia,
+                pendingPerimetroFileRef.current,
+                user?.uid,
+              );
+              if (finalPerimetro) {
+                await updateDoc(doc(firestore, 'projects', ref.id), {
+                  perimetroReferencia: finalPerimetro,
+                });
+              }
+            } catch (e) {
+              console.error('Falha ao enviar perímetro de referência:', e);
+              toast({
+                variant: 'destructive',
+                title: 'Empreendimento criado, mas perímetro não foi enviado',
+                description:
+                  e instanceof Error ? e.message : 'Edite o empreendimento e tente novamente.',
+              });
+            }
+          }
           toast({
             title: 'Projeto criado!',
             description: `O projeto ${values.propertyName} foi adicionado com sucesso.`,
           });
           form.reset();
+          pendingPerimetroFileRef.current = null;
           onSuccess?.();
         })
         .catch(async (serverError) => {
@@ -307,6 +347,12 @@ export function ProjectForm({ currentItem, onSuccess, onCancel }: ProjectFormPro
     clients: clients || [],
     isLoadingClients,
     hideEmpreendedorSelect: usesCentralEmpreendedorResponsavel,
+    projectId: currentItem?.id,
+    perimetroReferencia,
+    onPerimetroReferenciaChange: setPerimetroReferencia,
+    onPendingPerimetroFileChange: (file: File | null) => {
+      pendingPerimetroFileRef.current = file;
+    },
   };
 
   return (

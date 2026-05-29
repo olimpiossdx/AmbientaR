@@ -16,13 +16,19 @@ import bbox from '@turf/bbox';
 import { parseKmlTextToFeaturePolygon } from '@/lib/geospatial/parse-kml-text';
 import { parsePerimeterPolygon, parseGeoJsonObject } from '@/lib/geospatial/perimeter';
 import { fetchStorageImageProxyBlob, isFirebaseStorageHttpsUrl } from '@/lib/storage-image-proxy-client';
+import type { ProjectPerimetroReferencia } from '@/lib/types';
+import {
+  parsePerimetroReferenciaFile,
+  resolvePerimetroReferenciaFromProject,
+} from '@/lib/project-perimetro-referencia';
 import type { GeoAnalysisBundle } from '@/lib/geospatial/load-geo-analysis-bundle';
 
 export type ProjectGeometrySourceKind =
   | 'geo_analysis'
   | 'georef'
   | 'car_shp'
-  | 'kml_upload';
+  | 'kml_upload'
+  | 'perimetro_referencia';
 
 export type ProjectGeometryCandidate = {
   id: string;
@@ -32,6 +38,7 @@ export type ProjectGeometryCandidate = {
   analysisId?: string;
   georefId?: string;
   shpUrl?: string;
+  perimetroReferencia?: ProjectPerimetroReferencia;
 };
 
 export type ResolvedProjectPolygon = {
@@ -84,6 +91,22 @@ export async function listProjectGeometryCandidates(
   const projectSnap = await getDoc(doc(firestore, 'projects', pid));
   if (projectSnap.exists()) {
     const data = projectSnap.data() as Record<string, unknown>;
+    const perimetroReferencia = data.perimetroReferencia as
+      | ProjectPerimetroReferencia
+      | undefined;
+    if (perimetroReferencia?.geojson || perimetroReferencia?.fileUrl) {
+      out.push({
+        id: `perimetro-ref-${pid}`,
+        label: `Perímetro de referência (cadastro)${
+          typeof perimetroReferencia.areaHa === 'number'
+            ? ` · ${perimetroReferencia.areaHa.toFixed(2)} ha`
+            : ''
+        }`,
+        source: 'perimetro_referencia',
+        areaHa: perimetroReferencia.areaHa,
+        perimetroReferencia,
+      });
+    }
     const car = data.car as { shpUrl?: string } | undefined;
     if (car?.shpUrl) {
       out.push({
@@ -143,6 +166,10 @@ export async function resolveGeometryFromCandidate(
   candidate: ProjectGeometryCandidate,
   userId: string,
 ): Promise<ResolvedProjectPolygon | null> {
+  if (candidate.source === 'perimetro_referencia' && candidate.perimetroReferencia) {
+    return resolvePerimetroReferenciaFromProject(candidate.perimetroReferencia);
+  }
+
   if (candidate.source === 'car_shp' && candidate.shpUrl) {
     const blob = await fetchBlobFromUrl(candidate.shpUrl);
     const b64 = await blobToBase64(blob);
@@ -214,9 +241,12 @@ export async function parseGeometryUploadFile(file: File): Promise<ResolvedProje
   const ext = name.split('.').pop() ?? '';
 
   if (ext === 'kmz') {
-    throw new Error(
-      'Arquivo KMZ: extraia o .kml do ZIP ou exporte como KML simples antes de importar.',
-    );
+    try {
+      const parsed = await parsePerimetroReferenciaFile(file);
+      return { ...parsed, source: 'kml_upload' };
+    } catch (e) {
+      throw e instanceof Error ? e : new Error('Falha ao ler KMZ.');
+    }
   }
 
   if (ext === 'kml' || ext === 'xml') {

@@ -1,9 +1,7 @@
-import { parseKmlTextToFeaturePolygon } from '@/lib/geospatial/parse-kml-text';
 import type { StudyAreaGeoJSON } from '@/components/maps/study-area-map';
+import { parseKmlTextToFeaturePolygon } from '@/lib/study-maps/parse-kml-text';
 
-/**
- * Converte texto de ficheiro GeoJSON ou KML/XML em geometria para o mapa de estudos.
- */
+/** Converte GeoJSON/KML para o submenu Mapas (Estudos Técnicos). Autónomo de Análise Geoespacial. */
 export function parseStudyAreaFileText(
   text: string,
   fileName: string,

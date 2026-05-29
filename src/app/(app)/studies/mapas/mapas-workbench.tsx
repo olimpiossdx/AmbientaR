@@ -25,8 +25,7 @@ import { useFirebase, useAuth } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 import type { StudyAreaGeoJSON } from "@/components/maps/study-area-map";
 import type { StacPreviewItem } from "@/lib/study-maps/types";
-import { Loader2, Satellite, FileArchive, MapPin } from "lucide-react";
-import Link from "next/link";
+import { Loader2, Satellite, FileArchive } from "lucide-react";
 import { parseStudyAreaFileText } from "@/lib/study-maps/import-area-file";
 
 const StudyAreaMap = dynamic(
@@ -197,8 +196,8 @@ export function MapasWorkbench() {
             <CardHeader>
               <CardTitle className="text-base">Perímetro</CardTitle>
               <CardDescription>
-                Mesmo basemap que Análise Geoespacial (IA). Desenhe o polígono,
-                importe GeoJSON ou KML.
+                Desenhe o polígono da propriedade, importe GeoJSON ou KML e exporte
+                mapas técnicos (MCA / uso e ocupação).
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
@@ -241,12 +240,6 @@ export function MapasWorkbench() {
                   onChange={(e) => onImportFile(e.target.files?.[0] ?? null)}
                 />
               </div>
-              <Button type="button" variant="outline" size="sm" className="gap-1 w-full" asChild>
-                <Link href="/analise-ambiental">
-                  <MapPin className="h-4 w-4" />
-                  Análise Geoespacial (camadas IA)
-                </Link>
-              </Button>
               <div className="flex flex-wrap gap-2">
                 <Button type="button" onClick={runExport} disabled={busy}>
                   {busy ? (

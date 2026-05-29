@@ -154,6 +154,103 @@ async function fetchOneTypeName(params: {
   return { ok: false, error: `${params.typeName}: ${lastError}` };
 }
 
+export async function fetchWfsFeaturesWithCql(params: {
+  baseUrl: string;
+  typeName: string;
+  cqlFilter: string;
+  maxFeatures?: number;
+  version?: "1.0.0" | "1.1.0";
+}): Promise<WfsFetchResult> {
+  const url = new URL(params.baseUrl);
+  url.searchParams.set("service", "WFS");
+  url.searchParams.set("version", params.version ?? "1.0.0");
+  url.searchParams.set("request", "GetFeature");
+  url.searchParams.set("typeName", params.typeName);
+  url.searchParams.set("outputFormat", "application/json");
+  url.searchParams.set("CQL_FILTER", params.cqlFilter);
+  url.searchParams.set("maxFeatures", String(params.maxFeatures ?? MAX_FEATURES));
+
+  const maxAttempts = 3;
+  let lastError = "falha de rede";
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      const response = await withTimeout(
+        fetch(url.toString(), {
+          method: "GET",
+          cache: "no-store",
+          headers: WFS_HEADERS,
+        }),
+        WFS_TIMEOUT_MS,
+      );
+
+      if (!response.ok) {
+        lastError = `HTTP ${response.status}`;
+        if (response.status >= 500 && attempt < maxAttempts) {
+          await new Promise((r) => setTimeout(r, 800 * attempt));
+          continue;
+        }
+        return {
+          ok: false,
+          features: [],
+          error: `${params.typeName}@${params.baseUrl}: ${lastError}`,
+        };
+      }
+
+      const text = await response.text();
+      if (text.trim().startsWith("<") || text.includes("ExceptionReport")) {
+        return {
+          ok: false,
+          features: [],
+          error: `${params.typeName}: resposta XML/erro OGC`,
+        };
+      }
+
+      const fc = parseFeatureCollection(text);
+      if (!fc) {
+        return {
+          ok: false,
+          features: [],
+          error: `${params.typeName}: JSON inválido`,
+        };
+      }
+
+      if (fc.features.length === 0) {
+        return {
+          ok: false,
+          features: [],
+          noFeaturesInExtent: true,
+          error: `${params.typeName}: sem feições no filtro`,
+        };
+      }
+
+      return {
+        ok: true,
+        features: fc.features,
+        typeName: params.typeName,
+        baseUrl: params.baseUrl,
+      };
+    } catch (e) {
+      lastError = e instanceof Error ? e.message : "falha de rede";
+      if (isRetryableNetworkError(lastError) && attempt < maxAttempts) {
+        await new Promise((r) => setTimeout(r, 1000 * attempt));
+        continue;
+      }
+      return {
+        ok: false,
+        features: [],
+        error: `${params.typeName}: ${lastError}`,
+      };
+    }
+  }
+
+  return {
+    ok: false,
+    features: [],
+    error: `${params.typeName}: ${lastError}`,
+  };
+}
+
 export async function fetchWfsFeaturesInBbox(params: {
   baseUrls: string[];
   typeNames: string[];

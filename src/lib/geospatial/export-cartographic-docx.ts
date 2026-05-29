@@ -7,12 +7,15 @@ import {
   TextRun,
 } from "docx";
 import {
-  buildWaveACartographicSheets,
   CARTOGRAPHIC_PAGE_SIZE,
   type CartographicBranding,
   type CartographicSheetMeta,
 } from "@/lib/geospatial/cartographic-layout";
-import type { WaveAAnalysisResult } from "@/lib/types/geo-wave-a";
+import {
+  resolveWaveCartographicSheets,
+  type ResolveCartographicSheetsOptions,
+} from "@/lib/geospatial/resolve-cartographic-sheets";
+import type { GeoLayerResult, WaveAAnalysisResult } from "@/lib/types/geo-wave-a";
 
 /** Converte SVG → PNG Uint8Array (Node ou browser com canvas). */
 async function svgToPngBytes(svg: string): Promise<Uint8Array> {
@@ -34,52 +37,72 @@ async function svgToPngBytes(svg: string): Promise<Uint8Array> {
   throw new Error("DOCX cartográfico requer ambiente com canvas (browser).");
 }
 
+function layerStatsParagraphs(layer: GeoLayerResult): Paragraph[] {
+  const lines: string[] = [`${layer.summary} [${layer.status}]`];
+  if (layer.stats.length === 0) {
+    lines.push("Sem interseção mensurável ou serviço indisponível.");
+  } else {
+    for (const row of layer.stats) {
+      const pct = row.pctOfPerimeter != null ? `${row.pctOfPerimeter}%` : "—";
+      const ha = row.areaHa != null ? `${row.areaHa.toFixed(2)} ha` : "—";
+      const km = row.lengthKm != null ? ` | ${row.lengthKm.toFixed(2)} km` : "";
+      lines.push(`• ${row.label}: ${ha} | ${pct} do empreendimento${km}`);
+    }
+  }
+  if (layer.source) {
+    lines.push(`Fonte: ${layer.source.layerName} (${layer.source.method})`);
+  }
+  return lines.map(
+    (line) =>
+      new Paragraph({
+        children: [new TextRun({ text: line, size: 20 })],
+      }),
+  );
+}
+
 export async function buildCartographicDocxBlob(
   wave: WaveAAnalysisResult,
-  options?: {
-    propertyName?: string;
-    projectAuthor?: string;
-    branding?: CartographicBranding;
-    meta?: CartographicSheetMeta;
+  options?: ResolveCartographicSheetsOptions & {
+    layerId?: string | "all";
   },
 ): Promise<Blob> {
-  const sheets = buildWaveACartographicSheets(wave, {
-    propertyName: options?.propertyName,
-    branding: options?.branding,
-    meta: {
-      ...options?.meta,
-      projectAuthor: options?.projectAuthor ?? options?.meta?.projectAuthor,
-    },
-  });
+  const sheets = await resolveWaveCartographicSheets(wave, options);
 
-  if (!sheets.length) {
+  const filtered =
+    options?.layerId && options.layerId !== "all"
+      ? sheets.filter((sheet) => sheet.layerId === options.layerId)
+      : sheets;
+
+  if (!filtered.length) {
     throw new Error("Não foi possível gerar mapas para o documento Word.");
   }
 
+  const layerById = new Map(wave.layers.map((layer) => [layer.layerId, layer]));
+
   const children: Paragraph[] = [
     new Paragraph({
-      text: "Mapas cartográficos — Análise geoespacial MG",
+      text: "Relatório geoespacial — mapas e dados factuais (SIG MG)",
       heading: HeadingLevel.HEADING_1,
     }),
     new Paragraph({
       children: [
         new TextRun({
-          text: `Área: ${wave.perimeter.areaHa.toFixed(2)} ha · ${sheets.length} folha(s)`,
+          text: `Área: ${wave.perimeter.areaHa.toFixed(2)} ha · ${filtered.length} folha(s)`,
           size: 22,
-        }),
-      ],
-    }),
-    new Paragraph({
-      children: [
-        new TextRun({
-          text: wave.factualSummary,
-          size: 20,
         }),
       ],
     }),
   ];
 
-  for (const sheet of sheets) {
+  if (!options?.layerId || options.layerId === "all") {
+    children.push(
+      new Paragraph({
+        children: [new TextRun({ text: wave.factualSummary, size: 20 })],
+      }),
+    );
+  }
+
+  for (const sheet of filtered) {
     const png = await svgToPngBytes(sheet.svg);
     children.push(
       new Paragraph({
@@ -92,20 +115,38 @@ export async function buildCartographicDocxBlob(
             data: png,
             transformation: {
               width: 680,
-              height: Math.round((680 * CARTOGRAPHIC_PAGE_SIZE.height) / CARTOGRAPHIC_PAGE_SIZE.width),
+              height: Math.round(
+                (680 * CARTOGRAPHIC_PAGE_SIZE.height) / CARTOGRAPHIC_PAGE_SIZE.width,
+              ),
             },
             type: "png",
           }),
         ],
       }),
     );
+
+    const layer = layerById.get(sheet.layerId);
+    if (layer) {
+      children.push(...layerStatsParagraphs(layer));
+    } else if (sheet.layerId === "_localizacao") {
+      children.push(
+        new Paragraph({
+          children: [
+            new TextRun({
+              text: `Perímetro do empreendimento · ${wave.perimeter.areaHa.toFixed(2)} ha`,
+              size: 20,
+            }),
+          ],
+        }),
+      );
+    }
   }
 
   children.push(
     new Paragraph({
       children: [
         new TextRun({
-          text: "Fonte: IDE-Sisema MG. Layout de referência Pimenta Consultoria Ambiental.",
+          text: "Fontes: IDE-Sisema MG, IBGE (biomas/limites) e bases estaduais MG quando aplicável. Layout de referência Pimenta Consultoria Ambiental.",
           italics: true,
           size: 18,
         }),

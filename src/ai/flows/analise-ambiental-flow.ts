@@ -24,14 +24,28 @@ const getDadosCAR = ai.defineTool(
       "Obtém dados detalhados do Cadastro Ambiental Rural (CAR) a partir do número do recibo.",
     inputSchema: z.object({ numeroCAR: z.string() }),
     outputSchema: z.object({
+      codImovel: z.string(),
       areaTotal: z.number(),
       situacao: z.string(),
-      appDeclarada: z.number(),
-      reservaLegalDeclarada: z.number(),
+      statusCodigo: z.string(),
+      condicao: z.string(),
+      municipio: z.string(),
+      uf: z.string(),
+      fonte: z.string(),
     }),
   },
   async ({ numeroCAR }) => {
-    return await fetchCarData(numeroCAR);
+    const data = await fetchCarData(numeroCAR);
+    return {
+      codImovel: data.codImovel,
+      areaTotal: data.areaTotal,
+      situacao: data.situacao,
+      statusCodigo: data.statusCodigo,
+      condicao: data.condicao,
+      municipio: data.municipio,
+      uf: data.uf,
+      fonte: data.fonte,
+    };
   },
 );
 

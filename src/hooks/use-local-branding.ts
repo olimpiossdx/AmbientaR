@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { getApps } from 'firebase/app';
 import { useFirebase, useDoc, useMemoFirebase } from '@/firebase';
-import { doc } from 'firebase/firestore';
+import { doc, getDocFromServer } from 'firebase/firestore';
 import {
   clearBrandingPdfCache,
   fetchBrandingImagesForPdf,
@@ -34,6 +34,14 @@ const empty: LocalBranding = {
 
 const BRANDING_LOAD_RETRIES = 2;
 const BRANDING_RETRY_DELAY_MS = 600;
+/** Evita spinner infinito em Firefox móvel / redes lentas. */
+const BRANDING_PDF_LOAD_TIMEOUT_MS = 30_000;
+
+const emptyPdfImages: BrandingPdfImages = {
+  headerBase64: null,
+  footerBase64: null,
+  watermarkBase64: null,
+};
 
 async function loadBrandingWithRetries(urls: {
   headerImageUrl: string | null;
@@ -58,6 +66,28 @@ async function loadBrandingWithRetries(urls: {
     if (hasCompleteBrandingImages(last)) return last;
   }
   return last;
+}
+
+async function loadBrandingWithTimeout(urls: {
+  headerImageUrl: string | null;
+  footerImageUrl: string | null;
+  watermarkImageUrl: string | null;
+}): Promise<BrandingPdfImages> {
+  try {
+    return await Promise.race([
+      loadBrandingWithRetries(urls),
+      new Promise<BrandingPdfImages>((_, reject) => {
+        setTimeout(() => reject(new Error('BRANDING_PDF_TIMEOUT')), BRANDING_PDF_LOAD_TIMEOUT_MS);
+      }),
+    ]);
+  } catch (e) {
+    if ((e as Error)?.message === 'BRANDING_PDF_TIMEOUT') {
+      console.warn(
+        '[branding] Tempo esgotado ao preparar imagens para PDF (rede lenta ou browser móvel).',
+      );
+    }
+    return emptyPdfImages;
+  }
 }
 
 export function useLocalBranding() {
@@ -85,7 +115,8 @@ export function useLocalBranding() {
 
   const hasBrandingUrls = hasCompleteBrandingUrls(data);
   const isSessionReady = Boolean(auth?.currentUser);
-  const isPdfImagesLoading = isLoading || !isSessionReady || isFetchingPdfImages;
+  const isFirestoreLoading = isLoading || !isSessionReady;
+  const isPdfImagesLoading = isFirestoreLoading || isFetchingPdfImages;
   const isBrandingReady =
     hasBrandingUrls && Boolean(pdfImages) && hasCompleteBrandingImages(pdfImages!);
   const brandingMissingSlots = useMemo(() => {
@@ -119,7 +150,7 @@ export function useLocalBranding() {
     }
 
     if (!hasBrandingUrls) {
-      setPdfImages({ headerBase64: null, footerBase64: null, watermarkBase64: null });
+      setPdfImages(emptyPdfImages);
       setIsFetchingPdfImages(false);
       return;
     }
@@ -135,11 +166,11 @@ export function useLocalBranding() {
         }
       }
       try {
-        const loaded = await loadBrandingWithRetries(data);
+        const loaded = await loadBrandingWithTimeout(data);
         if (!cancelled) setPdfImages(loaded);
       } catch {
         if (!cancelled) {
-          setPdfImages({ headerBase64: null, footerBase64: null, watermarkBase64: null });
+          setPdfImages(emptyPdfImages);
         }
       } finally {
         if (!cancelled) setIsFetchingPdfImages(false);
@@ -158,14 +189,27 @@ export function useLocalBranding() {
     setPdfImagesReloadToken((n) => n + 1);
   };
 
+  const syncFromServer = async () => {
+    if (!brandingRef) return;
+    try {
+      await getDocFromServer(brandingRef);
+      refetch();
+    } catch (e) {
+      console.warn('[branding] Falha ao sincronizar do servidor:', e);
+    }
+  };
+
   return {
     data: data ?? empty,
     isLoading,
+    isFirestoreLoading,
+    isFetchingPdfImages,
     pdfImages,
     isPdfImagesLoading,
     hasBrandingUrls,
     isBrandingReady,
     brandingMissingSlots,
     refetch,
+    syncFromServer,
   };
 }

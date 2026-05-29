@@ -1,9 +1,13 @@
+import fs from "node:fs";
+import path from "node:path";
 import buffer from "@turf/buffer";
 import area from "@turf/area";
-import { point } from "@turf/helpers";
+import { centroid, point } from "@turf/helpers";
+import transformScale from "@turf/transform-scale";
 import type { FeatureCollection } from "geojson";
 import type { McaGoldPresetId } from "./gold-presets";
 import { getGoldPreset } from "./gold-presets";
+import { goldManifestAreaHa } from "./gold-manifest";
 
 const GOLD_PERIMETER_URL: Record<McaGoldPresetId, string> = {
   gold_palmeiras: "/mca/gold/gold_palmeiras/perimeter.geojson",
@@ -18,15 +22,35 @@ const GOLD_CENTERS: Record<McaGoldPresetId, [number, number]> = {
   gold_catingueiro: [-46.108, -16.368],
 };
 
+/** Escala uniforme em torno do centróide até bater a área-alvo (ha). */
+export function scaleFeatureCollectionToAreaHa(
+  fc: FeatureCollection,
+  targetAreaHa: number,
+): FeatureCollection {
+  const currentHa = area(fc) / 10_000;
+  if (currentHa <= 0 || targetAreaHa <= 0) return fc;
+  const relErr = Math.abs(currentHa - targetAreaHa) / targetAreaHa;
+  if (relErr < 0.005) return fc;
+  const factor = Math.sqrt(targetAreaHa / currentHa);
+  const origin = centroid(fc);
+  const scaled = transformScale(fc, factor, { origin: origin.geometry.coordinates });
+  const feat = scaled.features[0];
+  if (feat?.properties) {
+    feat.properties.scaledToAreaHa = targetAreaHa;
+    feat.properties.areaBeforeScaleHa = currentHa;
+  }
+  return scaled;
+}
+
 /**
  * Perímetro circular sintético com área próxima do manifest ouro (testes E05/E15).
  * Substituir por `perimeter.geojson` real quando disponível no repo.
  */
 export function buildGoldPerimeter(id: McaGoldPresetId): FeatureCollection {
   const preset = getGoldPreset(id);
-  const areaHa = preset
-    ? Number(preset.areaTotalHa.replace(",", "."))
-    : 1500;
+  const areaHa =
+    goldManifestAreaHa(id) ??
+    (preset ? Number(preset.areaTotalHa.replace(",", ".")) : 1500);
   const [lon, lat] = GOLD_CENTERS[id];
   const rKm = Math.sqrt((areaHa * 10_000) / Math.PI) / 1000;
   const feat = buffer(point([lon, lat]), rKm, { units: "kilometers", steps: 64 });
@@ -38,10 +62,12 @@ export function buildGoldPerimeter(id: McaGoldPresetId): FeatureCollection {
     source: "mca_gold_synthetic",
     targetAreaHa: areaHa,
   };
-  const fc: FeatureCollection = { type: "FeatureCollection", features: [feat] };
+  let fc: FeatureCollection = { type: "FeatureCollection", features: [feat] };
+  fc = scaleFeatureCollectionToAreaHa(fc, areaHa);
   const actualHa = area(fc) / 10_000;
-  if (feat.properties && Math.abs(actualHa - areaHa) / areaHa > 0.02) {
-    feat.properties.areaNote = `área real ${actualHa.toFixed(2)} ha`;
+  const main = fc.features[0];
+  if (main?.properties && Math.abs(actualHa - areaHa) / areaHa > 0.01) {
+    main.properties.areaNote = `área real ${actualHa.toFixed(2)} ha`;
   }
   return fc;
 }
@@ -50,14 +76,42 @@ export function goldPerimeterAreaHa(id: McaGoldPresetId): number {
   return area(buildGoldPerimeter(id)) / 10_000;
 }
 
+export function loadGoldPerimeterFromRepo(id: McaGoldPresetId): FeatureCollection {
+  const targetHa = goldManifestAreaHa(id);
+  try {
+    const filePath = path.join(process.cwd(), "public/mca/gold", id, "perimeter.geojson");
+    if (fs.existsSync(filePath)) {
+      const fc = JSON.parse(fs.readFileSync(filePath, "utf8")) as FeatureCollection;
+      if (fc?.features?.length) {
+        if (targetHa != null) {
+          return scaleFeatureCollectionToAreaHa(fc, targetHa);
+        }
+        return fc;
+      }
+    }
+  } catch {
+    /* fallback sintético */
+  }
+  return buildGoldPerimeter(id);
+}
+
 /** Carrega perímetro estático do repo (public/) ou fallback sintético. */
 export async function fetchGoldPerimeter(id: McaGoldPresetId): Promise<FeatureCollection> {
   if (typeof window !== "undefined") {
     try {
       const res = await fetch(GOLD_PERIMETER_URL[id], { cache: "no-store" });
       if (res.ok) {
-        const fc = (await res.json()) as FeatureCollection;
-        if (fc?.features?.length) return fc;
+        let fc = (await res.json()) as FeatureCollection;
+        if (fc?.features?.length) {
+          const preset = getGoldPreset(id);
+          const targetHa = preset
+            ? Number(preset.areaTotalHa.replace(",", "."))
+            : null;
+          if (targetHa) {
+            fc = scaleFeatureCollectionToAreaHa(fc, targetHa);
+          }
+          return fc;
+        }
       }
     } catch {
       /* fallback */

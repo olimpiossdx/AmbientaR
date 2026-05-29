@@ -1,9 +1,13 @@
 /**
- * Layout cartográfico estilo Pimenta Consultoria (mapas IDE-Sisema / CF Agrícola).
- * Gera SVG pronto para PNG, JPEG, PDF ou incorporação em DOCX.
+ * Layout cartográfico — módulo Análise Geoespacial (IA).
+ * Rota: /analise-ambiental · Código: src/lib/geospatial/*
+ *
+ * Independente do submenu Mapas (Estudos Técnicos / MCA): src/lib/mca/*, /studies/mapas.
+ * Não importar código MCA daqui; integração futura apenas via dados/APIs explícitas.
  */
 
 import type { GeoLayerResult, GeoLayerStat, GeoPerimeter } from "@/lib/types/geo-wave-a";
+import type { GeoInfluenceAreas } from "@/lib/types/geo-wave-a";
 
 export type CartographicBranding = {
   companyName?: string;
@@ -19,16 +23,32 @@ export type CartographicSheetMeta = {
   projectAuthor?: string;
 };
 
+export type CartographicOverlayRing = {
+  ring: [number, number][];
+  stroke: string;
+  fill?: string;
+  fillOpacity?: number;
+  strokeWidth?: number;
+  dashArray?: string;
+  label?: string;
+};
+
 export type CartographicSheetInput = {
   title: string;
   perimeter: GeoPerimeter;
   layer?: GeoLayerResult;
   branding?: CartographicBranding;
   meta?: CartographicSheetMeta;
+  overlayRings?: CartographicOverlayRing[];
+  satelliteBackgroundHref?: string;
+  mapBbox?: [number, number, number, number];
 };
 
 const PAGE_W = 1123;
 const PAGE_H = 794;
+
+/** Extent MG para inseto estatal (estilo Pimenta / QGIS). */
+const MG_STATE_BBOX: [number, number, number, number] = [-51.5, -23.5, -39.8, -14.0];
 
 const CLASS_COLORS: { match: RegExp; color: string; label: string }[] = [
   { match: /muito\s*alta/i, color: "#c41e3a", label: "Muito alta" },
@@ -51,6 +71,38 @@ function ringFromPerimeter(geojson: Record<string, unknown>): [number, number][]
   const g = geojson as { type?: string; coordinates?: [number, number][][] };
   if (g.type !== "Polygon" || !g.coordinates?.[0]?.length) return null;
   return g.coordinates[0];
+}
+
+function unionBbox(
+  boxes: ([number, number, number, number] | undefined)[],
+): [number, number, number, number] | null {
+  const valid = boxes.filter(Boolean) as [number, number, number, number][];
+  if (!valid.length) return null;
+  let minX = valid[0]![0];
+  let minY = valid[0]![1];
+  let maxX = valid[0]![2];
+  let maxY = valid[0]![3];
+  for (const b of valid.slice(1)) {
+    minX = Math.min(minX, b[0]);
+    minY = Math.min(minY, b[1]);
+    maxX = Math.max(maxX, b[2]);
+    maxY = Math.max(maxY, b[3]);
+  }
+  return [minX, minY, maxX, maxY];
+}
+
+function bboxFromRing(ring: [number, number][]): [number, number, number, number] {
+  let minX = ring[0]![0];
+  let minY = ring[0]![1];
+  let maxX = ring[0]![0];
+  let maxY = ring[0]![1];
+  for (const [x, y] of ring) {
+    minX = Math.min(minX, x);
+    minY = Math.min(minY, y);
+    maxX = Math.max(maxX, x);
+    maxY = Math.max(maxY, y);
+  }
+  return [minX, minY, maxX, maxY];
 }
 
 function expandBbox(
@@ -237,7 +289,14 @@ export function buildCartographicSheetSvg(input: CartographicSheetInput): string
   const ring = ringFromPerimeter(input.perimeter.geojson);
   if (!ring?.length) return null;
 
-  const bbox = input.perimeter.bbox;
+  const overlayRings = input.overlayRings ?? [];
+  const bbox =
+    input.mapBbox ??
+    unionBbox([
+      input.perimeter.bbox,
+      ...overlayRings.map((o) => bboxFromRing(o.ring)),
+    ]) ??
+    input.perimeter.bbox;
   const utm = isLikelyUtm(bbox);
   const mainBbox = bbox;
   const insetBbox = expandBbox(bbox, 4);
@@ -263,18 +322,50 @@ export function buildCartographicSheetSvg(input: CartographicSheetInput): string
   const sideW = 360;
 
   const mainPoints = projectRing(ring, mainBbox, mapX, mapY, mapW, mapH);
-  const insetPoints = projectRing(ring, insetBbox, sideX + 12, mapY + 12, sideW - 24, 118);
+  const insetLocalH = 88;
+  const insetMgH = 72;
+  const insetPoints = projectRing(
+    ring,
+    insetBbox,
+    sideX + 12,
+    mapY + 14,
+    sideW - 24,
+    insetLocalH,
+  );
+  const mgInsetPoints = projectRing(
+    ring,
+    MG_STATE_BBOX,
+    sideX + 12,
+    mapY + 14 + insetLocalH + 10,
+    sideW - 24,
+    insetMgH,
+  );
+  const overlaySvg = overlayRings
+    .map((overlay) => {
+      const pts = projectRing(overlay.ring, mainBbox, mapX, mapY, mapW, mapH);
+      const fill = overlay.fill ?? "none";
+      const fillOpacity = overlay.fillOpacity ?? 0.12;
+      const strokeWidth = overlay.strokeWidth ?? 1.5;
+      const dash = overlay.dashArray ? ` stroke-dasharray="${overlay.dashArray}"` : "";
+      return `<polygon points="${pts}" fill="${fill}" fill-opacity="${fillOpacity}" stroke="${overlay.stroke}" stroke-width="${strokeWidth}"${dash}/>`;
+    })
+    .join("\n");
+  const satelliteLayer = input.satelliteBackgroundHref
+    ? `<image href="${input.satelliteBackgroundHref.replace(/"/g, "&quot;")}" x="${mapX + 28}" y="${mapY + 28}" width="${mapW - 56}" height="${mapH - 56}" preserveAspectRatio="xMidYMid slice" opacity="0.88"/>`
+    : "";
   const bar = scaleBarMeters(mainBbox, utm);
 
   const classificationItems = input.layer?.stats?.length
     ? legendFromStats(input.layer.stats)
     : [];
 
-  const layerSummary = input.layer?.summary
-    ? `<text x="${sideX + 14}" y="${mapY + 200}" font-size="8" fill="#475569">${esc(input.layer.summary.slice(0, 120))}${input.layer.summary.length > 120 ? "…" : ""}</text>`
-    : "";
+  const insetBlockH = insetLocalH + insetMgH + 28;
+  const legendBoxY = mapY + insetBlockH;
+  const legendY = legendBoxY + 68;
 
-  let legendY = mapY + 168;
+  const layerSummary = input.layer?.summary
+    ? `<text x="${sideX + 14}" y="${legendY + 36}" font-size="8" fill="#475569">${esc(input.layer.summary.slice(0, 120))}${input.layer.summary.length > 120 ? "…" : ""}</text>`
+    : "";
   const classLegend = classificationItems.length
     ? classificationItems
         .map((item, i) => {
@@ -285,7 +376,7 @@ export function buildCartographicSheetSvg(input: CartographicSheetInput): string
         .join("\n")
     : `<text x="${sideX + 14}" y="${legendY + 20}" font-size="9" fill="#64748b">Sem classes mensuráveis nesta camada.</text>`;
 
-  const metaY = mapY + 380;
+  const metaY = legendBoxY + (classificationItems.length ? 132 + classificationItems.length * 16 : 100);
   const brandY = mapY + 500;
 
   return `<?xml version="1.0" encoding="UTF-8"?>
@@ -302,19 +393,24 @@ export function buildCartographicSheetSvg(input: CartographicSheetInput): string
   <text x="${PAGE_W / 2}" y="37" text-anchor="middle" font-size="14" font-weight="700" fill="#0f172a">${esc(title.toUpperCase())}</text>
 
   <rect x="${mapX}" y="${mapY}" width="${mapW}" height="${mapH}" fill="#f8fafc" stroke="#0f172a" stroke-width="1"/>
+  ${satelliteLayer}
   ${drawGrid(mainBbox, mapX, mapY, mapW, mapH, utm)}
-  <polygon points="${mainPoints}" fill="url(#perimHatch)" stroke="#0f172a" stroke-width="2"/>
+  ${overlaySvg}
+  <polygon points="${mainPoints}" fill="url(#perimHatch)" stroke="#ca8a04" stroke-width="2"/>
   ${northArrow(mapX + 24, mapY + mapH - 72)}
   ${scaleBarSvg(mapX + 24, mapY + mapH - 42, bar)}
 
-  <rect x="${sideX}" y="${mapY}" width="${sideW}" height="132" fill="#ffffff" stroke="#0f172a" stroke-width="1"/>
-  <text x="${sideX + sideW / 2}" y="${mapY + 10}" text-anchor="middle" font-size="8" fill="#64748b">Mapa de localização</text>
-  <rect x="${sideX + 10}" y="${mapY + 14}" width="${sideW - 20}" height="112" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="0.5"/>
+  <rect x="${sideX}" y="${mapY}" width="${sideW}" height="${insetLocalH + insetMgH + 28}" fill="#ffffff" stroke="#0f172a" stroke-width="1"/>
+  <text x="${sideX + sideW / 2}" y="${mapY + 10}" text-anchor="middle" font-size="8" fill="#64748b">Mapa de localização (regional)</text>
+  <rect x="${sideX + 10}" y="${mapY + 14}" width="${sideW - 20}" height="${insetLocalH}" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="0.5"/>
   <polygon points="${insetPoints}" fill="url(#perimHatch)" stroke="#0f172a" stroke-width="1.2"/>
+  <text x="${sideX + sideW / 2}" y="${mapY + insetLocalH + 22}" text-anchor="middle" font-size="8" fill="#64748b">Minas Gerais</text>
+  <rect x="${sideX + 10}" y="${mapY + insetLocalH + 26}" width="${sideW - 20}" height="${insetMgH}" fill="#e2e8f0" stroke="#cbd5e1" stroke-width="0.5"/>
+  <polygon points="${mgInsetPoints}" fill="url(#perimHatch)" stroke="#b91c1c" stroke-width="1.4"/>
 
-  <rect x="${sideX}" y="${mapY + 138}" width="${sideW}" height="${classificationItems.length ? 120 + classificationItems.length * 16 : 88}" fill="#ffffff" stroke="#0f172a" stroke-width="1"/>
-  <rect x="${sideX + 14}" y="${mapY + 152}" width="18" height="12" fill="url(#perimHatch)" stroke="#0f172a" stroke-width="0.6"/>
-  <text x="${sideX + 38}" y="${mapY + 162}" font-size="9" fill="#0f172a">${esc(propertyLabel)}</text>
+  <rect x="${sideX}" y="${legendBoxY}" width="${sideW}" height="${classificationItems.length ? 120 + classificationItems.length * 16 : 88}" fill="#ffffff" stroke="#0f172a" stroke-width="1"/>
+  <rect x="${sideX + 14}" y="${legendBoxY + 14}" width="18" height="12" fill="url(#perimHatch)" stroke="#0f172a" stroke-width="0.6"/>
+  <text x="${sideX + 38}" y="${legendBoxY + 24}" font-size="9" fill="#0f172a">${esc(propertyLabel)}</text>
   ${classificationItems.length ? `<text x="${sideX + 14}" y="${legendY}" font-size="9" font-weight="600" fill="#0f172a">Classificações</text>` : ""}
   ${classLegend}
   ${layerSummary}
@@ -344,23 +440,90 @@ export type CartographicSheetBundle = {
   svg: string;
 };
 
-/** Uma folha por camada SIG + folha de localização. */
+const INFLUENCE_STYLE: Record<
+  "ada" | "aid" | "aii",
+  { stroke: string; fill: string; dash?: string }
+> = {
+  ada: { stroke: "#ca8a04", fill: "#facc15" },
+  aid: { stroke: "#0891b2", fill: "#22d3ee", dash: "6 4" },
+  aii: { stroke: "#0f172a", fill: "#64748b", dash: "3 5" },
+};
+
+function influenceOverlayRings(
+  areas: GeoInfluenceAreas,
+  focus: "ada" | "aid" | "aii" | "all",
+): CartographicOverlayRing[] {
+  const items: { key: "ada" | "aid" | "aii"; poly: GeoInfluenceAreas["ada"] | null }[] = [
+    { key: "ada", poly: areas.ada },
+    { key: "aid", poly: areas.aid },
+    { key: "aii", poly: areas.aii },
+  ];
+  const rings: CartographicOverlayRing[] = [];
+  for (const item of items) {
+    if (!item.poly) continue;
+    if (focus !== "all" && item.key !== focus) continue;
+    const r = ringFromPerimeter(item.poly.geojson);
+    if (!r) continue;
+    const style = INFLUENCE_STYLE[item.key];
+    rings.push({
+      ring: r,
+      stroke: style.stroke,
+      fill: style.fill,
+      fillOpacity: item.key === "ada" ? 0.35 : 0.18,
+      strokeWidth: item.key === "ada" ? 2.2 : 1.6,
+      dashArray: style.dash,
+      label: item.poly.title,
+    });
+  }
+  if (focus === "all") return rings;
+  const contextKeys = focus === "ada" ? [] : focus === "aid" ? (["ada"] as const) : (["ada", "aid"] as const);
+  for (const key of contextKeys) {
+    const poly = key === "ada" ? areas.ada : areas.aid;
+    if (!poly) continue;
+    const r = ringFromPerimeter(poly.geojson);
+    if (!r) continue;
+    const style = INFLUENCE_STYLE[key];
+    rings.unshift({
+      ring: r,
+      stroke: style.stroke,
+      fill: style.fill,
+      fillOpacity: 0.08,
+      strokeWidth: 1,
+      dashArray: style.dash,
+    });
+  }
+  return rings;
+}
+
+function influenceMapBbox(areas: GeoInfluenceAreas): [number, number, number, number] {
+  return (
+    unionBbox([areas.ada.bbox, areas.aid?.bbox, areas.aii?.bbox]) ?? areas.ada.bbox
+  );
+}
+
+/** Uma folha por camada SIG + folha de localização + áreas de influência. */
 export function buildWaveACartographicSheets(
   wave: {
     perimeter: GeoPerimeter;
     layers: GeoLayerResult[];
     factualSummary?: string;
+    influenceAreas?: GeoInfluenceAreas;
   },
   options?: {
     propertyName?: string;
     branding?: CartographicBranding;
     meta?: CartographicSheetMeta;
+    satelliteBackgroundHref?: string;
+    influenceAreas?: GeoInfluenceAreas;
+    thematicOverlaysByLayerId?: Record<string, CartographicOverlayRing[]>;
   },
 ): CartographicSheetBundle[] {
   const meta: CartographicSheetMeta = {
     ...options?.meta,
     propertyLabel: options?.propertyName ?? options?.meta?.propertyLabel,
   };
+  const satelliteHref = options?.satelliteBackgroundHref;
+  const influence = options?.influenceAreas ?? wave.influenceAreas;
   const sheets: CartographicSheetBundle[] = [];
 
   const locationSvg = buildCartographicSheetSvg({
@@ -370,9 +533,55 @@ export function buildWaveACartographicSheets(
     perimeter: wave.perimeter,
     branding: options?.branding,
     meta,
+    satelliteBackgroundHref: satelliteHref,
   });
   if (locationSvg) {
     sheets.push({ layerId: "_localizacao", title: "Localização", svg: locationSvg });
+  }
+
+  if (influence) {
+    const mapBbox = influenceMapBbox(influence);
+    const influenceTargets: { id: string; title: string; focus: "ada" | "aid" | "aii" }[] = [
+      { id: "_ada", title: "Área diretamente afetada (ADA)", focus: "ada" },
+    ];
+    if (influence.aid) {
+      influenceTargets.push({
+        id: "_aid",
+        title: "Área de influência direta (AID)",
+        focus: "aid",
+      });
+    }
+    if (influence.aii) {
+      influenceTargets.push({
+        id: "_aii",
+        title: "Área de influência indireta (AII)",
+        focus: "aii",
+      });
+    }
+    for (const target of influenceTargets) {
+      const focusPoly =
+        target.focus === "ada"
+          ? influence.ada
+          : target.focus === "aid"
+            ? influence.aid
+            : influence.aii;
+      if (!focusPoly) continue;
+      const svg = buildCartographicSheetSvg({
+        title: target.title,
+        perimeter: {
+          geojson: focusPoly.geojson,
+          areaHa: focusPoly.areaHa,
+          source: wave.perimeter.source,
+          bbox: focusPoly.bbox,
+        },
+        branding: options?.branding,
+        meta: { ...meta, dataSource: "Delimitação do empreendimento / buffer" },
+        overlayRings: influenceOverlayRings(influence, target.focus),
+        mapBbox,
+        satelliteBackgroundHref: satelliteHref,
+      });
+      if (svg) sheets.push({ layerId: target.id, title: target.title, svg });
+    }
   }
 
   for (const layer of wave.layers) {
@@ -382,6 +591,8 @@ export function buildWaveACartographicSheets(
       layer,
       branding: options?.branding,
       meta,
+      satelliteBackgroundHref: satelliteHref,
+      overlayRings: options?.thematicOverlaysByLayerId?.[layer.layerId],
     });
     if (svg) {
       sheets.push({ layerId: layer.layerId, title: layer.title, svg });

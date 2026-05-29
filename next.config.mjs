@@ -58,6 +58,10 @@ const nextConfig = {
   /** `standalone` em dev quebra error components / App Router no Next 14. */
   ...(process.env.NODE_ENV === "production" ? { output: "standalone" } : {}),
   experimental: {
+    serverActions: {
+      /** Polígonos grandes / SHP em base64 na Análise Geoespacial. */
+      bodySizeLimit: "10mb",
+    },
     /** Evita empacotar pdf-parse no bundle do servidor. */
     serverComponentsExternalPackages: [
       "pdf-parse",

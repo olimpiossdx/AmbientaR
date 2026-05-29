@@ -2,6 +2,7 @@ import { FieldValue } from "firebase-admin/firestore";
 import type { FeatureCollection } from "geojson";
 import { studyMapsAdminDb } from "@/lib/study-maps/admin";
 import { geojsonChecksum } from "./checksum";
+import { firestoreLayerRef } from "./spatial/layer-ref";
 import type { McaAgentResult } from "./types";
 
 const PROJECTS = "mca_projects";
@@ -25,6 +26,8 @@ export async function persistAgentLayer(
       layerKey: result.layerKey,
       agentId: result.agentId,
       checksum: geojsonChecksum(result.geojson),
+      geometryRef: firestoreLayerRef(projectId, result.layerKey),
+      storageKind: "firestore",
       sourceAgentId: result.agentId,
       updatedAt: FieldValue.serverTimestamp(),
     });
@@ -44,6 +47,8 @@ export async function persistAgentLayers(
       layerKey,
       agentId: sourceAgentId,
       checksum: geojsonChecksum(geojson),
+      geometryRef: firestoreLayerRef(projectId, layerKey),
+      storageKind: "firestore",
       sourceAgentId,
       updatedAt: FieldValue.serverTimestamp(),
     });

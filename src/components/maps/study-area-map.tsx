@@ -42,7 +42,8 @@ export type StudyAreaMapProps = {
 };
 
 /**
- * Mesmo basemap e desenho que Análise Geoespacial (Esri World Imagery + polígono).
+ * Mapa de desenho do perímetro — submenu Mapas (Estudos Técnicos / MCA).
+ * Basemap satélite Esri + polígono editável.
  */
 export function StudyAreaMap({ polygon, onPolygonChange }: StudyAreaMapProps) {
   const handleCreated = (e: { layer: L.Layer }) => {

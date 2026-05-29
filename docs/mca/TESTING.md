@@ -93,9 +93,13 @@ flowchart TD
 
 **Gate v1:** PDF abre; contém título «Uso e Ocupação do Solo», quadro informações, tabelas se pipeline gerou dados.
 
-**Limitação v1:** não é réplica pixel-a-pixel dos PDFs Pimenta (sem grade QGIS, inset, satélite embutido).
+**Limitação v1:** comparação pixel-a-pixel com PDF Pimenta ainda manual. E13 jsPDF inclui grade UTM, inset MG, satélite Esri (toggle) e preview raster; PDF final v3 usa worker QGIS quando configurado.
 
 ---
+
+### 5b. Análise Geoespacial — export cartográfico (módulo separado)
+
+Rota `/analise-ambiental` → **Exportação cartográfica**. Opções: satélite Esri, overlay WFS temático, insetos duplos (regional + MG). Distinto do MCA (`/studies/mapas`).
 
 ### 6. Debugger por etapa
 
@@ -252,12 +256,45 @@ npm run deploy:rules             # inclui mca_reviews (read-only cliente)
 
 ---
 
+## Roteiro v3 (enterprise — fundação)
+
+### CLI
+
+```bash
+npm run mca:verify-v3
+```
+
+### Worker QGIS (local)
+
+```bash
+cd infra/mca-qgis-worker
+docker compose up --build
+# ou: pip install -r requirements.txt && uvicorn main:app --reload --port 8091
+```
+
+`.env.local`:
+
+```env
+MCA_QGIS_WORKER_URL=http://localhost:8091
+WORKER_SHARED_SECRET=...
+```
+
+### UI
+
+1. Pipeline completo + revisão aprovada (se fila activa).
+2. **PDF final QGIS (v3)** — chama `POST /api/mca/projects/{id}/export-final`.
+3. Health na barra: `QGIS ✓` quando worker responde.
+
+**Nota:** renderer actual é **ReportLab bridge**; PyQGIS substitui em imagem Docker v3 plena.
+
+---
+
 ## Evolução dos testes (v2–v5)
 
 | Versão | Testes adicionais |
 |--------|-------------------|
 | v2 | Layout JSON snapshot; invalidation graph; review queue; scale/topo; verify-registry |
-| v3 | PostGIS integration; QGIS PDF diff vs gold |
+| v3 | PostGIS stub; tile policy; export-final + QGIS worker bridge; `mca:verify-v3` |
 | v4 | CI benchmark Catingueiro; score 5 eixos |
 | v5 | E2E multi-tenant; carga tiling |
 

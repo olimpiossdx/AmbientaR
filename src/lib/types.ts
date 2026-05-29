@@ -1,6 +1,7 @@
 
 
 import type { LucideIcon } from "lucide-react";
+import type { Feature, Polygon } from "geojson";
 
 export type EntityType = 'Pessoa Física' | 'Pessoa Jurídica' | 'Produtor Rural';
 
@@ -341,6 +342,19 @@ export type License = {
   fileUrl?: string;
 };
 
+export type ProjectPerimetroReferenciaFileType = 'kml' | 'kmz' | 'shp';
+
+/** Perímetro opcional guardado no cadastro do empreendimento (referência para análises). */
+export type ProjectPerimetroReferencia = {
+  fileUrl?: string;
+  fileName?: string;
+  fileType?: ProjectPerimetroReferenciaFileType;
+  geojson?: Feature<Polygon>;
+  areaHa?: number;
+  uploadedAt?: string;
+  uploadedBy?: string;
+};
+
 export type Project = {
   id: string;
   empreendedorId: string;
@@ -442,6 +456,8 @@ export type Project = {
     /** URL do arquivo de geometria (SHP/ZIP) no Storage */
     shpUrl?: string;
   };
+  /** Perímetro de referência opcional (KML/KMZ/SHP) — auxiliar para análises; separado do CAR e do MCA. */
+  perimetroReferencia?: ProjectPerimetroReferencia;
   projectArea?: {
     totalArea?: number;
     builtArea?: number;

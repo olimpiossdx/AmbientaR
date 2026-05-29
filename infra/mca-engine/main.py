@@ -7,10 +7,11 @@ from pathlib import Path
 from typing import Any
 
 import yaml
-from fastapi import FastAPI, Header, HTTPException
+from fastapi import FastAPI, Header, HTTPException, Response
 from pydantic import BaseModel, Field
 
 from dag import resolve_agent_order
+from layout_render_route import LayoutRenderBody, render_layout_pdf_route
 
 app = FastAPI(title="AmbientaR MCA Engine", version="1.0.0")
 
@@ -73,6 +74,14 @@ def debug_etapa(etapa: int) -> dict[str, Any]:
         "checks": ETAPA_CHECKS.get(etapa, ["see docs/mca/ETAPAS.md"]),
         "registry_agents": len(_load_registry()),
     }
+
+
+@app.post("/v1/layout/render-pdf")
+def post_layout_render_pdf(
+    body: LayoutRenderBody,
+    x_worker_secret: str | None = Header(default=None),
+) -> Response:
+    return render_layout_pdf_route(body, x_worker_secret)
 
 
 @app.post("/v1/debug/agent")

@@ -30,7 +30,7 @@
 | E05-pass.md … E14-pass.md | E05–E14 | Templates — preencher após QA |
 | [IMPORT-LAYERS.md](IMPORT-LAYERS.md) | Guia import CAD |
 | [examples/layers-import-exemplo.json](examples/layers-import-exemplo.json) | Exemplo import |
-| E15-pass.md | E15 | PASS estrutural (pipeline); **benchmark Catingueiro pendente** |
+| E15-pass.md | E15 | PASS + benchmark Catingueiro (`npm run mca:verify-gold-catingueiro`) |
 
 ---
 

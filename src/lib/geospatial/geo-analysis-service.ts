@@ -1,6 +1,13 @@
 import type { GeoFactualItem, GeoFonte } from "@/lib/types/analise-ambiental";
+import type { SicarCarRecord } from "@/lib/types/sicar-car";
 import { runWaveAAnalysis } from "@/lib/geospatial/run-wave-a-analysis";
 import type { PerimeterParseInput } from "@/lib/geospatial/perimeter";
+import {
+  fetchCarByCodImovel,
+  queryCarsInPerimeter,
+  sicarRecordsToFactualSummary,
+  SICAR_WFS_BASE_URL,
+} from "@/lib/geospatial/sicar-car-service";
 
 type SobreposicaoResultado = {
   bioma: string;
@@ -12,13 +19,31 @@ type SobreposicaoResultado = {
   hidrografia: Array<{ nome: string; tipo: string }>;
   factualData: GeoFactualItem[];
   fontesConsultadas: GeoFonte[];
+  carImoveis?: SicarCarRecord[];
 };
 
-type CarResultado = {
+export type CarResultado = {
+  codImovel: string;
   areaTotal: number;
   situacao: string;
-  appDeclarada: number;
-  reservaLegalDeclarada: number;
+  statusCodigo: string;
+  condicao: string;
+  municipio: string;
+  uf: string;
+  tipoImovel?: string;
+  modFiscal?: number;
+  dataAtualizacao?: string;
+  /** Não disponível na camada área do imóvel do WFS público. */
+  appDeclarada?: number;
+  reservaLegalDeclarada?: number;
+  fonte: "sicar-wfs-publico";
+  aviso?: string;
+};
+
+const SICAR_FONTE: GeoFonte = {
+  nome: "SICAR GeoServer (consulta pública)",
+  url: SICAR_WFS_BASE_URL,
+  tipo: "ogc",
 };
 
 const DEFAULT_FONTES: GeoFonte[] = [
@@ -27,32 +52,13 @@ const DEFAULT_FONTES: GeoFonte[] = [
     url: "https://geoserver.meioambiente.mg.gov.br/",
     tipo: "ogc",
   },
-  {
-    nome: "SICAR APIs (Conecta Gov)",
-    url: "https://www.gov.br/conecta/catalogo/apis/sicar-imovel",
-    tipo: "api",
-  },
+  SICAR_FONTE,
   {
     nome: "IBAMA PAMGIA",
     url: "https://pamgia.ibama.gov.br/geoservicos/",
     tipo: "ogc",
   },
 ];
-
-function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
-  return new Promise((resolve, reject) => {
-    const id = setTimeout(() => reject(new Error("Tempo limite excedido.")), ms);
-    promise
-      .then((v) => {
-        clearTimeout(id);
-        resolve(v);
-      })
-      .catch((e) => {
-        clearTimeout(id);
-        reject(e);
-      });
-  });
-}
 
 function estimateAreaByInput(input: string): number | undefined {
   if (!input) return undefined;
@@ -66,38 +72,107 @@ function estimateAreaByInput(input: string): number | undefined {
   return undefined;
 }
 
+function recordToCarResultado(record: SicarCarRecord): CarResultado {
+  return {
+    codImovel: record.codImovel,
+    areaTotal: record.areaHa,
+    situacao: record.situacao,
+    statusCodigo: record.statusCodigo,
+    condicao: record.condicao,
+    municipio: record.municipio,
+    uf: record.uf,
+    tipoImovel: record.tipoImovel,
+    modFiscal: record.modFiscal,
+    dataAtualizacao: record.dataAtualizacao,
+    fonte: "sicar-wfs-publico",
+    aviso:
+      "APP e Reserva Legal declaradas não constam na camada pública de área do imóvel; consulte o demonstrativo no SICAR.",
+  };
+}
+
+function mergeFontes(base: GeoFonte[], extra: GeoFonte[]): GeoFonte[] {
+  const seen = new Set<string>();
+  const out: GeoFonte[] = [];
+  for (const f of [...base, ...extra]) {
+    const key = `${f.nome}|${f.url}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(f);
+  }
+  return out;
+}
+
+async function queryCarForInput(
+  data: string,
+  dataType: PerimeterParseInput["dataType"],
+): Promise<SicarCarRecord[]> {
+  if (dataType === "car") {
+    const result = await fetchCarByCodImovel(data);
+    return result.imoveis;
+  }
+  if (
+    dataType === "coordinates" ||
+    dataType === "polygon" ||
+    dataType === "kml" ||
+    dataType === "shp"
+  ) {
+    const result = await queryCarsInPerimeter({ dataType, data });
+    return result.imoveis;
+  }
+  return [];
+}
+
 export async function fetchCarData(numeroCAR: string): Promise<CarResultado> {
   const trimmed = numeroCAR.trim();
   if (!trimmed) {
     throw new Error("Número do CAR inválido.");
   }
 
-  // Nesta primeira versão usamos chamada leve ao endpoint oficial do catálogo como verificação de disponibilidade.
-  // A consulta detalhada do imóvel depende de credenciais OAuth específicas de produção.
-  try {
-    await withTimeout(
-      fetch("https://www.gov.br/conecta/catalogo/apis/sicar-imovel", {
-        method: "GET",
-        cache: "no-store",
-      }),
-      8000,
+  const result = await fetchCarByCodImovel(trimmed);
+  if (!result.ok || result.imoveis.length === 0) {
+    throw new Error(
+      result.error ?? "CAR não encontrado na base pública do SICAR.",
     );
-  } catch {
-    // Sem bloquear o fluxo: mantemos fallback factual com transparência no relatório.
   }
 
-  return {
-    areaTotal: 50.45,
-    situacao: "Em análise no SICAR (consulta pública)",
-    appDeclarada: 5.2,
-    reservaLegalDeclarada: 10.1,
-  };
+  return recordToCarResultado(result.imoveis[0]);
+}
+
+export async function queryCarByGeometry(
+  input: PerimeterParseInput,
+): Promise<SicarCarRecord[]> {
+  const result = await queryCarsInPerimeter(input);
+  return result.imoveis;
 }
 
 export async function runGeospatialOverlay(
   data: string,
   dataType: PerimeterParseInput["dataType"] = "polygon",
 ): Promise<SobreposicaoResultado> {
+  let carImoveis: SicarCarRecord[] = [];
+  try {
+    carImoveis = await queryCarForInput(data, dataType);
+  } catch {
+    carImoveis = [];
+  }
+
+  const carFactual: GeoFactualItem | null =
+    carImoveis.length > 0
+      ? {
+          camada: "CAR / SICAR (imóveis no perímetro)",
+          fonte: SICAR_FONTE.nome,
+          metodo: "WFS GetFeature + INTERSECTS (GeoServer CAR)",
+          resultado: sicarRecordsToFactualSummary(carImoveis),
+        }
+      : dataType !== "car"
+        ? {
+            camada: "CAR / SICAR (imóveis no perímetro)",
+            fonte: SICAR_FONTE.nome,
+            metodo: "WFS GetFeature + INTERSECTS (GeoServer CAR)",
+            resultado: "Nenhum imóvel CAR intersectou o perímetro consultado.",
+          }
+        : null;
+
   try {
     const wave = await runWaveAAnalysis({ dataType, data });
     const biomaLayer = wave.layers.find((l) => l.layerId === "mg_bioma");
@@ -120,6 +195,10 @@ export async function runGeospatialOverlay(
       areaHa: layer.stats[0]?.areaHa,
     }));
 
+    if (carFactual) {
+      factualData.unshift(carFactual);
+    }
+
     return {
       bioma,
       sobreposicaoUC: {
@@ -129,12 +208,14 @@ export async function runGeospatialOverlay(
       },
       hidrografia,
       factualData,
-      fontesConsultadas: wave.fontesConsultadas.length
-        ? wave.fontesConsultadas
-        : DEFAULT_FONTES,
+      fontesConsultadas: mergeFontes(
+        wave.fontesConsultadas.length ? wave.fontesConsultadas : DEFAULT_FONTES,
+        [SICAR_FONTE],
+      ),
+      carImoveis,
     };
   } catch {
-    // Fallback mínimo se perímetro inválido
+    // Fallback mínimo se perímetro inválido para Onda A
   }
 
   let bioma = "Cerrado";
@@ -143,7 +224,11 @@ export async function runGeospatialOverlay(
   ];
   const areaHa = estimateAreaByInput(data);
 
-  const factualData: GeoFactualItem[] = [
+  const factualData: GeoFactualItem[] = [];
+  if (carFactual) {
+    factualData.push(carFactual);
+  }
+  factualData.push(
     {
       camada: "Hidrografia (Onda A)",
       fonte: "IDE-Sisema",
@@ -165,7 +250,7 @@ export async function runGeospatialOverlay(
       resultado: "Perímetro inválido ou serviço indisponível.",
       areaHa,
     },
-  ];
+  );
 
   return {
     bioma,
@@ -176,6 +261,7 @@ export async function runGeospatialOverlay(
     },
     hidrografia,
     factualData,
-    fontesConsultadas: DEFAULT_FONTES,
+    fontesConsultadas: mergeFontes(DEFAULT_FONTES, [SICAR_FONTE]),
+    carImoveis,
   };
 }

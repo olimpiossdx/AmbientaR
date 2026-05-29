@@ -91,11 +91,24 @@ function buildFactsPrompt(
   if (carData) {
     lines.push(
       "",
-      "## Dados CAR (consulta auxiliar)",
+      "## Dados CAR (SICAR — WFS público)",
+      `- Código: ${carData.codImovel}`,
       `- Área total declarada: ${carData.areaTotal} ha`,
       `- Situação: ${carData.situacao}`,
-      `- APP declarada: ${carData.appDeclarada} ha`,
-      `- Reserva Legal declarada: ${carData.reservaLegalDeclarada} ha`,
+      `- Status: ${carData.statusCodigo}${carData.condicao ? ` (${carData.condicao})` : ""}`,
+      `- Município/UF: ${carData.municipio}/${carData.uf}`,
+    );
+    if (carData.aviso) {
+      lines.push(`- Nota: ${carData.aviso}`);
+    }
+  } else if (overlay.carImoveis?.length) {
+    lines.push(
+      "",
+      "## Imóveis CAR no perímetro (SICAR — WFS público)",
+      ...overlay.carImoveis.map(
+        (i) =>
+          `- ${i.codImovel}: ${i.situacao} · ${i.areaHa.toFixed(2)} ha · ${i.municipio}/${i.uf}`,
+      ),
     );
   }
 
@@ -135,8 +148,28 @@ export async function analyseAreaWithDeepseek(
   apiKey: string,
 ): Promise<AnaliseAmbientalOutput> {
   const factualOverlay = await runGeospatialOverlay(input.data, input.dataType);
-  const carData =
-    input.dataType === "car" ? await fetchCarData(input.data) : null;
+  let carData: Awaited<ReturnType<typeof fetchCarData>> | null = null;
+  if (input.dataType === "car") {
+    try {
+      carData = await fetchCarData(input.data);
+    } catch {
+      carData = null;
+    }
+  } else if (factualOverlay.carImoveis?.length === 1) {
+    const i = factualOverlay.carImoveis[0];
+    carData = {
+      codImovel: i.codImovel,
+      areaTotal: i.areaHa,
+      situacao: i.situacao,
+      statusCodigo: i.statusCodigo,
+      condicao: i.condicao,
+      municipio: i.municipio,
+      uf: i.uf,
+      fonte: "sicar-wfs-publico",
+      aviso:
+        "APP e Reserva Legal declaradas não constam na camada pública de área do imóvel.",
+    };
+  }
 
   const result = await deepseekChatCompletion(
     {

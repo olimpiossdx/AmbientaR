@@ -52,6 +52,7 @@ import {
 } from "@/lib/ia-menu-branded-pdf";
 import { appendGeoAnalysisComplementPdf } from "@/lib/geospatial/export-complement-pdf";
 import { buildComplementDocxBlob } from "@/lib/geospatial/export-complement-docx";
+import { buildCartographicPngMap } from "@/lib/geospatial/render-minimap-client";
 import {
   brandingUrlsFromLocal,
   guardBrandingExportFromHook,
@@ -61,6 +62,7 @@ import {
   SESSION_GEO_ANALYSIS_ID,
   isSessionGeoAnalysisId,
 } from "@/lib/geospatial/geo-analysis-session";
+import { WAVE_ALL_LAYER_COUNT } from "@/lib/geospatial/run-wave-a-analysis";
 
 type GeoAnalysisDoc = {
   id: string;
@@ -93,7 +95,7 @@ function createdAtMs(v: unknown): number {
 function formatAnalysisLabel(a: GeoAnalysisDoc, isSession?: boolean): string {
   const ha = a.perimeter?.areaHa;
   const ok = a.layers?.filter((l) => l.status === "ok").length ?? 0;
-  const total = a.layers?.length ?? 8;
+  const total = a.layers?.length ?? WAVE_ALL_LAYER_COUNT;
   const date = a.generatedAtUtc?.slice(0, 10) ?? "";
   const area = ha != null ? `${ha.toFixed(0)} ha` : "— ha";
   const prefix = isSession ? "Sessão actual · " : "";
@@ -119,10 +121,16 @@ export function GeoAnalysisComplementPanel({
   userId,
   initialGeoAnalysisId,
   inlineWaveResult,
+  cartographicMeta,
 }: {
   userId: string;
   initialGeoAnalysisId?: string | null;
   inlineWaveResult?: WaveAAnalysisResult | null;
+  cartographicMeta?: {
+    propertyName?: string;
+    projectAuthor?: string;
+    layerId?: string | "all";
+  };
 }) {
   const { firestore } = useFirebase();
   const searchParams = useSearchParams();
@@ -147,7 +155,9 @@ export function GeoAnalysisComplementPanel({
   const [loadingComplement, setLoadingComplement] = React.useState(false);
   const [generating, setGenerating] = React.useState(false);
   const [exportingPdf, setExportingPdf] = React.useState(false);
+  const [exportingLayerPdf, setExportingLayerPdf] = React.useState(false);
   const [exportingDocx, setExportingDocx] = React.useState(false);
+  const [exportLayerId, setExportLayerId] = React.useState<string>("all");
   const [factualOpen, setFactualOpen] = React.useState(true);
 
   const sessionOnly =
@@ -337,9 +347,10 @@ export function GeoAnalysisComplementPanel({
     }
   };
 
-  const handleExportComplementPdf = async () => {
+  const handleExportComplementPdf = async (layerId: string | "all" = "all") => {
     if (!complement || !loadedWave) return;
-    setExportingPdf(true);
+    if (layerId === "all") setExportingPdf(true);
+    else setExportingLayerPdf(true);
     try {
       const session = await prepareIaMenuBrandedPdfSession({
         brandingData,
@@ -350,17 +361,43 @@ export function GeoAnalysisComplementPanel({
       });
       if (!session) return;
 
-      appendGeoAnalysisComplementPdf(session, loadedWave, complement);
+      let cartographicPngs = null;
+      try {
+        cartographicPngs = await buildCartographicPngMap(loadedWave, {
+          propertyName: cartographicMeta?.propertyName,
+          projectAuthor: cartographicMeta?.projectAuthor,
+          layerId,
+        });
+      } catch (e) {
+        console.warn("Mapas cartográficos omitidos no PDF Etapa 2:", e);
+      }
+
+      appendGeoAnalysisComplementPdf(session, loadedWave, complement, {
+        cartographicPngs,
+        layerId,
+      });
+      const suffix =
+        layerId === "all"
+          ? "completo"
+          : layerId.replace(/^mg_/, "").slice(0, 24);
       saveIaMenuBrandedPdf(
         session,
-        `etapa2-geoespacial-${loadedWave.perimeter.areaHa.toFixed(0)}ha-${new Date().toISOString().slice(0, 10)}.pdf`,
+        `etapa2-${suffix}-${loadedWave.perimeter.areaHa.toFixed(0)}ha-${new Date().toISOString().slice(0, 10)}.pdf`,
       );
+      toast({
+        title: layerId === "all" ? "PDF completo gerado" : "PDF da camada gerado",
+        description:
+          layerId === "all"
+            ? "Mapas SIG + complemento IA num único documento."
+            : "Mapa cartográfico + dados factuais da camada seleccionada.",
+      });
     } finally {
       setExportingPdf(false);
+      setExportingLayerPdf(false);
     }
   };
 
-  const handleExportDocx = async () => {
+  const handleExportDocx = async (layerId: string | "all" = "all") => {
     if (!complement || !loadedWave) return;
     if (
       !guardBrandingExportFromHook({
@@ -382,6 +419,16 @@ export function GeoAnalysisComplementPanel({
     reportBrandingPdfIssues(brandingUrlsFromLocal(brandingData), images, toast);
     setExportingDocx(true);
     try {
+      let cartographicPngs;
+      try {
+        cartographicPngs = await buildCartographicPngMap(loadedWave, {
+          propertyName: cartographicMeta?.propertyName,
+          projectAuthor: cartographicMeta?.projectAuthor,
+          layerId,
+        });
+      } catch {
+        cartographicPngs = undefined;
+      }
       const blob = await buildComplementDocxBlob(
         complement,
         {
@@ -389,11 +436,17 @@ export function GeoAnalysisComplementPanel({
           generatedAtUtc: complement.generatedAtUtc,
           factualSummary: loadedWave.factualSummary,
           layers: loadedWave.layers,
+          wave: loadedWave,
+          cartographicPngs,
+          propertyName: cartographicMeta?.propertyName,
+          projectAuthor: cartographicMeta?.projectAuthor,
+          layerId,
         },
         images,
       );
+      const suffix = layerId === "all" ? "completo" : layerId.replace(/^mg_/, "").slice(0, 24);
       downloadBlob(
-        `etapa2-geoespacial-${new Date().toISOString().slice(0, 10)}.docx`,
+        `etapa2-${suffix}-${new Date().toISOString().slice(0, 10)}.docx`,
         blob,
       );
     } finally {
@@ -427,8 +480,8 @@ export function GeoAnalysisComplementPanel({
       <CardHeader>
         <CardTitle>Etapa 2 — Complementação geoespacial (IA)</CardTitle>
         <CardDescription>
-          Revise os dados factuais (8 camadas SIG), gere o rascunho interpretativo e exporte PDF
-          completo (factual + IA) ou Word.
+          Revise os dados factuais ({WAVE_ALL_LAYER_COUNT} camadas SIG), gere o rascunho interpretativo e exporte PDF/Word
+          completo (mapas cartográficos + dados + IA) ou por camada individual.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -436,7 +489,7 @@ export function GeoAnalysisComplementPanel({
           <p className="text-sm text-muted-foreground">Carregando análises...</p>
         ) : !canShow ? (
           <p className="text-sm text-muted-foreground">
-            Nenhuma análise factual salva. Gere primeiro o relatório factual (8 camadas) acima.
+            Nenhuma análise factual salva. Gere primeiro o relatório factual ({WAVE_ALL_LAYER_COUNT} camadas) acima.
           </p>
         ) : (
           <div className="space-y-2">
@@ -531,22 +584,39 @@ export function GeoAnalysisComplementPanel({
               {complement.disclaimer}
             </p>
             <div className="flex flex-wrap gap-2">
+              <div className="w-full space-y-1.5 sm:max-w-xs">
+                <Label htmlFor="etapa2-export-layer">Exportar camada</Label>
+                <Select value={exportLayerId} onValueChange={setExportLayerId}>
+                  <SelectTrigger id="etapa2-export-layer">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Documento completo (todas)</SelectItem>
+                    <SelectItem value="_localizacao">Localização</SelectItem>
+                    {loadedWave?.layers.map((layer) => (
+                      <SelectItem key={layer.layerId} value={layer.layerId}>
+                        {layer.title.slice(0, 56)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
               <Button
                 size="sm"
-                onClick={handleExportComplementPdf}
-                disabled={exportingPdf}
+                onClick={() => handleExportComplementPdf(exportLayerId as "all" | string)}
+                disabled={exportingPdf || exportingLayerPdf}
               >
-                {exportingPdf ? (
+                {exportingPdf || exportingLayerPdf ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : (
                   <FileDown className="mr-2 h-4 w-4" />
                 )}
-                PDF completo (SIG + IA)
+                {exportLayerId === "all" ? "PDF completo (mapas + IA)" : "PDF desta camada"}
               </Button>
               <Button
                 size="sm"
                 variant="outline"
-                onClick={handleExportDocx}
+                onClick={() => handleExportDocx(exportLayerId as "all" | string)}
                 disabled={exportingDocx}
               >
                 {exportingDocx ? (

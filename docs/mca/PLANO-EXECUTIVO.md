@@ -563,8 +563,10 @@ PostGIS, cache, tiles, `mca-qgis-worker`, PDF final QGIS.
 - [x] Gold Catingueiro = regressão máxima  
 - [x] Revisão humana oficial (v2)  
 - [x] MVP pipeline completo E01–E15 (estrutura)  
-- [ ] Fidelidade cartográfica alta (pendente geometrias reais)  
-- [ ] Benchmark Catingueiro automatizado (v4)  
+- [ ] Fidelidade cartográfica alta (pendente geometrias reais DWG no repo)  
+- [x] Benchmark Catingueiro automatizado (v4 — `mca:verify-gold-v4` + API visual-verify)  
+- [x] Satélite Esri server-side no PDF MCA (`resolve-pdf-map-image-server.ts`)  
+- [x] Import CAD ouro — `layers-import.json` via `mca:regenerate-gold-perimeters`  
 
 ---
 

@@ -1,9 +1,16 @@
 import type { jsPDF } from "jspdf";
 import type { Feature, FeatureCollection, Geometry, Position } from "geojson";
+import {
+  drawMcaLocationInset,
+  drawMcaNorthArrow,
+  drawMcaScaleBar,
+  drawMcaUtmGrid,
+  type McaPdfBbox,
+} from "./cartographic-pdf-elements";
 
 export type McaPdfMapRect = { x: number; y: number; w: number; h: number };
 
-type Bbox = [number, number, number, number];
+type Bbox = McaPdfBbox;
 
 type LayerStyle = {
   stroke: [number, number, number];
@@ -240,7 +247,7 @@ export function drawMcaMapPanel(
 
   doc.setFontSize(8);
   doc.setTextColor(71, 85, 105);
-  doc.text("Mapa esquemático MCA (UTM/SIRGAS — referência)", rect.x + 4, rect.y + 5);
+  doc.text("Mapa MCA — UTM SIRGAS 2000", rect.x + 4, rect.y + 5);
 
   const mapInner: McaPdfMapRect = {
     x: rect.x,
@@ -249,6 +256,24 @@ export function drawMcaMapPanel(
     h: rect.h - 7,
   };
 
+  const insetRect = {
+    x: rect.x + rect.w - 36,
+    y: rect.y + 8,
+    w: 32,
+    h: 22,
+  };
+
+  const propertyRing = (() => {
+    const src =
+      perimeter?.features?.[0] ??
+      layers.FUND_LIMITE?.features?.[0] ??
+      layers.BASE_PERIMETRO?.features?.[0];
+    const g = src?.geometry;
+    if (g?.type === "Polygon") return g.coordinates[0] as [number, number][];
+    return null;
+  })();
+
+  drawMcaUtmGrid(doc, bbox, mapInner);
   for (const key of sortLayerKeys(Object.keys(layers))) {
     const fc = layers[key];
     if (fc?.features?.length) drawLayer(doc, key, fc, bbox, mapInner);
@@ -272,7 +297,99 @@ export function drawMcaMapPanel(
     }
   }
 
+  drawMcaNorthArrow(doc, mapInner.x + 6, mapInner.y + mapInner.h - 22);
+  drawMcaScaleBar(doc, bbox, mapInner.x + 6, mapInner.y + mapInner.h - 10);
+  drawMcaLocationInset(doc, bbox, propertyRing, insetRect);
+
   return true;
+}
+
+/** Moldura cartográfica sobre imagem raster (satélite capturado no browser). */
+export function drawMcaMapRasterFrame(
+  doc: jsPDF,
+  rect: McaPdfMapRect,
+  perimeter: FeatureCollection | null | undefined,
+  layers: Record<string, FeatureCollection>,
+): void {
+  const layerFcs = Object.values(layers).filter((fc) => fc?.features?.length);
+  const bbox = bboxFromCollections(perimeter, ...layerFcs);
+  if (!bbox) {
+    doc.setDrawColor(203, 213, 225);
+    doc.setLineWidth(0.25);
+    doc.roundedRect(rect.x, rect.y, rect.w, rect.h, 2, 2, "S");
+    return;
+  }
+
+  doc.setDrawColor(203, 213, 225);
+  doc.setLineWidth(0.25);
+  doc.roundedRect(rect.x, rect.y, rect.w, rect.h, 2, 2, "S");
+
+  const mapInner: McaPdfMapRect = {
+    x: rect.x,
+    y: rect.y + 2,
+    w: rect.w,
+    h: rect.h - 2,
+  };
+
+  const propertyRing = (() => {
+    const src =
+      perimeter?.features?.[0] ??
+      layers.FUND_LIMITE?.features?.[0] ??
+      layers.BASE_PERIMETRO?.features?.[0];
+    const g = src?.geometry;
+    if (g?.type === "Polygon") return g.coordinates[0] as [number, number][];
+    return null;
+  })();
+
+  const insetRect = {
+    x: rect.x + rect.w - 36,
+    y: rect.y + 4,
+    w: 32,
+    h: 22,
+  };
+
+  drawMcaUtmGrid(doc, bbox, mapInner);
+  drawMcaNorthArrow(doc, mapInner.x + 6, mapInner.y + mapInner.h - 22);
+  drawMcaScaleBar(doc, bbox, mapInner.x + 6, mapInner.y + mapInner.h - 10);
+  drawMcaLocationInset(doc, bbox, propertyRing, insetRect);
+
+  doc.setFontSize(6.5);
+  doc.setTextColor(71, 85, 105);
+  doc.text("Basemap: Esri World Imagery", rect.x + 4, rect.y + rect.h - 2);
+}
+
+export function drawMcaConsultancyFooter(
+  doc: jsPDF,
+  x: number,
+  y: number,
+  w: number,
+  branding: {
+    companyName: string;
+    address?: string;
+    phone?: string;
+    email?: string;
+  },
+): void {
+  doc.setDrawColor(15, 23, 42);
+  doc.setLineWidth(0.2);
+  doc.line(x, y - 2, x + w, y - 2);
+
+  const brandWord = branding.companyName.split(/\s+/)[0] ?? "Consultoria";
+  doc.setFontSize(9);
+  doc.setTextColor(185, 28, 28);
+  doc.text(brandWord.toUpperCase(), x + w / 2, y + 2, { align: "center" });
+
+  doc.setFontSize(7);
+  doc.setTextColor(15, 23, 42);
+  doc.text(branding.companyName, x + w / 2, y + 6.5, { align: "center" });
+
+  doc.setFontSize(6);
+  doc.setTextColor(100, 116, 139);
+  let ly = y + 10;
+  for (const line of [branding.address, branding.phone, branding.email].filter(Boolean)) {
+    doc.text(String(line).slice(0, 64), x + w / 2, ly, { align: "center" });
+    ly += 3.5;
+  }
 }
 
 export function drawMcaCartouche(

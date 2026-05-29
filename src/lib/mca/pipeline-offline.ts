@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import type { FeatureCollection } from "geojson";
 import { runMcaAgent } from "./agents/run-agent";
-import { buildGoldPerimeter } from "./gold-perimeters";
+import { buildGoldPerimeter, loadGoldPerimeterFromRepo } from "./gold-perimeters";
 import { ensureProjectGeometry } from "./geometry-build";
 import { parseLayersImportPayload } from "./layer-import";
 import { loadMcaRegistry, listAgentsForEtapa } from "./registry";
@@ -10,6 +10,7 @@ import { resolveAgentOrder } from "./dag";
 import { buildAppTable, buildRlTable, buildUsoTable, extractRlRowsFromLayers, fcAreaHa } from "./tables";
 import { toFeatureCollection, perimeterAreaHa } from "./perimeter";
 import { buildLayoutJson } from "./layout/build-layout-json";
+import { loadGoldLayersFromRepo } from "./gold-cad-import";
 import type { McaAgentContext, McaAgentRun, McaProjectDoc } from "./types";
 
 export type OfflinePipelineResult = {
@@ -31,18 +32,40 @@ function loadDemoImportLayers(): Record<string, FeatureCollection> {
 
 /** Simula pipeline E05–E15 sem Firestore (gold Catingueiro + import demo E06). */
 export async function runOfflinePipeline(): Promise<OfflinePipelineResult> {
-  const perimeter = buildGoldPerimeter("gold_catingueiro");
-  const layers = new Map<string, FeatureCollection>();
+  return runOfflinePipelineInternal({ useDemoImport: true });
+}
 
-  const demoLayers = loadDemoImportLayers();
-  const importedKeys = Object.keys(demoLayers);
-  for (const [key, fc] of Object.entries(demoLayers)) {
-    if (fc.features?.length) layers.set(key, fc);
+/** Pipeline offline só com geometria sintética (sem import demo E06). */
+export async function runOfflinePipelineSynthetic(): Promise<OfflinePipelineResult> {
+  return runOfflinePipelineInternal({ useDemoImport: false });
+}
+
+async function runOfflinePipelineInternal(opts: {
+  useDemoImport: boolean;
+}): Promise<OfflinePipelineResult> {
+  const perimeter = loadGoldPerimeterFromRepo("gold_catingueiro");
+  const layers = new Map<string, FeatureCollection>();
+  let importedKeys: string[] | undefined;
+
+  if (opts.useDemoImport) {
+    const goldLayers = loadGoldLayersFromRepo("gold_catingueiro");
+    if (goldLayers && Object.keys(goldLayers).length) {
+      importedKeys = Object.keys(goldLayers);
+      for (const [key, fc] of Object.entries(goldLayers)) {
+        if (fc.features?.length) layers.set(key, fc);
+      }
+    } else {
+      const demoLayers = loadDemoImportLayers();
+      importedKeys = Object.keys(demoLayers);
+      for (const [key, fc] of Object.entries(demoLayers)) {
+        if (fc.features?.length) layers.set(key, fc);
+      }
+    }
   }
 
   const project: McaProjectDoc = {
     uid: "offline-test",
-    title: "Catingueiro — offline",
+    title: opts.useDemoImport ? "Catingueiro — offline" : "Catingueiro — sintético",
     meta: {
       propertyName: "Faz. Catingueiro",
       ownerName: "Célio Fontana",
@@ -122,6 +145,9 @@ export async function runOfflinePipeline(): Promise<OfflinePipelineResult> {
 
   project.lastJobId = jobId;
   project.currentEtapa = 15;
+  project.meta.pipelineLayerKeys = [...ctx.layers.keys()].filter(
+    (k) => !["BASE_PERIMETRO", "FUND_LIMITE"].includes(k),
+  );
   for (let e = 1; e <= 15; e++) {
     project.etapaStatus[String(e).padStart(2, "0")] = "pass";
   }

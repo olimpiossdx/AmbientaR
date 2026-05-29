@@ -12,9 +12,11 @@ Datasets de referência para benchmark, regressão, score visual e treino.
 
 ```
 gold_{id}/
-  manifest.json      # áreas, matrículas, contagens esperadas
-  referencia.pdf     # cópia do PDF Pimenta (opcional no repo)
-  notes.md           # desvios conhecidos v1
+  manifest.json
+  perimeter.geojson    # sintético ou CAD (mca_gold_cad)
+  layers-import.json   # opcional — layers reais do DWG
+  referencia.pdf
+  notes.md
 ```
 
 ## manifest.json (exemplo)
@@ -51,4 +53,16 @@ Copiar PDFs do cliente para esta pasta ou referenciar caminho de rede na documen
 - **API:** `GET /api/mca/gold/presets`
 - **Fluxo rápido:** «Fluxo completo Catingueiro» — criar projeto + pipeline E01–E15 + vista Layers.
 
-Substituir por `perimeter.geojson` real quando DWG/PDF estiver no repo.
+Substituir por `perimeter.geojson` real quando DWG/PDF estiver no repo:
+
+```bash
+# Sintético escalado ao manifest (±2% área)
+npm run mca:regenerate-gold-perimeters
+
+# Com CAD Pimenta (ogr2ogr) — perímetro + layers-import.json
+MCA_GOLD_DWG_DIR=E:\refs\pimenta npm run mca:regenerate-gold-perimeters
+
+# Validar área vs manifest
+npm run mca:verify-gold-manifest
+npm run mca:verify-gold-catingueiro
+```

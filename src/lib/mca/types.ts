@@ -48,6 +48,7 @@ export type McaProjectMeta = {
   dwgFileName?: string;
   dwgConvertedAt?: string;
   importedLayerKeys?: string[];
+  pipelineLayerKeys?: string[];
   lastImportAt?: string;
   invalidatedLayerKeys?: string[];
   goldPresetId?: string;
