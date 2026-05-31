@@ -1,6 +1,6 @@
 # Checklist Fase 3 — Menus por perfil
 
-Gerado em: 2026-05-25T16:28:00.272Z
+Gerado em: 2026-05-31T16:17:32.790Z
 
 Use com `npm run dev` (porta 9002), utilizador de teste por role, DevTools → Rede + Consola.
 
@@ -15,7 +15,7 @@ Use com `npm run dev` (porta 9002), utilizador de teste por role, DevTools → R
 
 ### Administrador (`admin`)
 
-Itens de menu visíveis: **121**
+Itens de menu visíveis: **129**
 
 | Menu | Rota |
 |------|------|
@@ -36,6 +36,7 @@ Itens de menu visíveis: **121**
 | Backup de Dados Apagados | `/settings/deleted-backups` |
 | Base de Conhecimento (RAG) | `/ai-lab/rag` |
 | Bens e Patrimônio | `/financial/bens-patrimonio` |
+| Biblioteca IA (OneDrive) | `/ai-lab/cloud-library` |
 | Campo e levantamento | `/georeferenciamento/campo` |
 | Canais (WhatsApp/IG) | `/canais` |
 | CAR | `/car` |
@@ -52,6 +53,7 @@ Itens de menu visíveis: **121**
 | Consultar vistorias | `/inspections` |
 | Consultas Técnicas | `/consultas` |
 | Contratos | `/contracts` |
+| Contratos Plataforma | `/financial/platform-subscription-contracts` |
 | Contratos-Fornecedores | `/contracts-suppliers` |
 | Cruzamento de dados | `/studies/assistant` |
 | CTF/IBAMA | `/external` |
@@ -83,6 +85,7 @@ Itens de menu visíveis: **121**
 | IDE-SisemaNet-MG | `/external` |
 | Identidade Visual | `/settings` |
 | Informações da Empresa | `/settings/company` |
+| Integração OneDrive | `/settings/onedrive-integration` |
 | Intervenção em APP | `/studies/compensacao-ambiental/app` |
 | Inventário Florestal | `/studies/inventario` |
 | Lançamento Manual | `/monitoring/manual` |
@@ -97,25 +100,30 @@ Itens de menu visíveis: **121**
 | MCP & Ferramentas IA | `/ai-lab/mcp` |
 | Mídias Sociais | `/social-media` |
 | Minerária | `/studies/compensacao-ambiental/mineraria` |
+| Minha Carteira | `/carteira` |
 | NFe-Eletrônica | `/external` |
+| Nova outorga | `/studies/outorgas/new` |
 | Nova vistoria | `/inspections/new` |
 | Oportunidades & Pipeline | `/crm/opportunities` |
 | Orçamento Anual | `/financial/orcamento` |
 | Orçamentos e Propostas | `/commercial-proposals` |
 | Outorgas | `/outorgas` |
-| Outorgas | `/studies/outorgas` |
 | Painel | `/` |
 | Painel | `/georeferenciamento` |
 | Painel de Vendas | `/crm` |
 | Painel Financeiro | `/financial/painel` |
 | Pasta Base IA (Local) | `/settings/ai-local-source` |
+| Pasta do cliente | `/documentos-ambientais/pasta-cliente` |
 | PCA | `/studies/pca` |
 | PIA | `/studies/pia` |
 | PRADA | `/studies/prada` |
+| Processos | `/studies/outorgas` |
 | Programa de Educação Ambiental | `/studies/educacao-ambiental` |
 | Projeto Técnico de Barragem | `/studies/barragem` |
+| Projetos & ROI | `/financial/projetos-roi` |
 | PTRF | `/studies/ptrf` |
 | RCA | `/studies/rca` |
+| Reanálise | `/studies/reanalise` |
 | Referências normativas | `/georeferenciamento/referencias` |
 | Relatórios & Análises | `/crm/reports` |
 | Relatórios de Campo | `/inspections/reports` |
@@ -161,6 +169,7 @@ Itens de menu visíveis: **121**
 - [ ] Backup de Dados Apagados — `/settings/deleted-backups`
 - [ ] Base de Conhecimento (RAG) — `/ai-lab/rag`
 - [ ] Bens e Patrimônio — `/financial/bens-patrimonio`
+- [ ] Biblioteca IA (OneDrive) — `/ai-lab/cloud-library`
 - [ ] Campo e levantamento — `/georeferenciamento/campo`
 - [ ] Canais (WhatsApp/IG) — `/canais`
 - [ ] CAR — `/car`
@@ -177,6 +186,7 @@ Itens de menu visíveis: **121**
 - [ ] Consultar vistorias — `/inspections`
 - [ ] Consultas Técnicas — `/consultas`
 - [ ] Contratos — `/contracts`
+- [ ] Contratos Plataforma — `/financial/platform-subscription-contracts`
 - [ ] Contratos-Fornecedores — `/contracts-suppliers`
 - [ ] Cruzamento de dados — `/studies/assistant`
 - [ ] CTF/IBAMA — `/external`
@@ -208,6 +218,7 @@ Itens de menu visíveis: **121**
 - [ ] IDE-SisemaNet-MG — `/external`
 - [ ] Identidade Visual — `/settings`
 - [ ] Informações da Empresa — `/settings/company`
+- [ ] Integração OneDrive — `/settings/onedrive-integration`
 - [ ] Intervenção em APP — `/studies/compensacao-ambiental/app`
 - [ ] Inventário Florestal — `/studies/inventario`
 - [ ] Lançamento Manual — `/monitoring/manual`
@@ -222,25 +233,30 @@ Itens de menu visíveis: **121**
 - [ ] MCP & Ferramentas IA — `/ai-lab/mcp`
 - [ ] Mídias Sociais — `/social-media`
 - [ ] Minerária — `/studies/compensacao-ambiental/mineraria`
+- [ ] Minha Carteira — `/carteira`
 - [ ] NFe-Eletrônica — `/external`
+- [ ] Nova outorga — `/studies/outorgas/new`
 - [ ] Nova vistoria — `/inspections/new`
 - [ ] Oportunidades & Pipeline — `/crm/opportunities`
 - [ ] Orçamento Anual — `/financial/orcamento`
 - [ ] Orçamentos e Propostas — `/commercial-proposals`
 - [ ] Outorgas — `/outorgas`
-- [ ] Outorgas — `/studies/outorgas`
 - [ ] Painel — `/`
 - [ ] Painel — `/georeferenciamento`
 - [ ] Painel de Vendas — `/crm`
 - [ ] Painel Financeiro — `/financial/painel`
 - [ ] Pasta Base IA (Local) — `/settings/ai-local-source`
+- [ ] Pasta do cliente — `/documentos-ambientais/pasta-cliente`
 - [ ] PCA — `/studies/pca`
 - [ ] PIA — `/studies/pia`
 - [ ] PRADA — `/studies/prada`
+- [ ] Processos — `/studies/outorgas`
 - [ ] Programa de Educação Ambiental — `/studies/educacao-ambiental`
 - [ ] Projeto Técnico de Barragem — `/studies/barragem`
+- [ ] Projetos & ROI — `/financial/projetos-roi`
 - [ ] PTRF — `/studies/ptrf`
 - [ ] RCA — `/studies/rca`
+- [ ] Reanálise — `/studies/reanalise`
 - [ ] Referências normativas — `/georeferenciamento/referencias`
 - [ ] Relatórios & Análises — `/crm/reports`
 - [ ] Relatórios de Campo — `/inspections/reports`
@@ -270,11 +286,12 @@ Itens de menu visíveis: **121**
 
 ### Gestor (`gestor`)
 
-Itens de menu visíveis: **76**
+Itens de menu visíveis: **80**
 
 | Menu | Rota |
 |------|------|
 | /georeferenciamento/processos | `/georeferenciamento/processos` |
+| /multas-defesas | `/multas-defesas` |
 | /oficios | `/oficios` |
 | /requests | `/requests` |
 | /requests/new | `/requests/new` |
@@ -319,18 +336,21 @@ Itens de menu visíveis: **76**
 | Mapas | `/studies/mapas` |
 | Mata Atlântica | `/studies/compensacao-ambiental/mata-atlantica` |
 | Minerária | `/studies/compensacao-ambiental/mineraria` |
+| Nova outorga | `/studies/outorgas/new` |
 | Nova vistoria | `/inspections/new` |
 | Outorgas | `/outorgas` |
-| Outorgas | `/studies/outorgas` |
 | Painel | `/` |
 | Painel | `/georeferenciamento` |
+| Pasta do cliente | `/documentos-ambientais/pasta-cliente` |
 | PCA | `/studies/pca` |
 | PIA | `/studies/pia` |
 | PRADA | `/studies/prada` |
+| Processos | `/studies/outorgas` |
 | Programa de Educação Ambiental | `/studies/educacao-ambiental` |
 | Projeto Técnico de Barragem | `/studies/barragem` |
 | PTRF | `/studies/ptrf` |
 | RCA | `/studies/rca` |
+| Reanálise | `/studies/reanalise` |
 | Referências normativas | `/georeferenciamento/referencias` |
 | Relatórios de Campo | `/inspections/reports` |
 | Relatórios Diversos | `/studies/relatorios-diversos` |
@@ -355,6 +375,7 @@ Itens de menu visíveis: **76**
 <summary>Checklist copiável</summary>
 
 - [ ] /georeferenciamento/processos — `/georeferenciamento/processos`
+- [ ] /multas-defesas — `/multas-defesas`
 - [ ] /oficios — `/oficios`
 - [ ] /requests — `/requests`
 - [ ] /requests/new — `/requests/new`
@@ -399,18 +420,21 @@ Itens de menu visíveis: **76**
 - [ ] Mapas — `/studies/mapas`
 - [ ] Mata Atlântica — `/studies/compensacao-ambiental/mata-atlantica`
 - [ ] Minerária — `/studies/compensacao-ambiental/mineraria`
+- [ ] Nova outorga — `/studies/outorgas/new`
 - [ ] Nova vistoria — `/inspections/new`
 - [ ] Outorgas — `/outorgas`
-- [ ] Outorgas — `/studies/outorgas`
 - [ ] Painel — `/`
 - [ ] Painel — `/georeferenciamento`
+- [ ] Pasta do cliente — `/documentos-ambientais/pasta-cliente`
 - [ ] PCA — `/studies/pca`
 - [ ] PIA — `/studies/pia`
 - [ ] PRADA — `/studies/prada`
+- [ ] Processos — `/studies/outorgas`
 - [ ] Programa de Educação Ambiental — `/studies/educacao-ambiental`
 - [ ] Projeto Técnico de Barragem — `/studies/barragem`
 - [ ] PTRF — `/studies/ptrf`
 - [ ] RCA — `/studies/rca`
+- [ ] Reanálise — `/studies/reanalise`
 - [ ] Referências normativas — `/georeferenciamento/referencias`
 - [ ] Relatórios de Campo — `/inspections/reports`
 - [ ] Relatórios Diversos — `/studies/relatorios-diversos`
@@ -435,11 +459,12 @@ Itens de menu visíveis: **76**
 
 ### Supervisor (`supervisor`)
 
-Itens de menu visíveis: **87**
+Itens de menu visíveis: **91**
 
 | Menu | Rota |
 |------|------|
 | /georeferenciamento/processos | `/georeferenciamento/processos` |
+| /multas-defesas | `/multas-defesas` |
 | /oficios | `/oficios` |
 | /requests | `/requests` |
 | /requests/new | `/requests/new` |
@@ -491,20 +516,23 @@ Itens de menu visíveis: **87**
 | Mata Atlântica | `/studies/compensacao-ambiental/mata-atlantica` |
 | Mídias Sociais | `/social-media` |
 | Minerária | `/studies/compensacao-ambiental/mineraria` |
+| Nova outorga | `/studies/outorgas/new` |
 | Nova vistoria | `/inspections/new` |
 | Oportunidades & Pipeline | `/crm/opportunities` |
 | Outorgas | `/outorgas` |
-| Outorgas | `/studies/outorgas` |
 | Painel | `/` |
 | Painel | `/georeferenciamento` |
 | Painel de Vendas | `/crm` |
+| Pasta do cliente | `/documentos-ambientais/pasta-cliente` |
 | PCA | `/studies/pca` |
 | PIA | `/studies/pia` |
 | PRADA | `/studies/prada` |
+| Processos | `/studies/outorgas` |
 | Programa de Educação Ambiental | `/studies/educacao-ambiental` |
 | Projeto Técnico de Barragem | `/studies/barragem` |
 | PTRF | `/studies/ptrf` |
 | RCA | `/studies/rca` |
+| Reanálise | `/studies/reanalise` |
 | Referências normativas | `/georeferenciamento/referencias` |
 | Relatórios & Análises | `/crm/reports` |
 | Relatórios de Campo | `/inspections/reports` |
@@ -531,6 +559,7 @@ Itens de menu visíveis: **87**
 <summary>Checklist copiável</summary>
 
 - [ ] /georeferenciamento/processos — `/georeferenciamento/processos`
+- [ ] /multas-defesas — `/multas-defesas`
 - [ ] /oficios — `/oficios`
 - [ ] /requests — `/requests`
 - [ ] /requests/new — `/requests/new`
@@ -582,20 +611,23 @@ Itens de menu visíveis: **87**
 - [ ] Mata Atlântica — `/studies/compensacao-ambiental/mata-atlantica`
 - [ ] Mídias Sociais — `/social-media`
 - [ ] Minerária — `/studies/compensacao-ambiental/mineraria`
+- [ ] Nova outorga — `/studies/outorgas/new`
 - [ ] Nova vistoria — `/inspections/new`
 - [ ] Oportunidades & Pipeline — `/crm/opportunities`
 - [ ] Outorgas — `/outorgas`
-- [ ] Outorgas — `/studies/outorgas`
 - [ ] Painel — `/`
 - [ ] Painel — `/georeferenciamento`
 - [ ] Painel de Vendas — `/crm`
+- [ ] Pasta do cliente — `/documentos-ambientais/pasta-cliente`
 - [ ] PCA — `/studies/pca`
 - [ ] PIA — `/studies/pia`
 - [ ] PRADA — `/studies/prada`
+- [ ] Processos — `/studies/outorgas`
 - [ ] Programa de Educação Ambiental — `/studies/educacao-ambiental`
 - [ ] Projeto Técnico de Barragem — `/studies/barragem`
 - [ ] PTRF — `/studies/ptrf`
 - [ ] RCA — `/studies/rca`
+- [ ] Reanálise — `/studies/reanalise`
 - [ ] Referências normativas — `/georeferenciamento/referencias`
 - [ ] Relatórios & Análises — `/crm/reports`
 - [ ] Relatórios de Campo — `/inspections/reports`
@@ -622,10 +654,11 @@ Itens de menu visíveis: **87**
 
 ### Técnico (`technical`)
 
-Itens de menu visíveis: **65**
+Itens de menu visíveis: **69**
 
 | Menu | Rota |
 |------|------|
+| /multas-defesas | `/multas-defesas` |
 | /oficios | `/oficios` |
 | /requests | `/requests` |
 | /requests/new | `/requests/new` |
@@ -666,17 +699,20 @@ Itens de menu visíveis: **65**
 | Mapas | `/studies/mapas` |
 | Mata Atlântica | `/studies/compensacao-ambiental/mata-atlantica` |
 | Minerária | `/studies/compensacao-ambiental/mineraria` |
+| Nova outorga | `/studies/outorgas/new` |
 | Nova vistoria | `/inspections/new` |
 | Outorgas | `/outorgas` |
-| Outorgas | `/studies/outorgas` |
 | Painel | `/` |
+| Pasta do cliente | `/documentos-ambientais/pasta-cliente` |
 | PCA | `/studies/pca` |
 | PIA | `/studies/pia` |
 | PRADA | `/studies/prada` |
+| Processos | `/studies/outorgas` |
 | Programa de Educação Ambiental | `/studies/educacao-ambiental` |
 | Projeto Técnico de Barragem | `/studies/barragem` |
 | PTRF | `/studies/ptrf` |
 | RCA | `/studies/rca` |
+| Reanálise | `/studies/reanalise` |
 | Relatórios de Campo | `/inspections/reports` |
 | Relatórios Diversos | `/studies/relatorios-diversos` |
 | Reserva Legal | `/studies/reserva-legal` |
@@ -695,6 +731,7 @@ Itens de menu visíveis: **65**
 <details>
 <summary>Checklist copiável</summary>
 
+- [ ] /multas-defesas — `/multas-defesas`
 - [ ] /oficios — `/oficios`
 - [ ] /requests — `/requests`
 - [ ] /requests/new — `/requests/new`
@@ -735,17 +772,20 @@ Itens de menu visíveis: **65**
 - [ ] Mapas — `/studies/mapas`
 - [ ] Mata Atlântica — `/studies/compensacao-ambiental/mata-atlantica`
 - [ ] Minerária — `/studies/compensacao-ambiental/mineraria`
+- [ ] Nova outorga — `/studies/outorgas/new`
 - [ ] Nova vistoria — `/inspections/new`
 - [ ] Outorgas — `/outorgas`
-- [ ] Outorgas — `/studies/outorgas`
 - [ ] Painel — `/`
+- [ ] Pasta do cliente — `/documentos-ambientais/pasta-cliente`
 - [ ] PCA — `/studies/pca`
 - [ ] PIA — `/studies/pia`
 - [ ] PRADA — `/studies/prada`
+- [ ] Processos — `/studies/outorgas`
 - [ ] Programa de Educação Ambiental — `/studies/educacao-ambiental`
 - [ ] Projeto Técnico de Barragem — `/studies/barragem`
 - [ ] PTRF — `/studies/ptrf`
 - [ ] RCA — `/studies/rca`
+- [ ] Reanálise — `/studies/reanalise`
 - [ ] Relatórios de Campo — `/inspections/reports`
 - [ ] Relatórios Diversos — `/studies/relatorios-diversos`
 - [ ] Reserva Legal — `/studies/reserva-legal`
@@ -765,7 +805,7 @@ Itens de menu visíveis: **65**
 
 ### Vendas (`sales`)
 
-Itens de menu visíveis: **29**
+Itens de menu visíveis: **30**
 
 | Menu | Rota |
 |------|------|
@@ -791,6 +831,7 @@ Itens de menu visíveis: **29**
 | Orçamentos e Propostas | `/commercial-proposals` |
 | Painel | `/` |
 | Painel de Vendas | `/crm` |
+| Projetos & ROI | `/financial/projetos-roi` |
 | Relatórios & Análises | `/crm/reports` |
 | SEI-IBAMA | `/external` |
 | SEI-MG | `/external` |
@@ -824,6 +865,7 @@ Itens de menu visíveis: **29**
 - [ ] Orçamentos e Propostas — `/commercial-proposals`
 - [ ] Painel — `/`
 - [ ] Painel de Vendas — `/crm`
+- [ ] Projetos & ROI — `/financial/projetos-roi`
 - [ ] Relatórios & Análises — `/crm/reports`
 - [ ] SEI-IBAMA — `/external`
 - [ ] SEI-MG — `/external`
@@ -836,7 +878,7 @@ Itens de menu visíveis: **29**
 
 ### Financeiro (`financial`)
 
-Itens de menu visíveis: **48**
+Itens de menu visíveis: **51**
 
 | Menu | Rota |
 |------|------|
@@ -855,6 +897,7 @@ Itens de menu visíveis: **48**
 | Consulta Outorgas | `/external` |
 | Consultas Técnicas | `/consultas` |
 | Contratos | `/contracts` |
+| Contratos Plataforma | `/financial/platform-subscription-contracts` |
 | Contratos-Fornecedores | `/contracts-suppliers` |
 | CTF/IBAMA | `/external` |
 | Curva ABC | `/financial/abc-curve` |
@@ -879,6 +922,8 @@ Itens de menu visíveis: **48**
 | Painel | `/` |
 | Painel de Vendas | `/crm` |
 | Painel Financeiro | `/financial/painel` |
+| Pasta do cliente | `/documentos-ambientais/pasta-cliente` |
+| Projetos & ROI | `/financial/projetos-roi` |
 | Relatórios & Análises | `/crm/reports` |
 | Relatórios de IA | `/reporting` |
 | SEI-IBAMA | `/external` |
@@ -907,6 +952,7 @@ Itens de menu visíveis: **48**
 - [ ] Consulta Outorgas — `/external`
 - [ ] Consultas Técnicas — `/consultas`
 - [ ] Contratos — `/contracts`
+- [ ] Contratos Plataforma — `/financial/platform-subscription-contracts`
 - [ ] Contratos-Fornecedores — `/contracts-suppliers`
 - [ ] CTF/IBAMA — `/external`
 - [ ] Curva ABC — `/financial/abc-curve`
@@ -931,6 +977,8 @@ Itens de menu visíveis: **48**
 - [ ] Painel — `/`
 - [ ] Painel de Vendas — `/crm`
 - [ ] Painel Financeiro — `/financial/painel`
+- [ ] Pasta do cliente — `/documentos-ambientais/pasta-cliente`
+- [ ] Projetos & ROI — `/financial/projetos-roi`
 - [ ] Relatórios & Análises — `/crm/reports`
 - [ ] Relatórios de IA — `/reporting`
 - [ ] SEI-IBAMA — `/external`
@@ -945,7 +993,7 @@ Itens de menu visíveis: **48**
 
 ### Cliente Gestão (`client`)
 
-Itens de menu visíveis: **22**
+Itens de menu visíveis: **23**
 
 | Menu | Rota |
 |------|------|
@@ -964,6 +1012,7 @@ Itens de menu visíveis: **22**
 | Fauna | `/fauna` |
 | Lançamento Manual | `/monitoring/manual` |
 | Licenças | `/licenses` |
+| Minha Carteira | `/carteira` |
 | Orçamentos e Propostas | `/commercial-proposals` |
 | Outorgas | `/outorgas` |
 | Painel | `/` |
@@ -990,6 +1039,7 @@ Itens de menu visíveis: **22**
 - [ ] Fauna — `/fauna`
 - [ ] Lançamento Manual — `/monitoring/manual`
 - [ ] Licenças — `/licenses`
+- [ ] Minha Carteira — `/carteira`
 - [ ] Orçamentos e Propostas — `/commercial-proposals`
 - [ ] Outorgas — `/outorgas`
 - [ ] Painel — `/`
@@ -1002,7 +1052,7 @@ Itens de menu visíveis: **22**
 
 ### Cliente Autônomo (`cliente_autonomo`)
 
-Itens de menu visíveis: **19**
+Itens de menu visíveis: **20**
 
 | Menu | Rota |
 |------|------|
@@ -1018,6 +1068,7 @@ Itens de menu visíveis: **19**
 | Fauna | `/fauna` |
 | Lançamento Manual | `/monitoring/manual` |
 | Licenças | `/licenses` |
+| Minha Carteira | `/carteira` |
 | Orçamentos e Propostas | `/commercial-proposals` |
 | Outorgas | `/outorgas` |
 | Painel | `/` |
@@ -1041,6 +1092,7 @@ Itens de menu visíveis: **19**
 - [ ] Fauna — `/fauna`
 - [ ] Lançamento Manual — `/monitoring/manual`
 - [ ] Licenças — `/licenses`
+- [ ] Minha Carteira — `/carteira`
 - [ ] Orçamentos e Propostas — `/commercial-proposals`
 - [ ] Outorgas — `/outorgas`
 - [ ] Painel — `/`
@@ -1201,7 +1253,7 @@ Itens de menu visíveis: **40**
 
 ### Advogado (`advogado`)
 
-Itens de menu visíveis: **73**
+Itens de menu visíveis: **75**
 
 | Menu | Rota |
 |------|------|
@@ -1248,18 +1300,20 @@ Itens de menu visíveis: **73**
 | Mapas | `/studies/mapas` |
 | Mata Atlântica | `/studies/compensacao-ambiental/mata-atlantica` |
 | Minerária | `/studies/compensacao-ambiental/mineraria` |
+| Nova outorga | `/studies/outorgas/new` |
 | Nova vistoria | `/inspections/new` |
 | Outorgas | `/outorgas` |
-| Outorgas | `/studies/outorgas` |
 | Painel | `/` |
 | Painel | `/georeferenciamento` |
 | PCA | `/studies/pca` |
 | PIA | `/studies/pia` |
 | PRADA | `/studies/prada` |
+| Processos | `/studies/outorgas` |
 | Programa de Educação Ambiental | `/studies/educacao-ambiental` |
 | Projeto Técnico de Barragem | `/studies/barragem` |
 | PTRF | `/studies/ptrf` |
 | RCA | `/studies/rca` |
+| Reanálise | `/studies/reanalise` |
 | Referências normativas | `/georeferenciamento/referencias` |
 | Relatórios de Campo | `/inspections/reports` |
 | Relatórios Diversos | `/studies/relatorios-diversos` |
@@ -1325,18 +1379,20 @@ Itens de menu visíveis: **73**
 - [ ] Mapas — `/studies/mapas`
 - [ ] Mata Atlântica — `/studies/compensacao-ambiental/mata-atlantica`
 - [ ] Minerária — `/studies/compensacao-ambiental/mineraria`
+- [ ] Nova outorga — `/studies/outorgas/new`
 - [ ] Nova vistoria — `/inspections/new`
 - [ ] Outorgas — `/outorgas`
-- [ ] Outorgas — `/studies/outorgas`
 - [ ] Painel — `/`
 - [ ] Painel — `/georeferenciamento`
 - [ ] PCA — `/studies/pca`
 - [ ] PIA — `/studies/pia`
 - [ ] PRADA — `/studies/prada`
+- [ ] Processos — `/studies/outorgas`
 - [ ] Programa de Educação Ambiental — `/studies/educacao-ambiental`
 - [ ] Projeto Técnico de Barragem — `/studies/barragem`
 - [ ] PTRF — `/studies/ptrf`
 - [ ] RCA — `/studies/rca`
+- [ ] Reanálise — `/studies/reanalise`
 - [ ] Referências normativas — `/georeferenciamento/referencias`
 - [ ] Relatórios de Campo — `/inspections/reports`
 - [ ] Relatórios Diversos — `/studies/relatorios-diversos`

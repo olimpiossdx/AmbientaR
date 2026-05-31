@@ -1,6 +1,7 @@
 import { formatCurrencyBRL } from '@/lib/financial-core';
 import type { ProjectRoiCase, ProjectRoiSemaforo } from '@/lib/types';
 import type { ProjectRoiSnapshot } from '@/lib/project-roi-aggregator';
+import { extratoLineTipoLabel } from '@/lib/project-roi-aggregator';
 
 const SEMAFORO_LABEL: Record<ProjectRoiSemaforo, string> = {
   ganhando: 'Ganhando',
@@ -41,7 +42,7 @@ export function buildProjectRoiDreCsv(
     ['Data', 'Tipo', 'Descrição', 'Valor'],
     ...snap.extrato.map((line) => [
       line.date,
-      line.kind,
+      extratoLineTipoLabel(line),
       line.description.replace(/"/g, '""'),
       String(line.amount),
     ]),

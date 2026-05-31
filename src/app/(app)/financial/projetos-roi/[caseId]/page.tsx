@@ -33,7 +33,12 @@ import type {
 } from '@/lib/types';
 import type { ProjectRoiCompanySettings } from '@/lib/project-roi-thresholds';
 import { formatCurrencyBRL } from '@/lib/financial-core';
-import { buildProjectRoiSnapshot } from '@/lib/project-roi-aggregator';
+import {
+  buildProjectRoiSnapshot,
+  extratoLineTipoLabel,
+  extratoValorVariant,
+  type ProjectRoiExtratoLine,
+} from '@/lib/project-roi-aggregator';
 import {
   encerrarRoiCase,
   linkManualCaseToContract,
@@ -541,10 +546,10 @@ export default function ProjetosRoiDetailPage() {
                           <TableCell>{line.date}</TableCell>
                           <TableCell>{line.description}</TableCell>
                           <TableCell className="text-xs">
-                            {line.kind === 'expense' ? 'Saída' : 'Entrada'}
+                            {extratoLineTipoLabel(line)}
                           </TableCell>
                           <TableCell className="text-right">
-                            {formatCurrencyBRL(line.amount)}
+                            <ExtratoValorCell line={line} />
                           </TableCell>
                           <TableCell>
                             <ExtratoEstornoButton
@@ -969,18 +974,32 @@ export default function ProjetosRoiDetailPage() {
   );
 }
 
+function ExtratoValorCell({ line }: { line: ProjectRoiExtratoLine }) {
+  const formatted = formatCurrencyBRL(line.amount);
+  if (extratoValorVariant(line) === 'credito') {
+    return (
+      <span className="font-bold text-blue-600 dark:text-blue-400">{formatted}</span>
+    );
+  }
+  return (
+    <span className="font-bold text-red-600 dark:text-red-400">{formatted}</span>
+  );
+}
+
 function ExtratoEstornoButton({
   line,
   revenues,
   expenses,
 }: {
-  line: { id: string; kind: string };
+  line: ProjectRoiExtratoLine;
   revenues?: Revenue[];
   expenses?: Expense[];
 }) {
   const { firestore } = useFirebase();
   const { toast } = useToast();
   const [busy, setBusy] = React.useState(false);
+
+  if (line.kind === 'orcamento_credito') return null;
 
   if (line.kind !== 'revenue' && line.kind !== 'expense') return null;
 

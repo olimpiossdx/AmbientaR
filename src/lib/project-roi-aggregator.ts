@@ -17,14 +17,22 @@ import type {
   Revenue,
 } from '@/lib/types';
 
+export type ProjectRoiExtratoLineKind =
+  | 'revenue'
+  | 'expense'
+  | 'invoice_paid'
+  | 'orcamento_credito';
+
 export type ProjectRoiExtratoLine = {
   id: string;
-  kind: 'revenue' | 'expense' | 'invoice_paid';
+  kind: ProjectRoiExtratoLineKind;
   date: string;
   description: string;
   amount: number;
   counterparty?: string;
   sourceCollection: string;
+  /** Receita registrada como abatimento de crédito (compensação em serviços). */
+  isAbatimento?: boolean;
 };
 
 export type ProjectRoiSnapshot = {
@@ -52,6 +60,40 @@ export type { ProjectRoiSemaforoThresholds };
 
 const EMPATE_TOLERANCE_REAIS = DEFAULT_PROJECT_ROI_SEMAFORO_THRESHOLDS.empateToleranceReais;
 const EMPATE_TOLERANCE_PCT = DEFAULT_PROJECT_ROI_SEMAFORO_THRESHOLDS.empateTolerancePct;
+
+function isAbatimentoDescription(description: string): boolean {
+  return /abatimento/i.test(description);
+}
+
+export function isAbatimentoExtratoLine(line: ProjectRoiExtratoLine): boolean {
+  return (
+    line.isAbatimento === true ||
+    (line.kind === 'revenue' && isAbatimentoDescription(line.description))
+  );
+}
+
+export function extratoLineTipoLabel(line: ProjectRoiExtratoLine): string {
+  if (line.kind === 'orcamento_credito') return 'Crédito inicial';
+  if (line.kind === 'expense') return 'Saída';
+  if (line.kind === 'invoice_paid') return 'Recebimento';
+  if (line.kind === 'revenue') {
+    return isAbatimentoExtratoLine(line) ? 'Abatimento' : 'Recebimento';
+  }
+  return '—';
+}
+
+export type ExtratoValorVariant = 'credito' | 'debito';
+
+/** Azul: crédito inicial (informativo) e recebimentos. Vermelho: abatimentos e saídas. */
+export function extratoValorVariant(line: ProjectRoiExtratoLine): ExtratoValorVariant {
+  if (line.kind === 'orcamento_credito') return 'credito';
+  if (line.kind === 'expense') return 'debito';
+  if (line.kind === 'invoice_paid') return 'credito';
+  if (line.kind === 'revenue') {
+    return isAbatimentoExtratoLine(line) ? 'debito' : 'credito';
+  }
+  return 'debito';
+}
 
 function amountOf(v: unknown): number {
   const n = Number(v);
@@ -214,6 +256,19 @@ export function buildProjectRoiSnapshot(
 
   const extrato: ProjectRoiExtratoLine[] = [];
 
+  if (orcamento > 0) {
+    extrato.push({
+      id: `orcamento-${roiCase.id}`,
+      kind: 'orcamento_credito',
+      date:
+        datePart(roiCase.contractSignedAt || roiCase.createdAt) ||
+        roiCase.createdAt.slice(0, 10),
+      description: 'Crédito inicial (orçamento)',
+      amount: orcamento,
+      sourceCollection: 'project_roi_cases',
+    });
+  }
+
   for (const inv of linkedInvoicesPaid) {
     if (linkedRevenues.some((r) => r.invoiceId === inv.id)) continue;
     extrato.push({
@@ -238,6 +293,7 @@ export function buildProjectRoiSnapshot(
         ? options?.clientNameById?.get(r.clientId)
         : undefined,
       sourceCollection: 'revenues',
+      isAbatimento: isAbatimentoDescription(r.description),
     });
   }
 
@@ -255,7 +311,11 @@ export function buildProjectRoiSnapshot(
     });
   }
 
-  extrato.sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
+  extrato.sort((a, b) => {
+    if (a.kind === 'orcamento_credito' && b.kind !== 'orcamento_credito') return -1;
+    if (b.kind === 'orcamento_credito' && a.kind !== 'orcamento_credito') return 1;
+    return a.date < b.date ? -1 : a.date > b.date ? 1 : 0;
+  });
 
   return {
     orcamento,

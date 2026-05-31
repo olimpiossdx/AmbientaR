@@ -38,6 +38,7 @@ import type {
   Revenue,
 } from '@/lib/types';
 import { formatCurrencyBRL } from '@/lib/financial-core';
+import { getFirestoreErrorMessage } from '@/lib/firestore-payload';
 import { buildProjectRoiSnapshot } from '@/lib/project-roi-aggregator';
 import {
   createManualRoiCase,
@@ -229,7 +230,11 @@ export default function ProjetosRoiListPage() {
       router.push(`/financial/projetos-roi/${id}`);
     } catch (e) {
       console.error(e);
-      toast({ variant: 'destructive', title: 'Erro ao criar caso' });
+      toast({
+        variant: 'destructive',
+        title: 'Erro ao criar caso',
+        description: getFirestoreErrorMessage(e),
+      });
     } finally {
       setCreating(false);
     }

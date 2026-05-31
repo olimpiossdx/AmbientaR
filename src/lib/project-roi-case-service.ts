@@ -9,6 +9,7 @@ import {
 } from 'firebase/firestore';
 import type { Firestore } from 'firebase/firestore';
 import type { Contract, ProjectRoiCase } from '@/lib/types';
+import { stripUndefinedDeep } from '@/lib/firestore-payload';
 import {
   caseFromContract,
   contractQualifiesForFormalCase,
@@ -34,21 +35,27 @@ export async function syncFormalCasesFromContracts(
 
     if (existing) {
       if (existing.statusGovernanca === 'encerrado') continue;
-      await updateDoc(doc(firestore, 'project_roi_cases', existing.id), {
-        ...payload,
-        projectId: existing.projectId ?? payload.projectId,
-        empreendedorId: existing.empreendedorId ?? payload.empreendedorId,
-        apelido: existing.apelido || payload.apelido,
-        updatedAt: now,
-        updatedByUid: uid,
-      });
+      await updateDoc(
+        doc(firestore, 'project_roi_cases', existing.id),
+        stripUndefinedDeep({
+          ...payload,
+          projectId: existing.projectId ?? payload.projectId,
+          empreendedorId: existing.empreendedorId ?? payload.empreendedorId,
+          apelido: existing.apelido || payload.apelido,
+          updatedAt: now,
+          updatedByUid: uid,
+        }),
+      );
       updated += 1;
     } else {
-      await addDoc(collection(firestore, 'project_roi_cases'), {
-        ...payload,
-        createdByUid: uid,
-        updatedByUid: uid,
-      });
+      await addDoc(
+        collection(firestore, 'project_roi_cases'),
+        stripUndefinedDeep({
+          ...payload,
+          createdByUid: uid,
+          updatedByUid: uid,
+        }),
+      );
       created += 1;
     }
   }
@@ -73,22 +80,25 @@ export async function createManualRoiCase(
   uid?: string,
 ): Promise<string> {
   const now = new Date().toISOString();
-  const ref = await addDoc(collection(firestore, 'project_roi_cases'), {
-    origin: 'manual',
-    statusGovernanca: 'informal',
-    apelido: input.apelido.trim(),
-    orcamentoValor: input.orcamentoValor,
-    projectId: input.projectId || undefined,
-    empreendedorId: input.empreendedorId || undefined,
-    clientId: input.clientId || undefined,
-    empreendimentoTexto: input.empreendimentoTexto?.trim() || undefined,
-    observacoes: input.observacoes?.trim() || undefined,
-    horasEstimadas: input.horasEstimadas,
-    createdAt: now,
-    updatedAt: now,
-    createdByUid: uid,
-    updatedByUid: uid,
-  } satisfies Omit<ProjectRoiCase, 'id'>);
+  const ref = await addDoc(
+    collection(firestore, 'project_roi_cases'),
+    stripUndefinedDeep({
+      origin: 'manual',
+      statusGovernanca: 'informal',
+      apelido: input.apelido.trim(),
+      orcamentoValor: input.orcamentoValor,
+      projectId: input.projectId,
+      empreendedorId: input.empreendedorId,
+      clientId: input.clientId,
+      empreendimentoTexto: input.empreendimentoTexto?.trim(),
+      observacoes: input.observacoes?.trim(),
+      horasEstimadas: input.horasEstimadas,
+      createdAt: now,
+      updatedAt: now,
+      createdByUid: uid,
+      updatedByUid: uid,
+    } satisfies Omit<ProjectRoiCase, 'id'>),
+  );
   return ref.id;
 }
 
@@ -140,19 +150,22 @@ export async function linkManualCaseToContract(
     ? ({ id: caseId, ...currentSnap.data() } as ProjectRoiCase)
     : undefined;
 
-  await updateDoc(doc(firestore, 'project_roi_cases', caseId), {
-    ...payload,
-    origin: 'formal',
-    statusGovernanca: 'ativo',
-    apelido: current?.apelido || payload.apelido,
-    projectId: current?.projectId ?? payload.projectId,
-    empreendedorId: current?.empreendedorId ?? payload.empreendedorId,
-    observacoes: current?.observacoes,
-    horasEstimadas: current?.horasEstimadas,
-    aliquotaImpostoPct: current?.aliquotaImpostoPct,
-    impostoEstimadoValor: current?.impostoEstimadoValor,
-    parcelasPrevistas: current?.parcelasPrevistas,
-    updatedAt: now,
-    updatedByUid: uid,
-  });
+  await updateDoc(
+    doc(firestore, 'project_roi_cases', caseId),
+    stripUndefinedDeep({
+      ...payload,
+      origin: 'formal',
+      statusGovernanca: 'ativo',
+      apelido: current?.apelido || payload.apelido,
+      projectId: current?.projectId ?? payload.projectId,
+      empreendedorId: current?.empreendedorId ?? payload.empreendedorId,
+      observacoes: current?.observacoes,
+      horasEstimadas: current?.horasEstimadas,
+      aliquotaImpostoPct: current?.aliquotaImpostoPct,
+      impostoEstimadoValor: current?.impostoEstimadoValor,
+      parcelasPrevistas: current?.parcelasPrevistas,
+      updatedAt: now,
+      updatedByUid: uid,
+    }),
+  );
 }
