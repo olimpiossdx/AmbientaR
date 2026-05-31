@@ -25,7 +25,11 @@ import {
   useDoc,
 } from "@/firebase";
 import { resolvePortalAuthUid } from "@/lib/auth-user-id";
-import { isClientePortalRole } from "@/lib/role-guards";
+import { isClientePortalRole, isConsultorRepresentante, isRepresentativeLikePortalRole } from "@/lib/role-guards";
+import {
+  fetchClientIdsForPortalPartner,
+  fetchEmpreendedorIdsForPortalScope,
+} from "@/lib/portal-empreendedor-scope";
 import {
   collection,
   query,
@@ -35,6 +39,7 @@ import {
   setDoc,
 } from "firebase/firestore";
 import type {
+  AppUser,
   Client,
   Empreendedor,
   Project,
@@ -83,78 +88,18 @@ export default function ClientDashboard() {
     if (user && firestore) {
       setEmpreendedorIds(undefined);
 
-      // Representante: mesmas informações do painel do cliente — dados dos titulares que aprovaram seu acesso.
-      const isRepresentative = (user as any).role === "representative";
-      const repUid = isRepresentative ? (user?.id ?? (user as any)?.uid) : null;
-      if (repUid) {
-        const clientsRef = collection(firestore, "clients");
-        const empreendedoresRef = collection(firestore, "empreendedores");
-        const accessRequestsRef = collection(firestore, "access_requests");
-
-        const qClients = query(
-          clientsRef,
-          where("approvedUserIds", "array-contains", repUid),
-        );
-        const qEmpreendedores = query(
-          empreendedoresRef,
-          where("approvedUserIds", "array-contains", repUid),
-        );
-        const qApprovedRequests = query(
-          accessRequestsRef,
-          where("status", "==", "approved"),
-          where("requestedByUserId", "==", repUid),
-        );
-
+      // Representante / consultor: mesmas informações do painel do cliente na carteira aprovada.
+      if (isRepresentativeLikePortalRole((user as AppUser).role)) {
         Promise.all([
-          getDocs(qClients),
-          getDocs(qEmpreendedores),
-          getDocs(qApprovedRequests),
+          fetchClientIdsForPortalPartner(firestore, user as AppUser),
+          fetchEmpreendedorIdsForPortalScope(firestore, user as AppUser),
         ])
-          .then(([snapClients, snapEmp, snapRequests]) => {
-            let empIds = Array.from(new Set(snapEmp.docs.map((d) => d.id)));
-            let firstClient = snapClients.docs[0];
-
-            // Fallback: se não achou por approvedUserIds, deriva pelos pedidos aprovados (cpfOfInterested → empreendedores por cpfCnpj).
-            if (empIds.length === 0 && snapRequests.docs.length > 0) {
-              const cpfsFromRequests = new Set<string>();
-              snapRequests.docs.forEach((d) => {
-                const cpf = (d.data().cpfOfInterested || "").trim();
-                const digits = onlyDigits(cpf);
-                if (digits.length >= 11) {
-                  cpfsFromRequests.add(cpf);
-                  cpfsFromRequests.add(digits);
-                }
-              });
-              const cpfList = Array.from(cpfsFromRequests).slice(0, 10);
-              if (cpfList.length > 0) {
-                const qByCpf = query(
-                  empreendedoresRef,
-                  where("cpfCnpj", "in", cpfList),
-                );
-                return getDocs(qByCpf).then((snapByCpf) => {
-                  empIds = snapByCpf.docs.map((d) => d.id);
-                  if (empIds.length > 0 && !firstClient) {
-                    const qClientByCpf = query(
-                      clientsRef,
-                      where("cpfCnpj", "in", cpfList),
-                    );
-                    return getDocs(qClientByCpf).then((snapC) => {
-                      firstClient = snapC.docs[0];
-                      if (firstClient) setClientId(firstClient.id);
-                      setEmpreendedorIds(empIds);
-                    });
-                  }
-                  if (firstClient) setClientId(firstClient.id);
-                  setEmpreendedorIds(
-                    empIds.length > 0 ? empIds : ["non-existent-placeholder"],
-                  );
-                });
-              }
-            }
-
-            if (firstClient) setClientId(firstClient.id);
+          .then(([clientIds, empIds]) => {
+            if (clientIds[0]) setClientId(clientIds[0]);
             setEmpreendedorIds(
-              empIds.length > 0 ? empIds : ["non-existent-placeholder"],
+              empIds.length > 0 && empIds[0] !== "invalid-placeholder"
+                ? empIds
+                : ["non-existent-placeholder"],
             );
           })
           .catch(() => setEmpreendedorIds(["non-existent-placeholder"]));
@@ -657,11 +602,18 @@ export default function ClientDashboard() {
       })
     : "Não informado";
 
-  const isRep = (user as any).role === "representative";
+  const isRep = isRepresentativeLikePortalRole(user?.role);
+  const isConsultor = isConsultorRepresentante(user?.role);
   return (
     <div className="flex flex-col h-full">
       <PageHeader
-        title={isRep ? "Painel do Representante" : "Painel do Cliente"}
+        title={
+          isConsultor
+            ? "Painel do Consultor"
+            : isRep
+              ? "Painel do Representante"
+              : "Painel do Cliente"
+        }
       />
       <main className="flex-1 overflow-auto p-4 md:p-6 space-y-8">
         {user?.role && <DocumentosAmbientaisHubCard role={user.role} />}

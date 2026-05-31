@@ -110,7 +110,8 @@ service cloud.firestore {
             empId is string && empId.size() > 0 && (
                 getRole() == 'technical' || getRole() == 'diretor_fauna' ||
                 (isClienteAutonomo() && canViewEmpreendedorByProfile(empId)) ||
-                (getRole() == 'representative' && canRepresentativeAccessEmpreendedor(empId))
+                (getRole() == 'representative' && canRepresentativeAccessEmpreendedor(empId)) ||
+                (isConsultorRepresentante() && canConsultorAccessEmpreendedor(empId))
             )
         );
     }
@@ -179,9 +180,34 @@ service cloud.firestore {
         request.auth.uid in get(empPath).data.approvedUserIds;
     }
 
+    /**
+     * @description Consultor-representante aprovado (approvedConsultorIds).
+     */
+    function isConsultorRepresentante() {
+      return request.auth != null && getRole() == 'consultor_representante';
+    }
+
+    function canConsultorAccessEmpreendedor(empreendedorId) {
+      let empPath = /databases/$(database)/documents/empreendedores/$(empreendedorId);
+      return isConsultorRepresentante() &&
+        exists(empPath) &&
+        'approvedConsultorIds' in get(empPath).data &&
+        request.auth.uid in get(empPath).data.approvedConsultorIds;
+    }
+
+    function canConsultorManageEmpreendedor(empreendedorId) {
+      return canConsultorAccessEmpreendedor(empreendedorId);
+    }
+
+    function condicionanteLinkedEmpreendedorIdForConsultor(data) {
+      let empId = condicionanteLinkedEmpreendedorIdFromData(data);
+      return empId is string && empId.size() > 0 && canConsultorManageEmpreendedor(empId);
+    }
+
     function canAccessEmpreendedorTelemetry(empreendedorId) {
       return canViewEmpreendedorByProfile(empreendedorId) ||
-        canRepresentativeAccessEmpreendedor(empreendedorId);
+        canRepresentativeAccessEmpreendedor(empreendedorId) ||
+        canConsultorAccessEmpreendedor(empreendedorId);
     }
 
      /**
@@ -269,7 +295,7 @@ service cloud.firestore {
      */
     function isAuthorizedInspector() {
       let role = getRole();
-      return isSignedIn() && role != 'financial' && role != 'client' && role != 'cliente_autonomo' && role != 'sales' && role != 'representative';
+      return isSignedIn() && role != 'financial' && role != 'client' && role != 'cliente_autonomo' && role != 'sales' && role != 'representative' && role != 'consultor_representante';
     }
     
     /**
@@ -533,7 +559,7 @@ service cloud.firestore {
      */
     match /companySettings/{settingId} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow write: if isAdmin() || (settingId == 'projectRoi' && isFinancial());
     }
     
     /**
@@ -575,6 +601,10 @@ service cloud.firestore {
               && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['car'])
             )
           )
+          && (
+            !isConsultorRepresentante()
+            || canConsultorManageEmpreendedor(resource.data.empreendedorId)
+          )
         )
       );
       allow delete: if canDeleteProject();
@@ -588,9 +618,11 @@ service cloud.firestore {
     match /licenses/{licenseId} {
       allow read: if request.auth != null;
       allow create: if isManager() || isAdmin() ||
-        canClienteAutonomoManageEmpreendedor(request.resource.data.empreendedorId);
+        canClienteAutonomoManageEmpreendedor(request.resource.data.empreendedorId) ||
+        canConsultorManageEmpreendedor(request.resource.data.empreendedorId);
       allow update, delete: if isManager() || isAdmin() ||
-        canClienteAutonomoManageEmpreendedor(resource.data.empreendedorId);
+        canClienteAutonomoManageEmpreendedor(resource.data.empreendedorId) ||
+        canConsultorManageEmpreendedor(resource.data.empreendedorId);
     }
 
     /**
@@ -616,9 +648,11 @@ service cloud.firestore {
     match /outorgas/{outorgaId} {
       allow read: if request.auth != null;
       allow create: if isManager() || isAdmin() ||
-        canClienteAutonomoManageEmpreendedor(request.resource.data.empreendedorId);
+        canClienteAutonomoManageEmpreendedor(request.resource.data.empreendedorId) ||
+        canConsultorManageEmpreendedor(request.resource.data.empreendedorId);
       allow update, delete: if isManager() || isAdmin() ||
-        canClienteAutonomoManageEmpreendedor(resource.data.empreendedorId);
+        canClienteAutonomoManageEmpreendedor(resource.data.empreendedorId) ||
+        canConsultorManageEmpreendedor(resource.data.empreendedorId);
     }
 
     /**
@@ -630,10 +664,12 @@ service cloud.firestore {
       allow create: if canWriteOutorgaProcesso();
       allow update: if canWriteOutorgaProcesso() ||
         (resource.data.empreendedorId is string && resource.data.empreendedorId.size() > 0 &&
-          canClienteAutonomoManageEmpreendedor(resource.data.empreendedorId));
+          (canClienteAutonomoManageEmpreendedor(resource.data.empreendedorId) ||
+           canConsultorManageEmpreendedor(resource.data.empreendedorId)));
       allow delete: if isManager() || isAdmin() ||
         (resource.data.empreendedorId is string && resource.data.empreendedorId.size() > 0 &&
-          canClienteAutonomoManageEmpreendedor(resource.data.empreendedorId)) ||
+          (canClienteAutonomoManageEmpreendedor(resource.data.empreendedorId) ||
+           canConsultorManageEmpreendedor(resource.data.empreendedorId))) ||
         (resource.data.empreendedorId == "" && canWriteOutorgaProcesso());
     }
 
@@ -644,9 +680,11 @@ service cloud.firestore {
     match /usosInsignificantes/{usoId} {
       allow read: if request.auth != null;
       allow create: if isManager() || isAdmin() ||
-        canClienteAutonomoManageEmpreendedor(request.resource.data.empreendedorId);
+        canClienteAutonomoManageEmpreendedor(request.resource.data.empreendedorId) ||
+        canConsultorManageEmpreendedor(request.resource.data.empreendedorId);
       allow update, delete: if isManager() || isAdmin() ||
-        canClienteAutonomoManageEmpreendedor(resource.data.empreendedorId);
+        canClienteAutonomoManageEmpreendedor(resource.data.empreendedorId) ||
+        canConsultorManageEmpreendedor(resource.data.empreendedorId);
     }
     
     /**
@@ -666,7 +704,7 @@ service cloud.firestore {
     match /telemetryReadings/{readingId} {
       allow read: if isSignedIn() && (
         canReadTelemetryRole() ||
-        ((getRole() == 'client' || getRole() == 'cliente_autonomo' || getRole() == 'representative') &&
+        ((getRole() == 'client' || getRole() == 'cliente_autonomo' || getRole() == 'representative' || getRole() == 'consultor_representante') &&
           canAccessTelemetryReadingData(resource.data))
       );
       allow create: if isSignedIn() && request.resource.data.keys().hasAll(['pontoId', 'timestamp', 'pumpOn']) &&
@@ -677,7 +715,8 @@ service cloud.firestore {
         (
           isAdmin() || isManager() ||
           (getRole() == 'cliente_autonomo' && canAccessTelemetryReadingData(request.resource.data)) ||
-          (getRole() == 'representative' && canAccessTelemetryReadingData(request.resource.data))
+          (getRole() == 'representative' && canAccessTelemetryReadingData(request.resource.data)) ||
+          (getRole() == 'consultor_representante' && canAccessTelemetryReadingData(request.resource.data))
         );
       allow update: if isAdmin() || isManager() ||
         (isClienteAutonomo() && canAccessTelemetryReadingData(resource.data));
@@ -713,11 +752,14 @@ service cloud.firestore {
         allow get: if isSignedIn();
         allow list: if isSignedIn();
         allow create: if isAdmin() || isManager() ||
-          canClienteAutonomoManageCondicionanteFromData(request.resource.data);
+          canClienteAutonomoManageCondicionanteFromData(request.resource.data) ||
+          condicionanteLinkedEmpreendedorIdForConsultor(request.resource.data);
         allow update: if isAdmin() || isManager() ||
-          canClienteAutonomoManageCondicionanteFromData(request.resource.data);
+          canClienteAutonomoManageCondicionanteFromData(request.resource.data) ||
+          condicionanteLinkedEmpreendedorIdForConsultor(request.resource.data);
         allow delete: if isAdmin() || isManager() ||
-          canClienteAutonomoManageCondicionanteFromData(resource.data);
+          canClienteAutonomoManageCondicionanteFromData(resource.data) ||
+          condicionanteLinkedEmpreendedorIdForConsultor(resource.data);
     }
 
     /**
@@ -938,6 +980,29 @@ service cloud.firestore {
     }
 
     /**
+     * @description Casos gerenciais Projetos & ROI (admin/financeiro).
+     * @path /databases/{database}/documents/project_roi_cases/{caseId}
+     */
+    match /project_roi_cases/{caseId} {
+      allow read: if isSignedIn() && (isAdmin() || isFinancial() || isSales());
+      allow write: if isAdmin() || isFinancial();
+
+      match /time_entries/{entryId} {
+        allow read: if isSignedIn() && (isAdmin() || isFinancial() || isSales());
+        allow write: if isAdmin() || isFinancial();
+      }
+    }
+
+    /**
+     * @description Lembrete único de contrato sem assinatura (governança ROI).
+     * @path /databases/{database}/documents/project_roi_governance_reminders/{contractId}
+     */
+    match /project_roi_governance_reminders/{contractId} {
+      allow read: if isAdmin() || isFinancial();
+      allow write: if isAdmin() || isFinancial();
+    }
+
+    /**
      * @description Allows read access to signed-in users. Write access is restricted to admin or sales roles.
      * @path /databases/{database}/documents/opportunities/{opportunityId}
      */
@@ -988,12 +1053,51 @@ service cloud.firestore {
     }
 
     /**
+     * Aceite de contrato de plataforma (cadastro titular) — rotina separada dos contracts comerciais.
+     * Escrita apenas via Admin SDK (API). Leitura: titular ou financeiro/admin.
+     */
+    match /platform_subscription_acceptances/{acceptanceId} {
+      allow read: if isSignedIn() && (
+        isAdmin() || isFinancial() || isSupervisor() ||
+        resource.data.userId == request.auth.uid
+      );
+      allow create, update, delete: if false;
+    }
+
+    match /platform_subscription_ledger/{ledgerId} {
+      allow read: if isSignedIn() && (isAdmin() || isFinancial() || isSupervisor());
+      allow create, update, delete: if false;
+    }
+
+    /**
      * @description Pedidos de acesso: qualquer usuário autenticado pode listar/criar/atualizar (app filtra por titular).
      * Usa request.auth != null para não depender de getRole() e evitar negação quando o doc do usuário não existe.
      */
     match /access_requests/{requestId} {
       allow read, create: if request.auth != null;
       allow update: if request.auth != null;
+      allow delete: if isAdmin();
+    }
+
+    /**
+     * @description Carteira consultor ↔ titular (handoff e transferência).
+     */
+    match /consultor_assignments/{assignmentId} {
+      allow read: if isSignedIn() && (
+        isAdmin() ||
+        resource.data.consultorUid == request.auth.uid ||
+        resource.data.titularUid == request.auth.uid
+      );
+      allow create: if isSignedIn() && (
+        isAdmin() ||
+        request.resource.data.titularUid == request.auth.uid ||
+        request.resource.data.consultorUid == request.auth.uid
+      );
+      allow update: if isSignedIn() && (
+        isAdmin() ||
+        resource.data.titularUid == request.auth.uid ||
+        resource.data.consultorUid == request.auth.uid
+      );
       allow delete: if isAdmin();
     }
 
@@ -1054,7 +1158,8 @@ service cloud.firestore {
         && request.resource.data.uid == request.auth.uid;
       allow delete: if isAdmin();
       match /layers/{layerId} {
-        allow read, write: if canStudyMapsRole();
+        allow read, write: if canStudyMapsRole()
+          && get(/databases/$(database)/documents/mca_projects/$(projectId)).data.uid == request.auth.uid;
       }
     }
 

@@ -85,7 +85,7 @@ function NavContentInner() {
 
       const filterItemsByRole = (items: (NavItem | NavSubItem)[]): any[] => {
           return items
-            .filter(item => canAccessNavItem(userRole, item.roles))
+            .filter(item => canAccessNavItem(userRole, item.roles, item.href))
             .map(item => {
               if ('subItems' in item && item.subItems) {
                   const filteredSubItems = filterItemsByRole(item.subItems);

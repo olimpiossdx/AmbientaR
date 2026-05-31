@@ -9,6 +9,8 @@
 | Documento | Função |
 |-----------|--------|
 | [**PLANO-EXECUTIVO.md**](PLANO-EXECUTIVO.md) | Plano mestre operacional: contexto, auditoria, 15 fases com debugger |
+| [**SPRINT-0-VALIDACAO.md**](SPRINT-0-VALIDACAO.md) | Sprint 0: matriz E01–E15 (CLI + checklist UI) |
+| [**SPRINT-1-GEOMETRIA.md**](SPRINT-1-GEOMETRIA.md) | Sprint 1: layers ouro Catingueiro + DWG real |
 | [PLANO-MAESTRO.md](PLANO-MAESTRO.md) | Visão Cartographic OS v1–v5, pilares, roadmap |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Arquitetura técnica (camadas, cache, tiles, export, aceite) |
 | [IMPLEMENTATION-SPEC.md](IMPLEMENTATION-SPEC.md) | Contrato de código v1/v2 |

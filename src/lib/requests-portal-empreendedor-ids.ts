@@ -8,6 +8,7 @@ import {
 import type { AppUser } from "@/lib/types";
 import { resolvePortalAuthUid } from "@/lib/auth-user-id";
 import { fetchEmpreendedorIdsForRepresentative } from "@/lib/representative-empreendedor-ids";
+import { fetchEmpreendedorIdsForConsultor } from "@/lib/consultor-empreendedor-ids";
 
 /** IDs de empreendedores ligados ao titular Cliente Gestão (mesma regra da lista de Licenciamento). */
 export async function fetchEmpreendedorIdsForClientGestao(
@@ -53,6 +54,9 @@ export async function fetchEmpreendedorIdsForProcessosPortal(
   }
   if (user.role === "representative") {
     return fetchEmpreendedorIdsForRepresentative(firestore, user);
+  }
+  if (user.role === "consultor_representante") {
+    return fetchEmpreendedorIdsForConsultor(firestore, user);
   }
   return [];
 }

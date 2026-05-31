@@ -68,6 +68,7 @@ import { Label } from "@/components/ui/label";
 import { CardSearchInput } from "@/components/card-search-input";
 import {
   isClientePortalRole,
+  isRepresentativeLikePortalRole,
   canApproveOficio,
   canConfigureOficioCounter,
   canAdministerOficios,
@@ -140,7 +141,7 @@ export default function OficiosPage() {
   const { toast } = useToast();
 
   const isPortalReadOnly =
-    isClientePortalRole(user?.role) || user?.role === "representative";
+    isClientePortalRole(user?.role) || isRepresentativeLikePortalRole(user?.role);
   const canManage = canWriteOficioDraft(user?.role);
   const canApprove = canApproveOficio(user?.role);
   const isAdmin = canAdministerOficios(user?.role);
@@ -148,7 +149,7 @@ export default function OficiosPage() {
 
   const oficiosQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
-    if (user.role === "representative") return null;
+    if (isRepresentativeLikePortalRole(user.role)) return null;
     if (isClientePortalRole(user.role)) {
       return query(
         collection(firestore, "oficios"),

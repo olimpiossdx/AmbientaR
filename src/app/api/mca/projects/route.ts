@@ -1,11 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
-import { FieldValue, type QueryDocumentSnapshot } from "firebase-admin/firestore";
+import { FieldValue } from "firebase-admin/firestore";
 import { verifyBearerUid } from "@/lib/mca/verify-user";
 import { studyMapsAdminDb } from "@/lib/study-maps/admin";
 import { defaultEtapaStatus } from "@/lib/mca/etapas";
+import { toMcaProjectListItem } from "@/lib/mca/project-list-item";
 import type { McaProjectDoc, McaProjectMeta } from "@/lib/mca/types";
 
 const COL = "mca_projects";
+
+const LIST_SELECT = [
+  "title",
+  "currentEtapa",
+  "etapaStatus",
+  "meta",
+  "createdAt",
+  "updatedAt",
+] as const;
 
 export async function GET(req: NextRequest) {
   try {
@@ -13,12 +23,12 @@ export async function GET(req: NextRequest) {
     const snap = await studyMapsAdminDb()
       .collection(COL)
       .where("uid", "==", user.uid)
+      .select(...LIST_SELECT)
       .limit(30)
       .get();
-    const projects = snap.docs.map((d: QueryDocumentSnapshot) => ({
-      id: d.id,
-      ...d.data(),
-    }));
+    const projects = snap.docs.map((d) =>
+      toMcaProjectListItem(d.id, d.data() as McaProjectDoc),
+    );
     return NextResponse.json({ success: true, projects });
   } catch (e) {
     return NextResponse.json(

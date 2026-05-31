@@ -28,7 +28,7 @@
 | Análise ambiental (mapa) | DeepSeek obrigatório se houver chave |
 | AI Lab — relatório ABNT | DeepSeek |
 | Reporting — financeiro / sustentabilidade | DeepSeek |
-| Autofill empreendedor, preencher relatório, geo complemento | Gemini (Genkit) |
+| Autofill empreendedor, preencher relatório, geo complemento (Etapa 2) | Gemini gratuito na app (sem quota; `GEO_IA_GEMINI_MONTHLY_LIMIT` omitido ou `0`) ou DeepSeek (saldo pago) |
 | Genkit com `GENKIT_PROVIDER=openai` | Só se definido explicitamente |
 
 ## Blaze e Gemini

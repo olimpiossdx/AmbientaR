@@ -27,11 +27,15 @@ import {
   canManageProposalsAndCommercialQuotes,
   isAdminOrFinancialRole,
   isClientePortalRole,
+  isRepresentativeLikePortalRole,
 } from "@/lib/role-guards";
+import {
+  fetchClientIdsForPortalPartner,
+  isEmpreendedorScopedPortalRole,
+} from "@/lib/portal-empreendedor-scope";
 import {
   fetchClientIdsForTitularPortalUser,
   titularClientDocumentVariants,
-  fetchClientIdsForRepresentativeUser,
 } from "@/lib/portal-titular-client-ids";
 import type { AppUser } from "@/lib/types";
 import {
@@ -174,14 +178,8 @@ export default function CommercialProposalsPage() {
       return;
     }
 
-    // Representante: clientes que o titular aprovou para ele.
-    if (user.role === "representative") {
-      const repUid = resolvePortalAuthUid(user);
-      if (!repUid) {
-        setClientIdsForUser([]);
-        return;
-      }
-      fetchClientIdsForRepresentativeUser(firestore, repUid)
+    if (isRepresentativeLikePortalRole(user.role)) {
+      fetchClientIdsForPortalPartner(firestore, user as AppUser)
         .then(setClientIdsForUser)
         .catch(() => setClientIdsForUser([]));
       return;
@@ -194,11 +192,7 @@ export default function CommercialProposalsPage() {
     if (!firestore || !user) return null;
 
     // Titular (gestão ou autônomo) ou representante: apenas propostas dos seus clientes.
-    if (
-      user.role === "client" ||
-      user.role === "cliente_autonomo" ||
-      user.role === "representative"
-    ) {
+    if (isEmpreendedorScopedPortalRole(user.role)) {
       if (!clientIdsForUser || clientIdsForUser.length === 0) return null;
       return query(
         collection(firestore, "commercialProposals"),
@@ -248,7 +242,7 @@ export default function CommercialProposalsPage() {
     }
 
     // Representante: já filtrado em proposalsQuery via clientIdsForUser.
-    if (user?.role === "representative") {
+    if (isRepresentativeLikePortalRole(user?.role)) {
       if (!clientIdsForUser || clientIdsForUser.length === 0) return [];
       return proposals.filter((p) => clientIdsForUser.includes(p.clientId));
     }
@@ -268,7 +262,7 @@ export default function CommercialProposalsPage() {
   );
 
   const isResolvingClientIds =
-    (isClientePortalRole(user?.role) || user?.role === "representative") &&
+    isEmpreendedorScopedPortalRole(user?.role) &&
     clientIdsForUser === null;
 
   const isLoading =
@@ -284,7 +278,7 @@ export default function CommercialProposalsPage() {
     let proposalsToShow = filteredProposals;
 
     // Titular (gestão ou autônomo) e representante veem apenas propostas aprovadas (consulta/download).
-    if (isClientePortalRole(user?.role) || user?.role === "representative") {
+    if (isEmpreendedorScopedPortalRole(user?.role)) {
       proposalsToShow = proposalsToShow.filter((p) => p.status === "Accepted");
     }
 
@@ -690,8 +684,7 @@ export default function CommercialProposalsPage() {
               ) : (
                 <Tabs
                   defaultValue={
-                    isClientePortalRole(user?.role) ||
-                    user?.role === "representative"
+                    isEmpreendedorScopedPortalRole(user?.role)
                       ? "finalized"
                       : "active"
                   }

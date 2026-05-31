@@ -1,0 +1,309 @@
+/**
+ * Agregação gerencial por caso (Projetos & ROI) — não altera DRE global.
+ */
+
+import { datePart } from '@/lib/financial-core';
+import {
+  DEFAULT_PROJECT_ROI_SEMAFORO_THRESHOLDS,
+  resolveProjectRoiThresholds,
+  type ProjectRoiSemaforoThresholds,
+} from '@/lib/project-roi-thresholds';
+import type {
+  Contract,
+  Expense,
+  Invoice,
+  ProjectRoiCase,
+  ProjectRoiSemaforo,
+  Revenue,
+} from '@/lib/types';
+
+export type ProjectRoiExtratoLine = {
+  id: string;
+  kind: 'revenue' | 'expense' | 'invoice_paid';
+  date: string;
+  description: string;
+  amount: number;
+  counterparty?: string;
+  sourceCollection: string;
+};
+
+export type ProjectRoiSnapshot = {
+  orcamento: number;
+  recebido: number;
+  pago: number;
+  saldoCaixa: number;
+  saldoOrcamento: number | null;
+  aReceber: number | null;
+  pctOrcamentoConsumido: number | null;
+  pctRecebido: number | null;
+  impostosDespesas: number;
+  impostosProvisao: number;
+  resultado: number;
+  margemPct: number | null;
+  semaforo: ProjectRoiSemaforo;
+  extrato: ProjectRoiExtratoLine[];
+  horasRegistradas: number;
+  custoHoraImplicito: number | null;
+  margemPorHora: number | null;
+};
+
+export { DEFAULT_PROJECT_ROI_SEMAFORO_THRESHOLDS };
+export type { ProjectRoiSemaforoThresholds };
+
+const EMPATE_TOLERANCE_REAIS = DEFAULT_PROJECT_ROI_SEMAFORO_THRESHOLDS.empateToleranceReais;
+const EMPATE_TOLERANCE_PCT = DEFAULT_PROJECT_ROI_SEMAFORO_THRESHOLDS.empateTolerancePct;
+
+function amountOf(v: unknown): number {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : 0;
+}
+
+function isNeutralizedByEstorno(
+  docId: string,
+  revenues: Revenue[],
+  expenses: Expense[],
+): boolean {
+  return (
+    revenues.some((r) => r.estornoDeId === docId) ||
+    expenses.some((e) => e.estornoDeId === docId)
+  );
+}
+
+function shouldSkipAsEstorno(item: Revenue | Expense): boolean {
+  return Boolean(item.isEstorno);
+}
+
+/** Vínculo explícito ou legado ao caso. */
+export function transactionLinksToCase(
+  item: {
+    projectRoiCaseId?: string;
+    contractId?: string;
+    projectId?: string;
+    centroCusto?: string;
+  },
+  roiCase: ProjectRoiCase,
+): boolean {
+  if (roiCase.id && item.projectRoiCaseId === roiCase.id) return true;
+  if (roiCase.contractId && item.contractId === roiCase.contractId) return true;
+  if (roiCase.projectId && item.projectId === roiCase.projectId) return true;
+  const ref = roiCase.sourceProposalNumber?.trim();
+  if (ref && item.centroCusto?.includes(ref)) return true;
+  return false;
+}
+
+function invoiceLinksToCase(invoice: Invoice, roiCase: ProjectRoiCase): boolean {
+  if (invoice.projectRoiCaseId === roiCase.id) return true;
+  if (roiCase.contractId && invoice.contractId === roiCase.contractId) return true;
+  if (roiCase.projectId && invoice.projectId === roiCase.projectId) return true;
+  return false;
+}
+
+function calcImpostosProvisao(
+  roiCase: ProjectRoiCase,
+  recebidoNoPeriodo: number,
+): number {
+  let total = 0;
+  const pct = amountOf(roiCase.aliquotaImpostoPct);
+  if (pct > 0) total += recebidoNoPeriodo * (pct / 100);
+  total += amountOf(roiCase.impostoEstimadoValor);
+  return total;
+}
+
+function calcSemaforo(
+  resultado: number,
+  recebido: number,
+  margemPct: number | null,
+  orcamento: number,
+  pago: number,
+  thresholds: ProjectRoiSemaforoThresholds = DEFAULT_PROJECT_ROI_SEMAFORO_THRESHOLDS,
+): ProjectRoiSemaforo {
+  if (recebido <= 0 && pago <= 0) return 'sem_movimento';
+  const empate =
+    Math.abs(resultado) <= thresholds.empateToleranceReais ||
+    (recebido > 0 &&
+      Math.abs(resultado) / recebido <= thresholds.empateTolerancePct);
+  if (empate) return 'empatando';
+  if (resultado < 0 || (orcamento > 0 && pago > orcamento)) return 'perdendo';
+  if (
+    margemPct != null &&
+    margemPct >= thresholds.margemVerdeMinPct
+  ) {
+    return 'ganhando';
+  }
+  if (resultado > 0) return 'ganhando';
+  return 'perdendo';
+}
+
+export function buildProjectRoiSnapshot(
+  roiCase: ProjectRoiCase,
+  revenues: Revenue[],
+  expenses: Expense[],
+  invoices: Invoice[],
+  options?: {
+    clientNameById?: Map<string, string>;
+    supplierNameById?: Map<string, string>;
+    semaforoThresholds?: Partial<ProjectRoiSemaforoThresholds> | null;
+  },
+): ProjectRoiSnapshot {
+  const linkedRevenues = revenues.filter(
+    (r) =>
+      transactionLinksToCase(r, roiCase) &&
+      !shouldSkipAsEstorno(r) &&
+      !isNeutralizedByEstorno(r.id, revenues, expenses),
+  );
+  const linkedExpenses = expenses.filter(
+    (e) =>
+      transactionLinksToCase(e, roiCase) &&
+      !shouldSkipAsEstorno(e) &&
+      !isNeutralizedByEstorno(e.id, revenues, expenses),
+  );
+  const linkedInvoicesPaid = invoices.filter(
+    (i) => i.status === 'Paid' && invoiceLinksToCase(i, roiCase),
+  );
+
+  const revenueIdsFromInvoices = new Set(
+    linkedRevenues.filter((r) => r.invoiceId).map((r) => r.invoiceId),
+  );
+
+  let recebidoFaturas = 0;
+  for (const inv of linkedInvoicesPaid) {
+    const dup = linkedRevenues.some((r) => r.invoiceId === inv.id);
+    if (!dup) recebidoFaturas += amountOf(inv.amount);
+  }
+
+  const recebidoCaixaAvulso = linkedRevenues
+    .filter((r) => !r.invoiceId)
+    .reduce((a, r) => a + amountOf(r.amount), 0);
+
+  const recebido = recebidoFaturas + recebidoCaixaAvulso;
+
+  let impostosDespesas = 0;
+  let pago = 0;
+  for (const e of linkedExpenses) {
+    const amt = amountOf(e.amount);
+    pago += amt;
+    impostosDespesas += amountOf(e.impostoValor);
+    if (!e.impostoValor && e.category === 'impostos') {
+      impostosDespesas += amt;
+    }
+  }
+
+  const impostosProvisao = calcImpostosProvisao(roiCase, recebido);
+  const resultado = recebido - pago - impostosDespesas - impostosProvisao;
+  const orcamento = amountOf(roiCase.orcamentoValor);
+  const saldoCaixa = recebido - pago;
+  const saldoOrcamento = orcamento > 0 ? orcamento - pago : null;
+  const aReceber = orcamento > 0 ? Math.max(0, orcamento - recebido) : null;
+  const margemPct = recebido > 0 ? (resultado / recebido) * 100 : null;
+  const thresholds = resolveProjectRoiThresholds(options?.semaforoThresholds);
+  const semaforo = calcSemaforo(
+    resultado,
+    recebido,
+    margemPct,
+    orcamento,
+    pago,
+    thresholds,
+  );
+
+  const horasRegistradas = amountOf(roiCase.horasRegistradas);
+  const despesasDiretas = pago + impostosDespesas + impostosProvisao;
+  const custoHoraImplicito =
+    horasRegistradas > 0 ? despesasDiretas / horasRegistradas : null;
+  const margemPorHora =
+    horasRegistradas > 0 ? resultado / horasRegistradas : null;
+
+  const extrato: ProjectRoiExtratoLine[] = [];
+
+  for (const inv of linkedInvoicesPaid) {
+    if (linkedRevenues.some((r) => r.invoiceId === inv.id)) continue;
+    extrato.push({
+      id: inv.id,
+      kind: 'invoice_paid',
+      date: datePart(inv.invoiceDate) || inv.invoiceDate,
+      description: `Fatura ${inv.invoiceNumber} (paga)`,
+      amount: amountOf(inv.amount),
+      counterparty: options?.clientNameById?.get(inv.clientId),
+      sourceCollection: 'invoices',
+    });
+  }
+
+  for (const r of linkedRevenues) {
+    extrato.push({
+      id: r.id,
+      kind: 'revenue',
+      date: datePart(r.date) || r.date,
+      description: r.description,
+      amount: amountOf(r.amount),
+      counterparty: r.clientId
+        ? options?.clientNameById?.get(r.clientId)
+        : undefined,
+      sourceCollection: 'revenues',
+    });
+  }
+
+  for (const e of linkedExpenses) {
+    extrato.push({
+      id: e.id,
+      kind: 'expense',
+      date: datePart(e.date) || e.date,
+      description: e.description,
+      amount: amountOf(e.amount),
+      counterparty: e.supplierId
+        ? options?.supplierNameById?.get(e.supplierId)
+        : undefined,
+      sourceCollection: 'expenses',
+    });
+  }
+
+  extrato.sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
+
+  return {
+    orcamento,
+    recebido,
+    pago,
+    saldoCaixa,
+    saldoOrcamento,
+    aReceber,
+    pctOrcamentoConsumido: orcamento > 0 ? (pago / orcamento) * 100 : null,
+    pctRecebido: orcamento > 0 ? (recebido / orcamento) * 100 : null,
+    impostosDespesas,
+    impostosProvisao,
+    resultado,
+    margemPct,
+    semaforo,
+    extrato,
+    horasRegistradas,
+    custoHoraImplicito,
+    margemPorHora,
+  };
+}
+
+export function contractQualifiesForFormalCase(contract: Contract): boolean {
+  return contract.status === 'Aprovado' && Boolean(contract.fileUrl?.trim());
+}
+
+export function contractPendingSignature(contract: Contract): boolean {
+  return contract.status === 'Aprovado' && !contract.fileUrl?.trim();
+}
+
+export function caseFromContract(contract: Contract, nowIso: string): Omit<ProjectRoiCase, 'id'> {
+  const clientId =
+    contract.contratante?.clientId || contract.clientId || undefined;
+  return {
+    origin: 'formal',
+    statusGovernanca: 'ativo',
+    projectId: undefined,
+    empreendimentoTexto: contract.objeto?.empreendimento,
+    empreendedorId: undefined,
+    clientId,
+    contractId: contract.id,
+    sourceProposalId: contract.sourceProposalId,
+    sourceProposalNumber: contract.sourceProposalNumber,
+    apelido: contract.objeto?.empreendimento || contract.sourceProposalNumber,
+    orcamentoValor: amountOf(contract.pagamento?.valorTotal),
+    orcamentoItens: contract.objeto?.itens,
+    contractSignedAt: nowIso,
+    createdAt: nowIso,
+    updatedAt: nowIso,
+  };
+}

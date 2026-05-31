@@ -6,6 +6,7 @@ export const ROLE_LABELS_PT: Record<UserRole, string> = {
   client: "Cliente Gestão",
   cliente_autonomo: "Cliente Autônomo",
   representative: "Representante",
+  consultor_representante: "Consultor-Representante",
   technical: "Técnico",
   sales: "Vendas",
   financial: "Financeiro",

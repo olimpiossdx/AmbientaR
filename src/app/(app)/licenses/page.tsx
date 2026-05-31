@@ -74,7 +74,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { backupAndDeleteParentWithCondicionantes } from "@/lib/deleted-data-backup";
 import { CardSearchInput } from "@/components/card-search-input";
-import { fetchEmpreendedorIdsForRepresentative } from "@/lib/representative-empreendedor-ids";
+import { fetchEmpreendedorIdsForPortalScope, isEmpreendedorScopedPortalRole } from "@/lib/portal-empreendedor-scope";
 import { canPerformOperationalWrite } from "@/lib/role-guards";
 
 const canPerformWriteActions = (user: AppUser | null): boolean => {
@@ -150,9 +150,13 @@ export default function LicensesPage() {
           );
         })
         .catch(() => setEmpreendedorIdsForUser(["invalid-placeholder"]));
-    } else if (user?.role === "representative" && firestore) {
+    } else if (
+      (user?.role === "representative" ||
+        user?.role === "consultor_representante") &&
+      firestore
+    ) {
       setEmpreendedorIdsForUser(undefined);
-      fetchEmpreendedorIdsForRepresentative(firestore, user)
+      fetchEmpreendedorIdsForPortalScope(firestore, user)
         .then(setEmpreendedorIdsForUser)
         .catch(() => setEmpreendedorIdsForUser(["invalid-placeholder"]));
     } else if (user) {
@@ -164,7 +168,7 @@ export default function LicensesPage() {
     if (!firestore || !user || empreendedorIdsForUser === undefined)
       return null;
 
-    if (user.role === "client" || user.role === "cliente_autonomo" || user.role === "representative") {
+    if (isEmpreendedorScopedPortalRole(user.role)) {
       if (empreendedorIdsForUser.length > 0) {
         return query(
           collection(firestore, "licenses"),
@@ -188,10 +192,7 @@ export default function LicensesPage() {
 
   const empreendedoresQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
-    const portal =
-      user.role === "client" ||
-      user.role === "cliente_autonomo" ||
-      user.role === "representative";
+    const portal = isEmpreendedorScopedPortalRole(user.role);
     if (portal) {
       if (empreendedorIdsForUser === undefined) return null;
       const ids = empreendedorIdsForUser.filter(
@@ -210,10 +211,7 @@ export default function LicensesPage() {
 
   const projectsQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
-    const portal =
-      user.role === "client" ||
-      user.role === "cliente_autonomo" ||
-      user.role === "representative";
+    const portal = isEmpreendedorScopedPortalRole(user.role);
     if (portal) {
       if (empreendedorIdsForUser === undefined) return null;
       const ids = empreendedorIdsForUser.filter(
@@ -234,7 +232,7 @@ export default function LicensesPage() {
     isLoadingLicenses ||
     isLoadingEmpreendedores ||
     isLoadingProjects ||
-    ((user?.role === "client" || user?.role === "cliente_autonomo" || user?.role === "representative") &&
+    ((isEmpreendedorScopedPortalRole(user?.role)) &&
       empreendedorIdsForUser === undefined);
 
   const empreendedoresMap = useMemo(

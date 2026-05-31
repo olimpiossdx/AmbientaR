@@ -67,6 +67,36 @@ async function removeUidFromApprovedLists(
     empreendedores += 1;
   }
 
+  const clientsConsultorSnap = await db
+    .collection("clients")
+    .where("approvedConsultorIds", "array-contains", uid)
+    .get();
+  for (const docSnap of clientsConsultorSnap.docs) {
+    const data = docSnap.data();
+    await docSnap.ref.update({
+      approvedConsultorIds: (data.approvedConsultorIds as string[]).filter(
+        (id) => id !== uid,
+      ),
+      ...(data.primaryConsultorUid === uid ? { primaryConsultorUid: "" } : {}),
+    });
+    clients += 1;
+  }
+
+  const empConsultorSnap = await db
+    .collection("empreendedores")
+    .where("approvedConsultorIds", "array-contains", uid)
+    .get();
+  for (const docSnap of empConsultorSnap.docs) {
+    const data = docSnap.data();
+    await docSnap.ref.update({
+      approvedConsultorIds: (data.approvedConsultorIds as string[]).filter(
+        (id) => id !== uid,
+      ),
+      ...(data.primaryConsultorUid === uid ? { primaryConsultorUid: "" } : {}),
+    });
+    empreendedores += 1;
+  }
+
   return { clients, empreendedores };
 }
 

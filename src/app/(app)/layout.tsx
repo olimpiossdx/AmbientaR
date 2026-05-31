@@ -47,6 +47,7 @@ import type {
   Client,
   Empreendedor,
 } from "@/lib/types";
+import { isClientePortalRole } from "@/lib/role-guards";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import {
@@ -153,7 +154,7 @@ const AppLayoutClient = ({ children }: { children: React.ReactNode }) => {
 
   // Consultas auxiliares para identificar todos os CPFs/CNPJs vinculados ao titular (mesma lógica da página de Meu Perfil).
   const accessRequestsQuery = useMemoFirebase(() => {
-    if (!firestore || !profileAligned || !sessionUid || user?.role !== "client") {
+    if (!firestore || !profileAligned || !sessionUid || !isClientePortalRole(user?.role)) {
       return null;
     }
     return query(
@@ -163,7 +164,7 @@ const AppLayoutClient = ({ children }: { children: React.ReactNode }) => {
   }, [firestore, profileAligned, sessionUid, user?.role]);
 
   const myClientsQuery = useMemoFirebase(() => {
-    if (!firestore || !profileAligned || !sessionUid || user?.role !== "client") {
+    if (!firestore || !profileAligned || !sessionUid || !isClientePortalRole(user?.role)) {
       return null;
     }
     return query(
@@ -173,7 +174,7 @@ const AppLayoutClient = ({ children }: { children: React.ReactNode }) => {
   }, [firestore, profileAligned, sessionUid, user?.role]);
 
   const myEmpreendedoresQuery = useMemoFirebase(() => {
-    if (!firestore || !profileAligned || !sessionUid || user?.role !== "client") {
+    if (!firestore || !profileAligned || !sessionUid || !isClientePortalRole(user?.role)) {
       return null;
     }
     return query(
@@ -183,14 +184,14 @@ const AppLayoutClient = ({ children }: { children: React.ReactNode }) => {
   }, [firestore, profileAligned, sessionUid, user?.role]);
 
   const clientByIdRef = useMemoFirebase(() => {
-    if (!firestore || !profileAligned || !sessionUid || user?.role !== "client") {
+    if (!firestore || !profileAligned || !sessionUid || !isClientePortalRole(user?.role)) {
       return null;
     }
     return doc(firestore, "clients", sessionUid);
   }, [firestore, profileAligned, sessionUid, user?.role]);
 
   const empreendedorByIdRef = useMemoFirebase(() => {
-    if (!firestore || !profileAligned || !sessionUid || user?.role !== "client") {
+    if (!firestore || !profileAligned || !sessionUid || !isClientePortalRole(user?.role)) {
       return null;
     }
     return doc(firestore, "empreendedores", sessionUid);
@@ -279,7 +280,8 @@ const AppLayoutClient = ({ children }: { children: React.ReactNode }) => {
     user?.cadastroIncompleto &&
     (user?.role === "client" ||
       user?.role === "cliente_autonomo" ||
-      user?.role === "representative"),
+      user?.role === "representative" ||
+      user?.role === "consultor_representante"),
   );
 
   const unreadCount = React.useMemo(() => {
@@ -322,6 +324,7 @@ const AppLayoutClient = ({ children }: { children: React.ReactNode }) => {
     advogado: "Advogado",
     client: "Cliente",
     representative: "Representante",
+    consultor_representante: "Consultor-Representante",
   };
   const getActorLabel = (actorRole?: string) =>
     actorRole ? roleLabel[actorRole] || actorRole : null;
@@ -376,7 +379,9 @@ const AppLayoutClient = ({ children }: { children: React.ReactNode }) => {
   );
   const allowExternalChat = Boolean(featureFlagsData?.allowExternalChat);
   const canRenderChatWidget =
-    user?.role !== "client" && user?.role !== "representative"
+    user?.role !== "client" &&
+    user?.role !== "representative" &&
+    user?.role !== "consultor_representante"
       ? true
       : allowExternalChat;
 

@@ -147,6 +147,16 @@ export default function EmpreendedoresPage() {
       );
     }
 
+    if (user.role === "consultor_representante") {
+      const consultorUid = resolvePortalAuthUid(user);
+      if (!consultorUid) return null;
+      return query(
+        collection(firestore, "empreendedores"),
+        where("approvedConsultorIds", "array-contains", consultorUid),
+        limit(200),
+      );
+    }
+
     return query(collection(firestore, "empreendedores"), limit(200));
   }, [firestore, user]);
 

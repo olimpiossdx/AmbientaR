@@ -75,7 +75,7 @@ import { FirestorePermissionError } from "@/firebase/errors";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { CardSearchInput } from "@/components/card-search-input";
-import { fetchEmpreendedorIdsForRepresentative } from "@/lib/representative-empreendedor-ids";
+import { fetchEmpreendedorIdsForPortalScope, isEmpreendedorScopedPortalRole } from "@/lib/portal-empreendedor-scope";
 import { isClientePortalRole } from "@/lib/role-guards";
 import { insignificantWaterUseOptions, permitStatusBadgeClassSimple } from "@/lib/status-display-classes";
 
@@ -149,9 +149,9 @@ export default function UsosInsignificantesPage() {
       } else {
         setEmpreendedorIdsForUser(["invalid-placeholder"]);
       }
-    } else if (user?.role === "representative" && firestore) {
+    } else if (isEmpreendedorScopedPortalRole(user?.role) && !isClientePortalRole(user?.role) && firestore && user) {
       setEmpreendedorIdsForUser(undefined);
-      fetchEmpreendedorIdsForRepresentative(firestore, user)
+      fetchEmpreendedorIdsForPortalScope(firestore, user)
         .then(setEmpreendedorIdsForUser)
         .catch(() => setEmpreendedorIdsForUser(["invalid-placeholder"]));
     } else if (user) {
@@ -163,7 +163,7 @@ export default function UsosInsignificantesPage() {
     if (!firestore || !user || empreendedorIdsForUser === undefined)
       return null;
 
-    if (isClientePortalRole(user.role) || user.role === "representative") {
+    if (isEmpreendedorScopedPortalRole(user.role)) {
       if (empreendedorIdsForUser.length > 0) {
         return query(
           collection(firestore, "usosInsignificantes"),
@@ -235,7 +235,7 @@ export default function UsosInsignificantesPage() {
     isLoadingUsos ||
     isLoadingEmpreendedores ||
     isLoadingProjects ||
-    ((isClientePortalRole(user?.role) || user?.role === "representative") &&
+    (isEmpreendedorScopedPortalRole(user?.role) &&
       empreendedorIdsForUser === undefined);
 
   const handleAddNew = (type: InsignificantWaterUseType) => {

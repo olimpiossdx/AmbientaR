@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { useAuth, useFirestore } from "@/firebase";
 import { fetchEmpreendedorIdsForRepresentative } from "@/lib/representative-empreendedor-ids";
+import { fetchEmpreendedorIdsForConsultor } from "@/lib/consultor-empreendedor-ids";
 import { fetchEmpreendedorIdsForClientGestao } from "@/lib/requests-portal-empreendedor-ids";
 import { resolvePortalAuthUid } from "@/lib/auth-user-id";
 import { isClientePortalRole } from "@/lib/role-guards";
@@ -74,6 +75,14 @@ export function usePortalEmpreendedorIds(): string[] | undefined {
     if (user.role === "representative") {
       setIds(undefined);
       fetchEmpreendedorIdsForRepresentative(firestore, user)
+        .then(setIds)
+        .catch(() => setIds(["invalid-placeholder"]));
+      return;
+    }
+
+    if (user.role === "consultor_representante") {
+      setIds(undefined);
+      fetchEmpreendedorIdsForConsultor(firestore, user)
         .then(setIds)
         .catch(() => setIds(["invalid-placeholder"]));
       return;

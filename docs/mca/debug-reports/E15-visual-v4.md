@@ -1,6 +1,6 @@
 # E15 — Benchmark visual v4 (Catingueiro)
 
-- Data: 2026-05-28
+- Data: 2026-05-29
 - Comando: `npm run mca:verify-gold-v4` → **PASS** (automático)
 
 ## Checks automáticos

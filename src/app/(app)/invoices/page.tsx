@@ -74,8 +74,10 @@ import { useToast } from "@/hooks/use-toast";
 import {
   getAppUserProfileUid,
   isClientePortalRole,
+  isRepresentativeLikePortalRole,
   isSelfRegisteredPortalUser,
 } from "@/lib/role-guards";
+import { fetchClientIdsForPortalPartner, isEmpreendedorScopedPortalRole } from "@/lib/portal-empreendedor-scope";
 import { resolvePortalAuthUid } from "@/lib/auth-user-id";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { logUserAction } from "@/lib/audit-log";
@@ -190,7 +192,7 @@ export default function InvoicesPage() {
   // Para `client` e `representative`, mostramos/permitimos download apenas de itens "aprovados".
   // Nas faturas, "aprovado" corresponde a `status === 'Paid'`.
   const isClientOrRep =
-    isClientePortalRole(user?.role) || user?.role === "representative";
+    isEmpreendedorScopedPortalRole(user?.role);
 
   // Algumas contas podem ter o CPF em `userCpf` em vez de `cpf`.
   // Usamos o primeiro disponível para resolver `clientIdsForUser`.
@@ -284,22 +286,9 @@ export default function InvoicesPage() {
       return;
     }
 
-    // Representante: clientes que o titular aprovou explicitamente (approvedUserIds).
-    if (user.role === "representative") {
-      const repUid = getAppUserProfileUid(user);
-      if (!repUid) {
-        setClientIdsForUser([]);
-        return;
-      }
-      const clientsRef = collection(firestore, "clients");
-      const qApprovedForRep = query(
-        clientsRef,
-        where("approvedUserIds", "array-contains", repUid),
-      );
-      getDocs(qApprovedForRep)
-        .then((snap) => {
-          setClientIdsForUser(snap.docs.map((d) => d.id));
-        })
+    if (isRepresentativeLikePortalRole(user.role)) {
+      fetchClientIdsForPortalPartner(firestore, user)
+        .then(setClientIdsForUser)
         .catch(() => setClientIdsForUser([]));
       return;
     }
@@ -317,7 +306,7 @@ export default function InvoicesPage() {
     }
 
     // Cliente e representante: apenas faturas dos clientes que podem visualizar.
-    if (isClientePortalRole(user.role) || user.role === "representative") {
+    if (isEmpreendedorScopedPortalRole(user.role)) {
       if (!clientIdsForUser || clientIdsForUser.length === 0) return null;
       return query(
         collection(firestore, "invoices"),
@@ -376,7 +365,7 @@ export default function InvoicesPage() {
   } = useLocalBranding();
 
   const isResolvingClientIds =
-    (isClientePortalRole(user?.role) || user?.role === "representative") &&
+    isEmpreendedorScopedPortalRole(user?.role) &&
     clientIdsForUser === null;
 
   const isLoading =

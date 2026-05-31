@@ -54,7 +54,7 @@ import { lookupClientAndEmpreendedorByDocument, normalizeDocumentDigits } from '
 const baseSchema = z.object({
   name: z.string().min(2, 'O nome é obrigatório.'),
   email: z.string().email('Por favor, insira um e-mail válido.'),
-  role: z.enum(['admin', 'client', 'cliente_autonomo', 'representative', 'technical', 'sales', 'financial', 'gestor', 'supervisor', 'diretor_fauna', 'advogado']),
+  role: z.enum(['admin', 'client', 'cliente_autonomo', 'representative', 'consultor_representante', 'technical', 'sales', 'financial', 'gestor', 'supervisor', 'diretor_fauna', 'advogado']),
   status: z.enum(['active', 'inactive']),
   userCpf: z.string().optional(),
   cpf: z.string().optional(),
@@ -174,6 +174,7 @@ const roles: { value: UserRole; label: string }[] = [
   { value: 'client', label: 'Cliente Gestão' },
   { value: 'cliente_autonomo', label: 'Cliente Autônomo' },
   { value: 'representative', label: 'Representante' },
+  { value: 'consultor_representante', label: 'Consultor-Representante' },
   { value: 'technical', label: 'Técnico' },
   { value: 'sales', label: 'Vendas' },
   { value: 'financial', label: 'Financeiro' },

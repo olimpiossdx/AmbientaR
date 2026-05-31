@@ -23,6 +23,7 @@ export const FINANCIAL_ROUTES = [
   '/proposals',
   '/commercial-proposals',
   '/financial/painel',
+  '/financial/projetos-roi',
   '/financial/fluxo-projetado',
   '/financial/conciliacao',
   '/financial/abc-servicos',

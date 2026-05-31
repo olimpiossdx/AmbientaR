@@ -22,6 +22,10 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { isClientePortalRole } from "@/lib/role-guards";
+import {
+  createConsultorAssignment,
+  getAccessRequestType,
+} from "@/lib/consultor-assignments";
 import { isUserConsideredOnline } from "@/lib/user-presence";
 import { usePresenceClock } from "@/hooks/use-user-presence";
 import type {
@@ -62,6 +66,7 @@ import {
   reportBrandingPdfIssues,
 } from "@/lib/pdf-branding-layout";
 import { Skeleton } from "@/components/ui/skeleton";
+import { PlatformSubscriptionAcceptanceViewer } from "@/components/platform-subscription-contract/acceptance-viewer";
 import {
   Dialog,
   DialogContent,
@@ -136,6 +141,12 @@ export default function UsersPage() {
     AppUser[]
   >([]);
   const [isLoadingApprovedReps, setIsLoadingApprovedReps] = useState(false);
+  const [approvedConsultors, setApprovedConsultors] = useState<AppUser[]>([]);
+  const [isLoadingApprovedConsultors, setIsLoadingApprovedConsultors] =
+    useState(false);
+  const [revokingConsultorId, setRevokingConsultorId] = useState<string | null>(
+    null,
+  );
   const [revokingRepresentativeId, setRevokingRepresentativeId] = useState<
     string | null
   >(null);
@@ -205,6 +216,7 @@ export default function UsersPage() {
         "client",
         "cliente_autonomo",
         "representative",
+        "consultor_representante",
         "advogado",
       ].includes(user.role)
     ) {
@@ -239,6 +251,8 @@ export default function UsersPage() {
         return "Cliente Autônomo";
       case "representative":
         return "Representante";
+      case "consultor_representante":
+        return "Consultor-Representante";
       case "technical":
         return "Técnico";
       case "sales":
@@ -696,7 +710,12 @@ export default function UsersPage() {
     useDoc<AppUser>(clientProfileDocRef);
 
   const accessRequestsQuery = useMemoFirebase(() => {
-    if (!firestore || !user || user.role !== "client" || !profileAligned) {
+    if (
+      !firestore ||
+      !user ||
+      !isClientePortalRole(user.role) ||
+      !profileAligned
+    ) {
       return null;
     }
     return query(
@@ -708,7 +727,12 @@ export default function UsersPage() {
     useCollection<AccessRequest>(accessRequestsQuery);
 
   const approvedRequestsQuery = useMemoFirebase(() => {
-    if (!firestore || !user || user.role !== "client" || !profileAligned) {
+    if (
+      !firestore ||
+      !user ||
+      !isClientePortalRole(user.role) ||
+      !profileAligned
+    ) {
       return null;
     }
     return query(
@@ -785,6 +809,33 @@ export default function UsersPage() {
   const { data: myApprovedEmpreendedoresAsRep } = useCollection<Empreendedor>(
     myApprovedEmpreendedoresAsRepQuery,
   );
+
+  const consultorUid = useMemo(
+    () =>
+      user?.role === "consultor_representante" && profileAligned
+        ? resolvePortalAuthUid(user)
+        : null,
+    [user, profileAligned],
+  );
+  const myApprovedClientsAsConsultorQuery = useMemoFirebase(() => {
+    if (!firestore || !consultorUid) return null;
+    return query(
+      collection(firestore, "clients"),
+      where("approvedConsultorIds", "array-contains", consultorUid),
+    );
+  }, [firestore, consultorUid]);
+  const { data: myApprovedClientsAsConsultor } = useCollection<Client>(
+    myApprovedClientsAsConsultorQuery,
+  );
+  const myApprovedEmpreendedoresAsConsultorQuery = useMemoFirebase(() => {
+    if (!firestore || !consultorUid) return null;
+    return query(
+      collection(firestore, "empreendedores"),
+      where("approvedConsultorIds", "array-contains", consultorUid),
+    );
+  }, [firestore, consultorUid]);
+  const { data: myApprovedEmpreendedoresAsConsultor } =
+    useCollection<Empreendedor>(myApprovedEmpreendedoresAsConsultorQuery);
 
   const clientByIdRef = useMemoFirebase(() => {
     if (
@@ -864,12 +915,46 @@ export default function UsersPage() {
     });
   }, [allApprovedRequests, myCpfCnpjSet]);
 
+  const pendingRepRequestsForMe = useMemo(
+    () =>
+      pendingRequestsForMe.filter(
+        (r) => getAccessRequestType(r) === "representative",
+      ),
+    [pendingRequestsForMe],
+  );
+
+  const pendingConsultorRequestsForMe = useMemo(
+    () =>
+      pendingRequestsForMe.filter(
+        (r) => getAccessRequestType(r) === "consultor_representante",
+      ),
+    [pendingRequestsForMe],
+  );
+
+  const approvedConsultorUids = useMemo(() => {
+    const set = new Set<string>();
+    myClients?.forEach((c) =>
+      c.approvedConsultorIds?.forEach((uid) => set.add(uid)),
+    );
+    myEmpreendedores?.forEach((e) =>
+      e.approvedConsultorIds?.forEach((uid) => set.add(uid)),
+    );
+    approvedRequestsForMe
+      .filter((r) => getAccessRequestType(r) === "consultor_representante")
+      .forEach((r) => {
+        if (r.requestedByUserId) set.add(r.requestedByUserId);
+      });
+    return Array.from(set);
+  }, [myClients, myEmpreendedores, approvedRequestsForMe]);
+
   // IDs de representantes aprovados (requestedByUserId dos pedidos aprovados).
   const approvedRepresentativeIds = useMemo(() => {
     const set = new Set<string>();
-    approvedRequestsForMe.forEach((r) => {
-      if (r.requestedByUserId) set.add(r.requestedByUserId);
-    });
+    approvedRequestsForMe
+      .filter((r) => getAccessRequestType(r) === "representative")
+      .forEach((r) => {
+        if (r.requestedByUserId) set.add(r.requestedByUserId);
+      });
     return Array.from(set);
   }, [approvedRequestsForMe]);
 
@@ -906,6 +991,45 @@ export default function UsersPage() {
     };
     loadRepresentatives();
   }, [firestore, user, approvedRepresentativeIds]);
+
+  useEffect(() => {
+    const loadConsultors = async () => {
+      if (!firestore || !user || !isClientePortalRole(user.role)) {
+        setApprovedConsultors([]);
+        return;
+      }
+      if (approvedConsultorUids.length === 0) {
+        setApprovedConsultors([]);
+        return;
+      }
+      setIsLoadingApprovedConsultors(true);
+      try {
+        const consultors: AppUser[] = [];
+        for (const consultorId of approvedConsultorUids) {
+          try {
+            const snap = await getDocs(
+              query(
+                collection(firestore, "users"),
+                where("uid", "==", consultorId),
+              ),
+            );
+            snap.forEach((docSnap) => {
+              consultors.push({
+                ...(docSnap.data() as AppUser),
+                id: docSnap.id,
+              });
+            });
+          } catch (e) {
+            console.warn("Erro ao carregar consultor aprovado", consultorId, e);
+          }
+        }
+        setApprovedConsultors(consultors);
+      } finally {
+        setIsLoadingApprovedConsultors(false);
+      }
+    };
+    loadConsultors();
+  }, [firestore, user, approvedConsultorUids]);
 
   /** Lista de representantes que solicitam ou têm acesso aos dados do cliente sendo editado (para exibir no form quando perfil = cliente). */
   const representativesForClientInDialog = useMemo((): {
@@ -991,21 +1115,44 @@ export default function UsersPage() {
             (e.cpfCnpj || "").replace(/\D/g, "") === cpfNorm ||
             e.cpfCnpj === request.cpfOfInterested,
         );
+        const isConsultorRequest =
+          getAccessRequestType(request) === "consultor_representante";
         for (const c of clientsToUpdate) {
-          await updateDoc(doc(firestore, "clients", c.id), {
-            approvedUserIds: arrayUnion(userIdToAdd),
-          });
+          await updateDoc(doc(firestore, "clients", c.id), isConsultorRequest
+            ? {
+                approvedConsultorIds: arrayUnion(userIdToAdd),
+                primaryConsultorUid: userIdToAdd,
+              }
+            : {
+                approvedUserIds: arrayUnion(userIdToAdd),
+              });
         }
         for (const e of empreendedoresToUpdate) {
-          await updateDoc(doc(firestore, "empreendedores", e.id), {
-            approvedUserIds: arrayUnion(userIdToAdd),
+          await updateDoc(doc(firestore, "empreendedores", e.id), isConsultorRequest
+            ? {
+                approvedConsultorIds: arrayUnion(userIdToAdd),
+                primaryConsultorUid: userIdToAdd,
+              }
+            : {
+                approvedUserIds: arrayUnion(userIdToAdd),
+              });
+        }
+        if (isConsultorRequest && portalUid) {
+          await createConsultorAssignment(firestore, {
+            consultorUid: userIdToAdd,
+            titularUid: portalUid,
+            clientId: clientsToUpdate[0]?.id,
+            empreendedorIds: empreendedoresToUpdate.map((e) => e.id),
+            assignedByUid: portalUid,
           });
         }
       }
       toast({
         title: approve ? "Acesso aprovado" : "Pedido rejeitado",
         description: approve
-          ? "O usuário poderá acessar seus dados."
+          ? getAccessRequestType(request) === "consultor_representante"
+            ? "O consultor poderá operar seus dados ambientais."
+            : "O usuário poderá acessar seus dados."
           : "O pedido foi recusado.",
       });
     } catch (e) {
@@ -1080,6 +1227,58 @@ export default function UsersPage() {
       });
     } finally {
       setRevokingRepresentativeId(null);
+    }
+  };
+
+  const handleRevokeConsultorAccess = async (consultorUserId: string) => {
+    if (!firestore || !user || !isClientePortalRole(user.role)) return;
+    setRevokingConsultorId(consultorUserId);
+    try {
+      const updates: Promise<unknown>[] = [];
+      (myClients || []).forEach((c) => {
+        if (c.approvedConsultorIds?.includes(consultorUserId)) {
+          updates.push(
+            updateDoc(doc(firestore, "clients", c.id), {
+              approvedConsultorIds: arrayRemove(consultorUserId),
+              ...(c.primaryConsultorUid === consultorUserId
+                ? { primaryConsultorUid: "" }
+                : {}),
+            }),
+          );
+        }
+      });
+      (myEmpreendedores || []).forEach((e) => {
+        if (e.approvedConsultorIds?.includes(consultorUserId)) {
+          updates.push(
+            updateDoc(doc(firestore, "empreendedores", e.id), {
+              approvedConsultorIds: arrayRemove(consultorUserId),
+              ...(e.primaryConsultorUid === consultorUserId
+                ? { primaryConsultorUid: "" }
+                : {}),
+            }),
+          );
+        }
+      });
+      await Promise.all(updates);
+      setApprovedConsultors((prev) =>
+        prev.filter(
+          (c) => c.uid !== consultorUserId && c.id !== consultorUserId,
+        ),
+      );
+      toast({
+        title: "Acesso revogado",
+        description:
+          "O consultor não poderá mais operar seus dados ambientais.",
+      });
+    } catch (e) {
+      console.error("Erro ao revogar acesso de consultor", e);
+      toast({
+        variant: "destructive",
+        title: "Erro ao revogar acesso",
+        description: "Não foi possível revogar o acesso. Tente novamente.",
+      });
+    } finally {
+      setRevokingConsultorId(null);
     }
   };
 
@@ -1192,6 +1391,7 @@ export default function UsersPage() {
                   </Card>
 
                   {isClientePortalRole(user?.role) ? (
+                  <>
                   <Card id="access-requests-card">
                     <CardHeader>
                       <CardTitle>
@@ -1205,8 +1405,8 @@ export default function UsersPage() {
                     </CardHeader>
                     <CardContent className="space-y-4">
                       {/* Pedidos pendentes */}
-                      {pendingRequestsForMe.length > 0 ? (
-                        pendingRequestsForMe.map((req) => (
+                      {pendingRepRequestsForMe.length > 0 ? (
+                        pendingRepRequestsForMe.map((req) => (
                           <div
                             key={req.id}
                             className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-lg border p-4"
@@ -1346,6 +1546,123 @@ export default function UsersPage() {
                       </div>
                     </CardContent>
                   </Card>
+
+                  <Card id="consultor-access-requests-card">
+                    <CardHeader>
+                      <CardTitle>
+                        Aprovar consultores-representantes
+                      </CardTitle>
+                      <CardDescription>
+                        Consultores externos podem solicitar permissão para
+                        lançar e corrigir seus dados ambientais. Cliente
+                        Autônomo: opt-in explícito — sem aprovação, nenhum
+                        consultor vê seus dados.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      {pendingConsultorRequestsForMe.length > 0 ? (
+                        pendingConsultorRequestsForMe.map((req) => (
+                          <div
+                            key={req.id}
+                            className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-lg border p-4"
+                          >
+                            <div className="space-y-1">
+                              <p className="font-semibold text-foreground">
+                                Consultor: {req.requestedByName}
+                              </p>
+                              <p className="text-sm text-muted-foreground">
+                                E-mail: {req.requestedByEmail}
+                              </p>
+                              {req.consultorNotes ? (
+                                <p className="text-xs text-muted-foreground">
+                                  Mensagem: {req.consultorNotes}
+                                </p>
+                              ) : null}
+                            </div>
+                            <div className="flex gap-2 shrink-0">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                disabled={resolvingRequestId === req.id}
+                                onClick={() =>
+                                  handleResolveAccessRequest(req.id, false)
+                                }
+                              >
+                                Recusar
+                              </Button>
+                              <Button
+                                size="sm"
+                                disabled={resolvingRequestId === req.id}
+                                onClick={() =>
+                                  handleResolveAccessRequest(req.id, true)
+                                }
+                              >
+                                Aceitar
+                              </Button>
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-sm text-muted-foreground py-2">
+                          Nenhum pedido de consultor pendente.
+                        </p>
+                      )}
+
+                      <div className="space-y-2 border-t pt-3">
+                        <h4 className="text-sm font-semibold text-foreground">
+                          Consultores com acesso aprovado
+                        </h4>
+                        {isLoadingApprovedConsultors ? (
+                          <p className="text-xs text-muted-foreground">
+                            Carregando consultores...
+                          </p>
+                        ) : approvedConsultors.length > 0 ? (
+                          <div className="space-y-2">
+                            {approvedConsultors.map((consultor) => (
+                              <div
+                                key={consultor.id}
+                                className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-md border px-3 py-2 bg-muted/40"
+                              >
+                                <div className="space-y-1">
+                                  <p className="text-sm font-medium text-foreground">
+                                    {consultor.name}{" "}
+                                    <span className="text-xs text-muted-foreground">
+                                      (Consultor-Representante)
+                                    </span>
+                                  </p>
+                                  <p className="text-xs text-muted-foreground">
+                                    {consultor.email}
+                                  </p>
+                                </div>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="text-destructive border-destructive hover:bg-destructive/10"
+                                  disabled={
+                                    revokingConsultorId === consultor.uid
+                                  }
+                                  onClick={() =>
+                                    handleRevokeConsultorAccess(
+                                      consultor.uid || consultor.id,
+                                    )
+                                  }
+                                >
+                                  {revokingConsultorId === consultor.uid
+                                    ? "Revogando..."
+                                    : "Revogar acesso"}
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-xs text-muted-foreground">
+                            Nenhum consultor aprovado no momento.
+                          </p>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                  </>
                   ) : null}
 
                   {isClientePortalRole(user?.role) && accessRequestsError && (
@@ -1496,6 +1813,125 @@ export default function UsersPage() {
               currentUser={editingUser || clientUser}
               onSuccess={() => setIsDialogOpen(false)}
               representativesForThisClient={representativesForClientInDialog}
+            />
+          </DialogContent>
+        </Dialog>
+      </>
+    );
+  }
+
+  const approvedTitularesForConsultor =
+    user?.role !== "consultor_representante"
+      ? []
+      : (() => {
+          const byCpf = new Map<
+            string,
+            { name: string; cpfCnpj: string; type: "cliente" | "empreendedor" }
+          >();
+          const add = (
+            item: { name: string; cpfCnpj?: string },
+            type: "cliente" | "empreendedor",
+          ) => {
+            const key = (item.cpfCnpj || "").replace(/\D/g, "");
+            if (key.length >= 11 && !byCpf.has(key)) {
+              byCpf.set(key, {
+                name: item.name,
+                cpfCnpj: item.cpfCnpj || "",
+                type,
+              });
+            }
+          };
+          myApprovedClientsAsConsultor?.forEach((c) => add(c, "cliente"));
+          myApprovedEmpreendedoresAsConsultor?.forEach((e) =>
+            add(e, "empreendedor"),
+          );
+          return Array.from(byCpf.values());
+        })();
+
+  if (user?.role === "consultor_representante") {
+    const consultorUser = clientProfile || user;
+
+    return (
+      <>
+        <div className="flex flex-col h-full">
+          <PageHeader title="Meu Perfil" />
+          <main className="flex-1 overflow-auto p-4 md:p-6 space-y-6 max-w-3xl mx-auto w-full">
+            <TooltipProvider>
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between gap-4">
+                    <div>
+                      <CardTitle>{consultorUser?.name}</CardTitle>
+                      <CardDescription>
+                        Perfil de consultor-representante. Opere licenças,
+                        outorgas e cadastros dos titulares que aprovaram sua
+                        carteira.
+                      </CardDescription>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setEditingUser(consultorUser || null);
+                        setIsDialogOpen(true);
+                      }}
+                    >
+                      Atualizar / Editar Cadastro
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <DetailItem label="Email" value={consultorUser?.email} />
+                  <DetailItem
+                    label="Nível de Acesso"
+                    value={getRoleText("consultor_representante")}
+                  />
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Minha carteira de clientes</CardTitle>
+                  <CardDescription>
+                    Titulares que aprovaram seu acesso. Gerencie em{" "}
+                    <strong>Minha Carteira</strong> no menu lateral.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {approvedTitularesForConsultor.length > 0 ? (
+                    <div className="space-y-2">
+                      {approvedTitularesForConsultor.map((t, i) => (
+                        <div
+                          key={`${t.cpfCnpj}-${i}`}
+                          className="rounded-md border px-3 py-2 bg-muted/40 text-sm"
+                        >
+                          <p className="font-medium">{t.name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {formatCpfCnpjDisplay(t.cpfCnpj)}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      Nenhum cliente na carteira. Solicite acesso informando o
+                      CPF/CNPJ do titular no cadastro.
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+            </TooltipProvider>
+          </main>
+        </div>
+
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogContent className="sm:max-w-xl h-full max-h-[90dvh] flex flex-col">
+            <DialogHeader>
+              <DialogTitle>Atualizar Cadastro</DialogTitle>
+            </DialogHeader>
+            <UserForm
+              currentUser={editingUser || consultorUser}
+              onSuccess={() => setIsDialogOpen(false)}
             />
           </DialogContent>
         </Dialog>
@@ -2096,6 +2532,24 @@ export default function UsersPage() {
                     : ""
                 }
               />
+              {viewingUser.platformSubscriptionAcceptanceId ? (
+                <>
+                  <Separator />
+                  <div className="flex items-center justify-between gap-2">
+                    <div>
+                      <p className="text-sm font-medium">Contrato de plataforma</p>
+                      <p className="text-xs text-muted-foreground">
+                        Cópia do aceite no cadastro (somente admin altera ou apaga).
+                      </p>
+                    </div>
+                    <PlatformSubscriptionAcceptanceViewer
+                      acceptanceId={viewingUser.platformSubscriptionAcceptanceId}
+                      userLabel={viewingUser.name}
+                      compact
+                    />
+                  </div>
+                </>
+              ) : null}
             </div>
           )}
           <DialogFooter>

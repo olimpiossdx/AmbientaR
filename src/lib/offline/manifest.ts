@@ -5,6 +5,7 @@ const PORTAL_ROLES: ReadonlySet<UserRole> = new Set([
   "client",
   "cliente_autonomo",
   "representative",
+  "consultor_representante",
 ]);
 
 function collectDocumentKeys(user: AppUser): string[] {

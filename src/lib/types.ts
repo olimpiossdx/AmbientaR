@@ -39,6 +39,10 @@ export type Empreendedor = {
   userId?: string;
   /** IDs de usuários que o titular aprovou para acessar os dados deste empreendedor (acesso com CPF diferente). */
   approvedUserIds?: string[];
+  /** IDs de consultores-representantes aprovados (escrita operacional delegada). */
+  approvedConsultorIds?: string[];
+  /** Consultor principal ativo na carteira deste empreendedor. */
+  primaryConsultorUid?: string;
   sourceClientId?: string;
   dataNascimento?: string;
   ctfIbama?: string;
@@ -123,6 +127,10 @@ export type Client = {
   userId?: string;
   /** IDs de usuários que o titular aprovou para acessar os dados (acesso com CPF diferente). */
   approvedUserIds?: string[];
+  /** IDs de consultores-representantes aprovados (escrita operacional delegada). */
+  approvedConsultorIds?: string[];
+  /** Consultor principal ativo na carteira deste cliente. */
+  primaryConsultorUid?: string;
   entityType?: EntityType;
   phone?: string;
   email?: string;
@@ -156,6 +164,7 @@ export type Invoice = {
   requestId?: string;
   projectId?: string;
   centroCusto?: string;
+  projectRoiCaseId?: string;
 };
 
 export type Revenue = {
@@ -171,7 +180,12 @@ export type Revenue = {
   requestId?: string;
   projectId?: string;
   centroCusto?: string;
+  /** Caso em Projetos & ROI (opcional) */
+  projectRoiCaseId?: string;
   reconciledAt?: string;
+  estornoDeId?: string;
+  isEstorno?: boolean;
+  estornadoPorId?: string;
 };
 
 export type ExpenseCategory =
@@ -195,10 +209,16 @@ export type Expense = {
   requestId?: string;
   projectId?: string;
   centroCusto?: string;
+  contractId?: string;
+  projectRoiCaseId?: string;
+  impostoValor?: number;
   /** Despesa gerada por depreciação de bem */
   depreciacaoBemId?: string;
   bensPatrimonioId?: string;
   reconciledAt?: string;
+  estornoDeId?: string;
+  isEstorno?: boolean;
+  estornadoPorId?: string;
 };
 
 export type Transaction = (Revenue | Expense) & { type: 'revenue' | 'expense' };
@@ -1550,6 +1570,7 @@ export type UserRole =
   | 'client'
   | 'cliente_autonomo'
   | 'representative'
+  | 'consultor_representante'
   | 'technical'
   | 'sales'
   | 'financial'
@@ -1557,6 +1578,8 @@ export type UserRole =
   | 'supervisor'
   | 'diretor_fauna'
   | 'advogado';
+
+export type AccessRequestType = 'representative' | 'consultor_representante';
 
 export type ClientPackage = 'gratuito' | 'basico' | 'intermediario' | 'avancado' | 'completo' | 'sob_consulta';
 
@@ -1636,6 +1659,9 @@ export type AppUser = {
   package?: ClientPackage;
   contractAcceptedAt?: any;
   contractSignature?: string;
+  /** Rotina nova: aceite de plataforma (cópia imutável em platform_subscription_acceptances). */
+  platformSubscriptionAcceptanceId?: string;
+  platformSubscriptionLedgerId?: string;
   /** true quando o usuário se cadastrou pelo "Cadastre-se" (login) e ainda não completou o cadastro no menu Cadastro. Usado para exibir alerta no sino. */
   cadastroIncompleto?: boolean;
   /** Cliente financeiro já existente vinculado ao perfil (evita duplicar em Clientes). */
@@ -1657,7 +1683,7 @@ export type AppUser = {
   ambbotPrepaidCredits?: number;
 };
 
-/** Pedido de acesso: usuário (ex.: Renato) solicita acessar dados do titular (ex.: Célio). O titular aprova ou rejeita. */
+/** Pedido de acesso: representante ou consultor-representante solicita vínculo ao titular. */
 export type AccessRequest = {
   id: string;
   /** UID do usuário que solicitou o acesso. */
@@ -1666,10 +1692,36 @@ export type AccessRequest = {
   requestedByName: string;
   /** CPF ou CNPJ do titular dos dados (interessado) cujo cadastro o solicitante quer acessar. */
   cpfOfInterested: string;
+  /** Tipo de delegação solicitada (omitido = representante, retrocompatível). */
+  requestType?: AccessRequestType;
+  /** Mensagem opcional do consultor ao titular. */
+  consultorNotes?: string;
   status: 'pending' | 'approved' | 'rejected';
   createdAt: any;
   resolvedAt?: any;
   resolvedByUserId?: string;
+};
+
+export type ConsultorAssignmentStatus =
+  | 'pending'
+  | 'active'
+  | 'revoked'
+  | 'transferred';
+
+/** Histórico de carteira consultor ↔ titular (handoff e transferência). */
+export type ConsultorAssignment = {
+  id: string;
+  consultorUid: string;
+  titularUid: string;
+  clientId?: string;
+  empreendedorIds: string[];
+  status: ConsultorAssignmentStatus;
+  assignedAt: any;
+  assignedByUid: string;
+  transferredToUid?: string;
+  transferredAt?: any;
+  handoffNotes?: string;
+  handoffChecklist?: { item: string; done: boolean }[];
 };
 
 export type OpportunityStage = 'Qualificação' | 'Proposta' | 'Negociação' | 'Fechado Ganho' | 'Fechado Perdido';
@@ -2291,7 +2343,75 @@ export type SupplierContract = {
   dataContrato: string;
   contractPdfUrl?: string;
   fileUrl?: string;
+  projectRoiCaseId?: string;
+  clientContractId?: string;
+  projectId?: string;
 };
+
+/** Entrada de timesheet no caso Projetos & ROI (Fase 3). */
+export type ProjectRoiTimeEntry = {
+  id: string;
+  date: string;
+  hours: number;
+  userId?: string;
+  userDisplayName?: string;
+  activity?: string;
+  notes?: string;
+  createdAt: string;
+};
+
+/** Parcela prevista no caso Projetos & ROI (Fase 2). */
+export type ProjectRoiParcelaPrevista = {
+  id: string;
+  vencimento: string;
+  valor: number;
+  status?: 'prevista' | 'recebida' | 'atrasada';
+  observacao?: string;
+};
+
+export type ProjectRoiCaseOrigin = 'formal' | 'manual';
+
+export type ProjectRoiCaseGovernanceStatus =
+  | 'pendente_assinatura'
+  | 'pendente_vinculo_empreendimento'
+  | 'ativo'
+  | 'informal'
+  | 'encerrado';
+
+export type ProjectRoiCase = {
+  id: string;
+  origin: ProjectRoiCaseOrigin;
+  statusGovernanca: ProjectRoiCaseGovernanceStatus;
+  projectId?: string;
+  empreendimentoTexto?: string;
+  empreendedorId?: string;
+  clientId?: string;
+  contractId?: string;
+  sourceProposalId?: string;
+  sourceProposalNumber?: string;
+  apelido?: string;
+  orcamentoValor?: number;
+  orcamentoItens?: { descricao: string; valor: number }[];
+  impostoEstimadoValor?: number;
+  aliquotaImpostoPct?: number;
+  impostoObservacao?: string;
+  horasEstimadas?: number;
+  horasRegistradas?: number;
+  parcelasPrevistas?: ProjectRoiParcelaPrevista[];
+  observacoes?: string;
+  contractSignedAt?: string;
+  encerradoAt?: string;
+  createdAt: string;
+  createdByUid?: string;
+  updatedAt: string;
+  updatedByUid?: string;
+};
+
+export type ProjectRoiSemaforo =
+  | 'ganhando'
+  | 'perdendo'
+  | 'empatando'
+  | 'sem_movimento';
 
 export type Service = {
   id: string;

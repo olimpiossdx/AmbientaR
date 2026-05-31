@@ -4,14 +4,23 @@ import { useMemo } from 'react';
 import Link from 'next/link';
 import { PageHeader } from '@/components/page-header';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
-import { collection } from 'firebase/firestore';
-import type { CommercialProposal, Expense, Invoice, Revenue } from '@/lib/types';
+import { useCollection, useDoc, useFirebase, useMemoFirebase } from '@/firebase';
+import { collection, doc } from 'firebase/firestore';
+import type {
+  CommercialProposal,
+  Expense,
+  Invoice,
+  ProjectRoiCase,
+  Revenue,
+} from '@/lib/types';
+import type { ProjectRoiCompanySettings } from '@/lib/project-roi-thresholds';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatCurrencyBRL, datePart, calculateDre } from '@/lib/financial-core';
 import { AlertTriangle, TrendingUp, FileText, ClipboardPenLine } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useFinancialMenuDebug } from '@/lib/financial-menu-debug';
+import { listProjectRoiAlerts } from '@/lib/project-roi-alerts';
+import { ProjectRoiAlertsCard } from '@/components/financial/project-roi-alerts-card';
 
 const year = new Date().getFullYear();
 
@@ -23,11 +32,29 @@ export default function FinancialPainelPage() {
   const revenuesQ = useMemoFirebase(() => (firestore && user ? collection(firestore, 'revenues') : null), [firestore, user]);
   const expensesQ = useMemoFirebase(() => (firestore && user ? collection(firestore, 'expenses') : null), [firestore, user]);
   const proposalsQ = useMemoFirebase(() => (firestore && user ? collection(firestore, 'commercialProposals') : null), [firestore, user]);
+  const roiCasesQ = useMemoFirebase(() => (firestore && user ? collection(firestore, 'project_roi_cases') : null), [firestore, user]);
+  const roiSettingsRef = useMemoFirebase(
+    () => (firestore ? doc(firestore, 'companySettings', 'projectRoi') : null),
+    [firestore],
+  );
 
   const { data: invoices, isLoading: li } = useCollection<Invoice>(invoicesQ);
   const { data: revenues, isLoading: lr } = useCollection<Revenue>(revenuesQ);
   const { data: expenses, isLoading: le } = useCollection<Expense>(expensesQ);
   const { data: proposals, isLoading: lp } = useCollection<CommercialProposal>(proposalsQ);
+  const { data: roiCases, isLoading: lroi } = useCollection<ProjectRoiCase>(roiCasesQ);
+  const { data: roiSettings } = useDoc<ProjectRoiCompanySettings>(roiSettingsRef);
+
+  const roiAlerts = useMemo(() => {
+    if (!roiCases || !revenues || !expenses || !invoices) return [];
+    return listProjectRoiAlerts(
+      roiCases,
+      revenues,
+      expenses,
+      invoices,
+      roiSettings?.semaforo,
+    );
+  }, [roiCases, revenues, expenses, invoices, roiSettings?.semaforo]);
 
   const stats = useMemo(() => {
     if (!invoices || !revenues || !expenses) return null;
@@ -86,6 +113,11 @@ export default function FinancialPainelPage() {
           <Skeleton className="h-48 w-full" />
         ) : (
           <>
+            <ProjectRoiAlertsCard
+              alerts={roiAlerts}
+              loading={lroi}
+            />
+
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
               <Card>
                 <CardHeader className="pb-2">

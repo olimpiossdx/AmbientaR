@@ -31,6 +31,7 @@ import type { StudyAreaGeoJSON } from "@/components/maps/study-area-map";
 import type { Feature, FeatureCollection } from "geojson";
 import { MCA_ETAPA_COUNT, MCA_ETAPA_LABELS } from "@/lib/mca/etapas";
 import type { McaEtapaStatus, McaProjectDoc } from "@/lib/mca/types";
+import type { McaProjectListItem } from "@/lib/mca/project-list-item";
 import {
   Loader2,
   Play,
@@ -53,7 +54,7 @@ import {
 } from "lucide-react";
 import { parseStudyAreaFileText } from "@/lib/study-maps/import-area-file";
 import { MCA_GOLD_PRESETS, type McaGoldPresetId } from "@/lib/mca/gold-presets";
-import { fetchGoldPerimeter } from "@/lib/mca/gold-perimeters";
+import { fetchGoldPerimeter } from "@/lib/mca/gold-perimeters-fetch";
 import { validateMcaPerimeter } from "@/lib/mca/perimeter-validation";
 import area from "@turf/area";
 
@@ -75,7 +76,8 @@ const McaUnifiedMap = dynamic(
 
 type McaPerimeterInputMode = "draw" | "car" | "coordinates" | "paste" | "kml_file" | "shp";
 
-type ProjectRow = McaProjectDoc & { id: string };
+type ProjectRow = McaProjectListItem;
+type McaLayerManifestRow = { id: string; featureCount: number };
 
 const MCA_PDF_SATELLITE_PREF_KEY = "mca-pdf-include-satellite";
 
@@ -94,6 +96,16 @@ export function McaWorkbench() {
   const [projectLayers, setProjectLayers] = React.useState<
     Record<string, FeatureCollection | null>
   >({});
+  const [layerManifest, setLayerManifest] = React.useState<McaLayerManifestRow[]>([]);
+  const [visibleMapLayers, setVisibleMapLayers] = React.useState<Set<string>>(
+    () => new Set(),
+  );
+  const [loadingMapLayerId, setLoadingMapLayerId] = React.useState<string | null>(
+    null,
+  );
+  const [activeProject, setActiveProject] = React.useState<
+    (McaProjectDoc & { id: string }) | null
+  >(null);
   const [mapMode, setMapMode] = React.useState<"edit" | "preview">("edit");
   const [debugAgentId, setDebugAgentId] = React.useState("MCA_Ingest_Perimeter");
   const [agentOptions, setAgentOptions] = React.useState<string[]>([]);
@@ -272,8 +284,6 @@ export function McaWorkbench() {
     }
   }, [isInitialized, user, loadProjects, loadHealth, loadAgents]);
 
-  const activeProject = projects.find((p) => p.id === activeId);
-
   const fillFormFromProject = React.useCallback((project: McaProjectDoc & { title: string }) => {
     const m = project.meta ?? {};
     setForm({
@@ -370,32 +380,90 @@ export function McaWorkbench() {
     [auth, bearer],
   );
 
+  const loadMcaLayerGeojson = React.useCallback(
+    async (projectId: string, layerKey: string) => {
+      if (!auth?.currentUser) return;
+      try {
+        const token = await bearer();
+        const res = await fetch(
+          `/api/mca/projects/${projectId}/layers/${encodeURIComponent(layerKey)}`,
+          { headers: { Authorization: `Bearer ${token}` } },
+        );
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+        if (data.geojson) {
+          setProjectLayers((prev) => ({
+            ...prev,
+            [layerKey]: data.geojson as FeatureCollection,
+          }));
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    },
+    [auth, bearer],
+  );
+
   const loadProjectDetail = React.useCallback(
     async (projectId: string) => {
       if (!auth?.currentUser) return;
       try {
         const token = await bearer();
-        const res = await fetch(`/api/mca/projects/${projectId}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const res = await fetch(
+          `/api/mca/projects/${projectId}?layers=manifest`,
+          { headers: { Authorization: `Bearer ${token}` } },
+        );
         const data = await res.json();
         if (!res.ok) throw new Error(data.error);
-        const layers = (data.layers ?? {}) as Record<string, FeatureCollection | null>;
-        setProjectLayers(layers);
+        const manifest = (data.layerManifest ?? []) as McaLayerManifestRow[];
+        setLayerManifest(manifest);
+        setProjectLayers({});
         if (data.project) {
-          fillFormFromProject(data.project as McaProjectDoc & { title: string });
+          const project = data.project as McaProjectDoc & { title: string };
+          setActiveProject({ id: projectId, ...project });
+          fillFormFromProject(project);
         }
         if (data.project?.perimeterGeoJson) {
           setPolygon(data.project.perimeterGeoJson as unknown as StudyAreaGeoJSON);
         }
-        if (Object.keys(layers).some((k) => k.startsWith("USO_") || k.startsWith("HYD_"))) {
+        const defaultVisible = manifest
+          .filter(
+            (m) =>
+              m.featureCount > 0 &&
+              (m.id.startsWith("USO_") || m.id.startsWith("HYD_")),
+          )
+          .slice(0, 4)
+          .map((m) => m.id);
+        setVisibleMapLayers(new Set(defaultVisible));
+        await Promise.all(
+          defaultVisible.map((layerKey) => loadMcaLayerGeojson(projectId, layerKey)),
+        );
+        if (defaultVisible.length > 0) {
           setMapMode("preview");
         }
       } catch (e) {
         console.error(e);
       }
     },
-    [auth, bearer, fillFormFromProject],
+    [auth, bearer, fillFormFromProject, loadMcaLayerGeojson],
+  );
+
+  const toggleMapLayer = React.useCallback(
+    (layerKey: string, enabled: boolean) => {
+      setVisibleMapLayers((prev) => {
+        const next = new Set(prev);
+        if (enabled) next.add(layerKey);
+        else next.delete(layerKey);
+        return next;
+      });
+      if (enabled && activeId) {
+        setLoadingMapLayerId(layerKey);
+        void loadMcaLayerGeojson(activeId, layerKey).finally(() =>
+          setLoadingMapLayerId(null),
+        );
+      }
+    },
+    [activeId, loadMcaLayerGeojson],
   );
 
   React.useEffect(() => {
@@ -404,7 +472,10 @@ export function McaWorkbench() {
       void loadReviews(activeId);
       void loadReleaseInfo(activeId);
     } else {
+      setActiveProject(null);
       setProjectLayers({});
+      setLayerManifest([]);
+      setVisibleMapLayers(new Set());
       setReviews([]);
       setReleaseInfo(null);
       setExportReady(true);
@@ -523,7 +594,7 @@ export function McaWorkbench() {
       if (!createRes.ok) throw new Error(created.error);
       const projectId = created.projectId as string;
       setActiveId(projectId);
-      await importDemoLayers({ projectId, silent: true });
+      await importDemoLayers({ projectId, presetId: id, silent: true });
       const runRes = await fetch(`/api/mca/projects/${projectId}/run`, {
         method: "POST",
         headers: {
@@ -1031,7 +1102,27 @@ export function McaWorkbench() {
     }
   };
 
-  const importDemoLayers = async (opts?: { projectId?: string; silent?: boolean }) => {
+  const importGoldLayersForPreset = async (opts: {
+    projectId: string;
+    presetId: McaGoldPresetId;
+    silent?: boolean;
+  }) => {
+    const goldRes = await fetch(`/mca/gold/${opts.presetId}/layers-import.json`, {
+      cache: "no-store",
+    });
+    if (goldRes.ok) return goldRes.json();
+    const exampleRes = await fetch("/mca/examples/layers-import-exemplo.json", {
+      cache: "no-store",
+    });
+    if (!exampleRes.ok) throw new Error("Layers ouro e exemplo E06 indisponíveis.");
+    return exampleRes.json();
+  };
+
+  const importDemoLayers = async (opts?: {
+    projectId?: string;
+    silent?: boolean;
+    presetId?: McaGoldPresetId;
+  }) => {
     const id = opts?.projectId ?? activeId;
     if (!id) {
       toast({ variant: "destructive", title: "E06", description: "Seleccione um projeto." });
@@ -1040,24 +1131,33 @@ export function McaWorkbench() {
     if (!opts?.silent) setBusy(true);
     try {
       const token = await bearer();
-      const exampleRes = await fetch("/mca/examples/layers-import-exemplo.json", {
-        cache: "no-store",
-      });
-      if (!exampleRes.ok) throw new Error("Exemplo E06 não encontrado.");
-      const example = await exampleRes.json();
+      let payload: unknown;
+      if (opts?.presetId) {
+        payload = await importGoldLayersForPreset({
+          projectId: id,
+          presetId: opts.presetId,
+          silent: opts.silent,
+        });
+      } else {
+        const exampleRes = await fetch("/mca/examples/layers-import-exemplo.json", {
+          cache: "no-store",
+        });
+        if (!exampleRes.ok) throw new Error("Exemplo E06 não encontrado.");
+        payload = await exampleRes.json();
+      }
       const res = await fetch(`/api/mca/projects/${id}/import-layers`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(example),
+        body: JSON.stringify(payload),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
       if (!opts?.silent) {
         toast({
-          title: "Layers demo (E06)",
+          title: opts?.presetId ? "Layers ouro (E06)" : "Layers demo (E06)",
           description: `${data.imported} layer(s): ${(data.layerKeys as string[])?.slice(0, 4).join(", ")}`,
         });
       }
@@ -2121,12 +2221,12 @@ export function McaWorkbench() {
                       onClick={() => {
                         setActiveId(p.id);
                         setMapMode("edit");
-                        fillFormFromProject(p);
                       }}
                     >
                       <div className="font-medium">{p.title}</div>
                       <div className="text-xs text-muted-foreground">
-                        Etapa {p.currentEtapa ?? 4} · nota {p.scores?.final?.toFixed(1) ?? "—"}
+                        Etapa {p.currentEtapa ?? 4}
+                        {p.meta.propertyName ? ` · ${p.meta.propertyName}` : ""}
                       </div>
                     </button>
                   ))
@@ -2681,13 +2781,43 @@ export function McaWorkbench() {
             </CardHeader>
             <CardContent>
               {mapMode === "preview" ? (
-                <div className="relative min-h-[420px] w-full overflow-hidden rounded-md border">
-                  <McaUnifiedMap
-                    mode="preview"
-                    perimeter={polygon}
-                    layers={projectLayers}
-                    onPolygonChange={setPolygon}
-                  />
+                <div className="space-y-2">
+                  {layerManifest.length > 0 ? (
+                    <div className="flex flex-wrap gap-2 max-h-24 overflow-y-auto text-xs">
+                      {layerManifest.map((row) => {
+                        const on = visibleMapLayers.has(row.id);
+                        return (
+                          <label
+                            key={row.id}
+                            className="inline-flex items-center gap-1 rounded border px-2 py-1 cursor-pointer"
+                          >
+                            <Checkbox
+                              checked={on}
+                              onCheckedChange={(v) =>
+                                toggleMapLayer(row.id, v === true)
+                              }
+                            />
+                            <span>
+                              {row.id}
+                              {row.featureCount > 0
+                                ? ` (${row.featureCount})`
+                                : ""}
+                              {loadingMapLayerId === row.id ? " …" : ""}
+                            </span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  ) : null}
+                  <div className="relative min-h-[420px] w-full overflow-hidden rounded-md border">
+                    <McaUnifiedMap
+                      mode="preview"
+                      perimeter={polygon}
+                      layers={projectLayers}
+                      visibleLayerKeys={visibleMapLayers}
+                      onPolygonChange={setPolygon}
+                    />
+                  </div>
                 </div>
               ) : (
                 <p className="text-sm text-muted-foreground">

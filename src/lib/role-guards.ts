@@ -1,4 +1,7 @@
 import type { AppUser, UserRole } from "@/lib/types";
+import {
+  canConsultorAccessNavItem,
+} from "@/lib/consultor-nav-access";
 
 /** Perfil administrador: acesso total na UI (menus, rotas e ações). */
 export function isAdminRole(role: UserRole | undefined | null): boolean {
@@ -11,8 +14,12 @@ export function isAdminRole(role: UserRole | undefined | null): boolean {
 export function canAccessNavItem(
   role: UserRole | undefined | null,
   allowedRoles?: UserRole[] | null,
+  href?: string,
 ): boolean {
   if (isAdminRole(role)) return true;
+  if (role === "consultor_representante") {
+    return canConsultorAccessNavItem(allowedRoles, href);
+  }
   if (!allowedRoles || allowedRoles.length === 0) return true;
   if (!role) return false;
   return allowedRoles.includes(role);
@@ -66,6 +73,7 @@ export function canPerformOperationalWrite(
     "gestor",
     "supervisor",
     "cliente_autonomo",
+    "consultor_representante",
   ]);
 }
 
@@ -80,7 +88,7 @@ export function canManageCondicionantes(
 export function canPerformManualMonitoringWrite(
   role: UserRole | undefined | null,
 ): boolean {
-  return hasAnyRoleOrAdmin(role, ["gestor", "cliente_autonomo"]);
+  return hasAnyRoleOrAdmin(role, ["gestor", "cliente_autonomo", "consultor_representante"]);
 }
 
 /**
@@ -93,6 +101,7 @@ export function canWriteCadastro(
   return (
     role === "supervisor" ||
     role === "gestor" ||
+    role === "consultor_representante" ||
     canWriteCadastroClienteAutonomo(role)
   );
 }
@@ -109,9 +118,44 @@ export function isClienteGestao(role: UserRole | undefined | null): boolean {
   return role === "client";
 }
 
+/** Representante ou consultor: mesmo escopo de menus e filtros por empreendedor. */
+export function isRepresentativeLikePortalRole(
+  role: UserRole | undefined | null,
+): boolean {
+  return role === "representative" || isConsultorRepresentante(role);
+}
+
+/** Representante: mesmas telas que consultor, mas só leitura operacional. */
+export function isRepresentativeReadOnlyPortalRole(
+  role: UserRole | undefined | null,
+): boolean {
+  return role === "representative";
+}
+
 /** Planos de acompanhamento autônomo (lançar e acompanhar próprios dados e prazos). */
 export function isClienteAutonomo(role: UserRole | undefined | null): boolean {
   return role === "cliente_autonomo";
+}
+
+/** Consultor-representante: parceiro externo com escrita operacional na carteira aprovada. */
+export function isConsultorRepresentante(
+  role: UserRole | undefined | null,
+): boolean {
+  return role === "consultor_representante";
+}
+
+/** Escrita operacional delegada (consultor na carteira aprovada). */
+export function canConsultorRepresentanteWrite(
+  role: UserRole | undefined | null,
+): boolean {
+  return isConsultorRepresentante(role);
+}
+
+/** Papel com escopo filtrado por approvedConsultorIds (como representante). */
+export function isConsultorCarteiraScopeRole(
+  role: UserRole | undefined | null,
+): boolean {
+  return isConsultorRepresentante(role);
 }
 
 /** Qualquer titular do portal (Cliente Gestão ou Cliente Autônomo). */
@@ -162,11 +206,13 @@ export function isProcessosPortalReadOnlyRole(
   return role === "client" || role === "representative";
 }
 
-/** Quem vê a lista de trâmites filtrada por empreendedores do portal (gestão + representante). */
+/** Quem vê a lista de trâmites filtrada por empreendedores do portal. */
 export function isProcessosPortalScopeRole(
   role: UserRole | undefined | null,
 ): boolean {
-  return isProcessosPortalReadOnlyRole(role);
+  return (
+    isProcessosPortalReadOnlyRole(role) || isConsultorRepresentante(role)
+  );
 }
 
 /** Criar/editar/apagar trâmites de licenciamento e avançar status: equipa interna. */
@@ -179,6 +225,7 @@ export function canWriteProcessosInternal(
     "gestor",
     "technical",
     "advogado",
+    "consultor_representante",
   ]);
 }
 
@@ -203,6 +250,7 @@ export function canManageCarUploadsOnProject(
 ): boolean {
   if (isAdminRole(role)) return true;
   if (isClienteAutonomo(role)) return true;
+  if (isConsultorRepresentante(role)) return true;
   return !isClientePortalRole(role) && role !== "representative";
 }
 
@@ -229,7 +277,7 @@ export function canEditUserInUsersList(
 ): boolean {
   if (!sessionRole || !sessionUid || !target) return false;
   if (isAdminRole(sessionRole) || sessionRole === "supervisor") return true;
-  if (sessionRole === "representative") {
+  if (sessionRole === "representative" || sessionRole === "consultor_representante") {
     return target.id === sessionUid || target.uid === sessionUid;
   }
   const selfServiceRoles: UserRole[] = [
@@ -258,6 +306,27 @@ export function isAdminOrFinancialRole(
   role: UserRole | undefined | null,
 ): boolean {
   return hasAnyRoleOrAdmin(role, ["admin", "financial"]);
+}
+
+/** Projetos & ROI — leitura (Fase 3: inclui vendas). */
+export function canReadProjectRoi(
+  role: UserRole | undefined | null,
+): boolean {
+  return hasAnyRoleOrAdmin(role, ["admin", "financial", "sales"]);
+}
+
+/** Projetos & ROI — escrita (admin/financeiro). */
+export function canWriteProjectRoi(
+  role: UserRole | undefined | null,
+): boolean {
+  return isAdminOrFinancialRole(role);
+}
+
+/** Vendas: visão resumida sem custos detalhados. */
+export function isProjectRoiSalesReadOnly(
+  role: UserRole | undefined | null,
+): boolean {
+  return role === "sales";
 }
 
 /** Clientes comerciais: escrita admin, financeiro e vendas. */
@@ -295,7 +364,8 @@ export function isOficioReadOnlyRole(
   if (isAdminRole(role)) return false;
   return (
     isClientePortalRole(role) ||
-    role === "representative"
+    role === "representative" ||
+    role === "consultor_representante"
   );
 }
 

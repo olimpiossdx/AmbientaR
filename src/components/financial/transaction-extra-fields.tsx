@@ -20,7 +20,11 @@ import {
   EXPENSE_CATEGORIES,
   SUPPLIER_NONE_SELECT_VALUE,
 } from '@/lib/financial-core';
-import type { Fornecedor } from '@/lib/types';
+import type { Contract, Fornecedor, Project, ProjectRoiCase } from '@/lib/types';
+import { ProjectRoiCaseSelectField } from '@/components/financial/project-roi-case-select-field';
+
+export const CONTRACT_NONE_SELECT_VALUE = '__contract_none__';
+export const PROJECT_NONE_SELECT_VALUE = '__project_none__';
 
 /** Campos opcionais de classificação (receita/despesa no fluxo de caixa). */
 export type TransactionExtraFieldsForm = {
@@ -30,6 +34,9 @@ export type TransactionExtraFieldsForm = {
   projectId?: string;
   centroCusto?: string;
   invoiceId?: string;
+  projectRoiCaseId?: string;
+  contractId?: string;
+  impostoValor?: number;
 };
 
 interface TransactionExtraFieldsProps {
@@ -38,6 +45,13 @@ interface TransactionExtraFieldsProps {
   suppliers?: Fornecedor[];
   isLoadingSuppliers?: boolean;
   showInvoiceLink?: boolean;
+  roiCases?: ProjectRoiCase[];
+  isLoadingRoiCases?: boolean;
+  contracts?: Contract[];
+  isLoadingContracts?: boolean;
+  projects?: Project[];
+  isLoadingProjects?: boolean;
+  onRoiCaseChange?: (caseId: string, selected?: ProjectRoiCase) => void;
 }
 
 export function TransactionExtraFields({
@@ -46,12 +60,70 @@ export function TransactionExtraFields({
   suppliers,
   isLoadingSuppliers,
   showInvoiceLink,
+  roiCases,
+  isLoadingRoiCases,
+  contracts,
+  isLoadingContracts,
+  projects,
+  isLoadingProjects,
+  onRoiCaseChange,
 }: TransactionExtraFieldsProps) {
   return (
     <div className="grid gap-4 sm:grid-cols-2 border rounded-md p-4 bg-muted/30">
       <p className="sm:col-span-2 text-sm font-medium text-muted-foreground">
         Classificação e centro de custo (opcional)
       </p>
+
+      <ProjectRoiCaseSelectField
+        control={control}
+        name="projectRoiCaseId"
+        cases={roiCases}
+        isLoading={isLoadingRoiCases}
+      />
+
+      {transactionType === 'revenue' && (
+        <FormField
+          control={control}
+          name="contractId"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Contrato cliente (opcional)</FormLabel>
+              <Select
+                onValueChange={(v) => {
+                  const id = v === CONTRACT_NONE_SELECT_VALUE ? '' : v;
+                  field.onChange(id);
+                  if (id && roiCases) {
+                    const match = roiCases.find((c) => c.contractId === id);
+                    if (match && onRoiCaseChange) onRoiCaseChange(match.id, match);
+                  }
+                }}
+                value={
+                  field.value ? field.value : CONTRACT_NONE_SELECT_VALUE
+                }
+                disabled={isLoadingContracts}
+              >
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Opcional" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value={CONTRACT_NONE_SELECT_VALUE}>
+                    — Nenhum —
+                  </SelectItem>
+                  {contracts?.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.sourceProposalNumber || c.objeto?.empreendimento || c.id}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      )}
+
       {transactionType === 'expense' && (
         <>
           <FormField
@@ -120,8 +192,33 @@ export function TransactionExtraFields({
               </FormItem>
             )}
           />
+          <FormField
+            control={control}
+            name="impostoValor"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Valor imposto nesta despesa (R$)</FormLabel>
+                <FormControl>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min={0}
+                    placeholder="Opcional"
+                    value={field.value ?? ''}
+                    onChange={(e) =>
+                      field.onChange(
+                        e.target.value ? Number(e.target.value) : undefined,
+                      )
+                    }
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
         </>
       )}
+
       {showInvoiceLink && transactionType === 'revenue' && (
         <FormField
           control={control}
@@ -137,6 +234,41 @@ export function TransactionExtraFields({
           )}
         />
       )}
+
+      <FormField
+        control={control}
+        name="projectId"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Empreendimento (opcional)</FormLabel>
+            <Select
+              onValueChange={(v) =>
+                field.onChange(v === PROJECT_NONE_SELECT_VALUE ? '' : v)
+              }
+              value={field.value ? field.value : PROJECT_NONE_SELECT_VALUE}
+              disabled={isLoadingProjects}
+            >
+              <FormControl>
+                <SelectTrigger>
+                  <SelectValue placeholder="Opcional" />
+                </SelectTrigger>
+              </FormControl>
+              <SelectContent>
+                <SelectItem value={PROJECT_NONE_SELECT_VALUE}>
+                  — Nenhum —
+                </SelectItem>
+                {projects?.map((p) => (
+                  <SelectItem key={p.id} value={p.id}>
+                    {p.propertyName || p.fantasyName || p.id}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
       <FormField
         control={control}
         name="requestId"
@@ -150,19 +282,7 @@ export function TransactionExtraFields({
           </FormItem>
         )}
       />
-      <FormField
-        control={control}
-        name="projectId"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Empreendimento (projectId)</FormLabel>
-            <FormControl>
-              <Input placeholder="ID do empreendimento" {...field} />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
+
       <FormField
         control={control}
         name="centroCusto"

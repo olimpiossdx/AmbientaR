@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { collection, getDocs, query, where } from "firebase/firestore";
+import { collection, documentId, getDocs, query, where } from "firebase/firestore";
 import {
   useCollection,
   useFirebase,
@@ -10,7 +10,13 @@ import {
 } from "@/firebase";
 import type { Client, Project } from "@/lib/types";
 import { resolvePortalAuthUid } from "@/lib/auth-user-id";
-import { isClienteAutonomo, isClientePortalRole } from "@/lib/role-guards";
+import {
+  isClienteAutonomo,
+  isClientePortalRole,
+  isConsultorRepresentante,
+  isRepresentativeLikePortalRole,
+} from "@/lib/role-guards";
+import { fetchEmpreendedorIdsForPortalScope } from "@/lib/portal-empreendedor-scope";
 import { sortByPropertyNamePt } from "@/lib/sort-pt-br";
 
 export function useGeorefClientProject(
@@ -33,11 +39,14 @@ export function useGeorefClientProject(
 
   const clientsQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
-    if (user.role === "representative") {
+    if (isRepresentativeLikePortalRole(user.role)) {
       if (!portalUid) return null;
+      const approvedField = isConsultorRepresentante(user.role)
+        ? "approvedConsultorIds"
+        : "approvedUserIds";
       return query(
         collection(firestore, "clients"),
-        where("approvedUserIds", "array-contains", portalUid),
+        where(approvedField, "array-contains", portalUid),
       );
     }
     if (isClienteAutonomo(user.role)) {
@@ -69,18 +78,27 @@ export function useGeorefClientProject(
   }, [firestore, user]);
 
   React.useEffect(() => {
-    if (!firestore || !user || user.role !== "representative") return;
-    const repUid = user.id;
-    getDocs(
-      query(
-        collection(firestore, "empreendedores"),
-        where("approvedUserIds", "array-contains", repUid),
-      ),
-    )
-      .then((snap) => {
-        setEmpreendedorIdsForRep(snap.docs.map((d) => d.id));
+    if (!firestore || !user || !isRepresentativeLikePortalRole(user.role)) return;
+    setEmpreendedorIdsForRep(undefined);
+    fetchEmpreendedorIdsForPortalScope(firestore, user)
+      .then(async (ids) => {
+        const validIds = ids.filter((id) => id !== "invalid-placeholder");
+        setEmpreendedorIdsForRep(validIds);
+        if (validIds.length === 0) {
+          setEmpreendedoresForRep([]);
+          return;
+        }
+        const snap = await getDocs(
+          query(
+            collection(firestore, "empreendedores"),
+            where(documentId(), "in", validIds.slice(0, 10)),
+          ),
+        );
         setEmpreendedoresForRep(
-          snap.docs.map((d) => ({ id: d.id, cpfCnpj: d.data().cpfCnpj as string | undefined })),
+          snap.docs.map((d) => ({
+            id: d.id,
+            cpfCnpj: d.data().cpfCnpj as string | undefined,
+          })),
         );
       })
       .catch(() => {
@@ -98,7 +116,7 @@ export function useGeorefClientProject(
         where("empreendedorId", "in", empreendedorIdsForTitular.slice(0, 10)),
       );
     }
-    if (user.role === "representative") {
+    if (isRepresentativeLikePortalRole(user.role)) {
       if (empreendedorIdsForRep === undefined) return null;
       if (empreendedorIdsForRep.length === 0) {
         return query(collection(firestore, "projects"), where("empreendedorId", "==", "__none__"));
@@ -123,7 +141,7 @@ export function useGeorefClientProject(
 
   const filteredProjects = React.useMemo(() => {
     if (!projects) return [];
-    if (user?.role !== "representative") return projects;
+    if (!isRepresentativeLikePortalRole(user?.role)) return projects;
     if (!clientId) return [];
     const client = clientsMap.get(clientId);
     if (!client?.cpfCnpj) return [];
@@ -147,7 +165,7 @@ export function useGeorefClientProject(
     loadingProjects,
     selectedClient,
     selectedProject,
-    isRepresentative: user?.role === "representative",
+    isRepresentative: isRepresentativeLikePortalRole(user?.role),
   };
 }
 

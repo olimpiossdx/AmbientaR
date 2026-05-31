@@ -10,7 +10,7 @@ import {
   parseLayersImportPayload,
 } from "./layer-import";
 
-function mergeFeatureCollections(a: FeatureCollection, b: FeatureCollection): FeatureCollection {
+export function mergeFeatureCollections(a: FeatureCollection, b: FeatureCollection): FeatureCollection {
   return {
     type: "FeatureCollection",
     features: [...(a.features ?? []), ...(b.features ?? [])],
@@ -32,8 +32,97 @@ const GOLD_CAD_ALIASES: Record<McaGoldPresetId, string[]> = {
   gold_mangabeiras: ["gold_mangabeiras", "mangabeiras", "mangabeira", "MANGABEIRAS"],
 };
 
+const QGIS_OGR_CANDIDATES_WIN = [
+  "C:\\Program Files\\QGIS 4.0.1\\bin\\ogr2ogr.exe",
+  "C:\\Program Files\\QGIS 4.0.0\\bin\\ogr2ogr.exe",
+  "C:\\Program Files\\QGIS 3.40.4\\bin\\ogr2ogr.exe",
+  "C:\\Program Files\\QGISQT6 3.44.2\\bin\\ogr2ogr.exe",
+  "C:\\OSGeo4W64\\bin\\ogr2ogr.exe",
+  "C:\\OSGeo4W\\bin\\ogr2ogr.exe",
+];
+
+function resolveOgrBin(tool: "ogr2ogr" | "ogrinfo"): string {
+  const envKey = tool === "ogr2ogr" ? "MCA_OGR2OGR" : "MCA_OGRINFO";
+  const env = process.env[envKey]?.trim();
+  if (env && fs.existsSync(env)) return env;
+
+  if (spawnSync(tool, ["--version"], { encoding: "utf8" }).status === 0) return tool;
+
+  for (const ogr of QGIS_OGR_CANDIDATES_WIN) {
+    if (!fs.existsSync(ogr)) continue;
+    const sibling = path.join(path.dirname(ogr), `${tool}.exe`);
+    if (fs.existsSync(sibling)) return sibling;
+  }
+
+  return tool;
+}
+
+export function buildOgrEnv(): NodeJS.ProcessEnv {
+  const qgisRoot =
+    process.env.MCA_QGIS_ROOT?.trim() ||
+    QGIS_OGR_CANDIDATES_WIN.map((p) => path.dirname(path.dirname(p))).find((p) =>
+      fs.existsSync(path.join(p, "share", "gdal")),
+    ) ||
+    "";
+  if (!qgisRoot) return { ...process.env };
+  return {
+    ...process.env,
+    PATH: `${path.join(qgisRoot, "bin")};${process.env.PATH ?? ""}`,
+    GDAL_DATA: path.join(qgisRoot, "share", "gdal"),
+    PROJ_LIB: path.join(qgisRoot, "share", "proj"),
+  };
+}
+
+export function runOgrTool(tool: "ogr2ogr" | "ogrinfo", args: string[]): ReturnType<typeof spawnSync> {
+  const bin = resolveOgrBin(tool);
+  return spawnSync(bin, args, { encoding: "utf8", env: buildOgrEnv() });
+}
+
 export function ogr2ogrAvailable(): boolean {
-  return spawnSync("ogr2ogr", ["--version"], { encoding: "utf8" }).status === 0;
+  const bin = resolveOgrBin("ogr2ogr");
+  if (bin.endsWith(".exe")) return fs.existsSync(bin);
+  return spawnSync(bin, ["--version"], { encoding: "utf8" }).status === 0;
+}
+
+function scoreGoldCadCandidate(filePath: string, id: McaGoldPresetId): number {
+  const base = path.basename(filePath).toLowerCase();
+  const full = filePath.toLowerCase();
+  if (base.includes("recover")) return -1000;
+  if (base.includes("reloca") || full.includes("reloca")) return -400;
+  if (base.includes("reserva") && base.includes("averbad")) return -300;
+  if (base.includes("proposta")) return -200;
+
+  let score = 0;
+  const aliases = GOLD_CAD_ALIASES[id] ?? [id];
+  for (const alias of aliases) {
+    if (base.includes(alias.toLowerCase())) score += 40;
+  }
+  if (base.startsWith("faz.")) score += 15;
+  if (full.includes(`${path.sep}documentos${path.sep}`)) score += 10;
+  if (full.includes(`${path.sep}licenciamento${path.sep}`)) score += 5;
+  try {
+    score += Math.min(20, Math.floor(fs.statSync(filePath).size / 500_000));
+  } catch {
+    /* ignore */
+  }
+  return score;
+}
+
+function walkCadFiles(root: string, depth = 0, maxDepth = 7): string[] {
+  if (depth > maxDepth) return [];
+  const out: string[] = [];
+  let entries: fs.Dirent[];
+  try {
+    entries = fs.readdirSync(root, { withFileTypes: true });
+  } catch {
+    return out;
+  }
+  for (const ent of entries) {
+    const full = path.join(root, ent.name);
+    if (ent.isFile() && /\.(dwg|dxf)$/i.test(ent.name)) out.push(full);
+    else if (ent.isDirectory()) out.push(...walkCadFiles(full, depth + 1, maxDepth));
+  }
+  return out;
 }
 
 export function findGoldCadFile(dir: string, id: McaGoldPresetId): string | null {
@@ -48,11 +137,16 @@ export function findGoldCadFile(dir: string, id: McaGoldPresetId): string | null
     const p = path.join(dir, `${id}${ext}`);
     if (fs.existsSync(p)) return p;
   }
-  return null;
+
+  const candidates = walkCadFiles(dir)
+    .map((filePath) => ({ filePath, score: scoreGoldCadCandidate(filePath, id) }))
+    .filter((c) => c.score > 0)
+    .sort((a, b) => b.score - a.score);
+  return candidates[0]?.filePath ?? null;
 }
 
 function listGpkgLayers(gpkg: string): string[] {
-  const info = spawnSync("ogrinfo", ["-json", gpkg], { encoding: "utf8" });
+  const info = runOgrTool("ogrinfo", ["-json", gpkg]);
   try {
     return (JSON.parse(info.stdout).layers ?? []).map((l: { name: string }) => l.name);
   } catch {
@@ -61,11 +155,15 @@ function listGpkgLayers(gpkg: string): string[] {
 }
 
 function layerToGeoJson(gpkg: string, layerName: string, outPath: string): boolean {
-  const r = spawnSync(
-    "ogr2ogr",
-    ["-f", "GeoJSON", outPath, gpkg, layerName, "-t_srs", "EPSG:4326"],
-    { encoding: "utf8" },
-  );
+  const r = runOgrTool("ogr2ogr", [
+    "-f",
+    "GeoJSON",
+    outPath,
+    gpkg,
+    layerName,
+    "-t_srs",
+    "EPSG:4326",
+  ]);
   return r.status === 0 && fs.existsSync(outPath);
 }
 
@@ -79,11 +177,15 @@ function readGeoJsonFile(filePath: string): FeatureCollection | null {
 }
 
 export function cadToGpkg(cadPath: string, gpkgPath: string): boolean {
-  const r = spawnSync(
-    "ogr2ogr",
-    ["-f", "GPKG", gpkgPath, cadPath, "-t_srs", "EPSG:4326", "-skipfailures"],
-    { encoding: "utf8" },
-  );
+  const r = runOgrTool("ogr2ogr", [
+    "-f",
+    "GPKG",
+    gpkgPath,
+    cadPath,
+    "-t_srs",
+    "EPSG:4326",
+    "-skipfailures",
+  ]);
   return r.status === 0 && fs.existsSync(gpkgPath);
 }
 

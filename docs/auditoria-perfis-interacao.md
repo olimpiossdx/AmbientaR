@@ -270,3 +270,22 @@ Deploy recomendado após mudanças em regras: `npm run deploy:rules`, `npm run d
 ---
 
 *Última atualização: Fase 3 — todos os perfis (auditoria menus concluída).*
+
+---
+
+## 15. Consultor-Representante (`consultor_representante`)
+
+Parceiro externo com **as mesmas telas do representante** (menus espelhados via `canConsultorAccessNavItem` em itens com `representative`), mais **Minha Carteira** (`/carteira`). A diferença operacional: o consultor pode **incluir, excluir, alterar e lançar** dados ambientais nos clientes da carteira aprovada (`approvedConsultorIds`); o representante permanece só leitura.
+
+| Aspecto | Implementação |
+|---------|----------------|
+| Role / tipos | `src/lib/types.ts`, `src/lib/user-role-labels.ts` |
+| Menus / rotas | `src/lib/consultor-nav-access.ts`, `src/lib/route-access.ts`, `canAccessNavItem` |
+| Escopo empreendedores | `fetchEmpreendedorIdsForPortalScope`, hook `use-portal-empreendedor-ids.ts` |
+| Escopo clientes (contratos/faturas) | `fetchClientIdsForPortalPartner` |
+| Escrita operacional | `canPerformOperationalWrite`, `canWriteCadastro`, regras Firestore |
+| Aprovação titular | `access_requests.requestType = consultor_representante`; titular `client` + `cliente_autonomo` em `/users` |
+| Carteira / handoff | `/carteira`, coleção `consultor_assignments` |
+| Cadastro público | `/register` — perfil Consultor-Representante |
+
+**Verificação manual:** consultor vê os mesmos menus que representante (+ carteira); só dados de clientes aprovados; botões de criar/editar/excluir ativos nas telas operacionais; representante continua sem escrita.

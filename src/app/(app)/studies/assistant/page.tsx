@@ -29,6 +29,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Loader2, Sparkles, Zap } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { handleAskAssistant } from './actions';
+import { useProjectRoiAiContext } from '@/lib/project-roi-ai-context';
 import { IA_MENU_LABEL } from '@/lib/navigation-config';
 import { PageHeader } from '@/components/page-header';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -80,6 +81,8 @@ function AssistantPageInner() {
   });
 
   const modo = form.watch('modo');
+  const tipo = form.watch('tipo');
+  const roiContext = useProjectRoiAiContext(tipo === 'financeiro');
 
   React.useEffect(() => {
     const t = parseTipoFromSearch(searchParams?.get('tipo'));
@@ -99,6 +102,7 @@ function AssistantPageInner() {
       prompt: values.prompt,
       tipo: values.tipo,
       modo: values.modo,
+      roiContext: values.tipo === 'financeiro' ? roiContext : undefined,
     });
 
     if (result.success && result.response) {

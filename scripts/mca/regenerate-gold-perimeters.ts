@@ -3,6 +3,7 @@
  * MCA_GOLD_DWG_DIR=E:\refs\pimenta npm run mca:regenerate-gold-perimeters
  */
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import area from "@turf/area";
 import { MCA_GOLD_PRESETS, type McaGoldPresetId } from "../../src/lib/mca/gold-presets";
@@ -12,6 +13,7 @@ import {
   ogr2ogrAvailable,
   writeGoldLayersImport,
 } from "../../src/lib/mca/gold-cad-import";
+import { importGoldFromShapefiles, tagGoldFeatures } from "../../src/lib/mca/gold-shp-import";
 import {
   buildGoldPerimeter,
   scaleFeatureCollectionToAreaHa,
@@ -43,47 +45,59 @@ function summarizeLayers(layers: Record<string, unknown>): void {
 }
 
 function main() {
-  const dwgDir = process.env.MCA_GOLD_DWG_DIR?.trim();
-  const useOgr = Boolean(dwgDir && ogr2ogrAvailable());
-  if (dwgDir && !ogr2ogrAvailable()) {
-    console.warn("MCA_GOLD_DWG_DIR definido mas ogr2ogr ausente — sintético escalado.");
+  const dataDir = (process.env.MCA_GOLD_DATA_DIR ?? process.env.MCA_GOLD_DWG_DIR)?.trim();
+  const useOgr = Boolean(dataDir && ogr2ogrAvailable());
+  if (dataDir && !ogr2ogrAvailable()) {
+    console.warn("MCA_GOLD_DATA_DIR definido mas ogr2ogr ausente — sintético escalado.");
   }
+
+  const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), "mca-gold-import-"));
 
   for (const preset of MCA_GOLD_PRESETS) {
     const id = preset.id;
     const targetHa = goldManifestAreaHa(id) ?? Number(preset.areaTotalHa.replace(",", "."));
     let fc = null;
     let cadLayers: Record<string, import("geojson").FeatureCollection> | null = null;
+    let source = "mca_gold_synthetic";
 
-    if (useOgr && dwgDir) {
-      const cad = findGoldCadFile(dwgDir, id);
+    if (useOgr && dataDir) {
+      const cad = findGoldCadFile(dataDir, id);
       if (cad) {
         const bundle = extractGoldCadBundle(cad);
         if (bundle?.perimeter?.features?.length) {
           fc = bundle.perimeter;
-          fc.features[0].properties = {
-            ...(fc.features[0].properties ?? {}),
-            source: "mca_gold_cad",
-            cadFile: bundle.cadFile,
-            goldPreset: id,
-          };
-          fc = scaleFeatureCollectionToAreaHa(fc, targetHa);
+          source = "mca_gold_cad";
           console.log(`CAD ${bundle.cadFile} · perímetro`);
         } else {
-          console.warn(`Sem perímetro em ${cad}`);
+          console.warn(`CAD sem perímetro (${path.basename(cad)}) — tentando shapefiles…`);
         }
-
         if (bundle?.layers && Object.keys(bundle.layers).length) {
           cadLayers = bundle.layers;
-          const out = writeGoldLayersImport(id, cadLayers, {
-            cadFile: bundle.cadFile,
-            source: "mca_gold_cad",
-          });
-          console.log(`→ ${out}`);
-          summarizeLayers(cadLayers);
         }
-      } else {
-        console.warn(`CAD não encontrado para ${id} em ${dwgDir}`);
+      }
+
+      if (!fc?.features?.length || !cadLayers || !Object.keys(cadLayers).length) {
+        const shp = importGoldFromShapefiles(dataDir, id, tmpRoot);
+        if (shp?.perimeter?.features?.length) {
+          fc = shp.perimeter;
+          source = "mca_gold_shp";
+          console.log(`SHP ${shp.shpFiles} ficheiro(s) · perímetro`);
+        }
+        if (shp?.layers && Object.keys(shp.layers).length) {
+          cadLayers = { ...(cadLayers ?? {}), ...shp.layers };
+          console.log(`SHP layers: ${Object.keys(shp.layers).join(", ")}`);
+        }
+      }
+
+      if (fc?.features?.length) {
+        fc = tagGoldFeatures(fc, { source, goldPreset: id });
+        fc = scaleFeatureCollectionToAreaHa(fc, targetHa);
+      }
+
+      if (cadLayers && Object.keys(cadLayers).length) {
+        const out = writeGoldLayersImport(id, cadLayers, { source });
+        console.log(`→ ${out}`);
+        summarizeLayers(cadLayers);
       }
     }
 
@@ -93,6 +107,12 @@ function main() {
     }
 
     writePerimeter(id, fc);
+  }
+
+  try {
+    fs.rmSync(tmpRoot, { recursive: true, force: true });
+  } catch {
+    /* ignore */
   }
 
   console.log("\nDone. Teste: npm run mca:verify-gold-catingueiro");

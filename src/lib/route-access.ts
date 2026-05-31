@@ -1,5 +1,6 @@
 import type { NavItem, NavSubItem, UserRole } from '@/lib/types';
-import { isAdminRole } from '@/lib/role-guards';
+import { isAdminRole, isConsultorRepresentante } from '@/lib/role-guards';
+import { canConsultorAccessNavItem } from '@/lib/consultor-nav-access';
 import { allNavItems } from '@/lib/navigation-config';
 
 type FlatNavEntry = { href: string; roles?: UserRole[] };
@@ -10,6 +11,7 @@ const ALL_APP_ROLES: UserRole[] = [
   'client',
   'cliente_autonomo',
   'representative',
+  'consultor_representante',
   'technical',
   'sales',
   'financial',
@@ -85,6 +87,9 @@ const LEGACY_PATH_ROLE_ALIASES: Record<string, string> = {
 function getManualAllowedRoles(path: string): UserRole[] | null {
   if (path === '/settings/appearance') return ALL_APP_ROLES;
   if (path === '/settings') return ['admin'];
+  if (path === '/carteira' || path.startsWith('/carteira/')) {
+    return ['admin', 'consultor_representante', 'client', 'cliente_autonomo'];
+  }
   if (path === '/oficios/new' || /\/oficios\/[^/]+\/edit$/.test(path)) {
     return OFICIOS_WRITE_ROLES;
   }
@@ -209,7 +214,10 @@ export function isRoleAllowedForPath(
     }
   }
   const allowed = getAllowedRolesForPath(pathname, searchParams);
-  if (!allowed) return true;
+  if (allowed === null) return true;
+  if (isConsultorRepresentante(role)) {
+    return canConsultorAccessNavItem(allowed, path);
+  }
   return allowed.includes(role);
 }
 

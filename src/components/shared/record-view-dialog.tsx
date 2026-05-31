@@ -30,6 +30,7 @@ export type RecordViewDialogProps = {
   /** Texto acessível do botão */
   triggerLabel?: string;
   contentClassName?: string;
+  footer?: ReactNode;
 };
 
 export function RecordViewDialog({
@@ -41,6 +42,7 @@ export function RecordViewDialog({
   labels,
   triggerLabel = 'Visualizar',
   contentClassName = 'w-[95vw] max-w-3xl max-h-[90vh] overflow-y-auto',
+  footer,
 }: RecordViewDialogProps) {
   const [open, setOpen] = useState(false);
 
@@ -70,6 +72,7 @@ export function RecordViewDialog({
               />
             )}
           </div>
+          {footer ? <div className="pt-4 border-t">{footer}</div> : null}
         </DialogContent>
       </Dialog>
     </>

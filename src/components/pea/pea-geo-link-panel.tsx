@@ -146,7 +146,7 @@ export function PeaGeoLinkPanel({
 
 }: PeaGeoLinkPanelProps) {
 
-  const { firestore } = useFirebase();
+  const { firestore, auth } = useFirebase();
 
   const { toast } = useToast();
 
@@ -213,18 +213,20 @@ export function PeaGeoLinkPanel({
 
     setLoadingList(true);
 
-    void listGeoAnalysesForUser(firestore, userId, projectId?.trim() || undefined)
-
+    void (async () => {
+      const idToken = await auth?.currentUser?.getIdToken();
+      return listGeoAnalysesForUser(
+        firestore,
+        userId,
+        projectId?.trim() || undefined,
+        idToken ?? undefined,
+      );
+    })()
       .then((rows) => {
-
         if (!cancelled) setAnalyses(rows);
-
       })
-
       .finally(() => {
-
         if (!cancelled) setLoadingList(false);
-
       });
 
     return () => {
@@ -233,7 +235,7 @@ export function PeaGeoLinkPanel({
 
     };
 
-  }, [firestore, userId, projectId]);
+  }, [auth, firestore, userId, projectId]);
 
 
 
@@ -271,7 +273,7 @@ export function PeaGeoLinkPanel({
 
     };
 
-  }, [firestore, userId, projectId]);
+  }, [auth, firestore, userId, projectId]);
 
 
 

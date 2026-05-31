@@ -64,13 +64,21 @@ export type McaUnifiedMapProps = {
   mode: McaMapMode;
   perimeter: StudyAreaGeoJSON | null;
   layers?: Record<string, FeatureCollection | null>;
+  /** Se definido, só desenha estas layers no modo preview (carregamento sob demanda). */
+  visibleLayerKeys?: Set<string>;
   onPolygonChange: (geo: StudyAreaGeoJSON | null) => void;
 };
 
 /**
  * Mapa único Leaflet — evita "Map container is already initialized" ao alternar edit/preview.
  */
-export function McaUnifiedMap({ mode, perimeter, layers, onPolygonChange }: McaUnifiedMapProps) {
+export function McaUnifiedMap({
+  mode,
+  perimeter,
+  layers,
+  visibleLayerKeys,
+  onPolygonChange,
+}: McaUnifiedMapProps) {
   const handleCreated = (e: { layer: L.Layer }) => {
     const layer = e.layer as L.Layer & { toGeoJSON: () => StudyAreaGeoJSON };
     onPolygonChange(layer.toGeoJSON());
@@ -89,10 +97,14 @@ export function McaUnifiedMap({ mode, perimeter, layers, onPolygonChange }: McaU
 
   const overlayEntries = React.useMemo(() => {
     if (mode !== "preview" || !layers) return [];
-    return Object.entries(layers).filter(
-      ([k, fc]) => k !== "BASE_PERIMETRO" && fc && fc.features?.length,
-    );
-  }, [mode, layers]);
+    return Object.entries(layers).filter(([k, fc]) => {
+      if (k === "BASE_PERIMETRO" || !fc || !fc.features?.length) return false;
+      if (visibleLayerKeys && visibleLayerKeys.size > 0) {
+        return visibleLayerKeys.has(k);
+      }
+      return true;
+    });
+  }, [mode, layers, visibleLayerKeys]);
 
   const fitGeo: StudyAreaGeoJSON | FeatureCollection | null =
     perimeter ?? overlayEntries[0]?.[1] ?? null;

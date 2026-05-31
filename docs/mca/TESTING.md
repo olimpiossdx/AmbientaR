@@ -2,7 +2,7 @@
 
 Roteiro para validar o Motor Cartográfico Automatizado. Inclui **v1 (E01–E15)** e **fundação v2** (Layout JSON, invalidação, revisão humana, scale/topology).
 
-**Plano executivo:** [`PLANO-EXECUTIVO.md`](PLANO-EXECUTIVO.md) · **Índice:** [`INDEX.md`](INDEX.md)  
+**Plano executivo:** [`PLANO-EXECUTIVO.md`](PLANO-EXECUTIVO.md) · **Sprint 0:** [`SPRINT-0-VALIDACAO.md`](SPRINT-0-VALIDACAO.md) · **Índice:** [`INDEX.md`](INDEX.md)  
 Referências: [`ETAPAS.md`](ETAPAS.md), [`REFERENCIA-PIMENTA.md`](REFERENCIA-PIMENTA.md), [`ARCHITECTURE.md`](ARCHITECTURE.md).
 
 ---

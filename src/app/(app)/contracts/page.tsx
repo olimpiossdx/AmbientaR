@@ -63,8 +63,10 @@ import {
   getAppUserProfileUid,
   isAdminOrFinancialRole,
   isClientePortalRole,
+  isRepresentativeLikePortalRole,
   isSelfRegisteredPortalUser,
 } from "@/lib/role-guards";
+import { fetchClientIdsForPortalPartner, isEmpreendedorScopedPortalRole } from "@/lib/portal-empreendedor-scope";
 import { resolvePortalAuthUid } from "@/lib/auth-user-id";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -217,17 +219,9 @@ export default function ContractsPage() {
       return;
     }
 
-    // Representante: clientes que o titular aprovou.
-    if (user.role === "representative") {
-      const repUid = getAppUserProfileUid(user);
-      if (!repUid) {
-        setClientIdsForUser([]);
-        return;
-      }
-      const cRef = collection(firestore, "clients");
-      const q = query(cRef, where("approvedUserIds", "array-contains", repUid));
-      getDocs(q)
-        .then((snap) => setClientIdsForUser(snap.docs.map((d) => d.id)))
+    if (isRepresentativeLikePortalRole(user.role)) {
+      fetchClientIdsForPortalPartner(firestore, user)
+        .then(setClientIdsForUser)
         .catch(() => setClientIdsForUser([]));
       return;
     }
@@ -246,7 +240,7 @@ export default function ContractsPage() {
     useCollection<Contract>(contractsQuery);
 
   const isResolvingClientIds =
-    (isClientePortalRole(user?.role) || user?.role === "representative") &&
+    isEmpreendedorScopedPortalRole(user?.role) &&
     clientIdsForUser === null;
   const contractsLoading = isLoadingContracts || isResolvingClientIds;
   const acceptedProposalsQuery = useMemoFirebase(
@@ -470,7 +464,7 @@ export default function ContractsPage() {
   };
 
   const isPortalUser =
-    isClientePortalRole(user?.role) || user?.role === "representative";
+    isEmpreendedorScopedPortalRole(user?.role);
 
   const formatDate = (dateString: string) => {
     if (!dateString) return "N/A";
@@ -486,7 +480,7 @@ export default function ContractsPage() {
   const visibleContracts = useMemo(() => {
     const all = contracts || [];
     if (!user) return all;
-    if (!isClientePortalRole(user.role) && user.role !== "representative")
+    if (!isEmpreendedorScopedPortalRole(user.role))
       return all;
     if (!clientIdsForUser || clientIdsForUser.length === 0) return [];
     const allowedIds = new Set(clientIdsForUser);

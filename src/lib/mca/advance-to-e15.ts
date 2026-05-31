@@ -3,6 +3,8 @@ import path from "node:path";
 import { FieldValue } from "firebase-admin/firestore";
 import type { FeatureCollection } from "geojson";
 import { studyMapsAdminDb } from "@/lib/study-maps/admin";
+import { loadGoldLayersFromRepo } from "./gold-cad-import";
+import type { McaGoldPresetId } from "./gold-presets";
 import { parseLayersImportPayload } from "./layer-import";
 import { fitLayersToPerimeter } from "./layer-fit";
 import { toFeatureCollection, isValidPerimeter } from "./perimeter";
@@ -26,11 +28,20 @@ function loadDemoImportPayload(): Record<string, FeatureCollection> {
   return parseLayersImportPayload(raw);
 }
 
-async function importDemoLayersForProject(
+async function importLayersForProject(
   projectId: string,
   project: McaProjectDoc,
+  source: "import-demo" | "import-gold",
 ): Promise<string[]> {
-  let layers = loadDemoImportPayload();
+  let layers: Record<string, FeatureCollection> | null = null;
+  const presetId = project.meta.goldPresetId as McaGoldPresetId | undefined;
+  if (source === "import-gold" && presetId) {
+    layers = loadGoldLayersFromRepo(presetId);
+  }
+  if (!layers || !Object.keys(layers).length) {
+    layers = loadDemoImportPayload();
+    source = "import-demo";
+  }
   const perim = toFeatureCollection(project.perimeterGeoJson);
   if (perim?.features?.length) {
     layers = fitLayersToPerimeter(layers, perim);
@@ -47,7 +58,7 @@ async function importDemoLayersForProject(
     batch.set(projectRef.collection("layers").doc(layerKey), {
       geojson: fc,
       layerKey,
-      source: "import-demo",
+      source,
       updatedAt: FieldValue.serverTimestamp(),
     });
     importedKeys.push(layerKey);
@@ -140,8 +151,9 @@ export async function advanceMcaProjectToE15(opts: {
     !(project.meta.importedLayerKeys?.length ?? 0);
 
   if (needsImport) {
-    await importDemoLayersForProject(opts.projectId, project);
-    importedDemoLayers = true;
+    const importSource = project.meta.goldPresetId ? "import-gold" : "import-demo";
+    await importLayersForProject(opts.projectId, project, importSource);
+    importedDemoLayers = importSource === "import-demo";
     project =
       (await loadMcaProject(opts.projectId, opts.uid)) ?? project;
   }

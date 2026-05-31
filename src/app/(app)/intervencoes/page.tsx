@@ -67,7 +67,7 @@ import { backupAndDeleteParentWithCondicionantes } from "@/lib/deleted-data-back
 import { CardSearchInput } from "@/components/card-search-input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { fetchEmpreendedorIdsForRepresentative } from "@/lib/representative-empreendedor-ids";
+import { fetchEmpreendedorIdsForPortalScope, isEmpreendedorScopedPortalRole } from "@/lib/portal-empreendedor-scope";
 import { isClientePortalRole, canPerformOperationalWrite } from "@/lib/role-guards";
 
 const canPerformWriteActions = (user: AppUser | null): boolean => {
@@ -135,9 +135,9 @@ export default function IntervencoesPage() {
       } else {
         setEmpreendedorIdsForUser(["invalid-placeholder"]);
       }
-    } else if (user?.role === "representative" && firestore) {
+    } else if (isEmpreendedorScopedPortalRole(user?.role) && !isClientePortalRole(user?.role) && firestore && user) {
       setEmpreendedorIdsForUser(undefined);
-      fetchEmpreendedorIdsForRepresentative(firestore, user)
+      fetchEmpreendedorIdsForPortalScope(firestore, user)
         .then(setEmpreendedorIdsForUser)
         .catch(() => setEmpreendedorIdsForUser(["invalid-placeholder"]));
     } else if (user) {
@@ -148,7 +148,7 @@ export default function IntervencoesPage() {
   const intervencoesQuery = useMemoFirebase(() => {
     if (!firestore || !user || empreendedorIdsForUser === undefined)
       return null;
-    if (isClientePortalRole(user.role) || user.role === "representative") {
+    if (isEmpreendedorScopedPortalRole(user.role)) {
       if (empreendedorIdsForUser.length > 0) {
         return query(
           collection(firestore, "intervencoes"),
@@ -208,7 +208,7 @@ export default function IntervencoesPage() {
   const isLoading =
     isLoadingIntervencoes ||
     isLoadingEmpreendedores ||
-    ((isClientePortalRole(user?.role) || user?.role === "representative") &&
+    (isEmpreendedorScopedPortalRole(user?.role) &&
       empreendedorIdsForUser === undefined);
 
   const handleAddNew = () => {

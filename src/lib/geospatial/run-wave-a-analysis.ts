@@ -227,23 +227,39 @@ function waveLayersForAnalysis(
   return [...SIG_MG_ALL_LAYERS, ...resolveFederalLayersForBbox(bbox)];
 }
 
+const WAVE_A_BATCH_SIZE = 8;
+
 async function mapInBatches<T, R>(
   items: T[],
   batchSize: number,
-  fn: (item: T) => Promise<R>,
+  fn: (item: T, index: number) => Promise<R>,
+  onItem?: (item: R, index: number, total: number) => void,
 ): Promise<R[]> {
   const out: R[] = [];
   for (let i = 0; i < items.length; i += batchSize) {
     const slice = items.slice(i, i + batchSize);
-    const chunk = await Promise.all(slice.map(fn));
-    out.push(...chunk);
+    const chunk = await Promise.all(
+      slice.map((item, j) => fn(item, i + j)),
+    );
+    chunk.forEach((result, j) => {
+      const index = i + j;
+      onItem?.(result, index, items.length);
+      out.push(result);
+    });
   }
   return out;
 }
 
+export type WaveAAnalysisProgress = {
+  layer: GeoLayerResult;
+  index: number;
+  total: number;
+};
+
 export async function runWaveAAnalysis(
   input: PerimeterParseInput,
   influenceConfig: GeoInfluenceAreaConfig = DEFAULT_INFLUENCE_CONFIG,
+  onLayerComplete?: (progress: WaveAAnalysisProgress) => void,
 ): Promise<WaveAAnalysisResult> {
   const parsed = await parsePerimeterPolygon(input);
   if (!parsed) {
@@ -253,10 +269,11 @@ export async function runWaveAAnalysis(
   }
 
   const influenceAreas = await resolveInfluenceAreas(input, influenceConfig);
+  const catalog = waveLayersForAnalysis(parsed.bbox);
 
   const layerResults = await mapInBatches(
-    waveLayersForAnalysis(parsed.bbox),
-    6,
+    catalog,
+    WAVE_A_BATCH_SIZE,
     (entry) =>
       analyzeCatalogLayer({
         perimeter: parsed.polygon,
@@ -264,6 +281,7 @@ export async function runWaveAAnalysis(
         bbox: parsed.bbox,
         entry,
       }),
+    (layer, index, total) => onLayerComplete?.({ layer, index, total }),
   );
 
   const generatedAtUtc = new Date().toISOString();

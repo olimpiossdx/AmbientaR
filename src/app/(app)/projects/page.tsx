@@ -62,7 +62,8 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
 import { CardSearchInput } from "@/components/card-search-input";
-import { isClientePortalRole, canWriteCadastroClienteAutonomo, isCadastroReadOnlyClienteGestao, canWriteCadastro } from "@/lib/role-guards";
+import { fetchEmpreendedorIdsForPortalScope, isEmpreendedorScopedPortalRole } from "@/lib/portal-empreendedor-scope";
+import { isClientePortalRole, canWriteCadastroClienteAutonomo, isCadastroReadOnlyClienteGestao, canWriteCadastro, isRepresentativeLikePortalRole, isRepresentativeReadOnlyPortalRole, isConsultorRepresentante } from "@/lib/role-guards";
 import { usePackageUsage } from "@/hooks/use-package-usage";
 import { PackageUsageBanner } from "@/components/package-usage-banner";
 
@@ -134,91 +135,28 @@ function ProjectsPageContent() {
       return;
     }
 
-    // Representante: empreendimentos dos titulares que aprovaram o acesso (approvedUserIds); fallback por access_requests.
-    if (user.role === "representative") {
+    // Representante / consultor: empreendimentos da carteira aprovada.
+    if (isRepresentativeLikePortalRole(user.role)) {
       setEmpreendedorIdsForUser(undefined);
-      const repUid = user.id ?? (user as any).uid;
-      const empreendedoresRef = collection(firestore, "empreendedores");
-      const accessRequestsRef = collection(firestore, "access_requests");
-      const qEmp = query(
-        empreendedoresRef,
-        where("approvedUserIds", "array-contains", repUid),
-      );
-      getDocs(qEmp)
-        .then((snapshot) => {
-          let ids = snapshot.docs.map((d) => d.id);
-          if (ids.length > 0) {
-            setEmpreendedorIdsForUser(ids);
-            return;
-          }
-          const qApproved = query(
-            accessRequestsRef,
-            where("status", "==", "approved"),
-            where("requestedByUserId", "==", repUid),
-          );
-          getDocs(qApproved)
-            .then((snapReq) => {
-              if (snapReq.docs.length === 0) {
-                setEmpreendedorIdsForUser([
-                  "invalid-placeholder-for-empty-query",
-                ]);
-                return;
-              }
-              const cpfs = new Set<string>();
-              snapReq.docs.forEach((d) => {
-                const cpf = (d.data().cpfOfInterested || "").trim();
-                const digits = cpf.replace(/\D/g, "");
-                if (digits.length >= 11) {
-                  cpfs.add(cpf);
-                  cpfs.add(digits);
-                }
-              });
-              const cpfList = Array.from(cpfs).slice(0, 10);
-              if (cpfList.length === 0) {
-                setEmpreendedorIdsForUser([
-                  "invalid-placeholder-for-empty-query",
-                ]);
-                return;
-              }
-              const qByCpf = query(
-                empreendedoresRef,
-                where("cpfCnpj", "in", cpfList),
-              );
-              getDocs(qByCpf)
-                .then((snapEmp) => {
-                  ids = snapEmp.docs.map((d) => d.id);
-                  setEmpreendedorIdsForUser(
-                    ids.length > 0
-                      ? ids
-                      : ["invalid-placeholder-for-empty-query"],
-                  );
-                })
-                .catch(() =>
-                  setEmpreendedorIdsForUser([
-                    "invalid-placeholder-for-empty-query",
-                  ]),
-                );
-            })
-            .catch(() =>
-              setEmpreendedorIdsForUser([
-                "invalid-placeholder-for-empty-query",
-              ]),
-            );
-        })
-        .catch((err) => {
-          console.error(
-            "Error fetching empreendedor IDs for representative:",
-            err,
-          );
-          setEmpreendedorIdsForUser(["invalid-placeholder-for-empty-query"]);
-        });
+      fetchEmpreendedorIdsForPortalScope(firestore, user)
+        .then((ids) =>
+          setEmpreendedorIdsForUser(
+            ids[0] === "invalid-placeholder"
+              ? ["invalid-placeholder-for-empty-query"]
+              : ids,
+          ),
+        )
+        .catch(() =>
+          setEmpreendedorIdsForUser(["invalid-placeholder-for-empty-query"]),
+        );
+      return;
     }
   }, [user, firestore]);
 
   const projectsQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
 
-    if (isClientePortalRole(user.role) || user.role === "representative") {
+    if (isEmpreendedorScopedPortalRole(user.role)) {
       if (empreendedorIdsForUser === undefined) {
         return null;
       }
@@ -258,7 +196,7 @@ function ProjectsPageContent() {
   const isLoading =
     isLoadingProjects ||
     isLoadingEmpreendedores ||
-    ((isClientePortalRole(user?.role) || user?.role === "representative") &&
+    (isEmpreendedorScopedPortalRole(user?.role) &&
       empreendedorIdsForUser === undefined);
 
   const filteredProjects = useMemo(() => {
@@ -353,9 +291,11 @@ function ProjectsPageContent() {
             <CardHeader>
               <CardTitle>Gerenciamento de Empreendimentos</CardTitle>
               <CardDescription>
-                {user?.role === "representative"
+                {isRepresentativeReadOnlyPortalRole(user?.role)
                   ? "Empreendimentos dos titulares (clientes) que você representa — mesmos dados visíveis no perfil do cliente."
-                  : canWriteCadastroClienteAutonomo(user?.role)
+                  : isConsultorRepresentante(user?.role)
+                    ? "Empreendimentos dos clientes da sua carteira aprovada — você pode incluir, alterar e excluir cadastros."
+                    : canWriteCadastroClienteAutonomo(user?.role)
                     ? "Adicione, edite e exclua empreendimentos ligados aos seus empreendedores."
                     : isCadastroReadOnlyClienteGestao(user?.role)
                       ? "Visualize os empreendimentos vinculados ao seu perfil Cliente Gestão. Alterações de cadastro são feitas pela consultoria."

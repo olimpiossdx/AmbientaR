@@ -105,6 +105,12 @@ export const ESTUDOS_TECNICOS_MENU_LABEL = "Estudos Técnicos";
 
 export const allNavItems: NavItem[] = [
   {
+    href: "/carteira",
+    label: "Minha Carteira",
+    icon: Briefcase,
+    roles: ["consultor_representante", "client", "cliente_autonomo", "admin"],
+  },
+  {
     href: "/",
     label: "Painel",
     icon: LayoutDashboard,
@@ -156,6 +162,12 @@ export const allNavItems: NavItem[] = [
           "client",
           "representative",
         ],
+      },
+      {
+        href: "/financial/platform-subscription-contracts",
+        label: "Contratos Plataforma",
+        icon: FileText,
+        roles: ["admin", "financial"],
       },
       {
         href: "/contracts-suppliers",
@@ -232,6 +244,12 @@ export const allNavItems: NavItem[] = [
         label: "Painel Financeiro",
         icon: BarChart2,
         roles: ["admin", "financial"],
+      },
+      {
+        href: "/financial/projetos-roi",
+        label: "Projetos & ROI",
+        icon: TrendingUp,
+        roles: ["admin", "financial", "sales"],
       },
       {
         href: "/financial/fluxo-projetado",

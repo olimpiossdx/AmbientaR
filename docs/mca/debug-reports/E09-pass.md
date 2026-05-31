@@ -1,6 +1,6 @@
 # E09 — Uso e ocupação
 
-- Data: 2026-05-28
+- Data: 2026-05-29
 - Debugger: `npm run mca:verify-all-etapas` → **PASS**
 
 ## Checks

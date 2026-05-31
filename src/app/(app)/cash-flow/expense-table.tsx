@@ -149,7 +149,11 @@ export function ExpenseTable({ expenses: expensesProp, isLoadingExpenses: isLoad
                     </p>
                   </div>
                   <div className="flex items-center gap-1">
-                    <TransactionViewDialog item={item} type="Despesa" />
+                    <TransactionViewDialog
+                      item={item}
+                      type="Despesa"
+                      collectionKind="expense"
+                    />
                     {item.fileUrl && (
                       <Button asChild variant="ghost" size="icon">
                         <a href={item.fileUrl} target="_blank" rel="noopener noreferrer" title="Ver anexo">
@@ -229,7 +233,11 @@ export function ExpenseTable({ expenses: expensesProp, isLoadingExpenses: isLoad
                 </TableCell>
                 <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-1">
-                        <TransactionViewDialog item={item} type="Despesa" />
+                        <TransactionViewDialog
+                      item={item}
+                      type="Despesa"
+                      collectionKind="expense"
+                    />
                         {canWrite && (
                           <>
                             <Tooltip>

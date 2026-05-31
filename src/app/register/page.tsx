@@ -165,12 +165,21 @@ const PROFILE_CHOICE_TEXT = {
     "Sou titular e uso os planos de acompanhamento na plataforma para lançar e acompanhar meus dados e prazos por conta própria, sem supervisão mensal da consultoria.",
   representative:
     "Atuo em nome de um cliente titular e preciso de acesso à plataforma para gerenciar os dados dele.",
+  consultor_representante:
+    "Sou consultor externo/parceiro e preciso operar licenças, outorgas e cadastros dos clientes que me aprovarem.",
 };
 
-type RegisterProfileMode = "client" | "cliente_autonomo" | "representative";
+type RegisterProfileMode =
+  | "client"
+  | "cliente_autonomo"
+  | "representative"
+  | "consultor_representante";
 
 function parseRegisterProfileFromTipo(tipo: string | null | undefined): RegisterProfileMode {
   if (tipo === "representante") return "representative";
+  if (tipo === "consultor" || tipo === "consultor_representante") {
+    return "consultor_representante";
+  }
   if (tipo === "cliente_autonomo" || tipo === "autonomo") return "cliente_autonomo";
   return "client";
 }
@@ -192,6 +201,14 @@ function RegisterPageContent() {
 
   const [paymentMethod, setPaymentMethod] =
     React.useState<PlatformPaymentMethod>("pix");
+  const [billingMode, setBillingMode] = React.useState<
+    "annual_upfront" | "monthly_12x"
+  >("annual_upfront");
+  const [cardHolder, setCardHolder] = React.useState("");
+  const [cardLast4, setCardLast4] = React.useState("");
+  const [cardExpiryMonth, setCardExpiryMonth] = React.useState("");
+  const [cardExpiryYear, setCardExpiryYear] = React.useState("");
+  const [cardBrand, setCardBrand] = React.useState("");
   const [paymentAcknowledged, setPaymentAcknowledged] = React.useState(false);
   const [linkedClientId, setLinkedClientId] = React.useState<string | null>(null);
   const [linkedEmpreendedorId, setLinkedEmpreendedorId] = React.useState<string | null>(null);
@@ -231,11 +248,9 @@ function RegisterPageContent() {
     });
   }, [form]);
 
-  // Para representantes, não exibimos escolha de plano/contrato.
-  // Preenchemos internamente com plano gratuito e contrato aceito
-  // apenas para satisfazer o schema, sem cobrar nada.
+  // Representantes e consultores: sem plano/contrato de titular.
   React.useEffect(() => {
-    if (mode === "representative") {
+    if (mode === "representative" || mode === "consultor_representante") {
       form.setValue("selectedPackage", "gratuito");
       form.setValue("contractAccepted", true as any);
       setStep(1);
@@ -354,6 +369,8 @@ function RegisterPageContent() {
 
   const isTitularPlanMode =
     mode === "client" || mode === "cliente_autonomo";
+  const isDelegatePortalMode =
+    mode === "representative" || mode === "consultor_representante";
 
   const handleCancelRegistration = () => {
     if (
@@ -466,18 +483,20 @@ function RegisterPageContent() {
         role:
           mode === "representative"
             ? "representative"
+            : mode === "consultor_representante"
+              ? "consultor_representante"
             : mode === "cliente_autonomo"
               ? "cliente_autonomo"
               : "client",
         status: "active",
-        package: mode === "representative" ? null : values.selectedPackage,
+        package: isDelegatePortalMode ? null : values.selectedPackage,
         contractAcceptedAt:
-          mode === "representative" ? null : serverTimestamp(),
+          isDelegatePortalMode ? null : serverTimestamp(),
         createdAt: serverTimestamp(),
         lastLogin: serverTimestamp(),
         isOnline: false,
         cadastroIncompleto:
-          mode === "representative"
+          isDelegatePortalMode
             ? false
             : isTitularPlanMode
               ? !hasExistingLink
@@ -503,6 +522,69 @@ function RegisterPageContent() {
           : {}),
       });
 
+      if (mode !== "representative" && mode !== "consultor_representante" && isTitularPlanMode && values.selectedPackage) {
+        try {
+          const token = await cred.user.getIdToken();
+          const titularRole =
+            mode === "cliente_autonomo" ? "cliente_autonomo" : "client";
+          const payConfirmed =
+            values.selectedPackage === "gratuito" ||
+            values.selectedPackage === "sob_consulta" ||
+            (clientPackageRequiresAnnualPaymentStep(values.selectedPackage) &&
+              isPlatformPaymentAutoApproveEnabled()) ||
+            paymentAcknowledged;
+          await fetch("/api/platform-subscription-contract/record", {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              userId: uid,
+              name: values.name,
+              phone: values.phone,
+              cpf:
+                titularDocument.length === 11
+                  ? titularDocument
+                  : userCpfNormalized,
+              cnpjs:
+                titularDocument.length === 14 ? [titularDocument] : undefined,
+              role: titularRole,
+              packageId: values.selectedPackage,
+              paymentMethod: clientPackageRequiresAnnualPaymentStep(
+                values.selectedPackage,
+              )
+                ? paymentMethod
+                : null,
+              billingMode,
+              paymentConfirmed: payConfirmed,
+              cardDisplay:
+                paymentMethod === "credit_card" ||
+                paymentMethod === "debit_card"
+                  ? {
+                      holderName: cardHolder.trim() || values.name,
+                      last4: cardLast4.replace(/\D/g, "").slice(-4),
+                      expiryMonth: cardExpiryMonth,
+                      expiryYear: cardExpiryYear,
+                      brand: cardBrand.trim() || undefined,
+                    }
+                  : undefined,
+              clientUserAgent:
+                typeof navigator !== "undefined"
+                  ? navigator.userAgent
+                  : undefined,
+              platformCompanyName: platformCompany?.name,
+              platformCompanyCnpj: platformCompany?.cnpj,
+            }),
+          });
+        } catch (contractErr) {
+          console.warn(
+            "[platform-subscription-contract] registro de aceite:",
+            contractErr,
+          );
+        }
+      }
+
       if (
         isTitularPlanMode &&
         clientPackageRequiresAnnualPaymentStep(values.selectedPackage) &&
@@ -525,8 +607,8 @@ function RegisterPageContent() {
         }
       }
 
-      // Representante: criar pedido de acesso para o titular aprovar (não falha o cadastro se der erro de permissão/rede).
-      if (mode === "representative") {
+      // Representante / consultor: pedido de acesso para o titular aprovar.
+      if (isDelegatePortalMode) {
         const cpfCnpjTitularRaw = (values.cpfCnpjTitular ?? "").trim();
         const cpfCnpjTitularDigits = normalizeDocument(cpfCnpjTitularRaw);
         if (isValidCpfOrCnpj(cpfCnpjTitularDigits)) {
@@ -536,12 +618,16 @@ function RegisterPageContent() {
               requestedByName: values.name,
               requestedByEmail: values.email,
               cpfOfInterested: cpfCnpjTitularDigits,
+              requestType:
+                mode === "consultor_representante"
+                  ? "consultor_representante"
+                  : "representative",
               status: "pending",
               createdAt: new Date().toISOString(),
             });
           } catch (e) {
             console.warn(
-              "Pedido de acesso (access_requests) não criado; o representante pode solicitar depois em Usuários.",
+              "Pedido de acesso (access_requests) não criado; solicite depois em Usuários.",
               e,
             );
           }
@@ -630,6 +716,8 @@ function RegisterPageContent() {
         description:
           mode === "representative"
             ? "Sua conta de representante foi criada. Aguarde o titular conceder acesso aos dados."
+            : mode === "consultor_representante"
+              ? "Sua conta de consultor foi criada. Aguarde o titular aprovar sua carteira."
             : pendingPay
               ? "Sua conta foi criada. O acesso à plataforma será liberado após a confirmação do pagamento anual."
               : mode === "cliente_autonomo"
@@ -1190,6 +1278,30 @@ function RegisterPageContent() {
           {annual && (
             <>
               <div className="space-y-3">
+                <Label className="text-base">Quitação do valor anual</Label>
+                <RadioGroup
+                  value={billingMode}
+                  onValueChange={(v) =>
+                    setBillingMode(v as "annual_upfront" | "monthly_12x")
+                  }
+                  className="grid gap-2 sm:grid-cols-2"
+                >
+                  <div className="flex items-center gap-2 rounded-lg border p-3">
+                    <RadioGroupItem value="annual_upfront" id="bill-upfront" />
+                    <Label htmlFor="bill-upfront" className="cursor-pointer text-sm">
+                      À vista (anual)
+                    </Label>
+                  </div>
+                  <div className="flex items-center gap-2 rounded-lg border p-3">
+                    <RadioGroupItem value="monthly_12x" id="bill-12x" />
+                    <Label htmlFor="bill-12x" className="cursor-pointer text-sm">
+                      12 parcelas mensais (sem juros)
+                    </Label>
+                  </div>
+                </RadioGroup>
+              </div>
+
+              <div className="space-y-3">
                 <Label className="text-base">Forma de pagamento</Label>
                 <RadioGroup
                   value={paymentMethod}
@@ -1340,11 +1452,67 @@ function RegisterPageContent() {
 
               {(paymentMethod === "credit_card" ||
                 paymentMethod === "debit_card") && (
-                <div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
-                  O processamento de cartão será integrado a um gateway
-                  (ex.: Mercado Pago / Stripe). Por enquanto, conclua o cadastro e
-                  utilize o <strong>PIX</strong> ou aguarde contato da equipe para
-                  pagamento com cartão.
+                <div className="rounded-lg border p-4 space-y-3 text-sm">
+                  <p className="text-muted-foreground">
+                    Dados para o contrato assinado (a cópia registra titular e
+                    final do cartão — <strong>não</strong> armazenamos o código de
+                    segurança). Processamento via gateway em integração.
+                  </p>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div>
+                      <Label className="text-xs">Titular do cartão</Label>
+                      <Input
+                        value={cardHolder}
+                        onChange={(e) => setCardHolder(e.target.value)}
+                        placeholder={form.watch("name") || "Nome no cartão"}
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Bandeira</Label>
+                      <Input
+                        value={cardBrand}
+                        onChange={(e) => setCardBrand(e.target.value)}
+                        placeholder="Visa, Master…"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Final do cartão (4 dígitos)</Label>
+                      <Input
+                        value={cardLast4}
+                        onChange={(e) =>
+                          setCardLast4(e.target.value.replace(/\D/g, "").slice(0, 4))
+                        }
+                        placeholder="0000"
+                        maxLength={4}
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <div className="flex-1">
+                        <Label className="text-xs">Validade (mês)</Label>
+                        <Input
+                          value={cardExpiryMonth}
+                          onChange={(e) =>
+                            setCardExpiryMonth(
+                              e.target.value.replace(/\D/g, "").slice(0, 2),
+                            )
+                          }
+                          placeholder="MM"
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <Label className="text-xs">Ano</Label>
+                        <Input
+                          value={cardExpiryYear}
+                          onChange={(e) =>
+                            setCardExpiryYear(
+                              e.target.value.replace(/\D/g, "").slice(0, 4),
+                            )
+                          }
+                          placeholder="AAAA"
+                        />
+                      </div>
+                    </div>
+                  </div>
                 </div>
               )}
             </>
@@ -1497,6 +1665,25 @@ function RegisterPageContent() {
               {PROFILE_CHOICE_TEXT.representative}
             </span>
           </button>
+          <button
+            type="button"
+            onClick={() => {
+              setMode("consultor_representante");
+              setHasChosenProfile(true);
+            }}
+            className={cn(
+              "flex flex-col items-start rounded-lg border-2 p-4 text-left transition-colors sm:col-span-2 lg:col-span-1",
+              "hover:border-primary hover:bg-primary/5",
+              "border-border",
+            )}
+          >
+            <span className="font-semibold text-foreground">
+              Consultor-Representante
+            </span>
+            <span className="mt-1 text-xs text-muted-foreground">
+              {PROFILE_CHOICE_TEXT.consultor_representante}
+            </span>
+          </button>
         </div>
         <Button variant="outline" className="w-full" asChild>
           <Link
@@ -1553,6 +1740,8 @@ function RegisterPageContent() {
             {hasChosenProfile
               ? mode === "representative"
                 ? "Cadastro de Representante"
+                : mode === "consultor_representante"
+                  ? "Cadastro de Consultor-Representante"
                 : mode === "cliente_autonomo"
                   ? "Cadastro de Cliente Autônomo"
                   : "Cadastro de Cliente Gestão"
@@ -1608,6 +1797,18 @@ function RegisterPageContent() {
               >
                 Representante
               </button>
+              <button
+                type="button"
+                onClick={() => setMode("consultor_representante")}
+                className={cn(
+                  "px-2.5 py-1 rounded-full transition-colors whitespace-nowrap",
+                  mode === "consultor_representante"
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-transparent text-muted-foreground",
+                )}
+              >
+                Consultor
+              </button>
             </div>
           )}
         </div>
@@ -1644,6 +1845,7 @@ function RegisterPageContent() {
                 {isTitularPlanMode && step === 3 && renderStep3()}
                 {isTitularPlanMode && step === 4 && renderStep4()}
                 {mode === "representative" && renderStep1()}
+                {mode === "consultor_representante" && renderStep1()}
               </form>
             </Form>
 

@@ -87,9 +87,10 @@ import {
   deleteCondicionanteDirect,
 } from "@/lib/deleted-data-backup";
 import { CardSearchInput } from "@/components/card-search-input";
-import { fetchEmpreendedorIdsForRepresentative } from "@/lib/representative-empreendedor-ids";
+import { fetchEmpreendedorIdsForPortalScope, isEmpreendedorScopedPortalRole } from "@/lib/portal-empreendedor-scope";
 import {
   isClientePortalRole,
+  isRepresentativeLikePortalRole,
   canManageCondicionantes,
   isAdminRole,
 } from "@/lib/role-guards";
@@ -129,7 +130,7 @@ export default function CompliancePage() {
   const { toast } = useToast();
 
   const isClientLike = useMemo(
-    () => isClientePortalRole(user?.role) || user?.role === "representative",
+    () => isEmpreendedorScopedPortalRole(user?.role),
     [user?.role],
   );
 
@@ -138,9 +139,9 @@ export default function CompliancePage() {
   >(undefined);
 
   useEffect(() => {
-    if (user?.role === "representative" && firestore) {
+    if (isRepresentativeLikePortalRole(user?.role) && firestore && user) {
       setEmpreendedorIdsForUser(undefined);
-      fetchEmpreendedorIdsForRepresentative(firestore, user)
+      fetchEmpreendedorIdsForPortalScope(firestore, user)
         .then(setEmpreendedorIdsForUser)
         .catch(() => setEmpreendedorIdsForUser(["invalid-placeholder"]));
       return;

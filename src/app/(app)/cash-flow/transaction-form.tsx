@@ -19,7 +19,16 @@ import { Loader2 } from "lucide-react";
 import { numberToWordsBRL } from "@/lib/utils";
 import { BrDateFormControl } from "@/components/form/br-date-input";
 import { useToast } from "@/hooks/use-toast";
-import type { Revenue, Expense, Client, Fornecedor, ExpenseCategory } from "@/lib/types";
+import type {
+  Revenue,
+  Expense,
+  Client,
+  Fornecedor,
+  ExpenseCategory,
+  Contract,
+  Project,
+  ProjectRoiCase,
+} from "@/lib/types";
 import {
   TransactionExtraFields,
   type TransactionExtraFieldsForm,
@@ -59,6 +68,9 @@ const formSchema = z.object({
   projectId: z.string().optional(),
   centroCusto: z.string().optional(),
   invoiceId: z.string().optional(),
+  projectRoiCaseId: z.string().optional(),
+  contractId: z.string().optional(),
+  impostoValor: z.coerce.number().optional(),
   file: z
     .any()
     .optional()
@@ -78,6 +90,11 @@ interface TransactionFormProps {
   currentItem?: Revenue | Expense | null;
   onSuccess?: () => void;
   onCancel?: () => void;
+  /** Pré-vínculo ao abrir a partir de Projetos & ROI */
+  defaultProjectRoiCaseId?: string;
+  defaultContractId?: string;
+  defaultClientId?: string;
+  defaultProjectId?: string;
 }
 
 const formatCurrencyBRL = (value: number) => {
@@ -133,6 +150,10 @@ export function TransactionForm({
   currentItem,
   onSuccess,
   onCancel,
+  defaultProjectRoiCaseId,
+  defaultContractId,
+  defaultClientId,
+  defaultProjectId,
 }: TransactionFormProps) {
   const [loading, setLoading] = React.useState(false);
   const [isUploading, setIsUploading] = React.useState(false);
@@ -166,6 +187,27 @@ export function TransactionForm({
   const { data: suppliers, isLoading: isLoadingSuppliers } =
     useCollection<Fornecedor>(suppliersQuery);
 
+  const roiCasesQuery = useMemoFirebase(
+    () => (firestore ? collection(firestore, "project_roi_cases") : null),
+    [firestore],
+  );
+  const { data: roiCases, isLoading: isLoadingRoiCases } =
+    useCollection<ProjectRoiCase>(roiCasesQuery);
+
+  const contractsQuery = useMemoFirebase(
+    () => (firestore && transactionType === "revenue" ? collection(firestore, "contracts") : null),
+    [firestore, transactionType],
+  );
+  const { data: contracts, isLoading: isLoadingContracts } =
+    useCollection<Contract>(contractsQuery);
+
+  const projectsQuery = useMemoFirebase(
+    () => (firestore ? collection(firestore, "projects") : null),
+    [firestore],
+  );
+  const { data: projects, isLoading: isLoadingProjects } =
+    useCollection<Project>(projectsQuery);
+
   const form = useForm<TransactionFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -182,6 +224,13 @@ export function TransactionForm({
       projectId: currentItem?.projectId || "",
       centroCusto: currentItem?.centroCusto || "",
       invoiceId: (currentItem as Revenue)?.invoiceId || "",
+      projectRoiCaseId:
+        (currentItem as Revenue | Expense)?.projectRoiCaseId ||
+        defaultProjectRoiCaseId ||
+        "",
+      contractId:
+        (currentItem as Revenue)?.contractId || defaultContractId || "",
+      impostoValor: (currentItem as Expense)?.impostoValor,
     },
   });
 
@@ -258,13 +307,30 @@ export function TransactionForm({
     if (values.requestId) dataToSave.requestId = values.requestId;
     if (values.projectId) dataToSave.projectId = values.projectId;
     if (values.centroCusto) dataToSave.centroCusto = values.centroCusto;
+    if (values.projectRoiCaseId) {
+      dataToSave.projectRoiCaseId = values.projectRoiCaseId;
+    } else if (defaultProjectRoiCaseId) {
+      dataToSave.projectRoiCaseId = defaultProjectRoiCaseId;
+    }
+    const contractIdVal = values.contractId || defaultContractId;
+    if (contractIdVal) dataToSave.contractId = contractIdVal;
     if (transactionType === "revenue") {
-      if (values.clientId) dataToSave.clientId = values.clientId;
+      const cid =
+        values.clientId ||
+        defaultClientId ||
+        (currentItem as Revenue | undefined)?.clientId;
+      if (cid) dataToSave.clientId = cid;
       if (values.invoiceId) dataToSave.invoiceId = values.invoiceId;
+    }
+    if (!values.projectId && defaultProjectId) {
+      dataToSave.projectId = defaultProjectId;
     }
     if (transactionType === "expense") {
       if (values.category) dataToSave.category = values.category as ExpenseCategory;
       if (values.supplierId) dataToSave.supplierId = values.supplierId;
+      if (values.impostoValor != null && values.impostoValor > 0) {
+        dataToSave.impostoValor = values.impostoValor;
+      }
     }
 
     if (currentItem) {
@@ -433,6 +499,24 @@ export function TransactionForm({
             suppliers={suppliers ?? undefined}
             isLoadingSuppliers={isLoadingSuppliers}
             showInvoiceLink={transactionType === "revenue"}
+            roiCases={roiCases ?? undefined}
+            isLoadingRoiCases={isLoadingRoiCases}
+            contracts={contracts ?? undefined}
+            isLoadingContracts={isLoadingContracts}
+            projects={projects ?? undefined}
+            isLoadingProjects={isLoadingProjects}
+            onRoiCaseChange={(id, selected) => {
+              form.setValue("projectRoiCaseId", id);
+              if (selected?.contractId) {
+                form.setValue("contractId", selected.contractId);
+              }
+              if (selected?.projectId) {
+                form.setValue("projectId", selected.projectId);
+              }
+              if (selected?.clientId && transactionType === "revenue") {
+                form.setValue("clientId", selected.clientId);
+              }
+            }}
           />
           <FormField
             control={form.control}

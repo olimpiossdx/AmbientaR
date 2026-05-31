@@ -42,7 +42,7 @@ export function GeoAnalysisRcaImport({
   initialGeoAnalysisId,
   onBundleChange,
 }: GeoAnalysisRcaImportProps) {
-  const { firestore } = useFirebase();
+  const { firestore, auth } = useFirebase();
   const { toast } = useToast();
   const [analyses, setAnalyses] = React.useState<
     Awaited<ReturnType<typeof listGeoAnalysesForUser>>
@@ -56,7 +56,15 @@ export function GeoAnalysisRcaImport({
     if (!firestore) return;
     let cancelled = false;
     setLoadingList(true);
-    void listGeoAnalysesForUser(firestore, userId, empreendimentoId)
+    void (async () => {
+      const idToken = await auth?.currentUser?.getIdToken();
+      return listGeoAnalysesForUser(
+        firestore,
+        userId,
+        empreendimentoId,
+        idToken ?? undefined,
+      );
+    })()
       .then((rows) => {
         if (!cancelled) setAnalyses(rows);
       })
@@ -66,7 +74,7 @@ export function GeoAnalysisRcaImport({
     return () => {
       cancelled = true;
     };
-  }, [firestore, userId, empreendimentoId]);
+  }, [auth, firestore, userId, empreendimentoId]);
 
   React.useEffect(() => {
     if (!firestore || !selectedId) {

@@ -34,6 +34,16 @@
 
 Após atualizar código: `npm run deploy:rules` (regras `financial_budgets`).
 
+## Projetos & ROI (Fase 1)
+
+| Item | Rota / notas |
+|------|----------------|
+| Lista e sincronização de casos | `/financial/projetos-roi` |
+| Detalhe, extrato, lançamento vinculado | `/financial/projetos-roi/[caseId]` |
+| Coleção Firestore | `project_roi_cases`, `project_roi_governance_reminders` |
+| Spec | `docs/financeiro-projetos-roi.md` |
+| Regras | `npm run deploy:rules` após pull |
+
 ## Pendências (fora deste lote)
 
 - Open Finance / Acesso Bancário real

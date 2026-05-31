@@ -26,7 +26,8 @@ import { Loader2, Upload } from "lucide-react";
 import { BrDateFormControl } from "@/components/form/br-date-input";
 import { useToast } from "@/hooks/use-toast";
 import { CONTRACT_NONE_SELECT_VALUE } from "@/lib/financial-core";
-import type { Invoice, Client, Contract } from "@/lib/types";
+import type { Invoice, Client, Contract, ProjectRoiCase } from "@/lib/types";
+import { ProjectRoiCaseSelectField } from "@/components/financial/project-roi-case-select-field";
 import {
   useFirebase,
   errorEmitter,
@@ -70,6 +71,7 @@ const formSchema = z
     invoiceDate: z.date({ required_error: "A data de emissão é obrigatória." }),
     dueDate: z.date({ required_error: "A data de vencimento é obrigatória." }),
     contractId: z.string().optional(),
+    projectRoiCaseId: z.string().optional(),
     file: z
       .any()
       .optional()
@@ -190,6 +192,13 @@ export function InvoiceForm({
   const { data: contracts, isLoading: isLoadingContracts } =
     useCollection<Contract>(contractsQuery);
 
+  const roiCasesQuery = useMemoFirebase(
+    () => (firestore ? collection(firestore, "project_roi_cases") : null),
+    [firestore],
+  );
+  const { data: roiCases, isLoading: isLoadingRoiCases } =
+    useCollection<ProjectRoiCase>(roiCasesQuery);
+
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -204,6 +213,7 @@ export function InvoiceForm({
         ? new Date(currentItem.dueDate)
         : new Date(),
       contractId: currentItem?.contractId || "",
+      projectRoiCaseId: currentItem?.projectRoiCaseId || "",
     },
   });
 
@@ -259,6 +269,7 @@ export function InvoiceForm({
       dueDate: values.dueDate.toISOString(),
       fileUrl: uploadedFileUrl || currentItem?.fileUrl || "",
       contractId: values.contractId || "",
+      projectRoiCaseId: values.projectRoiCaseId || "",
     };
 
     const wasPaid = currentItem?.status === "Paid";
@@ -385,11 +396,19 @@ export function InvoiceForm({
               <FormItem>
                 <FormLabel>Contrato (Opcional)</FormLabel>
                 <Select
-                  onValueChange={(v) =>
-                    field.onChange(
-                      v === CONTRACT_NONE_SELECT_VALUE ? "" : v,
-                    )
-                  }
+                  onValueChange={(v) => {
+                    const cid =
+                      v === CONTRACT_NONE_SELECT_VALUE ? "" : v;
+                    field.onChange(cid);
+                    if (cid && roiCases?.length) {
+                      const match = roiCases.find(
+                        (c) => c.contractId === cid,
+                      );
+                      if (match) {
+                        form.setValue("projectRoiCaseId", match.id);
+                      }
+                    }
+                  }}
                   value={
                     field.value
                       ? field.value
@@ -423,11 +442,19 @@ export function InvoiceForm({
                   </SelectContent>
                 </Select>
                 <FormDescription>
-                  Vincule esta fatura a um contrato aprovado.
+                  Vincule esta fatura a um contrato aprovado. Se existir caso
+                  Projetos & ROI para o contrato, o vínculo é preenchido
+                  automaticamente.
                 </FormDescription>
                 <FormMessage />
               </FormItem>
             )}
+          />
+          <ProjectRoiCaseSelectField
+            control={form.control}
+            name="projectRoiCaseId"
+            cases={roiCases ?? undefined}
+            isLoading={isLoadingRoiCases}
           />
           <FormField
             control={form.control}

@@ -31,6 +31,8 @@
     "mca:verify-gold-v4": "npx tsx scripts/mca/verify-gold-visual-v4.ts",
     "mca:write-gold-perimeters": "npx tsx scripts/mca/regenerate-gold-perimeters.ts",
     "mca:regenerate-gold-perimeters": "npx tsx scripts/mca/regenerate-gold-perimeters.ts",
+    "mca:export-gold-layers": "npx tsx scripts/mca/export-gold-layers-from-pipeline.ts",
+    "mca:test-fluxo-catingueiro": "npx tsx scripts/mca/test-fluxo-catingueiro.ts",
     "mca:verify-gold-manifest": "npx tsx scripts/mca/verify-gold-manifest.ts",
     "setup:firebase-admin": "node scripts/copy-firebase-service-account.mjs",
     "start": "node --require ./scripts/react-cache-polyfill.cjs ./node_modules/next/dist/bin/next start",

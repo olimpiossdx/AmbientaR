@@ -3,6 +3,7 @@ import { FieldValue } from "firebase-admin/firestore";
 import { verifyBearerUid } from "@/lib/mca/verify-user";
 import { loadMcaProject } from "@/lib/mca/orchestrator";
 import { studyMapsAdminDb } from "@/lib/study-maps/admin";
+import { mcaLayerFeatureCount } from "@/lib/mca/layer-feature-count";
 import type { McaProjectDoc, McaProjectMeta } from "@/lib/mca/types";
 
 const COL = "mca_projects";
@@ -17,16 +18,39 @@ export async function GET(
     if (!project) {
       return NextResponse.json({ success: false, error: "Não encontrado." }, { status: 404 });
     }
+    const layersMode = req.nextUrl.searchParams.get("layers") ?? "manifest";
     const layersSnap = await studyMapsAdminDb()
       .collection(COL)
       .doc(params.id)
       .collection("layers")
       .get();
-    const layers: Record<string, unknown> = {};
+
+    if (layersMode === "none") {
+      return NextResponse.json({ success: true, project, layers: {}, layerManifest: [] });
+    }
+
+    if (layersMode === "full") {
+      const layers: Record<string, unknown> = {};
+      layersSnap.docs.forEach((d: { id: string; data: () => Record<string, unknown> }) => {
+        layers[d.id] = d.data().geojson ?? null;
+      });
+      return NextResponse.json({ success: true, project, layers });
+    }
+
+    const layerManifest: { id: string; featureCount: number }[] = [];
     layersSnap.docs.forEach((d: { id: string; data: () => Record<string, unknown> }) => {
-      layers[d.id] = d.data().geojson ?? null;
+      const geojson = d.data().geojson;
+      layerManifest.push({
+        id: d.id,
+        featureCount: mcaLayerFeatureCount(geojson),
+      });
     });
-    return NextResponse.json({ success: true, project, layers });
+    return NextResponse.json({
+      success: true,
+      project,
+      layers: {},
+      layerManifest,
+    });
   } catch (e) {
     return NextResponse.json(
       { success: false, error: e instanceof Error ? e.message : "Erro" },

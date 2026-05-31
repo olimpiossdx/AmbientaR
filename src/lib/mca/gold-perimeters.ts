@@ -2,7 +2,8 @@ import fs from "node:fs";
 import path from "node:path";
 import buffer from "@turf/buffer";
 import area from "@turf/area";
-import { centroid, point } from "@turf/helpers";
+import centroid from "@turf/centroid";
+import { point } from "@turf/helpers";
 import transformScale from "@turf/transform-scale";
 import type { FeatureCollection } from "geojson";
 import type { McaGoldPresetId } from "./gold-presets";
@@ -33,7 +34,7 @@ export function scaleFeatureCollectionToAreaHa(
   if (relErr < 0.005) return fc;
   const factor = Math.sqrt(targetAreaHa / currentHa);
   const origin = centroid(fc);
-  const scaled = transformScale(fc, factor, { origin: origin.geometry.coordinates });
+  const scaled = transformScale(fc, factor, { origin: origin.geometry.coordinates as [number, number] });
   const feat = scaled.features[0];
   if (feat?.properties) {
     feat.properties.scaledToAreaHa = targetAreaHa;
@@ -95,27 +96,11 @@ export function loadGoldPerimeterFromRepo(id: McaGoldPresetId): FeatureCollectio
   return buildGoldPerimeter(id);
 }
 
-/** Carrega perímetro estático do repo (public/) ou fallback sintético. */
+/** Browser: use `gold-perimeters-fetch`. Servidor: repo ou sintético. */
 export async function fetchGoldPerimeter(id: McaGoldPresetId): Promise<FeatureCollection> {
   if (typeof window !== "undefined") {
-    try {
-      const res = await fetch(GOLD_PERIMETER_URL[id], { cache: "no-store" });
-      if (res.ok) {
-        let fc = (await res.json()) as FeatureCollection;
-        if (fc?.features?.length) {
-          const preset = getGoldPreset(id);
-          const targetHa = preset
-            ? Number(preset.areaTotalHa.replace(",", "."))
-            : null;
-          if (targetHa) {
-            fc = scaleFeatureCollectionToAreaHa(fc, targetHa);
-          }
-          return fc;
-        }
-      }
-    } catch {
-      /* fallback */
-    }
+    const { fetchGoldPerimeter: fetchClient } = await import("./gold-perimeters-fetch");
+    return fetchClient(id);
   }
-  return buildGoldPerimeter(id);
+  return loadGoldPerimeterFromRepo(id);
 }

@@ -163,6 +163,7 @@ export function RevenueTable({ revenues: revenuesProp, isLoadingRevenues: isLoad
                   </div>
                   <div className="flex items-center gap-1">
                     <TransactionViewDialog
+                      collectionKind="revenue"
                       item={item}
                       type="Receita"
                       clientName={item.clientId ? clientsMap.get(item.clientId) || 'N/A' : undefined}
@@ -250,6 +251,7 @@ export function RevenueTable({ revenues: revenuesProp, isLoadingRevenues: isLoad
                 <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-1">
                         <TransactionViewDialog
+                      collectionKind="revenue"
                           item={item}
                           type="Receita"
                           clientName={item.clientId ? clientsMap.get(item.clientId) || 'N/A' : undefined}

@@ -11,7 +11,11 @@ import type {
   Fornecedor,
   EnvironmentalCompany,
   Service,
+  ProjectRoiCase,
+  Contract,
 } from "@/lib/types";
+import { ProjectRoiCaseSelectField } from "@/components/financial/project-roi-case-select-field";
+import { CONTRACT_NONE_SELECT_VALUE } from "@/lib/financial-core";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import {
@@ -103,6 +107,8 @@ const formSchema = z.object({
   }),
   dataContrato: z.string().min(1, "Informe a data do contrato."),
   status: z.enum(["Rascunho", "Aprovado"]),
+  projectRoiCaseId: z.string().optional(),
+  clientContractId: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -237,6 +243,23 @@ export function SupplierContractForm({
   const { data: companyProfile, isLoading: isLoadingCompanyProfile } =
     useDoc<Omit<EnvironmentalCompany, "id">>(companyProfileDocRef);
 
+  const roiCasesQuery = useMemoFirebase(
+    () => (firestore ? collection(firestore, "project_roi_cases") : null),
+    [firestore],
+  );
+  const { data: roiCases, isLoading: isLoadingRoiCases } =
+    useCollection<ProjectRoiCase>(roiCasesQuery);
+
+  const clientContractsQuery = useMemoFirebase(
+    () =>
+      firestore
+        ? collection(firestore, "contracts")
+        : null,
+    [firestore],
+  );
+  const { data: clientContracts, isLoading: isLoadingClientContracts } =
+    useCollection<Contract>(clientContractsQuery);
+
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: currentItem
@@ -265,6 +288,8 @@ export function SupplierContractForm({
           dataContrato:
             currentItem.dataContrato.split("T")[0] || currentItem.dataContrato,
           status: currentItem.status,
+          projectRoiCaseId: currentItem.projectRoiCaseId || "",
+          clientContractId: currentItem.clientContractId || "",
         }
       : {
           prestador: {
@@ -296,6 +321,8 @@ export function SupplierContractForm({
           foro: { comarca: "Unaí", uf: "MG" },
           dataContrato: new Date().toISOString().split("T")[0],
           status: "Rascunho",
+          projectRoiCaseId: "",
+          clientContractId: "",
         },
   });
 
@@ -411,6 +438,8 @@ export function SupplierContractForm({
         pagamento: values.pagamento,
         foro: values.foro,
         dataContrato: new Date(values.dataContrato).toISOString(),
+        projectRoiCaseId: values.projectRoiCaseId || "",
+        clientContractId: values.clientContractId || "",
       };
 
       const cleaned = pruneUndefined(payload) as Omit<SupplierContract, "id">;
@@ -865,6 +894,55 @@ export function SupplierContractForm({
               </AccordionContent>
             </AccordionItem>
           </Accordion>
+
+          <div className="rounded-md border p-3 space-y-3">
+            <p className="text-sm font-medium">Vínculo Projetos & ROI (opcional)</p>
+            <ProjectRoiCaseSelectField
+              control={form.control}
+              name="projectRoiCaseId"
+              cases={roiCases ?? undefined}
+              isLoading={isLoadingRoiCases}
+            />
+            <FormField
+              control={form.control}
+              name="clientContractId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Contrato cliente (opcional)</FormLabel>
+                  <Select
+                    onValueChange={(v) =>
+                      field.onChange(
+                        v === CONTRACT_NONE_SELECT_VALUE ? "" : v,
+                      )
+                    }
+                    value={
+                      field.value ? field.value : CONTRACT_NONE_SELECT_VALUE
+                    }
+                    disabled={isLoadingClientContracts}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Nenhum" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value={CONTRACT_NONE_SELECT_VALUE}>
+                        — Nenhum —
+                      </SelectItem>
+                      {clientContracts
+                        ?.filter((c) => c.status === "Aprovado")
+                        .map((c) => (
+                          <SelectItem key={c.id} value={c.id}>
+                            {c.objeto?.empreendimento ?? c.id}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
 
           <DialogFooter>
             <Button type="submit" disabled={loading}>

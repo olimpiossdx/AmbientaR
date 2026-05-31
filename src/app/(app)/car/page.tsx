@@ -31,6 +31,7 @@ import {
 import {
   collection,
   doc,
+  documentId,
   updateDoc,
   query,
   where,
@@ -55,7 +56,10 @@ import {
   canManageCarUploadsOnProject,
   isClienteAutonomo,
   isClientePortalRole,
+  isConsultorRepresentante,
+  isRepresentativeLikePortalRole,
 } from "@/lib/role-guards";
+import { fetchEmpreendedorIdsForPortalScope } from "@/lib/portal-empreendedor-scope";
 import { NOTIFICATION_LINKS, NOTIFICATION_SOURCE } from "@/lib/notification-events";
 import { notifyProjectPortalUsers } from "@/lib/notifications";
 
@@ -97,11 +101,14 @@ export default function CarPage() {
 
   const clientsQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
-    if (user.role === "representative") {
+    if (isRepresentativeLikePortalRole(user.role)) {
       if (!portalUid) return null;
+      const approvedField = isConsultorRepresentante(user.role)
+        ? "approvedConsultorIds"
+        : "approvedUserIds";
       return query(
         collection(firestore, "clients"),
-        where("approvedUserIds", "array-contains", portalUid),
+        where(approvedField, "array-contains", portalUid),
       );
     }
     if (isClienteAutonomo(user.role)) {
@@ -118,7 +125,7 @@ export default function CarPage() {
     useCollection<Client>(clientsQuery);
 
   React.useEffect(() => {
-    if (!firestore || !user || user.role !== "representative" || loadingClients)
+    if (!firestore || !user || !isRepresentativeLikePortalRole(user.role) || loadingClients)
       return;
     if (clients && clients.length > 0) {
       setFallbackClients(null);
@@ -134,12 +141,20 @@ export default function CarPage() {
     );
     getDocs(qApproved)
       .then((snap) => {
-        if (snap.docs.length === 0) {
+        const docs =
+          user.role === "consultor_representante"
+            ? snap.docs.filter(
+                (d) =>
+                  (d.data() as { requestType?: string }).requestType ===
+                  "consultor_representante",
+              )
+            : snap.docs;
+        if (docs.length === 0) {
           setFallbackClients([]);
           return;
         }
         const cpfs = new Set<string>();
-        snap.docs.forEach((d) => {
+        docs.forEach((d) => {
           const cpf = (d.data().cpfOfInterested || "").trim();
           const digits = cpf.replace(/\D/g, "");
           if (digits.length >= 11) {
@@ -197,77 +212,29 @@ export default function CarPage() {
   );
 
   React.useEffect(() => {
-    if (!firestore || !user || user.role !== "representative") return;
-    const repUid = user.id ?? (user as any).uid;
-    const empreendedoresRef = collection(firestore, "empreendedores");
-    const accessRequestsRef = collection(firestore, "access_requests");
-    const qEmp = query(
-      empreendedoresRef,
-      where("approvedUserIds", "array-contains", repUid),
-    );
-    getDocs(qEmp)
-      .then((snapshot) => {
-        let ids = snapshot.docs.map((d) => d.id);
-        const empList = snapshot.docs.map((d) => ({
-          id: d.id,
-          cpfCnpj: d.data().cpfCnpj as string | undefined,
-        }));
-        if (ids.length > 0) {
-          setEmpreendedorIdsForRep(ids);
-          setEmpreendedoresForRep(empList);
+    if (!firestore || !user || !isRepresentativeLikePortalRole(user.role)) return;
+    setEmpreendedorIdsForRep(undefined);
+    fetchEmpreendedorIdsForPortalScope(firestore, user)
+      .then(async (ids) => {
+        const validIds = ids.filter((id) => id !== "invalid-placeholder");
+        setEmpreendedorIdsForRep(validIds);
+        if (validIds.length === 0) {
+          setEmpreendedoresForRep([]);
           return;
         }
-        const qApproved = query(
-          accessRequestsRef,
-          where("status", "==", "approved"),
-          where("requestedByUserId", "==", repUid),
+        const empreendedoresRef = collection(firestore, "empreendedores");
+        const snap = await getDocs(
+          query(
+            empreendedoresRef,
+            where(documentId(), "in", validIds.slice(0, 10)),
+          ),
         );
-        getDocs(qApproved)
-          .then((snapReq) => {
-            if (snapReq.docs.length === 0) {
-              setEmpreendedorIdsForRep([]);
-              setEmpreendedoresForRep([]);
-              return;
-            }
-            const cpfs = new Set<string>();
-            snapReq.docs.forEach((d) => {
-              const cpf = (d.data().cpfOfInterested || "").trim();
-              const digits = cpf.replace(/\D/g, "");
-              if (digits.length >= 11) {
-                cpfs.add(cpf);
-                cpfs.add(digits);
-              }
-            });
-            const cpfList = Array.from(cpfs).slice(0, 10);
-            if (cpfList.length === 0) {
-              setEmpreendedorIdsForRep([]);
-              setEmpreendedoresForRep([]);
-              return;
-            }
-            const qByCpf = query(
-              empreendedoresRef,
-              where("cpfCnpj", "in", cpfList),
-            );
-            getDocs(qByCpf)
-              .then((snapEmp) => {
-                ids = snapEmp.docs.map((d) => d.id);
-                setEmpreendedorIdsForRep(ids);
-                setEmpreendedoresForRep(
-                  snapEmp.docs.map((d) => ({
-                    id: d.id,
-                    cpfCnpj: d.data().cpfCnpj as string | undefined,
-                  })),
-                );
-              })
-              .catch(() => {
-                setEmpreendedorIdsForRep([]);
-                setEmpreendedoresForRep([]);
-              });
-          })
-          .catch(() => {
-            setEmpreendedorIdsForRep([]);
-            setEmpreendedoresForRep([]);
-          });
+        setEmpreendedoresForRep(
+          snap.docs.map((d) => ({
+            id: d.id,
+            cpfCnpj: d.data().cpfCnpj as string | undefined,
+          })),
+        );
       })
       .catch(() => {
         setEmpreendedorIdsForRep([]);
@@ -294,7 +261,7 @@ export default function CarPage() {
         ),
       );
     }
-    if (user.role === "representative") {
+    if (isRepresentativeLikePortalRole(user.role)) {
       if (empreendedorIdsForRep === undefined) return null;
       if (empreendedorIdsForRep.length === 0) {
         return query(
@@ -322,7 +289,7 @@ export default function CarPage() {
 
   const displayedProjects = React.useMemo(() => {
     if (!projects) return [];
-    if (user?.role !== "representative") return projects;
+    if (!isRepresentativeLikePortalRole(user?.role)) return projects;
     if (!clientId) return [];
     const client = clientsMap.get(clientId);
     if (!client?.cpfCnpj) return [];
@@ -345,7 +312,7 @@ export default function CarPage() {
   }, [projects, user?.role, clientId, clientsMap, empreendedoresForRep]);
 
   React.useEffect(() => {
-    if (user?.role === "representative" && !clientId) setProjectId("");
+    if (isRepresentativeLikePortalRole(user?.role) && !clientId) setProjectId("");
   }, [user?.role, clientId]);
 
   const projectsWithCar = React.useMemo(
@@ -537,7 +504,7 @@ export default function CarPage() {
   const isLoading =
     loadingClients ||
     loadingProjects ||
-    (user?.role === "representative" && empreendedorIdsForRep === undefined) ||
+    (isRepresentativeLikePortalRole(user?.role) && empreendedorIdsForRep === undefined) ||
     (isClientePortalRole(user?.role) &&
       empreendedorIdsForTitular === undefined);
 
@@ -574,7 +541,7 @@ export default function CarPage() {
                   <div className="space-y-2">
                     <Label>
                       Cliente{" "}
-                      {user?.role === "representative"
+                      {isRepresentativeLikePortalRole(user?.role)
                         ? "(obrigatório para selecionar fazenda)"
                         : "(opcional)"}
                     </Label>
@@ -582,7 +549,7 @@ export default function CarPage() {
                       value={clientId}
                       onValueChange={(v) => {
                         setClientId(v);
-                        if (user?.role === "representative") setProjectId("");
+                        if (isRepresentativeLikePortalRole(user?.role)) setProjectId("");
                       }}
                     >
                       <SelectTrigger>
@@ -602,19 +569,19 @@ export default function CarPage() {
                     <Select
                       value={projectId}
                       onValueChange={setProjectId}
-                      disabled={user?.role === "representative" && !clientId}
+                      disabled={isRepresentativeLikePortalRole(user?.role) && !clientId}
                     >
                       <SelectTrigger>
                         <SelectValue
                           placeholder={
-                            user?.role === "representative" && !clientId
+                            isRepresentativeLikePortalRole(user?.role) && !clientId
                               ? "Selecione primeiro o cliente"
                               : "Selecione o empreendimento"
                           }
                         />
                       </SelectTrigger>
                       <SelectContent>
-                        {(user?.role === "representative"
+                        {(isRepresentativeLikePortalRole(user?.role)
                           ? displayedProjects
                           : (projects ?? [])
                         ).map((p) => (

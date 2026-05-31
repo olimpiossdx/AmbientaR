@@ -81,7 +81,8 @@ import {
   Line,
   Legend,
 } from "recharts";
-import { isClientePortalRole, canPerformManualMonitoringWrite } from "@/lib/role-guards";
+import { fetchEmpreendedorIdsForPortalScope, isEmpreendedorScopedPortalRole } from "@/lib/portal-empreendedor-scope";
+import { isClientePortalRole, isRepresentativeLikePortalRole, canPerformManualMonitoringWrite } from "@/lib/role-guards";
 
 const canPerformWriteActions = (user: AppUser | null): boolean => {
   if (!user) return false;
@@ -137,62 +138,14 @@ export default function ManualMonitoringPage() {
       }
       return;
     }
-    if (user.role === "representative") {
+    if (isRepresentativeLikePortalRole(user.role)) {
       setEmpreendedorIdsForUser(undefined);
-      const repUid = user.id ?? (user as any).uid;
-      const empreendedoresRef = collection(firestore, "empreendedores");
-      const accessRequestsRef = collection(firestore, "access_requests");
-      const qEmp = query(
-        empreendedoresRef,
-        where("approvedUserIds", "array-contains", repUid),
-      );
-      getDocs(qEmp)
-        .then((snapshot) => {
-          let ids = snapshot.docs.map((d) => d.id);
-          if (ids.length > 0) {
-            setEmpreendedorIdsForUser(ids);
-            return;
-          }
-          const qApproved = query(
-            accessRequestsRef,
-            where("status", "==", "approved"),
-            where("requestedByUserId", "==", repUid),
-          );
-          getDocs(qApproved)
-            .then((snapReq) => {
-              if (snapReq.docs.length === 0) {
-                setEmpreendedorIdsForUser(["__none__"]);
-                return;
-              }
-              const cpfs = new Set<string>();
-              snapReq.docs.forEach((d) => {
-                const cpf = (d.data().cpfOfInterested || "").trim();
-                const digits = cpf.replace(/\D/g, "");
-                if (digits.length >= 11) {
-                  cpfs.add(cpf);
-                  cpfs.add(digits);
-                }
-              });
-              const cpfList = Array.from(cpfs).slice(0, 10);
-              if (cpfList.length === 0) {
-                setEmpreendedorIdsForUser(["__none__"]);
-                return;
-              }
-              const qByCpf = query(
-                empreendedoresRef,
-                where("cpfCnpj", "in", cpfList),
-              );
-              getDocs(qByCpf)
-                .then((snapEmp) => {
-                  ids = snapEmp.docs.map((d) => d.id);
-                  setEmpreendedorIdsForUser(
-                    ids.length > 0 ? ids : ["__none__"],
-                  );
-                })
-                .catch(() => setEmpreendedorIdsForUser(["__none__"]));
-            })
-            .catch(() => setEmpreendedorIdsForUser(["__none__"]));
-        })
+      fetchEmpreendedorIdsForPortalScope(firestore, user)
+        .then((ids) =>
+          setEmpreendedorIdsForUser(
+            ids[0] === "invalid-placeholder" ? ["__none__"] : ids,
+          ),
+        )
         .catch(() => setEmpreendedorIdsForUser(["__none__"]));
       return;
     }
@@ -201,7 +154,7 @@ export default function ManualMonitoringPage() {
 
   const outorgasQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
-    if (isClientePortalRole(user.role) || user.role === "representative") {
+    if (isEmpreendedorScopedPortalRole(user.role)) {
       if (empreendedorIdsForUser === undefined) return null;
       if (
         empreendedorIdsForUser.length === 0 ||
@@ -247,7 +200,7 @@ export default function ManualMonitoringPage() {
 
   const isLoadingOutorgasList =
     isLoadingOutorgas ||
-    ((isClientePortalRole(user?.role) || user?.role === "representative") &&
+    (isEmpreendedorScopedPortalRole(user?.role) &&
       empreendedorIdsForUser === undefined);
 
   useEffect(() => {

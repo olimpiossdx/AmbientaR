@@ -95,11 +95,36 @@ export async function listGeoAnalysesForUser(
   firestore: Firestore,
   userId: string,
   empreendimentoId?: string,
+  idToken?: string,
 ): Promise<
   { id: string; areaHa: number; generatedAtUtc: string; okCount: number; total: number }[]
 > {
+  if (idToken) {
+    try {
+      const { fetchGeoAnalysisListClient } = await import(
+        "@/lib/geospatial/fetch-geo-analysis-list-client"
+      );
+      const rows = await fetchGeoAnalysisListClient(idToken, {
+        empreendimentoId,
+        limit: 25,
+      });
+      return rows
+        .map((r) => ({
+          id: r.id,
+          empreendimentoId: r.empreendimentoId,
+          areaHa: r.listSummary.areaHa,
+          generatedAtUtc: r.listSummary.generatedAtUtc,
+          okCount: r.listSummary.okCount,
+          total: r.listSummary.totalLayers,
+        }))
+        .filter((a) => a.areaHa > 0);
+    } catch {
+      /* fallback Firestore */
+    }
+  }
+
   const snap = await getDocs(
-    query(collection(firestore, "geo_analyses"), where("createdBy", "==", userId), limit(40)),
+    query(collection(firestore, "geo_analyses"), where("createdBy", "==", userId), limit(25)),
   );
   return snap.docs
     .map((d) => {
@@ -107,13 +132,21 @@ export async function listGeoAnalysesForUser(
       const layers = (data.layers as WaveAAnalysisResult["layers"]) ?? [];
       const wave = data.wave as string | undefined;
       if (wave !== "A" && wave !== "ABC") return null;
+      const listSummary = data.listSummary as
+        | { areaHa?: number; okCount?: number; totalLayers?: number; generatedAtUtc?: string }
+        | undefined;
       return {
         id: d.id,
         empreendimentoId: data.empreendimentoId as string | undefined,
-        areaHa: (data.perimeter as { areaHa?: number })?.areaHa ?? 0,
-        generatedAtUtc: (data.generatedAtUtc as string) ?? "",
-        okCount: layers.filter((l) => l.status === "ok").length,
-        total: layers.length || 8,
+        areaHa:
+          listSummary?.areaHa ??
+          (data.perimeter as { areaHa?: number })?.areaHa ??
+          0,
+        generatedAtUtc:
+          listSummary?.generatedAtUtc ?? ((data.generatedAtUtc as string) ?? ""),
+        okCount:
+          listSummary?.okCount ?? layers.filter((l) => l.status === "ok").length,
+        total: listSummary?.totalLayers ?? (layers.length || 8),
       };
     })
     .filter((a): a is NonNullable<typeof a> => a != null && a.areaHa > 0)

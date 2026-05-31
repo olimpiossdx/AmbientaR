@@ -1,5 +1,5 @@
 import kinks from "@turf/kinks";
-import type { Feature, FeatureCollection } from "geojson";
+import type { Feature, FeatureCollection, MultiPolygon, Polygon } from "geojson";
 import type { McaSpatialLayer } from "../types-v2";
 
 function hasCoordinates(f: Feature): boolean {
@@ -27,7 +27,7 @@ export function assessTopology(fc: FeatureCollection): McaSpatialLayer["topology
     if (!hasCoordinates(f)) return "invalid";
     if (f.geometry?.type === "Polygon" || f.geometry?.type === "MultiPolygon") {
       try {
-        const hits = kinks(f);
+        const hits = kinks(f as Feature<Polygon | MultiPolygon>);
         if (hits.features.length > 0) selfIntersects = true;
       } catch {
         return "invalid";

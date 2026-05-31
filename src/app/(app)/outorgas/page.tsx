@@ -64,7 +64,7 @@ import {
 } from "@/components/ui/tooltip";
 import { backupAndDeleteParentWithCondicionantes } from "@/lib/deleted-data-backup";
 import { CardSearchInput } from "@/components/card-search-input";
-import { fetchEmpreendedorIdsForRepresentative } from "@/lib/representative-empreendedor-ids";
+import { fetchEmpreendedorIdsForPortalScope, isEmpreendedorScopedPortalRole } from "@/lib/portal-empreendedor-scope";
 import { isClientePortalRole } from "@/lib/role-guards";
 import { isDebugAgentIngestEnabled } from "@/lib/deploy-flags";
 
@@ -133,9 +133,9 @@ export default function OutorgasPage() {
       } else {
         setEmpreendedorIdsForUser(["invalid-placeholder"]);
       }
-    } else if (user?.role === "representative" && firestore) {
+    } else if (isEmpreendedorScopedPortalRole(user?.role) && !isClientePortalRole(user?.role) && firestore && user) {
       setEmpreendedorIdsForUser(undefined);
-      fetchEmpreendedorIdsForRepresentative(firestore, user)
+      fetchEmpreendedorIdsForPortalScope(firestore, user)
         .then(setEmpreendedorIdsForUser)
         .catch(() => setEmpreendedorIdsForUser(["invalid-placeholder"]));
     } else if (user) {
@@ -147,7 +147,7 @@ export default function OutorgasPage() {
     if (!firestore || !user || empreendedorIdsForUser === undefined)
       return null;
 
-    if (isClientePortalRole(user.role) || user.role === "representative") {
+    if (isEmpreendedorScopedPortalRole(user.role)) {
       if (empreendedorIdsForUser.length > 0) {
         return query(
           collection(firestore, "outorgas"),
@@ -219,7 +219,7 @@ export default function OutorgasPage() {
     isLoadingOutorgas ||
     isLoadingEmpreendedores ||
     isLoadingProjects ||
-    ((isClientePortalRole(user?.role) || user?.role === "representative") &&
+    (isEmpreendedorScopedPortalRole(user?.role) &&
       empreendedorIdsForUser === undefined);
 
   // #region agent log — Etapa 6: Gestão Ambiental → Outorgas
