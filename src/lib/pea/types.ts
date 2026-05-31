@@ -55,7 +55,7 @@ export type PeaGeoVinculo = {
   incluirMeioFisico?: boolean;
   aplicarAutomatico?: boolean;
   /** Origem da última geometria aplicada (KML, CAR, georef, análise) */
-  geometrySource?: 'geo_analysis' | 'georef' | 'car_shp' | 'kml_upload';
+  geometrySource?: 'geo_analysis' | 'georef' | 'car_shp' | 'kml_upload' | 'perimetro_referencia';
   geometryLabel?: string;
   vertexCount?: number;
 };

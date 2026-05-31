@@ -19,7 +19,7 @@ import { toFeatureCollection } from "@/lib/mca/perimeter";
 import { advanceMcaProjectToE15 } from "@/lib/mca/advance-to-e15";
 import { loadMcaProject } from "@/lib/mca/orchestrator";
 import { buildMcaLayoutPdf } from "@/lib/mca/layout-pdf";
-import { loadProjectLayers } from "@/lib/mca/load-project-layers";
+import { loadMcaProjectLayers } from "@/lib/mca/load-project-layers";
 import { MCA_GOLD_PRESETS } from "@/lib/mca/gold-presets";
 import type { McaProjectDoc } from "@/lib/mca/types";
 
@@ -123,7 +123,7 @@ async function main() {
   console.log(`→ score final: ${result.scores?.final?.toFixed(1) ?? "—"}`);
 
   const project = await loadMcaProject(projectId, uid);
-  const layers = await loadProjectLayers(projectId);
+  const layers = await loadMcaProjectLayers(projectId);
   if (project) {
     const pdf = buildMcaLayoutPdf({ ...project, id: projectId }, { layers });
     const outPdf = path.join(process.cwd(), "docs/mca/debug-reports", "fluxo-catingueiro-test.pdf");

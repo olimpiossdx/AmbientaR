@@ -171,9 +171,12 @@ export function McaWorkbench() {
     });
   }, [polygon, projectLayers, includeSatelliteInPdf, toast]);
 
-  const buildMapImageExportPayload = React.useCallback(async () => {
+  const buildMapImageExportPayload = React.useCallback(async (): Promise<{
+    body: { mapImageDataUrl?: string; includeSatellite?: boolean };
+    clientMode: string | undefined;
+  }> => {
     if (!includeSatelliteInPdf) {
-      return { body: {} as { mapImageDataUrl?: string; includeSatellite?: boolean }, clientMode: undefined };
+      return { body: {}, clientMode: undefined };
     }
     try {
       const cap = await captureMapForPdfExport();

@@ -148,7 +148,8 @@ export function findGoldCadFile(dir: string, id: McaGoldPresetId): string | null
 function listGpkgLayers(gpkg: string): string[] {
   const info = runOgrTool("ogrinfo", ["-json", gpkg]);
   try {
-    return (JSON.parse(info.stdout).layers ?? []).map((l: { name: string }) => l.name);
+    const stdout = String(info.stdout ?? "");
+    return (JSON.parse(stdout).layers ?? []).map((l: { name: string }) => l.name);
   } catch {
     return [];
   }

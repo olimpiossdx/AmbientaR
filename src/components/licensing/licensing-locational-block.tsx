@@ -239,7 +239,7 @@ export function LicensingLocationalBlock({
 
       {mode === "draw" ? (
         <div className="h-[280px] w-full rounded-md border overflow-hidden">
-          <LeafletMap polygon={drawn} onPolygonCreated={setDrawn} />
+          <LeafletMap adaPolygon={drawn} onAdaChange={setDrawn} />
         </div>
       ) : (
         <Textarea
