@@ -70,7 +70,6 @@ const nextConfig = {
       "@genkit-ai/core",
       "@genkit-ai/ai",
       "@genkit-ai/google-genai",
-      "@genkit-ai/compat-oai",
     ],
   },
   webpack: (config, { dev, isServer }) => {

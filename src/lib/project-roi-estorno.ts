@@ -4,12 +4,21 @@ import { addDoc, collection, doc, updateDoc } from 'firebase/firestore';
 import type { Firestore } from 'firebase/firestore';
 import type { Expense, Revenue } from '@/lib/types';
 
+import { isTransactionNeutralizedByEstorno } from '@/lib/financial-transaction-scope';
+
+/** Estorno contábil: lançamento de sinal oposto (receita → despesa, despesa → receita). */
 export async function createTransactionEstorno(
   firestore: Firestore,
   original: Revenue | Expense,
   kind: 'revenue' | 'expense',
 ): Promise<string> {
-  const collectionName = kind === 'revenue' ? 'revenues' : 'expenses';
+  const estornoKind: 'revenue' | 'expense' =
+    kind === 'revenue' ? 'expense' : 'revenue';
+  const collectionName =
+    estornoKind === 'revenue' ? 'revenues' : 'expenses';
+  const originalCollection =
+    kind === 'revenue' ? 'revenues' : 'expenses';
+
   const base: Record<string, unknown> = {
     description: `Estorno: ${original.description}`,
     amount: original.amount,
@@ -24,7 +33,7 @@ export async function createTransactionEstorno(
     requestId: original.requestId || '',
   };
 
-  if (kind === 'revenue') {
+  if (estornoKind === 'revenue') {
     const r = original as Revenue;
     if (r.clientId) base.clientId = r.clientId;
   } else {
@@ -35,7 +44,7 @@ export async function createTransactionEstorno(
   }
 
   const ref = await addDoc(collection(firestore, collectionName), base);
-  await updateDoc(doc(firestore, collectionName, original.id), {
+  await updateDoc(doc(firestore, originalCollection, original.id), {
     estornadoPorId: ref.id,
   });
   return ref.id;
@@ -48,7 +57,8 @@ export function isTransactionEstornada(
 ): boolean {
   return (
     Boolean(item.estornadoPorId) ||
-    revenues.some((r) => r.estornoDeId === item.id) ||
-    expenses.some((e) => e.estornoDeId === item.id)
+    isTransactionNeutralizedByEstorno(item.id, revenues, expenses)
   );
 }
+
+export { isTransactionNeutralizedByEstorno };

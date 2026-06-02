@@ -2,6 +2,12 @@
  * Cálculos e regras compartilhadas do módulo Financeiro.
  */
 
+import {
+  expenseAmountForCompanyCaixa,
+  filterCompanyCaixaExpenses,
+  filterCompanyCaixaRevenues,
+  revenueAmountForCompanyCaixa,
+} from '@/lib/financial-transaction-scope';
 import type { Expense, Invoice, Revenue } from '@/lib/types';
 
 export type DreRevenueRegime = 'faturas_pagas' | 'caixa' | 'combinado_sem_duplicar';
@@ -60,19 +66,29 @@ export function calculateDre(
   regime: DreRevenueRegime = 'combinado_sem_duplicar',
 ): DreBreakdown {
   const inPeriod = (part: string) => inYearPeriod(part, year);
+  const caixaRevenues = filterCompanyCaixaRevenues(revenues);
+  const caixaExpenses = filterCompanyCaixaExpenses(expenses);
+  const caixaInvoices = invoices.filter((i) => !i.projectRoiCaseId?.trim());
 
-  const receitaFaturas = invoices
+  const receitaFaturas = caixaInvoices
     .filter((i) => i.status === 'Paid' && inPeriod(datePart(i.invoiceDate)))
     .reduce((acc, i) => acc + (Number(i.amount) || 0), 0);
 
-  const revenuesInPeriod = revenues.filter((r) => inPeriod(datePart(r.date)));
+  const revenuesInPeriod = caixaRevenues.filter((r) =>
+    inPeriod(datePart(r.date)),
+  );
   const receitaCaixaTotal = revenuesInPeriod.reduce(
-    (acc, r) => acc + (Number(r.amount) || 0),
+    (acc, r) =>
+      acc + revenueAmountForCompanyCaixa(r, caixaRevenues, caixaExpenses),
     0,
   );
   const receitaCaixaVinculadaFatura = revenuesInPeriod
     .filter((r) => r.invoiceId)
-    .reduce((acc, r) => acc + (Number(r.amount) || 0), 0);
+    .reduce(
+      (acc, r) =>
+        acc + revenueAmountForCompanyCaixa(r, caixaRevenues, caixaExpenses),
+      0,
+    );
   const receitaCaixaAvulsa = receitaCaixaTotal - receitaCaixaVinculadaFatura;
 
   let receitaBruta = 0;
@@ -92,12 +108,19 @@ export function calculateDre(
   const deducoes = 0;
   const receitaLiquida = receitaBruta - deducoes;
 
-  const despesasInPeriod = expenses.filter((e) => inPeriod(datePart(e.date)));
+  const despesasInPeriod = caixaExpenses.filter((e) =>
+    inPeriod(datePart(e.date)),
+  );
   const depreciacaoDespesas = despesasInPeriod
     .filter((e) => e.category === 'depreciacao' || e.depreciacaoBemId)
-    .reduce((acc, e) => acc + (Number(e.amount) || 0), 0);
+    .reduce(
+      (acc, e) =>
+        acc + expenseAmountForCompanyCaixa(e, caixaRevenues, caixaExpenses),
+      0,
+    );
   const despesasOperacionais = despesasInPeriod.reduce(
-    (acc, e) => acc + (Number(e.amount) || 0),
+    (acc, e) =>
+      acc + expenseAmountForCompanyCaixa(e, caixaRevenues, caixaExpenses),
     0,
   );
 

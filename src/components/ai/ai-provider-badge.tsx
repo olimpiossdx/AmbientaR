@@ -43,6 +43,11 @@ export function AiRoutingInfoCard({ className }: { className?: string }) {
       )}
     >
       <p className="font-medium text-foreground">Como a app escolhe a IA</p>
+      <p className="text-xs text-muted-foreground">
+        Esta aplicação <strong className="font-medium text-foreground">não chama a API OpenAI</strong>{" "}
+        nem usa a sua subscrição ChatGPT Business / Codex. Só Google Gemini (consultas leves) e
+        DeepSeek (tarefas pesadas).
+      </p>
       <ul className="space-y-2 text-muted-foreground">
         {items.map((id) => (
           <li key={id}>
@@ -55,8 +60,9 @@ export function AiRoutingInfoCard({ className }: { className?: string }) {
       </ul>
       <p className="text-xs text-muted-foreground">
         Configure <code className="text-xs">GOOGLE_GENAI_API_KEY</code> e{" "}
-        <code className="text-xs">DEEPSEEK_API_KEY</code> no servidor. Detalhes
-        em <code className="text-xs">docs/IA-ROTEAMENTO.md</code>.
+        <code className="text-xs">DEEPSEEK_API_KEY</code> no servidor. Não defina{" "}
+        <code className="text-xs">OPENAI_API_KEY</code> — é ignorada. Detalhes em{" "}
+        <code className="text-xs">docs/IA-ROTEAMENTO.md</code>.
       </p>
     </div>
   );

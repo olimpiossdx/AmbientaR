@@ -7,6 +7,13 @@ import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
 import { collection } from 'firebase/firestore';
 import type { Expense, Invoice, Revenue } from '@/lib/types';
 import { formatCurrencyBRL, datePart } from '@/lib/financial-core';
+import {
+  expenseAmountForCompanyCaixa,
+  filterCompanyCaixaExpenses,
+  filterCompanyCaixaRevenues,
+  isProjectRoiOnlyTransaction,
+  revenueAmountForCompanyCaixa,
+} from '@/lib/financial-transaction-scope';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   BarChart,
@@ -36,6 +43,11 @@ export default function FluxoProjetadoPage() {
   const { data: expenses, isLoading: le } = useCollection<Expense>(expensesQ);
 
   const projection = useMemo(() => {
+    const allRev = revenues || [];
+    const allExp = expenses || [];
+    const caixaRevenues = filterCompanyCaixaRevenues(allRev);
+    const caixaExpenses = filterCompanyCaixaExpenses(allExp);
+
     const today = new Date().toISOString().slice(0, 10);
     const d30 = addDays(today, 30);
     const d60 = addDays(today, 60);
@@ -60,14 +72,30 @@ export default function FluxoProjetadoPage() {
     };
 
     invoices
-      ?.filter((i) => i.status === 'Unpaid' || i.status === 'Overdue')
+      ?.filter(
+        (i) =>
+          (i.status === 'Unpaid' || i.status === 'Overdue') &&
+          !isProjectRoiOnlyTransaction(i),
+      )
       .forEach((i) => assign(i.dueDate, Number(i.amount) || 0, true));
 
-    revenues?.forEach((r) => {
-      if (!r.invoiceId) assign(r.date, Number(r.amount) || 0, true);
+    caixaRevenues.forEach((r) => {
+      if (!r.invoiceId) {
+        assign(
+          r.date,
+          revenueAmountForCompanyCaixa(r, allRev, allExp),
+          true,
+        );
+      }
     });
 
-    expenses?.forEach((e) => assign(e.date, Number(e.amount) || 0, false));
+    caixaExpenses.forEach((e) => {
+      assign(
+        e.date,
+        expenseAmountForCompanyCaixa(e, allRev, allExp),
+        false,
+      );
+    });
 
     return buckets.map((b) => ({
       periodo: b.label,

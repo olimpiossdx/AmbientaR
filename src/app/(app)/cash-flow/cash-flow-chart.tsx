@@ -20,7 +20,13 @@ import {
 } from 'recharts';
 import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
 import { collection, limit, query } from 'firebase/firestore';
-import type { Revenue, Expense, Transaction } from '@/lib/types';
+import {
+  expenseAmountForCompanyCaixa,
+  filterCompanyCaixaExpenses,
+  filterCompanyCaixaRevenues,
+  revenueAmountForCompanyCaixa,
+} from '@/lib/financial-transaction-scope';
+import type { Revenue, Expense } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export function CashFlowChart() {
@@ -41,13 +47,10 @@ export function CashFlowChart() {
     useCollection<Expense>(expensesQuery);
 
   const chartData = useMemo(() => {
-    const revenues = revenuesData || [];
-    const expenses = expensesData || [];
-
-    const allTransactions: Transaction[] = [
-      ...revenues.map((r) => ({ ...r, type: 'revenue' as const })),
-      ...expenses.map((e) => ({ ...e, type: 'expense' as const })),
-    ];
+    const revenues = filterCompanyCaixaRevenues(revenuesData || []);
+    const expenses = filterCompanyCaixaExpenses(expensesData || []);
+    const allRev = revenuesData || [];
+    const allExp = expensesData || [];
 
     const monthlyData: {
       [key: string]: { revenue: number; expenses: number };
@@ -67,20 +70,28 @@ export function CashFlowChart() {
       'Dez',
     ];
 
-    allTransactions.forEach((transaction) => {
-      const date = new Date(transaction.date);
+    for (const r of revenues) {
+      const date = new Date(r.date);
       const month = monthNames[date.getMonth()];
-      if (!month) return;
-
-      if (!monthlyData[month]) {
-        monthlyData[month] = { revenue: 0, expenses: 0 };
-      }
-      if (transaction.type === 'revenue') {
-        monthlyData[month].revenue += transaction.amount;
-      } else {
-        monthlyData[month].expenses += transaction.amount;
-      }
-    });
+      if (!month) continue;
+      if (!monthlyData[month]) monthlyData[month] = { revenue: 0, expenses: 0 };
+      monthlyData[month].revenue += revenueAmountForCompanyCaixa(
+        r,
+        allRev,
+        allExp,
+      );
+    }
+    for (const e of expenses) {
+      const date = new Date(e.date);
+      const month = monthNames[date.getMonth()];
+      if (!month) continue;
+      if (!monthlyData[month]) monthlyData[month] = { revenue: 0, expenses: 0 };
+      monthlyData[month].expenses += expenseAmountForCompanyCaixa(
+        e,
+        allRev,
+        allExp,
+      );
+    }
 
     return monthNames
       .map((month) => ({

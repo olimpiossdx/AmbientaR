@@ -8,7 +8,7 @@ export const AI_PROVIDER_META: Record<
     label: "Google Gemini",
     short: "Gemini",
     description:
-      "Consultas curtas e rascunhos — custo baixo (modelo Flash). Ideal para o dia a dia.",
+      "Consultas curtas e rascunhos (modelo Flash). Usa a chave Google Gemini — não consome a subscrição ChatGPT Business nem Codex.",
     badgeClass:
       "border-blue-500/40 bg-blue-500/10 text-blue-900 dark:text-blue-100",
   },
@@ -16,7 +16,7 @@ export const AI_PROVIDER_META: Record<
     label: "DeepSeek",
     short: "DeepSeek",
     description:
-      "Relatórios longos, análise de mapa e sínteses grandes — uso pago na sua conta DeepSeek.",
+      "Relatórios longos, análise de mapa e sínteses grandes — debita o saldo da conta DeepSeek (platform.deepseek.com), não OpenAI.",
     badgeClass:
       "border-violet-500/40 bg-violet-500/10 text-violet-900 dark:text-violet-100",
   },

@@ -2,7 +2,7 @@
  * Entrada do Genkit Developer UI (`npm run genkit:dev` / `genkit:watch`).
  * Importa a instância `ai` e todos os fluxos para registro no catálogo local.
  *
- * Requer no ambiente: `GOOGLE_GENAI_API_KEY` ou `GEMINI_API_KEY` (ou OpenAI se usar esse caminho).
+ * Requer no ambiente: `GOOGLE_GENAI_API_KEY` ou `GEMINI_API_KEY` (Gemini apenas; sem OpenAI).
  */
 import "@/ai/genkit";
 import "@/ai/flows/analise-ambiental-flow";

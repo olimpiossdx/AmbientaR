@@ -17,6 +17,10 @@ import {
 import { useLocalBranding } from '@/hooks/use-local-branding';
 import { CashFlowView } from './cash-flow-view';
 import { useFinancialMenuDebug } from '@/lib/financial-menu-debug';
+import {
+  filterCompanyCaixaExpenses,
+  filterCompanyCaixaRevenues,
+} from '@/lib/financial-transaction-scope';
 
 type PeriodType = 'day' | 'month' | 'year';
 
@@ -85,11 +89,23 @@ export default function CashFlowPage() {
   const { data: clients } = useCollection<Client>(clientsQuery);
 
   const allRevenues = useMemo(
-    () => (rawRevenues ? sortByIsoDateField(rawRevenues, 'date') : undefined),
+    () =>
+      rawRevenues
+        ? sortByIsoDateField(
+            filterCompanyCaixaRevenues(rawRevenues),
+            'date',
+          )
+        : undefined,
     [rawRevenues],
   );
   const allExpenses = useMemo(
-    () => (rawExpenses ? sortByIsoDateField(rawExpenses, 'date') : undefined),
+    () =>
+      rawExpenses
+        ? sortByIsoDateField(
+            filterCompanyCaixaExpenses(rawExpenses),
+            'date',
+          )
+        : undefined,
     [rawExpenses],
   );
   const clientsMap = useMemo(() => new Map(clients?.map(c => [c.id, c.name])), [clients]);

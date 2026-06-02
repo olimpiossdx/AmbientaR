@@ -1,5 +1,5 @@
 /**
- * Chamada à API DeepSeek (OpenAI-compatible). Usado pela rota `/api/ai/deepseek/chat`
+ * Chamada à API DeepSeek (formato chat/completions). Usado pela rota `/api/ai/deepseek/chat`
  * e por Server Actions (ex.: assistente de estudos).
  */
 

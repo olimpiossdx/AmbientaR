@@ -129,9 +129,10 @@ function AssistantPageInner() {
             <CardHeader>
               <CardTitle>Consulta</CardTitle>
               <CardDescription>
-                <strong className="font-medium text-foreground">Resposta rápida</strong> usa Gemini
-                (barato). <strong className="font-medium text-foreground">Relatório completo</strong>{' '}
-                usa DeepSeek (textos longos e mais elaborados).
+                <strong className="font-medium text-foreground">Resposta rápida</strong> usa a API
+                Google Gemini (não debita ChatGPT Business nem Codex).{' '}
+                <strong className="font-medium text-foreground">Relatório completo</strong> usa
+                DeepSeek (saldo pago em platform.deepseek.com).
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -157,7 +158,7 @@ function AssistantPageInner() {
                                   Resposta rápida (Gemini)
                                 </Label>
                                 <p className="text-xs text-muted-foreground">
-                                  Dúvidas, legislação, orientações curtas — menor custo.
+                                  Dúvidas e orientações curtas — motor Gemini; sem uso da conta OpenAI.
                                 </p>
                               </div>
                             </div>
@@ -169,7 +170,7 @@ function AssistantPageInner() {
                                   Relatório completo (DeepSeek)
                                 </Label>
                                 <p className="text-xs text-muted-foreground">
-                                  Textos longos, capítulos e sínteses extensas — conta DeepSeek.
+                                  Textos longos e capítulos — consome saldo DeepSeek (não ChatGPT).
                                 </p>
                               </div>
                             </div>

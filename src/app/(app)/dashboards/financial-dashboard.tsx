@@ -24,6 +24,13 @@ import { DollarSign, TrendingUp, TrendingDown, Receipt } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
 import { collection, limit, query } from 'firebase/firestore';
+import {
+  expenseAmountForCompanyCaixa,
+  filterCompanyCaixaExpenses,
+  filterCompanyCaixaRevenues,
+  isProjectRoiOnlyTransaction,
+  revenueAmountForCompanyCaixa,
+} from '@/lib/financial-transaction-scope';
 import type { Revenue, Expense, Transaction, Invoice } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -54,17 +61,27 @@ export default function FinancialDashboard() {
 
 
   const { dashboardStats, chartData, recentTransactions } = useMemo(() => {
-    const revenues = revenuesData || [];
-    const expenses = expensesData || [];
-    const invoices = invoicesData || [];
+    const allRev = revenuesData || [];
+    const allExp = expensesData || [];
+    const revenues = filterCompanyCaixaRevenues(allRev);
+    const expenses = filterCompanyCaixaExpenses(allExp);
+    const invoices = (invoicesData || []).filter(
+      (i) => !isProjectRoiOnlyTransaction(i),
+    );
 
     const allTransactions: Transaction[] = [
       ...revenues.map((r) => ({ ...r, type: 'revenue' as const })),
       ...expenses.map((e) => ({ ...e, type: 'expense' as const })),
     ];
 
-    const totalRevenue = revenues.reduce((acc, r) => acc + (Number(r.amount) || 0), 0);
-    const totalExpenses = expenses.reduce((acc, e) => acc + (Number(e.amount) || 0), 0);
+    const totalRevenue = revenues.reduce(
+      (acc, r) => acc + revenueAmountForCompanyCaixa(r, allRev, allExp),
+      0,
+    );
+    const totalExpenses = expenses.reduce(
+      (acc, e) => acc + expenseAmountForCompanyCaixa(e, allRev, allExp),
+      0,
+    );
     const totalProfit = totalRevenue - totalExpenses;
 
     const paidInvoices = invoices.filter(inv => inv.status === 'Paid');
@@ -74,7 +91,7 @@ export default function FinancialDashboard() {
     const monthlyData: { [key: string]: { revenue: number, expenses: number } } = {};
     const monthNames = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
 
-    allTransactions.forEach(transaction => {
+    allTransactions.forEach((transaction) => {
       const ts = safeDateTime(transaction.date);
       if (ts === 0) return;
       const date = new Date(ts);
@@ -83,11 +100,18 @@ export default function FinancialDashboard() {
       if (!monthlyData[month]) {
         monthlyData[month] = { revenue: 0, expenses: 0 };
       }
-      const amount = Number(transaction.amount) || 0;
       if (transaction.type === 'revenue') {
-        monthlyData[month].revenue += amount;
+        monthlyData[month].revenue += revenueAmountForCompanyCaixa(
+          transaction,
+          allRev,
+          allExp,
+        );
       } else {
-        monthlyData[month].expenses += amount;
+        monthlyData[month].expenses += expenseAmountForCompanyCaixa(
+          transaction,
+          allRev,
+          allExp,
+        );
       }
     });
 

@@ -3,6 +3,7 @@
  */
 
 import { datePart } from '@/lib/financial-core';
+import { isTransactionNeutralizedByEstorno } from '@/lib/financial-transaction-scope';
 import {
   DEFAULT_PROJECT_ROI_SEMAFORO_THRESHOLDS,
   resolveProjectRoiThresholds,
@@ -105,10 +106,7 @@ function isNeutralizedByEstorno(
   revenues: Revenue[],
   expenses: Expense[],
 ): boolean {
-  return (
-    revenues.some((r) => r.estornoDeId === docId) ||
-    expenses.some((e) => e.estornoDeId === docId)
-  );
+  return isTransactionNeutralizedByEstorno(docId, revenues, expenses);
 }
 
 function shouldSkipAsEstorno(item: Revenue | Expense): boolean {

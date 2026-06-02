@@ -5,6 +5,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DollarSign, TrendingDown, TrendingUp } from 'lucide-react';
 import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
 import { collection, limit, query } from 'firebase/firestore';
+import {
+  sumCompanyCaixaExpenses,
+  sumCompanyCaixaRevenues,
+} from '@/lib/financial-transaction-scope';
 import type { Expense, Revenue } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -26,10 +30,10 @@ export function CashFlowSummary() {
     useCollection<Expense>(expensesQuery);
 
   const stats = useMemo(() => {
-    const revenues = revenuesData || [];
-    const expenses = expensesData || [];
-    const totalRevenue = revenues.reduce((acc, r) => acc + r.amount, 0);
-    const totalExpenses = expenses.reduce((acc, e) => acc + e.amount, 0);
+    const allRev = revenuesData || [];
+    const allExp = expensesData || [];
+    const totalRevenue = sumCompanyCaixaRevenues(allRev, allExp);
+    const totalExpenses = sumCompanyCaixaExpenses(allRev, allExp);
     return {
       revenue: totalRevenue,
       expenses: totalExpenses,

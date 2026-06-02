@@ -1,0 +1,398 @@
+# App Hosting local check
+startedAt=2026-05-31T16:58:10.829Z
+
+## output
+  ▲ Next.js 14.2.35
+  - Environments: .env.local
+
+   Creating an optimized production build ...
+ ✓ (pwa) Compiling for server...
+ ✓ (pwa) Compiling for server...
+ ✓ (pwa) Compiling for client (static)...
+ ○ (pwa) Service worker: D:\AmbientaR\public\sw.js
+ ○ (pwa)   URL: /sw.js
+ ○ (pwa)   Scope: /
+ ○ (pwa) This app will fallback to these precached routes when fetching from the cache and the network fails:
+ ○ (pwa)   Documents (pages): /offline
+ ✓ Compiled successfully
+   Linting and checking validity of types ...
+
+./src/app/(app)/studies/mapas/mca-workbench.tsx
+1449:5  Warning: React Hook React.useCallback has a missing dependency: 'applyParsedPerimeter'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+info  - Need to disable some ESLint rules? Learn more here: https://nextjs.org/docs/basic-features/eslint#disabling-rules
+   Collecting page data ...
+   Generating static pages (0/227) ...
+   Generating static pages (56/227) 
+   Generating static pages (113/227) 
+   Generating static pages (170/227) 
+ ✓ Generating static pages (227/227)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)                                           Size     First Load JS
+┌ ○ /                                                 4.3 kB          311 kB
+├ ○ /_not-found                                       182 B          91.2 kB
+├ ○ /ai-lab                                           3.68 kB         300 kB
+├ ○ /ai-lab/automations                               7.11 kB         404 kB
+├ ○ /ai-lab/cloud-library                             5.44 kB         293 kB
+├ ○ /ai-lab/mcp                                       1.57 kB         289 kB
+├ ○ /ai-lab/rag                                       5.32 kB         293 kB
+├ ○ /analise-ambiental                                243 kB          653 kB
+├ ƒ /api/admin/credentials-status                     0 B                0 B
+├ ƒ /api/admin/delete-user                            0 B                0 B
+├ ƒ /api/admin/delete-user-by-email                   0 B                0 B
+├ ƒ /api/admin/migrate-proposals                      0 B                0 B
+├ ƒ /api/ai-lab/autofill-empreendedor                 0 B                0 B
+├ ƒ /api/ai-lab/generate-report                       0 B                0 B
+├ ƒ /api/ai-lab/import-reference-files                0 B                0 B
+├ ƒ /api/ai/deepseek/chat                             0 B                0 B
+├ ƒ /api/ai/enriquecer-processo                       0 B                0 B
+├ ƒ /api/ai/preencher-relatorio                       0 B                0 B
+├ ƒ /api/barragens/export-docx                        0 B                0 B
+├ ƒ /api/branding                                     0 B                0 B
+├ ƒ /api/branding/image                               0 B                0 B
+├ ƒ /api/canais/notificar-laudo-pronto                0 B                0 B
+├ ƒ /api/cloud-rag/index                              0 B                0 B
+├ ƒ /api/cloud-rag/jobs/[jobId]                       0 B                0 B
+├ ƒ /api/cloud-rag/search                             0 B                0 B
+├ ƒ /api/cloud-rag/status                             0 B                0 B
+├ ƒ /api/cloud-rag/sync                               0 B                0 B
+├ ƒ /api/external-embed-check                         0 B                0 B
+├ ƒ /api/geo-analyses                                 0 B                0 B
+├ ƒ /api/geo-analyses/complement                      0 B                0 B
+├ ƒ /api/geo-analyses/gemini-quota                    0 B                0 B
+├ ƒ /api/geospatial/analyze                           0 B                0 B
+├ ƒ /api/geospatial/car                               0 B                0 B
+├ ƒ /api/geospatial/wave-a                            0 B                0 B
+├ ƒ /api/geospatial/wave-a/stream                     0 B                0 B
+├ ƒ /api/inventory-project-photos                     0 B                0 B
+├ ƒ /api/laudos/gerar-docx                            0 B                0 B
+├ ○ /api/mca/agents                                   0 B                0 B
+├ ƒ /api/mca/debug/agent                              0 B                0 B
+├ ƒ /api/mca/debug/etapa/[n]                          0 B                0 B
+├ ○ /api/mca/gold/presets                             0 B                0 B
+├ ƒ /api/mca/gold/visual-verify                       0 B                0 B
+├ ○ /api/mca/health                                   0 B                0 B
+├ ƒ /api/mca/projects                                 0 B                0 B
+├ ƒ /api/mca/projects/[id]                            0 B                0 B
+├ ƒ /api/mca/projects/[id]/advance-to-e15             0 B                0 B
+├ ƒ /api/mca/projects/[id]/convert-dwg                0 B                0 B
+├ ƒ /api/mca/projects/[id]/export                     0 B                0 B
+├ ƒ /api/mca/projects/[id]/export-final               0 B                0 B
+├ ƒ /api/mca/projects/[id]/import-layers              0 B                0 B
+├ ƒ /api/mca/projects/[id]/ingest-dwg                 0 B                0 B
+├ ƒ /api/mca/projects/[id]/layers/[layerKey]          0 B                0 B
+├ ƒ /api/mca/projects/[id]/layout-json                0 B                0 B
+├ ƒ /api/mca/projects/[id]/pdf                        0 B                0 B
+├ ƒ /api/mca/projects/[id]/reviews                    0 B                0 B
+├ ƒ /api/mca/projects/[id]/run                        0 B                0 B
+├ ƒ /api/mca/projects/[id]/upload-dwg                 0 B                0 B
+├ ƒ /api/multas-defesas/suggest-section               0 B                0 B
+├ ƒ /api/notifications/register-fcm                   0 B                0 B
+├ ƒ /api/notifications/send-push                      0 B                0 B
+├ ƒ /api/onedrive-consumer/auth/callback              0 B                0 B
+├ ƒ /api/onedrive-consumer/auth/disconnect            0 B                0 B
+├ ƒ /api/onedrive-consumer/auth/start                 0 B                0 B
+├ ƒ /api/onedrive-consumer/auth/status                0 B                0 B
+├ ƒ /api/onedrive/autofill-by-cpf                     0 B                0 B
+├ ƒ /api/onedrive/catalog                             0 B                0 B
+├ ƒ /api/onedrive/items/[itemId]/content              0 B                0 B
+├ ƒ /api/onedrive/link                                0 B                0 B
+├ ƒ /api/onedrive/status                              0 B                0 B
+├ ƒ /api/onedrive/sync                                0 B                0 B
+├ ƒ /api/package/check                                0 B                0 B
+├ ƒ /api/package/usage                                0 B                0 B
+├ ƒ /api/pea/import-feam-tr                           0 B                0 B
+├ ƒ /api/platform-subscription-contract/[id]          0 B                0 B
+├ ƒ /api/platform-subscription-contract/record        0 B                0 B
+├ ƒ /api/pradas/export-docx                           0 B                0 B
+├ ƒ /api/studies/[slug]/form-schema                   0 B                0 B
+├ ƒ /api/studies/sync-form-schemas                    0 B                0 B
+├ ƒ /api/study-maps/export                            0 B                0 B
+├ ƒ /api/study-maps/jobs                              0 B                0 B
+├ ƒ /api/study-maps/parse-perimeter                   0 B                0 B
+├ ƒ /api/study-maps/stac-preview                      0 B                0 B
+├ ƒ /api/templates/[type]                             0 B                0 B
+├ ƒ /api/termos-referencia/list                       0 B                0 B
+├ ƒ /api/uploads/car-geometry                         0 B                0 B
+├ ƒ /api/uploads/car-pdf                              0 B                0 B
+├ ƒ /api/uploads/compliance                           0 B                0 B
+├ ƒ /api/uploads/fauna                                0 B                0 B
+├ ƒ /api/uploads/intervencoes                         0 B                0 B
+├ ƒ /api/uploads/invoices                             0 B                0 B
+├ ƒ /api/uploads/licenses                             0 B                0 B
+├ ƒ /api/uploads/outorgas                             0 B                0 B
+├ ƒ /api/uploads/proposals                            0 B                0 B
+├ ƒ /api/uploads/signed-contracts                     0 B                0 B
+├ ƒ /api/uploads/transactions                         0 B                0 B
+├ ƒ /api/uploads/usos-insignificantes                 0 B                0 B
+├ ○ /app-campo                                        182 B          91.2 kB
+├ ○ /audit-log                                        8.65 kB         316 kB
+├ ○ /autos-infracao-defesa                            182 B          91.2 kB
+├ ○ /bank-access                                      5.19 kB         156 kB
+├ ○ /calendar                                         12.1 kB         352 kB
+├ ○ /canais                                           2.93 kB         145 kB
+├ ○ /car                                              12.8 kB         367 kB
+├ ○ /carteira                                         4.56 kB         301 kB
+├ ƒ /carteira/[clientId]                              3.34 kB         299 kB
+├ ○ /cash-flow                                        15.2 kB         473 kB
+├ ƒ /cash-flow/[id]/edit                              2.76 kB         415 kB
+├ ○ /cash-flow/new                                    2.48 kB         414 kB
+├ ○ /clients                                          8.32 kB         307 kB
+├ ƒ /clients/[id]/edit                                959 B           372 kB
+├ ○ /clients/new                                      1.59 kB         373 kB
+├ ○ /coleta-campo                                     5.48 kB         336 kB
+├ ƒ /coleta-campo/[id]                                8.16 kB         505 kB
+├ ƒ /coleta-campo/[id]/parcelas/[parcelaId]           4.07 kB         344 kB
+├ ○ /coleta-campo/nova                                6.63 kB         369 kB
+├ ○ /commercial-proposals                             21 kB           466 kB
+├ ƒ /commercial-proposals/[id]/edit                   5.85 kB         449 kB
+├ ○ /commercial-proposals/new                         5.59 kB         448 kB
+├ ○ /compliance                                       20.6 kB         434 kB
+├ ○ /consultas                                        4.81 kB         301 kB
+├ ƒ /consultas/[id]                                   3.79 kB         300 kB
+├ ƒ /consultas/[id]/edit                              4.39 kB         305 kB
+├ ○ /consultas/new                                    3.79 kB         305 kB
+├ ○ /contracts                                        16 kB           441 kB
+├ ○ /contracts-suppliers                              21.2 kB         432 kB
+├ ƒ /contracts/[id]/edit                              1.13 kB         382 kB
+├ ○ /contracts/new                                    821 B           382 kB
+├ ○ /crm                                              12 kB           450 kB
+├ ƒ /crm/[id]/edit                                    948 B           348 kB
+├ ○ /crm/alerts                                       4.26 kB         292 kB
+├ ○ /crm/clients                                      6.16 kB         293 kB
+├ ○ /crm/new                                          647 B           347 kB
+├ ○ /crm/opportunities                                3.39 kB         306 kB
+├ ○ /crm/proposals                                    5.62 kB         293 kB
+├ ○ /crm/reports                                      15.3 kB         421 kB
+├ ○ /crm/settings                                     4.46 kB         292 kB
+├ ○ /crm/team                                         4.79 kB         391 kB
+├ ○ /documentos-ambientais/pasta-cliente              3.67 kB         291 kB
+├ ○ /empreendedores                                   9.05 kB         322 kB
+├ ƒ /empreendedores/[id]/edit                         1.02 kB         372 kB
+├ ○ /empreendedores/new                               749 B           372 kB
+├ ○ /environmental-company                            182 B          91.2 kB
+├ ○ /external                                         2.94 kB         290 kB
+├ ○ /fauna                                            11 kB           405 kB
+├ ○ /financial/abc-curve                              9.75 kB         445 kB
+├ ○ /financial/abc-fornecedores                       1.08 kB         412 kB
+├ ○ /financial/abc-servicos                           1.22 kB         412 kB
+├ ○ /financial/bens-patrimonio                        9.88 kB         317 kB
+├ ƒ /financial/bens-patrimonio/[id]/edit              973 B           418 kB
+├ ○ /financial/bens-patrimonio/new                    725 B           418 kB
+├ ○ /financial/conciliacao                            4.11 kB         291 kB
+├ ○ /financial/dre-contabil                           7 kB            333 kB
+├ ○ /financial/export-contabil                        4.19 kB         300 kB
+├ ○ /financial/fluxo-projetado                        3.15 kB         389 kB
+├ ○ /financial/orcamento                              3.48 kB         291 kB
+├ ○ /financial/painel                                 5.06 kB         316 kB
+├ ○ /financial/platform-subscription-contracts        4.23 kB         292 kB
+├ ○ /financial/projetos-roi                           13.3 kB         325 kB
+├ ƒ /financial/projetos-roi/[caseId]                  16.5 kB         447 kB
+├ ○ /forgot-password                                  4.99 kB         282 kB
+├ ○ /georeferenciamento                               5.09 kB         156 kB
+├ ○ /georeferenciamento/ambiental                     2.36 kB         161 kB
+├ ○ /georeferenciamento/campo                         2.22 kB         161 kB
+├ ○ /georeferenciamento/documentos                    2.54 kB         161 kB
+├ ○ /georeferenciamento/processos                     4.34 kB         314 kB
+├ ƒ /georeferenciamento/processos/[id]                10.1 kB         482 kB
+├ ○ /georeferenciamento/referencias                   4.09 kB         146 kB
+├ ○ /georeferenciamento/registro                      2.31 kB         161 kB
+├ ○ /georeferenciamento/rural                         2.38 kB         161 kB
+├ ○ /georeferenciamento/urbano                        2.34 kB         161 kB
+├ ○ /georeferenciamento/validacoes                    2.3 kB          161 kB
+├ ○ /icon.svg                                         0 B                0 B
+├ ○ /inspections                                      8.89 kB         376 kB
+├ ƒ /inspections/[id]/edit                            1.07 kB         443 kB
+├ ○ /inspections/new                                  619 B           443 kB
+├ ○ /inspections/reports                              4.97 kB         367 kB
+├ ○ /intervencoes                                     14.3 kB         422 kB
+├ ○ /inventarios                                      182 B          91.2 kB
+├ ƒ /inventarios/[id]                                 182 B          91.2 kB
+├ ƒ /inventarios/[id]/parcelas/[parcelaId]            182 B          91.2 kB
+├ ○ /inventarios/new                                  182 B          91.2 kB
+├ ○ /invoices                                         23.3 kB         433 kB
+├ ƒ /invoices/(.)[id]/edit                            7.61 kB         400 kB
+├ ƒ /invoices/(.)new                                  7.44 kB         400 kB
+├ ƒ /invoices/[id]/edit                               4.77 kB         418 kB
+├ ○ /invoices/new                                     4.51 kB         417 kB
+├ ○ /knowledge-sources                                4.68 kB         300 kB
+├ ƒ /knowledge-sources/[id]                           4.08 kB         300 kB
+├ ○ /knowledge-sources/new                            6.94 kB         322 kB
+├ ○ /laudos                                           4.6 kB          309 kB
+├ ƒ /laudos/[id]                                      9.06 kB         314 kB
+├ ○ /laudos/new                                       3.81 kB         305 kB
+├ ○ /licenses                                         15.1 kB         427 kB
+├ ƒ /licenses/(.)[id]/edit                            6.34 kB         405 kB
+├ ƒ /licenses/(.)new                                  6.15 kB         405 kB
+├ ƒ /licenses/[id]/edit                               7.23 kB         420 kB
+├ ○ /licenses/new                                     6.97 kB         419 kB
+├ ○ /login                                            5.02 kB         282 kB
+├ ○ /monitoring                                       182 B          91.2 kB
+├ ○ /monitoring/manual                                10.3 kB         479 kB
+├ ○ /monitoring/telemetric                            43.9 kB         385 kB
+├ ○ /multas-defesas                                   7.8 kB          304 kB
+├ ƒ /multas-defesas/[id]                              25.4 kB         417 kB
+├ ○ /multas-defesas/nova                              14.4 kB         402 kB
+├ ○ /offline                                          184 B          99.9 kB
+├ ○ /oficios                                          13.2 kB         331 kB
+├ ƒ /oficios/[id]/edit                                1.09 kB         359 kB
+├ ○ /oficios/new                                      806 B           359 kB
+├ ○ /outorgas                                         11.7 kB         430 kB
+├ ƒ /outorgas/(.)[id]/edit                            3.66 kB         407 kB
+├ ƒ /outorgas/(.)new                                  3.5 kB          407 kB
+├ ○ /projects                                         11.4 kB         313 kB
+├ ƒ /projects/[id]/edit                               1.04 kB         526 kB
+├ ○ /projects/new                                     750 B           526 kB
+├ ○ /proposals                                        1.23 kB        92.2 kB
+├ ƒ /proposals/[id]/edit                              1.14 kB        92.1 kB
+├ ○ /proposals/new                                    1.11 kB        92.1 kB
+├ ○ /register                                         28.1 kB         313 kB
+├ ○ /reporting                                        10.4 kB         358 kB
+├ ○ /requests                                         17.2 kB         321 kB
+├ ƒ /requests/[id]/aia                                5.95 kB         384 kB
+├ ƒ /requests/[id]/edit                               7.76 kB         395 kB
+├ ○ /requests/new                                     5.53 kB         393 kB
+├ ○ /responsible-company                              8.05 kB         318 kB
+├ ƒ /responsible-company/(.)[id]/edit                 1.62 kB         327 kB
+├ ƒ /responsible-company/(.)new                       1.51 kB         327 kB
+├ ƒ /responsible-company/[id]/edit                    2.04 kB         345 kB
+├ ○ /responsible-company/new                          1.78 kB         345 kB
+├ ○ /services                                         5.96 kB         293 kB
+├ ƒ /services/[id]/edit                               945 B           316 kB
+├ ○ /services/new                                     653 B           315 kB
+├ ○ /settings                                         14.4 kB         324 kB
+├ ○ /settings/ai-local-source                         3.34 kB         291 kB
+├ ○ /settings/appearance                              5.22 kB         152 kB
+├ ○ /settings/company                                 4.38 kB         340 kB
+├ ○ /settings/deleted-backups                         7.15 kB         294 kB
+├ ○ /settings/files                                   8.16 kB         154 kB
+├ ○ /settings/onedrive-integration                    4.78 kB         301 kB
+├ ○ /settings/templates                               7.55 kB         364 kB
+├ ○ /settings/templates/rca                           399 B          91.4 kB
+├ ○ /social-media                                     3.31 kB         145 kB
+├ ○ /studies                                          182 B          91.2 kB
+├ ○ /studies/analise-socioambiental                   13 kB           362 kB
+├ ○ /studies/assistant                                6.01 kB         344 kB
+├ ○ /studies/barragem                                 7.14 kB         323 kB
+├ ƒ /studies/barragem/[id]/edit                       1.05 kB         356 kB
+├ ○ /studies/barragem/new                             3.38 kB         331 kB
+├ ○ /studies/cavidades                                10.5 kB         320 kB
+├ ƒ /studies/cavidades/[id]/edit                      1.18 kB         365 kB
+├ ○ /studies/cavidades/new                            802 B           344 kB
+├ ○ /studies/compensacao-ambiental                    3.27 kB         160 kB
+├ ƒ /studies/compensacao-ambiental/[tipo]             9.05 kB         319 kB
+├ ○ /studies/educacao-ambiental                       12.3 kB         339 kB
+├ ƒ /studies/educacao-ambiental/[id]/edit             6.11 kB         448 kB
+├ ƒ /studies/educacao-ambiental/dispensas/[id]        5.51 kB         470 kB
+├ ○ /studies/educacao-ambiental/novo                  4.2 kB          438 kB
+├ ○ /studies/educacao-ambiental/solicitar-dispensa    7.71 kB         462 kB
+├ ○ /studies/eia-rima                                 2.52 kB         316 kB
+├ ƒ /studies/eia-rima/(.)[id]/edit                    7.93 kB         307 kB
+├ ƒ /studies/eia-rima/(.)new                          7.81 kB         307 kB
+├ ƒ /studies/eia-rima/[id]/edit                       5.17 kB         325 kB
+├ ○ /studies/eia-rima/new                             3.18 kB         376 kB
+├ ○ /studies/fauna                                    14.7 kB         334 kB
+├ ○ /studies/fauna/inventario                         614 B           330 kB
+├ ○ /studies/fauna/inventario-relatorio               1.53 kB         321 kB
+├ ƒ /studies/fauna/inventario-relatorio/[id]          581 B           320 kB
+├ ƒ /studies/fauna/inventario/[id]                    773 B           330 kB
+├ ○ /studies/fauna/monitoramento                      573 B           330 kB
+├ ○ /studies/fauna/monitoramento-relatorio            1.52 kB         321 kB
+├ ƒ /studies/fauna/monitoramento-relatorio/[id]       557 B           320 kB
+├ ƒ /studies/fauna/monitoramento/[id]                 763 B           330 kB
+├ ○ /studies/fauna/resgate                            581 B           330 kB
+├ ○ /studies/fauna/resgate-relatorio                  1.54 kB         321 kB
+├ ƒ /studies/fauna/resgate-relatorio/[id]             552 B           320 kB
+├ ƒ /studies/fauna/resgate/[id]                       770 B           330 kB
+├ ○ /studies/ide-sisemanet                            2.64 kB         145 kB
+├ ○ /studies/intervencao-ambiental                    182 B          91.2 kB
+├ ƒ /studies/intervencao-ambiental/(.)[id]/edit       4.61 kB         337 kB
+├ ƒ /studies/intervencao-ambiental/(.)new             4.47 kB         337 kB
+├ ƒ /studies/intervencao-ambiental/[id]/edit          1.82 kB         355 kB
+├ ○ /studies/intervencao-ambiental/new                1.63 kB         355 kB
+├ ○ /studies/inventario                               12.3 kB         348 kB
+├ ƒ /studies/inventario/[id]                          20.9 kB         585 kB
+├ ƒ /studies/inventario/[id]/arvores                  6.22 kB         280 kB
+├ ƒ /studies/inventario/[id]/calculadora              12.8 kB         307 kB
+├ ƒ /studies/inventario/[id]/especies                 8.98 kB         468 kB
+├ ƒ /studies/inventario/[id]/formulas                 13.2 kB         288 kB
+├ ƒ /studies/inventario/[id]/parcelas                 11 kB           267 kB
+├ ƒ /studies/inventario/[id]/resultado/[runId]        8.81 kB         281 kB
+├ ○ /studies/las-ras                                  573 B           327 kB
+├ ƒ /studies/las-ras/[id]/edit                        2.38 kB         373 kB
+├ ○ /studies/las-ras/new                              839 B           376 kB
+├ ○ /studies/mapas                                    25.1 kB         393 kB
+├ ○ /studies/outorgas                                 5.3 kB          301 kB
+├ ƒ /studies/outorgas/[id]/edit                       8.26 kB         348 kB
+├ ○ /studies/outorgas/new                             3.75 kB         307 kB
+├ ƒ /studies/outorgas/processo/[id]                   12.2 kB         321 kB
+├ ○ /studies/pca                                      2.6 kB          316 kB
+├ ƒ /studies/pca/(.)[id]/edit                         10.9 kB         334 kB
+├ ƒ /studies/pca/(.)new                               10.7 kB         334 kB
+├ ƒ /studies/pca/[id]/edit                            8.47 kB         353 kB
+├ ○ /studies/pca/new                                  839 B           378 kB
+├ ○ /studies/pia                                      10.2 kB         331 kB
+├ ƒ /studies/pia/(.)[id]/edit                         4.62 kB         353 kB
+├ ƒ /studies/pia/(.)new                               4.47 kB         353 kB
+├ ƒ /studies/pia/[id]/edit                            7.73 kB         404 kB
+├ ○ /studies/pia/new                                  1.65 kB         371 kB
+├ ○ /studies/prada                                    14.7 kB         320 kB
+├ ƒ /studies/prada/(.)[id]/edit                       4.59 kB         340 kB
+├ ƒ /studies/prada/(.)new                             4.39 kB         340 kB
+├ ƒ /studies/prada/[id]/edit                          1.84 kB         358 kB
+├ ○ /studies/prada/new                                1.49 kB         357 kB
+├ ○ /studies/ptrf                                     2.56 kB         316 kB
+├ ƒ /studies/ptrf/(.)[id]/edit                        4.58 kB         308 kB
+├ ƒ /studies/ptrf/(.)new                              4.38 kB         308 kB
+├ ƒ /studies/ptrf/[id]/edit                           1.79 kB         326 kB
+├ ○ /studies/ptrf/new                                 1.48 kB         326 kB
+├ ○ /studies/rca                                      2.88 kB         317 kB
+├ ƒ /studies/rca/(.)[id]/edit                         12.8 kB         393 kB
+├ ƒ /studies/rca/(.)new                               12.6 kB         393 kB
+├ ƒ /studies/rca/[id]/edit                            10.2 kB         412 kB
+├ ○ /studies/rca/new                                  6.72 kB         437 kB
+├ ○ /studies/reanalise                                549 B           327 kB
+├ ƒ /studies/reanalise/[id]/edit                      2.09 kB         357 kB
+├ ○ /studies/reanalise/new                            701 B           360 kB
+├ ○ /studies/relatorios-diversos                      2.44 kB         145 kB
+├ ○ /studies/relatorios-diversos/carvao-vegetal       11.9 kB         352 kB
+├ ○ /studies/relatorios-diversos/ptrf-prad            8.29 kB         367 kB
+├ ○ /studies/relatorios-diversos/transporte-residuos  14.4 kB         418 kB
+├ ○ /studies/reserva-legal                            2.81 kB         145 kB
+├ ○ /studies/seguranca-barragens                      2.82 kB         145 kB
+├ ○ /suppliers                                        6.18 kB         293 kB
+├ ƒ /suppliers/[id]/edit                              954 B           324 kB
+├ ○ /suppliers/new                                    652 B           324 kB
+├ ○ /technical-responsible                            7.23 kB         303 kB
+├ ƒ /technical-responsible/(.)[id]/edit               5.26 kB         308 kB
+├ ƒ /technical-responsible/(.)new                     5.07 kB         308 kB
+├ ƒ /technical-responsible/[id]/edit                  1.76 kB         326 kB
+├ ○ /technical-responsible/new                        1.47 kB         325 kB
+├ ○ /users                                            32.2 kB         392 kB
+├ ○ /usos-insignificantes                             21.8 kB         435 kB
+└ ○ /webmail                                          182 B          91.2 kB
++ First Load JS shared by all                         91 kB
+  ├ chunks/6997-c91abb9e861d60fe.js                   34.1 kB
+  ├ chunks/fd9d1056-206ae12e503f4cd4.js               53.6 kB
+  └ other shared chunks (total)                       3.25 kB
+
+Route (pages)                                         Size     First Load JS
+┌   /_app                                             0 B             104 kB
+└ ○ /404                                              495 B           105 kB
++ First Load JS shared by all                         104 kB
+  ├ chunks/framework-1a7bfeab28ecb855.js              56.4 kB
+  ├ chunks/main-61c2d011ab05e2b8.js                   44.4 kB
+  └ other shared chunks (total)                       3.31 kB
+
+ƒ Middleware                                          25 kB
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+
+## result
+finishedAt=2026-05-31T17:01:10.999Z
+status=0
+signal=
