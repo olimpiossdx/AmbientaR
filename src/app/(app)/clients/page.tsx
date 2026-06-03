@@ -95,6 +95,8 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
 import { CardSearchInput } from "@/components/card-search-input";
+import { CreatePortalAccessDialog } from "@/components/clients/create-portal-access-dialog";
+import { UserPlus } from "lucide-react";
 
 const DetailItem = ({
   label,
@@ -118,6 +120,7 @@ const DetailItem = ({
 export default function ClientsPage() {
   const [isAlertOpen, setIsAlertOpen] = useState(false);
   const [isViewOpen, setIsViewOpen] = useState(false);
+  const [isPortalAccessOpen, setIsPortalAccessOpen] = useState(false);
   const [clientToDelete, setClientToDelete] = useState<string | null>(null);
   const [clientToView, setClientToView] = useState<Client | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -713,15 +716,32 @@ export default function ClientsPage() {
               </div>
             </div>
           )}
-          <DialogFooter>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            {user?.role === "admin" && clientToView && (
+              <Button
+                type="button"
+                variant="default"
+                className="gap-1 w-full sm:w-auto"
+                onClick={() => setIsPortalAccessOpen(true)}
+              >
+                <UserPlus className="h-4 w-4" />
+                Acesso ao portal
+              </Button>
+            )}
             <DialogClose asChild>
-              <Button type="button" variant="outline">
+              <Button type="button" variant="outline" className="w-full sm:w-auto">
                 Fechar
               </Button>
             </DialogClose>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <CreatePortalAccessDialog
+        client={clientToView}
+        open={isPortalAccessOpen}
+        onOpenChange={setIsPortalAccessOpen}
+      />
 
       <AlertDialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>
         <AlertDialogContent>

@@ -1,16 +1,34 @@
 # App Hosting local check
-startedAt=2026-06-02T12:02:13.065Z
+startedAt=2026-06-03T19:04:18.901Z
 
 ## output
   ▲ Next.js 14.2.35
   - Environments: .env.local
 
-   Creating an optimized production build ...
- ✓ (pwa) Compiling for server...
- ✓ (pwa) Compiling for server...
- ✓ (pwa) Compiling for client (static)...
- ○ (pwa) Service worker: D:\AmbientaR\public\sw.js
- ○ (pwa)   URL: /sw.js
- ○ (pwa)   Scope: /
- ○ (pwa) This app will fallback to these precached routes when fetching from the cache and the network fails:
- ○ (pwa)   Documents (pages): /offline
+ ✓ Compiled successfully
+   Linting and checking validity of types ...
+
+./src/app/(app)/studies/mapas/mca-workbench.tsx
+1449:5  Warning: React Hook React.useCallback has a missing dependency: 'applyParsedPerimeter'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+info  - Need to disable some ESLint rules? Learn more here: https://nextjs.org/docs/basic-features/eslint#disabling-rules
+   Collecting page data ...
+
+> Build error occurred
+Error: ENOENT: no such file or directory, open 'D:\AmbientaR\.next\server\pages-manifest.json'
+    at async open (node:internal/fs/promises:636:25)
+    at async Object.readFile (node:internal/fs/promises:1235:14)
+    at async readManifest (D:\AmbientaR\node_modules\next\dist\build\index.js:165:23)
+    at async D:\AmbientaR\node_modules\next\dist\build\index.js:1043:35
+    at async Span.traceAsyncFn (D:\AmbientaR\node_modules\next\dist\trace\trace.js:154:20)
+    at async build (D:\AmbientaR\node_modules\next\dist\build\index.js:368:9) {
+  errno: -4058,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: 'D:\\AmbientaR\\.next\\server\\pages-manifest.json'
+}
+
+## result
+finishedAt=2026-06-03T19:05:12.863Z
+status=1
+signal=

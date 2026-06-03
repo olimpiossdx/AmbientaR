@@ -23,10 +23,12 @@ import { AppUser } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { logUserAction } from '@/lib/audit-log';
 import { PRESENCE_HEARTBEAT_MS } from '@/lib/user-presence';
+import { buildFallbackAppUser } from '@/lib/auth-user-id';
 import {
   ADMIN_BOOTSTRAP_EMAIL,
-  buildFallbackAppUser,
-} from '@/lib/auth-user-id';
+  isBootstrapAdminEmail,
+  resolveRoleForEmail,
+} from '@/lib/admin-bootstrap';
 
 interface FirebaseContextState {
   firebaseApp: FirebaseApp | null;
@@ -38,14 +40,6 @@ interface FirebaseContextState {
   isProfileLoading: boolean;
   login: (email: string, password_hash: string) => Promise<boolean>;
   logout: () => void;
-}
-
-function resolveRoleForEmail(
-  email: string,
-  existingRole?: AppUser['role'],
-): AppUser['role'] {
-  if (email === ADMIN_BOOTSTRAP_EMAIL) return 'admin';
-  return existingRole ?? 'client';
 }
 
 export const FirebaseContext = createContext<FirebaseContextState | undefined>(undefined);
@@ -239,12 +233,39 @@ export const FirebaseProvider: React.FC<{ children: ReactNode; firebaseApp: Fire
           }
         }
 
+        if (isBootstrapAdminEmail(normalizedEmail) && userData.role !== 'admin') {
+          try {
+            await setDoc(
+              userDocRef,
+              { role: 'admin', status: 'active', uid: sessionUid },
+              { merge: true },
+            );
+          } catch (adminRestoreError) {
+            console.warn('Could not restore bootstrap admin role:', adminRestoreError);
+          }
+        }
+
+        let resolvedStatus = userData.status;
+        const shouldActivatePortalUser =
+          userData.status === 'pending_invite' ||
+          (userData.status === 'inactive' &&
+            (resolvedRole === 'admin' || normalizedEmail === ADMIN_BOOTSTRAP_EMAIL));
+        if (shouldActivatePortalUser) {
+          try {
+            await updateDoc(userDocRef, { status: 'active' });
+            resolvedStatus = 'active';
+          } catch (statusPatchError) {
+            console.warn('Could not activate portal user profile:', statusPatchError);
+          }
+        }
+
         return {
           id: sessionUid,
           ...userData,
           uid: sessionUid,
           email: userData.email || normalizedEmail,
           role: resolvedRole,
+          status: resolvedStatus,
           photoURL: userData.photoURL || firebaseUser.photoURL || undefined,
         };
       }
@@ -383,20 +404,35 @@ export const FirebaseProvider: React.FC<{ children: ReactNode; firebaseApp: Fire
     const normalizedEmail = email.trim().toLowerCase();
     const normalizedPassword = password_hash.trim();
 
-    const finishLogin = async (uid: string, auditAction: string) => {
-      const profile = await waitForUserProfile();
-      if (!profile) {
-        toast({
-          variant: 'destructive',
-          title: 'Perfil não carregado',
-          description:
-            'A autenticação funcionou, mas não foi possível carregar seu perfil. Verifique as regras do Firestore ou tente novamente.',
-        });
-        return false;
+    const finishLogin = async (firebaseUser: User, auditAction: string) => {
+      setIsProfileLoading(true);
+      try {
+        let profile: AppUser;
+        try {
+          profile = await loadUserProfile(firebaseUser);
+        } catch (serverError) {
+          console.error('Failed to load profile after login:', serverError);
+          profile = buildFallbackAppUser(firebaseUser);
+          const userDocRef = doc(firestore, 'users', firebaseUser.uid);
+          await setDoc(
+            userDocRef,
+            {
+              ...profile,
+              lastLogin: serverTimestamp(),
+              lastSeenAt: serverTimestamp(),
+            },
+            { merge: true },
+          ).catch((writeError) => {
+            console.warn('Could not persist fallback profile after login:', writeError);
+          });
+        }
+        commitAppUser(profile);
+        await updateLastLogin(firebaseUser.uid);
+        await logUserAction(firestore, auth, auditAction);
+        return true;
+      } finally {
+        setIsProfileLoading(false);
       }
-      await updateLastLogin(uid);
-      await logUserAction(firestore, auth, auditAction);
-      return true;
     };
 
     try {
@@ -405,7 +441,7 @@ export const FirebaseProvider: React.FC<{ children: ReactNode; firebaseApp: Fire
         normalizedEmail,
         normalizedPassword,
       );
-      return finishLogin(userCredential.user.uid, 'login');
+      return finishLogin(userCredential.user, 'login');
     } catch (error: any) {
       if (
         normalizedEmail === ADMIN_BOOTSTRAP_EMAIL &&
@@ -419,7 +455,7 @@ export const FirebaseProvider: React.FC<{ children: ReactNode; firebaseApp: Fire
             normalizedPassword,
           );
           return finishLogin(
-            userCredential.user.uid,
+            userCredential.user,
             'login_admin_creation',
           );
         } catch (creationError: any) {
@@ -455,7 +491,7 @@ export const FirebaseProvider: React.FC<{ children: ReactNode; firebaseApp: Fire
       });
       return false;
     }
-  }, [auth, firestore, toast, updateLastLogin, waitForUserProfile]);
+  }, [auth, firestore, toast, updateLastLogin, loadUserProfile, commitAppUser]);
 
   const logout = useCallback(async () => {
     if (auth && auth.currentUser && firestore) {

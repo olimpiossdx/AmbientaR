@@ -91,6 +91,8 @@ import {
   isUserProfileAlignedWithSession,
   useAuthUserId,
 } from "@/lib/auth-user-id";
+import { filterAccessRequestsForTitular } from "@/lib/access-request-titular-match";
+import { buildTitularCpfCnpjSet } from "@/lib/titular-document-set";
 
 const LogoIcon = () => (
   <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-emerald-400 text-primary-foreground">
@@ -206,39 +208,37 @@ const AppLayoutClient = ({ children }: { children: React.ReactNode }) => {
   const { data: clientById } = useDoc<Client>(clientByIdRef);
   const { data: empreendedorById } = useDoc<Empreendedor>(empreendedorByIdRef);
 
-  const myCpfCnpjSet = React.useMemo(() => {
-    const set = new Set<string>();
-    const add = (v: string | undefined | null) => {
-      if (!v) return;
-      const trimmed = String(v).trim();
-      if (!trimmed) return;
-      const digits = trimmed.replace(/\D/g, "");
-      if (digits.length >= 11) {
-        set.add(digits);
-        set.add(trimmed);
-      }
-    };
+  const ownedEntitiesForMatch = React.useMemo(
+    () => [
+      ...(myClients ?? []),
+      ...(myEmpreendedores ?? []),
+      ...(clientById ? [clientById] : []),
+      ...(empreendedorById ? [empreendedorById] : []),
+    ],
+    [myClients, myEmpreendedores, clientById, empreendedorById],
+  );
 
-    myClients?.forEach((c) => add(c.cpfCnpj));
-    myEmpreendedores?.forEach((e) => add(e.cpfCnpj));
-    if (clientById?.cpfCnpj) add(clientById.cpfCnpj);
-    if (empreendedorById?.cpfCnpj) add(empreendedorById.cpfCnpj);
-    if (user?.role === "client") {
-      add(user.cpf);
-      add(user.userCpf);
-    }
+  const myCpfCnpjSet = React.useMemo(
+    () =>
+      buildTitularCpfCnpjSet({
+        profile: user ?? undefined,
+        myClients,
+        myEmpreendedores,
+        clientById: clientById ?? undefined,
+        empreendedorById: empreendedorById ?? undefined,
+      }),
+    [myClients, myEmpreendedores, clientById, empreendedorById, user],
+  );
 
-    return set;
-  }, [myClients, myEmpreendedores, clientById, empreendedorById, user]);
-
-  const pendingAccessRequestsForMe = React.useMemo(() => {
-    if (!pendingAccessRequests || myCpfCnpjSet.size === 0) return [];
-    return pendingAccessRequests.filter((r) => {
-      const digits = (r.cpfOfInterested || "").replace(/\D/g, "");
-      if (digits.length < 11) return false;
-      return myCpfCnpjSet.has(r.cpfOfInterested!) || myCpfCnpjSet.has(digits);
-    });
-  }, [pendingAccessRequests, myCpfCnpjSet]);
+  const pendingAccessRequestsForMe = React.useMemo(
+    () =>
+      filterAccessRequestsForTitular(
+        pendingAccessRequests,
+        myCpfCnpjSet,
+        ownedEntitiesForMatch,
+      ),
+    [pendingAccessRequests, myCpfCnpjSet, ownedEntitiesForMatch],
+  );
 
   React.useEffect(() => {
     async function fetchLogoUrl() {

@@ -322,6 +322,13 @@ export function canWriteProjectRoi(
   return isAdminOrFinancialRole(role);
 }
 
+/** Projetos & ROI — excluir caso (somente admin). */
+export function canDeleteProjectRoi(
+  role: UserRole | undefined | null,
+): boolean {
+  return isAdminRole(role);
+}
+
 /** Vendas: visão resumida sem custos detalhados. */
 export function isProjectRoiSalesReadOnly(
   role: UserRole | undefined | null,

@@ -11,10 +11,17 @@ import {
   doc,
   setDoc,
   updateDoc,
+  getDoc,
   serverTimestamp,
   collection,
   addDoc,
 } from "firebase/firestore";
+import {
+  isBootstrapAdminEmail,
+  resolveRegisterRole,
+  shouldBlockPublicRegistration,
+} from "@/lib/admin-bootstrap";
+import type { AppUser } from "@/lib/types";
 import {
   lookupClientAndEmpreendedorByDocument,
   normalizeDocumentDigits,
@@ -50,7 +57,6 @@ import {
   Gift,
   MessageSquareMore,
   X,
-  Compass,
   Smartphone,
   CreditCard,
   Building2,
@@ -158,7 +164,8 @@ const getEntityTypeFromDocument = (document: string): EntityType =>
   normalizeDocument(document).length === 14 ? "Pessoa Jurídica" : "Pessoa Física";
 
 const PROFILE_CHOICE_TEXT = {
-  intro: "Escolha seu perfil de cadastro para continuar:",
+  intro:
+    "Contas profissionais ou Cliente Autônomo (planos). Titulares Cliente Gestão recebem convite da consultoria.",
   client:
     "Sou titular e contrato o plano com assessoria e gestão da consultoria (acompanhamento sob medida, com supervisão mensal).",
   cliente_autonomo:
@@ -181,12 +188,15 @@ function parseRegisterProfileFromTipo(tipo: string | null | undefined): Register
     return "consultor_representante";
   }
   if (tipo === "cliente_autonomo" || tipo === "autonomo") return "cliente_autonomo";
-  return "client";
+  /** Legado `?tipo=client`: auto-cadastro Gestão desativado — tratado à parte. */
+  if (tipo === "client") return "cliente_autonomo";
+  return "cliente_autonomo";
 }
 
 function RegisterPageContent() {
   const searchParams = useSearchParams();
   const initialTipo = searchParams?.get("tipo");
+  const clientGestaoInviteOnly = initialTipo === "client";
   const [mode, setMode] = React.useState<RegisterProfileMode>(() =>
     parseRegisterProfileFromTipo(initialTipo),
   );
@@ -367,8 +377,7 @@ function RegisterPageContent() {
     return !!selectedPackage;
   };
 
-  const isTitularPlanMode =
-    mode === "client" || mode === "cliente_autonomo";
+  const isTitularPlanMode = mode === "cliente_autonomo";
   const isDelegatePortalMode =
     mode === "representative" || mode === "consultor_representante";
 
@@ -393,16 +402,24 @@ function RegisterPageContent() {
       return;
     }
 
+    if (mode === "client") {
+      toast({
+        variant: "destructive",
+        title: "Cadastro indisponível",
+        description:
+          "Cliente Gestão só recebe acesso por convite da consultoria. Use o link do e-mail ou fale com a Pimenta.",
+      });
+      return;
+    }
+
     const hasLinkedTitularDoc = isValidCpfOrCnpj(values.cpfCnpjTitular);
     if (!hasLinkedTitularDoc) {
-      if (mode === "representative" || mode === "client") {
+      if (mode === "representative") {
         toast({
           variant: "destructive",
           title: "Campo obrigatório",
           description:
-            mode === "representative"
-              ? "Informe o CPF ou CNPJ do titular ao qual solicita acesso."
-              : "Informe o CPF ou CNPJ vinculado ao cliente/empreendedor.",
+            "Informe o CPF ou CNPJ do titular ao qual solicita acesso.",
         });
         return;
       }
@@ -432,6 +449,17 @@ function RegisterPageContent() {
       }
     }
 
+    const normalizedEmail = values.email.trim().toLowerCase();
+    if (isBootstrapAdminEmail(normalizedEmail)) {
+      toast({
+        variant: "destructive",
+        title: "Use o login",
+        description:
+          "O administrador do sistema entra em /login com este e-mail, não pelo cadastro público.",
+      });
+      return;
+    }
+
     setLoading(true);
     try {
       const cred = await createUserWithEmailAndPassword(
@@ -440,6 +468,20 @@ function RegisterPageContent() {
         values.password,
       );
       const uid = cred.user.uid;
+
+      const existingProfileSnap = await getDoc(doc(firestore, "users", uid));
+      const existingProfile = existingProfileSnap.exists()
+        ? (existingProfileSnap.data() as Pick<AppUser, "role">)
+        : null;
+      if (shouldBlockPublicRegistration(normalizedEmail, existingProfile)) {
+        toast({
+          variant: "destructive",
+          title: "Cadastro não permitido",
+          description:
+            "Esta conta é de administrador. Faça login em /login ou peça suporte à consultoria.",
+        });
+        return;
+      }
       const userCpfNormalized = normalizeDocument(values.cpf);
       const titularFromField = normalizeDocument(values.cpfCnpjTitular);
       const titularDocument =
@@ -469,10 +511,18 @@ function RegisterPageContent() {
 
       const hasExistingLink = Boolean(linkedClientId || linkedEmpreendedorId);
 
-      await setDoc(doc(firestore, "users", uid), {
+      const registerRole = resolveRegisterRole(
+        normalizedEmail,
+        mode,
+        existingProfile,
+      );
+
+      await setDoc(
+        doc(firestore, "users", uid),
+        {
         uid: uid,
         name: values.name,
-        email: values.email,
+        email: normalizedEmail,
         phone: values.phone,
         cpf:
           mode === "representative" && titularDocument.length === 14
@@ -480,14 +530,7 @@ function RegisterPageContent() {
             : titularDocument,
         userCpf: userCpfNormalized,
         cnpjs: titularDocument.length === 14 ? [titularDocument] : [],
-        role:
-          mode === "representative"
-            ? "representative"
-            : mode === "consultor_representante"
-              ? "consultor_representante"
-            : mode === "cliente_autonomo"
-              ? "cliente_autonomo"
-              : "client",
+        role: registerRole,
         status: "active",
         package: isDelegatePortalMode ? null : values.selectedPackage,
         contractAcceptedAt:
@@ -520,7 +563,9 @@ function RegisterPageContent() {
               ambbotPrepaidCredits: 0,
             }
           : {}),
-      });
+        },
+        { merge: true },
+      );
 
       if (mode !== "representative" && mode !== "consultor_representante" && isTitularPlanMode && values.selectedPackage) {
         try {
@@ -1595,6 +1640,40 @@ function RegisterPageContent() {
     ? ["Dados Pessoais", "Pacote", "Contrato", "Pagamento anual"]
     : ["Dados Pessoais"];
 
+  const renderClientGestaoInviteOnly = () => (
+    <Card className="border border-border bg-card shadow-sm">
+      <CardHeader className="space-y-1">
+        <CardTitle className="text-lg font-semibold">
+          Cliente Gestão — acesso por convite
+        </CardTitle>
+        <CardDescription>
+          Titulares com assessoria da consultoria não se cadastram aqui. A
+          Pimenta cria seu acesso após o contrato e envia um e-mail para definir
+          a senha.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <p className="text-sm text-muted-foreground">
+          Se você já recebeu o convite, use o link do e-mail ou faça login após
+          definir sua senha.
+        </p>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <Button className="w-full sm:flex-1" asChild>
+            <Link href="/login">Ir para login</Link>
+          </Button>
+          <Button variant="outline" className="w-full sm:flex-1" asChild>
+            <Link href="/register?tipo=cliente_autonomo">
+              Sou Cliente Autônomo (planos)
+            </Link>
+          </Button>
+        </div>
+        <Button variant="ghost" className="w-full" asChild>
+          <Link href="/register">Ver outros perfis de cadastro</Link>
+        </Button>
+      </CardContent>
+    </Card>
+  );
+
   const renderProfileChoice = () => (
     <Card className="border border-border bg-card shadow-sm">
       <CardHeader className="space-y-1">
@@ -1606,26 +1685,7 @@ function RegisterPageContent() {
           Selecione o perfil que corresponde à sua situação para preencher o
           formulário de cadastro.
         </p>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          <button
-            type="button"
-            onClick={() => {
-              setMode("client");
-              setHasChosenProfile(true);
-            }}
-            className={cn(
-              "flex flex-col items-start rounded-lg border-2 p-4 text-left transition-colors",
-              "hover:border-primary hover:bg-primary/5",
-              "border-border",
-            )}
-          >
-            <span className="font-semibold text-foreground">
-              Cliente Gestão (titular)
-            </span>
-            <span className="mt-1 text-xs text-muted-foreground">
-              {PROFILE_CHOICE_TEXT.client}
-            </span>
-          </button>
+        <div className="flex flex-col gap-3">
           <button
             type="button"
             onClick={() => {
@@ -1633,13 +1693,12 @@ function RegisterPageContent() {
               setHasChosenProfile(true);
             }}
             className={cn(
-              "flex flex-col items-start rounded-lg border-2 p-4 text-left transition-colors",
+              "flex w-full flex-col items-start rounded-lg border-2 p-4 text-left transition-colors",
               "hover:border-primary hover:bg-primary/5",
               "border-border",
             )}
           >
-            <span className="inline-flex items-center gap-1.5 font-semibold text-foreground">
-              <Compass className="h-4 w-4 shrink-0 text-primary" />
+            <span className="font-semibold text-foreground">
               Cliente Autônomo
             </span>
             <span className="mt-1 text-xs text-muted-foreground">
@@ -1653,7 +1712,7 @@ function RegisterPageContent() {
               setHasChosenProfile(true);
             }}
             className={cn(
-              "flex flex-col items-start rounded-lg border-2 p-4 text-left transition-colors sm:col-span-2 lg:col-span-1",
+              "flex w-full flex-col items-start rounded-lg border-2 p-4 text-left transition-colors",
               "hover:border-primary hover:bg-primary/5",
               "border-border",
             )}
@@ -1672,7 +1731,7 @@ function RegisterPageContent() {
               setHasChosenProfile(true);
             }}
             className={cn(
-              "flex flex-col items-start rounded-lg border-2 p-4 text-left transition-colors sm:col-span-2 lg:col-span-1",
+              "flex w-full flex-col items-start rounded-lg border-2 p-4 text-left transition-colors",
               "hover:border-primary hover:bg-primary/5",
               "border-border",
             )}
@@ -1742,10 +1801,8 @@ function RegisterPageContent() {
                 ? "Cadastro de Representante"
                 : mode === "consultor_representante"
                   ? "Cadastro de Consultor-Representante"
-                : mode === "cliente_autonomo"
-                  ? "Cadastro de Cliente Autônomo"
-                  : "Cadastro de Cliente Gestão"
-              : "Novo cadastro"}
+                : "Cadastro de Cliente Autônomo"
+              : "Criar conta profissional ou autônoma"}
           </p>
           {hasChosenProfile && (
             <button
@@ -1761,18 +1818,6 @@ function RegisterPageContent() {
           )}
           {hasChosenProfile && (
             <div className="mt-3 flex flex-wrap items-center justify-center gap-1 rounded-full border bg-muted px-1 py-1 text-xs max-w-full">
-              <button
-                type="button"
-                onClick={() => setMode("client")}
-                className={cn(
-                  "px-2.5 py-1 rounded-full transition-colors whitespace-nowrap",
-                  mode === "client"
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-transparent text-muted-foreground",
-                )}
-              >
-                Cliente Gestão
-              </button>
               <button
                 type="button"
                 onClick={() => setMode("cliente_autonomo")}
@@ -1813,9 +1858,11 @@ function RegisterPageContent() {
           )}
         </div>
 
-        {!hasChosenProfile && showProfileChoice && renderProfileChoice()}
+        {clientGestaoInviteOnly && renderClientGestaoInviteOnly()}
 
-        {hasChosenProfile && (
+        {!clientGestaoInviteOnly && !hasChosenProfile && showProfileChoice && renderProfileChoice()}
+
+        {!clientGestaoInviteOnly && hasChosenProfile && (
           <>
             {isTitularPlanMode && renderStepIndicator()}
 

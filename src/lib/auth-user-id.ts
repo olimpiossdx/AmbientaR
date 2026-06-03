@@ -5,8 +5,8 @@ import type { Auth, User } from 'firebase/auth';
 import { onAuthStateChanged } from 'firebase/auth';
 import type { AppUser } from '@/lib/types';
 
-/** Conta bootstrap de administrador (criação automática no primeiro login). */
-export const ADMIN_BOOTSTRAP_EMAIL = 'adm@adm.com';
+export { ADMIN_BOOTSTRAP_EMAIL } from '@/lib/admin-bootstrap';
+import { isBootstrapAdminEmail } from '@/lib/admin-bootstrap';
 
 /** Perfil mínimo quando o Firestore falha mas a sessão Auth é válida. */
 export function buildFallbackAppUser(firebaseUser: User): AppUser {
@@ -19,7 +19,7 @@ export function buildFallbackAppUser(firebaseUser: User): AppUser {
       normalizedEmail.split('@')[0] ||
       'Usuário',
     email: normalizedEmail,
-    role: normalizedEmail === ADMIN_BOOTSTRAP_EMAIL ? 'admin' : 'client',
+    role: isBootstrapAdminEmail(normalizedEmail) ? 'admin' : 'client',
     status: 'active',
     isOnline: true,
     photoURL: firebaseUser.photoURL || '',

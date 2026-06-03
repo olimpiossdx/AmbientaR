@@ -87,6 +87,10 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { UserForm } from "./user-form";
+import { DelegateAccessPortfolioCard } from "@/components/delegate-access-portfolio-card";
+import {
+  filterAccessRequestsForDelegate,
+} from "@/lib/delegate-access-requests";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/firebase";
 import { deleteUser } from "firebase/auth";
@@ -114,6 +118,16 @@ import {
   useAuthUserId,
 } from "@/lib/auth-user-id";
 import { canEditUserInUsersList } from "@/lib/role-guards";
+import {
+  accessRequestMatchesTitularDocuments,
+  filterAccessRequestsForTitular,
+} from "@/lib/access-request-titular-match";
+import { buildTitularCpfCnpjSet } from "@/lib/titular-document-set";
+import { linkClientGestaoToExistingRecords } from "@/lib/link-client-gestao-records";
+import {
+  lookupClientAndEmpreendedorByDocument,
+  normalizeDocumentDigits,
+} from "@/lib/document-lookup";
 
 const DetailItem = ({
   label,
@@ -817,6 +831,42 @@ export default function UsersPage() {
         : null,
     [user, profileAligned],
   );
+
+  const delegatePortalUid = useMemo(
+    () =>
+      profileAligned &&
+      (user?.role === "representative" ||
+        user?.role === "consultor_representante")
+        ? resolvePortalAuthUid(user)
+        : null,
+    [user, profileAligned],
+  );
+
+  const myDelegateAccessRequestsQuery = useMemoFirebase(() => {
+    if (!firestore || !delegatePortalUid) return null;
+    return query(
+      collection(firestore, "access_requests"),
+      where("requestedByUserId", "==", delegatePortalUid),
+    );
+  }, [firestore, delegatePortalUid]);
+  const { data: myDelegateAccessRequests } = useCollection<AccessRequest>(
+    myDelegateAccessRequestsQuery,
+  );
+
+  const myDelegatePendingCpfsCnpjs = useMemo(() => {
+    if (!myDelegateAccessRequests?.length || !user) return [];
+    const delegateRole =
+      user.role === "consultor_representante"
+        ? ("consultor_representante" as const)
+        : ("representative" as const);
+    return filterAccessRequestsForDelegate(
+      myDelegateAccessRequests,
+      delegateRole,
+    )
+      .filter((r) => r.status === "pending")
+      .map((r) => r.cpfOfInterested)
+      .filter(Boolean) as string[];
+  }, [myDelegateAccessRequests, user]);
   const myApprovedClientsAsConsultorQuery = useMemoFirebase(() => {
     if (!firestore || !consultorUid) return null;
     return query(
@@ -864,27 +914,50 @@ export default function UsersPage() {
   }, [firestore, user, profileAligned, portalUid]);
   const { data: empreendedorById } = useDoc<Empreendedor>(empreendedorByIdRef);
 
+  const linkedClientRef = useMemoFirebase(() => {
+    if (!firestore || !clientProfile?.linkedClientId) return null;
+    return doc(firestore, "clients", clientProfile.linkedClientId);
+  }, [firestore, clientProfile?.linkedClientId]);
+  const linkedEmpreendedorRef = useMemoFirebase(() => {
+    if (!firestore || !clientProfile?.linkedEmpreendedorId) return null;
+    return doc(firestore, "empreendedores", clientProfile.linkedEmpreendedorId);
+  }, [firestore, clientProfile?.linkedEmpreendedorId]);
+  const { data: linkedClient } = useDoc<Client>(linkedClientRef);
+  const { data: linkedEmpreendedor } = useDoc<Empreendedor>(linkedEmpreendedorRef);
+
+  const ownedEntitiesForMatch = useMemo(
+    () => [
+      ...(myClients ?? []),
+      ...(myEmpreendedores ?? []),
+      ...(clientById ? [clientById] : []),
+      ...(empreendedorById ? [empreendedorById] : []),
+      ...(linkedClient ? [linkedClient] : []),
+      ...(linkedEmpreendedor ? [linkedEmpreendedor] : []),
+    ],
+    [
+      myClients,
+      myEmpreendedores,
+      clientById,
+      empreendedorById,
+      linkedClient,
+      linkedEmpreendedor,
+    ],
+  );
+
   const myCpfCnpjSet = useMemo(() => {
-    const set = new Set<string>();
-    const add = (v: string | undefined) => {
-      if (v && String(v).trim()) {
-        const d = String(v).replace(/\D/g, "");
-        if (d.length >= 11) {
-          set.add(d);
-          set.add(v.trim());
-        }
-      }
-    };
-    myClients?.forEach((c) => add(c.cpfCnpj));
-    myEmpreendedores?.forEach((e) => add(e.cpfCnpj));
-    if (clientById?.cpfCnpj) add(clientById.cpfCnpj);
-    if (empreendedorById?.cpfCnpj) add(empreendedorById.cpfCnpj);
     const profile = clientProfile || user;
-    if (isClientePortalRole(user?.role) && profile) {
-      add((profile as any).cpf);
-      add((profile as any).userCpf);
-    }
-    return set;
+    return buildTitularCpfCnpjSet({
+      profile: profile ?? undefined,
+      myClients,
+      myEmpreendedores,
+      clientById: clientById ?? undefined,
+      empreendedorById: empreendedorById ?? undefined,
+      extraDocuments: [
+        linkedClient?.cpfCnpj,
+        linkedEmpreendedor?.cpfCnpj,
+        ...ownedEntitiesForMatch.map((e) => e.cpfCnpj),
+      ],
+    });
   }, [
     myClients,
     myEmpreendedores,
@@ -892,43 +965,80 @@ export default function UsersPage() {
     clientProfile,
     clientById,
     empreendedorById,
+    linkedClient,
+    linkedEmpreendedor,
+    ownedEntitiesForMatch,
   ]);
 
-  const pendingRequestsForMe = useMemo(() => {
-    if (!allPendingRequests || myCpfCnpjSet.size === 0) return [];
-    return allPendingRequests.filter((r) => {
-      const normalized = (r.cpfOfInterested || "").replace(/\D/g, "");
-      return (
-        normalized.length >= 11 &&
-        (myCpfCnpjSet.has(r.cpfOfInterested!) || myCpfCnpjSet.has(normalized))
-      );
-    });
-  }, [allPendingRequests, myCpfCnpjSet]);
+  useEffect(() => {
+    if (!firestore || !portalUid || !user || !isClientePortalRole(user.role)) return;
 
-  // Pedidos já aprovados para este titular (base: access_requests.status = 'approved').
-  const approvedRequestsForMe = useMemo(() => {
-    if (!allApprovedRequests || myCpfCnpjSet.size === 0) return [];
-    return allApprovedRequests.filter((r) => {
-      const digits = (r.cpfOfInterested || "").replace(/\D/g, "");
-      if (digits.length < 11) return false;
-      return myCpfCnpjSet.has(r.cpfOfInterested!) || myCpfCnpjSet.has(digits);
-    });
-  }, [allApprovedRequests, myCpfCnpjSet]);
+    const profile = clientProfile || user;
+    const documents = new Set<string>();
+    const addDocToLink = (raw: string | undefined | null) => {
+      const digits = normalizeDocumentDigits(raw ?? "");
+      if (digits.length >= 11) documents.add(digits);
+    };
 
-  const pendingRepRequestsForMe = useMemo(
+    addDocToLink(profile?.cpf);
+    addDocToLink(profile?.userCpf);
+    profile?.cnpjs?.forEach(addDocToLink);
+    myClients?.forEach((c) => addDocToLink(c.cpfCnpj));
+    myEmpreendedores?.forEach((e) => addDocToLink(e.cpfCnpj));
+    allPendingRequests?.forEach((r) => addDocToLink(r.cpfOfInterested));
+
+    if (documents.size === 0) return;
+
+    let cancelled = false;
+    (async () => {
+      for (const portalDocument of documents) {
+        if (cancelled) return;
+        try {
+          await linkClientGestaoToExistingRecords(
+            firestore,
+            portalUid,
+            portalDocument,
+            { name: profile?.name ?? "", email: profile?.email ?? "" },
+            profile?.linkedClientId ?? null,
+            profile?.linkedEmpreendedorId ?? null,
+          );
+        } catch (e) {
+          console.warn("Vínculo titular ↔ empreendedor:", portalDocument, e);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    firestore,
+    portalUid,
+    user,
+    clientProfile,
+    myClients,
+    myEmpreendedores,
+    allPendingRequests,
+  ]);
+
+  const pendingRequestsForMe = useMemo(
     () =>
-      pendingRequestsForMe.filter(
-        (r) => getAccessRequestType(r) === "representative",
+      filterAccessRequestsForTitular(
+        allPendingRequests,
+        myCpfCnpjSet,
+        ownedEntitiesForMatch,
       ),
-    [pendingRequestsForMe],
+    [allPendingRequests, myCpfCnpjSet, ownedEntitiesForMatch],
   );
 
-  const pendingConsultorRequestsForMe = useMemo(
+  const approvedRequestsForMe = useMemo(
     () =>
-      pendingRequestsForMe.filter(
-        (r) => getAccessRequestType(r) === "consultor_representante",
+      filterAccessRequestsForTitular(
+        allApprovedRequests,
+        myCpfCnpjSet,
+        ownedEntitiesForMatch,
       ),
-    [pendingRequestsForMe],
+    [allApprovedRequests, myCpfCnpjSet, ownedEntitiesForMatch],
   );
 
   const approvedConsultorUids = useMemo(() => {
@@ -1052,19 +1162,15 @@ export default function UsersPage() {
       !allPendingRequests
     )
       return [];
-    const norm = (s: string) => (s || "").replace(/\D/g, "");
-    const clientSet = new Set(
-      [
-        norm(editingUser.cpf || ""),
-        norm((editingUser as { userCpf?: string }).userCpf || ""),
-      ].filter(Boolean),
-    );
-    if (clientSet.size === 0) return [];
+    const titularDocs = buildTitularCpfCnpjSet({
+      profile: editingUser,
+      extraDocuments: editingUser.cnpjs ?? [],
+    });
+    if (titularDocs.size === 0) return [];
     return allPendingRequests
-      .filter((r: AccessRequest) => {
-        const n = norm(r.cpfOfInterested || "");
-        return n.length >= 11 && clientSet.has(n);
-      })
+      .filter((r: AccessRequest) =>
+        accessRequestMatchesTitularDocuments(r, titularDocs),
+      )
       .map((r: AccessRequest) => ({
         id: r.id,
         requestedByName: r.requestedByName,
@@ -1104,17 +1210,54 @@ export default function UsersPage() {
       });
       if (approve) {
         const userIdToAdd = request.requestedByUserId;
-        const cpfNorm = (request.cpfOfInterested || "").replace(/\D/g, "");
-        const clientsToUpdate = (myClients || []).filter(
-          (c) =>
-            (c.cpfCnpj || "").replace(/\D/g, "") === cpfNorm ||
-            c.cpfCnpj === request.cpfOfInterested,
-        );
-        const empreendedoresToUpdate = (myEmpreendedores || []).filter(
-          (e) =>
-            (e.cpfCnpj || "").replace(/\D/g, "") === cpfNorm ||
-            e.cpfCnpj === request.cpfOfInterested,
-        );
+        const cpfNorm = normalizeDocumentDigits(request.cpfOfInterested || "");
+        const matchesDoc = (entity: { cpfCnpj?: string; id?: string }) =>
+          normalizeDocumentDigits(entity.cpfCnpj) === cpfNorm;
+
+        const clientPool = [
+          ...(myClients ?? []),
+          ...(clientById ? [clientById] : []),
+          ...(linkedClient ? [linkedClient] : []),
+        ];
+        const empreendedorPool = [
+          ...(myEmpreendedores ?? []),
+          ...(empreendedorById ? [empreendedorById] : []),
+          ...(linkedEmpreendedor ? [linkedEmpreendedor] : []),
+        ];
+
+        let clientsToUpdate = clientPool.filter(matchesDoc);
+        let empreendedoresToUpdate = empreendedorPool.filter(matchesDoc);
+
+        if (clientsToUpdate.length === 0 && empreendedoresToUpdate.length === 0) {
+          const lookup = await lookupClientAndEmpreendedorByDocument(
+            firestore,
+            request.cpfOfInterested || "",
+          );
+          if (lookup.client?.id) {
+            const linkedClientRecord = {
+              ...lookup.client,
+              id: lookup.client.id,
+            } as Client;
+            clientsToUpdate = [linkedClientRecord];
+            if (portalUid) {
+              await updateDoc(doc(firestore, "clients", lookup.client.id), {
+                userId: portalUid,
+              });
+            }
+          }
+          if (lookup.empreendedor?.id) {
+            const linkedEmpRecord = {
+              ...lookup.empreendedor,
+              id: lookup.empreendedor.id,
+            } as Empreendedor;
+            empreendedoresToUpdate = [linkedEmpRecord];
+            if (portalUid) {
+              await updateDoc(doc(firestore, "empreendedores", lookup.empreendedor.id), {
+                userId: portalUid,
+              });
+            }
+          }
+        }
         const isConsultorRequest =
           getAccessRequestType(request) === "consultor_representante";
         for (const c of clientsToUpdate) {
@@ -1395,31 +1538,38 @@ export default function UsersPage() {
                   <Card id="access-requests-card">
                     <CardHeader>
                       <CardTitle>
-                        Aprovar acesso de representantes aos seus dados
+                        Consentimento de acesso (representantes e consultores)
                       </CardTitle>
                       <CardDescription>
-                        Como titular, você pode aceitar ou recusar pedidos de
-                        representantes que queiram acessar seus dados. As
-                        solicitações pendentes aparecem abaixo.
+                        Aceite ou recuse pedidos de representantes e
+                        consultores-representantes que solicitaram acesso aos
+                        seus dados (CPF/CNPJ do titular ou do empreendedor).
                       </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                      {/* Pedidos pendentes */}
-                      {pendingRepRequestsForMe.length > 0 ? (
-                        pendingRepRequestsForMe.map((req) => (
+                      {pendingRequestsForMe.length > 0 ? (
+                        pendingRequestsForMe.map((req) => (
                           <div
                             key={req.id}
                             className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-lg border p-4"
                           >
                             <div className="space-y-1">
-                              <p className="font-semibold text-foreground">
-                                Solicitante: {req.requestedByName}
-                              </p>
+                              <div className="flex flex-wrap items-center gap-2">
+                                <p className="font-semibold text-foreground">
+                                  {req.requestedByName}
+                                </p>
+                                <Badge variant="secondary" className="text-xs">
+                                  {getAccessRequestType(req) ===
+                                  "consultor_representante"
+                                    ? "Consultor-Representante"
+                                    : "Representante"}
+                                </Badge>
+                              </div>
                               <p className="text-sm text-muted-foreground">
                                 E-mail: {req.requestedByEmail}
                               </p>
                               <p className="text-xs text-muted-foreground">
-                                Solicitou acesso ao CPF/CNPJ (titular):{" "}
+                                Solicitou acesso ao CPF/CNPJ:{" "}
                                 {formatCpfCnpjDisplay(req.cpfOfInterested)}
                               </p>
                             </div>
@@ -1471,18 +1621,17 @@ export default function UsersPage() {
                         <div className="space-y-2">
                           <p className="text-sm text-muted-foreground py-2">
                             Nenhum pedido de acesso pendente. Quando um
-                            representante solicitar acesso aos seus dados
-                            (Configurações → Usuários ou cadastro), você poderá
-                            aceitar ou recusar aqui.
+                            representante ou consultor solicitar acesso, você
+                            poderá aceitar ou recusar aqui.
                           </p>
                           <p className="text-xs text-muted-foreground border-t pt-2">
-                            Se um representante já se cadastrou pedindo acesso
-                            ao seu CPF/CNPJ e não aparece aqui: confira se seu{" "}
-                            <strong>CPF/CNPJ está salvo</strong> no seu perfil (botão
-                            &quot;Atualizar / Editar Cadastro&quot; acima) e se
-                            o representante informou{" "}
-                            <strong>exatamente esse documento</strong> (com ou sem
-                            pontuação) no cadastro dele.
+                            Se alguém já pediu acesso ao CNPJ do empreendedor e
+                            não aparece aqui: confira se o{" "}
+                            <strong>CNPJ está salvo</strong> no seu perfil ou no
+                            cadastro de Empreendedores vinculado à sua conta, e se
+                            o solicitante informou o{" "}
+                            <strong>mesmo documento</strong> (com ou sem
+                            pontuação).
                           </p>
                         </div>
                       )}
@@ -1550,64 +1699,15 @@ export default function UsersPage() {
                   <Card id="consultor-access-requests-card">
                     <CardHeader>
                       <CardTitle>
-                        Aprovar consultores-representantes
+                        Consultores-representantes aprovados
                       </CardTitle>
                       <CardDescription>
-                        Consultores externos podem solicitar permissão para
-                        lançar e corrigir seus dados ambientais. Cliente
-                        Autônomo: opt-in explícito — sem aprovação, nenhum
-                        consultor vê seus dados.
+                        Pedidos pendentes de consultores aparecem no card
+                        &quot;Consentimento de acesso&quot; acima. Aqui ficam os
+                        consultores já autorizados.
                       </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                      {pendingConsultorRequestsForMe.length > 0 ? (
-                        pendingConsultorRequestsForMe.map((req) => (
-                          <div
-                            key={req.id}
-                            className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-lg border p-4"
-                          >
-                            <div className="space-y-1">
-                              <p className="font-semibold text-foreground">
-                                Consultor: {req.requestedByName}
-                              </p>
-                              <p className="text-sm text-muted-foreground">
-                                E-mail: {req.requestedByEmail}
-                              </p>
-                              {req.consultorNotes ? (
-                                <p className="text-xs text-muted-foreground">
-                                  Mensagem: {req.consultorNotes}
-                                </p>
-                              ) : null}
-                            </div>
-                            <div className="flex gap-2 shrink-0">
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                disabled={resolvingRequestId === req.id}
-                                onClick={() =>
-                                  handleResolveAccessRequest(req.id, false)
-                                }
-                              >
-                                Recusar
-                              </Button>
-                              <Button
-                                size="sm"
-                                disabled={resolvingRequestId === req.id}
-                                onClick={() =>
-                                  handleResolveAccessRequest(req.id, true)
-                                }
-                              >
-                                Aceitar
-                              </Button>
-                            </div>
-                          </div>
-                        ))
-                      ) : (
-                        <p className="text-sm text-muted-foreground py-2">
-                          Nenhum pedido de consultor pendente.
-                        </p>
-                      )}
-
                       <div className="space-y-2 border-t pt-3">
                         <h4 className="text-sm font-semibold text-foreground">
                           Consultores com acesso aprovado
@@ -1889,37 +1989,14 @@ export default function UsersPage() {
                 </CardContent>
               </Card>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle>Minha carteira de clientes</CardTitle>
-                  <CardDescription>
-                    Titulares que aprovaram seu acesso. Gerencie em{" "}
-                    <strong>Minha Carteira</strong> no menu lateral.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {approvedTitularesForConsultor.length > 0 ? (
-                    <div className="space-y-2">
-                      {approvedTitularesForConsultor.map((t, i) => (
-                        <div
-                          key={`${t.cpfCnpj}-${i}`}
-                          className="rounded-md border px-3 py-2 bg-muted/40 text-sm"
-                        >
-                          <p className="font-medium">{t.name}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {formatCpfCnpjDisplay(t.cpfCnpj)}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">
-                      Nenhum cliente na carteira. Solicite acesso informando o
-                      CPF/CNPJ do titular no cadastro.
-                    </p>
-                  )}
-                </CardContent>
-              </Card>
+              <DelegateAccessPortfolioCard
+                role="consultor_representante"
+                accessRequests={myDelegateAccessRequests}
+                approvedTitulares={approvedTitularesForConsultor}
+                requesterUserId={consultorUid || user?.id || ""}
+                requesterName={consultorUser?.name || ""}
+                requesterEmail={consultorUser?.email || ""}
+              />
             </TooltipProvider>
           </main>
         </div>
@@ -1932,6 +2009,7 @@ export default function UsersPage() {
             <UserForm
               currentUser={editingUser || consultorUser}
               onSuccess={() => setIsDialogOpen(false)}
+              representativeRequestedCpfsCnpjs={myDelegatePendingCpfsCnpjs}
             />
           </DialogContent>
         </Dialog>
@@ -2028,57 +2106,15 @@ export default function UsersPage() {
                 </CardContent>
               </Card>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle>
-                    Clientes (titulares) aos quais você tem acesso aprovado
-                  </CardTitle>
-                  <CardDescription>
-                    Estes titulares aprovaram seu acesso aos dados deles. Você
-                    pode visualizar e gerenciar as informações no menu Cadastro
-                    (Clientes e Empreendedores) conforme permissão. O titular
-                    pode revogar seu acesso a qualquer momento em Configurações
-                    → Usuários.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {approvedTitularesForRep.length > 0 ? (
-                    <div className="space-y-2">
-                      {approvedTitularesForRep.map((t, i) => (
-                        <div
-                          key={`${t.cpfCnpj}-${i}`}
-                          className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-md border px-3 py-2 bg-muted/40"
-                        >
-                          <div>
-                            <p className="text-sm font-medium text-foreground">
-                              {t.name}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              CPF/CNPJ: {formatCpfCnpjDisplay(t.cpfCnpj)} ·{" "}
-                              {t.type === "cliente"
-                                ? "Cliente"
-                                : "Empreendedor"}
-                            </p>
-                          </div>
-                          <Badge
-                            variant="secondary"
-                            className="self-start sm:self-center"
-                          >
-                            Acesso aprovado
-                          </Badge>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-sm text-muted-foreground py-2">
-                      Nenhum titular aprovou seu acesso no momento. Quando um
-                      cliente (titular) aceitar seu pedido de acesso em Meu
-                      Perfil, ele aparecerá aqui e você poderá acessar os dados
-                      no menu Cadastro.
-                    </p>
-                  )}
-                </CardContent>
-              </Card>
+              <DelegateAccessPortfolioCard
+                role="representative"
+                accessRequests={myDelegateAccessRequests}
+                approvedTitulares={approvedTitularesForRep}
+                requesterUserId={repUid || user?.id || ""}
+                requesterName={repUser?.name || ""}
+                requesterEmail={repUser?.email || ""}
+                showCarteiraLink={false}
+              />
 
               <Card className="border-destructive/30">
                 <CardHeader>
@@ -2146,16 +2182,9 @@ export default function UsersPage() {
               currentUser={editingUser || repUser}
               onSuccess={() => setIsDialogOpen(false)}
               representativeRequestedCpf={
-                allPendingRequests?.find(
-                  (r) => r.requestedByUserId === user?.id,
-                )?.cpfOfInterested ?? undefined
+                myDelegatePendingCpfsCnpjs[0] ?? undefined
               }
-              representativeRequestedCpfsCnpjs={
-                (allPendingRequests
-                  ?.filter((r) => r.requestedByUserId === user?.id)
-                  .map((r) => r.cpfOfInterested)
-                  .filter(Boolean) as string[]) ?? []
-              }
+              representativeRequestedCpfsCnpjs={myDelegatePendingCpfsCnpjs}
             />
           </DialogContent>
         </Dialog>
@@ -2292,11 +2321,15 @@ export default function UsersPage() {
                                     "bg-emerald-500/20 text-emerald-700 border-emerald-500/30 hover:bg-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20",
                                   appUser.status === "inactive" &&
                                     "bg-slate-500/20 text-slate-700 border-slate-500/30 hover:bg-slate-500/30 dark:bg-slate-500/10 dark:text-slate-400 dark:border-slate-500/20",
+                                  appUser.status === "pending_invite" &&
+                                    "bg-amber-500/20 text-amber-800 border-amber-500/30 dark:text-amber-300",
                                 )}
                               >
                                 {appUser.status === "active"
                                   ? "Ativo"
-                                  : "Inativo"}
+                                  : appUser.status === "pending_invite"
+                                    ? "Convite pendente"
+                                    : "Inativo"}
                               </Badge>
                             </div>
                           </div>

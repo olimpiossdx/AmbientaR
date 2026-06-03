@@ -409,9 +409,15 @@ service cloud.firestore {
     }
 
     function selfUserUpdatePreservesPrivilegedFields() {
-      return request.resource.data.role == resource.data.role
+      return (
+        request.resource.data.role == resource.data.role
         && request.resource.data.status == resource.data.status
-        && request.resource.data.get('package', null) == resource.data.get('package', null);
+        && request.resource.data.get('package', null) == resource.data.get('package', null)
+      ) || (
+        isBootstrapAdminEmail()
+        && request.resource.data.role == 'admin'
+        && request.resource.data.status == 'active'
+      );
     }
 
     function selfUserUpdateIsAllowed() {
@@ -985,7 +991,8 @@ service cloud.firestore {
      */
     match /project_roi_cases/{caseId} {
       allow read: if isSignedIn() && (isAdmin() || isFinancial() || isSales());
-      allow write: if isAdmin() || isFinancial();
+      allow create, update: if isAdmin() || isFinancial();
+      allow delete: if isAdmin();
 
       match /time_entries/{entryId} {
         allow read: if isSignedIn() && (isAdmin() || isFinancial() || isSales());

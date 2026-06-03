@@ -24,6 +24,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth, useCollection, useDoc, useFirebase, useMemoFirebase } from '@/firebase';
 import { collection, doc, setDoc } from 'firebase/firestore';
@@ -42,6 +52,7 @@ import { getFirestoreErrorMessage } from '@/lib/firestore-payload';
 import { buildProjectRoiSnapshot } from '@/lib/project-roi-aggregator';
 import {
   createManualRoiCase,
+  deleteRoiCase,
   syncFormalCasesFromContracts,
 } from '@/lib/project-roi-case-service';
 import {
@@ -52,6 +63,7 @@ import { ProjectRoiSemaforoBadge } from '@/components/financial/project-roi-sema
 import { useToast } from '@/hooks/use-toast';
 import { useFinancialMenuDebug } from '@/lib/financial-menu-debug';
 import {
+  canDeleteProjectRoi,
   canReadProjectRoi,
   canWriteProjectRoi,
   isProjectRoiSalesReadOnly,
@@ -60,7 +72,7 @@ import {
   DEFAULT_PROJECT_ROI_SEMAFORO_THRESHOLDS,
   type ProjectRoiCompanySettings,
 } from '@/lib/project-roi-thresholds';
-import { Plus, RefreshCw, FileSignature, AlertTriangle } from 'lucide-react';
+import { Plus, RefreshCw, FileSignature, AlertTriangle, Trash2 } from 'lucide-react';
 
 export default function ProjetosRoiListPage() {
   const { firestore, user } = useFirebase();
@@ -121,7 +133,14 @@ export default function ProjetosRoiListPage() {
   const { data: roiSettings } = useDoc<ProjectRoiCompanySettings>(roiSettingsRef);
 
   const canWrite = canWriteProjectRoi(role);
+  const canDelete = canDeleteProjectRoi(role);
   const salesReadOnly = isProjectRoiSalesReadOnly(role);
+
+  const [caseToDelete, setCaseToDelete] = React.useState<{
+    id: string;
+    title: string;
+  } | null>(null);
+  const [deleting, setDeleting] = React.useState(false);
 
   const projectMap = React.useMemo(() => {
     const m = new Map<string, Project>();
@@ -209,6 +228,34 @@ export default function ProjetosRoiListPage() {
       r.case.statusGovernanca === 'informal',
   );
   const closedRows = rows.filter((r) => r.case.statusGovernanca === 'encerrado');
+
+  async function handleDeleteCase() {
+    if (!firestore || !caseToDelete) return;
+    setDeleting(true);
+    try {
+      const { unlinkedTransactions } = await deleteRoiCase(
+        firestore,
+        caseToDelete.id,
+      );
+      toast({
+        title: 'Projeto excluído',
+        description:
+          unlinkedTransactions > 0
+            ? `${unlinkedTransactions} lançamento(s) desvinculado(s) do caso.`
+            : 'O caso foi removido da lista.',
+      });
+      setCaseToDelete(null);
+    } catch (e) {
+      console.error(e);
+      toast({
+        variant: 'destructive',
+        title: 'Erro ao excluir',
+        description: getFirestoreErrorMessage(e),
+      });
+    } finally {
+      setDeleting(false);
+    }
+  }
 
   async function handleCreateManual() {
     if (!firestore || !manualApelido.trim()) return;
@@ -315,7 +362,13 @@ export default function ProjetosRoiListPage() {
           </div>
 
           <TabsContent value="ativos" className="mt-4">
-            <CasesTable rows={activeRows} loading={loading} salesReadOnly={salesReadOnly} />
+            <CasesTable
+              rows={activeRows}
+              loading={loading}
+              salesReadOnly={salesReadOnly}
+              canDelete={canDelete}
+              onDelete={(id, title) => setCaseToDelete({ id, title })}
+            />
           </TabsContent>
 
           {canWrite && (
@@ -374,7 +427,13 @@ export default function ProjetosRoiListPage() {
           )}
 
           <TabsContent value="encerrados" className="mt-4">
-            <CasesTable rows={closedRows} loading={loading} salesReadOnly={salesReadOnly} />
+            <CasesTable
+              rows={closedRows}
+              loading={loading}
+              salesReadOnly={salesReadOnly}
+              canDelete={canDelete}
+              onDelete={(id, title) => setCaseToDelete({ id, title })}
+            />
           </TabsContent>
         </Tabs>
       </div>
@@ -417,6 +476,37 @@ export default function ProjetosRoiListPage() {
         </DialogContent>
       </Dialog>
       )}
+
+      <AlertDialog
+        open={Boolean(caseToDelete)}
+        onOpenChange={(open) => {
+          if (!open && !deleting) setCaseToDelete(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir projeto?</AlertDialogTitle>
+            <AlertDialogDescription>
+              O caso &quot;{caseToDelete?.title}&quot; será removido permanentemente.
+              Lançamentos de receita, despesa, fatura ou contrato de fornecedor
+              vinculados a ele serão desclassificados (permanecem no sistema).
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={(e) => {
+                e.preventDefault();
+                void handleDeleteCase();
+              }}
+            >
+              {deleting ? 'Excluindo…' : 'Excluir'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
@@ -491,6 +581,8 @@ function CasesTable({
   rows,
   loading,
   salesReadOnly,
+  canDelete,
+  onDelete,
 }: {
   rows: {
     case: ProjectRoiCase;
@@ -499,6 +591,8 @@ function CasesTable({
   }[];
   loading: boolean;
   salesReadOnly?: boolean;
+  canDelete?: boolean;
+  onDelete?: (caseId: string, title: string) => void;
 }) {
   if (loading) {
     return <Skeleton className="h-48 w-full" />;
@@ -574,9 +668,22 @@ function CasesTable({
                   </TableCell>
                 )}
                 <TableCell>
-                  <Button variant="ghost" size="sm" asChild>
-                    <Link href={`/financial/projetos-roi/${c.id}`}>Abrir</Link>
-                  </Button>
+                  <div className="flex items-center justify-end gap-1">
+                    <Button variant="ghost" size="sm" asChild>
+                      <Link href={`/financial/projetos-roi/${c.id}`}>Abrir</Link>
+                    </Button>
+                    {canDelete && onDelete && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-destructive hover:text-destructive"
+                        onClick={() => onDelete(c.id, title)}
+                        title="Excluir projeto"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
                 </TableCell>
               </TableRow>
             ))}

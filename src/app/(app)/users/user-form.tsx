@@ -42,20 +42,20 @@ import {
   query,
   where,
   getDocs,
-  addDoc,
-  type Firestore,
 } from 'firebase/firestore';
+import { createAccessRequestsForDelegate } from '@/lib/delegate-access-requests';
 import { Label } from '@/components/ui/label';
 import { DialogFooter } from '@/components/ui/dialog';
 import { logUserAction } from '@/lib/audit-log';
 import { formatCpfCnpjDisplay } from '@/lib/masks';
 import { lookupClientAndEmpreendedorByDocument, normalizeDocumentDigits } from '@/lib/document-lookup';
+import { linkClientGestaoToExistingRecords } from '@/lib/link-client-gestao-records';
 
 const baseSchema = z.object({
   name: z.string().min(2, 'O nome é obrigatório.'),
   email: z.string().email('Por favor, insira um e-mail válido.'),
   role: z.enum(['admin', 'client', 'cliente_autonomo', 'representative', 'consultor_representante', 'technical', 'sales', 'financial', 'gestor', 'supervisor', 'diretor_fauna', 'advogado']),
-  status: z.enum(['active', 'inactive']),
+  status: z.enum(['active', 'inactive', 'pending_invite']),
   userCpf: z.string().optional(),
   cpf: z.string().optional(),
   cpfs: z.array(z.object({ value: z.string().min(11, 'CPF deve ter 11 dígitos.') })).optional(),
@@ -77,14 +77,14 @@ const createFormSchema = baseSchema
   })
   .refine(
     (data) => {
-      if (data.role !== 'representative') return true;
+      if (data.role !== 'representative' && data.role !== 'consultor_representante') return true;
       const hasCpfs = data.cpfs && data.cpfs.some((c: { value: string }) => (c.value || '').replace(/\D/g, '').length >= 11);
       const hasCnpjs = data.cnpjs && data.cnpjs.some((c: { value: string }) => (c.value || '').replace(/\D/g, '').length >= 14);
       return !!hasCpfs || !!hasCnpjs;
     },
     {
       message:
-        'Para o perfil Representante, informe ao menos um CPF ou CNPJ ao qual solicita acesso.',
+        'Informe ao menos um CPF ou CNPJ do titular ao qual solicita acesso.',
       path: ['cpfs'],
     },
   )
@@ -123,14 +123,14 @@ const editFormSchema = baseSchema
   )
   .refine(
     (data) => {
-      if (data.role !== 'representative') return true;
+      if (data.role !== 'representative' && data.role !== 'consultor_representante') return true;
       const hasCpfs = data.cpfs && data.cpfs.some((c: { value: string }) => (c.value || '').replace(/\D/g, '').length >= 11);
       const hasCnpjs = data.cnpjs && data.cnpjs.some((c: { value: string }) => (c.value || '').replace(/\D/g, '').length >= 14);
       return !!hasCpfs || !!hasCnpjs;
     },
     {
       message:
-        'Para o perfil Representante, informe ao menos um CPF ou CNPJ ao qual solicita acesso.',
+        'Informe ao menos um CPF ou CNPJ do titular ao qual solicita acesso.',
       path: ['cpfs'],
     },
   )
@@ -208,74 +208,6 @@ const resolvePortalDocument = (
 const getEntityTypeFromDocument = (value: string) =>
   normalizeDocumentDigits(value).length === 14 ? 'Pessoa Jurídica' as const : 'Pessoa Física' as const;
 
-/** Vincula `userId` em clientes/empreendedores já cadastrados (perfil Cliente Gestão). */
-async function linkClientGestaoToExistingRecords(
-  firestore: Firestore,
-  userId: string,
-  portalDocument: string,
-  profile: { name: string; email: string },
-  linkedClientId: string | null,
-  linkedEmpreendedorId: string | null,
-): Promise<{ linkedClientId: string | null; linkedEmpreendedorId: string | null }> {
-  if (portalDocument.length !== 11 && portalDocument.length !== 14) {
-    return { linkedClientId, linkedEmpreendedorId };
-  }
-
-  const { client, empreendedor } = await lookupClientAndEmpreendedorByDocument(
-    firestore,
-    portalDocument,
-  );
-  const clientDocId = linkedClientId || client?.id;
-  const empreendedorDocId = linkedEmpreendedorId || empreendedor?.id;
-
-  if (!clientDocId && !empreendedorDocId) {
-    return { linkedClientId, linkedEmpreendedorId };
-  }
-
-  const entityType = getEntityTypeFromDocument(portalDocument);
-  const linkedData = {
-    name: profile.name,
-    email: profile.email,
-    cpfCnpj: portalDocument,
-    entityType,
-    userId,
-  };
-  const linkedEmpreendedorData = {
-    name: profile.name,
-    email: profile.email,
-    cpfCnpj: portalDocument,
-    entityType: [entityType],
-    userId,
-  };
-
-  if (clientDocId) {
-    await setDoc(doc(firestore, 'clients', clientDocId), linkedData, { merge: true });
-  }
-  if (empreendedorDocId) {
-    await setDoc(doc(firestore, 'empreendedores', empreendedorDocId), linkedEmpreendedorData, {
-      merge: true,
-    });
-  }
-
-  const existingClients = await getDocs(
-    query(collection(firestore, 'clients'), where('userId', '==', userId)),
-  );
-  const existingEmpreendedores = await getDocs(
-    query(collection(firestore, 'empreendedores'), where('userId', '==', userId)),
-  );
-  for (const snap of existingClients.docs) {
-    await updateDoc(doc(firestore, 'clients', snap.id), linkedData);
-  }
-  for (const snap of existingEmpreendedores.docs) {
-    await updateDoc(doc(firestore, 'empreendedores', snap.id), linkedEmpreendedorData);
-  }
-
-  return {
-    linkedClientId: clientDocId ?? linkedClientId,
-    linkedEmpreendedorId: empreendedorDocId ?? linkedEmpreendedorId,
-  };
-}
-
 export function UserForm({ currentUser, onSuccess, representativeRequestedCpf, representativesForThisClient, representativeRequestedCpfsCnpjs }: UserFormProps) {
   const [loading, setLoading] = React.useState(false);
   const [showPassword, setShowPassword] = React.useState(false);
@@ -303,10 +235,10 @@ export function UserForm({ currentUser, onSuccess, representativeRequestedCpf, r
       confirmPassword: '',
       userCpf: currentUser?.userCpf || currentUser?.cpf || '',
       cpf: currentUser?.cpf || '',
-      cpfs: currentUser?.role === 'representative' && representativeRequestedCpfsCnpjs?.length
+      cpfs: (currentUser?.role === 'representative' || currentUser?.role === 'consultor_representante') && representativeRequestedCpfsCnpjs?.length
         ? representativeRequestedCpfsCnpjs.filter(v => (v || '').replace(/\D/g, '').length === 11).map(v => ({ value: v || '' }))
         : [],
-      cnpjs: currentUser?.cnpjs?.length ? currentUser.cnpjs.map(c => ({ value: c })) : (currentUser?.role === 'representative' && representativeRequestedCpfsCnpjs?.length ? representativeRequestedCpfsCnpjs.filter(v => (v || '').replace(/\D/g, '').length === 14).map(v => ({ value: v || '' })) : []),
+      cnpjs: currentUser?.cnpjs?.length ? currentUser.cnpjs.map(c => ({ value: c })) : ((currentUser?.role === 'representative' || currentUser?.role === 'consultor_representante') && representativeRequestedCpfsCnpjs?.length ? representativeRequestedCpfsCnpjs.filter(v => (v || '').replace(/\D/g, '').length === 14).map(v => ({ value: v || '' })) : []),
       dataNascimento: currentUser?.dataNascimento ? new Date(currentUser.dataNascimento) : undefined,
       photoURL: currentUser?.photoURL || '',
     },
@@ -464,27 +396,23 @@ export function UserForm({ currentUser, onSuccess, representativeRequestedCpf, r
             }
           }
 
-          if (values.role === 'representative' && currentUser.id) {
-            const existingSet = new Set((representativeRequestedCpfsCnpjs || []).map(v => (v || '').replace(/\D/g, '')));
-            const allCpfCnpj = [...cpfsArray, ...cnpjsArray];
-            for (const cpfOuCnpj of allCpfCnpj) {
-              const normalized = normalizeDocumentDigits(cpfOuCnpj);
-              const digits = normalized;
-              if (digits.length < 11 || existingSet.has(digits)) continue;
-              existingSet.add(digits);
-              try {
-                await addDoc(collection(firestore, 'access_requests'), {
-                  requestedByUserId: currentUser.id,
-                  requestedByEmail: values.email,
-                  requestedByName: values.name,
-                  cpfOfInterested: normalized,
-                  status: 'pending',
-                  createdAt: new Date().toISOString(),
-                } as Omit<AccessRequest, 'id'>);
-              } catch (e) {
-                console.warn('Erro ao criar pedido de acesso para', normalized, e);
-              }
-            }
+          if (
+            (values.role === 'representative' || values.role === 'consultor_representante') &&
+            currentUser.id
+          ) {
+            const existingSet = new Set(
+              (representativeRequestedCpfsCnpjs || []).map((v) =>
+                normalizeDocumentDigits(v),
+              ),
+            );
+            await createAccessRequestsForDelegate(firestore, {
+              requesterUserId: currentUser.id,
+              email: values.email,
+              name: values.name,
+              role: values.role,
+              documents: [...cpfsArray, ...cnpjsArray],
+              existingDigits: existingSet,
+            });
           }
           toast({
             title: 'Usuário atualizado!',
@@ -629,26 +557,14 @@ export function UserForm({ currentUser, onSuccess, representativeRequestedCpf, r
               }
             }
 
-            // Representante: criar um pedido de acesso por CPF/CNPJ informado (titular aprovará em Meu Perfil).
-            if (values.role === 'representative') {
-                const accessRequestsRef = collection(firestore, 'access_requests');
-                const allCpfCnpj = [...cpfsArray, ...cnpjsArray];
-                for (const cpfOuCnpj of allCpfCnpj) {
-                    const normalized = normalizeDocumentDigits(cpfOuCnpj);
-                    if (normalized.length !== 11 && normalized.length !== 14) continue;
-                    try {
-                        await addDoc(accessRequestsRef, {
-                            requestedByUserId: newUserId,
-                            requestedByEmail: values.email,
-                            requestedByName: values.name,
-                            cpfOfInterested: normalized,
-                            status: 'pending',
-                            createdAt: new Date().toISOString(),
-                        } as Omit<AccessRequest, 'id'>);
-                    } catch (e) {
-                        console.warn('Erro ao criar pedido de acesso para', normalized, e);
-                    }
-                }
+            if (values.role === 'representative' || values.role === 'consultor_representante') {
+              await createAccessRequestsForDelegate(firestore, {
+                requesterUserId: newUserId,
+                email: values.email,
+                name: values.name,
+                role: values.role,
+                documents: [...cpfsArray, ...cnpjsArray],
+              });
             }
 
             toast({
@@ -861,17 +777,21 @@ export function UserForm({ currentUser, onSuccess, representativeRequestedCpf, r
                                 </li>
                               ))}
                             </ul>
-                            <p className="text-xs text-muted-foreground">Aprove ou rejeite em Configurações → Usuários (Meu Perfil) → card &quot;Aprovar acesso de representantes&quot;.</p>
+                            <p className="text-xs text-muted-foreground">Aprove ou rejeite em Configurações → Usuários (Meu Perfil) → consentimento de acesso.</p>
                           </div>
                         ) : (
                           <p className="text-xs text-muted-foreground">Nenhum representante solicitou acesso no momento. Quando alguém solicitar, aparecerá aqui e em Meu Perfil.</p>
                         )}
                     </div>
                     )}
-                    {form.watch('role') === 'representative' && (
+                    {(form.watch('role') === 'representative' ||
+                      form.watch('role') === 'consultor_representante') && (
                     <div className='space-y-4 rounded-md border p-4'>
                         <h3 className="text-sm font-medium">CPFs/CNPJs ao qual solicito acesso</h3>
-                        <p className='text-sm text-muted-foreground'>Informe o CPF ou CNPJ de cada titular cujos dados você deseja acessar. O titular aprovará (ou não) em Meu Perfil.</p>
+                        <p className='text-sm text-muted-foreground'>
+                          Informe o CPF ou CNPJ de cada titular ou empreendedor cujos dados você deseja acessar.
+                          O titular aprovará (ou não) em Configurações → Usuários → consentimento de acesso.
+                        </p>
                         <div>
                           <Label>CPFs</Label>
                           {cpfsFields.map((field, index) => (

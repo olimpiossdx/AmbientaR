@@ -41,6 +41,7 @@ import {
 } from '@/lib/project-roi-aggregator';
 import {
   encerrarRoiCase,
+  deleteRoiCase,
   linkManualCaseToContract,
   reabrirRoiCase,
 } from '@/lib/project-roi-case-service';
@@ -57,6 +58,7 @@ import { TransactionForm } from '@/app/(app)/cash-flow/transaction-form';
 import { useToast } from '@/hooks/use-toast';
 import { useFinancialMenuDebug } from '@/lib/financial-menu-debug';
 import {
+  canDeleteProjectRoi,
   canReadProjectRoi,
   canWriteProjectRoi,
   isProjectRoiSalesReadOnly,
@@ -74,6 +76,17 @@ import {
 } from '@/components/ui/select';
 import { ArrowLeft, Download, Plus, Trash2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { getFirestoreErrorMessage } from '@/lib/firestore-payload';
 
 export default function ProjetosRoiDetailPage() {
   const params = useParams();
@@ -98,7 +111,11 @@ export default function ProjetosRoiDetailPage() {
   const { data: roiSettings } = useDoc<ProjectRoiCompanySettings>(roiSettingsRef);
 
   const canWrite = canWriteProjectRoi(role);
+  const canDelete = canDeleteProjectRoi(role);
   const salesReadOnly = isProjectRoiSalesReadOnly(role);
+
+  const [deleteOpen, setDeleteOpen] = React.useState(false);
+  const [deleting, setDeleting] = React.useState(false);
 
   const revenuesQ = useMemoFirebase(
     () => (firestore && user ? collection(firestore, 'revenues') : null),
@@ -318,15 +335,52 @@ export default function ProjetosRoiDetailPage() {
     roiCase.sourceProposalNumber ||
     roiCase.id;
 
+  async function handleDeleteCase() {
+    if (!firestore || !caseId) return;
+    setDeleting(true);
+    try {
+      const { unlinkedTransactions } = await deleteRoiCase(firestore, caseId);
+      toast({
+        title: 'Projeto excluído',
+        description:
+          unlinkedTransactions > 0
+            ? `${unlinkedTransactions} lançamento(s) desvinculado(s) do caso.`
+            : 'O caso foi removido.',
+      });
+      router.push('/financial/projetos-roi');
+    } catch (e) {
+      console.error(e);
+      toast({
+        variant: 'destructive',
+        title: 'Erro ao excluir',
+        description: getFirestoreErrorMessage(e),
+      });
+    } finally {
+      setDeleting(false);
+      setDeleteOpen(false);
+    }
+  }
+
   return (
     <div className="flex flex-col h-full">
       <PageHeader title={title} description="Detalhe do caso — Projetos & ROI">
-        <Button variant="outline" asChild>
-          <Link href="/financial/projetos-roi">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Voltar
-          </Link>
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          {canDelete && (
+            <Button
+              variant="destructive"
+              onClick={() => setDeleteOpen(true)}
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Excluir
+            </Button>
+          )}
+          <Button variant="outline" asChild>
+            <Link href="/financial/projetos-roi">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Voltar
+            </Link>
+          </Button>
+        </div>
       </PageHeader>
 
       <div className="flex-1 overflow-auto p-4 md:p-6">
@@ -970,6 +1024,32 @@ export default function ProjetosRoiDetailPage() {
           </TabsContent>
         </Tabs>
       </div>
+
+      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir projeto?</AlertDialogTitle>
+            <AlertDialogDescription>
+              O caso &quot;{title}&quot; será removido permanentemente.
+              Lançamentos vinculados serão desclassificados (permanecem no
+              sistema).
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={(e) => {
+                e.preventDefault();
+                void handleDeleteCase();
+              }}
+            >
+              {deleting ? 'Excluindo…' : 'Excluir'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

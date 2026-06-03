@@ -3,9 +3,13 @@
 import {
   addDoc,
   collection,
+  deleteDoc,
   doc,
   getDoc,
+  getDocs,
+  query,
   updateDoc,
+  where,
 } from 'firebase/firestore';
 import type { Firestore } from 'firebase/firestore';
 import type { Contract, ProjectRoiCase } from '@/lib/types';
@@ -133,6 +137,44 @@ export async function reabrirRoiCase(
 }
 
 /** Promove caso manual para formal quando contrato assinado é vinculado. */
+/** Exclui caso gerencial, apaga horas e desvincula lançamentos classificados nele. */
+export async function deleteRoiCase(
+  firestore: Firestore,
+  caseId: string,
+): Promise<{ unlinkedTransactions: number }> {
+  const entriesSnap = await getDocs(
+    collection(firestore, 'project_roi_cases', caseId, 'time_entries'),
+  );
+  await Promise.all(
+    entriesSnap.docs.map((d) =>
+      deleteDoc(
+        doc(firestore, 'project_roi_cases', caseId, 'time_entries', d.id),
+      ),
+    ),
+  );
+
+  let unlinkedTransactions = 0;
+  for (const coll of [
+    'revenues',
+    'expenses',
+    'invoices',
+    'supplierContracts',
+  ] as const) {
+    const snap = await getDocs(
+      query(collection(firestore, coll), where('projectRoiCaseId', '==', caseId)),
+    );
+    await Promise.all(
+      snap.docs.map(async (d) => {
+        await updateDoc(doc(firestore, coll, d.id), { projectRoiCaseId: '' });
+        unlinkedTransactions += 1;
+      }),
+    );
+  }
+
+  await deleteDoc(doc(firestore, 'project_roi_cases', caseId));
+  return { unlinkedTransactions };
+}
+
 export async function linkManualCaseToContract(
   firestore: Firestore,
   caseId: string,

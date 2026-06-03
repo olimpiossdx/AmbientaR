@@ -131,6 +131,8 @@ export type Client = {
   approvedConsultorIds?: string[];
   /** Consultor principal ativo na carteira deste cliente. */
   primaryConsultorUid?: string;
+  /** UIDs com login portal Cliente Gestão vinculado a este cadastro (vários responsáveis). */
+  portalUserIds?: string[];
   entityType?: EntityType;
   phone?: string;
   email?: string;
@@ -1643,7 +1645,7 @@ export type AppUser = {
   displayName?: string;
   email: string;
   role: UserRole;
-  status: 'active' | 'inactive';
+  status: 'active' | 'inactive' | 'pending_invite';
   /** CPF pessoal do usuário (identificação). */
   userCpf?: string;
   /** CPF/CNPJ do interessado: usado para vincular e acessar dados de empreendedor/cliente. */
