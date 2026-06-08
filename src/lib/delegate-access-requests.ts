@@ -28,6 +28,7 @@ export async function createAccessRequestsForDelegate(
         requestedByEmail: params.email,
         requestedByName: params.name,
         cpfOfInterested: normalized,
+        targetDocument: normalized,
         requestType,
         status: "pending",
         createdAt: new Date().toISOString(),

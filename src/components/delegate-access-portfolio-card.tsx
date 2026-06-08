@@ -201,7 +201,7 @@ export function DelegateAccessPortfolioCard({
 
   return (
     <>
-      <Card>
+      <Card id="delegate-access-portfolio">
         <CardHeader>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div className="space-y-1.5">

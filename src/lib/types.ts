@@ -1694,6 +1694,7 @@ export type AccessRequest = {
   requestedByName: string;
   /** CPF ou CNPJ do titular dos dados (interessado) cujo cadastro o solicitante quer acessar. */
   cpfOfInterested: string;
+  targetDocument?: string;
   /** Tipo de delegação solicitada (omitido = representante, retrocompatível). */
   requestType?: AccessRequestType;
   /** Mensagem opcional do consultor ao titular. */
@@ -1702,6 +1703,28 @@ export type AccessRequest = {
   createdAt: any;
   resolvedAt?: any;
   resolvedByUserId?: string;
+};
+
+export type DelegateInviteStatus =
+  | "pending"
+  | "pending_professional_ack"
+  | "accepted"
+  | "expired";
+
+export type DelegateInvite = {
+  id: string;
+  createdByUserId: string;
+  createdByName?: string;
+  titularDocument: string;
+  targetEmail?: string;
+  targetCpf?: string;
+  targetUserId?: string;
+  targetUserName?: string;
+  role: AccessRequestType;
+  status: DelegateInviteStatus;
+  createdAt: string;
+  acceptedAt?: string;
+  acceptedByUserId?: string;
 };
 
 export type ConsultorAssignmentStatus =
