@@ -36,7 +36,6 @@ import {
   where,
   getDocs,
   doc,
-  setDoc,
 } from "firebase/firestore";
 import type {
   AppUser,
@@ -54,6 +53,7 @@ import AgendaWidget from "./agenda-widget";
 import { DocumentosAmbientaisHubCard } from "@/components/documentos-ambientais-hub-card";
 import { DOCUMENTOS_AMBIENTAIS_MENU_LABEL } from "@/lib/navigation-config";
 import { ProfileNavigationHubCard } from "@/components/profile-navigation-hub-card";
+import { TitularOnboardingCard } from "@/components/titular-onboarding-card";
 
 /** Retorna apenas dígitos do CPF/CNPJ para comparação. */
 function onlyDigits(value: string): string {
@@ -114,7 +114,6 @@ export default function ClientDashboard() {
           setEmpreendedorIds(["non-existent-placeholder"]);
           return;
         }
-        const cpfNorm = onlyDigits((user as any).cpf || "");
         const clientsRef = collection(firestore, "clients");
         const empreendedoresRef = collection(firestore, "empreendedores");
         const qByUserId = query(empreendedoresRef, where("userId", "==", uid));
@@ -159,42 +158,6 @@ export default function ClientDashboard() {
               const firstClient = snapClientU.docs[0] || snapClientA.docs[0];
               if (firstClient) setClientId(firstClient.id);
 
-              if (empIds.size === 0 && uid && cpfNorm.length >= 11) {
-                try {
-                  const clientRef = doc(firestore, "clients", uid);
-                  const empreendedorRef = doc(firestore, "empreendedores", uid);
-                  await setDoc(
-                    clientRef,
-                    {
-                      name: user.name,
-                      cpfCnpj: cpfNorm,
-                      entityType: "Pessoa Física",
-                      phone: (user as any).phone || "",
-                      email: user.email,
-                      userId: uid,
-                    },
-                    { merge: true },
-                  );
-                  await setDoc(
-                    empreendedorRef,
-                    {
-                      name: user.name,
-                      email: user.email,
-                      phone: (user as any).phone || "",
-                      address: "",
-                      cpfCnpj: cpfNorm,
-                      entityType: ["Pessoa Física"],
-                      userId: uid,
-                    },
-                    { merge: true },
-                  );
-                  setClientId(uid);
-                  setEmpreendedorIds([uid]);
-                  return;
-                } catch (e) {
-                  console.error("Reparo client/empreendedor:", e);
-                }
-              }
               setEmpreendedorIds(
                 empIds.size > 0
                   ? Array.from(empIds)
@@ -616,6 +579,7 @@ export default function ClientDashboard() {
         }
       />
       <main className="flex-1 overflow-auto p-4 md:p-6 space-y-8">
+        {user && <TitularOnboardingCard user={user as AppUser} />}
         {user?.role && <DocumentosAmbientaisHubCard role={user.role} />}
         {user?.role && (
           <ProfileNavigationHubCard

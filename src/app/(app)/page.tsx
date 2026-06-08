@@ -88,6 +88,7 @@ export default function DashboardRouterPage() {
     client: <ClientDashboard />,
     cliente_autonomo: <ClientDashboard />,
     representative: <ClientDashboard />,
+    consultor_representante: <ClientDashboard />,
     diretor_fauna: <FaunaDashboard />,
     gestor: (
       <div className="flex flex-col h-full">
