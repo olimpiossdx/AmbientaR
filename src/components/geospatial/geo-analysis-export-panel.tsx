@@ -27,8 +27,6 @@ import {
   exportCartographicFromWaveA,
   type CartographicExportFormat,
 } from "@/lib/geospatial/export-cartographic-client";
-import { buildCartographicDocxBlob } from "@/lib/geospatial/export-cartographic-docx";
-import { buildComplementDocxBlob } from "@/lib/geospatial/export-complement-docx";
 import {
   brandingUrlsFromLocal,
   guardBrandingExportFromHook,
@@ -172,6 +170,9 @@ export function GeoAnalysisExportPanel({
 
         let blob: Blob;
         if (complement && (scope === "complete" || includeIaInPdf)) {
+          const { buildComplementDocxBlob } = await import(
+            "@/lib/geospatial/export-complement-docx"
+          );
           let cartographicPngs;
           try {
             cartographicPngs = await buildCartographicPngMap(wave, {
@@ -193,6 +194,9 @@ export function GeoAnalysisExportPanel({
             layerId: effectiveLayerId,
           });
         } else {
+          const { buildCartographicDocxBlob } = await import(
+            "@/lib/geospatial/export-cartographic-docx"
+          );
           blob = await buildCartographicDocxBlob(wave, {
             ...cartoOptions,
             layerId: effectiveLayerId,

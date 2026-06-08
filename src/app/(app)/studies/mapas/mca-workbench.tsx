@@ -31,7 +31,6 @@ import type { StudyAreaGeoJSON } from "@/components/maps/study-area-map";
 import type { Feature, FeatureCollection } from "geojson";
 import { MCA_ETAPA_COUNT, MCA_ETAPA_LABELS } from "@/lib/mca/etapas";
 import type { McaEtapaStatus, McaProjectDoc } from "@/lib/mca/types";
-import type { McaProjectListItem } from "@/lib/mca/project-list-item";
 import {
   Loader2,
   Play,
@@ -56,14 +55,14 @@ import { parseStudyAreaFileText } from "@/lib/study-maps/import-area-file";
 import { MCA_GOLD_PRESETS, type McaGoldPresetId } from "@/lib/mca/gold-presets";
 import { fetchGoldPerimeter } from "@/lib/mca/gold-perimeters-fetch";
 import { validateMcaPerimeter } from "@/lib/mca/perimeter-validation";
-
-const McaPerimeterDrawMap = dynamic(
-  () =>
-    import("@/components/maps/mca-perimeter-draw-map").then((m) => ({
-      default: m.McaPerimeterDrawMap,
-    })),
-  { ssr: false },
-);
+import { useMcaTurfArea } from "@/features/mca/hooks/useMcaTurfArea";
+import { McaPerimeterCapturePanel } from "@/features/mca/components/McaPerimeterCapturePanel";
+import {
+  MCA_PDF_SATELLITE_PREF_KEY,
+  type McaLayerManifestRow,
+  type McaPerimeterInputMode,
+  type McaProjectRow,
+} from "@/features/mca/types/mca-workbench.types";
 
 const McaUnifiedMap = dynamic(
   () =>
@@ -73,19 +72,12 @@ const McaUnifiedMap = dynamic(
   { ssr: false },
 );
 
-type McaPerimeterInputMode = "draw" | "car" | "coordinates" | "paste" | "kml_file" | "shp";
-
-type ProjectRow = McaProjectListItem;
-type McaLayerManifestRow = { id: string; featureCount: number };
-
-const MCA_PDF_SATELLITE_PREF_KEY = "mca-pdf-include-satellite";
-
 export function McaWorkbench() {
   const { auth } = useFirebase();
   const { user, isInitialized } = useAuth();
   const { toast } = useToast();
   const [polygon, setPolygon] = React.useState<StudyAreaGeoJSON | null>(null);
-  const [projects, setProjects] = React.useState<ProjectRow[]>([]);
+  const [projects, setProjects] = React.useState<McaProjectRow[]>([]);
   const [activeId, setActiveId] = React.useState<string | null>(null);
   const [busy, setBusy] = React.useState(false);
   const [health, setHealth] = React.useState<string>("—");
@@ -230,23 +222,7 @@ export function McaWorkbench() {
     scale: "1:12.000",
   });
 
-  const turfAreaRef = React.useRef<((geo: never) => number) | null>(null);
-  const [turfAreaReady, setTurfAreaReady] = React.useState(false);
-  React.useEffect(() => {
-    void import("@turf/area").then((m) => {
-      turfAreaRef.current = m.default;
-      setTurfAreaReady(true);
-    });
-  }, []);
-  const computeAreaHa = (geo: unknown): number | null => {
-    const fn = turfAreaRef.current;
-    if (!fn) return null;
-    try {
-      return fn(geo as never) / 10_000;
-    } catch {
-      return null;
-    }
-  };
+  const { turfAreaReady, computeAreaHa } = useMcaTurfArea();
 
   const bearer = React.useCallback(async () => {
     const u = auth?.currentUser;
@@ -319,9 +295,9 @@ export function McaWorkbench() {
   }, []);
 
   const polygonAreaHa = React.useMemo(() => {
-    if (!polygon) return null;
+    if (!polygon || !turfAreaReady) return null;
     return computeAreaHa(polygon);
-  }, [polygon, turfAreaReady]);
+  }, [polygon, turfAreaReady, computeAreaHa]);
 
   const declaredAreaHa = React.useMemo(() => {
     const raw = form.areaTotalHa.trim().replace(",", ".");
@@ -1395,18 +1371,24 @@ export function McaWorkbench() {
     }
   };
 
-  const applyParsedPerimeter = (
-    geojson: StudyAreaGeoJSON,
-    meta?: { areaHa?: number; source?: string; label?: string },
-  ) => {
-    setPolygon(geojson);
-    setMapMode("edit");
-    const ha = meta?.areaHa ?? computeAreaHa(geojson);
-    toast({
-      title: meta?.label ?? "Perímetro aplicado",
-      description: ha != null ? `${ha.toFixed(2)} ha${meta?.source ? ` · ${meta.source}` : ""}` : undefined,
-    });
-  };
+  const applyParsedPerimeter = React.useCallback(
+    (
+      geojson: StudyAreaGeoJSON,
+      meta?: { areaHa?: number; source?: string; label?: string },
+    ) => {
+      setPolygon(geojson);
+      setMapMode("edit");
+      const ha = meta?.areaHa ?? computeAreaHa(geojson);
+      toast({
+        title: meta?.label ?? "Perímetro aplicado",
+        description:
+          ha != null
+            ? `${ha.toFixed(2)} ha${meta?.source ? ` · ${meta.source}` : ""}`
+            : undefined,
+      });
+    },
+    [toast, computeAreaHa],
+  );
 
   const parsePerimeterFromApi = React.useCallback(
     async (
@@ -1444,7 +1426,29 @@ export function McaWorkbench() {
         setIsParsingPerimeter(false);
       }
     },
-    [bearer, toast],
+    [bearer, applyParsedPerimeter],
+  );
+
+  const handleShpFileSelected = React.useCallback(
+    async (file: File) => {
+      if (file.size > 8 * 1024 * 1024) {
+        toast({
+          variant: "destructive",
+          title: "Arquivo grande demais",
+          description: "Use um ZIP até 8 MB.",
+        });
+        return;
+      }
+      const buf = await file.arrayBuffer();
+      const bytes = new Uint8Array(buf);
+      let binary = "";
+      for (let i = 0; i < bytes.length; i++) {
+        binary += String.fromCharCode(bytes[i]!);
+      }
+      setShpZipBase64(btoa(binary));
+      setShpFileName(file.name);
+    },
+    [toast],
   );
 
   const handleUseCurrentCoordinates = () => {
@@ -1708,222 +1712,33 @@ export function McaWorkbench() {
       title="MCA — Motor Cartográfico"
       description={`${health} · Desenhe o perímetro no mapa abaixo antes de criar o projeto.`}
       mapPane={
-        <Card id="mca-perimeter-capture" className="flex w-full flex-col overflow-hidden">
-          <CardHeader className="shrink-0 space-y-1 pb-3">
-            <CardTitle>Captura do perímetro</CardTitle>
-            <CardDescription>
-              Desenhe no mapa, importe SHP/KML/GeoJSON, informe coordenadas ou associe o
-              número CAR ao projeto. Fluxo exclusivo do submenu Mapas (MCA).
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-4 pt-0">
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              <div className="space-y-1.5 sm:col-span-2 lg:col-span-1">
-                <Label htmlFor="mca-perimeter-mode">Origem do perímetro</Label>
-                <Select
-                  value={perimeterInputMode}
-                  onValueChange={(v) => setPerimeterInputMode(v as McaPerimeterInputMode)}
-                >
-                  <SelectTrigger id="mca-perimeter-mode">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="draw">Desenho no mapa</SelectItem>
-                    <SelectItem value="car">Número CAR (metadado)</SelectItem>
-                    <SelectItem value="coordinates">Coordenadas (lat, lng)</SelectItem>
-                    <SelectItem value="paste">Colar GeoJSON / WKT / KML</SelectItem>
-                    <SelectItem value="kml_file">Ficheiro KML / GeoJSON</SelectItem>
-                    <SelectItem value="shp">Shapefile ZIP (.shp)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              {perimeterInputMode === "car" ? (
-                <div className="space-y-1.5 sm:col-span-2">
-                  <Label htmlFor="mca-car">Recibo CAR</Label>
-                  <div className="flex flex-wrap gap-2">
-                    <Input
-                      id="mca-car"
-                      className="min-w-[200px] flex-1"
-                      placeholder="Ex.: MG-3106200-1234.ABCD…"
-                      value={carInput}
-                      onChange={(e) => setCarInput(e.target.value)}
-                    />
-                    <Button type="button" variant="secondary" onClick={handleAssociateCar}>
-                      Associar CAR
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      disabled={isConsultingCar || carInput.trim().length < 8}
-                      onClick={() => void handleConsultCar("codImovel")}
-                    >
-                      {isConsultingCar ? (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      ) : null}
-                      Consultar SICAR
-                    </Button>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    A consulta usa o WFS público do SICAR (situação, área, município). Se a
-                    geometria estiver disponível, ela será aplicada ao mapa. Também pode importar
-                    SHP/KML do{" "}
-                    <a
-                      href="https://www.car.gov.br/"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="underline"
-                    >
-                      SICAR
-                    </a>{" "}
-                    (SHP/KML).
-                  </p>
-                </div>
-              ) : null}
-              {perimeterInputMode === "coordinates" ? (
-                <div className="space-y-1.5 sm:col-span-2">
-                  <Label htmlFor="mca-coords">Coordenadas (lat, lng)</Label>
-                  <div className="flex flex-wrap gap-2">
-                    <Input
-                      id="mca-coords"
-                      className="min-w-[200px] flex-1 font-mono text-sm"
-                      placeholder="-19.922731, -43.945095"
-                      value={coordinateInput}
-                      onChange={(e) => setCoordinateInput(e.target.value)}
-                    />
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      disabled={isParsingPerimeter}
-                      onClick={() => void handleApplyCoordinates()}
-                    >
-                      {isParsingPerimeter ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        "Aplicar coordenadas"
-                      )}
-                    </Button>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Gera um buffer mínimo (~80 m). Para limite real da propriedade, prefira
-                    desenho ou SHP.
-                  </p>
-                </div>
-              ) : null}
-            </div>
-            <div className="relative min-h-[680px] w-full md:min-h-[760px] lg:min-h-[820px]">
-              <div className="absolute inset-0 overflow-hidden rounded-md border">
-                <McaPerimeterDrawMap polygon={polygon} onPolygonChange={setPolygon} />
-              </div>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <Button type="button" variant="outline" onClick={handleUseCurrentCoordinates}>
-                Capturar coordenada atual
-              </Button>
-              <Button type="button" variant="outline" onClick={handleConfirmDrawnPolygon}>
-                Confirmar polígono desenhado
-              </Button>
-            </div>
-            {coordinateHint ? (
-              <p className="text-xs text-muted-foreground">
-                Referência GPS:{" "}
-                <span className="font-mono">{coordinateHint}</span> (desenhe o limite no mapa)
-              </p>
-            ) : null}
-            {polygonAreaHa != null ? (
-              <p className="text-sm font-medium text-primary">
-                Área do perímetro: {polygonAreaHa.toFixed(2)} ha
-              </p>
-            ) : (
-              <p className="text-xs text-muted-foreground">
-                Nenhum perímetro definido — desenhe ou importe para activar Criar / Guardar.
-              </p>
-            )}
-            <div className="grid gap-4 md:grid-cols-2">
-              {perimeterInputMode === "kml_file" ? (
-                <div className="space-y-2 md:col-span-2">
-                  <Label htmlFor="mca-perimeter-file">Importar KML / GeoJSON</Label>
-                  <Input
-                    id="mca-perimeter-file"
-                    type="file"
-                    accept=".geojson,.json,.kml,.xml,application/geo+json"
-                    onChange={(e) => onImportFile(e.target.files?.[0] ?? null)}
-                  />
-                </div>
-              ) : null}
-              {perimeterInputMode === "shp" ? (
-                <div className="space-y-2 md:col-span-2">
-                  <Label htmlFor="mca-shp-upload">Shapefile ZIP (.shp + .shx + .dbf)</Label>
-                  <Input
-                    id="mca-shp-upload"
-                    type="file"
-                    accept=".zip,application/zip"
-                    onChange={async (e) => {
-                      const file = e.target.files?.[0];
-                      if (!file) return;
-                      if (file.size > 8 * 1024 * 1024) {
-                        toast({
-                          variant: "destructive",
-                          title: "Arquivo grande demais",
-                          description: "Use um ZIP até 8 MB.",
-                        });
-                        return;
-                      }
-                      const buf = await file.arrayBuffer();
-                      const bytes = new Uint8Array(buf);
-                      let binary = "";
-                      for (let i = 0; i < bytes.length; i++) {
-                        binary += String.fromCharCode(bytes[i]!);
-                      }
-                      setShpZipBase64(btoa(binary));
-                      setShpFileName(file.name);
-                    }}
-                  />
-                  {shpFileName ? (
-                    <p className="text-xs text-muted-foreground">
-                      Carregado: {shpFileName}. Clique em aplicar para ler o polígono.
-                    </p>
-                  ) : null}
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="sm"
-                    disabled={!shpZipBase64 || isParsingPerimeter}
-                    onClick={() => void handleApplyShp()}
-                  >
-                    {isParsingPerimeter ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : null}
-                    Aplicar SHP
-                  </Button>
-                </div>
-              ) : null}
-              {perimeterInputMode === "paste" ? (
-                <div className="space-y-2 md:col-span-2">
-                  <Label htmlFor="mca-perimeter-paste">Colar GeoJSON, WKT ou KML</Label>
-                  <Textarea
-                    id="mca-perimeter-paste"
-                    value={polygonPaste}
-                    onChange={(e) => setPolygonPaste(e.target.value)}
-                    placeholder='{"type":"Polygon","coordinates":[...]} ou POLYGON((...))'
-                    className="min-h-[72px] font-mono text-xs"
-                  />
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="sm"
-                    disabled={!polygonPaste.trim() || isParsingPerimeter}
-                    onClick={() => void handleApplyPolygonPaste()}
-                  >
-                    {isParsingPerimeter ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : null}
-                    Aplicar geometria colada
-                  </Button>
-                </div>
-              ) : null}
-            </div>
-          </CardContent>
-        </Card>
+        <McaPerimeterCapturePanel
+          perimeterInputMode={perimeterInputMode}
+          onPerimeterInputModeChange={setPerimeterInputMode}
+          carInput={carInput}
+          onCarInputChange={setCarInput}
+          onAssociateCar={handleAssociateCar}
+          onConsultCar={() => void handleConsultCar("codImovel")}
+          isConsultingCar={isConsultingCar}
+          coordinateInput={coordinateInput}
+          onCoordinateInputChange={setCoordinateInput}
+          onApplyCoordinates={() => void handleApplyCoordinates()}
+          coordinateHint={coordinateHint}
+          polygon={polygon}
+          onPolygonChange={setPolygon}
+          polygonAreaHa={polygonAreaHa}
+          isParsingPerimeter={isParsingPerimeter}
+          onUseCurrentCoordinates={handleUseCurrentCoordinates}
+          onConfirmDrawnPolygon={handleConfirmDrawnPolygon}
+          onImportFile={onImportFile}
+          shpZipBase64={shpZipBase64}
+          shpFileName={shpFileName}
+          onShpFileSelected={handleShpFileSelected}
+          onApplyShp={() => void handleApplyShp()}
+          polygonPaste={polygonPaste}
+          onPolygonPasteChange={setPolygonPaste}
+          onApplyPolygonPaste={() => void handleApplyPolygonPaste()}
+        />
       }
       controlsPane={
         <Tabs defaultValue="projeto" className="w-full">
