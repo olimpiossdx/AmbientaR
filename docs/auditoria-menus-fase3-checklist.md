@@ -1,6 +1,6 @@
 # Checklist Fase 3 — Menus por perfil
 
-Gerado em: 2026-05-31T16:17:32.790Z
+Gerado em: 2026-06-08T14:17:34.159Z
 
 Use com `npm run dev` (porta 9002), utilizador de teste por role, DevTools → Rede + Consola.
 

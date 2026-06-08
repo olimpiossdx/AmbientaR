@@ -11,6 +11,23 @@ service cloud.firestore {
      */
 
     /**
+     * ÍNDICE (leitura — não altera avaliação das regras):
+     * 1. Helpers de perfil e permissão (getRole, isAdmin, isManager, …)
+     * 2. Auditoria e ofícios — auditLogs, oficios, oficioCounters
+     * 3. Usuários, chat e cadastro — users, chats, clients, empreendedores, …
+     * 4. Projetos, licenciamento e monitoramento — projects, licenses, outorgas, …
+     * 5. Estudos técnicos — fauna, inventários, PRADA, RCA, …
+     * 6. Financeiro e comercial — invoices, proposals, contracts, revenues, …
+     * 7. Plataforma e acesso — platform_payment_requests, access_requests, consultor_assignments
+     * 8. IA, mapas e integrações — ai_lab_*, cloud_rag_*, mca_*, georef_*, onedrive_*
+     * 9. Catch-all admin — match /{document=**}
+     */
+
+    // ---------------------------------------------------------------------------
+    // 1. HELPERS — perfil, papéis e funções reutilizáveis
+    // ---------------------------------------------------------------------------
+
+    /**
      * @description Helper function to get the user's role from their profile in the 'users' collection.
      * Returns null if the user document does not exist (avoids denying access when doc is missing).
      */
@@ -298,6 +315,10 @@ service cloud.firestore {
       return isSignedIn() && role != 'financial' && role != 'client' && role != 'cliente_autonomo' && role != 'sales' && role != 'representative' && role != 'consultor_representante';
     }
     
+    // ---------------------------------------------------------------------------
+    // 2. AUDITORIA E OFÍCIOS
+    // ---------------------------------------------------------------------------
+
     /**
      * @description Audit logs can be created by any signed-in user.
      * Admins or supervisors can read any log.
@@ -427,6 +448,10 @@ service cloud.firestore {
         && selfUserUpdatePreservesPrivilegedFields();
     }
 
+    // ---------------------------------------------------------------------------
+    // 3. USUÁRIOS, CHAT E CADASTRO COMERCIAL/TÉCNICO
+    // ---------------------------------------------------------------------------
+
     match /users/{userId} {
       allow get: if isSignedIn();
       allow list: if isSignedIn();
@@ -520,6 +545,10 @@ service cloud.firestore {
         allow read, write: if isSignedIn();
     }
 
+    // ---------------------------------------------------------------------------
+    // 5. ESTUDOS TÉCNICOS E AMBIENTAIS
+    // ---------------------------------------------------------------------------
+
     /**
      * @description Allows any authenticated user to manage fauna studies.
      * @path /databases/{database}/documents/faunaStudies/{studyId}
@@ -590,6 +619,10 @@ service cloud.firestore {
      * Cliente autônomo pode atualizar só `car` em empreendimentos dos seus empreendedores (recibo/upload na app).
      * @path /databases/{database}/documents/projects/{projectId}
      */
+    // ---------------------------------------------------------------------------
+    // 4. PROJETOS, LICENCIAMENTO E MONITORAMENTO
+    // ---------------------------------------------------------------------------
+
     match /projects/{projectId} {
       allow read: if isSignedIn();
       allow create: if isSignedIn() && (
@@ -850,6 +883,10 @@ service cloud.firestore {
       allow read, write: if isSignedIn();
     }
 
+    // ---------------------------------------------------------------------------
+    // 6. FINANCEIRO E COMERCIAL
+    // ---------------------------------------------------------------------------
+
     /**
      * @description Allows financial team and admins to manage invoices. Others can read.
      * @path /databases/{database}/documents/invoices/{invoiceId}
@@ -1043,6 +1080,10 @@ service cloud.firestore {
         allow read, write: if isSignedIn();
     }
 
+    // ---------------------------------------------------------------------------
+    // 7. PLATAFORMA, ASSINATURA E ACESSO DE REPRESENTANTES
+    // ---------------------------------------------------------------------------
+
     /**
      * @description Pagamento anual da plataforma (cadastro titular): o próprio usuário cria o pedido;
      * leitura do próprio ou admin; atualização só admin (confirmação).
@@ -1107,6 +1148,10 @@ service cloud.firestore {
       );
       allow delete: if isAdmin();
     }
+
+    // ---------------------------------------------------------------------------
+    // 8. IA, MAPAS E INTEGRAÇÕES
+    // ---------------------------------------------------------------------------
 
     /**
      * @description Hub IA (RAG): somente admins podem ler/escrever.
@@ -1258,6 +1303,10 @@ service cloud.firestore {
     match /onedrive_catalog_entries/{entryId} {
       allow read, write: if isAdmin();
     }
+
+    // ---------------------------------------------------------------------------
+    // 9. CATCH-ALL ADMINISTRATIVO
+    // ---------------------------------------------------------------------------
 
     /**
      * @description Admin com acesso total em qualquer coleção/documento.

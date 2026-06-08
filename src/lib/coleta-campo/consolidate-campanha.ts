@@ -34,7 +34,7 @@ export async function consolidateCampanhaToStorage(
     return { issues };
   }
 
-  const buffer = buildCampanhaExcelArrayBuffer(input);
+  const buffer = await buildCampanhaExcelArrayBuffer(input);
   const storagePath = CONSOLIDATED_PATH(input.campanha.id);
   const storage = getClientFirebaseStorage();
   const storageRef = ref(storage, storagePath);

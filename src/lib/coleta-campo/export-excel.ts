@@ -1,5 +1,9 @@
-import * as XLSX from '@e965/xlsx';
+import type { WorkBook } from '@e965/xlsx';
 import type { Inventario, InventarioIndividuo, InventarioParcela } from '@/lib/types';
+
+async function loadXlsx() {
+  return import('@e965/xlsx');
+}
 import { excelHeadersForTipo } from './constants';
 
 export type ExportCampanhaInput = {
@@ -95,7 +99,10 @@ export function suggestCampanhaExcelFilename(campanha: Inventario): string {
   return `Coleta_${slug}_${date}.xlsx`;
 }
 
-export function buildCampanhaExcelWorkbook(input: ExportCampanhaInput): XLSX.WorkBook {
+export async function buildCampanhaExcelWorkbook(
+  input: ExportCampanhaInput,
+): Promise<WorkBook> {
+  const XLSX = await loadXlsx();
   const rows = buildCampanhaExcelRows(input);
   const ws = XLSX.utils.aoa_to_sheet(rows);
   const wb = XLSX.utils.book_new();
@@ -104,17 +111,24 @@ export function buildCampanhaExcelWorkbook(input: ExportCampanhaInput): XLSX.Wor
 }
 
 /** Gera bytes `.xlsx` para upload no Storage. */
-export function buildCampanhaExcelArrayBuffer(input: ExportCampanhaInput): ArrayBuffer {
-  const wb = buildCampanhaExcelWorkbook(input);
+export async function buildCampanhaExcelArrayBuffer(
+  input: ExportCampanhaInput,
+): Promise<ArrayBuffer> {
+  const XLSX = await loadXlsx();
+  const wb = await buildCampanhaExcelWorkbook(input);
   const out = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
   return out.buffer.slice(out.byteOffset, out.byteOffset + out.byteLength) as ArrayBuffer;
 }
 
-export function downloadCampanhaExcel(input: ExportCampanhaInput, filename?: string): ExportValidationIssue[] {
+export async function downloadCampanhaExcel(
+  input: ExportCampanhaInput,
+  filename?: string,
+): Promise<ExportValidationIssue[]> {
   const issues = validateCampanhaForExport(input);
   if (issues.some((i) => i.level === 'error')) return issues;
 
-  const wb = buildCampanhaExcelWorkbook(input);
+  const XLSX = await loadXlsx();
+  const wb = await buildCampanhaExcelWorkbook(input);
   XLSX.writeFile(wb, filename ?? suggestCampanhaExcelFilename(input.campanha));
   return issues;
 }

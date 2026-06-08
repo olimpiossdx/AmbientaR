@@ -259,7 +259,7 @@ export default function CampanhaDetailPage() {
     if (!campanha || !parcelas || !individuos) return;
     setExporting(true);
     try {
-      const issues = downloadCampanhaExcel({
+      const issues = await downloadCampanhaExcel({
         campanha,
         parcelas,
         individuos,

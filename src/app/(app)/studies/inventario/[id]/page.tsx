@@ -20,7 +20,12 @@ import {
   AlertTriangle,
   Loader2,
 } from 'lucide-react';
-import { ImportDialog } from './import-dialog';
+import dynamic from 'next/dynamic';
+
+const ImportDialog = dynamic(
+  () => import('./import-dialog').then((m) => m.ImportDialog),
+  { ssr: false },
+);
 import { ColetaCampanhaImportDialog } from './coleta-campanha-import-dialog';
 import { ProjectPhotosDialog } from './project-photos-dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';

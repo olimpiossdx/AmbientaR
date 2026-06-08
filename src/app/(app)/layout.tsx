@@ -123,6 +123,33 @@ const AppLayoutClient = ({ children }: { children: React.ReactNode }) => {
   const [logoUrl, setLogoUrl] = React.useState<string | null>(null);
   const [logoLoading, setLogoLoading] = React.useState(true);
   const { isMobile, openMobile, setOpenMobile } = useSidebar();
+  const edgeSwipeStartX = React.useRef(0);
+  const edgeSwipeStartY = React.useRef(0);
+
+  const handleEdgeTouchStart = React.useCallback(
+    (e: React.TouchEvent) => {
+      if (!isMobile || openMobile) return;
+      const touch = e.touches[0];
+      if (!touch || touch.clientX > 24) return;
+      edgeSwipeStartX.current = touch.clientX;
+      edgeSwipeStartY.current = touch.clientY;
+    },
+    [isMobile, openMobile],
+  );
+
+  const handleEdgeTouchEnd = React.useCallback(
+    (e: React.TouchEvent) => {
+      if (!isMobile || openMobile) return;
+      const touch = e.changedTouches[0];
+      if (!touch) return;
+      const deltaX = touch.clientX - edgeSwipeStartX.current;
+      const deltaY = Math.abs(touch.clientY - edgeSwipeStartY.current);
+      if (edgeSwipeStartX.current <= 24 && deltaX > 60 && deltaY < 40) {
+        setOpenMobile(true);
+      }
+    },
+    [isMobile, openMobile, setOpenMobile],
+  );
 
   const sessionUid = useAuthUserId(auth);
   const profileAligned = isUserProfileAlignedWithSession(user, sessionUid);
@@ -413,6 +440,7 @@ const AppLayoutClient = ({ children }: { children: React.ReactNode }) => {
             <Button
               variant="ghost"
               size="icon"
+              className="h-11 w-11 min-h-11 min-w-11"
               aria-label="Abrir menu"
               onClick={() => setOpenMobile(true)}
             >
@@ -637,6 +665,8 @@ const AppLayoutClient = ({ children }: { children: React.ReactNode }) => {
               ? "flex flex-col overflow-hidden"
               : "overflow-y-auto",
           )}
+          onTouchStart={handleEdgeTouchStart}
+          onTouchEnd={handleEdgeTouchEnd}
         >
           <div
             key={pathname}
@@ -671,7 +701,7 @@ const AppLayoutClient = ({ children }: { children: React.ReactNode }) => {
                     "rounded-full transition-all duration-200 ease-out",
                     item.isCenter
                       ? "h-16 w-16 flex items-center justify-center shadow-md bg-primary text-primary-foreground"
-                      : "h-10 w-10 flex items-center justify-center",
+                      : "h-11 w-11 min-h-11 min-w-11 flex items-center justify-center",
                     isMobileBottomNavItemActive(item) &&
                       !item.isCenter &&
                       "bg-primary/10 text-primary scale-110",

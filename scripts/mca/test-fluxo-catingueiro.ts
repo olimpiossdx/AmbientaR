@@ -125,7 +125,7 @@ async function main() {
   const project = await loadMcaProject(projectId, uid);
   const layers = await loadMcaProjectLayers(projectId);
   if (project) {
-    const pdf = buildMcaLayoutPdf({ ...project, id: projectId }, { layers });
+    const pdf = await buildMcaLayoutPdf({ ...project, id: projectId }, { layers });
     const outPdf = path.join(process.cwd(), "docs/mca/debug-reports", "fluxo-catingueiro-test.pdf");
     fs.writeFileSync(outPdf, pdf);
     console.log(`→ PDF E13: ${outPdf} (${pdf.length} bytes)`);

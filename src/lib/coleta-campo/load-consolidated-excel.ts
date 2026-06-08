@@ -1,8 +1,8 @@
-import * as XLSX from '@e965/xlsx';
+import type { WorkBook } from '@e965/xlsx';
 
 export type ParsedExcelSheet = {
   sheetNames: string[];
-  workbook: XLSX.WorkBook;
+  workbook: WorkBook;
   headers: string[];
   rows: Record<string, unknown>[];
 };
@@ -16,6 +16,7 @@ export async function fetchAndParseConsolidatedExcel(
     throw new Error(`Não foi possível baixar a planilha (${res.status}).`);
   }
   const data = new Uint8Array(await res.arrayBuffer());
+  const XLSX = await import('@e965/xlsx');
   const workbook = XLSX.read(data, { type: 'array' });
   const sheetNames = workbook.SheetNames;
   const preferred =

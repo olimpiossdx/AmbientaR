@@ -32,7 +32,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import * as XLSX from "@e965/xlsx";
+import type { WorkBook } from "@e965/xlsx";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -147,7 +147,7 @@ interface ImportDialogProps {
 export function ImportDialog({ isOpen, onOpenChange, projectId }: ImportDialogProps) {
   const [currentStep, setCurrentStep] = React.useState(0);
   const [fileName, setFileName] = React.useState<string | null>(null);
-  const [workbook, setWorkbook] = React.useState<XLSX.WorkBook | null>(null);
+  const [workbook, setWorkbook] = React.useState<WorkBook | null>(null);
   const [sheetNames, setSheetNames] = React.useState<string[]>([]);
   const [selectedSheet, setSelectedSheet] = React.useState<string>("");
   const [sheetHeaders, setSheetHeaders] = React.useState<string[]>([]);
@@ -198,6 +198,13 @@ export function ImportDialog({ isOpen, onOpenChange, projectId }: ImportDialogPr
   );
 
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const xlsxRef = React.useRef<typeof import("@e965/xlsx") | null>(null);
+  const getXlsx = React.useCallback(async () => {
+    if (!xlsxRef.current) {
+      xlsxRef.current = await import("@e965/xlsx");
+    }
+    return xlsxRef.current;
+  }, []);
 
   const coletaCampanhaLabel = (c: Inventario) =>
     c.nomeEmpreendimentoManual?.trim() || `Campanha ${c.id.slice(0, 8)}`;
@@ -210,22 +217,27 @@ export function ImportDialog({ isOpen, onOpenChange, projectId }: ImportDialogPr
       inputEl.value = "";
       setFileName(file.name);
       const reader = new FileReader();
-      reader.onload = (e) => {
+      reader.onload = async (e) => {
         const data = new Uint8Array(e.target?.result as ArrayBuffer);
+        const XLSX = await getXlsx();
         const wb = XLSX.read(data, { type: "array" });
         setWorkbook(wb);
         setSheetNames(wb.SheetNames);
         if (wb.SheetNames.length > 0) {
           const firstSheet = wb.SheetNames[0];
           setSelectedSheet(firstSheet);
-          processSheet(wb, firstSheet);
+          processSheet(wb, firstSheet, XLSX);
         }
       };
       reader.readAsArrayBuffer(file);
     }
   };
 
-  const processSheet = (wb: XLSX.WorkBook, sheetName: string) => {
+  const processSheet = (
+    wb: WorkBook,
+    sheetName: string,
+    XLSX: typeof import("@e965/xlsx"),
+  ) => {
     const sheet = wb.Sheets[sheetName];
     if (!sheet) return;
     const jsonData: any[][] = XLSX.utils.sheet_to_json(sheet, { header: 1 });
@@ -246,10 +258,11 @@ export function ImportDialog({ isOpen, onOpenChange, projectId }: ImportDialogPr
     }
   };
 
-  const handleSheetChange = (sheetName: string) => {
+  const handleSheetChange = async (sheetName: string) => {
     setSelectedSheet(sheetName);
     if (workbook) {
-      processSheet(workbook, sheetName);
+      const XLSX = await getXlsx();
+      processSheet(workbook, sheetName, XLSX);
     }
   };
 
@@ -307,7 +320,8 @@ export function ImportDialog({ isOpen, onOpenChange, projectId }: ImportDialogPr
     setCurrentStep((prev) => Math.max(prev - 1, 0));
   };
 
-  const handleDownloadTemplate = () => {
+  const handleDownloadTemplate = async () => {
+    const XLSX = await getXlsx();
     const headers = [
       "Parcela",
       "Área da Parcela",

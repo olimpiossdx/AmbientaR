@@ -25,7 +25,7 @@ async function main() {
   }
 
   const { project, layers } = await runOfflinePipeline();
-  const pdf = buildMcaLayoutPdf(
+  const pdf = await buildMcaLayoutPdf(
     { ...project, id: "gold-catingueiro-v4" },
     { layers: Object.fromEntries(layers) },
   );

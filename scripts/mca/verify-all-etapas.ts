@@ -93,7 +93,7 @@ async function main() {
     if (!runEtapa(etapa, verifyEtapaWithLayerAreas(etapa, project, areas))) process.exit(1);
   }
 
-  const pdf = buildMcaLayoutPdf(
+  const pdf = await buildMcaLayoutPdf(
     { ...project, id: "offline" },
     {
       layers: Object.fromEntries(layers),

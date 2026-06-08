@@ -88,7 +88,7 @@ export async function POST(
       req.nextUrl.searchParams.get("fallback") === "jspdf";
 
     if (!isQgisWorkerConfigured() || preferFallback) {
-      const pdf = buildMcaLayoutPdf(project, {
+      const pdf = await buildMcaLayoutPdf(project, {
         ...pdfOptions,
         mapImageDataUrl,
       });
@@ -121,7 +121,7 @@ export async function POST(
         },
       });
     } catch (workerErr) {
-      const pdf = buildMcaLayoutPdf(project, {
+      const pdf = await buildMcaLayoutPdf(project, {
         ...pdfOptions,
         mapImageDataUrl,
       });

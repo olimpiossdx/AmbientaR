@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
     }
 
     const { project, layers } = await runOfflinePipeline();
-    const pdf = buildMcaLayoutPdf(
+    const pdf = await buildMcaLayoutPdf(
       { ...project, id: `gold-${presetId}` },
       { layers: Object.fromEntries(layers) },
     );

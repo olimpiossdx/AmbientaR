@@ -5,8 +5,7 @@
  * Independente de Análise Geoespacial (IA): src/lib/geospatial/*, /analise-ambiental.
  */
 
-import { jsPDF } from "jspdf";
-import autoTable from "jspdf-autotable";
+import type { jsPDF } from "jspdf";
 import type { Feature, FeatureCollection } from "geojson";
 import type { McaProjectDoc } from "./types";
 import { formatAreaBr } from "./tables";
@@ -67,11 +66,13 @@ function addMapImage(doc: jsPDF, dataUrl: string, rect: McaPdfMapRect): boolean 
   }
 }
 
-export function buildMcaLayoutPdf(
+export async function buildMcaLayoutPdf(
   project: McaProjectDoc & { id?: string },
   options?: McaLayoutPdfOptions,
-): Buffer {
-  const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+): Promise<Buffer> {
+  const { jsPDF: JsPDF } = await import("jspdf");
+  const { default: autoTable } = await import("jspdf-autotable");
+  const doc = new JsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
   const m = project.meta;
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();

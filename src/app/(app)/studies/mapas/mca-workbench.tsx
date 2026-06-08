@@ -56,7 +56,6 @@ import { parseStudyAreaFileText } from "@/lib/study-maps/import-area-file";
 import { MCA_GOLD_PRESETS, type McaGoldPresetId } from "@/lib/mca/gold-presets";
 import { fetchGoldPerimeter } from "@/lib/mca/gold-perimeters-fetch";
 import { validateMcaPerimeter } from "@/lib/mca/perimeter-validation";
-import area from "@turf/area";
 
 const McaPerimeterDrawMap = dynamic(
   () =>
@@ -231,6 +230,24 @@ export function McaWorkbench() {
     scale: "1:12.000",
   });
 
+  const turfAreaRef = React.useRef<((geo: never) => number) | null>(null);
+  const [turfAreaReady, setTurfAreaReady] = React.useState(false);
+  React.useEffect(() => {
+    void import("@turf/area").then((m) => {
+      turfAreaRef.current = m.default;
+      setTurfAreaReady(true);
+    });
+  }, []);
+  const computeAreaHa = (geo: unknown): number | null => {
+    const fn = turfAreaRef.current;
+    if (!fn) return null;
+    try {
+      return fn(geo as never) / 10_000;
+    } catch {
+      return null;
+    }
+  };
+
   const bearer = React.useCallback(async () => {
     const u = auth?.currentUser;
     if (!u) throw new Error("Sessão inválida.");
@@ -303,12 +320,8 @@ export function McaWorkbench() {
 
   const polygonAreaHa = React.useMemo(() => {
     if (!polygon) return null;
-    try {
-      return area(polygon as never) / 10_000;
-    } catch {
-      return null;
-    }
-  }, [polygon]);
+    return computeAreaHa(polygon);
+  }, [polygon, turfAreaReady]);
 
   const declaredAreaHa = React.useMemo(() => {
     const raw = form.areaTotalHa.trim().replace(",", ".");
@@ -680,14 +693,7 @@ export function McaWorkbench() {
         .split(/[,;\n]/)
         .map((s) => s.trim())
         .filter(Boolean);
-      let computedAreaHa: number | undefined;
-      if (polygon) {
-        try {
-          computedAreaHa = area(polygon as never) / 10_000;
-        } catch {
-          computedAreaHa = undefined;
-        }
-      }
+      const computedAreaHa = polygon ? computeAreaHa(polygon) ?? undefined : undefined;
       const res = await fetch(`/api/mca/projects/${activeId}`, {
         method: "PATCH",
         headers: {
@@ -1376,10 +1382,10 @@ export function McaWorkbench() {
         const fc = await fetchGoldPerimeter(id);
         setPolygon(fc as unknown as StudyAreaGeoJSON);
         setMapMode("edit");
-        const ha = area(fc) / 10_000;
+        const ha = computeAreaHa(fc);
         toast({
           title: "Preset mapa ouro",
-          description: `${p.label} · perímetro ~${ha.toFixed(0)} ha`,
+          description: ha != null ? `${p.label} · perímetro ~${ha.toFixed(0)} ha` : p.label,
         });
       } finally {
         setBusy(false);
@@ -1395,15 +1401,7 @@ export function McaWorkbench() {
   ) => {
     setPolygon(geojson);
     setMapMode("edit");
-    const ha =
-      meta?.areaHa ??
-      (() => {
-        try {
-          return area(geojson as never) / 10_000;
-        } catch {
-          return null;
-        }
-      })();
+    const ha = meta?.areaHa ?? computeAreaHa(geojson);
     toast({
       title: meta?.label ?? "Perímetro aplicado",
       description: ha != null ? `${ha.toFixed(2)} ha${meta?.source ? ` · ${meta.source}` : ""}` : undefined,

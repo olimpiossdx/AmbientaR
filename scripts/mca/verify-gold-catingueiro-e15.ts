@@ -68,7 +68,7 @@ async function main() {
     console.log(`PASS E${String(etapa).padStart(2, "0")}`);
   }
 
-  const pdf = buildMcaLayoutPdf(
+  const pdf = await buildMcaLayoutPdf(
     { ...project, id: "gold-catingueiro" },
     { layers: Object.fromEntries(layers) },
   );

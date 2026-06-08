@@ -53,7 +53,12 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogD
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AtributosDialog } from './atributos-dialog';
-import { ImportDialog } from '../import-dialog';
+import dynamic from 'next/dynamic';
+
+const ImportDialog = dynamic(
+  () => import('../import-dialog').then((m) => m.ImportDialog),
+  { ssr: false },
+);
 import { Alert, AlertTitle } from "@/components/ui/alert";
 import { InventoryModuleHeader, inventoryActionButtonClass } from '../inventory-module-chrome';
 

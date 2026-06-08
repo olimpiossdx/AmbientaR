@@ -45,7 +45,7 @@ async function buildPdfResponse(
     clientMapImageDataUrl: mapImage,
     includeSatellite,
   });
-  const buf = buildMcaLayoutPdf(project, {
+  const buf = await buildMcaLayoutPdf(project, {
     ...pdfOptions,
     mapImageDataUrl: mapResolved.mapImageDataUrl,
   });
