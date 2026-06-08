@@ -14,9 +14,6 @@ import {
   validateStudyForExport,
   type StudyExportRecord,
 } from '@/lib/studies/study-export-record';
-import { generateStudyExportDocxBlob } from '@/lib/studies/study-export-docx';
-import { generateStudyExportPdfBlob } from '@/lib/studies/study-export-pdf';
-
 type StudyBrandedExportButtonsProps = {
   record: StudyExportRecord;
   templateSlug: DocxTemplateSlug;
@@ -84,6 +81,7 @@ export function StudyBrandedExportButtons({
     }
     setBusy('pdf');
     try {
+      const { generateStudyExportPdfBlob } = await import('@/lib/studies/study-export-pdf');
       const result = await generateStudyExportPdfBlob(
         record,
         templateSlug,
@@ -120,6 +118,7 @@ export function StudyBrandedExportButtons({
     }
     setBusy('docx');
     try {
+      const { generateStudyExportDocxBlob } = await import('@/lib/studies/study-export-docx');
       const templateUrl = docxTemplates?.[templateSlug]?.url;
       const result = await generateStudyExportDocxBlob({
         record,
