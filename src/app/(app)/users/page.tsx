@@ -30,8 +30,6 @@ import { isUserConsideredOnline } from "@/lib/user-presence";
 import { usePresenceClock } from "@/hooks/use-user-presence";
 import type {
   AppUser,
-  AuditLog,
-  CompanySettings,
   AccessRequest,
   Client,
   Empreendedor,
@@ -52,29 +50,30 @@ import {
   query,
   where,
   getDocs,
-  orderBy,
   updateDoc,
   arrayUnion,
   arrayRemove,
 } from "firebase/firestore";
 import { useLocalBranding } from "@/hooks/use-local-branding";
 import {
-  brandingUrlsFromLocal,
-  createMmBrandedPdfSession,
-  drawWatermarkOnPage,
-  guardBrandingExportFromHook,
-  reportBrandingPdfIssues,
-} from "@/lib/pdf-branding-layout";
+  buildApprovedTitularesFromEntities,
+  canDeleteUser as canDeleteTargetUser,
+  getPackageLabel,
+  getRoleText,
+} from "@/features/users/lib/user-display";
+import { exportUserAuditLog } from "@/features/users/services/export-user-audit-log";
+import { UserDetailItem } from "@/features/users/components/UserDetailItem";
+import { UserViewDialog } from "@/features/users/components/UserViewDialog";
+import { UserDeleteAlertDialog } from "@/features/users/components/UserDeleteAlertDialog";
+import { SelfAccessDeleteAlertDialog } from "@/features/users/components/SelfAccessDeleteAlertDialog";
+import { OrphanEmailReleaseCard } from "@/features/users/components/OrphanEmailReleaseCard";
 import { Skeleton } from "@/components/ui/skeleton";
-import { PlatformSubscriptionAcceptanceViewer } from "@/components/platform-subscription-contract/acceptance-viewer";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription,
-  DialogFooter,
-  DialogClose,
 } from "@/components/ui/dialog";
 import {
   AlertDialog,
@@ -103,10 +102,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Separator } from "@/components/ui/separator";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
 import { formatCpfDisplay, formatCpfCnpjDisplay } from "@/lib/masks";
-import { FirebaseAdminSetupHelp } from "@/components/admin/firebase-admin-setup-help";
 import {
   FIREBASE_AUTH_USERS_CONSOLE_URL,
   isAdminCredentialsMissing,
@@ -128,21 +124,6 @@ import {
   lookupClientAndEmpreendedorByDocument,
   normalizeDocumentDigits,
 } from "@/lib/document-lookup";
-
-const DetailItem = ({
-  label,
-  value,
-}: {
-  label: string;
-  value?: string | null | string[];
-}) => (
-  <div className="space-y-1">
-    <Label className="text-sm font-medium">{label}</Label>
-    <p className="text-sm text-muted-foreground">
-      {Array.isArray(value) ? value.join(", ") : value || "Não informado"}
-    </p>
-  </div>
-);
 
 export default function UsersPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -255,35 +236,6 @@ export default function UsersPage() {
     hasBrandingUrls,
   } = useLocalBranding();
 
-  const getRoleText = (role: AppUser["role"]) => {
-    switch (role) {
-      case "admin":
-        return "Admin";
-      case "client":
-        return "Cliente Gestão";
-      case "cliente_autonomo":
-        return "Cliente Autônomo";
-      case "representative":
-        return "Representante";
-      case "consultor_representante":
-        return "Consultor-Representante";
-      case "technical":
-        return "Técnico";
-      case "sales":
-        return "Vendas";
-      case "financial":
-        return "Financeiro";
-      case "gestor":
-        return "Gestor Ambiental";
-      case "supervisor":
-        return "Supervisor";
-      case "diretor_fauna":
-        return "Diretor de Fauna";
-      case "advogado":
-        return "Advogado";
-    }
-  };
-
   const handleEdit = (userToEdit: AppUser) => {
     setEditingUser(userToEdit);
     setIsDialogOpen(true);
@@ -307,12 +259,7 @@ export default function UsersPage() {
   const sessionTargetUid = sessionUid ?? user?.uid ?? user?.id ?? null;
 
   const canDeleteUser = (target: AppUser | null) =>
-    !!target &&
-    !!sessionTargetUid &&
-    (user?.role === "admin" ||
-      ((isClientePortalRole(user?.role) ||
-        user?.role === "representative") &&
-        (target.id === sessionTargetUid || target.uid === sessionTargetUid)));
+    canDeleteTargetUser(target, sessionTargetUid, user?.role);
 
   const handleReleaseOrphanEmail = async () => {
     if (!auth) return;
@@ -523,153 +470,21 @@ export default function UsersPage() {
 
   const handleGenerateLog = async (logUser: AppUser, format: "txt" | "pdf") => {
     if (!firestore) return;
-
-    toast({
-      title: "Gerando log...",
-      description: `Buscando registros para ${logUser.name}.`,
+    await exportUserAuditLog({
+      firestore,
+      logUser,
+      format,
+      brandingData,
+      pdfImages,
+      isPdfImagesLoading,
+      hasBrandingUrls,
+      toast,
     });
-
-    const logsQuery = query(
-      collection(firestore, "auditLogs"),
-      where("userId", "==", logUser.uid),
-      orderBy("timestamp", "desc"),
-    );
-
-    try {
-      const querySnapshot = await getDocs(logsQuery);
-      const logs = querySnapshot.docs.map((doc) => doc.data() as AuditLog);
-
-      if (format === "txt") {
-        let logContent = `HISTÓRICO DE AUDITORIA\n`;
-        logContent += `==================================================\n`;
-        logContent += `Usuário: ${logUser.name} (${logUser.email})\n`;
-        logContent += `ID do Usuário: ${logUser.uid}\n`;
-        logContent += `Gerado em: ${new Date().toLocaleString("pt-BR")}\n`;
-        logContent += `==================================================\n\n`;
-
-        if (logs.length === 0) {
-          logContent +=
-            "Nenhum registro de atividade encontrado para este usuário.";
-        } else {
-          logs.forEach((log) => {
-            logContent += `Data:       ${log.timestamp ? new Date(log.timestamp.seconds * 1000).toLocaleString("pt-BR") : "N/A"}\n`;
-            logContent += `Ação:       ${log.action}\n`;
-            logContent += `Detalhes:   ${JSON.stringify(log.details, null, 2)}\n`;
-            logContent += `--------------------------------------------------\n`;
-          });
-        }
-
-        const blob = new Blob([logContent], {
-          type: "text/plain;charset=utf-8",
-        });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.href = url;
-        link.download = `log_${logUser.name.replace(/\s+/g, "_")}_${new Date().toISOString().split("T")[0]}.txt`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-      } else if (format === "pdf") {
-        if (
-          !guardBrandingExportFromHook({
-            brandingData,
-            pdfImages,
-            isPdfImagesLoading,
-            hasBrandingUrls,
-            toast,
-          })
-        ) {
-          return;
-        }
-        const session = await createMmBrandedPdfSession(
-          brandingUrlsFromLocal(brandingData),
-          undefined,
-          pdfImages,
-        );
-        reportBrandingPdfIssues(
-          brandingUrlsFromLocal(brandingData),
-          session.branding.images,
-          toast,
-        );
-        const { doc } = session;
-        const pageHeight = doc.internal.pageSize.getHeight();
-        const pageWidth = doc.internal.pageSize.getWidth();
-        let yPos = session.startY;
-        const onPdfPage = () => drawWatermarkOnPage(doc, session.branding);
-
-        doc.setFont("Helvetica", "bold");
-        doc.setFontSize(14);
-        doc.text("Histórico de Auditoria do Usuário", pageWidth / 2, yPos, {
-          align: "center",
-        });
-        yPos += 10;
-
-        doc.setFontSize(10);
-        doc.setFont("Helvetica", "normal");
-        doc.text(`Usuário: ${logUser.name} (${logUser.email})`, 15, yPos);
-        yPos += 5;
-        doc.text(`Gerado em: ${new Date().toLocaleString("pt-BR")}`, 15, yPos);
-        yPos += 10;
-        doc.setLineWidth(0.5);
-        doc.line(15, yPos - 5, pageWidth - 15, yPos - 5);
-
-        if (logs.length === 0) {
-          doc.text("Nenhum registro de atividade encontrado.", 15, yPos);
-        } else {
-          logs.forEach((log) => {
-            const logString = `Data: ${log.timestamp ? new Date(log.timestamp.seconds * 1000).toLocaleString("pt-BR") : "N/A"}\nAção: ${log.action}\nDetalhes: ${JSON.stringify(log.details, null, 2)}`;
-            const splitText = doc.splitTextToSize(logString, pageWidth - 30);
-
-            if (yPos + splitText.length * 5 > pageHeight - 30) {
-              doc.addPage();
-              onPdfPage();
-              yPos = session.startY;
-            }
-
-            doc.text(splitText, 15, yPos);
-            yPos += splitText.length * 5 + 5;
-            doc.setDrawColor(230, 230, 230);
-            doc.line(15, yPos - 2.5, pageWidth - 15, yPos - 2.5);
-            yPos += 5;
-          });
-        }
-
-        session.finalize();
-
-        const fileName = `log_${logUser.name.replace(/\s+/g, "_")}_${new Date().toISOString().split("T")[0]}.pdf`;
-        doc.save(fileName);
-      }
-
-      toast({
-        title: "Log Gerado",
-        description: `O arquivo foi baixado com sucesso.`,
-      });
-    } catch (error) {
-      console.error("Error exporting user log:", error);
-      toast({
-        variant: "destructive",
-        title: "Erro na Exportação",
-        description: "Não foi possível gerar o arquivo de log.",
-      });
-    }
   };
 
   const [isDeleteAccountOpen, setIsDeleteAccountOpen] = useState(false);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const [isUpgradeOpen, setIsUpgradeOpen] = useState(false);
-
-  const getPackageLabel = (pkg?: string) => {
-    const labels: Record<string, string> = {
-      gratuito: "Gratuito",
-      basico: "Básico",
-      intermediario: "Intermediário",
-      avancado: "Avançado",
-      completo: "Completo",
-      sob_consulta: "Sob Consulta",
-    };
-    return pkg ? labels[pkg] || pkg : "Não informado";
-  };
 
   const handleDeleteAccount = async () => {
     if (!firestore || !auth || !user) return;
@@ -1472,20 +1287,20 @@ export default function UsersPage() {
                         Informações Pessoais
                       </h4>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <DetailItem label="Email" value={clientUser.email} />
-                        <DetailItem
+                        <UserDetailItem label="Email" value={clientUser.email} />
+                        <UserDetailItem
                           label="Telefone"
                           value={(clientUser as any).phone}
                         />
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <DetailItem
+                        <UserDetailItem
                           label="CPF"
                           value={formatCpfDisplay(
                             clientUser.cpf || (clientUser as any).userCpf,
                           )}
                         />
-                        <DetailItem
+                        <UserDetailItem
                           label="Data de Nascimento"
                           value={
                             clientUser.dataNascimento
@@ -1496,7 +1311,7 @@ export default function UsersPage() {
                           }
                         />
                       </div>
-                      <DetailItem
+                      <UserDetailItem
                         label="CNPJs Vinculados"
                         value={clientUser.cnpjs}
                       />
@@ -1515,15 +1330,15 @@ export default function UsersPage() {
                         </Button>
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <DetailItem
+                        <UserDetailItem
                           label="Pacote Contratado"
                           value={getPackageLabel((clientUser as any).package)}
                         />
-                        <DetailItem
+                        <UserDetailItem
                           label="Nível de Acesso"
                           value={getRoleText(clientUser.role)}
                         />
-                        <DetailItem
+                        <UserDetailItem
                           label="Status da Conta"
                           value={
                             clientUser.status === "active" ? "Ativo" : "Inativo"
@@ -1877,29 +1692,12 @@ export default function UsersPage() {
           </AlertDialogContent>
         </AlertDialog>
 
-        <AlertDialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>
-                Excluir seu usuário de acesso?
-              </AlertDialogTitle>
-              <AlertDialogDescription>
-                Será removido apenas o seu <strong>usuário de acesso</strong>{" "}
-                (perfil de login). Você será deslogado. Os dados nos submenus{" "}
-                <strong>Clientes</strong> e <strong>Empreendedores</strong> não
-                serão alterados; apenas o administrador pode excluí-los.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel onClick={() => setUserToDelete(null)}>
-                Cancelar
-              </AlertDialogCancel>
-              <AlertDialogAction onClick={handleDelete}>
-                Sim, excluir meu usuário de acesso
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+        <SelfAccessDeleteAlertDialog
+          open={isAlertOpen}
+          onOpenChange={setIsAlertOpen}
+          onConfirm={handleDelete}
+          onCancelClear={() => setUserToDelete(null)}
+        />
 
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogContent className="sm:max-w-xl h-full max-h-[90dvh] flex flex-col">
@@ -1923,30 +1721,10 @@ export default function UsersPage() {
   const approvedTitularesForConsultor =
     user?.role !== "consultor_representante"
       ? []
-      : (() => {
-          const byCpf = new Map<
-            string,
-            { name: string; cpfCnpj: string; type: "cliente" | "empreendedor" }
-          >();
-          const add = (
-            item: { name: string; cpfCnpj?: string },
-            type: "cliente" | "empreendedor",
-          ) => {
-            const key = (item.cpfCnpj || "").replace(/\D/g, "");
-            if (key.length >= 11 && !byCpf.has(key)) {
-              byCpf.set(key, {
-                name: item.name,
-                cpfCnpj: item.cpfCnpj || "",
-                type,
-              });
-            }
-          };
-          myApprovedClientsAsConsultor?.forEach((c) => add(c, "cliente"));
-          myApprovedEmpreendedoresAsConsultor?.forEach((e) =>
-            add(e, "empreendedor"),
-          );
-          return Array.from(byCpf.values());
-        })();
+      : buildApprovedTitularesFromEntities(
+          myApprovedClientsAsConsultor,
+          myApprovedEmpreendedoresAsConsultor,
+        );
 
   if (user?.role === "consultor_representante") {
     const consultorUser = clientProfile || user;
@@ -1981,8 +1759,8 @@ export default function UsersPage() {
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <DetailItem label="Email" value={consultorUser?.email} />
-                  <DetailItem
+                  <UserDetailItem label="Email" value={consultorUser?.email} />
+                  <UserDetailItem
                     label="Nível de Acesso"
                     value={getRoleText("consultor_representante")}
                   />
@@ -2022,28 +1800,10 @@ export default function UsersPage() {
   const approvedTitularesForRep =
     user?.role !== "representative"
       ? []
-      : (() => {
-          const byCpf = new Map<
-            string,
-            { name: string; cpfCnpj: string; type: "cliente" | "empreendedor" }
-          >();
-          const add = (
-            item: { name: string; cpfCnpj?: string },
-            type: "cliente" | "empreendedor",
-          ) => {
-            const key = (item.cpfCnpj || "").replace(/\D/g, "");
-            if (key.length >= 11 && !byCpf.has(key)) {
-              byCpf.set(key, {
-                name: item.name,
-                cpfCnpj: item.cpfCnpj || "",
-                type,
-              });
-            }
-          };
-          myApprovedClientsAsRep?.forEach((c) => add(c, "cliente"));
-          myApprovedEmpreendedoresAsRep?.forEach((e) => add(e, "empreendedor"));
-          return Array.from(byCpf.values());
-        })();
+      : buildApprovedTitularesFromEntities(
+          myApprovedClientsAsRep,
+          myApprovedEmpreendedoresAsRep,
+        );
 
   // Perfil do representante: lista de titulares que aprovaram seu acesso.
   if (user?.role === "representative") {
@@ -2082,23 +1842,23 @@ export default function UsersPage() {
                     Informações Pessoais
                   </h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <DetailItem label="Email" value={repUser?.email} />
-                    <DetailItem
+                    <UserDetailItem label="Email" value={repUser?.email} />
+                    <UserDetailItem
                       label="Telefone"
                       value={(repUser as any)?.phone}
                     />
                   </div>
-                  <DetailItem
+                  <UserDetailItem
                     label="CPF pessoal"
                     value={formatCpfDisplay((repUser as any)?.userCpf)}
                   />
                   <Separator />
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <DetailItem
+                    <UserDetailItem
                       label="Nível de Acesso"
                       value={getRoleText(repUser?.role || "representative")}
                     />
-                    <DetailItem
+                    <UserDetailItem
                       label="Status da Conta"
                       value={repUser?.status === "active" ? "Ativo" : "Inativo"}
                     />
@@ -2148,27 +1908,12 @@ export default function UsersPage() {
           </main>
         </div>
 
-        <AlertDialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>
-                Excluir seu usuário de acesso?
-              </AlertDialogTitle>
-              <AlertDialogDescription>
-                Será removido apenas o seu usuário de acesso (perfil de login).
-                Você será deslogado.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel onClick={() => setUserToDelete(null)}>
-                Cancelar
-              </AlertDialogCancel>
-              <AlertDialogAction onClick={handleDelete}>
-                Sim, excluir meu usuário de acesso
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+        <SelfAccessDeleteAlertDialog
+          open={isAlertOpen}
+          onOpenChange={setIsAlertOpen}
+          onConfirm={handleDelete}
+          onCancelClear={() => setUserToDelete(null)}
+        />
 
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogContent className="sm:max-w-xl h-full max-h-[90dvh] flex flex-col">
@@ -2205,47 +1950,14 @@ export default function UsersPage() {
         </PageHeader>
         <main className="flex-1 overflow-auto p-4 md:p-6 space-y-4">
           {user?.role === "admin" && (
-            <Card className="border-amber-500/30 bg-amber-500/5">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base">
-                  Liberar e-mail bloqueado
-                </CardTitle>
-                <CardDescription>
-                  Use quando o perfil já foi apagado mas o login (Firebase
-                  Auth) ainda impede criar o mesmo e-mail — ex.: após exclusão
-                  antiga só no Firestore.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {(adminSdkConfigured === false || showOrphanEmailSetupHelp) && (
-                  <FirebaseAdminSetupHelp
-                    variant="banner"
-                    emailHint={orphanEmail.trim() || undefined}
-                  />
-                )}
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-                  <div className="min-w-0 flex-1 space-y-1.5">
-                    <Label htmlFor="orphan-email">E-mail</Label>
-                    <Input
-                      id="orphan-email"
-                      type="email"
-                      placeholder="financeiro@exemplo.com.br"
-                      value={orphanEmail}
-                      onChange={(e) => setOrphanEmail(e.target.value)}
-                      disabled={isReleasingOrphanEmail}
-                    />
-                  </div>
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    disabled={isReleasingOrphanEmail || !orphanEmail.trim()}
-                    onClick={handleReleaseOrphanEmail}
-                  >
-                    {isReleasingOrphanEmail ? "Liberando…" : "Liberar e-mail"}
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+            <OrphanEmailReleaseCard
+              orphanEmail={orphanEmail}
+              onOrphanEmailChange={setOrphanEmail}
+              isReleasing={isReleasingOrphanEmail}
+              adminSdkConfigured={adminSdkConfigured}
+              showSetupHelp={showOrphanEmailSetupHelp}
+              onRelease={handleReleaseOrphanEmail}
+            />
           )}
           <Card>
             <CardHeader>
@@ -2503,151 +2215,22 @@ export default function UsersPage() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={isViewOpen} onOpenChange={setIsViewOpen}>
-        <DialogContent className="sm:max-w-xl">
-          <DialogHeader>
-            <DialogTitle>{viewingUser?.name}</DialogTitle>
-            <DialogDescription>
-              Detalhes do usuário cadastrado no sistema.
-            </DialogDescription>
-          </DialogHeader>
-          {viewingUser && (
-            <div className="form-scroll-body max-h-[60vh] space-y-4">
-              <DetailItem label="Nome Completo" value={viewingUser.name} />
-              <DetailItem label="Email" value={viewingUser.email} />
-              <Separator />
-              <div className="grid grid-cols-2 gap-4">
-                <DetailItem
-                  label="Nível de Acesso"
-                  value={getRoleText(viewingUser.role)}
-                />
-                <DetailItem
-                  label="Status da Conta"
-                  value={viewingUser.status === "active" ? "Ativo" : "Inativo"}
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <DetailItem
-                  label="Status Online"
-                  value={
-                    isUserConsideredOnline(viewingUser, presenceNow)
-                      ? "Online"
-                      : "Offline"
-                  }
-                />
-                <DetailItem
-                  label="Último Login"
-                  value={
-                    viewingUser.lastLogin
-                      ? new Date(
-                          viewingUser.lastLogin.seconds * 1000,
-                        ).toLocaleString("pt-BR")
-                      : "Nunca"
-                  }
-                />
-              </div>
-              <Separator />
-              <h4 className="font-semibold text-foreground">Documentos</h4>
-              <DetailItem
-                label="CPF"
-                value={formatCpfDisplay(
-                  viewingUser.cpf || (viewingUser as any).userCpf,
-                )}
-              />
-              <DetailItem label="CNPJs Vinculados" value={viewingUser.cnpjs} />
-              <DetailItem
-                label="Data de Nascimento"
-                value={
-                  viewingUser.dataNascimento
-                    ? new Date(viewingUser.dataNascimento).toLocaleDateString(
-                        "pt-BR",
-                      )
-                    : ""
-                }
-              />
-              {viewingUser.platformSubscriptionAcceptanceId ? (
-                <>
-                  <Separator />
-                  <div className="flex items-center justify-between gap-2">
-                    <div>
-                      <p className="text-sm font-medium">Contrato de plataforma</p>
-                      <p className="text-xs text-muted-foreground">
-                        Cópia do aceite no cadastro (somente admin altera ou apaga).
-                      </p>
-                    </div>
-                    <PlatformSubscriptionAcceptanceViewer
-                      acceptanceId={viewingUser.platformSubscriptionAcceptanceId}
-                      userLabel={viewingUser.name}
-                      compact
-                    />
-                  </div>
-                </>
-              ) : null}
-            </div>
-          )}
-          <DialogFooter>
-            <DialogClose asChild>
-              <Button type="button" variant="outline">
-                Fechar
-              </Button>
-            </DialogClose>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <UserViewDialog
+        open={isViewOpen}
+        onOpenChange={setIsViewOpen}
+        user={viewingUser}
+        presenceNow={presenceNow}
+      />
 
-      <AlertDialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              {userToDelete &&
-              sessionTargetUid &&
-              (userToDelete.id === sessionTargetUid ||
-                userToDelete.uid === sessionTargetUid) &&
-              (isClientePortalRole(user?.role) ||
-                (user?.role as UserRole | undefined) === "representative")
-                ? "Excluir seu usuário de acesso?"
-                : "Você tem certeza?"}
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              {userToDelete &&
-              sessionTargetUid &&
-              (userToDelete.id === sessionTargetUid ||
-                userToDelete.uid === sessionTargetUid) &&
-              (isClientePortalRole(user?.role) ||
-                (user?.role as UserRole | undefined) === "representative") ? (
-                <>
-                  Será removido apenas o seu <strong>usuário de acesso</strong>{" "}
-                  (perfil de login). Você será deslogado. Os dados nos submenus{" "}
-                  <strong>Clientes</strong> e <strong>Empreendedores</strong>{" "}
-                  não serão alterados; apenas o administrador pode excluí-los.
-                </>
-              ) : (
-                <>
-                  Esta ação não pode ser desfeita. Remove o perfil, a conta de
-                  login (Firebase Auth), notificações e pedidos de acesso de{" "}
-                  <span className="font-semibold">{userToDelete?.name}</span>.
-                  O e-mail ficará livre para novo cadastro.
-                </>
-              )}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setUserToDelete(null)}>
-              Cancelar
-            </AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete}>
-              {userToDelete &&
-              sessionTargetUid &&
-              (userToDelete.id === sessionTargetUid ||
-                userToDelete.uid === sessionTargetUid) &&
-              (isClientePortalRole(user?.role) ||
-                (user?.role as UserRole | undefined) === "representative")
-                ? "Sim, excluir meu usuário de acesso"
-                : "Deletar"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <UserDeleteAlertDialog
+        open={isAlertOpen}
+        onOpenChange={setIsAlertOpen}
+        userToDelete={userToDelete}
+        sessionTargetUid={sessionTargetUid}
+        currentRole={user?.role}
+        onConfirm={handleDelete}
+        onCancelClear={() => setUserToDelete(null)}
+      />
     </>
   );
 }
