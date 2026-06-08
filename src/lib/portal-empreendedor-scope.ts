@@ -14,6 +14,7 @@ import {
   where,
 } from "firebase/firestore";
 import { resolvePortalAuthUid } from "@/lib/auth-user-id";
+import { buildCpfCnpjVariants } from "@/lib/document-lookup";
 
 /** Papéis que filtram listas por empreendedores visíveis (não veem coleção inteira). */
 export function isEmpreendedorScopedPortalRole(
@@ -41,27 +42,39 @@ export async function fetchEmpreendedorIdsForPortalScope(
     if (!uid) return ["invalid-placeholder"];
     const empreendedoresRef = collection(firestore, "empreendedores");
     const byUserId = query(empreendedoresRef, where("userId", "==", uid));
-    const variants = [user.cpf || user.userCpf, ...(user.cnpjs || [])].filter(
+    const byOwnerUserId = query(
+      empreendedoresRef,
+      where("ownerUserId", "==", uid),
+    );
+    const docSources = [user.cpf, user.userCpf, ...(user.cnpjs || [])].filter(
       Boolean,
     ) as string[];
     const normalized = new Set<string>();
-    variants.forEach((v) => {
-      normalized.add(v);
-      const d = v.replace(/\D/g, "");
-      if (d.length >= 11) normalized.add(d);
+    docSources.forEach((v) => {
+      for (const variant of buildCpfCnpjVariants(v)) {
+        normalized.add(variant);
+      }
     });
     const variantList = Array.from(normalized).slice(0, 10);
     const byCpf =
       variantList.length > 0
         ? query(empreendedoresRef, where("cpfCnpj", "in", variantList))
         : null;
-    const [snapU, snapCpf] = await Promise.all([
+    const byTitularDoc =
+      variantList.length > 0
+        ? query(empreendedoresRef, where("titularDocument", "in", variantList))
+        : null;
+    const [snapU, snapOwner, snapCpf, snapTitular] = await Promise.all([
       getDocs(byUserId),
+      getDocs(byOwnerUserId),
       byCpf ? getDocs(byCpf) : Promise.resolve({ docs: [] }),
+      byTitularDoc ? getDocs(byTitularDoc) : Promise.resolve({ docs: [] }),
     ]);
     const ids = new Set<string>([
       ...snapU.docs.map((d) => d.id),
+      ...snapOwner.docs.map((d) => d.id),
       ...snapCpf.docs.map((d) => d.id),
+      ...snapTitular.docs.map((d) => d.id),
     ]);
     return ids.size > 0 ? Array.from(ids) : ["invalid-placeholder"];
   }
@@ -108,13 +121,16 @@ export async function fetchClientIdsForPortalPartner(
 
   const cpfs = new Set<string>();
   for (const d of relevantRequests) {
-    const cpf = String(
-      (d.data() as { cpfOfInterested?: string }).cpfOfInterested || "",
-    ).trim();
+    const data = d.data() as {
+      cpfOfInterested?: string;
+      targetDocument?: string;
+    };
+    const cpf = String(data.targetDocument || data.cpfOfInterested || "").trim();
     const digits = cpf.replace(/\D/g, "");
     if (digits.length >= 11) {
-      cpfs.add(cpf);
-      cpfs.add(digits);
+      for (const variant of buildCpfCnpjVariants(cpf)) {
+        cpfs.add(variant);
+      }
     }
   }
   const cpfList = Array.from(cpfs).slice(0, 10);
