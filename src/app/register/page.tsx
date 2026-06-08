@@ -74,6 +74,7 @@ import type {
   PlatformPaymentMethod,
 } from "@/lib/types";
 import { createNotificationForUser } from "@/lib/notifications";
+import { buildTitularFields } from "@/lib/titular-document";
 import {
   buildPlatformSubscriptionFieldsForNewTitular,
   clientPackageRequiresAnnualPaymentStep,
@@ -111,7 +112,8 @@ const formSchema = z
     name: z.string().min(3, "O nome deve ter no mínimo 3 caracteres."),
     email: z.string().email("Por favor, insira um e-mail válido."),
     phone: z.string().min(10, "Insira um telefone válido com DDD."),
-    cpf: z.string().min(11, "Insira um CPF válido."),
+    /** CPF do usuário/responsável pelo login (opcional no cadastro inicial). */
+    cpf: z.string().optional(),
     password: z.string().min(6, "A senha deve ter no mínimo 6 caracteres."),
     confirmPassword: z.string().min(6, "Confirme sua senha."),
     /** CPF/CNPJ vinculado ao titular/empreendedor ou ao titular ao qual o representante solicita acesso. */
@@ -139,6 +141,30 @@ const formSchema = z
     message: "As senhas não coincidem.",
     path: ["confirmPassword"],
   })
+  .refine(
+    (data) => {
+      const cpfDigits = normalizeDocument(data.cpf);
+      return cpfDigits.length === 0 || cpfDigits.length === 11;
+    },
+    {
+      message: "Informe um CPF válido ou deixe em branco.",
+      path: ["cpf"],
+    },
+  )
+  .refine(
+    (data) => {
+      const titularDigits = normalizeDocument(data.cpfCnpjTitular);
+      return (
+        titularDigits.length === 0 ||
+        titularDigits.length === 11 ||
+        titularDigits.length === 14
+      );
+    },
+    {
+      message: "Informe um CPF/CNPJ válido ou deixe em branco.",
+      path: ["cpfCnpjTitular"],
+    },
+  )
   .refine(
     (data) => {
       if (!packageRequiresMarketingOptIn(data.selectedPackage)) return true;
@@ -268,6 +294,9 @@ function RegisterPageContent() {
   }, [mode, form]);
 
   const selectedPackage = form.watch("selectedPackage");
+  const isTitularPlanMode = mode === "cliente_autonomo";
+  const isDelegatePortalMode =
+    mode === "representative" || mode === "consultor_representante";
 
   React.useEffect(() => {
     setPaymentAcknowledged(false);
@@ -294,7 +323,7 @@ function RegisterPageContent() {
   }, [form, mode]);
 
   const handleTitularDocumentBlur = React.useCallback(async () => {
-    if (!firestore || mode === "representative") return;
+    if (!firestore || isDelegatePortalMode) return;
     const docDigits = resolveTitularDocumentForLookup();
     if (docDigits.length !== 11 && docDigits.length !== 14) {
       setCpfLinkHint(null);
@@ -361,25 +390,19 @@ function RegisterPageContent() {
       (name ?? "").trim().length >= 3 &&
       (email ?? "").includes("@") &&
       digitsPhone.length >= 10 &&
-      digitsCpf.length === 11 &&
+      (digitsCpf.length === 0 || digitsCpf.length === 11) &&
       (password ?? "").length >= 6 &&
       (confirmPassword ?? "").length >= 6 &&
       password === confirmPassword;
     const titDigits = normalizeDocument(cpfCnpjTitular);
     const titularDocOk =
-      mode === "cliente_autonomo"
-        ? titDigits.length === 0 || isValidCpfOrCnpj(cpfCnpjTitular)
-        : isValidCpfOrCnpj(cpfCnpjTitular);
+      titDigits.length === 0 || isValidCpfOrCnpj(cpfCnpjTitular);
     return base && titularDocOk;
   }, [watchedStep1, mode]);
 
   const canAdvanceStep2 = () => {
     return !!selectedPackage;
   };
-
-  const isTitularPlanMode = mode === "cliente_autonomo";
-  const isDelegatePortalMode =
-    mode === "representative" || mode === "consultor_representante";
 
   const handleCancelRegistration = () => {
     if (
@@ -412,19 +435,7 @@ function RegisterPageContent() {
       return;
     }
 
-    const hasLinkedTitularDoc = isValidCpfOrCnpj(values.cpfCnpjTitular);
-    if (!hasLinkedTitularDoc) {
-      if (mode === "representative") {
-        toast({
-          variant: "destructive",
-          title: "Campo obrigatório",
-          description:
-            "Informe o CPF ou CNPJ do titular ao qual solicita acesso.",
-        });
-        return;
-      }
-      // cliente_autonomo: documento vinculado é opcional; o CPF do cadastro será usado no Cliente/Empreendedor.
-    }
+    // Representante/consultor não precisa informar titular no cadastro inicial.
 
     if (isTitularPlanMode) {
       if (!paymentAcknowledged) {
@@ -484,11 +495,15 @@ function RegisterPageContent() {
       }
       const userCpfNormalized = normalizeDocument(values.cpf);
       const titularFromField = normalizeDocument(values.cpfCnpjTitular);
-      const titularDocument =
-        mode === "cliente_autonomo" && !isValidCpfOrCnpj(values.cpfCnpjTitular)
-          ? userCpfNormalized
-          : titularFromField;
-      const titularEntityType = getEntityTypeFromDocument(titularDocument);
+      const titularDocument = isValidCpfOrCnpj(values.cpfCnpjTitular)
+        ? titularFromField
+        : "";
+      const titularEntityType = titularDocument
+        ? getEntityTypeFromDocument(titularDocument)
+        : ("Pessoa Física" as EntityType);
+      const hasExistingLink = Boolean(linkedClientId || linkedEmpreendedorId);
+      const hasTitularDoc = isValidCpfOrCnpj(values.cpfCnpjTitular);
+      const shouldCreateInitialTitularRecords = hasExistingLink || hasTitularDoc;
 
       const subscriptionFields =
         isTitularPlanMode && values.selectedPackage
@@ -509,8 +524,6 @@ function RegisterPageContent() {
         extraVerified.platformPaymentVerifiedAt = serverTimestamp();
       }
 
-      const hasExistingLink = Boolean(linkedClientId || linkedEmpreendedorId);
-
       const registerRole = resolveRegisterRole(
         normalizedEmail,
         mode,
@@ -525,9 +538,11 @@ function RegisterPageContent() {
         email: normalizedEmail,
         phone: values.phone,
         cpf:
-          mode === "representative" && titularDocument.length === 14
-            ? ""
-            : titularDocument,
+          titularDocument.length === 11
+            ? titularDocument
+            : userCpfNormalized.length === 11
+              ? userCpfNormalized
+              : "",
         userCpf: userCpfNormalized,
         cnpjs: titularDocument.length === 14 ? [titularDocument] : [],
         role: registerRole,
@@ -542,7 +557,7 @@ function RegisterPageContent() {
           isDelegatePortalMode
             ? false
             : isTitularPlanMode
-              ? !hasExistingLink
+              ? !(hasExistingLink || hasTitularDoc)
               : true,
         ...(linkedClientId ? { linkedClientId } : {}),
         ...(linkedEmpreendedorId ? { linkedEmpreendedorId } : {}),
@@ -663,6 +678,7 @@ function RegisterPageContent() {
               requestedByName: values.name,
               requestedByEmail: values.email,
               cpfOfInterested: cpfCnpjTitularDigits,
+              targetDocument: cpfCnpjTitularDigits,
               requestType:
                 mode === "consultor_representante"
                   ? "consultor_representante"
@@ -680,8 +696,14 @@ function RegisterPageContent() {
       }
 
       // Clientes (titulares): vincular a registros existentes ou criar esboço inicial.
-      if (isTitularPlanMode) {
+      if (isTitularPlanMode && shouldCreateInitialTitularRecords) {
         try {
+          const titularFields = buildTitularFields(values.cpfCnpjTitular);
+          const docForRecords = titularFields.titularDocument || titularDocument;
+          const entityForRecords = titularFields.titularDocument
+            ? titularFields.entityType
+            : titularEntityType;
+
           const empreendedorData = {
             name: values.name,
             phone: values.phone,
@@ -693,9 +715,16 @@ function RegisterPageContent() {
             uf: "",
             cep: "",
             email: values.email,
-            cpfCnpj: titularDocument,
-            entityType: [titularEntityType],
             userId: uid,
+            ownerUserId: uid,
+            ...(docForRecords
+              ? {
+                  cpfCnpj: docForRecords,
+                  entityType: [entityForRecords],
+                  titularDocument: docForRecords,
+                  titularType: titularFields.titularType,
+                }
+              : {}),
           };
           const clientData = {
             name: values.name,
@@ -707,11 +736,18 @@ function RegisterPageContent() {
             uf: "",
             cep: "",
             email: values.email,
-            cpfCnpj: titularDocument,
-            entityType: titularEntityType,
             dataNascimento: "",
             ctfIbama: "",
             userId: uid,
+            ownerUserId: uid,
+            ...(docForRecords
+              ? {
+                  cpfCnpj: docForRecords,
+                  entityType: entityForRecords,
+                  titularDocument: docForRecords,
+                  titularType: titularFields.titularType,
+                }
+              : {}),
           };
 
           if (hasExistingLink) {
@@ -727,7 +763,7 @@ function RegisterPageContent() {
                 clientData,
               );
             }
-          } else {
+          } else if (docForRecords) {
             const empreendedorRef = doc(firestore, "empreendedores", uid);
             const clientRef = doc(firestore, "clients", uid);
             await setDoc(empreendedorRef, empreendedorData, { merge: true });
@@ -751,6 +787,22 @@ function RegisterPageContent() {
         }
       }
 
+      if (isTitularPlanMode && !shouldCreateInitialTitularRecords) {
+        try {
+          await createNotificationForUser(firestore, uid, {
+            title: "Cadastre seu titular CPF/CNPJ",
+            description:
+              "Para cadastrar empreendimentos, informe se o titular é Pessoa Física ou Pessoa Jurídica e complete os dados cadastrais.",
+            link: "/empreendedores/new",
+            sourceType: "onboarding",
+            sourceId: uid,
+            actorRole: "admin",
+          });
+        } catch (e) {
+          console.warn("Notificação de onboarding titular não criada.", e);
+        }
+      }
+
       const pendingPay =
         isTitularPlanMode &&
         clientPackageRequiresAnnualPaymentStep(values.selectedPackage) &&
@@ -760,9 +812,9 @@ function RegisterPageContent() {
         title: "Cadastro realizado com sucesso!",
         description:
           mode === "representative"
-            ? "Sua conta de representante foi criada. Aguarde o titular conceder acesso aos dados."
+            ? "Sua conta de representante foi criada. Solicite acesso a um titular em Usuários, quando estiver pronto."
             : mode === "consultor_representante"
-              ? "Sua conta de consultor foi criada. Aguarde o titular aprovar sua carteira."
+              ? "Sua conta de consultor foi criada. Solicite acesso a um titular em Usuários, quando estiver pronto."
             : pendingPay
               ? "Sua conta foi criada. O acesso à plataforma será liberado após a confirmação do pagamento anual."
               : mode === "cliente_autonomo"
@@ -832,15 +884,14 @@ function RegisterPageContent() {
           <p className="text-sm text-muted-foreground">
             {mode === "cliente_autonomo" ? (
               <>
-                O CPF abaixo identifica sua conta. Se quiser vincular já um CPF
-                ou CNPJ diferente ao cadastro de cliente/empreendedor na
-                plataforma, use o segundo campo (opcional); caso contrário, o
-                sistema usará o mesmo CPF da conta.
+                Informe nome, e-mail, telefone e senha para criar sua conta. CPF
+                pessoal e titular CPF/CNPJ são opcionais nesta etapa — você
+                poderá cadastrar o titular ambiental depois do login.
               </>
             ) : (
               <>
-                A primeira etapa separa o CPF pessoal do usuário do CPF/CNPJ
-                que será usado para vincular os dados na plataforma.
+                Crie sua conta com dados mínimos. A solicitação de acesso ao
+                titular CPF/CNPJ será feita depois do login, em Usuários.
               </>
             )}
           </p>
@@ -850,7 +901,9 @@ function RegisterPageContent() {
           name="cpf"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>CPF</FormLabel>
+              <FormLabel>
+                CPF {mode === "cliente_autonomo" ? "(opcional)" : ""}
+              </FormLabel>
               <FormControl>
                 <MaskedInput
                   mask="cpf"
@@ -874,10 +927,10 @@ function RegisterPageContent() {
           render={({ field }) => (
             <FormItem>
               <FormLabel>
-                {mode === "representative"
-                  ? "CPF ou CNPJ do titular ao qual solicito acesso"
+                {mode === "representative" || mode === "consultor_representante"
+                  ? "CPF ou CNPJ do titular (opcional nesta etapa)"
                   : mode === "cliente_autonomo"
-                    ? "CPF ou CNPJ vinculado ao cliente/empreendedor (opcional)"
+                    ? "CPF ou CNPJ vinculado ao titular (opcional)"
                     : "CPF ou CNPJ vinculado ao cliente/empreendedor"}
               </FormLabel>
               <FormControl>
@@ -904,10 +957,10 @@ function RegisterPageContent() {
                 </p>
               )}
               <p className="text-xs text-muted-foreground">
-                {mode === "representative"
-                  ? "Informe o documento do cliente titular cujos dados você deseja gerenciar. O titular precisará aprovar seu acesso em Usuários."
+                {mode === "representative" || mode === "consultor_representante"
+                  ? "Você poderá solicitar acesso ao titular depois do login, em Usuários. Se preencher agora, um pedido será criado automaticamente (compatibilidade)."
                   : mode === "cliente_autonomo"
-                    ? "Opcional: deixe em branco para usar só o seu CPF no cadastro inicial; você poderá completar ou alterar dados em Empreendedores depois. Se preencher, o documento será gravado no Cliente/Empreendedor."
+                    ? "Opcional: deixe em branco para cadastrar o titular depois. Se preencher, Cliente/Empreendedor serão criados com este documento."
                     : "Este documento será gravado no Cliente/Empreendedor e usado para ligar representantes e dados operacionais a este cadastro."}
               </p>
             </FormItem>
