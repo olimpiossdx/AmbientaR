@@ -34,6 +34,7 @@ import type {
   CompanySettings,
   AccessRequest,
   Client,
+  DelegateInvite,
   Empreendedor,
   UserRole,
 } from "@/lib/types";
@@ -88,6 +89,11 @@ import {
 } from "@/components/ui/alert-dialog";
 import { UserForm } from "./user-form";
 import { DelegateAccessPortfolioCard } from "@/components/delegate-access-portfolio-card";
+import {
+  DelegateInviteAckCard,
+  TitularDelegateInviteCard,
+  TitularSentInvitesList,
+} from "@/components/delegate-invite-panel";
 import {
   filterAccessRequestsForDelegate,
 } from "@/lib/delegate-access-requests";
@@ -758,6 +764,13 @@ export default function UsersPage() {
     approvedRequestsQuery,
   );
 
+  const delegateInvitesQuery = useMemoFirebase(() => {
+    if (!firestore || !profileAligned) return null;
+    return collection(firestore, "delegate_invites");
+  }, [firestore, profileAligned]);
+  const { data: delegateInvites } =
+    useCollection<DelegateInvite>(delegateInvitesQuery);
+
   const myClientsQuery = useMemoFirebase(() => {
     if (
       !firestore ||
@@ -969,6 +982,11 @@ export default function UsersPage() {
     linkedEmpreendedor,
     ownedEntitiesForMatch,
   ]);
+
+  const titularDocumentList = useMemo(
+    () => Array.from(myCpfCnpjSet),
+    [myCpfCnpjSet],
+  );
 
   useEffect(() => {
     if (!firestore || !portalUid || !user || !isClientePortalRole(user.role)) return;
@@ -1535,6 +1553,10 @@ export default function UsersPage() {
 
                   {isClientePortalRole(user?.role) ? (
                   <>
+                  <TitularDelegateInviteCard
+                    titularUser={(clientProfile || user)!}
+                    titularDocuments={titularDocumentList}
+                  />
                   <Card id="access-requests-card">
                     <CardHeader>
                       <CardTitle>
@@ -1693,6 +1715,10 @@ export default function UsersPage() {
                           </p>
                         )}
                       </div>
+                      <TitularSentInvitesList
+                        invites={delegateInvites}
+                        titularUid={portalUid || user?.id || ""}
+                      />
                     </CardContent>
                   </Card>
 
@@ -1989,6 +2015,11 @@ export default function UsersPage() {
                 </CardContent>
               </Card>
 
+              <DelegateInviteAckCard
+                user={consultorUser as AppUser}
+                invites={delegateInvites}
+              />
+
               <DelegateAccessPortfolioCard
                 role="consultor_representante"
                 accessRequests={myDelegateAccessRequests}
@@ -2105,6 +2136,11 @@ export default function UsersPage() {
                   </div>
                 </CardContent>
               </Card>
+
+              <DelegateInviteAckCard
+                user={repUser as AppUser}
+                invites={delegateInvites}
+              />
 
               <DelegateAccessPortfolioCard
                 role="representative"
