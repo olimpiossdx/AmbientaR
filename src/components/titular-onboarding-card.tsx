@@ -77,17 +77,17 @@ function stepsForClienteAutonomo(user: AppUser): OnboardingStep[] {
     },
     {
       id: "titular",
-      title: "Cadastre um titular CPF/CNPJ",
+      title: "Complete o empreendedor base",
       description:
-        "Informe se o titular ambiental é Pessoa Física ou Jurídica antes de operar empreendimentos.",
-      href: "/empreendedores/new",
+        "Confirme endereço e demais dados do titular CPF/CNPJ informado no cadastro.",
+      href: uid ? `/empreendedores/${uid}/edit` : "/empreendedores",
       done: false,
     },
     {
       id: "empreendimento",
       title: "Cadastre seu primeiro empreendimento",
       description: "Vincule o empreendimento ao titular correto.",
-      href: "/empreendedores/new",
+      href: "/projects/new",
       done: false,
     },
     {
@@ -138,6 +138,7 @@ export function TitularOnboardingCard({ user }: TitularOnboardingCardProps) {
 
   if (!isAutonomo && !isDelegate) return null;
   if (isAutonomo && !user.cadastroIncompleto) return null;
+  if (isDelegate && user.pendingAccess === false) return null;
 
   const steps = isAutonomo
     ? stepsForClienteAutonomo(user)
@@ -156,7 +157,7 @@ export function TitularOnboardingCard({ user }: TitularOnboardingCardProps) {
         </CardTitle>
         <CardDescription>
           {isAutonomo
-            ? "Separamos a criação da conta do cadastro do titular ambiental. Siga os passos abaixo."
+            ? "Seu empreendedor base foi criado com o CPF/CNPJ informado. Complete os dados abaixo."
             : "Sua conta foi criada. Solicite acesso ao titular quando estiver pronto."}
         </CardDescription>
       </CardHeader>

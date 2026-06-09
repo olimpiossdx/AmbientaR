@@ -67,7 +67,7 @@ export async function findPortalUserByEmailOrCpf(
       query(usersRef, where("email", "==", normalizedEmail)),
     );
     const match = snap.docs[0];
-    if (match) return { id: match.id, ...(match.data() as AppUser) };
+    if (match) return { ...(match.data() as AppUser), id: match.id };
   }
 
   const cpfDigits = normalizeDocumentDigits(params.cpf);
@@ -77,7 +77,7 @@ export async function findPortalUserByEmailOrCpf(
       for (const variant of variants) {
         const snap = await getDocs(query(usersRef, where(field, "==", variant)));
         const match = snap.docs[0];
-        if (match) return { id: match.id, ...(match.data() as AppUser) };
+        if (match) return { ...(match.data() as AppUser), id: match.id };
       }
     }
   }
@@ -109,11 +109,16 @@ async function grantAccessForTitularDocument(
       params.titularDocument,
     );
     if (lookup.client?.id) {
-      clientsToUpdate = [{ id: lookup.client.id, cpfCnpj: lookup.client.cpfCnpj }];
+      clientsToUpdate = [
+        { id: lookup.client.id, cpfCnpj: lookup.client.cpfCnpj ?? params.titularDocument },
+      ];
     }
     if (lookup.empreendedor?.id) {
       empreendedoresToUpdate = [
-        { id: lookup.empreendedor.id, cpfCnpj: lookup.empreendedor.cpfCnpj },
+        {
+          id: lookup.empreendedor.id,
+          cpfCnpj: lookup.empreendedor.cpfCnpj ?? params.titularDocument,
+        },
       ];
     }
   }

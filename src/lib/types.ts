@@ -46,6 +46,13 @@ export type Empreendedor = {
   sourceClientId?: string;
   dataNascimento?: string;
   ctfIbama?: string;
+  /** UID do titular que criou/possui este empreendedor base. */
+  ownerUserId?: string;
+  titularDocument?: string;
+  titularType?: "pessoa_fisica" | "pessoa_juridica";
+  cadastroIncompleto?: boolean;
+  onboardingStep?: string;
+  cnpjLookupStatus?: "not_applicable" | "success" | "failed" | "not_found";
 };
 
 export type CompanyBankAccountType = 'corrente' | 'poupanca';
@@ -1666,6 +1673,13 @@ export type AppUser = {
   platformSubscriptionLedgerId?: string;
   /** true quando o usuário se cadastrou pelo "Cadastre-se" (login) e ainda não completou o cadastro no menu Cadastro. Usado para exibir alerta no sino. */
   cadastroIncompleto?: boolean;
+  /** Representante/consultor aguardando vínculo a um titular. */
+  pendingAccess?: boolean;
+  /** Etapa atual do onboarding pós-cadastro. */
+  onboardingStep?: string;
+  /** CPF/CNPJ do titular/empreendedor base (Cliente Autônomo). */
+  titularDocument?: string;
+  titularType?: "pessoa_fisica" | "pessoa_juridica";
   /** Cliente financeiro já existente vinculado ao perfil (evita duplicar em Clientes). */
   linkedClientId?: string;
   /** Empreendedor já existente vinculado ao perfil (evita duplicar em Empreendedores). */

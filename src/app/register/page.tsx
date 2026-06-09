@@ -76,6 +76,13 @@ import type {
 import { createNotificationForUser } from "@/lib/notifications";
 import { buildTitularFields } from "@/lib/titular-document";
 import {
+  detectCpfCnpjKind,
+  isValidCpfCnpj,
+  resolveEntityType,
+  resolveTitularType,
+} from "@/lib/cpf-cnpj";
+import { lookupCnpjPublicData } from "@/lib/cnpj-lookup";
+import {
   buildPlatformSubscriptionFieldsForNewTitular,
   clientPackageRequiresAnnualPaymentStep,
   isPlatformPaymentAutoApproveEnabled,
@@ -181,14 +188,6 @@ type FormValues = z.infer<typeof formSchema>;
 
 const normalizeDocument = normalizeDocumentDigits;
 
-const isValidCpfOrCnpj = (raw: string | undefined | null) => {
-  const digits = normalizeDocument(raw);
-  return digits.length === 11 || digits.length === 14;
-};
-
-const getEntityTypeFromDocument = (document: string): EntityType =>
-  normalizeDocument(document).length === 14 ? "Pessoa Jurídica" : "Pessoa Física";
-
 const PROFILE_CHOICE_TEXT = {
   intro:
     "Contas profissionais ou Cliente Autônomo (planos). Titulares Cliente Gestão recebem convite da consultoria.",
@@ -250,6 +249,9 @@ function RegisterPageContent() {
   const [linkedEmpreendedorId, setLinkedEmpreendedorId] = React.useState<string | null>(null);
   const [cpfLinkHint, setCpfLinkHint] = React.useState<string | null>(null);
   const [cpfLookupLoading, setCpfLookupLoading] = React.useState(false);
+  const [cnpjLookupStatus, setCnpjLookupStatus] = React.useState<
+    "not_applicable" | "success" | "failed" | "not_found"
+  >("not_applicable");
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -313,25 +315,43 @@ function RegisterPageContent() {
     setCpfLinkHint(null);
   }, [mode]);
 
-  const resolveTitularDocumentForLookup = React.useCallback(() => {
-    const titularField = normalizeDocument(form.getValues("cpfCnpjTitular"));
-    const userCpf = normalizeDocument(form.getValues("cpf"));
-    if (mode === "cliente_autonomo") {
-      return titularField.length >= 11 ? titularField : userCpf;
-    }
-    return titularField;
-  }, [form, mode]);
-
   const handleTitularDocumentBlur = React.useCallback(async () => {
-    if (!firestore || isDelegatePortalMode) return;
-    const docDigits = resolveTitularDocumentForLookup();
-    if (docDigits.length !== 11 && docDigits.length !== 14) {
+    if (!firestore || mode !== "cliente_autonomo") return;
+    const docDigits = normalizeDocument(form.getValues("cpfCnpjTitular"));
+    if (!isValidCpfCnpj(docDigits)) {
       setCpfLinkHint(null);
+      setCnpjLookupStatus("not_applicable");
       return;
     }
 
     setCpfLookupLoading(true);
+    let cnpjLookupFailed = false;
     try {
+      if (detectCpfCnpjKind(docDigits) === "cnpj") {
+        const lookup = await lookupCnpjPublicData(docDigits);
+        if (lookup.ok) {
+          setCnpjLookupStatus("success");
+          if (lookup.razaoSocial || lookup.nomeFantasia) {
+            form.setValue(
+              "name",
+              lookup.nomeFantasia || lookup.razaoSocial || form.getValues("name"),
+              { shouldValidate: true },
+            );
+          }
+          if (lookup.email) {
+            form.setValue("email", lookup.email, { shouldValidate: true });
+          }
+          if (lookup.phone) {
+            form.setValue("phone", lookup.phone, { shouldValidate: true });
+          }
+        } else {
+          cnpjLookupFailed = true;
+          setCnpjLookupStatus("failed");
+        }
+      } else {
+        setCnpjLookupStatus("not_applicable");
+      }
+
       const { client, empreendedor } = await lookupClientAndEmpreendedorByDocument(
         firestore,
         docDigits,
@@ -339,7 +359,9 @@ function RegisterPageContent() {
       if (!client && !empreendedor) {
         setLinkedClientId(null);
         setLinkedEmpreendedorId(null);
-        setCpfLinkHint(null);
+        if (!cnpjLookupFailed) {
+          setCpfLinkHint(null);
+        }
         return;
       }
 
@@ -362,7 +384,7 @@ function RegisterPageContent() {
     } finally {
       setCpfLookupLoading(false);
     }
-  }, [firestore, form, mode, resolveTitularDocumentForLookup]);
+  }, [firestore, form, mode]);
 
   const watchedStep1 = form.watch([
     "name",
@@ -394,10 +416,10 @@ function RegisterPageContent() {
       (password ?? "").length >= 6 &&
       (confirmPassword ?? "").length >= 6 &&
       password === confirmPassword;
-    const titDigits = normalizeDocument(cpfCnpjTitular);
-    const titularDocOk =
-      titDigits.length === 0 || isValidCpfOrCnpj(cpfCnpjTitular);
-    return base && titularDocOk;
+    const requiresBaseDocument = mode === "cliente_autonomo";
+    const baseDocumentOk =
+      !requiresBaseDocument || isValidCpfCnpj(cpfCnpjTitular);
+    return base && baseDocumentOk;
   }, [watchedStep1, mode]);
 
   const canAdvanceStep2 = () => {
@@ -471,6 +493,19 @@ function RegisterPageContent() {
       return;
     }
 
+    if (mode === "cliente_autonomo") {
+      const baseDocument = normalizeDocument(values.cpfCnpjTitular);
+      if (!isValidCpfCnpj(baseDocument)) {
+        toast({
+          variant: "destructive",
+          title: "CPF/CNPJ obrigatório",
+          description:
+            "Informe um CPF ou CNPJ válido para criar seu empreendedor base.",
+        });
+        return;
+      }
+    }
+
     setLoading(true);
     try {
       const cred = await createUserWithEmailAndPassword(
@@ -495,15 +530,16 @@ function RegisterPageContent() {
       }
       const userCpfNormalized = normalizeDocument(values.cpf);
       const titularFromField = normalizeDocument(values.cpfCnpjTitular);
-      const titularDocument = isValidCpfOrCnpj(values.cpfCnpjTitular)
+      const titularDocument = isValidCpfCnpj(values.cpfCnpjTitular)
         ? titularFromField
         : "";
       const titularEntityType = titularDocument
-        ? getEntityTypeFromDocument(titularDocument)
+        ? resolveEntityType(titularDocument)
         : ("Pessoa Física" as EntityType);
       const hasExistingLink = Boolean(linkedClientId || linkedEmpreendedorId);
-      const hasTitularDoc = isValidCpfOrCnpj(values.cpfCnpjTitular);
-      const shouldCreateInitialTitularRecords = hasExistingLink || hasTitularDoc;
+      const hasTitularDoc = isValidCpfCnpj(values.cpfCnpjTitular);
+      const shouldCreateInitialTitularRecords =
+        isTitularPlanMode && (hasExistingLink || hasTitularDoc);
 
       const subscriptionFields =
         isTitularPlanMode && values.selectedPackage
@@ -538,13 +574,20 @@ function RegisterPageContent() {
         email: normalizedEmail,
         phone: values.phone,
         cpf:
-          titularDocument.length === 11
-            ? titularDocument
-            : userCpfNormalized.length === 11
-              ? userCpfNormalized
-              : "",
-        userCpf: userCpfNormalized,
-        cnpjs: titularDocument.length === 14 ? [titularDocument] : [],
+          isDelegatePortalMode
+            ? ""
+            : titularDocument.length === 11
+              ? titularDocument
+              : userCpfNormalized.length === 11
+                ? userCpfNormalized
+                : "",
+        userCpf: isDelegatePortalMode ? "" : userCpfNormalized,
+        cnpjs:
+          isDelegatePortalMode
+            ? []
+            : titularDocument.length === 14
+              ? [titularDocument]
+              : [],
         role: registerRole,
         status: "active",
         package: isDelegatePortalMode ? null : values.selectedPackage,
@@ -553,12 +596,22 @@ function RegisterPageContent() {
         createdAt: serverTimestamp(),
         lastLogin: serverTimestamp(),
         isOnline: false,
-        cadastroIncompleto:
-          isDelegatePortalMode
-            ? false
-            : isTitularPlanMode
-              ? !(hasExistingLink || hasTitularDoc)
-              : true,
+        cadastroIncompleto: isDelegatePortalMode
+          ? false
+          : isTitularPlanMode,
+        ...(isDelegatePortalMode
+          ? {
+              pendingAccess: true,
+              onboardingStep: "solicitar_acesso",
+            }
+          : {}),
+        ...(isTitularPlanMode && titularDocument
+          ? {
+              titularDocument,
+              titularType: resolveTitularType(titularDocument),
+              onboardingStep: "completar_empreendedor",
+            }
+          : {}),
         ...(linkedClientId ? { linkedClientId } : {}),
         ...(linkedEmpreendedorId ? { linkedEmpreendedorId } : {}),
         ...(isTitularPlanMode
@@ -667,36 +720,8 @@ function RegisterPageContent() {
         }
       }
 
-      // Representante / consultor: pedido de acesso para o titular aprovar.
-      if (isDelegatePortalMode) {
-        const cpfCnpjTitularRaw = (values.cpfCnpjTitular ?? "").trim();
-        const cpfCnpjTitularDigits = normalizeDocument(cpfCnpjTitularRaw);
-        if (isValidCpfOrCnpj(cpfCnpjTitularDigits)) {
-          try {
-            await addDoc(collection(firestore, "access_requests"), {
-              requestedByUserId: uid,
-              requestedByName: values.name,
-              requestedByEmail: values.email,
-              cpfOfInterested: cpfCnpjTitularDigits,
-              targetDocument: cpfCnpjTitularDigits,
-              requestType:
-                mode === "consultor_representante"
-                  ? "consultor_representante"
-                  : "representative",
-              status: "pending",
-              createdAt: new Date().toISOString(),
-            });
-          } catch (e) {
-            console.warn(
-              "Pedido de acesso (access_requests) não criado; solicite depois em Usuários.",
-              e,
-            );
-          }
-        }
-      }
-
-      // Clientes (titulares): vincular a registros existentes ou criar esboço inicial.
-      if (isTitularPlanMode && shouldCreateInitialTitularRecords) {
+      // Cliente Autônomo: vincular a registros existentes ou criar empreendedor base incompleto.
+      if (shouldCreateInitialTitularRecords) {
         try {
           const titularFields = buildTitularFields(values.cpfCnpjTitular);
           const docForRecords = titularFields.titularDocument || titularDocument;
@@ -717,6 +742,9 @@ function RegisterPageContent() {
             email: values.email,
             userId: uid,
             ownerUserId: uid,
+            cadastroIncompleto: true,
+            onboardingStep: "completar_empreendedor",
+            cnpjLookupStatus,
             ...(docForRecords
               ? {
                   cpfCnpj: docForRecords,
@@ -784,22 +812,6 @@ function RegisterPageContent() {
             "Cadastro inicial de Cliente/Empreendedor não foi concluído integralmente.",
             e,
           );
-        }
-      }
-
-      if (isTitularPlanMode && !shouldCreateInitialTitularRecords) {
-        try {
-          await createNotificationForUser(firestore, uid, {
-            title: "Cadastre seu titular CPF/CNPJ",
-            description:
-              "Para cadastrar empreendimentos, informe se o titular é Pessoa Física ou Pessoa Jurídica e complete os dados cadastrais.",
-            link: "/empreendedores/new",
-            sourceType: "onboarding",
-            sourceId: uid,
-            actorRole: "admin",
-          });
-        } catch (e) {
-          console.warn("Notificação de onboarding titular não criada.", e);
         }
       }
 
@@ -884,9 +896,9 @@ function RegisterPageContent() {
           <p className="text-sm text-muted-foreground">
             {mode === "cliente_autonomo" ? (
               <>
-                Informe nome, e-mail, telefone e senha para criar sua conta. CPF
-                pessoal e titular CPF/CNPJ são opcionais nesta etapa — você
-                poderá cadastrar o titular ambiental depois do login.
+                Informe nome, e-mail, telefone, senha e o CPF ou CNPJ do
+                titular/empreendedor base. Você poderá complementar os dados
+                depois do login.
               </>
             ) : (
               <>
@@ -896,73 +908,69 @@ function RegisterPageContent() {
             )}
           </p>
         </div>
+        {mode === "cliente_autonomo" && (
+          <FormField
+            control={form.control}
+            name="cpfCnpjTitular"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>
+                  CPF ou CNPJ do titular/empreendedor base
+                </FormLabel>
+                <FormControl>
+                  <MaskedInput
+                    mask="cpfCnpj"
+                    placeholder="000.000.000-00 ou 00.000.000/0000-00"
+                    {...field}
+                    onBlur={() => {
+                      field.onBlur();
+                      void handleTitularDocumentBlur();
+                    }}
+                  />
+                </FormControl>
+                <FormMessage />
+                {cpfLookupLoading && (
+                  <p className="text-xs text-muted-foreground flex items-center gap-1">
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                    Verificando documento…
+                  </p>
+                )}
+                {cpfLinkHint && !cpfLookupLoading && (
+                  <p className="text-xs text-emerald-700 dark:text-emerald-400">
+                    {cpfLinkHint}
+                  </p>
+                )}
+                {cnpjLookupStatus === "failed" && !cpfLookupLoading && (
+                  <p className="text-xs text-muted-foreground">
+                    Não foi possível buscar dados públicos do CNPJ. Você pode
+                    continuar e preencher manualmente depois.
+                  </p>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  Informe o documento que identificará seu empreendedor base.
+                  O sistema detecta automaticamente CPF (11 dígitos) ou CNPJ (14
+                  dígitos).
+                </p>
+              </FormItem>
+            )}
+          />
+        )}
         <FormField
           control={form.control}
           name="cpf"
           render={({ field }) => (
             <FormItem>
               <FormLabel>
-                CPF {mode === "cliente_autonomo" ? "(opcional)" : ""}
+                CPF pessoal {mode === "cliente_autonomo" ? "(opcional)" : ""}
               </FormLabel>
               <FormControl>
                 <MaskedInput
                   mask="cpf"
                   placeholder="000.000.000-00"
                   {...field}
-                  onBlur={() => {
-                    field.onBlur();
-                    if (mode === "cliente_autonomo") {
-                      void handleTitularDocumentBlur();
-                    }
-                  }}
                 />
               </FormControl>
               <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="cpfCnpjTitular"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>
-                {mode === "representative" || mode === "consultor_representante"
-                  ? "CPF ou CNPJ do titular (opcional nesta etapa)"
-                  : mode === "cliente_autonomo"
-                    ? "CPF ou CNPJ vinculado ao titular (opcional)"
-                    : "CPF ou CNPJ vinculado ao cliente/empreendedor"}
-              </FormLabel>
-              <FormControl>
-                <MaskedInput
-                  mask="cpfCnpj"
-                  placeholder="000.000.000-00 ou 00.000.000/0000-00"
-                  {...field}
-                  onBlur={() => {
-                    field.onBlur();
-                    void handleTitularDocumentBlur();
-                  }}
-                />
-              </FormControl>
-              <FormMessage />
-              {cpfLookupLoading && (
-                <p className="text-xs text-muted-foreground flex items-center gap-1">
-                  <Loader2 className="h-3 w-3 animate-spin" />
-                  Verificando cadastro existente…
-                </p>
-              )}
-              {cpfLinkHint && !cpfLookupLoading && (
-                <p className="text-xs text-emerald-700 dark:text-emerald-400">
-                  {cpfLinkHint}
-                </p>
-              )}
-              <p className="text-xs text-muted-foreground">
-                {mode === "representative" || mode === "consultor_representante"
-                  ? "Você poderá solicitar acesso ao titular depois do login, em Usuários. Se preencher agora, um pedido será criado automaticamente (compatibilidade)."
-                  : mode === "cliente_autonomo"
-                    ? "Opcional: deixe em branco para cadastrar o titular depois. Se preencher, Cliente/Empreendedor serão criados com este documento."
-                    : "Este documento será gravado no Cliente/Empreendedor e usado para ligar representantes e dados operacionais a este cadastro."}
-              </p>
             </FormItem>
           )}
         />

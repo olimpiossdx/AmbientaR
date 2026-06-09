@@ -163,7 +163,7 @@ export function TitularDelegateInviteCard({
               mask="cpf"
               placeholder="000.000.000-00"
               value={targetCpf}
-              onChange={(e) => setTargetCpf(e.target.value)}
+              onChange={(v) => setTargetCpf(v)}
             />
           </div>
         </div>

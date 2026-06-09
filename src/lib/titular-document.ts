@@ -1,34 +1,38 @@
 import type { EntityType } from "@/lib/types";
-import { normalizeDocumentDigits } from "@/lib/document-lookup";
+import {
+  buildCpfCnpjIdentityFields,
+  isValidCpfCnpj,
+  normalizeCpfCnpj,
+  resolveTitularType as resolveTitularTypeFromDoc,
+} from "@/lib/cpf-cnpj";
 
 export type TitularType = "pessoa_fisica" | "pessoa_juridica" | "produtor_rural";
 
 export function isValidTitularDocument(raw: string | undefined | null): boolean {
-  const digits = normalizeDocumentDigits(raw);
-  return digits.length === 11 || digits.length === 14;
+  return isValidCpfCnpj(raw);
 }
 
-export function resolveTitularType(raw: string | undefined | null): TitularType | null {
-  const digits = normalizeDocumentDigits(raw);
-  if (digits.length === 11) return "pessoa_fisica";
-  if (digits.length === 14) return "pessoa_juridica";
-  return null;
+export function resolveTitularType(
+  raw: string | undefined | null,
+): TitularType | null {
+  const type = resolveTitularTypeFromDoc(raw);
+  return type;
 }
 
-export function resolveEntityTypeFromTitular(raw: string | undefined | null): EntityType {
-  const type = resolveTitularType(raw);
-  if (type === "pessoa_juridica") return "Pessoa Jurídica";
-  return "Pessoa Física";
+export function resolveEntityTypeFromTitular(
+  raw: string | undefined | null,
+): EntityType {
+  return buildCpfCnpjIdentityFields(raw).entityType;
 }
 
 export function buildTitularFields(raw: string | undefined | null) {
-  const titularDocument = normalizeDocumentDigits(raw);
-  const titularType = resolveTitularType(titularDocument);
+  const identity = buildCpfCnpjIdentityFields(raw);
+  const titularDocument = normalizeCpfCnpj(raw);
 
   return {
     titularDocument: titularDocument || "",
-    titularType,
+    titularType: identity.titularType,
     cpfCnpj: titularDocument || "",
-    entityType: resolveEntityTypeFromTitular(titularDocument),
+    entityType: identity.entityType,
   };
 }
