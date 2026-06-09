@@ -30,6 +30,7 @@ import {
   fetchClientIdsForPortalPartner,
   fetchEmpreendedorIdsForPortalScope,
 } from "@/lib/portal-empreendedor-scope";
+import { buildUserProfileDocumentVariants } from "@/lib/document-lookup";
 import {
   collection,
   query,
@@ -54,26 +55,6 @@ import { DocumentosAmbientaisHubCard } from "@/components/documentos-ambientais-
 import { DOCUMENTOS_AMBIENTAIS_MENU_LABEL } from "@/lib/navigation-config";
 import { ProfileNavigationHubCard } from "@/components/profile-navigation-hub-card";
 import { TitularOnboardingCard } from "@/components/titular-onboarding-card";
-
-/** Retorna apenas dígitos do CPF/CNPJ para comparação. */
-function onlyDigits(value: string): string {
-  return value.replace(/\D/g, "");
-}
-
-/** Monta lista de variantes (original + só dígitos) para match no Firestore, máx 10. */
-function documentVariants(
-  cpf: string | undefined,
-  cnpjs: string[] | undefined,
-): string[] {
-  const raw = [cpf, ...(cnpjs || [])].filter(Boolean) as string[];
-  const withNormalized = new Set<string>();
-  for (const v of raw) {
-    withNormalized.add(v);
-    const digits = onlyDigits(v);
-    if (digits.length >= 11) withNormalized.add(digits);
-  }
-  return Array.from(withNormalized).slice(0, 10);
-}
 
 export default function ClientDashboard() {
   const { user } = useAuth();
@@ -126,7 +107,12 @@ export default function ClientDashboard() {
           clientsRef,
           where("approvedUserIds", "array-contains", uid),
         );
-        const userDocs = documentVariants((user as any).cpf, user.cnpjs);
+        const userDocs = buildUserProfileDocumentVariants(
+          user.cpf,
+          user.userCpf,
+          user.titularDocument,
+          user.cnpjs,
+        );
 
         const promiseCpf =
           userDocs.length > 0
@@ -190,8 +176,10 @@ export default function ClientDashboard() {
           where("approvedUserIds", "array-contains", portalUid),
         ),
       );
-      const userDocuments = documentVariants(
-        user.cpf || user.userCpf,
+      const userDocuments = buildUserProfileDocumentVariants(
+        user.cpf,
+        user.userCpf,
+        user.titularDocument,
         user.cnpjs,
       );
 

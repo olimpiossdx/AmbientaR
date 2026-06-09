@@ -79,6 +79,7 @@ import {
 } from "@/lib/role-guards";
 import { fetchClientIdsForPortalPartner, isEmpreendedorScopedPortalRole } from "@/lib/portal-empreendedor-scope";
 import { resolvePortalAuthUid } from "@/lib/auth-user-id";
+import { buildUserProfileDocumentVariants } from "@/lib/document-lookup";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { logUserAction } from "@/lib/audit-log";
 import { InvoiceForm } from "./invoice-form";
@@ -115,21 +116,6 @@ const DetailItem = ({
     <p className="text-sm text-muted-foreground">{value || "Não informado"}</p>
   </div>
 );
-
-/** Variantes de CPF/CNPJ (original + só dígitos) para match no Firestore, máx 10. */
-function documentVariants(
-  cpf: string | undefined,
-  cnpjs: string[] | undefined,
-): string[] {
-  const raw = [cpf, ...(cnpjs || [])].filter(Boolean) as string[];
-  const set = new Set<string>();
-  for (const v of raw) {
-    set.add(v);
-    const digits = v.replace(/\D/g, "");
-    if (digits.length >= 11) set.add(digits);
-  }
-  return Array.from(set).slice(0, 10);
-}
 
 type PeriodType = "day" | "month" | "year";
 
@@ -194,12 +180,21 @@ export default function InvoicesPage() {
   const isClientOrRep =
     isEmpreendedorScopedPortalRole(user?.role);
 
-  // Algumas contas podem ter o CPF em `userCpf` em vez de `cpf`.
-  // Usamos o primeiro disponível para resolver `clientIdsForUser`.
-  const userCpf = user?.cpf || user?.userCpf;
-
   const [clientIdsForUser, setClientIdsForUser] = useState<string[] | null>(
     null,
+  );
+
+  const userDocumentVariants = useMemo(
+    () =>
+      user
+        ? buildUserProfileDocumentVariants(
+            user.cpf,
+            user.userCpf,
+            user.titularDocument,
+            user.cnpjs,
+          )
+        : [],
+    [user],
   );
 
   // Resolve a lista de clientIds que o usuário (cliente ou representante) pode visualizar.
@@ -225,7 +220,7 @@ export default function InvoicesPage() {
 
         // Fallback: se o `userId` não estiver correto/inexistente para o cliente,
         // tenta resolver também via CPF/CNPJ.
-        const userDocs = documentVariants(userCpf, user.cnpjs);
+        const userDocs = userDocumentVariants;
         const qByDoc =
           userDocs.length > 0
             ? query(clientsRef, where("cpfCnpj", "in", userDocs))
@@ -258,7 +253,7 @@ export default function InvoicesPage() {
             where("approvedUserIds", "array-contains", uid),
           ),
         );
-        const userDocs = documentVariants(userCpf, user.cnpjs);
+        const userDocs = userDocumentVariants;
 
         if (userDocs.length > 0) {
           const qByDoc = query(clientsRef, where("cpfCnpj", "in", userDocs));
@@ -295,7 +290,7 @@ export default function InvoicesPage() {
 
     // Outros perfis não usam clientIdsForUser.
     setClientIdsForUser(null);
-  }, [firestore, user, userCpf]);
+  }, [firestore, user, userDocumentVariants]);
 
   const invoicesQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;

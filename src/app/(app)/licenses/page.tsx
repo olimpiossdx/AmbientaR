@@ -37,6 +37,7 @@ import {
   getDocs,
 } from "firebase/firestore";
 import { resolvePortalAuthUid } from "@/lib/auth-user-id";
+import { buildUserProfileDocumentVariants } from "@/lib/document-lookup";
 import type { License, Empreendedor, AppUser, Project } from "@/lib/types";
 import { permitStatusBadgeClassRich } from "@/lib/status-display-classes";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -122,16 +123,12 @@ export default function LicensesPage() {
         return;
       }
       const byUserId = query(empreendedoresRef, where("userId", "==", uid));
-      const variants = [user.cpf || user.userCpf, ...(user.cnpjs || [])].filter(
-        Boolean,
-      ) as string[];
-      const normalized = new Set<string>();
-      variants.forEach((v) => {
-        normalized.add(v);
-        const d = v.replace(/\D/g, "");
-        if (d.length >= 11) normalized.add(d);
-      });
-      const variantList = Array.from(normalized).slice(0, 10);
+      const variantList = buildUserProfileDocumentVariants(
+        user.cpf,
+        user.userCpf,
+        user.titularDocument,
+        user.cnpjs,
+      );
       const byCpf =
         variantList.length > 0
           ? query(empreendedoresRef, where("cpfCnpj", "in", variantList))

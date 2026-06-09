@@ -22,6 +22,24 @@ export function buildCpfCnpjVariants(raw: string): string[] {
   return Array.from(variants).filter(Boolean);
 }
 
+/** Variantes de CPF/CNPJ do perfil (cpf, userCpf, titularDocument, cnpjs…) para consultas `in`. */
+export function buildUserProfileDocumentVariants(
+  ...sources: Array<string | null | undefined | string[]>
+): string[] {
+  const set = new Set<string>();
+  for (const source of sources) {
+    if (!source) continue;
+    const list = Array.isArray(source) ? source : [source];
+    for (const raw of list) {
+      if (!raw) continue;
+      for (const variant of buildCpfCnpjVariants(raw)) {
+        set.add(variant);
+      }
+    }
+  }
+  return Array.from(set).slice(0, 10);
+}
+
 export type ClientEmpreendedorLookupMatch = {
   client: (Partial<Client> & { id: string }) | null;
   empreendedor: (Partial<Empreendedor> & { id: string }) | null;

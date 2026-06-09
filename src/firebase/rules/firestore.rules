@@ -1087,6 +1087,61 @@ service cloud.firestore {
     }
 
     /**
+     * @description Convites de titular → representante/consultor (delegate_invites).
+     * Leitura: criador, profissional alvo (uid ou e-mail) ou admin.
+     * A app consulta com where em createdByUserId, targetUserId ou targetEmail.
+     */
+    function canReadDelegateInviteData(data) {
+      return isAdmin() || (
+        request.auth != null && (
+          data.createdByUserId == request.auth.uid ||
+          ('targetUserId' in data && data.targetUserId == request.auth.uid) ||
+          (
+            request.auth.token.email != null &&
+            'targetEmail' in data &&
+            data.targetEmail is string &&
+            data.targetEmail.lower() == request.auth.token.email.lower()
+          )
+        )
+      );
+    }
+
+    function canUpdateDelegateInvite() {
+      return isAdmin() || (
+        request.auth != null && (
+          resource.data.createdByUserId == request.auth.uid ||
+          ('targetUserId' in resource.data && resource.data.targetUserId == request.auth.uid) ||
+          (
+            request.auth.token.email != null &&
+            'targetEmail' in resource.data &&
+            resource.data.targetEmail is string &&
+            resource.data.targetEmail.lower() == request.auth.token.email.lower()
+          )
+        )
+      );
+    }
+
+    match /delegate_invites/{inviteId} {
+      allow get: if canReadDelegateInviteData(resource.data);
+      // Listas separadas (sem OR na mesma regra) para queries com where em um único campo.
+      allow list: if isAdmin();
+      allow list: if request.auth != null
+        && resource.data.createdByUserId == request.auth.uid;
+      allow list: if request.auth != null
+        && 'targetUserId' in resource.data
+        && resource.data.targetUserId == request.auth.uid;
+      allow list: if request.auth != null
+        && request.auth.token.email != null
+        && 'targetEmail' in resource.data
+        && resource.data.targetEmail is string
+        && resource.data.targetEmail.lower() == request.auth.token.email.lower();
+      allow create: if request.auth != null
+        && request.resource.data.createdByUserId == request.auth.uid;
+      allow update: if canUpdateDelegateInvite();
+      allow delete: if isAdmin();
+    }
+
+    /**
      * @description Carteira consultor ↔ titular (handoff e transferência).
      */
     match /consultor_assignments/{assignmentId} {

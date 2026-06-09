@@ -18,7 +18,7 @@ export function addTitularDocumentToSet(
 }
 
 export type TitularDocumentSetInput = {
-  profile?: Pick<AppUser, "cpf" | "userCpf" | "cnpjs"> | null;
+  profile?: Pick<AppUser, "cpf" | "userCpf" | "cnpjs" | "titularDocument"> | null;
   myClients?: Pick<Client, "cpfCnpj">[] | null;
   myEmpreendedores?: Pick<Empreendedor, "cpfCnpj">[] | null;
   clientById?: Pick<Client, "cpfCnpj"> | null;
@@ -41,6 +41,7 @@ export function buildTitularCpfCnpjSet(input: TitularDocumentSetInput): Set<stri
   if (profile) {
     addTitularDocumentToSet(set, profile.cpf);
     addTitularDocumentToSet(set, profile.userCpf);
+    addTitularDocumentToSet(set, profile.titularDocument);
     profile.cnpjs?.forEach((cnpj) => addTitularDocumentToSet(set, cnpj));
   }
 

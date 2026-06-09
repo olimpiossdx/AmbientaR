@@ -6,7 +6,7 @@ Fonte única de limites e preços: `src/lib/package-limits.ts`.
 
 | Pacote (`package`) | Empreendimentos | Storage | AmbBot/mês | Anual |
 |--------------------|-----------------|---------|------------|-------|
-| `gratuito` | 1 | **0** (sem upload) | 0 | R$ 0 — 1 registro/módulo, sem alertas de prazo |
+| `gratuito` | 1 | **0** (sem upload) | 0 | R$ 0 — 1 registro/módulo, sem alertas de prazo; publicidade + contato comercial no aceite |
 | `basico` | 1 | 1 GB | 0 (avulso R$ 99) | R$ 696 — marketing autorizado no contrato |
 | `intermediario` | 2 | 3 GB | 1 | R$ 1.396 |
 | `avancado` | 3 | 6 GB | 1 | R$ 1.996 |
@@ -16,7 +16,7 @@ Consultas AmbBot extras: **R$ 79** (planos 2+) ou **R$ 99** (planos 1 / gratuito
 
 ## Marketing e publicidade (LGPD)
 
-- **Gratuito:** sem autorização automática de **contato comercial da CONTRATADA** (e-mail, WhatsApp, etc.). É a **versão com publicidade de terceiros** (cláusula 9.3–9.5 do contrato de cadastro): anúncios em áreas periféricas da interface, sem marketing direto da Pimenta pelo só aceite. Campo técnico: `showsThirdPartyAdvertising: true` em `package-limits.ts` (implementação de blocos AdSense ainda opcional).
+- **Gratuito:** **versão com publicidade** (cláusulas 9.2–9.5 do contrato de cadastro e confirmação na etapa final sem custo). Ao aceitar, o titular autoriza: (a) **publicidade de terceiros** no aplicativo e no site; (b) **contato comercial da CONTRATADA** por ligações, e-mail, WhatsApp, SMS, notificações push, atualizações do app e demais canais; (c) **uso dos dados** para oferecimento de serviços e comunicações comerciais; (d) **renúncia a reclamações** quanto a essas práticas nos termos do contrato (salvo direitos irrenunciáveis em lei). Campos técnicos: `showsThirdPartyAdvertising: true` e `allowsCommercialContact: true` em `package-limits.ts` / cadastro (`src/app/register/page.tsx`). Implementação de blocos AdSense ainda opcional.
 - **Básico:** autorização ampla no aceite do contrato (telefone, e-mail, WhatsApp, SMS, etc.); sem publicidade de terceiros prevista no catálogo.
 - **Intermediário+:** opt-in explícito no cadastro (`allowsCommercialContact`).
 

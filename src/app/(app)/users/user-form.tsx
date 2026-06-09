@@ -47,8 +47,9 @@ import { createAccessRequestsForDelegate } from '@/lib/delegate-access-requests'
 import { Label } from '@/components/ui/label';
 import { DialogFooter } from '@/components/ui/dialog';
 import { logUserAction } from '@/lib/audit-log';
-import { formatCpfCnpjDisplay } from '@/lib/masks';
+import { formatCpfCnpjDisplay, maskCnpj } from '@/lib/masks';
 import { lookupClientAndEmpreendedorByDocument, normalizeDocumentDigits } from '@/lib/document-lookup';
+import { resolveEntityType } from '@/lib/cpf-cnpj';
 import { linkClientGestaoToExistingRecords } from '@/lib/link-client-gestao-records';
 
 const baseSchema = z.object({
@@ -205,9 +206,6 @@ const resolvePortalDocument = (
   return '';
 };
 
-const getEntityTypeFromDocument = (value: string) =>
-  normalizeDocumentDigits(value).length === 14 ? 'Pessoa Jurídica' as const : 'Pessoa Física' as const;
-
 export function UserForm({ currentUser, onSuccess, representativeRequestedCpf, representativesForThisClient, representativeRequestedCpfsCnpjs }: UserFormProps) {
   const [loading, setLoading] = React.useState(false);
   const [showPassword, setShowPassword] = React.useState(false);
@@ -295,14 +293,7 @@ export function UserForm({ currentUser, onSuccess, representativeRequestedCpf, r
   };
   
   const handleCnpjChange = (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
-    let value = e.target.value.replace(/\D/g, '');
-
-    value = value.replace(/^(\d{2})(\d)/, '$1.$2');
-    value = value.replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3');
-    value = value.replace(/\.(\d{3})(\d)/, '.$1/$2');
-    value = value.replace(/(\d{4})(\d)/, '$1-$2');
-
-    form.setValue(`cnpjs.${index}.value`, value, { shouldValidate: true });
+    form.setValue(`cnpjs.${index}.value`, maskCnpj(e.target.value), { shouldValidate: true });
   };
 
   const handleCpfListItemChange = (value: string, index: number) => {
@@ -367,7 +358,7 @@ export function UserForm({ currentUser, onSuccess, representativeRequestedCpf, r
             currentUser.id &&
             (portalDocument.length === 11 || portalDocument.length === 14)
           ) {
-            const entityType = getEntityTypeFromDocument(portalDocument);
+            const entityType = resolveEntityType(portalDocument);
             const clientDocId = linkedClientId || currentUser.linkedClientId || currentUser.id;
             const empreendedorDocId = linkedEmpreendedorId || currentUser.linkedEmpreendedorId || currentUser.id;
             const linkedData = {
@@ -513,7 +504,7 @@ export function UserForm({ currentUser, onSuccess, representativeRequestedCpf, r
                   firestore,
                   portalDocument,
                 );
-                const entityType = getEntityTypeFromDocument(portalDocument);
+                const entityType = resolveEntityType(portalDocument);
                 const linkedData = {
                   name: values.name,
                   cpfCnpj: portalDocument,

@@ -94,21 +94,7 @@ import {
   canManageCondicionantes,
   isAdminRole,
 } from "@/lib/role-guards";
-
-/** Variantes de CPF/CNPJ (original + só dígitos) para match no Firestore, máx 10. */
-function documentVariants(
-  cpf: string | undefined,
-  cnpjs: string[] | undefined,
-): string[] {
-  const raw = [cpf, ...(cnpjs || [])].filter(Boolean) as string[];
-  const set = new Set<string>();
-  for (const v of raw) {
-    set.add(v);
-    const digits = v.replace(/\D/g, "");
-    if (digits.length >= 11) set.add(digits);
-  }
-  return Array.from(set).slice(0, 10);
-}
+import { buildUserProfileDocumentVariants } from "@/lib/document-lookup";
 
 const canPerformWriteActions = (user: AppUser | null): boolean => {
   if (!user) return false;
@@ -161,7 +147,12 @@ export default function CompliancePage() {
           empreendedoresRef,
           where("approvedUserIds", "array-contains", currentUser.id),
         );
-        const userDocs = documentVariants(currentUser.cpf || currentUser.userCpf, currentUser.cnpjs);
+        const userDocs = buildUserProfileDocumentVariants(
+          currentUser.cpf,
+          currentUser.userCpf,
+          currentUser.titularDocument,
+          currentUser.cnpjs,
+        );
         const promiseCpf =
           userDocs.length > 0
             ? getDocs(
@@ -193,7 +184,12 @@ export default function CompliancePage() {
           where("approvedUserIds", "array-contains", currentUser.id),
         ),
       );
-      const userDocs = documentVariants(currentUser.cpf || currentUser.userCpf, currentUser.cnpjs);
+      const userDocs = buildUserProfileDocumentVariants(
+        currentUser.cpf,
+        currentUser.userCpf,
+        currentUser.titularDocument,
+        currentUser.cnpjs,
+      );
       if (userDocs.length > 0) {
         const qByDoc = query(
           empreendedoresRef,

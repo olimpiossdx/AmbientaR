@@ -64,6 +64,7 @@ import { Label } from "@/components/ui/label";
 import { formatCepDisplay, formatCpfCnpjDisplay } from "@/lib/masks";
 import { CardSearchInput } from "@/components/card-search-input";
 import { resolvePortalAuthUid } from "@/lib/auth-user-id";
+import { buildCpfCnpjVariants } from "@/lib/document-lookup";
 import {
   isClientePortalRole,
   canWriteCadastroClienteAutonomo,
@@ -192,10 +193,8 @@ export default function EmpreendedoresPage() {
         const cpfs = new Set<string>();
         snap.docs.forEach((d) => {
           const cpf = (d.data().cpfOfInterested || "").trim();
-          const digits = cpf.replace(/\D/g, "");
-          if (digits.length >= 11) {
-            cpfs.add(cpf);
-            cpfs.add(digits);
+          for (const variant of buildCpfCnpjVariants(cpf)) {
+            cpfs.add(variant);
           }
         });
         const cpfList = Array.from(cpfs).slice(0, 10);

@@ -16,7 +16,7 @@ Campos em `users/{uid}`: `platformSubscriptionAcceptanceId`, `platformSubscripti
 1. **Vigência:** início na **assinatura**; **acesso** após confirmação de pagamento.
 2. **Parcelamento:** 12× mensal **sem juros** ou à vista.
 3. **Rescisão:** continua a cobrança até o fim do período; **sem multa adicional** além do saldo devido.
-4. **Gratuito:** mantém regras atuais do cadastro (`gratuito_legacy`).
+4. **Gratuito:** mantém regras atuais do cadastro (`gratuito_legacy`), incluindo aceite de publicidade de terceiros, contato comercial da CONTRATADA e uso de dados para ofertas (sem cobrança; `platformPaymentStatus: exempt`).
 5. **Financeiro:** registro sempre **Aprovado** no ledger.
 6. **Prova:** dados de cadastro + pagamento (sem CVV); IP e equipamento (User-Agent) quando disponível.
 

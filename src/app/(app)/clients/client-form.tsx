@@ -48,6 +48,10 @@ import { DEFAULT_AI_LOCAL_SOURCE_PATH } from "@/lib/ai-local-source-defaults";
 import { getAdminApiRequestHeaders } from "@/lib/admin-api-client";
 import { searchReferences } from "@/lib/reference-search/client";
 import { fetchOnedriveAutofillContext } from "@/lib/autofill/fetch-onedrive-context";
+import {
+  buildCpfCnpjVariants,
+  normalizeDocumentDigits,
+} from "@/lib/document-lookup";
 
 const formSchema = z.object({
   name: z.string().min(2, "O nome é obrigatório."),
@@ -206,63 +210,7 @@ export function ClientForm({
     );
   }, [selectedUf]);
 
-  const handleCpfCnpjChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let value = e.target.value.replace(/\D/g, "");
-
-    if (value.length <= 11) {
-      value = value.replace(/(\d{3})(\d)/, "$1.$2");
-      value = value.replace(/(\d{3})(\d)/, "$1.$2");
-      value = value.replace(/(\d{3})(\d{1,2})$/, "$1-$2");
-    } else {
-      value = value.replace(/^(\d{2})(\d)/, "$1.$2");
-      value = value.replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3");
-      value = value.replace(/\.(\d{3})(\d)/, ".$1/$2");
-      value = value.replace(/(\d{4})(\d)/, "$1-$2");
-    }
-
-    form.setValue("cpfCnpj", value);
-  };
-
-  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let value = e.target.value.replace(/\D/g, "");
-    if (value.length > 11) value = value.substring(0, 11);
-
-    if (value.length > 10) {
-      value = value.replace(/^(\d\d)(\d{5})(\d{4}).*/, "($1) $2-$3");
-    } else if (value.length > 5) {
-      value = value.replace(/^(\d\d)(\d{4})(\d{0,4}).*/, "($1) $2-$3");
-    } else if (value.length > 2) {
-      value = value.replace(/^(\d\d)(\d{0,5}).*/, "($1) $2");
-    } else {
-      value = value.replace(/^(\d*)/, "($1");
-    }
-
-    form.setValue("phone", value);
-  };
-
-  const normalizeDocument = (value: string | undefined | null) =>
-    (value || "").replace(/\D/g, "");
-  const formatCpf = (digits: string) =>
-    digits
-      .replace(/\D/g, "")
-      .replace(/(\d{3})(\d)/, "$1.$2")
-      .replace(/(\d{3})(\d)/, "$1.$2")
-      .replace(/(\d{3})(\d{1,2})$/, "$1-$2");
-  const formatCnpj = (digits: string) =>
-    digits
-      .replace(/\D/g, "")
-      .replace(/^(\d{2})(\d)/, "$1.$2")
-      .replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3")
-      .replace(/\.(\d{3})(\d)/, ".$1/$2")
-      .replace(/(\d{4})(\d)/, "$1-$2");
-  const buildDocumentVariants = (raw: string) => {
-    const digits = normalizeDocument(raw);
-    if (!digits) return [];
-    const variants = new Set<string>([raw, digits]);
-    if (digits.length === 11) variants.add(formatCpf(digits));
-    if (digits.length === 14) variants.add(formatCnpj(digits));
-    return Array.from(variants).filter(Boolean);
-  };
+  const normalizeDocument = normalizeDocumentDigits;
 
   const logAutofillDecision = async (
     s: AutofillSuggestion,
@@ -393,7 +341,7 @@ export function ClientForm({
     setIsAutofilling(true);
     setAutofillSuggestions([]);
     try {
-      const variants = buildDocumentVariants(cpfCnpj).slice(0, 10);
+      const variants = buildCpfCnpjVariants(cpfCnpj).slice(0, 10);
       const [clientsSnap, empreendedoresSnap] = await Promise.all([
         getDocs(
           query(

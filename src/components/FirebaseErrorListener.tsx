@@ -28,6 +28,10 @@ export function FirebaseErrorListener() {
       if (path.includes('/documents/companySettings/')) {
         return;
       }
+      // Convites titular ↔ representante/consultor: não derrubar a app se regras ainda não estiverem em deploy.
+      if (path.includes('delegate_invites')) {
+        return;
+      }
       setError(error);
     };
 

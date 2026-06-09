@@ -70,16 +70,13 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import type {
   ClientPackage,
-  EntityType,
   PlatformPaymentMethod,
 } from "@/lib/types";
 import { createNotificationForUser } from "@/lib/notifications";
-import { buildTitularFields } from "@/lib/titular-document";
 import {
+  buildCpfCnpjIdentityFields,
   detectCpfCnpjKind,
   isValidCpfCnpj,
-  resolveEntityType,
-  resolveTitularType,
 } from "@/lib/cpf-cnpj";
 import { lookupCnpjPublicData } from "@/lib/cnpj-lookup";
 import {
@@ -529,15 +526,12 @@ function RegisterPageContent() {
         return;
       }
       const userCpfNormalized = normalizeDocument(values.cpf);
-      const titularFromField = normalizeDocument(values.cpfCnpjTitular);
-      const titularDocument = isValidCpfCnpj(values.cpfCnpjTitular)
-        ? titularFromField
-        : "";
-      const titularEntityType = titularDocument
-        ? resolveEntityType(titularDocument)
-        : ("Pessoa Física" as EntityType);
+      const titularIdentity = isValidCpfCnpj(values.cpfCnpjTitular)
+        ? buildCpfCnpjIdentityFields(values.cpfCnpjTitular)
+        : null;
+      const titularDocument = titularIdentity?.cpfCnpj ?? "";
       const hasExistingLink = Boolean(linkedClientId || linkedEmpreendedorId);
-      const hasTitularDoc = isValidCpfCnpj(values.cpfCnpjTitular);
+      const hasTitularDoc = Boolean(titularIdentity);
       const shouldCreateInitialTitularRecords =
         isTitularPlanMode && (hasExistingLink || hasTitularDoc);
 
@@ -605,10 +599,10 @@ function RegisterPageContent() {
               onboardingStep: "solicitar_acesso",
             }
           : {}),
-        ...(isTitularPlanMode && titularDocument
+        ...(isTitularPlanMode && titularIdentity
           ? {
-              titularDocument,
-              titularType: resolveTitularType(titularDocument),
+              titularDocument: titularIdentity.titularDocument,
+              titularType: titularIdentity.titularType,
               onboardingStep: "completar_empreendedor",
             }
           : {}),
@@ -617,7 +611,8 @@ function RegisterPageContent() {
         ...(isTitularPlanMode
           ? {
               allowsCommercialContact:
-                values.selectedPackage === "basico"
+                values.selectedPackage === "basico" ||
+                values.selectedPackage === "gratuito"
                   ? true
                   : Boolean(values.marketingContactConsent),
             }
@@ -721,13 +716,10 @@ function RegisterPageContent() {
       }
 
       // Cliente Autônomo: vincular a registros existentes ou criar empreendedor base incompleto.
-      if (shouldCreateInitialTitularRecords) {
+      if (shouldCreateInitialTitularRecords && titularIdentity) {
         try {
-          const titularFields = buildTitularFields(values.cpfCnpjTitular);
-          const docForRecords = titularFields.titularDocument || titularDocument;
-          const entityForRecords = titularFields.titularDocument
-            ? titularFields.entityType
-            : titularEntityType;
+          const docForRecords = titularIdentity.titularDocument;
+          const entityForRecords = titularIdentity.entityType;
 
           const empreendedorData = {
             name: values.name,
@@ -745,14 +737,10 @@ function RegisterPageContent() {
             cadastroIncompleto: true,
             onboardingStep: "completar_empreendedor",
             cnpjLookupStatus,
-            ...(docForRecords
-              ? {
-                  cpfCnpj: docForRecords,
-                  entityType: [entityForRecords],
-                  titularDocument: docForRecords,
-                  titularType: titularFields.titularType,
-                }
-              : {}),
+            cpfCnpj: docForRecords,
+            entityType: [entityForRecords],
+            titularDocument: docForRecords,
+            titularType: titularIdentity.titularType,
           };
           const clientData = {
             name: values.name,
@@ -768,14 +756,10 @@ function RegisterPageContent() {
             ctfIbama: "",
             userId: uid,
             ownerUserId: uid,
-            ...(docForRecords
-              ? {
-                  cpfCnpj: docForRecords,
-                  entityType: entityForRecords,
-                  titularDocument: docForRecords,
-                  titularType: titularFields.titularType,
-                }
-              : {}),
+            cpfCnpj: docForRecords,
+            entityType: entityForRecords,
+            titularDocument: docForRecords,
+            titularType: titularIdentity.titularType,
           };
 
           if (hasExistingLink) {
@@ -1353,6 +1337,7 @@ function RegisterPageContent() {
 
   const renderStep4 = () => {
     const pkg = selectedPackage;
+    const isFreePlan = pkg === "gratuito";
     const annual = clientPackageRequiresAnnualPaymentStep(pkg);
     const amount =
       (pkg && PACKAGE_ANNUAL_AMOUNT_LABEL[pkg]) ?? "Consulte a equipe";
@@ -1361,19 +1346,35 @@ function RegisterPageContent() {
     return (
       <Card className="shadow-lg bg-card/80 backdrop-blur-sm border">
         <CardHeader>
-          <CardTitle className="text-xl">Pagamento anual</CardTitle>
+          <CardTitle className="text-xl">
+            {isFreePlan ? "Confirmação — plano gratuito" : "Pagamento anual"}
+          </CardTitle>
           <CardDescription>
-            Acesso à plataforma AmbientaR mediante{" "}
-            <strong>pagamento único anual</strong> por usuário titular. Após a
-            confirmação, o acesso fica liberado por 12 meses; ao vencer, será
-            necessário renovar.
+            {isFreePlan ? (
+              <>
+                Plano <strong>Gratuito</strong>: sem cobrança neste cadastro. Leia
+                abaixo as condições de publicidade, contato comercial e uso de
+                dados antes de concluir.
+              </>
+            ) : (
+              <>
+                Acesso à plataforma AmbientaR mediante{" "}
+                <strong>pagamento único anual</strong> por usuário titular. Após
+                a confirmação, o acesso fica liberado por 12 meses; ao vencer,
+                será necessário renovar.
+              </>
+            )}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="rounded-lg border bg-muted/40 p-4">
-            <p className="text-sm text-muted-foreground">Valor de referência</p>
-            <p className="text-2xl font-bold text-primary">{amount}</p>
-            {annual && (
+            <p className="text-sm text-muted-foreground">
+              {isFreePlan ? "Custo neste cadastro" : "Valor de referência"}
+            </p>
+            <p className="text-2xl font-bold text-primary">
+              {isFreePlan ? "Sem custo" : amount}
+            </p>
+            {(annual || isFreePlan) && (
               <p className="text-xs text-muted-foreground mt-1">
                 Plano selecionado:{" "}
                 {PACKAGES.find((p) => p.id === pkg)?.name ?? pkg}
@@ -1625,13 +1626,43 @@ function RegisterPageContent() {
           )}
 
           {pkg === "gratuito" && (
-            <p className="text-sm text-muted-foreground">
-              Plano gratuito (versão com publicidade): sem cobrança neste
-              momento. Ao aceitar o contrato, você declara ciência de que a
-              interface poderá exibir anúncios de terceiros; a CONTRATADA não
-              fará marketing direto pelo só aceite. Seu acesso será registrado
-              com vigência anual para controle da plataforma.
-            </p>
+            <div className="space-y-2 rounded-lg border border-amber-500/40 bg-amber-500/10 p-4 text-sm text-muted-foreground">
+              <p>
+                <strong>Plano gratuito (versão com publicidade):</strong> sem
+                cobrança neste cadastro. Ao concluir, você declara ciência e
+                aceite de que:
+              </p>
+              <ul className="list-disc space-y-1 pl-5">
+                <li>
+                  o aplicativo e o site poderão exibir{" "}
+                  <strong>publicidade de terceiros</strong>, além de
+                  comunicações e ofertas da CONTRATADA;
+                </li>
+                <li>
+                  a CONTRATADA poderá entrar em contato por{" "}
+                  <strong>
+                    ligações, e-mails, WhatsApp, SMS, notificações push,
+                    atualizações do aplicativo
+                  </strong>{" "}
+                  e outros canais para ofertas, novidades e venda de serviços;
+                </li>
+                <li>
+                  seus dados cadastrais poderão ser utilizados para{" "}
+                  <strong>oferecimento de serviços</strong> e comunicações
+                  comerciais;
+                </li>
+                <li>
+                  o CONTRATANTE <strong>não poderá reclamar</strong> dessas
+                  práticas de publicidade e contato, nos termos do contrato
+                  aceito na etapa anterior.
+                </li>
+              </ul>
+              <p>
+                Seu acesso será registrado com vigência anual apenas para
+                controle da plataforma, sem qualquer cobrança no plano
+                Gratuito.
+              </p>
+            </div>
           )}
 
           {pkg === "sob_consulta" && (
@@ -1650,11 +1681,13 @@ function RegisterPageContent() {
               onCheckedChange={(c) => setPaymentAcknowledged(c === true)}
             />
             <Label htmlFor="pay-ack" className="text-sm leading-snug cursor-pointer">
-              {annual
-                ? isPlatformPaymentAutoApproveEnabled()
-                  ? "Confirmo que realizei o pagamento conforme as instruções acima e desejo concluir meu cadastro."
-                  : "Estou ciente de que o acesso à plataforma será liberado após a confirmação do pagamento pela equipe e desejo concluir meu cadastro."
-                : "Li as informações desta etapa e desejo concluir meu cadastro."}
+              {isFreePlan
+                ? "Declaro ciência e aceito as condições do plano gratuito (publicidade de terceiros no app e site, contato comercial da CONTRATADA por ligações, e-mails, notificações e demais canais, e uso dos meus dados para oferecimento de serviços), sem direito de reclamação quanto a essas práticas nos termos do contrato, e desejo concluir meu cadastro sem custo."
+                : annual
+                  ? isPlatformPaymentAutoApproveEnabled()
+                    ? "Confirmo que realizei o pagamento conforme as instruções acima e desejo concluir meu cadastro."
+                    : "Estou ciente de que o acesso à plataforma será liberado após a confirmação do pagamento pela equipe e desejo concluir meu cadastro."
+                  : "Li as informações desta etapa e desejo concluir meu cadastro."}
             </Label>
           </div>
 
@@ -1698,7 +1731,12 @@ function RegisterPageContent() {
   };
 
   const stepLabels = isTitularPlanMode
-    ? ["Dados Pessoais", "Pacote", "Contrato", "Pagamento anual"]
+    ? [
+        "Dados Pessoais",
+        "Pacote",
+        "Contrato",
+        selectedPackage === "gratuito" ? "Confirmação" : "Pagamento anual",
+      ]
     : ["Dados Pessoais"];
 
   const renderClientGestaoInviteOnly = () => (

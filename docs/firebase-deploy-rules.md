@@ -46,7 +46,7 @@ O app lê o **role** do documento em:
 
 Salve. Na próxima vez que o usuário fizer login, o app usará esse role.
 
-**Cadastro (titular):** o documento pode incluir **`allowsCommercialContact`** (boolean), preenchido automaticamente no registo: `true` apenas no plano **básico** após aceitar o contrato; nos planos **intermediário+**, só `true` se o utilizador marcar o opt-in de comunicação comercial no formulário. O plano **gratuito** não define `allowsCommercialContact` como verdadeiro (sem marketing direto da CONTRATADA; publicidade de terceiros, se ativada, regula-se pelo contrato — cláusula do plano Gratuito). O titular pode alterar preferências nos termos da LGPD (revogação/oposição conforme política da empresa).
+**Cadastro (titular):** o documento pode incluir **`allowsCommercialContact`** (boolean), preenchido automaticamente no registo: `true` nos planos **gratuito** e **básico** após aceitar o contrato (gratuito: publicidade de terceiros + contato comercial no aceite final sem custo; básico: cláusula de marketing no contrato); nos planos **intermediário+**, só `true` se o utilizador marcar o opt-in de comunicação comercial no formulário. O titular pode alterar preferências nos termos da LGPD (revogação/oposição conforme política da empresa).
 
 ---
 

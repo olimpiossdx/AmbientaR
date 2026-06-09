@@ -267,13 +267,20 @@ export function RegisterContractContent({
             prazo no aplicativo; e demais restrições exibidas na tela de planos.
           </p>
           <p className="mb-2">
-            9.2. O CONTRATANTE no plano Gratuito <strong>não autoriza</strong>,
-            pelo só aceite deste contrato, o uso de seus dados cadastrais para
-            campanhas promocionais <strong>diretas da CONTRATADA</strong> (e-mail,
-            telefone, WhatsApp, SMS ou equivalentes); eventual comunicação
-            limitar-se-á ao necessário para operação da conta, segurança e
-            cumprimento legal. Isso é distinto da publicidade de terceiros
-            prevista no item 9.4.
+            9.2. Ao aceitar este contrato no plano Gratuito, o CONTRATANTE
+            declara, de forma livre, informada e inequívoca, que{" "}
+            <strong>autoriza</strong> a CONTRATADA a tratar seus dados cadastrais
+            e de contato para: comunicações comerciais; prospecção; ofertas de
+            upgrade e de serviços; pesquisas; convites; e contato por{" "}
+            <strong>
+              e-mail, telefone (incluindo ligações), WhatsApp, SMS, mensagens em
+              aplicativos de celular, notificações push, atualizações do
+              aplicativo
+            </strong>{" "}
+            e demais canais digitais ou convencionais que venham a ser utilizados
+            pela CONTRATADA, inclusive para venda e oferecimento de serviços,
+            renunciando a reclamações quanto a essas práticas nos termos deste
+            instrumento e da legislação aplicável.
           </p>
           <p className="mb-2">
             9.3. O plano Gratuito constitui <strong>versão com publicidade</strong>
@@ -286,17 +293,21 @@ export function RegisterContractContent({
           </p>
           <p className="mb-2">
             9.4. Ao aceitar este contrato no plano Gratuito, o CONTRATANTE declara
-            ciência de que: (a) provedores de publicidade e anunciantes podem
-            utilizar cookies, identificadores de dispositivo e tecnologias
-            correlatas, nos termos das políticas desses provedores e da
-            legislação aplicável (incluindo manifestação de preferências de
-            cookies ou publicidade, quando disponibilizada na Plataforma); (b) a
-            CONTRATADA <strong>não garante, endossa nem responde</strong> pelo
-            conteúdo, produtos ou serviços anunciados por terceiros; (c) a
-            migração para plano pago conforme tabela vigente{" "}
+            ciência de que: (a) a Plataforma e o site poderão exibir
+            publicidade de terceiros e comunicações comerciais da CONTRATADA;
+            (b) provedores de publicidade e anunciantes podem utilizar cookies,
+            identificadores de dispositivo e tecnologias correlatas, nos termos
+            das políticas desses provedores e da legislação aplicável (incluindo
+            manifestação de preferências de cookies ou publicidade, quando
+            disponibilizada na Plataforma); (c) a CONTRATADA{" "}
+            <strong>não garante, endossa nem responde</strong> pelo conteúdo,
+            produtos ou serviços anunciados por terceiros; (d) a migração para
+            plano pago conforme tabela vigente{" "}
             <strong>poderá suprimir ou reduzir</strong> a exibição de
             publicidade de terceiros, conforme política então publicada na
-            Plataforma.
+            Plataforma; (e) o CONTRATANTE <strong>não poderá reclamar</strong> da
+            veiculação de publicidade ou do contato comercial autorizado nos
+            itens 9.2 e 9.3, salvo direitos irrenunciáveis previstos em lei.
           </p>
           <p className="mb-2">
             9.5. A CONTRATADA compromete-se a não sobrepor publicidade de
@@ -477,9 +488,13 @@ export function RegisterContractContent({
         <div className="mt-3 rounded-md border border-amber-500/40 bg-amber-500/10 p-2 text-[11px]">
           <strong>Plano Gratuito (versão com publicidade):</strong> uso limitado
           (1 empreendimento, 1 registro por tipo, sem upload e sem alertas
-          automáticos de prazo). Poderão ser exibidos anúncios de terceiros em
-          áreas da Plataforma — sem contato comercial automático da CONTRATADA.
-          Planos pagos ampliam recursos e podem remover a publicidade.
+          automáticos de prazo). Poderão ser exibidos anúncios de terceiros no
+          aplicativo e no site; a CONTRATADA poderá contatar o CONTRATANTE por
+          ligações, e-mails, notificações push, atualizações do app e outros
+          canais para ofertas e venda de serviços, com uso dos dados para
+          oferecimento comercial, sem direito de reclamação nos termos deste
+          contrato. Planos pagos ampliam recursos e podem remover a
+          publicidade.
         </div>
       )}
 

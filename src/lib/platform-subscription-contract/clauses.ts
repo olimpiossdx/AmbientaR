@@ -81,7 +81,9 @@ export function buildGratuitoLegacyNoticeHtml(): string {
   return `
     <h2 style="text-align:center;font-size:14px;">REGISTRO DE ACEITE — PLANO GRATUITO</h2>
     <p style="font-size:11px;">O CONTRATANTE aceitou, no cadastro, os Termos de Uso e Contrato de Licença exibidos na tela de registro
-    (plano Gratuito), mantendo-se as regras atuais desse plano, inclusive limites técnicos e publicidade de terceiros quando aplicável.</p>
+    (plano Gratuito), mantendo-se as regras atuais desse plano, inclusive limites técnicos, publicidade de terceiros no aplicativo e no site,
+    autorização de contato comercial da CONTRATADA (ligações, e-mails, notificações push, atualizações do app e demais canais),
+    uso de dados para oferecimento de serviços e renúncia a reclamações quanto a essas práticas, conforme cláusulas do plano Gratuito.</p>
     <p style="font-size:11px;">Este registro guarda cópia datada do aceite e dos dados de cadastro para fins de auditoria.</p>
     <p style="font-size:11px;">Versão: <strong>${CONTRACT_VERSION}</strong>.</p>
   `;

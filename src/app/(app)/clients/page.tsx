@@ -48,20 +48,7 @@ import {
   isClientePortalRole,
 } from "@/lib/role-guards";
 import { resolvePortalAuthUid } from "@/lib/auth-user-id";
-
-function documentVariants(
-  cpf: string | undefined,
-  cnpjs: string[] | undefined,
-): string[] {
-  const raw = [cpf, ...(cnpjs || [])].filter(Boolean) as string[];
-  const set = new Set<string>();
-  raw.forEach((v) => {
-    set.add(v);
-    const d = v.replace(/\D/g, "");
-    if (d.length >= 11) set.add(d);
-  });
-  return Array.from(set).slice(0, 10);
-}
+import { buildUserProfileDocumentVariants } from "@/lib/document-lookup";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Dialog,
@@ -150,7 +137,12 @@ export default function ClientsPage() {
 
   const clientsQueryByCpf = useMemoFirebase(() => {
     if (!firestore || !user || !isClientePortalRole(user.role)) return null;
-    const variants = documentVariants(user.cpf || user.userCpf, user.cnpjs);
+    const variants = buildUserProfileDocumentVariants(
+      user.cpf,
+      user.userCpf,
+      user.titularDocument,
+      user.cnpjs,
+    );
     if (variants.length === 0)
       return query(
         collection(firestore, "clients"),

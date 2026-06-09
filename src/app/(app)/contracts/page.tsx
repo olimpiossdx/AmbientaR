@@ -68,6 +68,7 @@ import {
 } from "@/lib/role-guards";
 import { fetchClientIdsForPortalPartner, isEmpreendedorScopedPortalRole } from "@/lib/portal-empreendedor-scope";
 import { resolvePortalAuthUid } from "@/lib/auth-user-id";
+import { buildUserProfileDocumentVariants } from "@/lib/document-lookup";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   AlertDialog,
@@ -121,21 +122,6 @@ const DetailItem = ({
   </div>
 );
 
-/** Variantes de CPF/CNPJ (original + só dígitos) para match no Firestore, máx 10. */
-function documentVariants(
-  cpf: string | undefined,
-  cnpjs: string[] | undefined,
-): string[] {
-  const raw = [cpf, ...(cnpjs || [])].filter(Boolean) as string[];
-  const set = new Set<string>();
-  for (const v of raw) {
-    set.add(v);
-    const digits = v.replace(/\D/g, "");
-    if (digits.length >= 11) set.add(digits);
-  }
-  return Array.from(set).slice(0, 10);
-}
-
 export default function ContractsPage() {
   const [isAlertOpen, setIsAlertOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
@@ -180,8 +166,12 @@ export default function ContractsPage() {
     if (isClientePortalRole(user.role)) {
       const isSelfRegistered = isSelfRegisteredPortalUser(user);
       const cRef = collection(firestore, "clients");
-      const userCpf = user.cpf || user.userCpf;
-      const userDocs = documentVariants(userCpf, user.cnpjs);
+      const userDocs = buildUserProfileDocumentVariants(
+        user.cpf,
+        user.userCpf,
+        user.titularDocument,
+        user.cnpjs,
+      );
 
       if (isSelfRegistered) {
         const uid = resolvePortalAuthUid(user);

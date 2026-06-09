@@ -112,7 +112,7 @@ export function DelegateAccessPortfolioCard({
   const titularNameByCpf = useMemo(() => {
     const map = new Map<string, string>();
     for (const t of approvedTitulares) {
-      const key = (t.cpfCnpj || "").replace(/\D/g, "");
+      const key = normalizeDocumentDigits(t.cpfCnpj || "");
       if (key.length >= 11) map.set(key, t.name);
     }
     return map;
@@ -120,7 +120,7 @@ export function DelegateAccessPortfolioCard({
 
   const approvedFromRequests = useMemo(() => {
     const seen = new Set(
-      approvedTitulares.map((t) => (t.cpfCnpj || "").replace(/\D/g, "")),
+      approvedTitulares.map((t) => normalizeDocumentDigits(t.cpfCnpj || "")),
     );
     return myRequests.filter((r) => {
       if (r.status !== "approved") return false;

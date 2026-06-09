@@ -764,12 +764,78 @@ export default function UsersPage() {
     approvedRequestsQuery,
   );
 
-  const delegateInvitesQuery = useMemoFirebase(() => {
-    if (!firestore || !profileAligned) return null;
-    return collection(firestore, "delegate_invites");
-  }, [firestore, profileAligned]);
-  const { data: delegateInvites } =
-    useCollection<DelegateInvite>(delegateInvitesQuery);
+  const delegateInvitesTitularQuery = useMemoFirebase(() => {
+    if (
+      !firestore ||
+      !profileAligned ||
+      !portalUid ||
+      !isClientePortalRole(user?.role)
+    ) {
+      return null;
+    }
+    return query(
+      collection(firestore, "delegate_invites"),
+      where("createdByUserId", "==", portalUid),
+    );
+  }, [firestore, profileAligned, portalUid, user?.role]);
+  const { data: delegateInvitesFromTitular } = useCollection<DelegateInvite>(
+    delegateInvitesTitularQuery,
+  );
+
+  const delegateInvitesForProfessionalUidQuery = useMemoFirebase(() => {
+    if (
+      !firestore ||
+      !profileAligned ||
+      !portalUid ||
+      (user?.role !== "representative" &&
+        user?.role !== "consultor_representante")
+    ) {
+      return null;
+    }
+    return query(
+      collection(firestore, "delegate_invites"),
+      where("targetUserId", "==", portalUid),
+    );
+  }, [firestore, profileAligned, portalUid, user?.role]);
+  const { data: delegateInvitesForProfessionalUid } =
+    useCollection<DelegateInvite>(delegateInvitesForProfessionalUidQuery);
+
+  const delegateInvitesForProfessionalEmailQuery = useMemoFirebase(() => {
+    if (
+      !firestore ||
+      !profileAligned ||
+      (user?.role !== "representative" &&
+        user?.role !== "consultor_representante")
+    ) {
+      return null;
+    }
+    const email = user?.email?.trim().toLowerCase();
+    if (!email) return null;
+    return query(
+      collection(firestore, "delegate_invites"),
+      where("targetEmail", "==", email),
+    );
+  }, [firestore, profileAligned, user?.role, user?.email]);
+  const { data: delegateInvitesForProfessionalEmail } =
+    useCollection<DelegateInvite>(delegateInvitesForProfessionalEmailQuery);
+
+  const delegateInvites = useMemo(() => {
+    const merged = new Map<string, DelegateInvite>();
+    for (const list of [
+      delegateInvitesFromTitular,
+      delegateInvitesForProfessionalUid,
+      delegateInvitesForProfessionalEmail,
+    ]) {
+      for (const invite of list ?? []) {
+        merged.set(invite.id, invite);
+      }
+    }
+    return merged.size > 0 ? Array.from(merged.values()) : null;
+  }, [
+    delegateInvitesFromTitular,
+    delegateInvitesForProfessionalUid,
+    delegateInvitesForProfessionalEmail,
+  ]);
 
   const myClientsQuery = useMemoFirebase(() => {
     if (

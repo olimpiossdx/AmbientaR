@@ -9,11 +9,7 @@ import {
   type Firestore,
 } from "firebase/firestore";
 import { lookupClientAndEmpreendedorByDocument, normalizeDocumentDigits } from "@/lib/document-lookup";
-
-const getEntityTypeFromDocument = (value: string) =>
-  normalizeDocumentDigits(value).length === 14
-    ? ("Pessoa Jurídica" as const)
-    : ("Pessoa Física" as const);
+import { resolveEntityType } from "@/lib/cpf-cnpj";
 
 /** Vincula `userId` em clientes/empreendedores já cadastrados (perfil Cliente Gestão / titular). */
 export async function linkClientGestaoToExistingRecords(
@@ -40,7 +36,7 @@ export async function linkClientGestaoToExistingRecords(
     return { linkedClientId, linkedEmpreendedorId };
   }
 
-  const entityType = getEntityTypeFromDocument(portalDocument);
+  const entityType = resolveEntityType(portalDocument);
   const linkedData = {
     name: profile.name,
     email: profile.email,
