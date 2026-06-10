@@ -1,5 +1,12 @@
-import { addDoc, collection, type Firestore } from "firebase/firestore";
-import type { AccessRequest, AccessRequestType } from "@/lib/types";
+import {
+  addDoc,
+  collection,
+  getDocs,
+  query,
+  where,
+  type Firestore,
+} from "firebase/firestore";
+import type { AccessRequest, AccessRequestType, AppUser } from "@/lib/types";
 import { normalizeDocumentDigits } from "@/lib/document-lookup";
 import { getAccessRequestType } from "@/lib/consultor-assignments";
 
@@ -48,6 +55,48 @@ export function filterAccessRequestsForDelegate(
 ): AccessRequest[] {
   if (!requests?.length) return [];
   return requests.filter((r) => getAccessRequestType(r) === role);
+}
+
+/** Documentos já solicitados (evita recriar pedidos ao salvar o perfil do representante). */
+export async function collectExistingDelegateRequestDigits(
+  firestore: Firestore,
+  requesterUserId: string,
+  options?: {
+    extraDigits?: string[];
+    profile?: Pick<AppUser, "cpf" | "cnpjs"> | null;
+  },
+): Promise<Set<string>> {
+  const set = new Set<string>();
+  const add = (raw: string | undefined | null) => {
+    const digits = normalizeDocumentDigits(raw ?? "");
+    if (digits.length >= 11) set.add(digits);
+  };
+
+  options?.extraDigits?.forEach(add);
+  options?.profile?.cnpjs?.forEach(add);
+  add(options?.profile?.cpf);
+
+  try {
+    const snap = await getDocs(
+      query(
+        collection(firestore, "access_requests"),
+        where("requestedByUserId", "==", requesterUserId),
+      ),
+    );
+    for (const docSnap of snap.docs) {
+      const data = docSnap.data() as Pick<
+        AccessRequest,
+        "cpfOfInterested" | "status"
+      >;
+      if (data.status === "pending" || data.status === "approved") {
+        add(data.cpfOfInterested);
+      }
+    }
+  } catch (e) {
+    console.warn("Não foi possível carregar pedidos de acesso existentes:", e);
+  }
+
+  return set;
 }
 
 export function collectRequestedDocumentDigits(

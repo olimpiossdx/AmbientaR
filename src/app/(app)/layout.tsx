@@ -91,7 +91,10 @@ import {
   isUserProfileAlignedWithSession,
   useAuthUserId,
 } from "@/lib/auth-user-id";
-import { filterAccessRequestsForTitular } from "@/lib/access-request-titular-match";
+import {
+  dedupeAccessRequestsByRequesterAndDocument,
+  filterAccessRequestsForTitular,
+} from "@/lib/access-request-titular-match";
 import { buildTitularCpfCnpjSet } from "@/lib/titular-document-set";
 
 const LogoIcon = () => (
@@ -155,49 +158,53 @@ const AppLayoutClient = ({ children }: { children: React.ReactNode }) => {
   );
 
   // Consultas auxiliares para identificar todos os CPFs/CNPJs vinculados ao titular (mesma lógica da página de Meu Perfil).
+  const portalSessionReady = Boolean(
+    firestore && user && sessionUid && isClientePortalRole(user.role),
+  );
+
   const accessRequestsQuery = useMemoFirebase(() => {
-    if (!firestore || !profileAligned || !sessionUid || !isClientePortalRole(user?.role)) {
+    if (!portalSessionReady || !sessionUid) {
       return null;
     }
     return query(
-      collection(firestore, "access_requests"),
+      collection(firestore!, "access_requests"),
       where("status", "==", "pending"),
     );
-  }, [firestore, profileAligned, sessionUid, user?.role]);
+  }, [firestore, portalSessionReady, sessionUid]);
 
   const myClientsQuery = useMemoFirebase(() => {
-    if (!firestore || !profileAligned || !sessionUid || !isClientePortalRole(user?.role)) {
+    if (!portalSessionReady || !sessionUid) {
       return null;
     }
     return query(
-      collection(firestore, "clients"),
+      collection(firestore!, "clients"),
       where("userId", "==", sessionUid),
     );
-  }, [firestore, profileAligned, sessionUid, user?.role]);
+  }, [firestore, portalSessionReady, sessionUid]);
 
   const myEmpreendedoresQuery = useMemoFirebase(() => {
-    if (!firestore || !profileAligned || !sessionUid || !isClientePortalRole(user?.role)) {
+    if (!portalSessionReady || !sessionUid) {
       return null;
     }
     return query(
-      collection(firestore, "empreendedores"),
+      collection(firestore!, "empreendedores"),
       where("userId", "==", sessionUid),
     );
-  }, [firestore, profileAligned, sessionUid, user?.role]);
+  }, [firestore, portalSessionReady, sessionUid]);
 
   const clientByIdRef = useMemoFirebase(() => {
-    if (!firestore || !profileAligned || !sessionUid || !isClientePortalRole(user?.role)) {
+    if (!portalSessionReady || !sessionUid) {
       return null;
     }
-    return doc(firestore, "clients", sessionUid);
-  }, [firestore, profileAligned, sessionUid, user?.role]);
+    return doc(firestore!, "clients", sessionUid);
+  }, [firestore, portalSessionReady, sessionUid]);
 
   const empreendedorByIdRef = useMemoFirebase(() => {
-    if (!firestore || !profileAligned || !sessionUid || !isClientePortalRole(user?.role)) {
+    if (!portalSessionReady || !sessionUid) {
       return null;
     }
-    return doc(firestore, "empreendedores", sessionUid);
-  }, [firestore, profileAligned, sessionUid, user?.role]);
+    return doc(firestore!, "empreendedores", sessionUid);
+  }, [firestore, portalSessionReady, sessionUid]);
 
   const { data: pendingAccessRequests } =
     useCollection<AccessRequest>(accessRequestsQuery);
@@ -232,10 +239,12 @@ const AppLayoutClient = ({ children }: { children: React.ReactNode }) => {
 
   const pendingAccessRequestsForMe = React.useMemo(
     () =>
-      filterAccessRequestsForTitular(
-        pendingAccessRequests,
-        myCpfCnpjSet,
-        ownedEntitiesForMatch,
+      dedupeAccessRequestsByRequesterAndDocument(
+        filterAccessRequestsForTitular(
+          pendingAccessRequests,
+          myCpfCnpjSet,
+          ownedEntitiesForMatch,
+        ),
       ),
     [pendingAccessRequests, myCpfCnpjSet, ownedEntitiesForMatch],
   );

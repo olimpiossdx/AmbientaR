@@ -126,6 +126,7 @@ import {
 import { canEditUserInUsersList } from "@/lib/role-guards";
 import {
   accessRequestMatchesTitularDocuments,
+  dedupeAccessRequestsByRequesterAndDocument,
   filterAccessRequestsForTitular,
 } from "@/lib/access-request-titular-match";
 import { buildTitularCpfCnpjSet } from "@/lib/titular-document-set";
@@ -181,7 +182,10 @@ export default function UsersPage() {
   const { firestore, auth, user } = useFirebase();
   const sessionUid = useAuthUserId(auth);
   const profileAligned = isUserProfileAlignedWithSession(user, sessionUid);
-  const portalUid = resolvePortalAuthUid(user);
+  const portalUid = resolvePortalAuthUid(user) ?? sessionUid;
+  const portalSessionReady = Boolean(
+    firestore && user && sessionUid && isClientePortalRole(user.role),
+  );
   const { toast } = useToast();
 
   useEffect(() => {
@@ -715,69 +719,48 @@ export default function UsersPage() {
   };
 
   const clientProfileDocRef = useMemoFirebase(() => {
-    if (
-      !firestore ||
-      !user ||
-      !profileAligned ||
-      !sessionUid ||
-      !isClientePortalRole(user.role)
-    ) {
+    if (!portalSessionReady || !sessionUid) {
       return null;
     }
-    return doc(firestore, "users", sessionUid);
-  }, [firestore, user, profileAligned, sessionUid]);
+    return doc(firestore!, "users", sessionUid);
+  }, [firestore, portalSessionReady, sessionUid]);
   const { data: clientProfile, isLoading: isLoadingProfile } =
     useDoc<AppUser>(clientProfileDocRef);
 
   const accessRequestsQuery = useMemoFirebase(() => {
-    if (
-      !firestore ||
-      !user ||
-      !isClientePortalRole(user.role) ||
-      !profileAligned
-    ) {
+    if (!portalSessionReady) {
       return null;
     }
     return query(
-      collection(firestore, "access_requests"),
+      collection(firestore!, "access_requests"),
       where("status", "==", "pending"),
     );
-  }, [firestore, user, profileAligned]);
+  }, [firestore, portalSessionReady]);
   const { data: allPendingRequests, error: accessRequestsError } =
     useCollection<AccessRequest>(accessRequestsQuery);
 
   const approvedRequestsQuery = useMemoFirebase(() => {
-    if (
-      !firestore ||
-      !user ||
-      !isClientePortalRole(user.role) ||
-      !profileAligned
-    ) {
+    if (!portalSessionReady) {
       return null;
     }
     return query(
-      collection(firestore, "access_requests"),
+      collection(firestore!, "access_requests"),
       where("status", "==", "approved"),
     );
-  }, [firestore, user, profileAligned]);
+  }, [firestore, portalSessionReady]);
   const { data: allApprovedRequests } = useCollection<AccessRequest>(
     approvedRequestsQuery,
   );
 
   const delegateInvitesTitularQuery = useMemoFirebase(() => {
-    if (
-      !firestore ||
-      !profileAligned ||
-      !portalUid ||
-      !isClientePortalRole(user?.role)
-    ) {
+    if (!portalSessionReady || !sessionUid) {
       return null;
     }
     return query(
-      collection(firestore, "delegate_invites"),
-      where("createdByUserId", "==", portalUid),
+      collection(firestore!, "delegate_invites"),
+      where("createdByUserId", "==", sessionUid),
     );
-  }, [firestore, profileAligned, portalUid, user?.role]);
+  }, [firestore, portalSessionReady, sessionUid]);
   const { data: delegateInvitesFromTitular } = useCollection<DelegateInvite>(
     delegateInvitesTitularQuery,
   );
@@ -838,37 +821,25 @@ export default function UsersPage() {
   ]);
 
   const myClientsQuery = useMemoFirebase(() => {
-    if (
-      !firestore ||
-      !user ||
-      !profileAligned ||
-      !portalUid ||
-      !isClientePortalRole(user.role)
-    ) {
+    if (!portalSessionReady || !sessionUid) {
       return null;
     }
     return query(
-      collection(firestore, "clients"),
-      where("userId", "==", portalUid),
+      collection(firestore!, "clients"),
+      where("userId", "==", sessionUid),
     );
-  }, [firestore, user, profileAligned, portalUid]);
+  }, [firestore, portalSessionReady, sessionUid]);
   const { data: myClients } = useCollection<Client>(myClientsQuery);
 
   const myEmpreendedoresQuery = useMemoFirebase(() => {
-    if (
-      !firestore ||
-      !user ||
-      !profileAligned ||
-      !portalUid ||
-      !isClientePortalRole(user.role)
-    ) {
+    if (!portalSessionReady || !sessionUid) {
       return null;
     }
     return query(
-      collection(firestore, "empreendedores"),
-      where("userId", "==", portalUid),
+      collection(firestore!, "empreendedores"),
+      where("userId", "==", sessionUid),
     );
-  }, [firestore, user, profileAligned, portalUid]);
+  }, [firestore, portalSessionReady, sessionUid]);
   const { data: myEmpreendedores } = useCollection<Empreendedor>(
     myEmpreendedoresQuery,
   );
@@ -876,10 +847,8 @@ export default function UsersPage() {
   // Representante: clientes e empreendedores que aprovaram este usuário (approvedUserIds contém o UID do representante).
   const repUid = useMemo(
     () =>
-      user?.role === "representative" && profileAligned
-        ? resolvePortalAuthUid(user)
-        : null,
-    [user, profileAligned],
+      user?.role === "representative" && sessionUid ? sessionUid : null,
+    [user?.role, sessionUid],
   );
   const myApprovedClientsAsRepQuery = useMemoFirebase(() => {
     if (!firestore || !repUid) return null;
@@ -905,20 +874,20 @@ export default function UsersPage() {
 
   const consultorUid = useMemo(
     () =>
-      user?.role === "consultor_representante" && profileAligned
-        ? resolvePortalAuthUid(user)
+      user?.role === "consultor_representante" && sessionUid
+        ? sessionUid
         : null,
-    [user, profileAligned],
+    [user?.role, sessionUid],
   );
 
   const delegatePortalUid = useMemo(
     () =>
-      profileAligned &&
+      sessionUid &&
       (user?.role === "representative" ||
         user?.role === "consultor_representante")
-        ? resolvePortalAuthUid(user)
+        ? sessionUid
         : null,
-    [user, profileAligned],
+    [user?.role, sessionUid],
   );
 
   const myDelegateAccessRequestsQuery = useMemoFirebase(() => {
@@ -967,30 +936,18 @@ export default function UsersPage() {
     useCollection<Empreendedor>(myApprovedEmpreendedoresAsConsultorQuery);
 
   const clientByIdRef = useMemoFirebase(() => {
-    if (
-      !firestore ||
-      !user ||
-      !profileAligned ||
-      !portalUid ||
-      !isClientePortalRole(user.role)
-    ) {
+    if (!portalSessionReady || !sessionUid) {
       return null;
     }
-    return doc(firestore, "clients", portalUid);
-  }, [firestore, user, profileAligned, portalUid]);
+    return doc(firestore!, "clients", sessionUid);
+  }, [firestore, portalSessionReady, sessionUid]);
   const { data: clientById } = useDoc<Client>(clientByIdRef);
   const empreendedorByIdRef = useMemoFirebase(() => {
-    if (
-      !firestore ||
-      !user ||
-      !profileAligned ||
-      !portalUid ||
-      !isClientePortalRole(user.role)
-    ) {
+    if (!portalSessionReady || !sessionUid) {
       return null;
     }
-    return doc(firestore, "empreendedores", portalUid);
-  }, [firestore, user, profileAligned, portalUid]);
+    return doc(firestore!, "empreendedores", sessionUid);
+  }, [firestore, portalSessionReady, sessionUid]);
   const { data: empreendedorById } = useDoc<Empreendedor>(empreendedorByIdRef);
 
   const linkedClientRef = useMemoFirebase(() => {
@@ -1055,7 +1012,7 @@ export default function UsersPage() {
   );
 
   useEffect(() => {
-    if (!firestore || !portalUid || !user || !isClientePortalRole(user.role)) return;
+    if (!firestore || !sessionUid || !user || !isClientePortalRole(user.role)) return;
 
     const profile = clientProfile || user;
     const documents = new Set<string>();
@@ -1069,7 +1026,10 @@ export default function UsersPage() {
     profile?.cnpjs?.forEach(addDocToLink);
     myClients?.forEach((c) => addDocToLink(c.cpfCnpj));
     myEmpreendedores?.forEach((e) => addDocToLink(e.cpfCnpj));
-    allPendingRequests?.forEach((r) => addDocToLink(r.cpfOfInterested));
+    addDocToLink(linkedClient?.cpfCnpj);
+    addDocToLink(linkedEmpreendedor?.cpfCnpj);
+    addDocToLink(clientById?.cpfCnpj);
+    addDocToLink(empreendedorById?.cpfCnpj);
 
     if (documents.size === 0) return;
 
@@ -1080,7 +1040,7 @@ export default function UsersPage() {
         try {
           await linkClientGestaoToExistingRecords(
             firestore,
-            portalUid,
+            sessionUid,
             portalDocument,
             { name: profile?.name ?? "", email: profile?.email ?? "" },
             profile?.linkedClientId ?? null,
@@ -1097,20 +1057,25 @@ export default function UsersPage() {
     };
   }, [
     firestore,
-    portalUid,
+    sessionUid,
     user,
     clientProfile,
     myClients,
     myEmpreendedores,
-    allPendingRequests,
+    linkedClient,
+    linkedEmpreendedor,
+    clientById,
+    empreendedorById,
   ]);
 
   const pendingRequestsForMe = useMemo(
     () =>
-      filterAccessRequestsForTitular(
-        allPendingRequests,
-        myCpfCnpjSet,
-        ownedEntitiesForMatch,
+      dedupeAccessRequestsByRequesterAndDocument(
+        filterAccessRequestsForTitular(
+          allPendingRequests,
+          myCpfCnpjSet,
+          ownedEntitiesForMatch,
+        ),
       ),
     [allPendingRequests, myCpfCnpjSet, ownedEntitiesForMatch],
   );
@@ -1518,7 +1483,7 @@ export default function UsersPage() {
           <PageHeader title="Meu Perfil" />
           <main className="flex-1 overflow-auto p-4 md:p-6 space-y-6 max-w-3xl mx-auto w-full">
             <TooltipProvider>
-              {isLoadingProfile && (
+              {isLoadingProfile && !clientUser && (
                 <Card>
                   <CardHeader>
                     <CardTitle>Carregando Perfil...</CardTitle>
@@ -1528,8 +1493,18 @@ export default function UsersPage() {
                   </CardContent>
                 </Card>
               )}
-              {clientUser && !isLoadingProfile && (
+              {clientUser && (
                 <>
+                  {isLoadingProfile ? (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Carregando Perfil...</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <Skeleton className="h-64 w-full" />
+                      </CardContent>
+                    </Card>
+                  ) : (
                   <Card>
                     <CardHeader>
                       <div className="flex items-center justify-between gap-4">
@@ -1616,8 +1591,9 @@ export default function UsersPage() {
                       </div>
                     </CardContent>
                   </Card>
+                  )}
 
-                  {isClientePortalRole(user?.role) ? (
+                  {portalSessionReady ? (
                   <>
                   <TitularDelegateInviteCard
                     titularUser={(clientProfile || user)!}
@@ -1857,7 +1833,7 @@ export default function UsersPage() {
                   </>
                   ) : null}
 
-                  {isClientePortalRole(user?.role) && accessRequestsError && (
+                  {portalSessionReady && accessRequestsError && (
                     <Card className="border-amber-200 bg-amber-50/50 dark:bg-amber-950/20 dark:border-amber-800">
                       <CardContent className="pt-4 space-y-2">
                         <p className="text-sm font-medium text-amber-800 dark:text-amber-200">

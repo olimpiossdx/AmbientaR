@@ -38,3 +38,33 @@ export function filterAccessRequestsForTitular(
     accessRequestMatchesTitularDocuments(r, titularDocuments, ownedEntities),
   );
 }
+
+/** Evita duplicatas na UI quando há vários pedidos do mesmo solicitante para o mesmo CPF/CNPJ. */
+export function dedupeAccessRequestsByRequesterAndDocument(
+  requests: AccessRequest[],
+): AccessRequest[] {
+  const byKey = new Map<string, AccessRequest>();
+  const orphans: AccessRequest[] = [];
+
+  for (const req of requests) {
+    const docDigits = normalizeDocumentDigits(req.cpfOfInterested ?? "");
+    const requesterKey =
+      (req.requestedByEmail ?? "").trim().toLowerCase() ||
+      req.requestedByUserId ||
+      "";
+    if (!requesterKey || docDigits.length < 11) {
+      orphans.push(req);
+      continue;
+    }
+    const key = `${requesterKey}:${docDigits}`;
+    const existing = byKey.get(key);
+    if (
+      !existing ||
+      String(req.createdAt ?? "") > String(existing.createdAt ?? "")
+    ) {
+      byKey.set(key, req);
+    }
+  }
+
+  return [...orphans, ...byKey.values()];
+}

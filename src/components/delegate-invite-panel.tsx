@@ -20,7 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { UserPlus } from "lucide-react";
+import { Search, UserPlus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useFirestore } from "@/firebase";
 import type { AccessRequestType, AppUser } from "@/lib/types";
@@ -31,6 +31,7 @@ import {
   createDelegateInviteFromTitular,
   filterInvitesCreatedByTitular,
   filterPendingInvitesForProfessional,
+  findPortalUserByEmailOrCpf,
   rejectDelegateInvite,
   type DelegateInvite,
 } from "@/lib/delegate-invites";
@@ -53,6 +54,11 @@ export function TitularDelegateInviteCard({
   const [targetEmail, setTargetEmail] = useState("");
   const [targetCpf, setTargetCpf] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [searching, setSearching] = useState(false);
+  const [searchAttempted, setSearchAttempted] = useState(false);
+  const [foundProfessional, setFoundProfessional] = useState<
+    (AppUser & { id: string }) | null
+  >(null);
 
   const docOptions = useMemo(() => {
     const seen = new Set<string>();
@@ -64,8 +70,79 @@ export function TitularDelegateInviteCard({
     });
   }, [titularDocuments]);
 
+  const resetSearch = () => {
+    setSearchAttempted(false);
+    setFoundProfessional(null);
+  };
+
+  const handleSearch = async () => {
+    if (!firestore) return;
+    const email = targetEmail.trim();
+    const cpf = targetCpf.trim();
+    if (!email && !cpf) {
+      toast({
+        variant: "destructive",
+        title: "Informe e-mail ou CPF",
+        description: "Digite ao menos um dos campos para buscar o profissional.",
+      });
+      return;
+    }
+    setSearching(true);
+    setSearchAttempted(true);
+    setFoundProfessional(null);
+    try {
+      const found = await findPortalUserByEmailOrCpf(firestore, {
+        email: email || undefined,
+        cpf: cpf || undefined,
+      });
+      if (!found) {
+        toast({
+          title: "Profissional não encontrado",
+          description:
+            "Não há conta com esse e-mail ou CPF. Você ainda pode registrar o convite para quando ele se cadastrar.",
+        });
+        return;
+      }
+      if (
+        found.role !== "representative" &&
+        found.role !== "consultor_representante"
+      ) {
+        toast({
+          variant: "destructive",
+          title: "Perfil incompatível",
+          description: `A conta encontrada (${found.name}) não é representante nem consultor-representante.`,
+        });
+        return;
+      }
+      setFoundProfessional(found);
+      if (!email && found.email) setTargetEmail(found.email);
+      toast({
+        title: "Profissional encontrado",
+        description: `${found.name} — ${found.role === "consultor_representante" ? "Consultor-Representante" : "Representante"}`,
+      });
+    } catch (e) {
+      toast({
+        variant: "destructive",
+        title: "Erro na busca",
+        description: e instanceof Error ? e.message : "Tente novamente.",
+      });
+    } finally {
+      setSearching(false);
+    }
+  };
+
   const handleSubmit = async () => {
     if (!firestore) return;
+    const email = foundProfessional?.email || targetEmail.trim();
+    const cpf = targetCpf.trim();
+    if (!email && !cpf) {
+      toast({
+        variant: "destructive",
+        title: "Informe e-mail ou CPF",
+        description: "Busque um profissional ou preencha e-mail/CPF manualmente.",
+      });
+      return;
+    }
     setSubmitting(true);
     try {
       const result = await createDelegateInviteFromTitular({
@@ -73,8 +150,8 @@ export function TitularDelegateInviteCard({
         titularUser,
         titularDocument,
         role,
-        targetEmail: targetEmail.trim() || undefined,
-        targetCpf: targetCpf.trim() || undefined,
+        targetEmail: email || undefined,
+        targetCpf: cpf || undefined,
       });
       toast({
         title: "Convite registrado",
@@ -85,6 +162,7 @@ export function TitularDelegateInviteCard({
       });
       setTargetEmail("");
       setTargetCpf("");
+      resetSearch();
     } catch (e) {
       toast({
         variant: "destructive",
@@ -106,8 +184,9 @@ export function TitularDelegateInviteCard({
           Indicar representante ou consultor
         </CardTitle>
         <CardDescription>
-          Informe e-mail ou CPF do profissional. Se já tiver conta, ele precisará
-          confirmar ciência do vínculo antes de acessar seus dados.
+          Busque por e-mail ou CPF para localizar representantes e
+          consultores-representantes já cadastrados. Depois registre o convite
+          para o vínculo com seus dados (CPF/CNPJ).
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -153,7 +232,10 @@ export function TitularDelegateInviteCard({
               type="email"
               placeholder="profissional@exemplo.com"
               value={targetEmail}
-              onChange={(e) => setTargetEmail(e.target.value)}
+              onChange={(e) => {
+                setTargetEmail(e.target.value);
+                resetSearch();
+              }}
             />
           </div>
           <div className="space-y-2">
@@ -163,14 +245,53 @@ export function TitularDelegateInviteCard({
               mask="cpf"
               placeholder="000.000.000-00"
               value={targetCpf}
-              onChange={(v) => setTargetCpf(v)}
+              onChange={(v) => {
+                setTargetCpf(v);
+                resetSearch();
+              }}
             />
           </div>
         </div>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => void handleSearch()}
+            disabled={
+              searching || (!targetEmail.trim() && !targetCpf.trim())
+            }
+          >
+            <Search className="mr-2 h-4 w-4" />
+            {searching ? "Buscando..." : "Buscar profissional"}
+          </Button>
+        </div>
+        {searchAttempted && !foundProfessional && !searching && (
+          <p className="text-sm text-muted-foreground rounded-md border border-dashed px-3 py-2">
+            Nenhuma conta de representante ou consultor encontrada com esses
+            dados. Você pode registrar o convite mesmo assim — quando o
+            profissional se cadastrar, o vínculo poderá ser concluído.
+          </p>
+        )}
+        {foundProfessional && (
+          <div className="rounded-lg border bg-muted/40 px-4 py-3 space-y-1">
+            <p className="font-medium text-foreground">{foundProfessional.name}</p>
+            <p className="text-sm text-muted-foreground">
+              {foundProfessional.email}
+            </p>
+            <Badge variant="secondary" className="text-xs">
+              {foundProfessional.role === "consultor_representante"
+                ? "Consultor-Representante"
+                : "Representante"}
+            </Badge>
+          </div>
+        )}
         <Button
           type="button"
           onClick={() => void handleSubmit()}
-          disabled={submitting || (!targetEmail.trim() && !targetCpf.trim())}
+          disabled={
+            submitting ||
+            (!targetEmail.trim() && !targetCpf.trim() && !foundProfessional)
+          }
         >
           {submitting ? "Enviando..." : "Registrar convite"}
         </Button>

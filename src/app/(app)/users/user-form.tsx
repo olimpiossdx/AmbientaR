@@ -43,7 +43,10 @@ import {
   where,
   getDocs,
 } from 'firebase/firestore';
-import { createAccessRequestsForDelegate } from '@/lib/delegate-access-requests';
+import {
+  collectExistingDelegateRequestDigits,
+  createAccessRequestsForDelegate,
+} from '@/lib/delegate-access-requests';
 import { Label } from '@/components/ui/label';
 import { DialogFooter } from '@/components/ui/dialog';
 import { logUserAction } from '@/lib/audit-log';
@@ -391,13 +394,17 @@ export function UserForm({ currentUser, onSuccess, representativeRequestedCpf, r
             (values.role === 'representative' || values.role === 'consultor_representante') &&
             currentUser.id
           ) {
-            const existingSet = new Set(
-              (representativeRequestedCpfsCnpjs || []).map((v) =>
-                normalizeDocumentDigits(v),
-              ),
+            const requesterUserId = currentUser.uid || currentUser.id;
+            const existingSet = await collectExistingDelegateRequestDigits(
+              firestore,
+              requesterUserId,
+              {
+                extraDigits: representativeRequestedCpfsCnpjs,
+                profile: currentUser,
+              },
             );
             await createAccessRequestsForDelegate(firestore, {
-              requesterUserId: currentUser.id,
+              requesterUserId,
               email: values.email,
               name: values.name,
               role: values.role,
@@ -549,12 +556,18 @@ export function UserForm({ currentUser, onSuccess, representativeRequestedCpf, r
             }
 
             if (values.role === 'representative' || values.role === 'consultor_representante') {
+              const existingSet = await collectExistingDelegateRequestDigits(
+                firestore,
+                newUserId,
+                { profile: { cpf: storedCpf, cnpjs: cnpjsArray } },
+              );
               await createAccessRequestsForDelegate(firestore, {
                 requesterUserId: newUserId,
                 email: values.email,
                 name: values.name,
                 role: values.role,
                 documents: [...cpfsArray, ...cnpjsArray],
+                existingDigits: existingSet,
               });
             }
 
