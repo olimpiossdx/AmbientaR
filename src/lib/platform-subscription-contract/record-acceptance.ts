@@ -1,6 +1,6 @@
 import { FieldValue } from "firebase-admin/firestore";
 import { studyMapsAdminDb } from "@/lib/study-maps/admin";
-import { PACKAGE_ANNUAL_PRICE_BRL } from "@/lib/package-limits";
+import { PACKAGE_ANNUAL_PRICE_BRL } from "@/lib/package-pricing";
 import { addYearsIso } from "@/lib/platform-access";
 import { buildPlatformSubscriptionContractHtml } from "./build-contract-html";
 import type {

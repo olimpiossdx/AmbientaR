@@ -295,11 +295,21 @@ export function RegisterContractContent({
             9.4. Ao aceitar este contrato no plano Gratuito, o CONTRATANTE declara
             ciência de que: (a) a Plataforma e o site poderão exibir
             publicidade de terceiros e comunicações comerciais da CONTRATADA;
-            (b) provedores de publicidade e anunciantes podem utilizar cookies,
-            identificadores de dispositivo e tecnologias correlatas, nos termos
-            das políticas desses provedores e da legislação aplicável (incluindo
-            manifestação de preferências de cookies ou publicidade, quando
-            disponibilizada na Plataforma); (c) a CONTRATADA{" "}
+            (b) provedores de publicidade — em especial o{" "}
+            <strong>Google AdSense</strong> — e anunciantes podem utilizar
+            cookies, identificadores de dispositivo e tecnologias correlatas, nos
+            termos das políticas desses provedores, da{" "}
+            <a
+              href="/politica-privacidade"
+              className="font-medium text-primary underline-offset-2 hover:underline"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Política de Privacidade da Plataforma
+            </a>{" "}
+            e da legislação aplicável (incluindo manifestação de preferências de
+            cookies ou publicidade no banner disponibilizado no aplicativo); (c)
+            a CONTRATADA{" "}
             <strong>não garante, endossa nem responde</strong> pelo conteúdo,
             produtos ou serviços anunciados por terceiros; (d) a migração para
             plano pago conforme tabela vigente{" "}

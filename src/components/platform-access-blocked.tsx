@@ -19,11 +19,6 @@ export function PlatformAccessBlocked({ user }: Props) {
   const { logout } = useFirebase();
 
   const pending = user.platformPaymentStatus === "pending_verification";
-  const expiredByDate =
-    user.platformPaymentStatus === "paid" &&
-    user.platformAccessValidUntil &&
-    new Date(user.platformAccessValidUntil).getTime() < Date.now();
-  const expired = user.platformPaymentStatus === "expired" || expiredByDate;
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
@@ -39,40 +34,22 @@ export function PlatformAccessBlocked({ user }: Props) {
           <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-400">
             <ShieldAlert className="h-6 w-6" />
           </div>
-          <CardTitle>
-            {pending
-              ? "Pagamento em análise"
-              : expired
-                ? "Acesso expirado"
-                : "Acesso suspenso"}
-          </CardTitle>
+          <CardTitle>Pagamento em análise</CardTitle>
           <CardDescription className="text-left space-y-2 pt-2">
-            {pending && (
+            {pending ? (
               <>
                 <p>
                   Sua assinatura anual da plataforma está{" "}
                   <strong>aguardando confirmação do pagamento</strong>. Após a
                   equipe validar o PIX ou o cartão, o acesso será liberado
-                  automaticamente.
+                  automaticamente e a publicidade de terceiros será removida.
                 </p>
                 <p className="text-sm">
                   Se já pagou, aguarde a confirmação. Em caso de dúvida, envie o
                   comprovante pelo e-mail abaixo.
                 </p>
               </>
-            )}
-            {expired && (
-              <>
-                <p>
-                  O período anual de acesso à plataforma terminou. Renove o
-                  pagamento para continuar utilizando o AmbientaR.
-                </p>
-                <p className="text-sm">
-                  Entre em contato com a consultoria para renovação.
-                </p>
-              </>
-            )}
-            {!pending && !expired && (
+            ) : (
               <p>
                 Não foi possível validar seu acesso à plataforma. Contacte o
                 suporte.

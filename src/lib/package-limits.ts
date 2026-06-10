@@ -1,5 +1,9 @@
 import type { AppUser, ClientPackage, UserRole } from "@/lib/types";
 import { isClientePortalRole } from "@/lib/role-guards";
+import {
+  resolveEffectivePackage as resolveEffectivePackageWithSubscription,
+  resolveStoredPackage,
+} from "@/lib/package-subscription";
 
 /** Limites comerciais por pacote (portal Cliente Gestão / Autônomo). */
 export type PackageLimits = {
@@ -135,117 +139,7 @@ export const PORTAL_MODULE_LABELS: Record<PortalModuleCollection, string> = {
   intervencoes: "intervenção",
 };
 
-/** Valores anuais (cadastro / PIX). */
-export const PACKAGE_ANNUAL_PRICE_BRL: Partial<Record<ClientPackage, number>> = {
-  basico: 696,
-  intermediario: 1396,
-  avancado: 1996,
-  completo: 2996,
-};
-
-export function formatPackageAnnualLabel(pkg: ClientPackage): string {
-  if (pkg === "gratuito") return "R$ 0";
-  if (pkg === "sob_consulta") return "Sob consulta";
-  const value = PACKAGE_ANNUAL_PRICE_BRL[pkg];
-  if (value == null) return "Consulte a equipe";
-  return `R$ ${value.toFixed(2).replace(".", ",")} / ano`;
-}
-
-export function formatPackageMonthlyHint(pkg: ClientPackage): string {
-  if (pkg === "gratuito" || pkg === "sob_consulta") {
-    return PACKAGE_LIMITS[pkg].tierLabel;
-  }
-  const annual = PACKAGE_ANNUAL_PRICE_BRL[pkg];
-  if (!annual) return "";
-  const monthly = annual / 12;
-  return `~R$ ${monthly.toFixed(0)}/mês`;
-}
-
-import type { ClientPackageInfo } from "@/lib/types";
-
-/** Textos de planos alinhados aos limites (cadastro e upgrade). */
-export const CLIENT_PACKAGE_CATALOG: ClientPackageInfo[] = [
-  {
-    id: "gratuito",
-    name: "Gratuito",
-    description: "Conheça o portal com 1 empreendimento.",
-    price: "R$ 0",
-    priceDetail: "Sem AmbBot incluído",
-    features: [
-      "Até 1 empreendimento",
-      "1 registro por módulo (licença, outorga, etc.)",
-      "Sem upload de arquivos",
-      "Sem alertas automáticos de prazo",
-      "Versão com publicidade de terceiros (ver contrato)",
-      "AmbBot avulso (R$ 99/consulta)",
-    ],
-  },
-  {
-    id: "basico",
-    name: "Autônomo 1",
-    description: "Uma propriedade com gestão de documentos e prazos.",
-    price: formatPackageAnnualLabel("basico"),
-    priceDetail: formatPackageMonthlyHint("basico"),
-    features: [
-      "Até 1 empreendimento",
-      "1 GB · 30 arquivos (10 MB cada)",
-      "Até 5 licenças ativas",
-      "AmbBot avulso (R$ 99/consulta)",
-    ],
-  },
-  {
-    id: "intermediario",
-    name: "Autônomo 2",
-    description: "Duas propriedades e 1 análise AmbBot por mês.",
-    price: formatPackageAnnualLabel("intermediario"),
-    priceDetail: formatPackageMonthlyHint("intermediario"),
-    highlighted: true,
-    features: [
-      "Até 2 empreendimentos",
-      "3 GB · 60 arquivos",
-      "1 AmbBot / mês (análise de área)",
-      "Consultas extras: R$ 79",
-    ],
-  },
-  {
-    id: "avancado",
-    name: "Autônomo 3",
-    description: "Três propriedades com monitoramento e representante.",
-    price: formatPackageAnnualLabel("avancado"),
-    priceDetail: formatPackageMonthlyHint("avancado"),
-    features: [
-      "Até 3 empreendimentos",
-      "6 GB · 90 arquivos",
-      "1 AmbBot / mês",
-      "Condicionantes e outorgas (cadastro)",
-    ],
-  },
-  {
-    id: "completo",
-    name: "Autônomo 5",
-    description: "Até cinco propriedades na gestão centralizada.",
-    price: formatPackageAnnualLabel("completo"),
-    priceDetail: formatPackageMonthlyHint("completo"),
-    features: [
-      "Até 5 empreendimentos",
-      "12 GB · 150 arquivos",
-      "1 AmbBot / mês",
-      "Suporte prioritário",
-    ],
-  },
-  {
-    id: "sob_consulta",
-    name: "Sob consulta",
-    description: "Mais de 5 empreendimentos ou demandas específicas.",
-    price: "Personalizado",
-    priceDetail: "Limites negociados",
-    features: [
-      "Empreendimentos e storage sob medida",
-      "AmbBot e consultoria dedicada",
-      "Projetos e assessoria presencial",
-    ],
-  },
-];
+/** Textos de planos: ver `@/lib/package-catalog`. */
 
 const INTERNAL_ROLES: UserRole[] = [
   "admin",
@@ -259,12 +153,15 @@ const INTERNAL_ROLES: UserRole[] = [
 ];
 
 export function resolveEffectivePackage(
-  user: Pick<AppUser, "package" | "role">,
+  user: Pick<
+    AppUser,
+    "package" | "role" | "platformPaymentStatus" | "platformAccessValidUntil"
+  >,
 ): ClientPackage {
-  if (user.package) return user.package;
-  if (user.role === "cliente_autonomo") return "gratuito";
-  return "gratuito";
+  return resolveEffectivePackageWithSubscription(user);
 }
+
+export { resolveStoredPackage };
 
 /** Equipa da consultoria e perfis sem pacote de portal não sofrem limites. */
 export function isPackageLimitsExempt(
@@ -272,7 +169,6 @@ export function isPackageLimitsExempt(
 ): boolean {
   if (INTERNAL_ROLES.includes(user.role)) return true;
   if (user.package === "sob_consulta") return true;
-  if (user.platformPaymentStatus === "exempt") return true;
   return false;
 }
 

@@ -1,24 +1,35 @@
 import type { AppUser, ClientPackage, PlatformPaymentMethod } from "@/lib/types";
 import { isClientePortalRole } from "@/lib/role-guards";
+import { getPackageAnnualAmountLabel } from "@/lib/package-pricing";
+import { CLIENT_PACKAGES_WITH_ANNUAL_PAYMENT } from "@/lib/package-constants";
 
-/** Planos com cobrança anual única no cadastro (etapa Pagamento). */
-export const CLIENT_PACKAGES_WITH_ANNUAL_PAYMENT: ClientPackage[] = [
-  "basico",
-  "intermediario",
-  "avancado",
-  "completo",
-];
+export { CLIENT_PACKAGES_WITH_ANNUAL_PAYMENT };
 
-import { formatPackageAnnualLabel } from "@/lib/package-limits";
+/** Texto de referência do valor anual (fonte: package-pricing.ts). */
+export function getPackageAnnualAmountLabelForPackage(pkg: ClientPackage): string {
+  return getPackageAnnualAmountLabel(pkg);
+}
 
-/** Texto de referência do valor anual (fonte: package-limits.ts). */
+/** @deprecated Preferir `getPackageAnnualAmountLabelForPackage` — evita init circular no bundle. */
 export const PACKAGE_ANNUAL_AMOUNT_LABEL: Partial<Record<ClientPackage, string>> = {
-  gratuito: formatPackageAnnualLabel("gratuito"),
-  basico: formatPackageAnnualLabel("basico"),
-  intermediario: formatPackageAnnualLabel("intermediario"),
-  avancado: formatPackageAnnualLabel("avancado"),
-  completo: formatPackageAnnualLabel("completo"),
-  sob_consulta: formatPackageAnnualLabel("sob_consulta"),
+  get gratuito() {
+    return getPackageAnnualAmountLabel("gratuito");
+  },
+  get basico() {
+    return getPackageAnnualAmountLabel("basico");
+  },
+  get intermediario() {
+    return getPackageAnnualAmountLabel("intermediario");
+  },
+  get avancado() {
+    return getPackageAnnualAmountLabel("avancado");
+  },
+  get completo() {
+    return getPackageAnnualAmountLabel("completo");
+  },
+  get sob_consulta() {
+    return getPackageAnnualAmountLabel("sob_consulta");
+  },
 };
 
 export function clientPackageRequiresAnnualPaymentStep(
@@ -43,7 +54,7 @@ export function getPublicPixCopyPaste(): string {
   return "";
 }
 
-/** Contas antigas sem campos de assinatura: não bloquear. */
+/** Bloqueia apenas pagamento pendente de confirmação. Vencimento faz downgrade suave (gratuito + ads). */
 export function shouldBlockPlatformAccess(user: AppUser | null | undefined): boolean {
   if (!user || !isClientePortalRole(user.role)) return false;
 
@@ -55,13 +66,6 @@ export function shouldBlockPlatformAccess(user: AppUser | null | undefined): boo
   if (st === "exempt" || st === "pending_contract") return false;
 
   if (st === "pending_verification") return true;
-
-  if (st === "paid") {
-    if (!until) return false;
-    return new Date(until).getTime() < Date.now();
-  }
-
-  if (st === "expired") return true;
 
   return false;
 }

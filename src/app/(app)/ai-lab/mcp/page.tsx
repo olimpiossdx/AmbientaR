@@ -1,21 +1,21 @@
 "use client";
 
 import { PageHeader } from "@/components/page-header";
+import { McpToolsPanel } from "@/components/mcp-rag/panels/mcp-tools-panel";
+import { useAuth } from "@/firebase";
 import {
   Card,
-  CardContent,
+  CardDescription,
   CardHeader,
   CardTitle,
-  CardDescription,
 } from "@/components/ui/card";
-import { useAuth } from "@/firebase";
 
 export default function AiLabMcpPage() {
   const { user } = useAuth();
 
   if (user && user.role !== "admin") {
     return (
-      <div className="flex flex-col h-full">
+      <div className="flex h-full flex-col">
         <PageHeader title="MCP & Ferramentas" />
         <main className="flex-1 overflow-auto p-4 md:p-6">
           <Card>
@@ -33,23 +33,10 @@ export default function AiLabMcpPage() {
   }
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex h-full flex-col">
       <PageHeader title="MCP & Ferramentas" />
-      <main className="flex-1 overflow-auto p-4 md:p-6 space-y-4">
-        <Card>
-          <CardHeader>
-            <CardTitle>Objetivo do módulo</CardTitle>
-            <CardDescription>
-              Padronizar uso de MCP para produtividade, auditoria e execução
-              assistida com segurança.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="text-sm text-muted-foreground space-y-2">
-            <p>- Catálogo de ferramentas MCP disponíveis por equipe.</p>
-            <p>- Playbooks de execução (deploy, validação, diagnóstico).</p>
-            <p>- Regras de acesso por perfil e trilha de auditoria.</p>
-          </CardContent>
-        </Card>
+      <main className="flex-1 overflow-auto p-4 md:p-6">
+        <McpToolsPanel />
       </main>
     </div>
   );

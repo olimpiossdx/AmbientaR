@@ -87,8 +87,7 @@ import {
   FileSpreadsheet,
   BookOpen,
   Smartphone,
-  CloudUpload,
-  Cloud,
+  AlertTriangle,
 } from "lucide-react";
 
 /** Rótulo do grupo de menu (licenças, CAR, outorgas, fauna, monitoramento, etc.). */
@@ -764,6 +763,19 @@ export const allNavItems: NavItem[] = [
           "advogado",
         ],
       },
+      {
+        label: "Automações",
+        icon: Bot,
+        roles: ["admin"],
+        subItems: [
+          {
+            href: "/ai-lab/automations",
+            label: "Automações IA",
+            icon: Bot,
+            roles: ["admin"],
+          },
+        ],
+      },
     ],
   },
   {
@@ -782,6 +794,19 @@ export const allNavItems: NavItem[] = [
         href: "/studies/educacao-ambiental",
         label: "Programa de Educação Ambiental",
         icon: BookOpenCheck,
+        roles: [
+          "admin",
+          "technical",
+          "gestor",
+          "supervisor",
+          "diretor_fauna",
+          "advogado",
+        ],
+      },
+      {
+        href: "/studies/acao-emergencial",
+        label: "Programa de Ação Emergencial",
+        icon: AlertTriangle,
         roles: [
           "admin",
           "technical",
@@ -913,6 +938,12 @@ export const allNavItems: NavItem[] = [
         href: "/studies/barragem",
         label: "Projeto Técnico de Barragem",
         icon: Building2,
+        roles: ["admin", "technical", "gestor", "supervisor", "advogado"],
+      },
+      {
+        href: "/studies/piscinao-off-stream",
+        label: "Cadastro de Piscinão (off-stream)",
+        icon: Waves,
         roles: ["admin", "technical", "gestor", "supervisor", "advogado"],
       },
       {
@@ -1308,9 +1339,9 @@ export const allNavItems: NavItem[] = [
     ],
     subItems: [
       {
-        href: "/ai-lab/automations",
-        label: "Automações IA",
-        icon: Bot,
+        href: "/configuracoes/mcp-rag",
+        label: "MCP + RAG / Inteligência do Sistema",
+        icon: DatabaseZap,
         roles: ["admin"],
       },
       {
@@ -1318,18 +1349,6 @@ export const allNavItems: NavItem[] = [
         label: "Backup de Dados Apagados",
         icon: History,
         roles: ["admin", "supervisor"],
-      },
-      {
-        href: "/ai-lab/rag",
-        label: "Base de Conhecimento (RAG)",
-        icon: DatabaseZap,
-        roles: ["admin"],
-      },
-      {
-        href: "/ai-lab/cloud-library",
-        label: "Biblioteca IA (OneDrive)",
-        icon: Cloud,
-        roles: ["admin"],
       },
       {
         href: "/settings/files",
@@ -1350,21 +1369,9 @@ export const allNavItems: NavItem[] = [
         roles: ["admin", "technical", "gestor", "supervisor"],
       },
       {
-        href: "/knowledge-sources",
-        label: "Fontes Normativas",
-        icon: BookText,
-        roles: ["admin"],
-      },
-      {
         href: "/canais",
         label: "Canais (WhatsApp/IG)",
         icon: MessagesSquare,
-        roles: ["admin"],
-      },
-      {
-        href: "/ai-lab",
-        label: "Hub IA + MCP + RAG",
-        icon: Bot,
         roles: ["admin"],
       },
       {
@@ -1384,24 +1391,6 @@ export const allNavItems: NavItem[] = [
         label: "Log de Auditoria",
         icon: History,
         roles: ["admin", "supervisor"],
-      },
-      {
-        href: "/ai-lab/mcp",
-        label: "MCP & Ferramentas IA",
-        icon: Workflow,
-        roles: ["admin"],
-      },
-      {
-        href: "/settings/ai-local-source",
-        label: "Pasta Base IA (Local)",
-        icon: Folder,
-        roles: ["admin"],
-      },
-      {
-        href: "/settings/onedrive-integration",
-        label: "Integração OneDrive",
-        icon: CloudUpload,
-        roles: ["admin"],
       },
       {
         href: "/technical-responsible",

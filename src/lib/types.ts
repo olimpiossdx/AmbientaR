@@ -1691,6 +1691,10 @@ export type AppUser = {
   platformPaymentVerifiedAt?: any;
   /** Contato comercial: gratuito/básico via contrato; demais planos via opt-in no cadastro. */
   allowsCommercialContact?: boolean;
+  /** Aceite de cookies de publicidade (banner no app; espelho opcional do localStorage). */
+  advertisingCookieConsentAt?: string;
+  /** Marcação automática quando assinatura paga vence (downgrade suave). */
+  platformSubscriptionLapsedAt?: any;
   /** Período UTC (YYYY-MM) do contador de AmbBot incluído no plano. */
   ambbotUsagePeriod?: string;
   /** Análises AmbBot incluídas já usadas no período atual. */

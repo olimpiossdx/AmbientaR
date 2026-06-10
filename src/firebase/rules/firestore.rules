@@ -405,6 +405,7 @@ service cloud.firestore {
         'lastSeenAt',
         'lastLogin',
         'uid',
+        'advertisingCookieConsentAt',
       ];
     }
 
@@ -1195,6 +1196,18 @@ service cloud.firestore {
       allow write: if false;
     }
     match /cloud_rag_library_state/{stateId} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
+    /**
+     * @description Hub MCP+RAG — fontes oficiais e runs de ingestão (Admin SDK).
+     */
+    match /mcp_rag_official_sources/{sourceId} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+    match /mcp_rag_ingestion_runs/{runId} {
       allow read: if isAdmin();
       allow write: if false;
     }

@@ -67,7 +67,13 @@ export function usePackageUsage(
 
   React.useEffect(() => {
     void fetchUsage();
-  }, [fetchUsage, user?.package, user?.role]);
+  }, [
+    fetchUsage,
+    user?.package,
+    user?.role,
+    user?.platformPaymentStatus,
+    user?.platformAccessValidUntil,
+  ]);
 
   return {
     loading,

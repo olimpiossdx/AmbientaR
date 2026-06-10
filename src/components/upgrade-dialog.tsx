@@ -3,7 +3,7 @@
 
 import * as React from 'react';
 import { useFirebase } from '@/firebase';
-import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { getBearerApiHeaders } from '@/lib/api-client-auth';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -16,7 +16,7 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Check, Crown, Star, Zap, Rocket, Gift, MessageSquareMore, ArrowUp, Loader2 } from 'lucide-react';
 import type { ClientPackage } from '@/lib/types';
-import { CLIENT_PACKAGE_CATALOG } from '@/lib/package-limits';
+import { CLIENT_PACKAGE_CATALOG } from "@/lib/package-catalog";
 
 const PACKAGES = CLIENT_PACKAGE_CATALOG;
 
@@ -37,7 +37,7 @@ interface UpgradeDialogProps {
 }
 
 export function UpgradeDialog({ open, onOpenChange }: UpgradeDialogProps) {
-  const { firestore, user } = useFirebase();
+  const { auth, user } = useFirebase();
   const { toast } = useToast();
   const [loading, setLoading] = React.useState(false);
   const [selectedPackage, setSelectedPackage] = React.useState<ClientPackage | null>(null);
@@ -46,19 +46,33 @@ export function UpgradeDialog({ open, onOpenChange }: UpgradeDialogProps) {
   const currentIndex = currentPackage ? PACKAGE_ORDER.indexOf(currentPackage) : -1;
 
   const handleUpgrade = async () => {
-    if (!firestore || !user || !selectedPackage) return;
+    if (!auth?.currentUser || !user || !selectedPackage) return;
 
     setLoading(true);
     try {
-      const userDocRef = doc(firestore, 'users', user.id);
-      await updateDoc(userDocRef, {
-        package: selectedPackage,
-        packageUpdatedAt: serverTimestamp(),
+      const res = await fetch('/api/package/change-plan', {
+        method: 'POST',
+        headers: {
+          ...(await getBearerApiHeaders(auth)),
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ packageId: selectedPackage }),
       });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data?.error || 'Falha ao alterar plano');
+      }
 
+      const pkgName = PACKAGES.find((p) => p.id === selectedPackage)?.name;
       toast({
         title: 'Plano atualizado!',
-        description: `Seu plano foi alterado para ${PACKAGES.find(p => p.id === selectedPackage)?.name}.`,
+        description: data.pendingPayment
+          ? `Plano ${pkgName} registrado. O acesso pleno será liberado após confirmação do pagamento.`
+          : data.removesAdvertising
+            ? `Seu plano foi alterado para ${pkgName}. Publicidade de terceiros foi removida.`
+            : selectedPackage === 'gratuito'
+              ? 'Você está no plano Gratuito. Limites reduzidos e publicidade podem ser exibidos conforme o contrato.'
+              : `Seu plano foi alterado para ${pkgName}.`,
       });
       onOpenChange(false);
       setSelectedPackage(null);

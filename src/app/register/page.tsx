@@ -95,10 +95,8 @@ import {
   RegisterContractContent,
   packageRequiresMarketingOptIn,
 } from "@/app/register/contract-content";
-import {
-  CLIENT_PACKAGE_CATALOG,
-  getAmbbotUsagePeriodKey,
-} from "@/lib/package-limits";
+import { CLIENT_PACKAGE_CATALOG } from "@/lib/package-catalog";
+import { getAmbbotUsagePeriodKey } from "@/lib/package-limits";
 
 const PACKAGES = CLIENT_PACKAGE_CATALOG;
 
@@ -1660,7 +1658,16 @@ function RegisterPageContent() {
               <p>
                 Seu acesso será registrado com vigência anual apenas para
                 controle da plataforma, sem qualquer cobrança no plano
-                Gratuito.
+                Gratuito. Consulte também a{" "}
+                <a
+                  href="/politica-privacidade"
+                  className="font-medium text-primary underline-offset-2 hover:underline"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Política de Privacidade e Cookies
+                </a>{" "}
+                (Google AdSense e preferências de publicidade).
               </p>
             </div>
           )}
@@ -1682,7 +1689,7 @@ function RegisterPageContent() {
             />
             <Label htmlFor="pay-ack" className="text-sm leading-snug cursor-pointer">
               {isFreePlan
-                ? "Declaro ciência e aceito as condições do plano gratuito (publicidade de terceiros no app e site, contato comercial da CONTRATADA por ligações, e-mails, notificações e demais canais, e uso dos meus dados para oferecimento de serviços), sem direito de reclamação quanto a essas práticas nos termos do contrato, e desejo concluir meu cadastro sem custo."
+                ? "Declaro ciência e aceito as condições do plano gratuito (publicidade de terceiros e Google AdSense no app e site, cookies de publicidade conforme Política de Privacidade, contato comercial da CONTRATADA por ligações, e-mails, notificações e demais canais, e uso dos meus dados para oferecimento de serviços), sem direito de reclamação quanto a essas práticas nos termos do contrato, e desejo concluir meu cadastro sem custo."
                 : annual
                   ? isPlatformPaymentAutoApproveEnabled()
                     ? "Confirmo que realizei o pagamento conforme as instruções acima e desejo concluir meu cadastro."

@@ -99,6 +99,7 @@ import {
   buildTitularAccessMatchDocumentSet,
   buildTitularOwnedEntitiesForAccessMatch,
 } from "@/lib/titular-document-set";
+import { PortalAdvertisingLayer } from "@/components/portal-advertising-layer";
 
 const LogoIcon = () => (
   <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-emerald-400 text-primary-foreground">
@@ -670,16 +671,31 @@ const AppLayoutClientInner = ({ children }: { children: React.ReactNode }) => {
               : "overflow-y-auto",
           )}
         >
-          <div
-            key={pathname}
-            className={cn(
-              "app-scroll-region animate-page-fade-in relative min-w-0 max-w-full",
-              pathname === "/external" &&
-                "flex min-h-0 flex-1 flex-col overflow-hidden",
-            )}
-          >
-            {children}
-          </div>
+          {isClientePortalRole(user.role) ? (
+            <PortalAdvertisingLayer user={user}>
+              <div
+                key={pathname}
+                className={cn(
+                  "app-scroll-region animate-page-fade-in relative min-w-0 max-w-full",
+                  pathname === "/external" &&
+                    "flex min-h-0 flex-1 flex-col overflow-hidden",
+                )}
+              >
+                {children}
+              </div>
+            </PortalAdvertisingLayer>
+          ) : (
+            <div
+              key={pathname}
+              className={cn(
+                "app-scroll-region animate-page-fade-in relative min-w-0 max-w-full",
+                pathname === "/external" &&
+                  "flex min-h-0 flex-1 flex-col overflow-hidden",
+              )}
+            >
+              {children}
+            </div>
+          )}
         </SidebarInset>
       </div>
 

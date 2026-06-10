@@ -1,4 +1,5 @@
-import { PACKAGE_LIMITS, PACKAGE_ANNUAL_PRICE_BRL } from "@/lib/package-limits";
+import { PACKAGE_LIMITS } from "@/lib/package-limits";
+import { PACKAGE_ANNUAL_PRICE_BRL } from "@/lib/package-pricing";
 import type { ClientPackage } from "@/lib/types";
 import {
   buildGratuitoLegacyNoticeHtml,
