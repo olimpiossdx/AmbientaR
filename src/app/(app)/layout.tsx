@@ -93,9 +93,12 @@ import {
 } from "@/lib/auth-user-id";
 import {
   dedupeAccessRequestsByRequesterAndDocument,
-  filterAccessRequestsForTitular,
+  filterAccessRequestsForTitularPortal,
 } from "@/lib/access-request-titular-match";
-import { buildTitularCpfCnpjSet } from "@/lib/titular-document-set";
+import {
+  buildTitularAccessMatchDocumentSet,
+  buildTitularOwnedEntitiesForAccessMatch,
+} from "@/lib/titular-document-set";
 
 const LogoIcon = () => (
   <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-emerald-400 text-primary-foreground">
@@ -117,7 +120,24 @@ const mobileNavItems = [
   { href: "/users", label: "Perfil", icon: UserRound },
 ];
 
-const AppLayoutClient = ({ children }: { children: React.ReactNode }) => {
+/**
+ * Evita "Cannot read properties of null (reading 'get')" em usePathname/useSearchParams
+ * durante HMR ou primeiro paint em alguns ambientes de dev (mesmo padrão do AuthThemeEnforcer).
+ */
+function AppLayoutClient({ children }: { children: React.ReactNode }) {
+  const [mounted, setMounted] = React.useState(false);
+  React.useEffect(() => setMounted(true), []);
+  if (!mounted) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center bg-background">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+      </div>
+    );
+  }
+  return <AppLayoutClientInner>{children}</AppLayoutClientInner>;
+}
+
+const AppLayoutClientInner = ({ children }: { children: React.ReactNode }) => {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -192,55 +212,58 @@ const AppLayoutClient = ({ children }: { children: React.ReactNode }) => {
     );
   }, [firestore, portalSessionReady, sessionUid]);
 
-  const clientByIdRef = useMemoFirebase(() => {
-    if (!portalSessionReady || !sessionUid) {
-      return null;
-    }
-    return doc(firestore!, "clients", sessionUid);
-  }, [firestore, portalSessionReady, sessionUid]);
-
-  const empreendedorByIdRef = useMemoFirebase(() => {
-    if (!portalSessionReady || !sessionUid) {
-      return null;
-    }
-    return doc(firestore!, "empreendedores", sessionUid);
-  }, [firestore, portalSessionReady, sessionUid]);
-
   const { data: pendingAccessRequests } =
     useCollection<AccessRequest>(accessRequestsQuery);
   const { data: myClients } = useCollection<Client>(myClientsQuery);
   const { data: myEmpreendedores } = useCollection<Empreendedor>(
     myEmpreendedoresQuery,
   );
-  const { data: clientById } = useDoc<Client>(clientByIdRef);
-  const { data: empreendedorById } = useDoc<Empreendedor>(empreendedorByIdRef);
+  const linkedClientRef = useMemoFirebase(() => {
+    if (!portalSessionReady || !user?.linkedClientId) return null;
+    return doc(firestore!, "clients", user.linkedClientId);
+  }, [firestore, portalSessionReady, user?.linkedClientId]);
+
+  const linkedEmpreendedorRef = useMemoFirebase(() => {
+    if (!portalSessionReady || !user?.linkedEmpreendedorId) return null;
+    return doc(firestore!, "empreendedores", user.linkedEmpreendedorId);
+  }, [firestore, portalSessionReady, user?.linkedEmpreendedorId]);
+
+  const { data: linkedClient } = useDoc<Client>(linkedClientRef);
+  const { data: linkedEmpreendedor } = useDoc<Empreendedor>(linkedEmpreendedorRef);
 
   const ownedEntitiesForMatch = React.useMemo(
-    () => [
-      ...(myClients ?? []),
-      ...(myEmpreendedores ?? []),
-      ...(clientById ? [clientById] : []),
-      ...(empreendedorById ? [empreendedorById] : []),
+    () =>
+      buildTitularOwnedEntitiesForAccessMatch({
+        myClients,
+        myEmpreendedores,
+        linkedClient: linkedClient ?? undefined,
+        linkedEmpreendedor: linkedEmpreendedor ?? undefined,
+        linkedClientId: user?.linkedClientId ?? null,
+        linkedEmpreendedorId: user?.linkedEmpreendedorId ?? null,
+      }),
+    [
+      myClients,
+      myEmpreendedores,
+      linkedClient,
+      linkedEmpreendedor,
+      user?.linkedClientId,
+      user?.linkedEmpreendedorId,
     ],
-    [myClients, myEmpreendedores, clientById, empreendedorById],
   );
 
   const myCpfCnpjSet = React.useMemo(
     () =>
-      buildTitularCpfCnpjSet({
+      buildTitularAccessMatchDocumentSet({
         profile: user ?? undefined,
-        myClients,
-        myEmpreendedores,
-        clientById: clientById ?? undefined,
-        empreendedorById: empreendedorById ?? undefined,
+        ownedEntities: ownedEntitiesForMatch,
       }),
-    [myClients, myEmpreendedores, clientById, empreendedorById, user],
+    [ownedEntitiesForMatch, user],
   );
 
   const pendingAccessRequestsForMe = React.useMemo(
     () =>
       dedupeAccessRequestsByRequesterAndDocument(
-        filterAccessRequestsForTitular(
+        filterAccessRequestsForTitularPortal(
           pendingAccessRequests,
           myCpfCnpjSet,
           ownedEntitiesForMatch,

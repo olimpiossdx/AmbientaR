@@ -115,7 +115,7 @@ function getUrlFromNavHref(href: string): string | null {
 }
 
 function getUrlFromRouteSearchParams(searchParams?: RouteSearchParams): string | null {
-  if (!searchParams) return null;
+  if (!searchParams?.get) return null;
   const url = searchParams.get('url');
   return url?.trim() ? url : null;
 }

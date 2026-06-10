@@ -24,6 +24,8 @@ const child = spawn(
       APPHOSTING_STRICT_BUILD: "1",
       CI: "true",
       NEXT_TELEMETRY_DISABLED: "1",
+      /** Não sobrescrever `.next` do `npm run dev` (evita vendor-chunks/date-fns 500). */
+      NEXT_DIST_DIR: ".next-apphosting-check",
     },
   },
 );

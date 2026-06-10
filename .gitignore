@@ -16,6 +16,7 @@ functions/node_modules
 
 # next.js
 /.next/
+/.next-apphosting-check/
 /out/
 
 # next-pwa / Workbox (gerados em `npm run build` em produção)

@@ -128,8 +128,13 @@ import {
   accessRequestMatchesTitularDocuments,
   dedupeAccessRequestsByRequesterAndDocument,
   filterAccessRequestsForTitular,
+  filterAccessRequestsForTitularPortal,
 } from "@/lib/access-request-titular-match";
-import { buildTitularCpfCnpjSet } from "@/lib/titular-document-set";
+import {
+  buildTitularAccessMatchDocumentSet,
+  buildTitularCpfCnpjSet,
+  buildTitularOwnedEntitiesForAccessMatch,
+} from "@/lib/titular-document-set";
 import { linkClientGestaoToExistingRecords } from "@/lib/link-client-gestao-records";
 import {
   lookupClientAndEmpreendedorByDocument,
@@ -961,50 +966,42 @@ export default function UsersPage() {
   const { data: linkedClient } = useDoc<Client>(linkedClientRef);
   const { data: linkedEmpreendedor } = useDoc<Empreendedor>(linkedEmpreendedorRef);
 
+  const profileForTitular = clientProfile || user;
+
   const ownedEntitiesForMatch = useMemo(
-    () => [
-      ...(myClients ?? []),
-      ...(myEmpreendedores ?? []),
-      ...(clientById ? [clientById] : []),
-      ...(empreendedorById ? [empreendedorById] : []),
-      ...(linkedClient ? [linkedClient] : []),
-      ...(linkedEmpreendedor ? [linkedEmpreendedor] : []),
-    ],
+    () =>
+      buildTitularOwnedEntitiesForAccessMatch({
+        myClients,
+        myEmpreendedores,
+        linkedClient: linkedClient ?? undefined,
+        linkedEmpreendedor: linkedEmpreendedor ?? undefined,
+        linkedClientId:
+          profileForTitular?.linkedClientId ?? user?.linkedClientId ?? null,
+        linkedEmpreendedorId:
+          profileForTitular?.linkedEmpreendedorId ??
+          user?.linkedEmpreendedorId ??
+          null,
+      }),
     [
       myClients,
       myEmpreendedores,
-      clientById,
-      empreendedorById,
       linkedClient,
       linkedEmpreendedor,
+      profileForTitular?.linkedClientId,
+      profileForTitular?.linkedEmpreendedorId,
+      user?.linkedClientId,
+      user?.linkedEmpreendedorId,
     ],
   );
 
-  const myCpfCnpjSet = useMemo(() => {
-    const profile = clientProfile || user;
-    return buildTitularCpfCnpjSet({
-      profile: profile ?? undefined,
-      myClients,
-      myEmpreendedores,
-      clientById: clientById ?? undefined,
-      empreendedorById: empreendedorById ?? undefined,
-      extraDocuments: [
-        linkedClient?.cpfCnpj,
-        linkedEmpreendedor?.cpfCnpj,
-        ...ownedEntitiesForMatch.map((e) => e.cpfCnpj),
-      ],
-    });
-  }, [
-    myClients,
-    myEmpreendedores,
-    user,
-    clientProfile,
-    clientById,
-    empreendedorById,
-    linkedClient,
-    linkedEmpreendedor,
-    ownedEntitiesForMatch,
-  ]);
+  const myCpfCnpjSet = useMemo(
+    () =>
+      buildTitularAccessMatchDocumentSet({
+        profile: profileForTitular ?? undefined,
+        ownedEntities: ownedEntitiesForMatch,
+      }),
+    [profileForTitular, ownedEntitiesForMatch],
+  );
 
   const titularDocumentList = useMemo(
     () => Array.from(myCpfCnpjSet),
@@ -1071,7 +1068,7 @@ export default function UsersPage() {
   const pendingRequestsForMe = useMemo(
     () =>
       dedupeAccessRequestsByRequesterAndDocument(
-        filterAccessRequestsForTitular(
+        filterAccessRequestsForTitularPortal(
           allPendingRequests,
           myCpfCnpjSet,
           ownedEntitiesForMatch,
@@ -1082,7 +1079,7 @@ export default function UsersPage() {
 
   const approvedRequestsForMe = useMemo(
     () =>
-      filterAccessRequestsForTitular(
+      filterAccessRequestsForTitularPortal(
         allApprovedRequests,
         myCpfCnpjSet,
         ownedEntitiesForMatch,

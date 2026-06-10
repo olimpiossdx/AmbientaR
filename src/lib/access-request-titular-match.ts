@@ -32,11 +32,28 @@ export function filterAccessRequestsForTitular(
   ownedEntities?: Pick<Client | Empreendedor, "cpfCnpj">[],
 ): AccessRequest[] {
   if (!requests?.length) return [];
-  if (titularDocuments.size === 0 && !ownedEntities?.length) return [];
+  if (!titularDocuments.size && !ownedEntities?.length) return [];
 
   return requests.filter((r) =>
     accessRequestMatchesTitularDocuments(r, titularDocuments, ownedEntities),
   );
+}
+
+/** Pedidos visíveis só quando o titular tem CPF/CNPJ no perfil ou empreendimento vinculado. */
+export function filterAccessRequestsForTitularPortal(
+  requests: AccessRequest[] | null | undefined,
+  titularDocuments: Set<string>,
+  ownedEntities?: Pick<Client | Empreendedor, "cpfCnpj">[] | null,
+): AccessRequest[] {
+  const entities = ownedEntities ?? [];
+  const docs = titularDocuments ?? new Set<string>();
+  const hasClaim =
+    docs.size > 0 ||
+    entities.some(
+      (e) => normalizeDocumentDigits(e.cpfCnpj ?? "").length >= 11,
+    );
+  if (!hasClaim) return [];
+  return filterAccessRequestsForTitular(requests, docs, entities);
 }
 
 /** Evita duplicatas na UI quando há vários pedidos do mesmo solicitante para o mesmo CPF/CNPJ. */
@@ -44,7 +61,6 @@ export function dedupeAccessRequestsByRequesterAndDocument(
   requests: AccessRequest[],
 ): AccessRequest[] {
   const byKey = new Map<string, AccessRequest>();
-  const orphans: AccessRequest[] = [];
 
   for (const req of requests) {
     const docDigits = normalizeDocumentDigits(req.cpfOfInterested ?? "");
@@ -52,10 +68,7 @@ export function dedupeAccessRequestsByRequesterAndDocument(
       (req.requestedByEmail ?? "").trim().toLowerCase() ||
       req.requestedByUserId ||
       "";
-    if (!requesterKey || docDigits.length < 11) {
-      orphans.push(req);
-      continue;
-    }
+    if (!requesterKey || docDigits.length < 11) continue;
     const key = `${requesterKey}:${docDigits}`;
     const existing = byKey.get(key);
     if (
@@ -66,5 +79,5 @@ export function dedupeAccessRequestsByRequesterAndDocument(
     }
   }
 
-  return [...orphans, ...byKey.values()];
+  return [...byKey.values()];
 }
