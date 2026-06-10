@@ -2610,6 +2610,72 @@ export type LasRas = {
   [key: string]: unknown;
 };
 
+/** Procurador nomeado na procuração (responsável técnico da consultoria). */
+export type ProcuracaoProcurador = {
+  responsibleId: string;
+  name: string;
+  profession?: string;
+  cpf?: string;
+  identidade?: string;
+  emissor?: string;
+  estadoCivil?: string;
+  nacionalidade?: string;
+  address?: string;
+  municipio?: string;
+  uf?: string;
+};
+
+/** Outorgante (empreendedor titular do mandato). */
+export type ProcuracaoOutorgante = {
+  empreendedorId: string;
+  nome: string;
+  cpfCnpj: string;
+  address?: string;
+  municipio?: string;
+  uf?: string;
+  /** Pessoa jurídica — responsável legal */
+  responsavelLegalNome?: string;
+  responsavelLegalCpf?: string;
+  responsavelLegalRg?: string;
+  responsavelLegalRgEmissor?: string;
+  responsavelLegalEndereco?: string;
+};
+
+/** Outorgada (empresa consultoria) e procuradores. */
+export type ProcuracaoOutorgado = {
+  companyId: string;
+  companyName: string;
+  companyCnpj: string;
+  companyAddress?: string;
+  procuradores: ProcuracaoProcurador[];
+};
+
+export type ProcuracaoEmpreendimento = {
+  projectId: string;
+  nome: string;
+  municipio?: string;
+  uf?: string;
+  cnpj?: string;
+};
+
+/** Procuração para representação do empreendedor/empreendimento (coleção `procuracoes`). */
+export type Procuracao = {
+  id: string;
+  status?: 'Rascunho' | 'Aprovado' | 'Assinada';
+  outorgante: ProcuracaoOutorgante;
+  outorgado: ProcuracaoOutorgado;
+  textoPoderes: string;
+  empreendimentos: ProcuracaoEmpreendimento[];
+  dataDocumento?: string;
+  localDocumento?: string;
+  /** PDF gerado para assinatura. */
+  contractPdfUrl?: string;
+  /** PDF assinado (upload). */
+  fileUrl?: string;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
 /** Reanálise de processo — formulário dinâmico (coleção `reanalises`). */
 export type Reanalise = {
   id: string;

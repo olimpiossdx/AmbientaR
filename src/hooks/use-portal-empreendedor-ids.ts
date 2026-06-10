@@ -1,13 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { collection, getDocs, query, where } from "firebase/firestore";
 import { useAuth, useFirestore } from "@/firebase";
-import { fetchEmpreendedorIdsForRepresentative } from "@/lib/representative-empreendedor-ids";
-import { fetchEmpreendedorIdsForConsultor } from "@/lib/consultor-empreendedor-ids";
-import { fetchEmpreendedorIdsForClientGestao } from "@/lib/requests-portal-empreendedor-ids";
-import { resolvePortalAuthUid } from "@/lib/auth-user-id";
+import { fetchEmpreendedorIdsForPortalScope } from "@/lib/portal-empreendedor-scope";
 import { isClientePortalRole } from "@/lib/role-guards";
+import type { AppUser } from "@/lib/types";
 
 /**
  * IDs de empreendedores visíveis para Cliente Gestão, Cliente Autônomo ou Representante.
@@ -24,65 +21,14 @@ export function usePortalEmpreendedorIds(): string[] | undefined {
       return;
     }
 
-    if (user.role === "client") {
+    if (
+      user.role === "client" ||
+      user.role === "cliente_autonomo" ||
+      user.role === "representative" ||
+      user.role === "consultor_representante"
+    ) {
       setIds(undefined);
-      fetchEmpreendedorIdsForClientGestao(firestore, user)
-        .then(setIds)
-        .catch(() => setIds(["invalid-placeholder"]));
-      return;
-    }
-
-    if (user.role === "cliente_autonomo") {
-      setIds(undefined);
-      const uid = resolvePortalAuthUid(user);
-      if (!uid) {
-        setIds(["invalid-placeholder"]);
-        return;
-      }
-      const empreendedoresRef = collection(firestore, "empreendedores");
-      const byUserId = query(empreendedoresRef, where("userId", "==", uid));
-      const variants = [user.cpf || user.userCpf, ...(user.cnpjs || [])].filter(
-        Boolean,
-      ) as string[];
-      const normalized = new Set<string>();
-      variants.forEach((v) => {
-        normalized.add(v);
-        const d = v.replace(/\D/g, "");
-        if (d.length >= 11) normalized.add(d);
-      });
-      const variantList = Array.from(normalized).slice(0, 10);
-      const byCpf =
-        variantList.length > 0
-          ? query(empreendedoresRef, where("cpfCnpj", "in", variantList))
-          : null;
-      Promise.all([
-        getDocs(byUserId),
-        byCpf ? getDocs(byCpf) : Promise.resolve({ docs: [] }),
-      ])
-        .then(([snapU, snapCpf]) => {
-          const merged = new Set<string>([
-            ...snapU.docs.map((d) => d.id),
-            ...snapCpf.docs.map((d) => d.id),
-          ]);
-          setIds(
-            merged.size > 0 ? Array.from(merged) : ["invalid-placeholder"],
-          );
-        })
-        .catch(() => setIds(["invalid-placeholder"]));
-      return;
-    }
-
-    if (user.role === "representative") {
-      setIds(undefined);
-      fetchEmpreendedorIdsForRepresentative(firestore, user)
-        .then(setIds)
-        .catch(() => setIds(["invalid-placeholder"]));
-      return;
-    }
-
-    if (user.role === "consultor_representante") {
-      setIds(undefined);
-      fetchEmpreendedorIdsForConsultor(firestore, user)
+      fetchEmpreendedorIdsForPortalScope(firestore, user as AppUser)
         .then(setIds)
         .catch(() => setIds(["invalid-placeholder"]));
       return;

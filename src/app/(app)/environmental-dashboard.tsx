@@ -24,6 +24,21 @@ import { isClientePortalRole } from '@/lib/role-guards';
 
 type LicenseGroup = 'expiringIn30' | 'expiringIn60' | 'expiringIn180' | 'expiringIn360' | 'expired';
 
+type LicenseExpiryRow = {
+  id: string;
+  expirationDate?: string;
+  issueDate?: string;
+  status?: string;
+  processNumber?: string;
+  permitNumber?: string;
+  propertyName?: string;
+  description?: string;
+};
+
+type RecentDashboardRow = LicenseExpiryRow & {
+  _rowKind?: "license" | "project";
+};
+
 interface EnvironmentalDashboardProps {
   initialPermits?: EnvironmentalPermit[] | null;
   initialLicenses?: License[] | null;
@@ -38,7 +53,7 @@ export default function EnvironmentalDashboard({ initialPermits, initialLicenses
   const { user } = useUser();
   const [isLicenseDialogOpen, setIsLicenseDialogOpen] = useState(false);
   const [isCondicionanteDialogOpen, setIsCondicionanteDialogOpen] = useState(false);
-  const [dialogContent, setDialogContent] = useState<EnvironmentalPermit[]>([]);
+  const [dialogContent, setDialogContent] = useState<LicenseExpiryRow[]>([]);
   const [dialogCondicionantes, setDialogCondicionantes] = useState<Condicionante[]>([]);
   const [dialogTitle, setDialogTitle] = useState('');
   
@@ -66,22 +81,38 @@ export default function EnvironmentalDashboard({ initialPermits, initialLicenses
     return query(collection(firestore, 'intervencoes'), limit(200));
   }, [firestore, initialIntervencoes, isClientView]));
   
-  const finalPermits = initialPermits !== undefined ? initialPermits : permits;
+  const finalProjects = initialPermits !== undefined ? initialPermits : permits;
+  const finalLicenses = initialLicenses !== undefined ? initialLicenses : null;
   const finalCondicionantes = initialCondicionantes !== undefined ? initialCondicionantes : condicionantes;
   const finalOutorgas = initialOutorgas !== undefined ? initialOutorgas : outorgas;
   const finalIntervencoes = initialIntervencoes !== undefined ? initialIntervencoes : intervencoes;
 
+  /** Licenças para estatísticas: no painel do cliente vêm de `initialLicenses`; gestores usam projetos (legado). */
+  const licenseStatsSource =
+    finalLicenses !== null ? finalLicenses : (finalProjects || []);
+
 
   const projectsQuery = useMemoFirebase(
-    () => (firestore ? query(collection(firestore, 'projects'), limit(200)) : null),
-    [firestore],
+    () => {
+      if (!firestore || isClientView) return null;
+      return query(collection(firestore, 'projects'), limit(200));
+    },
+    [firestore, isClientView],
   );
   const { data: allProjects, isLoading: isLoadingProjects } = useCollection<Project>(projectsQuery);
-  const projectsMap = useMemo(() => new Map(allProjects?.map(p => [p.id, p.propertyName])), [allProjects]);
+  const projectsMap = useMemo(() => {
+    if (isClientView) {
+      return new Map((finalProjects || []).map((p) => [p.id, p.propertyName]));
+    }
+    return new Map(allProjects?.map((p) => [p.id, p.propertyName]));
+  }, [isClientView, finalProjects, allProjects]);
 
   const empreendedoresQuery = useMemoFirebase(
-    () => (firestore ? query(collection(firestore, 'empreendedores'), limit(200)) : null),
-    [firestore],
+    () => {
+      if (!firestore || isClientView) return null;
+      return query(collection(firestore, 'empreendedores'), limit(200));
+    },
+    [firestore, isClientView],
   );
   const { data: allEmpreendedores, isLoading: isLoadingEmpreendedores } = useCollection<Empreendedor>(empreendedoresQuery);
   const empreendedoresMap = useMemo(() => new Map(allEmpreendedores?.map(e => [e.id, e.name])), [allEmpreendedores]);
@@ -93,14 +124,14 @@ export default function EnvironmentalDashboard({ initialPermits, initialLicenses
     
     const stats = {
       valid: 0,
-      expired: [] as EnvironmentalPermit[],
-      expiringIn30: [] as EnvironmentalPermit[],
-      expiringIn60: [] as EnvironmentalPermit[],
-      expiringIn180: [] as EnvironmentalPermit[],
-      expiringIn360: [] as EnvironmentalPermit[],
+      expired: [] as LicenseExpiryRow[],
+      expiringIn30: [] as LicenseExpiryRow[],
+      expiringIn60: [] as LicenseExpiryRow[],
+      expiringIn180: [] as LicenseExpiryRow[],
+      expiringIn360: [] as LicenseExpiryRow[],
     };
-    
-    (finalPermits || []).forEach(permit => {
+
+    (licenseStatsSource as LicenseExpiryRow[]).forEach((permit) => {
       if (!permit.expirationDate) {
         if (permit.status === 'Válida' || permit.status === 'Em Renovação' || permit.status === 'Em Andamento') stats.valid++;
         return;
@@ -125,9 +156,32 @@ export default function EnvironmentalDashboard({ initialPermits, initialLicenses
       }
     });
 
-    const recentPermits = [...(finalPermits || [])]
-        .sort((a,b) => new Date(b.issueDate || 0).getTime() - new Date(a.issueDate || 0).getTime())
-        .slice(0, 5);
+    const recentLicenses = [...(finalLicenses || [])]
+      .sort(
+        (a, b) =>
+          new Date(b.issueDate || 0).getTime() -
+          new Date(a.issueDate || 0).getTime(),
+      )
+      .slice(0, 5);
+    const recentProjects = [...(finalProjects || [])]
+      .sort(
+        (a, b) =>
+          new Date(b.issueDate || 0).getTime() -
+          new Date(a.issueDate || 0).getTime(),
+      )
+      .slice(0, 5);
+    const recentPermits: RecentDashboardRow[] =
+      finalLicenses !== null
+        ? [
+            ...recentLicenses.map((l) => ({
+              ...l,
+              _rowKind: "license" as const,
+            })),
+            ...recentProjects
+              .filter((p) => !recentLicenses.some((l) => l.id === p.id))
+              .map((p) => ({ ...p, _rowKind: "project" as const })),
+          ].slice(0, 5)
+        : (recentProjects as RecentDashboardRow[]);
         
     let pending = 0;
     let overdue = 0;
@@ -142,7 +196,7 @@ export default function EnvironmentalDashboard({ initialPermits, initialLicenses
     return {
       permitStats: {
         ...stats,
-        total: finalPermits?.length || 0,
+        total: licenseStatsSource.length,
         recent: recentPermits,
       },
       complianceStats: {
@@ -158,11 +212,18 @@ export default function EnvironmentalDashboard({ initialPermits, initialLicenses
         total: totalIntervencoes,
       }
     };
-  }, [finalPermits, finalCondicionantes, finalOutorgas, finalIntervencoes]);
+  }, [
+    licenseStatsSource,
+    finalLicenses,
+    finalProjects,
+    finalCondicionantes,
+    finalOutorgas,
+    finalIntervencoes,
+  ]);
 
 
   const handleCardClick = (group: LicenseGroup, title: string) => {
-    let licensesToShow: EnvironmentalPermit[] = [];
+    let licensesToShow: LicenseExpiryRow[] = [];
     switch (group) {
         case 'expiringIn30': licensesToShow = permitStats.expiringIn30; break;
         case 'expiringIn60': licensesToShow = permitStats.expiringIn60; break;
@@ -335,14 +396,27 @@ export default function EnvironmentalDashboard({ initialPermits, initialLicenses
                     </TableRow>
                   ))}
                   {!isLoading && permitStats.recent.map((permit) => (
-                    <TableRow key={permit.id}>
+                    <TableRow key={`${permit._rowKind ?? "row"}-${permit.id}`}>
                       <TableCell>
-                        <div className="font-medium">{permit.processNumber || permit.propertyName || permit.id}</div>
-                        <div className="text-sm text-muted-foreground hidden sm:block">{(permit.description ?? '').substring(0, 40)}{(permit.description?.length ?? 0) > 40 ? '...' : ''}</div>
+                        <div className="font-medium">
+                          {permit.processNumber ||
+                            permit.permitNumber ||
+                            permit.propertyName ||
+                            permit.id}
+                        </div>
+                        <div className="text-sm text-muted-foreground hidden sm:block">
+                          {permit._rowKind === "project"
+                            ? "Empreendimento"
+                            : (permit.description ?? "").substring(0, 40)}
+                          {permit._rowKind !== "project" &&
+                          (permit.description?.length ?? 0) > 40
+                            ? "..."
+                            : ""}
+                        </div>
                       </TableCell>
                       <TableCell className="hidden md:table-cell">{permit.issueDate ? new Date(permit.issueDate).toLocaleDateString('pt-BR') : 'N/A'}</TableCell>
                       <TableCell>
-                        <Badge variant="outline" className={cn(getStatusVariant(permit.status))}>
+                        <Badge variant="outline" className={cn(getStatusVariant(permit.status as EnvironmentalPermit['status']))}>
                             {permit.status || 'Não definido'}
                         </Badge>
                       </TableCell>

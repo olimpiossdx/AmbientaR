@@ -1,5 +1,7 @@
 import {
   collection,
+  doc,
+  getDoc,
   getDocs,
   query,
   where,
@@ -37,6 +39,21 @@ export async function fetchClientIdsForTitularPortalUser(
   const userDocs = titularClientDocumentVariants(userCpf, user.cnpjs);
 
   const uid = resolvePortalAuthUid(user);
+  if (user.role === "cliente_autonomo" && uid) {
+    const byUserId = query(cRef, where("userId", "==", uid));
+    const byOwnerUserId = query(cRef, where("ownerUserId", "==", uid));
+    const [snapU, snapOwner, ownDocSnap] = await Promise.all([
+      getDocs(byUserId),
+      getDocs(byOwnerUserId),
+      getDoc(doc(firestore, "clients", uid)),
+    ]);
+    const ids = new Set<string>([
+      ...snapU.docs.map((d) => d.id),
+      ...snapOwner.docs.map((d) => d.id),
+    ]);
+    if (ownDocSnap.exists()) ids.add(uid);
+    return Array.from(ids);
+  }
   if (isSelfRegistered && uid) {
     const q = query(cRef, where("userId", "==", uid));
     const qByDoc =

@@ -34,10 +34,7 @@ import {
   query,
   where,
   limit,
-  getDocs,
 } from "firebase/firestore";
-import { resolvePortalAuthUid } from "@/lib/auth-user-id";
-import { buildUserProfileDocumentVariants } from "@/lib/document-lookup";
 import type { License, Empreendedor, AppUser, Project } from "@/lib/types";
 import { permitStatusBadgeClassRich } from "@/lib/status-display-classes";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -114,44 +111,7 @@ export default function LicensesPage() {
   const router = useRouter();
 
   useEffect(() => {
-    if ((user?.role === "client" || user?.role === "cliente_autonomo") && firestore) {
-      setEmpreendedorIdsForUser(undefined);
-      const empreendedoresRef = collection(firestore, "empreendedores");
-      const uid = resolvePortalAuthUid(user);
-      if (!uid) {
-        setEmpreendedorIdsForUser(["invalid-placeholder"]);
-        return;
-      }
-      const byUserId = query(empreendedoresRef, where("userId", "==", uid));
-      const variantList = buildUserProfileDocumentVariants(
-        user.cpf,
-        user.userCpf,
-        user.titularDocument,
-        user.cnpjs,
-      );
-      const byCpf =
-        variantList.length > 0
-          ? query(empreendedoresRef, where("cpfCnpj", "in", variantList))
-          : null;
-      Promise.all([
-        getDocs(byUserId),
-        byCpf ? getDocs(byCpf) : Promise.resolve({ docs: [] }),
-      ])
-        .then(([snapU, snapCpf]) => {
-          const ids = new Set<string>([
-            ...snapU.docs.map((d) => d.id),
-            ...snapCpf.docs.map((d) => d.id),
-          ]);
-          setEmpreendedorIdsForUser(
-            ids.size > 0 ? Array.from(ids) : ["invalid-placeholder"],
-          );
-        })
-        .catch(() => setEmpreendedorIdsForUser(["invalid-placeholder"]));
-    } else if (
-      (user?.role === "representative" ||
-        user?.role === "consultor_representante") &&
-      firestore
-    ) {
+    if (isEmpreendedorScopedPortalRole(user?.role) && firestore && user) {
       setEmpreendedorIdsForUser(undefined);
       fetchEmpreendedorIdsForPortalScope(firestore, user)
         .then(setEmpreendedorIdsForUser)

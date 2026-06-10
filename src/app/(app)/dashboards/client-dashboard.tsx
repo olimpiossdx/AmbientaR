@@ -24,19 +24,17 @@ import {
   useAuth,
   useDoc,
 } from "@/firebase";
-import { resolvePortalAuthUid } from "@/lib/auth-user-id";
 import { isClientePortalRole, isConsultorRepresentante, isRepresentativeLikePortalRole } from "@/lib/role-guards";
 import {
   fetchClientIdsForPortalPartner,
   fetchEmpreendedorIdsForPortalScope,
 } from "@/lib/portal-empreendedor-scope";
-import { buildUserProfileDocumentVariants } from "@/lib/document-lookup";
+import { fetchClientIdsForTitularPortalUser } from "@/lib/portal-titular-client-ids";
 import {
   collection,
+  doc,
   query,
   where,
-  getDocs,
-  doc,
 } from "firebase/firestore";
 import type {
   AppUser,
@@ -66,205 +64,44 @@ export default function ClientDashboard() {
   const [clientId, setClientId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (user && firestore) {
-      setEmpreendedorIds(undefined);
+    if (!user || !firestore) return;
 
-      // Representante / consultor: mesmas informações do painel do cliente na carteira aprovada.
-      if (isRepresentativeLikePortalRole((user as AppUser).role)) {
-        Promise.all([
-          fetchClientIdsForPortalPartner(firestore, user as AppUser),
-          fetchEmpreendedorIdsForPortalScope(firestore, user as AppUser),
-        ])
-          .then(([clientIds, empIds]) => {
-            if (clientIds[0]) setClientId(clientIds[0]);
-            setEmpreendedorIds(
-              empIds.length > 0 && empIds[0] !== "invalid-placeholder"
-                ? empIds
-                : ["non-existent-placeholder"],
-            );
-          })
-          .catch(() => setEmpreendedorIds(["non-existent-placeholder"]));
-        return;
-      }
+    setEmpreendedorIds(undefined);
+    setClientId(null);
 
-      const isSelfRegistered = !!(user as any).package;
+    const appUser = user as AppUser;
+    const toPlaceholder = (empIds: string[]) =>
+      empIds.length > 0 && empIds[0] !== "invalid-placeholder"
+        ? empIds
+        : ["non-existent-placeholder"];
 
-      if (isSelfRegistered) {
-        const uid = resolvePortalAuthUid(user);
-        if (!uid) {
-          setEmpreendedorIds(["non-existent-placeholder"]);
-          return;
-        }
-        const clientsRef = collection(firestore, "clients");
-        const empreendedoresRef = collection(firestore, "empreendedores");
-        const qByUserId = query(empreendedoresRef, where("userId", "==", uid));
-        const qByApproved = query(
-          empreendedoresRef,
-          where("approvedUserIds", "array-contains", uid),
-        );
-        const qClientByUserId = query(clientsRef, where("userId", "==", uid));
-        const qClientByApproved = query(
-          clientsRef,
-          where("approvedUserIds", "array-contains", uid),
-        );
-        const userDocs = buildUserProfileDocumentVariants(
-          user.cpf,
-          user.userCpf,
-          user.titularDocument,
-          user.cnpjs,
-        );
-
-        const promiseCpf =
-          userDocs.length > 0
-            ? getDocs(
-                query(empreendedoresRef, where("cpfCnpj", "in", userDocs)),
-              )
-            : Promise.resolve({ docs: [] });
-
-        Promise.all([
-          getDocs(qByUserId),
-          getDocs(qByApproved),
-          getDocs(qClientByUserId),
-          getDocs(qClientByApproved),
-          promiseCpf,
-        ])
-          .then(
-            async ([
-              snapUserId,
-              snapApproved,
-              snapClientU,
-              snapClientA,
-              snapCpf,
-            ]) => {
-              const empIds = new Set<string>([
-                ...snapUserId.docs.map((d) => d.id),
-                ...snapApproved.docs.map((d) => d.id),
-                ...snapCpf.docs.map((d) => d.id),
-              ]);
-              const firstClient = snapClientU.docs[0] || snapClientA.docs[0];
-              if (firstClient) setClientId(firstClient.id);
-
-              setEmpreendedorIds(
-                empIds.size > 0
-                  ? Array.from(empIds)
-                  : ["non-existent-placeholder"],
-              );
-            },
-          )
-          .catch(() => {
-            setEmpreendedorIds(["non-existent-placeholder"]);
-          });
-
-        return;
-      }
-
-      // Cliente criado pelo admin: vínculo por userId no empreendedor e/ou por CPF/CNPJ
-      const empreendedoresRef = collection(firestore, "empreendedores");
-      const clientsRef = collection(firestore, "clients");
-
-      const portalUid = resolvePortalAuthUid(user);
-      if (!portalUid) {
-        setEmpreendedorIds(["non-existent-placeholder"]);
-        return;
-      }
-      const byUserId = getDocs(
-        query(empreendedoresRef, where("userId", "==", portalUid)),
-      );
-      const byApproved = getDocs(
-        query(
-          empreendedoresRef,
-          where("approvedUserIds", "array-contains", portalUid),
-        ),
-      );
-      const userDocuments = buildUserProfileDocumentVariants(
-        user.cpf,
-        user.userCpf,
-        user.titularDocument,
-        user.cnpjs,
-      );
-
-      if (userDocuments.length > 0) {
-        const qClients = query(
-          clientsRef,
-          where("cpfCnpj", "in", userDocuments),
-        );
-        const qEmpreendedoresByDoc = query(
-          empreendedoresRef,
-          where("cpfCnpj", "in", userDocuments),
-        );
-
-        Promise.all([
-          byUserId,
-          byApproved,
-          getDocs(qClients),
-          getDocs(qEmpreendedoresByDoc),
-        ])
-          .then(
-            ([
-              userIdSnapshot,
-              approvedSnapshot,
-              clientSnapshot,
-              empreendedorSnapshot,
-            ]) => {
-              const idsByUserId = userIdSnapshot.docs.map((d) => d.id);
-              const idsByApproved = approvedSnapshot.docs.map((d) => d.id);
-              const idsByDoc = empreendedorSnapshot.docs.map((d) => d.id);
-              const mergedIds = Array.from(
-                new Set([...idsByUserId, ...idsByApproved, ...idsByDoc]),
-              );
-
-              if (!clientSnapshot.empty) {
-                setClientId(clientSnapshot.docs[0].id);
-              } else {
-                const qClientByUserId = query(
-                  clientsRef,
-                  where("userId", "==", portalUid),
-                );
-                const qClientByApproved = query(
-                  clientsRef,
-                  where("approvedUserIds", "array-contains", portalUid),
-                );
-                Promise.all([
-                  getDocs(qClientByUserId),
-                  getDocs(qClientByApproved),
-                ]).then(([sU, sA]) => {
-                  const first = sU.docs[0] || sA.docs[0];
-                  if (first) setClientId(first.id);
-                });
-              }
-              setEmpreendedorIds(
-                mergedIds.length > 0 ? mergedIds : ["non-existent-placeholder"],
-              );
-            },
-          )
-          .catch((err) => {
-            console.error("Error fetching initial client data:", err);
-            setEmpreendedorIds(["non-existent-placeholder"]);
-          });
-      } else {
-        Promise.all([
-          byUserId,
-          getDocs(
-            query(
-              empreendedoresRef,
-              where("approvedUserIds", "array-contains", portalUid),
-            ),
-          ),
-        ])
-          .then(([userIdSnapshot, approvedSnapshot]) => {
-            const ids = new Set<string>([
-              ...userIdSnapshot.docs.map((d) => d.id),
-              ...approvedSnapshot.docs.map((d) => d.id),
-            ]);
-            setEmpreendedorIds(
-              ids.size > 0 ? Array.from(ids) : ["non-existent-placeholder"],
-            );
-          })
-          .catch(() => {
-            setEmpreendedorIds(["non-existent-placeholder"]);
-          });
-      }
+    if (isRepresentativeLikePortalRole(appUser.role)) {
+      Promise.all([
+        fetchClientIdsForPortalPartner(firestore, appUser),
+        fetchEmpreendedorIdsForPortalScope(firestore, appUser),
+      ])
+        .then(([clientIds, empIds]) => {
+          if (clientIds[0]) setClientId(clientIds[0]);
+          setEmpreendedorIds(toPlaceholder(empIds));
+        })
+        .catch(() => setEmpreendedorIds(["non-existent-placeholder"]));
+      return;
     }
+
+    if (isClientePortalRole(appUser.role)) {
+      Promise.all([
+        fetchClientIdsForTitularPortalUser(firestore, appUser),
+        fetchEmpreendedorIdsForPortalScope(firestore, appUser),
+      ])
+        .then(([clientIds, empIds]) => {
+          if (clientIds[0]) setClientId(clientIds[0]);
+          setEmpreendedorIds(toPlaceholder(empIds));
+        })
+        .catch(() => setEmpreendedorIds(["non-existent-placeholder"]));
+      return;
+    }
+
+    setEmpreendedorIds(["non-existent-placeholder"]);
   }, [user, firestore]);
 
   const singleClientDocRef = useMemoFirebase(() => {

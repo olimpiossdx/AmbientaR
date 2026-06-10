@@ -25,7 +25,6 @@ import {
   query,
   where,
   limit,
-  getDocs,
 } from "firebase/firestore";
 import type { Project, Empreendedor } from "@/lib/types";
 import { formatCepDisplay } from "@/lib/masks";
@@ -63,7 +62,7 @@ import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
 import { CardSearchInput } from "@/components/card-search-input";
 import { fetchEmpreendedorIdsForPortalScope, isEmpreendedorScopedPortalRole } from "@/lib/portal-empreendedor-scope";
-import { isClientePortalRole, canWriteCadastroClienteAutonomo, isCadastroReadOnlyClienteGestao, canWriteCadastro, isRepresentativeLikePortalRole, isRepresentativeReadOnlyPortalRole, isConsultorRepresentante } from "@/lib/role-guards";
+import { canWriteCadastroClienteAutonomo, isCadastroReadOnlyClienteGestao, canWriteCadastro, isRepresentativeReadOnlyPortalRole, isConsultorRepresentante } from "@/lib/role-guards";
 import { usePackageUsage } from "@/hooks/use-package-usage";
 import { PackageUsageBanner } from "@/components/package-usage-banner";
 
@@ -105,38 +104,7 @@ function ProjectsPageContent() {
   useEffect(() => {
     if (!firestore || !user) return;
 
-    // Cliente titular: filtra empreendimentos pelos seus próprios documentos (CPF/CNPJs).
-    if (isClientePortalRole(user.role)) {
-      setEmpreendedorIdsForUser(undefined);
-      const userDocuments = [
-        user.cpf || user.userCpf,
-        ...(user.cnpjs || []),
-      ].filter(Boolean) as string[];
-      if (userDocuments.length > 0) {
-        const empreendedoresRef = collection(firestore, "empreendedores");
-        const q = query(
-          empreendedoresRef,
-          where("cpfCnpj", "in", userDocuments),
-        );
-        getDocs(q)
-          .then((snapshot) => {
-            const ids = snapshot.docs.map((doc) => doc.id);
-            setEmpreendedorIdsForUser(
-              ids.length > 0 ? ids : ["invalid-placeholder-for-empty-query"],
-            );
-          })
-          .catch((err) => {
-            console.error("Error fetching empreendedor IDs:", err);
-            setEmpreendedorIdsForUser(["invalid-placeholder-for-empty-query"]);
-          });
-      } else {
-        setEmpreendedorIdsForUser(["invalid-placeholder-for-empty-query"]);
-      }
-      return;
-    }
-
-    // Representante / consultor: empreendimentos da carteira aprovada.
-    if (isRepresentativeLikePortalRole(user.role)) {
+    if (isEmpreendedorScopedPortalRole(user.role)) {
       setEmpreendedorIdsForUser(undefined);
       fetchEmpreendedorIdsForPortalScope(firestore, user)
         .then((ids) =>

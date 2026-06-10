@@ -9,6 +9,8 @@ import { fetchEmpreendedorIdsForRepresentative } from "@/lib/representative-empr
 import { fetchEmpreendedorIdsForConsultor } from "@/lib/consultor-empreendedor-ids";
 import {
   collection,
+  doc,
+  getDoc,
   getDocs,
   query,
   where,
@@ -46,36 +48,16 @@ export async function fetchEmpreendedorIdsForPortalScope(
       empreendedoresRef,
       where("ownerUserId", "==", uid),
     );
-    const docSources = [user.cpf, user.userCpf, ...(user.cnpjs || [])].filter(
-      Boolean,
-    ) as string[];
-    const normalized = new Set<string>();
-    docSources.forEach((v) => {
-      for (const variant of buildCpfCnpjVariants(v)) {
-        normalized.add(variant);
-      }
-    });
-    const variantList = Array.from(normalized).slice(0, 10);
-    const byCpf =
-      variantList.length > 0
-        ? query(empreendedoresRef, where("cpfCnpj", "in", variantList))
-        : null;
-    const byTitularDoc =
-      variantList.length > 0
-        ? query(empreendedoresRef, where("titularDocument", "in", variantList))
-        : null;
-    const [snapU, snapOwner, snapCpf, snapTitular] = await Promise.all([
+    const [snapU, snapOwner, ownDocSnap] = await Promise.all([
       getDocs(byUserId),
       getDocs(byOwnerUserId),
-      byCpf ? getDocs(byCpf) : Promise.resolve({ docs: [] }),
-      byTitularDoc ? getDocs(byTitularDoc) : Promise.resolve({ docs: [] }),
+      getDoc(doc(firestore, "empreendedores", uid)),
     ]);
     const ids = new Set<string>([
       ...snapU.docs.map((d) => d.id),
       ...snapOwner.docs.map((d) => d.id),
-      ...snapCpf.docs.map((d) => d.id),
-      ...snapTitular.docs.map((d) => d.id),
     ]);
+    if (ownDocSnap.exists()) ids.add(uid);
     return ids.size > 0 ? Array.from(ids) : ["invalid-placeholder"];
   }
   return [];

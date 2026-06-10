@@ -861,6 +861,12 @@ export const allNavItems: NavItem[] = [
         roles: ["admin", "technical", "gestor", "supervisor", "advogado"],
       },
       {
+        href: "/studies/procuracao",
+        label: "Procuração",
+        icon: FileSignature,
+        roles: ["admin", "technical", "gestor", "supervisor", "advogado"],
+      },
+      {
         href: "/studies/mapas",
         label: "Mapas",
         icon: Map,

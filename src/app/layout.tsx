@@ -38,6 +38,7 @@ export default function RootLayout({
         <meta name="mobile-web-app-capable" content="yes" />
         {process.env.NODE_ENV === "development" ? (
           <script
+            suppressHydrationWarning
             dangerouslySetInnerHTML={{ __html: DEV_CLEAR_PWA_SW_SNIPPET }}
           />
         ) : null}

@@ -851,6 +851,14 @@ service cloud.firestore {
     }
 
     /**
+     * @description Procuração de representação (empreendedor / empreendimento).
+     * @path /databases/{database}/documents/procuracoes/{procuracaoId}
+     */
+    match /procuracoes/{procuracaoId} {
+      allow read, write: if isSignedIn();
+    }
+
+    /**
      * @description Allows financial team and admins to manage invoices. Others can read.
      * @path /databases/{database}/documents/invoices/{invoiceId}
      */
