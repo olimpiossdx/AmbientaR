@@ -1,0 +1,433 @@
+{
+  "generatedAtUtc": "2026-06-11T13:42:40.352Z",
+  "fixture": "D:\\AmbientaR\\fixtures\\geo\\test-polygon-mg-850ha.geojson",
+  "bbox": [
+    -45.5234,
+    -21.2156,
+    -45.4982,
+    -21.1928
+  ],
+  "capabilities": [
+    {
+      "id": "ide_sisema_geoserver",
+      "url": "https://geoserver.meioambiente.mg.gov.br/ows?service=WFS&version=1.1.0&request=GetCapabilities",
+      "status": 200,
+      "ok": true,
+      "ms": 988
+    },
+    {
+      "id": "sicar",
+      "url": "https://geoserver.car.gov.br/geoserver/sicar/ows?service=WFS&version=1.1.0&request=GetCapabilities",
+      "status": 200,
+      "ok": true,
+      "ms": 1052
+    },
+    {
+      "id": "ibama_siscom",
+      "url": "https://siscom.ibama.gov.br/geoserver/publica/ows?service=WFS&version=1.1.0&request=GetCapabilities",
+      "status": 404,
+      "ok": false,
+      "ms": 420
+    },
+    {
+      "id": "icmbio_inde",
+      "url": "https://geoservicos.inde.gov.br/geoserver/ICMBio/ows?service=WFS&version=2.0.0&request=GetCapabilities",
+      "status": 200,
+      "ok": true,
+      "ms": 301
+    },
+    {
+      "id": "mma_inde",
+      "url": "https://geoservicos.inde.gov.br/geoserver/MMA/ows?service=WFS&version=2.0.0&request=GetCapabilities",
+      "status": 200,
+      "ok": true,
+      "ms": 177
+    },
+    {
+      "id": "terrabrasilis",
+      "url": "https://terrabrasilis.dpi.inpe.br/geoserver/ows?service=WFS&version=1.1.0&request=GetCapabilities",
+      "status": 200,
+      "ok": true,
+      "ms": 179
+    },
+    {
+      "id": "mapbiomas_alerta",
+      "url": "https://production.alerta.mapbiomas.org/geoserver/ows?service=WFS&version=1.1.0&request=GetCapabilities",
+      "status": 200,
+      "ok": true,
+      "ms": 564
+    },
+    {
+      "id": "geonetwork_csw",
+      "url": "https://idesisema.meioambiente.mg.gov.br/geonetwork/srv/por/csw?service=CSW&version=2.0.2&request=GetCapabilities",
+      "status": 200,
+      "ok": true,
+      "ms": 262
+    }
+  ],
+  "layers": [
+    {
+      "layerId": "mg_hidrografia",
+      "title": "Hidrografia (rede principal + massas d'água FBDS MG)",
+      "status": "ok",
+      "featureCount": 1,
+      "typeName": "IDE:ide_240902_mg_rios_duplos_fbds_pol",
+      "baseUrl": "https://geoserver.meioambiente.mg.gov.br/ows"
+    },
+    {
+      "layerId": "mg_bioma",
+      "title": "Bioma (limites IBGE MG)",
+      "status": "ok",
+      "featureCount": 2,
+      "typeName": "IDE:ide_0302_mg_limite_biomas_ibge_pol",
+      "baseUrl": "https://geoserver.meioambiente.mg.gov.br/ows"
+    },
+    {
+      "layerId": "mg_solos",
+      "title": "Solos (mapa MG 1:500.000)",
+      "status": "ok",
+      "featureCount": 4,
+      "typeName": "IDE:ide_1502_mg_mapa_solos_pol",
+      "baseUrl": "https://geoserver.meioambiente.mg.gov.br/ows"
+    },
+    {
+      "layerId": "mg_geologia",
+      "title": "Geologia (mapa geológico MG)",
+      "status": "ok",
+      "featureCount": 4,
+      "typeName": "IDE:ide_1701_mg_mapa_geologico_pol",
+      "baseUrl": "https://geoserver.meioambiente.mg.gov.br/ows"
+    },
+    {
+      "layerId": "mg_geomorfologia",
+      "title": "Geomorfologia (unidades MG)",
+      "status": "ok",
+      "featureCount": 4,
+      "typeName": "IDE:ide_0203_mg_unid_geomorfologicas_pol",
+      "baseUrl": "https://geoserver.meioambiente.mg.gov.br/ows"
+    },
+    {
+      "layerId": "mg_pedologia",
+      "title": "Pedologia (mapa pedológico simplificado MG)",
+      "status": "ok",
+      "featureCount": 4,
+      "typeName": "IDE:ide_2401_mg_mapa_pedologico_simplificado_pol",
+      "baseUrl": "https://geoserver.meioambiente.mg.gov.br/ows"
+    },
+    {
+      "layerId": "mg_inventario_florestal",
+      "title": "Cobertura florestal / vegetação (MG 2009)",
+      "status": "ok",
+      "featureCount": 5,
+      "typeName": "IDE:ide_0301_mg_cobertura_florestal__2009_pol",
+      "baseUrl": "https://geoserver.meioambiente.mg.gov.br/ows"
+    },
+    {
+      "layerId": "mg_fauna",
+      "title": "Fauna (ocorrências de espécies MG)",
+      "status": "ok",
+      "featureCount": 5,
+      "typeName": "IDE:ide_1802_mg_ocorrencia_especies_avifauna_geral_pol",
+      "baseUrl": "https://geoserver.meioambiente.mg.gov.br/ows"
+    },
+    {
+      "layerId": "mg_potencial_cavidades",
+      "title": "Potencialidade de ocorrência de cavidades (CECAV / DN 217)",
+      "status": "ok",
+      "featureCount": 2,
+      "typeName": "IDE:ide_2002_mg_potencialidade_cavidades_pol",
+      "baseUrl": "https://geoserver.meioambiente.mg.gov.br/ows"
+    },
+    {
+      "layerId": "mg_qualidade_ambiental",
+      "title": "Qualidade ambiental (diagnóstico MG)",
+      "status": "ok",
+      "featureCount": 5,
+      "typeName": "IDE:ide_2401_mg_qualidade_ambiental_pol",
+      "baseUrl": "https://geoserver.meioambiente.mg.gov.br/ows"
+    },
+    {
+      "layerId": "mg_risco_ambiental",
+      "title": "Risco ambiental (diagnóstico MG)",
+      "status": "ok",
+      "featureCount": 5,
+      "typeName": "IDE:ide_2401_mg_risco_ambiental_pol",
+      "baseUrl": "https://geoserver.meioambiente.mg.gov.br/ows"
+    },
+    {
+      "layerId": "mg_vulnerabilidade_erosao",
+      "title": "Vulnerabilidade dos solos à erosão",
+      "status": "ok",
+      "featureCount": 5,
+      "typeName": "IDE:ide_2401_mg_vulnerabilidade_solos_erosao_pol",
+      "baseUrl": "https://geoserver.meioambiente.mg.gov.br/ows"
+    },
+    {
+      "layerId": "mg_vulnerabilidade_natural",
+      "title": "Vulnerabilidade natural",
+      "status": "ok",
+      "featureCount": 5,
+      "typeName": "IDE:ide_2401_mg_vulnerabilidade_natural_pol",
+      "baseUrl": "https://geoserver.meioambiente.mg.gov.br/ows"
+    },
+    {
+      "layerId": "mg_vulnerabilidade_solo",
+      "title": "Vulnerabilidade do solo",
+      "status": "ok",
+      "featureCount": 5,
+      "typeName": "IDE:ide_2401_mg_vulnerabilidade_solo_pol",
+      "baseUrl": "https://geoserver.meioambiente.mg.gov.br/ows"
+    },
+    {
+      "layerId": "mg_vulnerabilidade_contaminacao",
+      "title": "Vulnerabilidade do solo à contaminação",
+      "status": "ok",
+      "featureCount": 5,
+      "typeName": "IDE:ide_2401_mg_vulnerabilidade_contaminacao_ambiental_uso_solo_pol",
+      "baseUrl": "https://geoserver.meioambiente.mg.gov.br/ows"
+    },
+    {
+      "layerId": "mg_integridade_flora",
+      "title": "Integridade ponderada da flora",
+      "status": "ok",
+      "featureCount": 5,
+      "typeName": "IDE:ide_2401_mg_integridade_ponderada_flora_pol",
+      "baseUrl": "https://geoserver.meioambiente.mg.gov.br/ows"
+    },
+    {
+      "layerId": "mg_integridade_fauna_diag",
+      "title": "Integridade da fauna (diagnóstico MG)",
+      "status": "ok",
+      "featureCount": 1,
+      "typeName": "IDE:ide_2401_mg_integridade_fauna_pol",
+      "baseUrl": "https://geoserver.meioambiente.mg.gov.br/ows"
+    },
+    {
+      "layerId": "mg_vulnerabilidade_hidrica",
+      "title": "Vulnerabilidade natural dos recursos hídricos",
+      "status": "ok",
+      "featureCount": 2,
+      "typeName": "IDE:ide_2401_mg_vulnerabilidade_natural_recursos_hidricos_pol",
+      "baseUrl": "https://geoserver.meioambiente.mg.gov.br/ows"
+    },
+    {
+      "layerId": "mg_erosao_atual",
+      "title": "Erosão atual (MG)",
+      "status": "ok",
+      "featureCount": 1,
+      "typeName": "IDE:ide_2401_mg_erosao_atual_pol",
+      "baseUrl": "https://geoserver.meioambiente.mg.gov.br/ows"
+    },
+    {
+      "layerId": "mg_temperatura_media",
+      "title": "Temperatura média anual (MG)",
+      "status": "ok",
+      "featureCount": 3,
+      "typeName": "IDE:ide_2401_mg_temperatura_media_anual_pol",
+      "baseUrl": "https://geoserver.meioambiente.mg.gov.br/ows"
+    },
+    {
+      "layerId": "mg_precipitacao_media",
+      "title": "Precipitação média anual (MG)",
+      "status": "ok",
+      "featureCount": 4,
+      "typeName": "IDE:ide_2401_mg_precipitacao_media_anual",
+      "baseUrl": "https://geoserver.meioambiente.mg.gov.br/ows"
+    },
+    {
+      "layerId": "mg_zoneamento_climatico",
+      "title": "Zoneamento climático (MG)",
+      "status": "ok",
+      "featureCount": 3,
+      "typeName": "IDE:ide_2401_mg_zoneamento_climatico_pol",
+      "baseUrl": "https://geoserver.meioambiente.mg.gov.br/ows"
+    },
+    {
+      "layerId": "mg_indice_umidade",
+      "title": "Índice de umidade (Thornthwaite)",
+      "status": "ok",
+      "featureCount": 1,
+      "typeName": "IDE:ide_1601_mg_indice_umidade_thornthwaite_pol",
+      "baseUrl": "https://geoserver.meioambiente.mg.gov.br/ows"
+    },
+    {
+      "layerId": "mg_declividade",
+      "title": "Declividade (MG)",
+      "status": "ok",
+      "featureCount": 5,
+      "typeName": "IDE:ide_2401_mg_declividade_pol",
+      "baseUrl": "https://geoserver.meioambiente.mg.gov.br/ows"
+    },
+    {
+      "layerId": "mg_potencialidade_social",
+      "title": "Potencialidade social (MG)",
+      "status": "ok",
+      "featureCount": 4,
+      "typeName": "IDE:ide_2401_mg_potencialidade_social_pol",
+      "baseUrl": "https://geoserver.meioambiente.mg.gov.br/ows"
+    },
+    {
+      "layerId": "mg_aptidao_agricola",
+      "title": "Aptidão agrícola dos solos (MG)",
+      "status": "ok",
+      "featureCount": 3,
+      "typeName": "IDE:ide_1504_mg_solos_aptidao_agricola_pol",
+      "baseUrl": "https://geoserver.meioambiente.mg.gov.br/ows"
+    },
+    {
+      "layerId": "mg_areas_prioritarias_conservacao",
+      "title": "Áreas prioritárias para conservação",
+      "status": "ok",
+      "featureCount": 5,
+      "typeName": "IDE:ide_2401_mg_areas_prioritarias_conservacao_pol",
+      "baseUrl": "https://geoserver.meioambiente.mg.gov.br/ows"
+    },
+    {
+      "layerId": "mg_areas_prioritarias_recuperacao",
+      "title": "Áreas prioritárias para recuperação",
+      "status": "ok",
+      "featureCount": 5,
+      "typeName": "IDE:ide_2401_mg_areas_prioritarias_recuperacao_pol",
+      "baseUrl": "https://geoserver.meioambiente.mg.gov.br/ows"
+    },
+    {
+      "layerId": "mg_unidades_conservacao",
+      "title": "Unidades de conservação (estaduais e federais MG)",
+      "status": "no_features",
+      "typeName": "IDE:ide_2010_mg_unidades_conservacao_estaduais_pol",
+      "baseUrl": "https://geoserver.meioambiente.mg.gov.br/ows",
+      "error": "IDE:ide_2010_mg_unidades_conservacao_estaduais_pol: sem feições no recorte; IDE:ide_2010_mg_unidades_conservacao_federais_pol: sem feições no recorte; IDE:ide_2010_mg_unidades_conservacao_municipais_pol: sem feições no recorte"
+    },
+    {
+      "layerId": "mg_massas_dagua",
+      "title": "Massas d'água (FBDS MG)",
+      "status": "ok",
+      "featureCount": 3,
+      "typeName": "IDE:ide_240904_mg_massas_dagua_fbds_pol",
+      "baseUrl": "https://geoserver.meioambiente.mg.gov.br/ows"
+    },
+    {
+      "layerId": "mg_hidrografia_classe_especial",
+      "title": "Hidrografia enquadrada em classe especial",
+      "status": "no_features",
+      "typeName": "IDE:ide_2008_mg_trecho_enquadrada_classe_especial_lin",
+      "baseUrl": "https://geoserver.meioambiente.mg.gov.br/ows",
+      "error": "IDE:ide_2008_mg_trecho_enquadrada_classe_especial_lin: sem feições no recorte; IDE:ide_2008_mg_trecho_enquadrada_classe_especial_lin: sem feições no recorte"
+    },
+    {
+      "layerId": "mg_zee_zonas",
+      "title": "ZEE-MG — Zonas ecológico-econômicas",
+      "status": "ok",
+      "featureCount": 2,
+      "typeName": "IDE:ide_2401_mg_zonas_ecologico_economicas_pol",
+      "baseUrl": "https://geoserver.meioambiente.mg.gov.br/ows"
+    },
+    {
+      "layerId": "mg_icms_ecologico",
+      "title": "ICMS Ecológico (MG)",
+      "status": "ok",
+      "featureCount": 2,
+      "typeName": "IDE:ide_2401_mg_icms_ecologico_pol",
+      "baseUrl": "https://geoserver.meioambiente.mg.gov.br/ows"
+    },
+    {
+      "layerId": "mg_outorgas_igam",
+      "title": "Outorgas de uso de recursos hídricos (IGAM)",
+      "status": "ok",
+      "featureCount": 1,
+      "typeName": "IDE:ide_2103_mg_outorgas_uso_recursos_hidricos_pto",
+      "baseUrl": "https://geoserver.meioambiente.mg.gov.br/ows"
+    },
+    {
+      "layerId": "br_sicar_imoveis",
+      "title": "Imóveis rurais CAR (SICAR — MG, SP)",
+      "status": "ok",
+      "featureCount": 5,
+      "typeName": "sicar:sicar_imoveis_mg",
+      "baseUrl": "https://geoserver.car.gov.br/geoserver/sicar/ows"
+    },
+    {
+      "layerId": "br_ibama_embargos",
+      "title": "Embargos IBAMA (SISCOM — áreas embargadas)",
+      "status": "ok",
+      "arcgis": true,
+      "error": "ArcGIS REST — probe WFS ignorado (usar arcgis-feature-client)"
+    },
+    {
+      "layerId": "br_uc_mma",
+      "title": "Unidades de conservação (MMA / CNUC)",
+      "status": "ok",
+      "arcgis": true,
+      "error": "ArcGIS REST — probe WFS ignorado (usar arcgis-feature-client)"
+    },
+    {
+      "layerId": "br_ti_funai",
+      "title": "Terras indígenas (FUNAI)",
+      "status": "ok",
+      "arcgis": true,
+      "error": "ArcGIS REST — probe WFS ignorado (usar arcgis-feature-client)"
+    },
+    {
+      "layerId": "br_prodes_cerrado",
+      "title": "Desmatamento PRODES — Cerrado (INPE)",
+      "status": "no_features",
+      "typeName": "prodes-cerrado-nb:yearly_deforestation",
+      "baseUrl": "https://terrabrasilis.dpi.inpe.br/geoserver/ows",
+      "error": "prodes-cerrado-nb:yearly_deforestation: sem feições no recorte"
+    },
+    {
+      "layerId": "br_prodes_mata_atlantica",
+      "title": "Desmatamento PRODES — Mata Atlântica (INPE)",
+      "status": "error",
+      "typeName": "prodes-mata-atlantica-nb:yearly_deforestation",
+      "baseUrl": "https://terrabrasilis.dpi.inpe.br/geoserver/ows",
+      "error": "prodes-mata-atlantica-nb:yearly_deforestation: resposta XML/erro OGC"
+    },
+    {
+      "layerId": "br_prodes_legal_amazon",
+      "title": "Desmatamento PRODES — Amazônia Legal (INPE)",
+      "status": "no_features",
+      "typeName": "prodes-legal-amz:yearly_deforestation",
+      "baseUrl": "https://terrabrasilis.dpi.inpe.br/geoserver/ows",
+      "error": "prodes-legal-amz:yearly_deforestation: sem feições no recorte"
+    },
+    {
+      "layerId": "br_mapbiomas_alerta",
+      "title": "Alertas de desmatamento (MapBiomas Alerta)",
+      "status": "no_features",
+      "typeName": "mapbiomas-alertas:dashboard_alerts-shapefile",
+      "baseUrl": "https://production.alerta.mapbiomas.org/geoserver/ows",
+      "error": "mapbiomas-alertas:dashboard_alerts-shapefile: sem feições no recorte"
+    },
+    {
+      "layerId": "br_icmbio_embargos",
+      "title": "Áreas embargadas (ICMBio)",
+      "status": "ok",
+      "featureCount": 2,
+      "typeName": "ICMBio:embargos_icmbio",
+      "baseUrl": "https://geoservicos.inde.gov.br/geoserver/ICMBio/ows"
+    },
+    {
+      "layerId": "br_icmbio_cavernas",
+      "title": "Cavernas cadastradas (ICMBio)",
+      "status": "no_features",
+      "typeName": "ICMBio:cavernas_092022_p",
+      "baseUrl": "https://geoservicos.inde.gov.br/geoserver/ICMBio/ows",
+      "error": "ICMBio:cavernas_092022_p: sem feições no recorte"
+    },
+    {
+      "layerId": "br_mma_uc_cnuc",
+      "title": "Unidades de conservação — CNUC (MMA / INDE)",
+      "status": "no_features",
+      "typeName": "MMA:cnuc_2026_03_atualizado",
+      "baseUrl": "https://geoservicos.inde.gov.br/geoserver/MMA/ows",
+      "error": "MMA:cnuc_2026_03_atualizado: sem feições no recorte; MMA:cnuc_2026_03: sem feições no recorte; MMA:cnuc_04_2024: sem feições no recorte"
+    }
+  ],
+  "summary": {
+    "total": 45,
+    "ok": 37,
+    "noFeatures": 7,
+    "error": 1
+  }
+}

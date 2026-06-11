@@ -17,19 +17,28 @@ export const IBAMA_SISCOM_WFS =
 export const TERRABRASILIS_WFS =
   "https://terrabrasilis.dpi.inpe.br/geoserver/ows";
 
+export const MAPBIOMAS_ALERTA_WFS =
+  "https://production.alerta.mapbiomas.org/geoserver/ows";
+
 export const PAMGIA_UC_LAYER_URL =
   "https://pamgia.ibama.gov.br/server/rest/services/BasesSincronizadas/lim_unidades_conserva%C3%A7%C3%A3o_mma_a/FeatureServer/0";
 
 export const PAMGIA_TI_LAYER_URL =
   "https://pamgia.ibama.gov.br/server/rest/services/BasesSincronizadas/lim_terra_indigena_funai_a/FeatureServer/0";
 
+/** Embargos SISCOM via PAMGIA ArcGIS (SISCOM WFS público retorna 404 desde 2026). */
+export const PAMGIA_EMBARGOS_LAYER_URL =
+  "https://pamgia.ibama.gov.br/server/rest/services/01_Publicacoes_Bases/embargos_siscom_brasil/FeatureServer/2";
+
 export const IBAMA_EMBARGOS_LAYER_ID = "br_ibama_embargos";
 export const FEDERAL_UC_LAYER_ID = "br_uc_mma";
 export const FEDERAL_TI_LAYER_ID = "br_ti_funai";
 export const FEDERAL_PRODES_CERRADO_LAYER_ID = "br_prodes_cerrado";
 export const FEDERAL_PRODES_MATA_ATLANTICA_LAYER_ID = "br_prodes_mata_atlantica";
+export const FEDERAL_PRODES_LEGAL_AMZ_LAYER_ID = "br_prodes_legal_amazon";
+export const FEDERAL_MAPBIOMAS_ALERTA_LAYER_ID = "br_mapbiomas_alerta";
 
-/** Áreas de embargo administrativo IBAMA (SISCOM / PAMGIA). */
+/** Áreas de embargo administrativo IBAMA (PAMGIA ArcGIS REST; fallback WFS SISCOM). */
 export const IBAMA_EMBARGOS_LAYER: WaveACatalogEntry = {
   layerId: IBAMA_EMBARGOS_LAYER_ID,
   title: "Embargos IBAMA (SISCOM — áreas embargadas)",
@@ -39,6 +48,8 @@ export const IBAMA_EMBARGOS_LAYER: WaveACatalogEntry = {
   labelFields: [
     "des_infracao",
     "DES_INFRACAO",
+    "sit_embargo",
+    "SIT_EMBARGO",
     "sit_embarga_poligono",
     "SIT_EMBARGA_POLIGONO",
     "status_tad",
@@ -47,12 +58,15 @@ export const IBAMA_EMBARGOS_LAYER: WaveACatalogEntry = {
     "SIG_UF",
     "nom_municipio",
     "NOM_MUNICIPIO",
+    "nom_pessoa",
+    "NOM_PESSOA",
     "numero_tad",
     "NUMERO_TAD",
     "orgao",
     "ORGAO",
   ],
   wfsBaseUrls: [IBAMA_SISCOM_WFS],
+  arcgisLayerUrl: PAMGIA_EMBARGOS_LAYER_URL,
   bboxMarginDegrees: 0.03,
   maxWfsFeatures: 80,
 };
@@ -161,12 +175,63 @@ export const FEDERAL_PRODES_MATA_ATLANTICA_LAYER: WaveACatalogEntry = {
   maxWfsFeatures: 60,
 };
 
+/** Supressão de vegetação — PRODES Amazônia Legal (INPE / TerraBrasilis). */
+export const FEDERAL_PRODES_LEGAL_AMZ_LAYER: WaveACatalogEntry = {
+  layerId: FEDERAL_PRODES_LEGAL_AMZ_LAYER_ID,
+  title: "Desmatamento PRODES — Amazônia Legal (INPE)",
+  wave: "G",
+  geometryKind: "polygon",
+  typeNames: ["prodes-legal-amz:yearly_deforestation"],
+  labelFields: [
+    "year",
+    "YEAR",
+    "class_name",
+    "CLASS_NAME",
+    "main_class",
+    "MAIN_CLASS",
+    "state",
+    "STATE",
+    "image_date",
+    "IMAGE_DATE",
+    "area_km",
+    "AREA_KM",
+  ],
+  wfsBaseUrls: [TERRABRASILIS_WFS],
+  bboxMarginDegrees: 0.06,
+  maxWfsFeatures: 60,
+};
+
+/** Alertas publicados de desmatamento (MapBiomas Alerta — WFS). */
+export const FEDERAL_MAPBIOMAS_ALERTA_LAYER: WaveACatalogEntry = {
+  layerId: FEDERAL_MAPBIOMAS_ALERTA_LAYER_ID,
+  title: "Alertas de desmatamento (MapBiomas Alerta)",
+  wave: "G",
+  geometryKind: "polygon",
+  typeNames: ["mapbiomas-alertas:dashboard_alerts-shapefile"],
+  labelFields: [
+    "CodeAlerta",
+    "Bioma",
+    "Estado",
+    "Municipio",
+    "AreaHa",
+    "AnoDetec",
+    "DataDetec",
+    "Fonte",
+    "VPressao",
+  ],
+  wfsBaseUrls: [MAPBIOMAS_ALERTA_WFS],
+  bboxMarginDegrees: 0.05,
+  maxWfsFeatures: 40,
+};
+
 export const FEDERAL_STATIC_LAYERS: WaveACatalogEntry[] = [
   IBAMA_EMBARGOS_LAYER,
   FEDERAL_UC_LAYER,
   FEDERAL_TI_LAYER,
   FEDERAL_PRODES_CERRADO_LAYER,
   FEDERAL_PRODES_MATA_ATLANTICA_LAYER,
+  FEDERAL_PRODES_LEGAL_AMZ_LAYER,
+  FEDERAL_MAPBIOMAS_ALERTA_LAYER,
 ];
 
 function sicarLayerForUfs(ufs: string[]): WaveACatalogEntry | null {
@@ -234,6 +299,11 @@ export const FEDERAL_FONTES = [
   {
     nome: "INPE TerraBrasilis (PRODES WFS)",
     url: TERRABRASILIS_WFS,
+    tipo: "ogc" as const,
+  },
+  {
+    nome: "MapBiomas Alerta (WFS)",
+    url: MAPBIOMAS_ALERTA_WFS,
     tipo: "ogc" as const,
   },
 ];

@@ -391,6 +391,66 @@ export const WAVE_G_LAYERS: WaveACatalogEntry[] = [
   },
 ];
 
+/** Onda H — ZEE-MG, outorgas IGAM e ICMS ecológico. */
+export const WAVE_H_LAYERS: WaveACatalogEntry[] = [
+  {
+    layerId: "mg_zee_zonas",
+    title: "ZEE-MG — Zonas ecológico-econômicas",
+    wave: "E",
+    geometryKind: "polygon",
+    typeNames: ["IDE:ide_2401_mg_zonas_ecologico_economicas_pol"],
+    labelFields: [
+      "zona",
+      "ZONA",
+      "classe",
+      "CLASSE",
+      "iee",
+      "IEE",
+      "legenda",
+      "LEGENDA",
+      "descricao",
+      "DESCRICAO",
+    ],
+    wfsBaseUrls: GEOSERVER_BASES,
+    maxWfsFeatures: 50,
+  },
+  {
+    layerId: "mg_icms_ecologico",
+    title: "ICMS Ecológico (MG)",
+    wave: "E",
+    geometryKind: "polygon",
+    typeNames: ["IDE:ide_2401_mg_icms_ecologico_pol"],
+    labelFields: ["classe", "CLASSE", "legenda", "LEGENDA", "categoria", "CATEGORIA"],
+    wfsBaseUrls: GEOSERVER_BASES,
+    maxWfsFeatures: 80,
+  },
+  {
+    layerId: "mg_outorgas_igam",
+    title: "Outorgas de uso de recursos hídricos (IGAM)",
+    wave: "G",
+    geometryKind: "point",
+    typeNames: [
+      "IDE:ide_2103_mg_outorgas_uso_recursos_hidricos_pto",
+      "IDE:ide_2103_mg_federais_ana_outorgas_pto",
+    ],
+    labelFields: [
+      "numero",
+      "NUMERO",
+      "processo",
+      "PROCESSO",
+      "situacao",
+      "SITUACAO",
+      "finalidade",
+      "FINALIDADE",
+      "nome",
+      "NOME",
+    ],
+    wfsBaseUrls: GEOSERVER_BASES,
+    bboxMarginDegrees: 0.08,
+    maxWfsFeatures: 120,
+  },
+];
+
 /** Todas as camadas (Ondas A–G + espeleologia). */
 export const SIG_MG_ALL_LAYERS: WaveACatalogEntry[] = [
   ...WAVE_A_LAYERS,
@@ -400,6 +460,7 @@ export const SIG_MG_ALL_LAYERS: WaveACatalogEntry[] = [
   ...WAVE_E_LAYERS,
   ...WAVE_F_LAYERS,
   ...WAVE_G_LAYERS,
+  ...WAVE_H_LAYERS,
 ];
 
 export const SIG_MG_LAYER_COUNT = SIG_MG_ALL_LAYERS.length;

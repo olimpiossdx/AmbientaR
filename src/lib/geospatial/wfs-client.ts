@@ -73,7 +73,15 @@ export type WfsFetchResult = {
   error?: string;
   /** Todas as tentativas responderam, mas sem feições no bbox (serviço OK). */
   noFeaturesInExtent?: boolean;
+  /** Bug conhecido no GeoServer INPE (uid) — WFS degradado, não é falha do catálogo. */
+  upstreamWfsDegraded?: boolean;
 };
+
+const INPE_UID_WFS_BUG = "does not have a property named uid";
+
+function isInpeUidWfsBug(text: string): boolean {
+  return text.includes(INPE_UID_WFS_BUG);
+}
 
 function isNoFeaturesInExtentError(msg: string): boolean {
   return msg.includes("sem feições no recorte");
@@ -95,7 +103,10 @@ async function fetchOneTypeName(params: {
   typeName: string;
   bbox: [number, number, number, number];
   maxFeatures: number;
-}): Promise<{ ok: true; features: Feature[] } | { ok: false; error: string }> {
+}): Promise<
+  | { ok: true; features: Feature[] }
+  | { ok: false; error: string; upstreamWfsDegraded?: boolean }
+> {
   const url = buildGetFeatureUrl({
     baseUrl: params.baseUrl,
     typeName: params.typeName,
@@ -127,6 +138,13 @@ async function fetchOneTypeName(params: {
       }
 
       const text = await response.text();
+      if (isInpeUidWfsBug(text)) {
+        return {
+          ok: false,
+          error: `${params.typeName}: WFS INPE degradado (bug GeoServer uid)`,
+          upstreamWfsDegraded: true,
+        };
+      }
       if (text.trim().startsWith("<") || text.includes("ExceptionReport")) {
         return { ok: false, error: `${params.typeName}: resposta XML/erro OGC` };
       }
@@ -274,6 +292,16 @@ export async function fetchWfsFeaturesInBbox(params: {
           features: result.features,
           typeName,
           baseUrl,
+        };
+      }
+      if (result.upstreamWfsDegraded) {
+        return {
+          ok: false,
+          features: [],
+          typeName,
+          baseUrl,
+          error: result.error,
+          upstreamWfsDegraded: true,
         };
       }
       errors.push(result.error);

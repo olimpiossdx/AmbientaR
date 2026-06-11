@@ -1,11 +1,19 @@
 import type { GeoLayerStat } from "@/lib/types/geo-wave-a";
 import {
+  FEDERAL_MAPBIOMAS_ALERTA_LAYER_ID,
   FEDERAL_PRODES_CERRADO_LAYER_ID,
+  FEDERAL_PRODES_LEGAL_AMZ_LAYER_ID,
   FEDERAL_PRODES_MATA_ATLANTICA_LAYER_ID,
   FEDERAL_TI_LAYER_ID,
   FEDERAL_UC_LAYER_ID,
   IBAMA_EMBARGOS_LAYER_ID,
 } from "@/lib/geospatial/wave-federal-catalog";
+
+const FEDERAL_PRODES_LAYER_IDS: readonly string[] = [
+  FEDERAL_PRODES_CERRADO_LAYER_ID,
+  FEDERAL_PRODES_MATA_ATLANTICA_LAYER_ID,
+  FEDERAL_PRODES_LEGAL_AMZ_LAYER_ID,
+];
 
 export function enrichEmbargosLayerSummary(
   stats: GeoLayerStat[],
@@ -45,15 +53,33 @@ export function enrichProdesLayerSummary(
     .join(" ");
 }
 
+export function enrichMapBiomasAlertaLayerSummary(
+  stats: GeoLayerStat[],
+  fallback: string,
+): string {
+  if (!stats.length) return fallback;
+  const totalHa = stats.reduce((s, row) => s + (row.areaHa ?? 0), 0);
+  const top = stats[0];
+  return [
+    `${stats.length} alerta(s) MapBiomas no perímetro`,
+    top?.label ? `(destaque: ${top.label})` : "",
+    totalHa > 0 ? `~${totalHa.toFixed(2)} ha` : "",
+    "Dado MapBiomas Alerta — confira laudo e status na plataforma oficial.",
+  ]
+    .filter(Boolean)
+    .join(" ");
+}
+
 export function isEmbargosLayer(layerId: string): boolean {
   return layerId === IBAMA_EMBARGOS_LAYER_ID;
 }
 
 export function isProdesLayer(layerId: string): boolean {
-  return (
-    layerId === FEDERAL_PRODES_CERRADO_LAYER_ID ||
-    layerId === FEDERAL_PRODES_MATA_ATLANTICA_LAYER_ID
-  );
+  return FEDERAL_PRODES_LAYER_IDS.includes(layerId);
+}
+
+export function isMapBiomasAlertaLayer(layerId: string): boolean {
+  return layerId === FEDERAL_MAPBIOMAS_ALERTA_LAYER_ID;
 }
 
 export function isFederalArcGisLayer(layerId: string): boolean {
@@ -73,6 +99,9 @@ export function federalLayerUnavailableSummary(
   }
   if (isProdesLayer(layerId)) {
     return "Nenhum polígono PRODES anual intersectou o perímetro no recorte WFS INPE.";
+  }
+  if (isMapBiomasAlertaLayer(layerId)) {
+    return "Nenhum alerta MapBiomas intersectou o perímetro no recorte WFS.";
   }
   return null;
 }

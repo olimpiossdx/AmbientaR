@@ -11,24 +11,24 @@ import {
   resolveInfluenceAreas,
   type GeoInfluenceAreaConfig,
 } from "@/lib/geospatial/influence-areas";
-import {
-  FEDERAL_FONTES,
-  resolveFederalLayersForBbox,
-  WAVE_FEDERAL_LAYER_COUNT,
-} from "@/lib/geospatial/wave-federal-catalog";
+import { FEDERAL_FONTES } from "@/lib/geospatial/wave-federal-catalog";
 import {
   enrichEmbargosLayerSummary,
+  enrichMapBiomasAlertaLayerSummary,
   enrichProdesLayerSummary,
   federalLayerUnavailableSummary,
   isEmbargosLayer,
+  isMapBiomasAlertaLayer,
   isProdesLayer,
 } from "@/lib/geospatial/ibama-embargos";
 import { fetchArcGisFeaturesInBbox } from "@/lib/geospatial/arcgis-feature-client";
+import { WAVE_A_FONTES, type WaveACatalogEntry } from "@/lib/geospatial/wave-a-catalog";
 import {
-  SIG_MG_ALL_LAYERS,
-  WAVE_A_FONTES,
-  type WaveACatalogEntry,
-} from "@/lib/geospatial/wave-a-catalog";
+  GEO_ALL_LAYER_COUNT,
+  resolveAllLayersForBbox,
+} from "@/lib/geospatial/geo-all-layers";
+import { ICMBIO_FONTES } from "@/lib/geospatial/wave-icmbio-catalog";
+import { MMA_FONTES } from "@/lib/geospatial/wave-mma-catalog";
 import { fetchWfsFeaturesInBbox } from "@/lib/geospatial/wfs-client";
 import {
   aggregateLineLayerStats,
@@ -54,8 +54,12 @@ function geometryKindFromFeatures(
 
 function layerUnavailableSummary(entry: WaveACatalogEntry, wfs: {
   noFeaturesInExtent?: boolean;
+  upstreamWfsDegraded?: boolean;
   ok: boolean;
 }): string {
+  if (wfs.upstreamWfsDegraded) {
+    return "WFS INPE temporariamente degradado (bug GeoServer uid). Consulte mapas em terrabrasilis.dpi.inpe.br.";
+  }
   if (wfs.noFeaturesInExtent) {
     if (entry.layerId === "mg_fauna") {
       return "Nenhuma ocorrência de fauna registrada no perímetro na base IDE-Sisema (consulta WFS concluída).";
@@ -86,12 +90,24 @@ function wfsSourceLabel(baseUrl: string | undefined, entry: WaveACatalogEntry): 
   if (entry.arcgisLayerUrl?.includes("pamgia.ibama.gov.br")) {
     return "IBAMA PAMGIA (ArcGIS REST)";
   }
+  if (baseUrl?.includes("alerta.mapbiomas.org") || isMapBiomasAlertaLayer(entry.layerId)) {
+    return "MapBiomas Alerta (WFS)";
+  }
   if (baseUrl?.includes("terrabrasilis.dpi.inpe.br") || isProdesLayer(entry.layerId)) {
     return "INPE TerraBrasilis (PRODES WFS)";
   }
   if (baseUrl?.includes("car.gov.br")) return "SICAR GeoServer (MAPA)";
+  if (entry.arcgisLayerUrl?.includes("embargos_siscom")) {
+    return "IBAMA PAMGIA (embargos ArcGIS)";
+  }
   if (baseUrl?.includes("siscom.ibama.gov.br") || isEmbargosLayer(entry.layerId)) {
-    return "IBAMA SISCOM (embargos WFS)";
+    return "IBAMA SISCOM / PAMGIA";
+  }
+  if (baseUrl?.includes("geoservicos.inde.gov.br/geoserver/ICMBio")) {
+    return "ICMBio (INDE WFS)";
+  }
+  if (baseUrl?.includes("geoservicos.inde.gov.br/geoserver/MMA")) {
+    return "MMA (INDE WFS)";
   }
   if (entry.wfsBaseUrls.some((u) => u.includes("car.gov.br"))) {
     return "SICAR GeoServer (MAPA)";
@@ -101,6 +117,9 @@ function wfsSourceLabel(baseUrl: string | undefined, entry: WaveACatalogEntry): 
   }
   if (entry.wfsBaseUrls.some((u) => u.includes("terrabrasilis.dpi.inpe.br"))) {
     return "INPE TerraBrasilis (PRODES WFS)";
+  }
+  if (entry.wfsBaseUrls.some((u) => u.includes("alerta.mapbiomas.org"))) {
+    return "MapBiomas Alerta (WFS)";
   }
   return "IDE-Sisema GeoServer MG";
 }
@@ -117,9 +136,10 @@ async function analyzeCatalogLayer(params: {
     (params.entry.geometryKind === "point" ? 0.05 : 0.02);
   const expandedBbox = expandBbox(params.bbox, margin);
 
-  const wfs = params.entry.arcgisLayerUrl
+  const usesArcgis = Boolean(params.entry.arcgisLayerUrl);
+  const wfs = usesArcgis
     ? await fetchArcGisFeaturesInBbox({
-        layerUrl: params.entry.arcgisLayerUrl,
+        layerUrl: params.entry.arcgisLayerUrl!,
         bbox: expandedBbox,
         maxFeatures: params.entry.maxWfsFeatures,
       })
@@ -129,10 +149,15 @@ async function analyzeCatalogLayer(params: {
         bbox: expandedBbox,
         maxFeatures: params.entry.maxWfsFeatures,
       });
+  const queryMethod = usesArcgis
+    ? "ArcGIS REST Query (bbox)"
+    : "WFS GetFeature (bbox)";
 
   if (!wfs.ok || wfs.features.length === 0) {
     const status =
-      wfs.ok || wfs.noFeaturesInExtent ? "partial" : "unavailable";
+      wfs.ok || wfs.noFeaturesInExtent || wfs.upstreamWfsDegraded
+        ? "partial"
+        : "unavailable";
     return {
       layerId: params.entry.layerId,
       title: params.entry.title,
@@ -146,7 +171,7 @@ async function analyzeCatalogLayer(params: {
             url: wfs.baseUrl,
             layerName: wfs.typeName ?? params.entry.typeNames[0],
             queriedAtUtc,
-            method: "WFS GetFeature (bbox)",
+            method: queryMethod,
           }
         : undefined,
     };
@@ -200,6 +225,9 @@ async function analyzeCatalogLayer(params: {
     if (isProdesLayer(params.entry.layerId)) {
       summary = enrichProdesLayerSummary(stats, summary);
     }
+    if (isMapBiomasAlertaLayer(params.entry.layerId)) {
+      summary = enrichMapBiomasAlertaLayerSummary(stats, summary);
+    }
   }
 
   return {
@@ -213,18 +241,17 @@ async function analyzeCatalogLayer(params: {
       url: wfs.baseUrl ?? params.entry.wfsBaseUrls[0],
       layerName: wfs.typeName ?? params.entry.typeNames[0],
       queriedAtUtc,
-      method: "WFS GetFeature (bbox) + interseção",
+      method: `${queryMethod} + interseção`,
     },
   };
 }
 
-export const WAVE_ALL_LAYER_COUNT =
-  SIG_MG_ALL_LAYERS.length + WAVE_FEDERAL_LAYER_COUNT;
+export const WAVE_ALL_LAYER_COUNT = GEO_ALL_LAYER_COUNT;
 
 function waveLayersForAnalysis(
   bbox: [number, number, number, number],
 ): WaveACatalogEntry[] {
-  return [...SIG_MG_ALL_LAYERS, ...resolveFederalLayersForBbox(bbox)];
+  return resolveAllLayersForBbox(bbox);
 }
 
 const WAVE_A_BATCH_SIZE = 8;
@@ -305,7 +332,7 @@ export async function runWaveAAnalysis(
     },
     layers: layerResults,
     factualSummary,
-    fontesConsultadas: [...WAVE_A_FONTES, ...FEDERAL_FONTES],
+    fontesConsultadas: [...WAVE_A_FONTES, ...FEDERAL_FONTES, ...ICMBIO_FONTES, ...MMA_FONTES],
     ...(influenceAreas ? { influenceAreas } : {}),
   };
 }

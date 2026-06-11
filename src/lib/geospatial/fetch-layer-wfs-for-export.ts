@@ -1,19 +1,23 @@
 import type { Feature, Geometry } from "geojson";
 import { expandBbox } from "@/lib/geospatial/perimeter";
 import { fetchArcGisFeaturesInBbox } from "@/lib/geospatial/arcgis-feature-client";
-import { fetchWfsFeaturesInBbox } from "@/lib/geospatial/wfs-client";import type { CartographicOverlayRing } from "@/lib/geospatial/cartographic-layout";
-import { resolveFederalLayersForBbox } from "@/lib/geospatial/wave-federal-catalog";
-import { isEmbargosLayer, isProdesLayer } from "@/lib/geospatial/ibama-embargos";
+import { fetchWfsFeaturesInBbox } from "@/lib/geospatial/wfs-client";
+import type { CartographicOverlayRing } from "@/lib/geospatial/cartographic-layout";
+import { resolveAllLayersForBbox } from "@/lib/geospatial/geo-all-layers";
+import {
+  isEmbargosLayer,
+  isMapBiomasAlertaLayer,
+  isProdesLayer,
+} from "@/lib/geospatial/ibama-embargos";
 import {
   FEDERAL_TI_LAYER_ID,
   FEDERAL_UC_LAYER_ID,
 } from "@/lib/geospatial/wave-federal-catalog";
-import { SIG_MG_ALL_LAYERS, type WaveACatalogEntry } from "@/lib/geospatial/wave-a-catalog";
+import type { WaveACatalogEntry } from "@/lib/geospatial/wave-a-catalog";
 
-const ALL_WAVE_CATALOG: WaveACatalogEntry[] = [
-  ...SIG_MG_ALL_LAYERS,
-  ...resolveFederalLayersForBbox([-51.13, -22.92, -36.03, -14.23]),
-];
+const ALL_WAVE_CATALOG: WaveACatalogEntry[] = resolveAllLayersForBbox([
+  -51.13, -22.92, -36.03, -14.23,
+]);
 
 const THEMATIC_PALETTE = [
   "#86efac",
@@ -94,7 +98,9 @@ function featuresToOverlayRings(
           ? { stroke: "#7c3aed", fill: "#a78bfa", fillOpacity: 0.22, strokeWidth: 1.2 }
           : isProdesLayer(entry.layerId)
             ? { stroke: "#c2410c", fill: "#fb923c", fillOpacity: 0.3, strokeWidth: 1.2 }
-            : colorForFeature(i, entry.geometryKind);
+            : isMapBiomasAlertaLayer(entry.layerId)
+              ? { stroke: "#b91c1c", fill: "#f87171", fillOpacity: 0.32, strokeWidth: 1.3 }
+              : colorForFeature(i, entry.geometryKind);
     rings.push({ ring, ...style });
   }
   return rings;
