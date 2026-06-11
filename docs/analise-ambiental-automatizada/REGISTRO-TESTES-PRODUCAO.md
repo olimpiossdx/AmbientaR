@@ -24,7 +24,9 @@ Documento vivo para refinamento. **Não substitui código** — regista o que o 
 | TerraBrasilis PRODES | 200 | OK |
 | GeoNetwork CSW | 200 | OK |
 
-**Camadas catálogo (45 total, 2026-06-11):** 37 OK, 7 sem feições no recorte, 1 erro (PRODES Mata Atlântica XML). Embargos IBAMA via PAMGIA ArcGIS (3 camadas ArcGIS OK no probe).
+**Camadas catálogo (48 total, probe 2026-06-12):** 41 OK | 5 sem feições | 1 degradado (PRODES MA uid) | 1 erro (PRODES Cerrado timeout). Novas MG: `mg_app_hidrica_mapcar` (80 feat), `mg_licenciamento_municipal`, `mg_empreendimentos_licenciados` (36 feat).
+
+**Contexto factual:** `zeeContext` + `hidrologiaContext` (estações ANA num raio de 50 km) no resultado da análise.
 
 **GeoNetwork sync:** REST `_search` devolve HTTP 403; fallback CSW GetRecords + filtro local (17 sugestões em `geo-catalog-sync-report.json`).
 
@@ -43,7 +45,9 @@ Documento vivo para refinamento. **Não substitui código** — regista o que o 
 | P4 | GeoNetwork client | `geonetwork-client.ts`, `sync-geo-catalog.ts` | ✅ |
 | P5 | MMA INDE + CKAN refs | `wave-mma-catalog.ts` | ✅ |
 | P6 | ANA HidroWeb | `ana-hidroweb-client.ts`, `/api/geo/ana/station` | ✅ |
-| P7 | MTR proxy | `mtr-client.ts`, `/api/mtr/*` | ✅ (requer `MTR_CHAVE_FEAM`) |
+| P7 | MTR proxy + UI | `mtr-client.ts`, `/api/mtr/*`, `/studies/mtr` | ✅ (homolog requer `MTR_CHAVE_FEAM`) |
+| P5+ | zeeContext JSON | `geo-national-context.ts` | ✅ |
+| P6+ | ANA raio 50 km | `buildHidrologiaContext`, `/api/geo/ana/stations/near` | ✅ |
 
 ---
 
@@ -55,6 +59,7 @@ Documento vivo para refinamento. **Não substitui código** — regista o que o 
 | `GET /api/geo/ana/station?id=` | Estação ANA HidroWeb |
 | `GET /api/mtr/status` | MTR configurado? (auth) |
 | `POST /api/mtr/proxy` | Proxy MTR (auth + allowlist) |
+| `GET /api/geo/ana/stations/near?bbox=` | Estações ANA num raio (default 50 km) |
 
 ---
 

@@ -70,6 +70,37 @@ export const GeoInfluenceAreasSchema = z.object({
 
 export type GeoInfluenceAreas = z.infer<typeof GeoInfluenceAreasSchema>;
 
+export const GeoZeeContextSchema = z.object({
+  mgZeeClasses: z.array(
+    z.object({
+      label: z.string(),
+      pctOfPerimeter: z.number().optional(),
+    }),
+  ),
+  mgIeeResumo: z.string().optional(),
+  zeeBrasilTitulo: z.string(),
+  zeeBrasilNota: z.string(),
+  zeeBrasilUrl: z.string(),
+  ecossistemasNota: z.string(),
+  fetchedAtUtc: z.string(),
+});
+
+export const GeoHidrologiaContextSchema = z.object({
+  raioKm: z.number(),
+  estacoesAnaProximas: z.array(
+    z.object({
+      codigo: z.union([z.number(), z.string()]),
+      nome: z.string(),
+      latitude: z.number(),
+      longitude: z.number(),
+      distanciaKm: z.number(),
+    }),
+  ),
+  resumo: z.string(),
+  fonteUrl: z.string(),
+  fetchedAtUtc: z.string(),
+});
+
 export const WaveAAnalysisResultSchema = z.object({
   wave: z.enum(["A", "ABC"]),
   generatedAtUtc: z.string(),
@@ -83,6 +114,8 @@ export const WaveAAnalysisResultSchema = z.object({
       tipo: z.enum(["ogc", "api", "catalogo", "download"]),
     }),
   ),
+  zeeContext: GeoZeeContextSchema.optional(),
+  hidrologiaContext: GeoHidrologiaContextSchema.optional(),
   influenceAreas: GeoInfluenceAreasSchema.optional(),
 });
 

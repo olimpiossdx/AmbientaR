@@ -32,6 +32,9 @@ function docToWave(data: Record<string, unknown>): WaveAAnalysisResult | null {
     factualSummary: (data.factualSummary as string) ?? "",
     fontesConsultadas:
       (data.fontesConsultadas as WaveAAnalysisResult["fontesConsultadas"]) ?? [],
+    zeeContext: data.zeeContext as WaveAAnalysisResult["zeeContext"],
+    hidrologiaContext:
+      data.hidrologiaContext as WaveAAnalysisResult["hidrologiaContext"],
   };
 }
 

@@ -11,6 +11,7 @@ import {
   TERRABRASILIS_WFS,
   MAPBIOMAS_ALERTA_WFS,
 } from "../src/lib/geospatial/wave-federal-catalog";
+import { expandBbox } from "../src/lib/geospatial/perimeter";
 import { fetchWfsFeaturesInBbox } from "../src/lib/geospatial/wfs-client";
 
 const FIXTURE = path.join(
@@ -111,7 +112,7 @@ async function probeLayers(
   {
     layerId: string;
     title: string;
-    status: "ok" | "no_features" | "error";
+    status: "ok" | "no_features" | "degraded" | "error";
     featureCount?: number;
     typeName?: string;
     baseUrl?: string;
@@ -135,11 +136,16 @@ async function probeLayers(
       continue;
     }
 
+    const margin =
+      entry.bboxMarginDegrees ??
+      (entry.geometryKind === "point" ? 0.05 : 0.02);
+    const queryBbox = expandBbox(bbox, margin);
+
     const wfs = await fetchWfsFeaturesInBbox({
       baseUrls: entry.wfsBaseUrls,
       typeNames: entry.typeNames,
-      bbox,
-      maxFeatures: 5,
+      bbox: queryBbox,
+      maxFeatures: entry.maxWfsFeatures ?? 5,
     });
 
     if (wfs.ok) {
@@ -164,7 +170,7 @@ async function probeLayers(
       results.push({
         layerId: entry.layerId,
         title: entry.title,
-        status: "no_features" as const,
+        status: "degraded" as const,
         typeName: entry.typeNames[0],
         baseUrl: entry.wfsBaseUrls[0],
         error: wfs.error,
@@ -199,8 +205,11 @@ async function main() {
   const layers = await probeLayers(bbox);
   const ok = layers.filter((l) => l.status === "ok").length;
   const noFeat = layers.filter((l) => l.status === "no_features").length;
+  const degraded = layers.filter((l) => l.status === "degraded").length;
   const err = layers.filter((l) => l.status === "error").length;
-  console.log(`  Total: ${layers.length} | OK: ${ok} | sem feições: ${noFeat} | erro: ${err}`);
+  console.log(
+    `  Total: ${layers.length} | OK: ${ok} | sem feições: ${noFeat} | degradado: ${degraded} | erro: ${err}`,
+  );
 
   for (const l of layers) {
     const tag =
@@ -208,7 +217,9 @@ async function main() {
         ? `OK (${l.featureCount} feat)`
         : l.status === "no_features"
           ? "SEM_FEICOES"
-          : "ERRO";
+          : l.status === "degraded"
+            ? "DEGRADADO"
+            : "ERRO";
     console.log(`  [${tag}] ${l.layerId}: ${l.error ?? l.typeName ?? ""}`);
   }
 
@@ -218,7 +229,13 @@ async function main() {
     bbox,
     capabilities,
     layers,
-    summary: { total: layers.length, ok, noFeatures: noFeat, error: err },
+    summary: {
+      total: layers.length,
+      ok,
+      noFeatures: noFeat,
+      degraded,
+      error: err,
+    },
   };
 
   const outPath = path.join(

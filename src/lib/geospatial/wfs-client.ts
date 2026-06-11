@@ -1,6 +1,13 @@
 import type { Feature, FeatureCollection } from "geojson";
 
 const WFS_TIMEOUT_MS = 45_000;
+const WFS_TIMEOUT_SLOW_MS = 90_000;
+
+function wfsTimeoutMs(baseUrl: string): number {
+  if (baseUrl.includes("terrabrasilis.dpi.inpe.br")) return WFS_TIMEOUT_SLOW_MS;
+  if (baseUrl.includes("alerta.mapbiomas.org")) return WFS_TIMEOUT_SLOW_MS;
+  return WFS_TIMEOUT_MS;
+}
 const MAX_FEATURES = 500;
 
 const WFS_HEADERS: HeadersInit = {
@@ -125,7 +132,7 @@ async function fetchOneTypeName(params: {
           cache: "no-store",
           headers: WFS_HEADERS,
         }),
-        WFS_TIMEOUT_MS,
+        wfsTimeoutMs(params.baseUrl),
       );
 
       if (!response.ok) {

@@ -6,7 +6,21 @@ import { SIG_MG_ALL_LAYERS } from "@/lib/geospatial/wave-a-catalog";
 import { resolveFederalLayersForBbox } from "@/lib/geospatial/wave-federal-catalog";
 import { ICMBIO_LAYERS } from "@/lib/geospatial/wave-icmbio-catalog";
 import { MMA_LAYERS } from "@/lib/geospatial/wave-mma-catalog";
+import { resolveMapcarAppTypeNamesForBbox } from "@/lib/geospatial/mapcar-app-layers";
 import type { WaveACatalogEntry } from "@/lib/geospatial/wave-a-catalog";
+
+function patchLayerTypeNamesForBbox(
+  entry: WaveACatalogEntry,
+  bbox: [number, number, number, number],
+): WaveACatalogEntry {
+  if (entry.layerId === "mg_app_hidrica_mapcar") {
+    return {
+      ...entry,
+      typeNames: resolveMapcarAppTypeNamesForBbox(bbox),
+    };
+  }
+  return entry;
+}
 
 export function resolveAllLayersForBbox(
   bbox: [number, number, number, number],
@@ -23,7 +37,7 @@ export function resolveAllLayersForBbox(
   ]) {
     if (seen.has(entry.layerId)) continue;
     seen.add(entry.layerId);
-    out.push(entry);
+    out.push(patchLayerTypeNamesForBbox(entry, bbox));
   }
 
   return out;

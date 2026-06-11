@@ -1,0 +1,77 @@
+{
+  "generatedAtUtc": "2026-06-11T15:19:05.545Z",
+  "fixture": "D:\\AmbientaR\\fixtures\\geo\\test-polygon-mg-850ha.geojson",
+  "bbox": [
+    -45.5234,
+    -21.2156,
+    -45.4982,
+    -21.1928
+  ],
+  "results": [
+    {
+      "layerId": "br_prodes_cerrado",
+      "title": "Desmatamento PRODES — Cerrado (INPE)",
+      "status": "ok",
+      "featureCount": 2,
+      "marginDegrees": 0.04,
+      "queryBbox": [
+        -45.5634,
+        -21.255599999999998,
+        -45.4582,
+        -21.1528
+      ],
+      "typeName": "prodes-cerrado-nb:yearly_deforestation"
+    },
+    {
+      "layerId": "br_prodes_mata_atlantica",
+      "title": "Desmatamento PRODES — Mata Atlântica (INPE)",
+      "status": "degraded",
+      "featureCount": 0,
+      "marginDegrees": 0.04,
+      "queryBbox": [
+        -45.5634,
+        -21.255599999999998,
+        -45.4582,
+        -21.1528
+      ],
+      "typeName": "prodes-mata-atlantica-nb:yearly_deforestation",
+      "error": "prodes-mata-atlantica-nb:yearly_deforestation: WFS INPE degradado (bug GeoServer uid)"
+    },
+    {
+      "layerId": "br_prodes_legal_amazon",
+      "title": "Desmatamento PRODES — Amazônia Legal (INPE)",
+      "status": "no_features",
+      "featureCount": 0,
+      "marginDegrees": 0.04,
+      "queryBbox": [
+        -45.5634,
+        -21.255599999999998,
+        -45.4582,
+        -21.1528
+      ],
+      "typeName": "prodes-legal-amz:yearly_deforestation",
+      "error": "prodes-legal-amz:yearly_deforestation: sem feições no recorte"
+    },
+    {
+      "layerId": "br_mapbiomas_alerta",
+      "title": "Alertas de desmatamento (MapBiomas Alerta)",
+      "status": "no_features",
+      "featureCount": 0,
+      "marginDegrees": 0.03,
+      "queryBbox": [
+        -45.5534,
+        -21.2456,
+        -45.468199999999996,
+        -21.162799999999997
+      ],
+      "typeName": "mapbiomas-alertas:dashboard_alerts-shapefile",
+      "error": "mapbiomas-alertas:dashboard_alerts-shapefile: sem feições no recorte"
+    }
+  ],
+  "summary": {
+    "ok": 1,
+    "noFeatures": 2,
+    "degraded": 1,
+    "error": 0
+  }
+}

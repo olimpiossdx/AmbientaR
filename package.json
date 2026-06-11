@@ -26,6 +26,8 @@
     "geo:probe": "npx tsx scripts/geo-probe.ts",
     "probe:terrabrasilis": "node scripts/probe-terrabrasilis-prodes.mjs",
     "probe:mapbiomas-alerta": "node scripts/probe-mapbiomas-alerta.mjs",
+    "debug:federal-geo": "npx tsx scripts/debug-federal-geo-layers.ts",
+    "debug:federal-geo:alerta": "npx tsx scripts/debug-federal-geo-layers.ts --fixture fixtures/geo/test-polygon-mg-alerta-hit.geojson",
     "geo:sync-catalog": "npx tsx scripts/sync-geo-catalog.ts",
     "mca:verify-etapa": "node scripts/mca/verify-etapa.mjs",
     "mca:verify-all": "node scripts/mca/verify-all.mjs",

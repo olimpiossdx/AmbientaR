@@ -147,11 +147,14 @@ export const FEDERAL_PRODES_CERRADO_LAYER: WaveACatalogEntry = {
     "IMAGE_DATE",
   ],
   wfsBaseUrls: [TERRABRASILIS_WFS],
-  bboxMarginDegrees: 0.06,
-  maxWfsFeatures: 60,
+  bboxMarginDegrees: 0.04,
+  maxWfsFeatures: 25,
 };
 
-/** Supressão de vegetação — PRODES Mata Atlântica (INPE / TerraBrasilis). */
+/**
+ * Supressão de vegetação — PRODES Mata Atlântica (INPE / TerraBrasilis).
+ * WFS degradado upstream (bug GeoServer `uid` em 2026) — análise retorna status partial.
+ */
 export const FEDERAL_PRODES_MATA_ATLANTICA_LAYER: WaveACatalogEntry = {
   layerId: FEDERAL_PRODES_MATA_ATLANTICA_LAYER_ID,
   title: "Desmatamento PRODES — Mata Atlântica (INPE)",
@@ -171,8 +174,8 @@ export const FEDERAL_PRODES_MATA_ATLANTICA_LAYER: WaveACatalogEntry = {
     "IMAGE_DATE",
   ],
   wfsBaseUrls: [TERRABRASILIS_WFS],
-  bboxMarginDegrees: 0.06,
-  maxWfsFeatures: 60,
+  bboxMarginDegrees: 0.04,
+  maxWfsFeatures: 25,
 };
 
 /** Supressão de vegetação — PRODES Amazônia Legal (INPE / TerraBrasilis). */
@@ -197,8 +200,8 @@ export const FEDERAL_PRODES_LEGAL_AMZ_LAYER: WaveACatalogEntry = {
     "AREA_KM",
   ],
   wfsBaseUrls: [TERRABRASILIS_WFS],
-  bboxMarginDegrees: 0.06,
-  maxWfsFeatures: 60,
+  bboxMarginDegrees: 0.04,
+  maxWfsFeatures: 25,
 };
 
 /** Alertas publicados de desmatamento (MapBiomas Alerta — WFS). */
@@ -220,8 +223,8 @@ export const FEDERAL_MAPBIOMAS_ALERTA_LAYER: WaveACatalogEntry = {
     "VPressao",
   ],
   wfsBaseUrls: [MAPBIOMAS_ALERTA_WFS],
-  bboxMarginDegrees: 0.05,
-  maxWfsFeatures: 40,
+  bboxMarginDegrees: 0.03,
+  maxWfsFeatures: 20,
 };
 
 export const FEDERAL_STATIC_LAYERS: WaveACatalogEntry[] = [

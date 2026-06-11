@@ -89,6 +89,16 @@ Implementar por **ondas** reduz risco de timeout WFS e facilita validar % com o 
 | Bioma | P0 | Contexto obrigatório em quase todos os estudos MG |
 | Solos | P1 | Descrição pedológica / aptidão |
 
+### Camadas confirmadas (probe 2026-06-11, plano P1+)
+
+| layerId | typeName (principal) | Confirmado |
+|---------|----------------------|------------|
+| `mg_zee_zonas` | `IDE:ide_2401_mg_zonas_ecologico_economicas_pol` | ✅ |
+| `mg_outorgas_igam` | `IDE:ide_2103_mg_outorgas_uso_recursos_hidricos_pto` | ✅ |
+| `mg_app_hidrica_mapcar` | `IDE:ide_210603_mg_hid_app_hidrica_mapcar_*` (por macrorregião) | ✅ |
+| `mg_licenciamento_municipal` | `IDE:ide_2102_mg_licenciamento_ambiental_municipal_pol` | ✅ probe |
+| `mg_empreendimentos_licenciados` | `IDE:ide_2101_mg_empreendimentos_licenciados_pto` | ✅ probe |
+
 ### Onda B — meio físico (texto Etapa 2)
 
 | Camada | Prioridade | Motivo |

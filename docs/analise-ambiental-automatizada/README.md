@@ -11,7 +11,7 @@ Pasta de **discussão e planeamento** (não substitui código). Serve para retom
 | [DISCUSSAO-2026-05-25.md](./DISCUSSAO-2026-05-25.md) | **Ler agora:** 12 itens (8 SIG + 4 PIA), prioridades, arquitectura QGIS |
 | [MAPAS-REFERENCIA-PIA-QGIS.md](./MAPAS-REFERENCIA-PIA-QGIS.md) | Especificação visual dos mapas/gráficos anexos (Fig. 1–5) |
 | [O-QUE-PRECISA-PARA-ANALISE-FUNCIONAR.md](./O-QUE-PRECISA-PARA-ANALISE-FUNCIONAR.md) | **Ler primeiro:** perímetro (tu) vs layerName WFS (config) — o que subir e o que não |
-| [REGISTRO-TESTES-PRODUCAO.md](./REGISTRO-TESTES-PRODUCAO.md) | **Teste real:** 850 ha OK; 8/8 camadas WFS 404; re-teste pós `de63002` pendente |
+| [REGISTRO-TESTES-PRODUCAO.md](./REGISTRO-TESTES-PRODUCAO.md) | **Teste real:** plano P0–P7 executado (2026-06); 48 camadas; `npm run geo:probe` |
 | [PLANO-ONDA-A-E-ETAPA-2.md](./PLANO-ONDA-A-E-ETAPA-2.md) | Plano Onda A → Etapa 2 |
 | [ETAPA-1-E-ETAPA-2.md](./ETAPA-1-E-ETAPA-2.md) | SIG factual → complemento IA |
 | [MVP-CAMADAS-IDE-SISEMA-MG.md](./MVP-CAMADAS-IDE-SISEMA-MG.md) | Catálogo 8 camadas IDE-Sisema (nomes a confirmar) |

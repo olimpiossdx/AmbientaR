@@ -29,6 +29,12 @@ import {
 } from "@/lib/geospatial/geo-all-layers";
 import { ICMBIO_FONTES } from "@/lib/geospatial/wave-icmbio-catalog";
 import { MMA_FONTES } from "@/lib/geospatial/wave-mma-catalog";
+import { buildHidrologiaContext } from "@/lib/geospatial/ana-hidroweb-client";
+import {
+  buildZeeContextFromLayers,
+  enrichZeeContextFromCkan,
+  zeeContextToFactualParagraph,
+} from "@/lib/geospatial/geo-national-context";
 import { fetchWfsFeaturesInBbox } from "@/lib/geospatial/wfs-client";
 import {
   aggregateLineLayerStats,
@@ -312,14 +318,25 @@ export async function runWaveAAnalysis(
   );
 
   const generatedAtUtc = new Date().toISOString();
-  const factualSummary = buildFactualSummary(
-    parsed.areaHa,
-    layerResults.map((l) => ({
-      title: l.title,
-      stats: l.stats,
-      status: l.status,
-    })),
+  let zeeContext = await enrichZeeContextFromCkan(
+    buildZeeContextFromLayers(layerResults),
   );
+  const hidrologiaContext = await buildHidrologiaContext(parsed.bbox, 50);
+
+  const factualSummary = [
+    buildFactualSummary(
+      parsed.areaHa,
+      layerResults.map((l) => ({
+        title: l.title,
+        stats: l.stats,
+        status: l.status,
+      })),
+    ),
+    zeeContextToFactualParagraph(zeeContext),
+    hidrologiaContext.resumo,
+  ]
+    .filter(Boolean)
+    .join("\n\n");
 
   return {
     wave: "ABC",
@@ -332,7 +349,19 @@ export async function runWaveAAnalysis(
     },
     layers: layerResults,
     factualSummary,
-    fontesConsultadas: [...WAVE_A_FONTES, ...FEDERAL_FONTES, ...ICMBIO_FONTES, ...MMA_FONTES],
+    fontesConsultadas: [
+      ...WAVE_A_FONTES,
+      ...FEDERAL_FONTES,
+      ...ICMBIO_FONTES,
+      ...MMA_FONTES,
+      {
+        nome: "ANA SNIRH — estações hidrometeorológicas",
+        url: hidrologiaContext.fonteUrl,
+        tipo: "api" as const,
+      },
+    ],
+    zeeContext,
+    hidrologiaContext,
     ...(influenceAreas ? { influenceAreas } : {}),
   };
 }

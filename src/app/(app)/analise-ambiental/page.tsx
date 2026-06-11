@@ -328,6 +328,10 @@ export default function AnaliseAmbientalPage() {
           fontesConsultadas: result.fontesConsultadas,
           generatedAtUtc: result.generatedAtUtc,
           influenceConfig,
+          ...(result.zeeContext ? { zeeContext: result.zeeContext } : {}),
+          ...(result.hidrologiaContext
+            ? { hidrologiaContext: result.hidrologiaContext }
+            : {}),
           ...(result.influenceAreas ? { influenceAreas: result.influenceAreas } : {}),
         });
         return ref.id;

@@ -419,6 +419,21 @@ export const allNavItems: NavItem[] = [
         ],
       },
       {
+        href: "/ctf-ibama",
+        label: "CTF/IBAMA",
+        icon: ShieldCheck,
+        roles: [
+          "admin",
+          "client",
+          "cliente_autonomo",
+          "representative",
+          "gestor",
+          "supervisor",
+          "technical",
+          "advogado",
+        ],
+      },
+      {
         href: "/intervencoes",
         label: "DAIA's",
         icon: Trees,
@@ -453,6 +468,21 @@ export const allNavItems: NavItem[] = [
         href: "/licenses",
         label: "Licenças",
         icon: FileCheck,
+        roles: [
+          "admin",
+          "client",
+      "cliente_autonomo",
+          "representative",
+          "gestor",
+          "supervisor",
+          "technical",
+          "advogado",
+        ],
+      },
+      {
+        href: "/mtr-declaracao",
+        label: "MTR-Declaração",
+        icon: Truck,
         roles: [
           "admin",
           "client",
@@ -970,6 +1000,12 @@ export const allNavItems: NavItem[] = [
           "diretor_fauna",
           "advogado",
         ],
+      },
+      {
+        href: "/studies/mtr",
+        label: "MTR-MG (resíduos)",
+        icon: Recycle,
+        roles: ["admin", "technical", "gestor", "supervisor", "advogado"],
       },
       {
         label: "Compensação Ambiental",
