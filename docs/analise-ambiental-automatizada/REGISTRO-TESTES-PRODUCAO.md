@@ -77,20 +77,32 @@ Documento vivo para refinamento. **Não substitui código** — regista o que o 
 1. Definir `MTR_CHAVE_FEAM` em `.env.local` para testar proxy MTR em homologação.
 2. Correr `npm run geo:probe` após cada alteração ao catálogo.
 3. Validar análise factual na UI com polígono fixture (~850 ha).
-4. **Localizador CAR/GPS (após M1.14):** ver [PLANO-LOCALIZADOR-CAR-GPS-SOCIOAMBIENTAL.md](./PLANO-LOCALIZADOR-CAR-GPS-SOCIOAMBIENTAL.md) — REF-01-A/B abaixo.
+4. **Localizador CAR/GPS (após G0-min):** ver [PLANO-LOCALIZADOR-CAR-GPS-SOCIOAMBIENTAL.md](./PLANO-LOCALIZADOR-CAR-GPS-SOCIOAMBIENTAL.md) — REF-01-A/B abaixo.
+
+---
+
+## Gate G0-min (antes de L1.1)
+
+| # | Critério | Passou? | Data |
+|---|----------|---------|------|
+| G0.1 | REF-01-A verificado no portal CAR (área anotada) | | |
+| G0.2 | Pacote socioambiental + polígono teste ≥1 camada OK | | |
+| G0.3 | ≥1 camada federal OK (SICAR ou embargos) | | |
+| G0.4 | `npm run geo:probe` SICAR 200 | ✅ P0 | 2026-06 |
 
 ---
 
 ## Referências CAR — localizador (Coronel Fabriciano / MG)
 
-Município IBGE **3170404**. Usar **após gate M1.14**; preencher `areaHa` e coordenadas na primeira execução L1.
+Município IBGE **3170404**. Usar **após G0-min**; preencher `areaHa` na primeira execução L1.
 
-| ID | CAR | Fase | areaHa (portal) | status | Passou? |
-|----|-----|------|-----------------|--------|---------|
-| REF-01-A | `MG-3170404-3DBDB334242844B392639D3237B27E10` | L1 | _preencher_ | _preencher_ | |
-| REF-01-B | `MG-3170404-CB2D550172B2405AAA6CF6479E2215B1` | L1 | _preencher_ | _preencher_ | |
-| REF-02 | Centróide REF-01-A | L1 | — | ok → A | |
-| REF-02-ambig | Ponto entre A e B | L2 | — | ambiguo | |
+| ID | CAR / teste | Fase | areaHa (portal) | Notas | Passou? |
+|----|-------------|------|-----------------|-------|---------|
+| REF-01-A | `MG-3170404-3DBDB334242844B392639D3237B27E10` | L1 | _preencher_ | T1, G0.1 | |
+| REF-01-B | `MG-3170404-CB2D550172B2405AAA6CF6479E2215B1` | L1 | _preencher_ | ambiguidade D2 | |
+| REF-02 | Centróide REF-01-A | L1 | — | T3 → A | |
+| REF-02-ambig | Ponto entre A e B | L2 | — | D2 | |
+| REF-07 | CAR SP ou GO | L2 | _preencher_ | T18: Localizar OK; Executar MG bloqueado (D9) | |
 
 Checklist por entrada:
 

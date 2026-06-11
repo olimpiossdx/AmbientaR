@@ -251,25 +251,29 @@ Registar resultado de cada debug em `REGISTRO-TESTES-PRODUCAO.md` (data + políg
 
 ## M1.13 — Mini-mapas / figuras restantes | M1.14 — Aprovação M1
 
-| M1.14 | Reunião: “SIG utilizável?” → assinar gate para M2 **e** para macro **L** (Localizador). |
+| M1.14 | Reunião: “SIG utilizável?” → assinar gate para **M2** e para **L3** (Localizador). **L1–L2** podem iniciar após **G0-min** (plano L §1.3). |
 
 ---
 
-# L — Localizador CAR / GPS / coordenadas (após M1.14)
+# L — Localizador CAR / GPS / coordenadas (após G0-min)
 
-Plano detalhado: [PLANO-LOCALIZADOR-CAR-GPS-SOCIOAMBIENTAL.md](./PLANO-LOCALIZADOR-CAR-GPS-SOCIOAMBIENTAL.md)
+Plano detalhado: [PLANO-LOCALIZADOR-CAR-GPS-SOCIOAMBIENTAL.md](./PLANO-LOCALIZADOR-CAR-GPS-SOCIOAMBIENTAL.md) (v3)
 
-| Macro | Objetivo | Gate saída |
-|-------|----------|------------|
-| **L1** | Resolver CAR → geometria (nacional); piloto CAR no pacote socioambiental | REF-01-A T1 |
-| **L2** | GPS + coordenadas no Executar pacote | T8 celular |
-| **L3** | Card confirmação + mobile | T13–T16 |
-| **L4** | Unificar `/analise-ambiental`, licenciamento | — |
-| **L5** | Conecta Gov (pós-MVP) | credenciais |
+| Macro | Objetivo | Gate entrada | Gate saída |
+|-------|----------|--------------|------------|
+| **L1** | Resolver CAR → geometria (nacional) | **G0-min** (§ plano L §1.3) | T1, T3 |
+| **L2** | GPS + coord; D9 UF≠MG | G1 | T8, **T18** |
+| **L3** | Card confirmação + mobile | G2 = T8 + **M1.14** | T13–T16 |
+| **L4** | Unificar app; CRM (D8) | G3 | — |
+| **L5** | Conecta Gov (D7) | L4 + credenciais | — |
 
-🚫 **Não iniciar L1.1** sem M1.14 assinado.
+**G0-min (início L1.1):** REF-01-A anotado; pacote com polígono teste ≥1 camada federal OK; SICAR WFS OK. **Não** exige M1.14.
 
-Decisões fechadas: D1 bloquear Executar com 0 CAR; D2 pré-selecionar maior interseção; D7 Conecta Gov em L5.
+**L3** exige **M1.14** assinado.
+
+Decisões fechadas: D1 0 CAR bloqueia; D2 pré-selecção; D3 `/resolve-location`; D4 cache 24h; D5 título auto; D6 link CAR; D7 L5; D8 CRM L4+; **D9 UF≠MG bloqueia Executar pacote MG**.
+
+🚫 **Não iniciar L1.1** se G0.2 falhar (zero camadas úteis no pacote).
 
 ---
 

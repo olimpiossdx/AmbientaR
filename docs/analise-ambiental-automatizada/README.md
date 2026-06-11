@@ -21,7 +21,7 @@ Pasta de **discussão e planeamento** (não substitui código). Serve para retom
 
 | Ficheiro | Conteúdo |
 |----------|----------|
-| [PLANO-LOCALIZADOR-CAR-GPS-SOCIOAMBIENTAL.md](./PLANO-LOCALIZADOR-CAR-GPS-SOCIOAMBIENTAL.md) | **Após M1.14:** resolver CAR→geometria (L1), GPS pacote socioambiental (L2), card mobile (L3); MG piloto, SICAR nacional |
+| [PLANO-LOCALIZADOR-CAR-GPS-SOCIOAMBIENTAL.md](./PLANO-LOCALIZADOR-CAR-GPS-SOCIOAMBIENTAL.md) | **Após G0-min (M1 parcial):** L1–L3 localizador CAR/GPS; MG piloto; SICAR nacional; D9 UF≠MG bloqueia Executar pacote |
 
 ### Passo 3 — Linha de montagem SaaS (estudos + licenciamento)
 

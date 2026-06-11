@@ -1,11 +1,11 @@
 # Plano — Localizador de imóvel (CAR / GPS / coordenadas)
 
-Documento de **planeamento e discussão** (junho/2026).  
-**Versão 2** — reorganizado após decisões de produto (11/06/2026).
+Documento de **planeamento** (junho/2026).  
+**Versão 3** — decisões D1–D9 e gate mínimo L1 fechados (11/06/2026).
 
 Complementa:
 
-- [PLANO-FASES-CIRURGICAS.md](./PLANO-FASES-CIRURGICAS.md) — **M1 completa antes deste plano**
+- [PLANO-FASES-CIRURGICAS.md](./PLANO-FASES-CIRURGICAS.md) — M1 em paralelo; gate mínimo antes de L1
 - [COLIGACAO-DADOS-PUBLICOS.md](./COLIGACAO-DADOS-PUBLICOS.md) — motor de coligação e SICAR
 - [O-QUE-PRECISA-PARA-ANALISE-FUNCIONAR.md](./O-QUE-PRECISA-PARA-ANALISE-FUNCIONAR.md) — perímetro vs catálogo WFS
 - [REGISTRO-TESTES-PRODUCAO.md](./REGISTRO-TESTES-PRODUCAO.md) — debug após cada micro-fase
@@ -16,64 +16,88 @@ Complementa:
 
 | Tema | Decisão |
 |------|---------|
-| **Quando começa** | **Depois de M1.14** (SIG utilizável: camadas OK, persistência, PDF, smoke produção) |
-| **Piloto comercial** | **Minas Gerais** — testes e mensagens orientadas a MG |
-| **Arquitectura técnica** | **Nacional desde o dia 1** — todas as UFs com camada `sicar_imoveis_{uf}` no WFS |
+| **Gate mínimo L1** | **G0-min** (§1.2) — não exige M1.14 completo; exige REF-01-A + ≥1 camada federal OK |
+| **M1.14** | Continua **em paralelo** com L1–L2; obrigatório antes de **L3** e promoção comercial plena |
+| **Piloto comercial** | **Minas Gerais** — preset `mg_padrao`, testes Coronel Fabriciano |
+| **Arquitectura** | **SICAR nacional (27 UFs)** desde L1; catálogo extrato MG no pacote |
 | **UI piloto** | Pacote socioambiental (`/studies/analise-socioambiental`) |
-| **Ordem interna** | L1 resolver → L2 GPS/coord → L3 card mobile → L4 rollout app |
-| **0 CAR** | **Bloquear Executar** (D1 fechado) |
-| **N CAR** | Pré-seleccionar maior interseção; **exigir Confirmar** (D2 fechado) |
-| **Conecta Gov** | **Fase L5 / pós-MVP** (D7 fechado) |
+| **Ordem interna** | L1 → L2 → L3 → L4 → L5 |
+| **0 CAR** | Bloquear Executar (D1) |
+| **N CAR** | Pré-selecção maior interseção + Confirmar (D2) |
+| **CAR fora de MG** | Localizar OK; **Executar pacote MG bloqueado** (D9) |
+| **API** | `POST /api/geospatial/resolve-location` (D3); `/car` delega |
+| **Cache SICAR** | 24 h por `codImovel`, servidor (D4) |
+| **Conecta Gov** | L5 pós-MVP (D7) |
 
 ---
 
 ## 1. Posicionamento no roadmap global
 
-### 1.1 Sequência obrigatória
+### 1.1 Sequência (com paralelismo)
 
 ```mermaid
-flowchart LR
-  M0[M0 Branding + templates]
-  M1[M1.1 … M1.14 SIG utilizável]
-  L1[L1 Resolver CAR geometria]
-  L2[L2 GPS + coord pacote]
-  L3[L3 Card confirmação mobile]
-  L4[L4 Rollout app]
-  M2[M2 Complemento IA]
+flowchart TB
+  M0[M0 Branding]
+  M1[M1 SIG — contínuo]
+  G0{G0-min}
+  L1[L1 Resolver]
+  L2[L2 GPS pacote]
+  M1full[M1.14 assinado]
+  L3[L3 Card mobile]
+  L4[L4 Rollout]
+  M2[M2 IA]
 
   M0 --> M1
-  M1 --> L1
+  M1 --> G0
+  G0 -->|passa| L1
   L1 --> L2
   L2 --> L3
+  M1 --> M1full
+  M1full --> L3
   L3 --> L4
   L3 --> M2
 ```
 
-**Porquê M1 antes:** o localizador só faz sentido se o pacote socioambiental já gerar cards com % reais (hidrografia, bioma, SICAR, embargos…). Localizar imóvel sem motor SIG fiável produz extrato vazio ou “Indisponível” — mesma lição do teste 850 ha ([O-QUE-PRECISA-PARA-ANALISE-FUNCIONAR.md](./O-QUE-PRECISA-PARA-ANALISE-FUNCIONAR.md)).
+**Ideia:** L1 corrige bug CAR→geometria (quick win) **sem** esperar 48 camadas perfeitas. M1.14 continua necessário antes de **L3** (card + PDF + confiança comercial) e **M2** pleno.
 
-### 1.2 Gate formal
+### 1.2 Gates formais
 
-| Gate | Condição | Documento |
-|------|----------|-----------|
-| **G0 → L1** | M1.14 assinado (“SIG utilizável?”) | `PLANO-FASES-CIRURGICAS.md` |
-| **G1 → L2** | Testes T1, T3 passam (REF-01-A) | §8 deste plano |
-| **G2 → L3** | T8 passa em celular real (REF-01-A ou REF-03) | §8 |
-| **G3 → L4** | T13–T16 passam | §8 |
-| **G4 → M2 pleno** | L3 + M1.8 (Etapa 2 lê análise) | ambos os planos |
+| Gate | Condição | Bloqueia |
+|------|----------|----------|
+| **G0-min → L1.1** | §1.3 checklist mínimo | Início do resolver |
+| **G1 → L2** | T1 + T3 (REF-01-A, REF-02) | GPS no pacote |
+| **G1b → L2** | M1.11 smoke passou **pelo menos uma vez** | — |
+| **G2 → L3** | T8 celular + **M1.14 assinado** | Card confirmação |
+| **G3 → L4** | T13–T16 | Rollout app |
+| **G4 → M2 pleno** | L3 + M1.8 | Complemento IA |
 
-### 1.3 Inserção no plano cirúrgico
+### 1.3 Gate mínimo G0-min (início L1.1)
 
-Após **M1.14**, acrescentar macro **L** (Localizador):
+Todos obrigatórios:
+
+| # | Critério | Como verificar |
+|---|----------|----------------|
+| G0.1 | **REF-01-A** consultável no portal CAR (área anotada manualmente) | Portal + registo testes |
+| G0.2 | Pacote socioambiental executa Wave A com **polígono** (~850 ha ou desenho) | ≥1 card não-404 |
+| G0.3 | Pelo menos **1 camada federal** OK no mesmo teste (SICAR imóveis **ou** embargos IBAMA) | UI ou `geo-probe` |
+| G0.4 | `npm run geo:probe` — SICAR WFS 200 | Já ✅ em P0 |
+| G0.5 | M1.11 smoke **não bloqueia** L1 se G0.1–G0.3 passam; **bloqueia L3** se nunca passou | Registo |
+
+🚫 **Não iniciar L1.1** se G0.2 falhar (zero camadas úteis no pacote).
+
+✅ **Pode iniciar L1.1** sem M1.14 se G0-min passar.
+
+### 1.4 Inserção no plano cirúrgico
+
+Macro **L** após gate G0-min (ver [PLANO-FASES-CIRURGICAS.md](./PLANO-FASES-CIRURGICAS.md)):
 
 | Macro | Micro-ações | Objetivo |
 |-------|-------------|----------|
-| **L1** | L1.1 – L1.6 | Resolver CAR → geometria |
-| **L2** | L2.1 – L2.8 | GPS + coord no pacote socioambiental |
-| **L3** | L3.1 – L3.6 | Card confirmação + mobile |
-| **L4** | L4.1 – L4.5 | Unificar `/analise-ambiental`, licenciamento… |
-| **L5** | futuro | Conecta Gov (APP/RL demonstrativo) |
-
-🚫 **Não iniciar L1.1** enquanto M1.11 (smoke produção SIG) não passar.
+| **L1** | L1.1 – L1.6 | Resolver CAR → geometria (nacional) |
+| **L2** | L2.1 – L2.9 | GPS + coord; regra UF (D9) |
+| **L3** | L3.1 – L3.6 | Card confirmação + mobile + D5/D6 |
+| **L4** | L4.1 – L4.5 | Unificar app; CRM (D8) |
+| **L5** | L5.x | Conecta Gov (D7) |
 
 ---
 
@@ -81,33 +105,31 @@ Após **M1.14**, acrescentar macro **L** (Localizador):
 
 ### 2.1 Objetivo funcional
 
-Permitir localizar imóvel rural para consulta socioambiental via:
+Localizar imóvel via CAR, coordenadas, GPS ou perímetro; resolver geometria SICAR; executar pacote socioambiental MG quando aplicável.
 
-1. Número CAR  
-2. Coordenadas (digitadas)  
-3. GPS do celular  
-4. Perímetro (mapa, GeoJSON, KML, SHP)
+### 2.2 MG primeiro, Brasil pronto
 
-Se o utilizador **não souber o CAR**, coordenadas/GPS resolvem na base pública SICAR, carregam **geometria oficial** e executam o pacote (Apto/Inapto, PDF, IA opcional).
+| Camada | MG (piloto) | Outras UFs |
+|--------|-------------|------------|
+| Marketing | Extrato socioambiental MG | CAR nacional; expansão estadual futura |
+| Testes | REF-01-A/B (Coronel Fabriciano) | REF-07 smoke resolver |
+| **Executar pacote** | Imóvel **MG** | **Bloqueado** (D9) — ver §2.3 |
+| Código resolver | — | 27 UFs via `sicar-uf-bounds` |
 
-### 2.2 Política comercial: MG primeiro, Brasil pronto
+### 2.3 Regra D9 — CAR fora de MG no preset `mg_padrao`
 
-| Camada | MG (piloto) | Demais UFs (desde L1) |
-|--------|-------------|------------------------|
-| **Marketing / TR** | “Extrato socioambiental MG”, preset `mg_padrao`, IDE-Sisema | Mensagem: “CAR nacional; camadas estaduais conforme catálogo” |
-| **Testes QA** | REF-01-A/B (Coronel Fabriciano), campo em MG | REF-07 (UF não-MG) smoke opcional pós-L3 |
-| **Suporte** | Prioridade consultoria MG | Outras UFs: CAR + camadas federais; sem prometer IDE estadual |
-| **Código** | Nenhum `if (uf === 'mg')` no resolver | `resolveUfsForBbox` + `sicarTypeNameForUf` já cobrem 27 UFs |
+**Decisão:** permitir **Localizar**; **bloquear Executar** do pacote MG.
 
-**Princípio:** o **resolver e o WFS SICAR são federativos**; o **pacote de camadas** do extrato socioambiental continua centrado em MG até expansão explícita do catálogo.
+| Acção | Comportamento |
+|-------|---------------|
+| Localizar imóvel | Funciona; card mostra CAR, UF, área |
+| Executar (N camadas MG) | **Desabilitado** |
+| Mensagem | “Imóvel em **{UF}**. Este pacote cobre **Minas Gerais**. Use [Análise Geoespacial (IA)](/analise-ambiental) para consulta multi-camada ou imóvel fora de MG.” |
+| Link | `/analise-ambiental` em nova aba ou navegação interna |
 
-### 2.3 Problema de negócio (inalterado)
+**Implementação (L2.9):** comparar `imoveis[0].uf` (ou selecionado) com `"MG"`; flag `extratoMgAplicavel: boolean` no resolver.
 
-| Cenário | Hoje | Após plano L |
-|---------|------|--------------|
-| Campo sem CAR | Bloqueado no pacote | GPS → CAR + extrato MG |
-| CAR sem shapefile | CAR não vira polígono | CAR → geometria SICAR |
-| Due diligence | Portal CAR + outras tools | AmbientaR end-to-end |
+**Futuro (pós-L4):** presets `sp_padrao`, `go_padrao`, etc.
 
 ---
 
@@ -115,282 +137,272 @@ Se o utilizador **não souber o CAR**, coordenadas/GPS resolvem na base pública
 
 | # | Questão | Decisão | Data |
 |---|---------|---------|------|
-| **D1** | 0 CAR: bloquear Executar? | **Sim** — sem checkbox de buffer no MVP | 2026-06-11 |
-| **D2** | N CAR: pré-selecção? | **Sim** — maior área de interseção; utilizador **deve Confirmar** | 2026-06-11 |
-| **D7** | Conecta Gov | **L5 / pós-MVP** — não bloqueia L1–L4 | 2026-06-11 |
+| **D1** | 0 CAR: bloquear Executar? | **Sim** — sem buffer no MVP | 2026-06-11 |
+| **D2** | N CAR: pré-selecção? | **Sim** — maior interseção; **Confirmar** obrigatório | 2026-06-11 |
+| **D3** | Rota API | **`POST /api/geospatial/resolve-location`**; `/car` delega (legado) | 2026-06-11 |
+| **D4** | Cache SICAR | **24 h** por `codImovel`, **só servidor**; atributos + geometria simplificada | 2026-06-11 |
+| **D5** | Título extrato | **`Extrato — {municipio}/{uf}`** quando CAR resolvido; editável | 2026-06-11 |
+| **D6** | Link car.gov.br | **Sim** — nova aba no card L3 | 2026-06-11 |
+| **D7** | Conecta Gov | **L5** pós-MVP | 2026-06-11 |
+| **D8** | CRM visita campo | **L4+**, não L3 | 2026-06-11 |
+| **D9** | CAR fora MG + preset MG | **Localizar sim; Executar pacote MG bloqueado** | 2026-06-11 |
 
-### 3.1 Decisões ainda em aberto
+### 3.1 Cache (D4) — detalhe
 
-| # | Questão | Proposta | Decisor |
-|---|---------|----------|---------|
-| D3 | API `/resolve-location` vs estender `/car` | Nova rota `/resolve-location` | Técnico |
-| D4 | Cache consultas SICAR | 24 h por `codImovel` | Técnico |
-| D5 | Título extrato auto | `Extrato — {municipio}/{uf}` | Produto |
-| D6 | Link car.gov.br | Nova aba no card L3 | Produto |
-| D8 | CRM visita campo | L4+, não L3 | Produto |
+| Guardar | TTL | Não guardar |
+|---------|-----|-------------|
+| `codImovel`, atributos, geometria simplificada, `consultadoEmUtc` | 24 h | WFS raw completo |
+| Chave | `sicar:car:{codImovel}` (memória ou Firestore opcional) | Dados Conecta Gov |
+
+Implementar em **L1.3** ou **L2** (quando API existir).
 
 ---
 
 ## 4. Estado actual no repositório
 
-### 4.1 Ativos reutilizáveis
+### 4.1 Ativos
 
 | Peça | Caminho |
 |------|---------|
-| SICAR por código / geometria | `src/lib/geospatial/sicar-car-service.ts` |
-| UFs + typeName (27 estados) | `src/lib/geospatial/sicar-uf-bounds.ts` |
-| Buffer coordenada ~80 m | `src/lib/geospatial/perimeter.ts` |
+| SICAR | `src/lib/geospatial/sicar-car-service.ts` |
+| 27 UFs | `src/lib/geospatial/sicar-uf-bounds.ts` |
+| Buffer coord | `src/lib/geospatial/perimeter.ts` |
 | API CAR | `POST /api/geospatial/car` |
-| UI GPS (referência) | `src/app/(app)/analise-ambiental/page.tsx` |
-| Pacote socioambiental (piloto UI) | `socioambiental-executar-tab.tsx` |
+| UI GPS ref. | `analise-ambiental/page.tsx` |
+| Pacote piloto | `socioambiental-executar-tab.tsx` |
 
-### 4.2 Lacunas (motivo do plano L)
+### 4.2 Lacunas
 
-1. `dataType: "car"` não resolve geometria em `parsePerimeterPolygon`.
-2. Pacote socioambiental: só CAR + polígono; sem GPS/coord.
-3. Sem resolver centralizado nem confirmação antes de Executar.
-4. Geometria SICAR retornada não substitui buffer no Wave A.
+1. CAR não vira polígono em `parsePerimeterPolygon`.
+2. Pacote sem GPS/coord.
+3. Sem resolver centralizado / confirmação.
+4. Geometria SICAR não alimenta Wave A automaticamente.
 
 ---
 
-## 5. Arquitectura alvo (federativa)
+## 5. Arquitectura alvo
 
 ### 5.1 Diagrama
 
 ```mermaid
 flowchart TB
-  subgraph ui [UI — piloto MG]
-    SA[socioambiental-executar-tab]
-    COMP[ImovelLocalizadorConfirmacao]
-  end
-
-  subgraph api [API]
-    RESOLVE["POST /api/geospatial/resolve-location"]
-    WAVE["POST /api/geospatial/wave-a/stream"]
-  end
-
-  subgraph lib [Lib — todas UFs]
-    RL[resolveLocalizacaoImovel]
-    SICAR[sicar-car-service]
-    UFS[sicar-uf-bounds 27 UFs]
-  end
+  SA[socioambiental-executar-tab]
+  RESOLVE["POST /resolve-location"]
+  RL[resolveLocalizacaoImovel]
+  CACHE[(Cache 24h D4)]
+  SICAR[sicar-car-service]
+  WAVE[Wave A stream]
 
   SA --> RESOLVE --> RL
-  RL --> SICAR --> UFS
-  SA --> WAVE
-  RL -.->|perimetroFinal WGS84| WAVE
+  RL --> CACHE
+  RL --> SICAR
+  SA -->|extratoMgAplicavel| WAVE
+  RL -->|perimetroFinal| WAVE
 ```
 
-### 5.2 Resolver multi-UF (obrigatório em L1)
-
-```
-resolveUfsForBbox(bbox) → ["mg", "es", …]  // máx. 4 UFs
-PARA cada uf:
-  fetch sicar:sicar_imoveis_{uf}
-dedupe + filterByPerimeter
-```
-
-- CAR com prefixo `MG-` → consulta directa `sicar_imoveis_mg` (já implementado).
-- Coordenada em SP → `resolveUfsForBbox` inclui `sp`; **mesmo código**, sem branch MG-only.
-- Pacote **camadas** MG: Wave A filtra `layerIds` do preset; imóvel em GO pode ser localizado mas extrato usa blocos federais + aviso “camadas MG não aplicáveis” (comportamento futuro; documentar na L2).
-
-### 5.3 Contrato `LocalizacaoResolvida`
-
-Ver tipos em §5 do plano v1 — mantidos. Campos novos sugeridos:
+### 5.2 Contrato `LocalizacaoResolvida` (campos relevantes)
 
 ```typescript
-ufsConsultadas: string[];       // ex. ["mg"]
-camadasExtratoAplicaveis?: string[];  // ex. preset mg_padrao
-avisoUf?: string;               // se imóvel fora de MG mas localizado
+type LocalizacaoResolvida = {
+  status: "ok" | "nao_encontrado" | "ambiguo";
+  metodoEntrada: "car" | "coordinates" | "gps" | "polygon" | "kml" | "shp";
+  imoveis: ImovelSicarResumo[];
+  imovelSelecionadoCod?: string;
+  perimetroFinal: GeoJSON.Feature<GeoJSON.Polygon>;
+  areaHa: number;
+  perimetroFonte: "sicar" | "buffer_ponto" | "desenho" | "upload";
+  confianca: "alta" | "media" | "baixa";
+  ufsConsultadas: string[];
+  /** false se imóvel UF ≠ MG e preset mg_padrao (D9) */
+  extratoMgAplicavel: boolean;
+  avisoUf?: string;
+  // … demais campos §5 plano v2
+};
 ```
 
 ---
 
 ## 6. Fase L1 — Resolver CAR → geometria
 
-**Gate entrada:** M1.14  
-**Estimativa:** 3–5 dias úteis  
-**UI:** mínima — pacote socioambiental usa resolver no modo CAR
-
-### L1.1 – L1.6 (micro-fases)
+**Gate:** G0-min  
+**Estimativa:** 3–5 dias  
+**Paralelo:** M1.2+ camadas
 
 | ID | Entrega |
 |----|---------|
 | L1.1 | `resolveLocalizacaoImovel()` + `sicarGeometryToPolygonFeature()` |
-| L1.2 | Multi-UF no resolver (reutilizar `resolveUfsForBbox`; testar MG + 1 UF) |
-| L1.3 | `POST /api/geospatial/resolve-location` |
-| L1.4 | `runWaveAAnalysisFromResolved()` ou delegação em `runWaveAAnalysis` |
-| L1.5 | `socioambiental-executar-tab`: modo CAR via resolver |
-| L1.6 | REF-01-A/B em `REGISTRO-TESTES-PRODUCAO.md` |
+| L1.2 | Multi-UF; `extratoMgAplicavel` quando UF ≠ MG |
+| L1.3 | `POST /api/geospatial/resolve-location` + cache D4 |
+| L1.4 | `runWaveAAnalysisFromResolved()` |
+| L1.5 | Pacote: modo CAR via resolver |
+| L1.6 | REF-01-A/B no registo; T1–T3 |
 
 ### Algoritmo (resumo)
 
-- **car** → WFS por `cod_imovel` → geometria → `perimetroFonte: sicar`
-- **coordinates | gps** → buffer → `queryCarsInPerimeter` → 1 CAR → geometria; 0 → `nao_encontrado`; N → `ambiguo` + pré-selecção D2
+- **car** → WFS → geometria → `perimetroFonte: sicar`
+- **coordinates | gps** → buffer → query CAR → geometria ou ambiguo/nao_encontrado
 - **polygon | kml | shp** → parse + enriquecimento CAR
+- **Sempre:** `extratoMgAplicavel = (ufImovel === "MG")` para preset actual
 
-### Ambiguidade (D2)
+### Debug gate G1
 
-- Ordenar `imoveis` por área de interseção com ponto/polígono (desc).
-- `imovelSelecionadoCod = imoveis[0].codImovel` como **sugestão**, não confirmação.
-- Wave A **só** após confirmar (L2/L3).
+🚫 L2 só após T1 + T3 (REF-01-A, REF-02).
 
 ---
 
-## 7. Fase L2 — GPS + coordenadas (pacote socioambiental)
+## 7. Fase L2 — GPS + coordenadas
 
-**Gate entrada:** G1 (T1, T3)  
+**Gate:** G1 + G1b  
 **Estimativa:** 2–4 dias
 
-| ID | Alteração |
-|----|-----------|
-| L2.1 | `InputMode`: car \| coordinates \| gps \| polygon |
+| ID | Entrega |
+|----|---------|
+| L2.1 | InputMode: car \| coordinates \| gps \| polygon |
 | L2.2 | Campo coordenadas |
-| L2.3 | Botão **Capturar coordenada actual** |
-| L2.4 | **Localizar imóvel** → `/resolve-location` |
-| L2.5 | **Executar** desabilitado até `status === "ok"` |
+| L2.3 | Botão GPS |
+| L2.4 | Localizar → `/resolve-location` |
+| L2.5 | Executar desabilitado até `status === "ok"` **e** `extratoMgAplicavel === true` |
 | L2.6 | Resumo textual CAR |
-| L2.7 | `ambiguo` → lista; pré-seleccionado = maior interseção |
-| L2.8 | `nao_encontrado` → **Executar bloqueado** (D1) |
+| L2.7 | Ambiguo: lista + pré-selecção D2 |
+| L2.8 | 0 CAR: Executar bloqueado (D1) |
+| **L2.9** | **D9:** banner + link `/analise-ambiental` se UF ≠ MG |
 
-### Mensagem comercial MG
+### Título extrato (D5)
 
-Preset default `mg_padrao` mantido. Se resolver achar CAR fora de MG (L1.2):
-
-> “Imóvel localizado em {UF}. Camadas do extrato referem-se a Minas Gerais; para análise em {UF}, use Análise Geoespacial completa ou aguarde expansão do catálogo.”
-
-(Não bloqueia localização; pode bloquear Executar pacote MG — **decisão D9 pendente**.)
+Após localizar com sucesso em MG: `setTituloExtrato(\`Extrato — ${municipio}/${uf}\`)`.
 
 ---
 
 ## 8. Fase L3 — Card confirmação + mobile
 
-**Gate entrada:** G2 (T8 celular)  
+**Gate:** G2 (T8 + **M1.14**)  
 **Estimativa:** 3–5 dias
 
-Componente: `src/components/geospatial/imovel-localizador-confirmacao.tsx`
-
-- Campos exactos: cabeçalho, SICAR, localização, perímetro, aviso APP/RL, acções (§8 plano v1).
-- **0 CAR:** sem Confirmar; Executar bloqueado (D1).
-- **N CAR:** mapa multi-polígono + cards tocáveis; pré-selecção visível (D2).
-- **Mobile:** mapa → dados → botões full width; Confirmar sticky.
-
-PDF: metadados `metodoLocalizacao`, `confiancaLocalizacao`, CAR, fonte SICAR.
-
----
-
-## 9. Fase L4 — Rollout unificado
-
-**Gate entrada:** G3  
-**Ordem:** `/analise-ambiental` → licenciamento → georef → PEA
+| ID | Entrega |
+|----|---------|
+| L3.1 | `ImovelLocalizadorConfirmacao` |
+| L3.2 | Estados 0 / 1 / N imóveis |
+| L3.3 | Layout mobile (mapa → dados → sticky Confirmar) |
+| L3.4 | Link car.gov.br nova aba (D6) |
+| L3.5 | PDF metadados localização |
+| L3.6 | Banner D9 no card (UF ≠ MG) |
 
 ---
 
-## 10. Fase L5 — Conecta Gov (pós-MVP)
+## 9. Fase L4 — Rollout
 
-**Gate:** L4 estável + credenciais Conecta Gov  
-**Entrega:** APP/RL declaradas, link demonstrativo PDF  
-**Fora do escopo L1–L4** (D7)
+**Gate:** G3  
+Ordem: `/analise-ambiental` → licenciamento → georef → **CRM campo (D8)**
 
 ---
 
-## 11. Plano de testes — registos reais
+## 10. Fase L5 — Conecta Gov
 
-### 11.1 Imóveis de referência (consultoria)
+**Gate:** L4 + credenciais (D7)
 
-Município IBGE **3170404** = **Coronel Fabriciano / MG**.
+---
 
-| ID | Tipo | Entrada | Uso |
-|----|------|---------|-----|
-| **REF-01-A** | CAR | `MG-3170404-3DBDB334242844B392639D3237B27E10` | T1 — geometria + área; baseline L1 |
-| **REF-01-B** | CAR | `MG-3170404-CB2D550172B2405AAA6CF6479E2215B1` | T1 bis; par para teste **ambiguidade** (D2) |
-| **REF-02** | Coord | Centróide de REF-01-A | T3 — mesmo CAR após L1.1 |
-| **REF-02-ambig** | Coord | Ponto entre A e B (campo) | T10 — N CAR, pré-selecção, confirmar |
-| **REF-03** | GPS | Celular no local de REF-01-A | T8 |
-| **REF-04** | Coord | BH centro (~-19.92, -43.94) | 0 CAR ou ambíguo urbano |
-| **REF-05** | Polígono | Desenho ~850 ha (histórico M1) | Regressão Wave A |
-| **REF-06** | CAR | Código inválido | Erro claro |
-| **REF-07** | CAR | 1 CAR SP/GO (smoke nacional pós-L1.2) | Resolver multi-UF |
+## 11. Plano de testes
 
-### 11.2 Colunas do registo (preencher em cada debug)
+### 11.1 Referências (Coronel Fabriciano / MG)
 
-| Campo | Exemplo |
-|-------|---------|
-| Data | 2026-06-__ |
-| Fase | L1.1 |
-| REF | REF-01-A |
-| codImovel | MG-3170404-3DB… |
-| areaHa obtida | ___ (comparar portal CAR) |
-| status / confianca | ok / alta |
-| perimetroFonte | sicar |
-| Passou? | Sim/Não |
+| ID | Entrada | Uso |
+|----|---------|-----|
+| **REF-01-A** | `MG-3170404-3DBDB334242844B392639D3237B27E10` | T1, G0-min |
+| **REF-01-B** | `MG-3170404-CB2D550172B2405AAA6CF6479E2215B1` | T1b, ambiguidade |
+| **REF-02** | Centróide A | T3 |
+| **REF-02-ambig** | Entre A e B | T10, D2 |
+| **REF-03** | GPS no local A | T8 |
+| **REF-04** | BH ~(-19.92, -43.94) | T4 |
+| **REF-05** | Polígono ~850 ha | Regressão M1 |
+| **REF-06** | CAR inválido | T2 |
+| **REF-07** | CAR SP ou GO | T17 resolver; **T18 D9** Executar bloqueado |
 
-### 11.3 Critérios de aceite consolidados
+### 11.2 Critérios de aceite
 
 | # | Fase | Teste |
 |---|------|-------|
-| T1 | L1 | REF-01-A: área ±1% vs SICAR; Wave A OK |
+| T1 | L1 | REF-01-A: área ±1%; Wave A OK |
 | T1b | L1 | REF-01-B: idem |
-| T2 | L1 | REF-06: erro antes das camadas |
-| T3 | L1 | REF-02 → mesmo polígono que REF-01-A |
-| T4 | L1 | REF-04: `nao_encontrado`, Executar bloqueado |
-| T5 | L1 | Polígono intersectando A+B: `ambiguo` |
-| T7–T12 | L2 | GPS, lista N, Firestore (§7 plano v1) |
-| T13–T16 | L3 | Mobile, PDF, componente reutilizável |
-| T17 | L1.2 | REF-07 UF ≠ MG: resolver OK |
+| T2 | L1 | REF-06: erro claro |
+| T3 | L1 | REF-02 = polígono A |
+| T4 | L1/L2 | REF-04: nao_encontrado; Executar off |
+| T5 | L1 | Polígono A∩B: ambiguo |
+| T7–T12 | L2 | GPS, Firestore, D5 título |
+| **T18** | **L2** | **REF-07: Localizar OK; Executar MG bloqueado; link análise geoespacial** |
+| T13–T16 | L3 | Mobile, PDF, D6 link |
+| T17 | L1.2 | REF-07 resolver nacional OK |
 
 ---
 
-## 12. Cronograma revisado
+## 12. Ordem de execução recomendada
 
-| Ordem | Bloco | Duração indicativa | Marco |
-|-------|-------|-------------------|--------|
-| 1 | **M1.1 – M1.14** | (plano cirúrgico existente) | SIG utilizável MG |
-| 2 | **L1.1 – L1.6** | 3–5 dias | CAR REF-01-A gera extrato com área real |
-| 3 | **L2.1 – L2.8** | 2–4 dias | GPS no pacote socioambiental |
-| 4 | **L3.1 – L3.6** | 3–5 dias | Card confirmação mobile |
-| 5 | **L4** | 1–2 sem | Unificação app |
-| 6 | **M2** | paralelo após L3+M1.8 | Complemento IA |
-| 7 | **L5** | futuro | Conecta Gov |
+| # | Acção | Quando |
+|---|--------|--------|
+| 1 | Verificar **G0-min** (polígono teste + 1 camada federal) | Antes L1.1 |
+| 2 | Anotar área REF-01-A no portal CAR → registo | Antes L1.1 |
+| 3 | **L1.1 – L1.3** resolver + API + cache | 3–5 d |
+| 4 | **L1.4 – L1.6** Wave A + pacote CAR | +1–2 d |
+| 5 | **M1** micro-fases restantes | **paralelo** |
+| 6 | **L2** GPS + D9 | 2–4 d |
+| 7 | **M1.14** assinar | Antes L3 |
+| 8 | **L3** card mobile | 3–5 d |
+| 9 | **L4** rollout | incremental |
 
-**MVP localizador (L1–L3):** ~8–14 dias úteis **após** M1.14.
+**MVP localizador (L1–L2):** ~5–9 dias após G0-min.  
+**MVP completo (L1–L3):** +3–5 dias após M1.14.
 
 ---
 
-## 13. Riscos
+## 13. Cronograma
+
+| Bloco | Dependência | Marco |
+|-------|-------------|--------|
+| G0-min | M1 parcial | OK para L1 |
+| L1 | G0-min | REF-01-A extrato área real |
+| M1.14 | M1 contínuo | Gate L3 |
+| L2 | G1 | GPS pacote MG |
+| L3 | G2 | Card mobile |
+| L4 | G3 | App unificada |
+| L5 | L4 | Conecta Gov |
+
+---
+
+## 14. Riscos
 
 | Risco | Mitigação |
 |-------|-----------|
-| M1 atrasada | L1 não começa; evita extrato bonito sem SIG |
-| REF-01-A/B vizinhos → ambiguidade frequente | Caso de teste ideal para D2 |
-| Imóvel fora MG com preset MG | Aviso `avisoUf`; D9 pendente |
-| GPS rural impreciso | Confiança + confirmação L3 |
-| WFS SICAR lento | Cache D4; retry BBOX |
+| SIG fraco no G0-min | Não abrir L1 |
+| A/B ambiguidade | Teste D2 REF-02-ambig |
+| CAR outra UF | D9 + link análise geoespacial |
+| WFS lento | D4 cache |
+| M1 atrasada | L1–L2 avançam; L3 espera M1.14 |
 
 ---
 
-## 14. Referências de código
+## 15. Próximo passo (implementação)
+
+1. Correr **G0-min** na UI (polígono 850 ha + pacote socioambiental).
+2. Iniciar **L1.1** (`resolveLocalizacaoImovel`) — uma acção, debug, registo.
+3. Não iniciar L3 até **M1.14** assinado.
+
+---
+
+## 16. Referências de código
 
 | Tema | Caminho |
 |------|---------|
 | SICAR | `src/lib/geospatial/sicar-car-service.ts` |
-| 27 UFs | `src/lib/geospatial/sicar-uf-bounds.ts` |
-| Pacote socioambiental | `src/app/(app)/studies/analise-socioambiental/socioambiental-executar-tab.tsx` |
-| Plano cirúrgico M1 | `docs/analise-ambiental-automatizada/PLANO-FASES-CIRURGICAS.md` |
+| UFs | `src/lib/geospatial/sicar-uf-bounds.ts` |
+| Pacote | `socioambiental-executar-tab.tsx` |
+| Plano M1/L | `PLANO-FASES-CIRURGICAS.md` |
 
 ---
 
-## 15. Próxima discussão sugerida
-
-1. **D9:** CAR localizado fora de MG — permite Executar pacote `mg_padrao` com aviso, ou bloqueia?
-2. **D3/D4:** confirmar rota API e cache.
-3. **M1:** em que micro-fase estão hoje (M1.2 hidrografia?) para estimar data de G0→L1.
-
----
-
-## 16. Histórico
+## 17. Histórico
 
 | Data | Alteração |
 |------|-----------|
 | 2026-06-11 | v1 — plano híbrido F1–F4 |
-| 2026-06-11 | v2 — M1 antes; D1/D2/D7 fechados; REF-01-A/B reais; MG piloto + UF nacional; fases L1–L5 |
+| 2026-06-11 | v2 — M1; REF-01-A/B; fases L |
+| 2026-06-11 | v3 — G0-min; D3–D6, D8, D9 fechados; D9 bloqueia Executar UF≠MG; L1 paralelo M1; ordem execução §12 |
