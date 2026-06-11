@@ -18,9 +18,12 @@ import { Button } from '@/components/ui/button';
 import { PlusCircle, Trash2 } from 'lucide-react';
 import { FormListagemCEspecifico } from './form-listagem-c-especifico';
 import { FormListagemCSecao6 } from './form-listagem-c-secao6';
+import { FormListagemCModulo4Complemento } from './form-listagem-c-modulo4-complemento';
 
 interface FormListagemCComumProps {
   form: any;
+  hideEspecifico?: boolean;
+  slotEspecifico?: React.ReactNode;
 }
 
 const datums = ['SAD-69', 'WGS-84', 'Córrego Alegre'] as const;
@@ -55,7 +58,7 @@ function BooleanRadio({
   );
 }
 
-export function FormListagemCPrincipal({ form }: FormListagemCComumProps) {
+export function FormListagemCPrincipal({ form, hideEspecifico, slotEspecifico }: FormListagemCComumProps) {
   const coordinateFormat = form.watch('geographicLocation.format');
   const faseLicenciamento = form.watch('listagemC.regularizacaoAmbiental.fase');
   const isAmpliacao = form.watch('listagemC.regularizacaoAmbiental.ampliacaoEmpreendimentoLicenciado');
@@ -64,8 +67,6 @@ export function FormListagemCPrincipal({ form }: FormListagemCComumProps) {
     useFieldArray({ control: form.control, name: 'listagemC.outrasAtividades' });
   const { fields: nucleoPopulacionalFields, append: appendNucleoPopulacional, remove: removeNucleoPopulacional } =
     useFieldArray({ control: form.control, name: 'listagemC.legislacaoMunicipal.nucleosPopulacionais' });
-  const { fields: ocupacaoEntornoFields, append: appendOcupacaoEntorno, remove: removeOcupacaoEntorno } =
-    useFieldArray({ control: form.control, name: 'listagemC.ocupacaoEntorno.ocorrencias' });
   const { fields: recursosHidricosFields, append: appendRecursosHidricos, remove: removeRecursosHidricos } =
     useFieldArray({ control: form.control, name: 'listagemC.recursosHidricos.intervencoes' });
   return (
@@ -383,6 +384,22 @@ export function FormListagemCPrincipal({ form }: FormListagemCComumProps) {
 
       <div className="space-y-4 rounded-md border p-4">
         <h3 className="text-lg font-medium">14. Intervenção em Recursos Hídricos</h3>
+        <FormField
+          control={form.control}
+          name="listagemC.recursosHidricos.usoConcessionaria"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Faz uso de água da concessionária local?</FormLabel>
+              <FormControl><BooleanRadio value={field.value} onChange={field.onChange} /></FormControl>
+            </FormItem>
+          )}
+        />
+        {form.watch('listagemC.recursosHidricos.usoConcessionaria') && (
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <FormField control={form.control} name="listagemC.recursosHidricos.concessionariaNome" render={({ field }) => (<FormItem><FormLabel>Empresa concessionária</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
+            <FormField control={form.control} name="listagemC.recursosHidricos.concessionariaVolumeM3Mes" render={({ field }) => (<FormItem><FormLabel>Volume demandado (m³/mês)</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
+          </div>
+        )}
         {recursosHidricosFields.map((item, index) => (
           <div key={item.id} className="grid grid-cols-1 gap-3 rounded-md border p-3 md:grid-cols-6">
             <FormField control={form.control} name={`listagemC.recursosHidricos.intervencoes.${index}.tipo`} render={({ field }) => (<FormItem><FormLabel>Tipo de intervenção</FormLabel><FormControl><Input placeholder="Poço tubular / captação etc." {...field} /></FormControl></FormItem>)} />
@@ -397,12 +414,30 @@ export function FormListagemCPrincipal({ form }: FormListagemCComumProps) {
           </div>
         ))}
         <Button type="button" variant="outline" onClick={() => appendRecursosHidricos({ tipo: '', volume: '', outorgada: '', orgao: '', portaria: '', processo: '' })}><PlusCircle className="mr-2 h-4 w-4" />Adicionar intervenção hídrica</Button>
+        <FormField control={form.control} name="listagemC.recursosHidricos.nomesCorposHidricos" render={({ field }) => (<FormItem><FormLabel>14.1 – Nome(s) do(s) corpo(s) hídrico(s) de captação/intervenção</FormLabel><FormControl><Textarea rows={2} {...field} /></FormControl></FormItem>)} />
+        <FormField
+          control={form.control}
+          name="listagemC.recursosHidricos.classeEnquadramento"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Classe de enquadramento (DN COPAM/CERH 01/2008)</FormLabel>
+              <RadioGroup onValueChange={field.onChange} value={field.value} className="flex flex-wrap gap-4">
+                {['Classe especial', 'Classe 1', 'Classe 2', 'Classe 3', 'Classe 4'].map((classe) => (
+                  <FormItem key={classe} className="flex items-center gap-2">
+                    <FormControl><RadioGroupItem value={classe} /></FormControl>
+                    <FormLabel className="font-normal">{classe}</FormLabel>
+                  </FormItem>
+                ))}
+              </RadioGroup>
+            </FormItem>
+          )}
+        />
       </div>
 
       <div className="space-y-4 rounded-md border p-4">
-        <h3 className="text-lg font-medium">15 e 16. Legislação Municipal e Ocupação do Entorno</h3>
+        <h3 className="text-lg font-medium">16. Caracterização frente à legislação municipal</h3>
         <FormField control={form.control} name="listagemC.legislacaoMunicipal.temPlanoDiretor" render={({ field }) => (<FormItem><FormLabel>Município tem Plano Diretor / Lei de Uso e Ocupação do Solo?</FormLabel><FormControl><BooleanRadio value={field.value} onChange={field.onChange} /></FormControl></FormItem>)} />
-        <FormField control={form.control} name="listagemC.legislacaoMunicipal.interfereNucleosPopulacionais" render={({ field }) => (<FormItem><FormLabel>Interfere com núcleos populacionais?</FormLabel><FormControl><BooleanRadio value={field.value} onChange={field.onChange} /></FormControl></FormItem>)} />
+        <FormField control={form.control} name="listagemC.legislacaoMunicipal.interfereNucleosPopulacionais" render={({ field }) => (<FormItem><FormLabel>Interfere com núcleos populacionais urbanos ou rurais?</FormLabel><FormControl><BooleanRadio value={field.value} onChange={field.onChange} /></FormControl></FormItem>)} />
         {nucleoPopulacionalFields.map((item, index) => (
           <div key={item.id} className="grid grid-cols-1 gap-3 rounded-md border p-3 md:grid-cols-5">
             <FormField control={form.control} name={`listagemC.legislacaoMunicipal.nucleosPopulacionais.${index}.nome`} render={({ field }) => (<FormItem><FormLabel>Núcleo populacional</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
@@ -415,19 +450,51 @@ export function FormListagemCPrincipal({ form }: FormListagemCComumProps) {
           </div>
         ))}
         <Button type="button" variant="outline" onClick={() => appendNucleoPopulacional({ nome: '', localizacao: '', distanciaM: '', referencia: '' })}><PlusCircle className="mr-2 h-4 w-4" />Adicionar núcleo populacional</Button>
-
-        {ocupacaoEntornoFields.map((item, index) => (
-          <div key={item.id} className="grid grid-cols-1 gap-3 rounded-md border p-3 md:grid-cols-3">
-            <FormField control={form.control} name={`listagemC.ocupacaoEntorno.ocorrencias.${index}.ocorrencia`} render={({ field }) => (<FormItem><FormLabel>Ocorrência</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
-            <FormField control={form.control} name={`listagemC.ocupacaoEntorno.ocorrencias.${index}.distanciaM`} render={({ field }) => (<FormItem><FormLabel>Distância (m)</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
-            <div className="flex items-end">
-              <Button type="button" variant="outline" size="sm" onClick={() => removeOcupacaoEntorno(index)}><Trash2 className="mr-2 h-4 w-4" />Remover</Button>
-            </div>
-          </div>
-        ))}
-        <Button type="button" variant="outline" onClick={() => appendOcupacaoEntorno({ ocorrencia: '', distanciaM: '' })}><PlusCircle className="mr-2 h-4 w-4" />Adicionar ocorrência do entorno</Button>
+        <FormField
+          control={form.control}
+          name="listagemC.legislacaoMunicipal.interferePatrimonio"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Interfere com patrimônio histórico/cultural?</FormLabel>
+              <FormControl><BooleanRadio value={field.value} onChange={field.onChange} /></FormControl>
+            </FormItem>
+          )}
+        />
+        {form.watch('listagemC.legislacaoMunicipal.interferePatrimonio') && (
+          <FormField control={form.control} name="listagemC.legislacaoMunicipal.descricaoPatrimonio" render={({ field }) => (<FormItem><FormLabel>Descrever interferência</FormLabel><FormControl><Textarea rows={2} {...field} /></FormControl></FormItem>)} />
+        )}
+        <FormField
+          control={form.control}
+          name="listagemC.legislacaoMunicipal.interfereCavidades"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Interfere com áreas de potencial existência de cavidades naturais?</FormLabel>
+              <FormControl><BooleanRadio value={field.value} onChange={field.onChange} /></FormControl>
+            </FormItem>
+          )}
+        />
+        {form.watch('listagemC.legislacaoMunicipal.interfereCavidades') && (
+          <FormField control={form.control} name="listagemC.legislacaoMunicipal.descricaoCavidades" render={({ field }) => (<FormItem><FormLabel>Descrever interferência</FormLabel><FormControl><Textarea rows={2} {...field} /></FormControl></FormItem>)} />
+        )}
+        <FormField
+          control={form.control}
+          name="listagemC.legislacaoMunicipal.interfereInfraestrutura"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Interfere com infraestrutura básica e social existente?</FormLabel>
+              <FormControl><BooleanRadio value={field.value} onChange={field.onChange} /></FormControl>
+            </FormItem>
+          )}
+        />
+        {form.watch('listagemC.legislacaoMunicipal.interfereInfraestrutura') && (
+          <FormField control={form.control} name="listagemC.legislacaoMunicipal.descricaoInfraestrutura" render={({ field }) => (<FormItem><FormLabel>Descrever interferência</FormLabel><FormControl><Textarea rows={2} {...field} /></FormControl></FormItem>)} />
+        )}
+        <FormDescription>Planta georreferenciada: Anexo XXII.</FormDescription>
       </div>
-<FormListagemCEspecifico form={form} />
+
+      <FormListagemCModulo4Complemento form={form} />
+
+      {hideEspecifico ? slotEspecifico : <FormListagemCEspecifico form={form} />}
 
       {faseLicenciamento === 'LO' || faseLicenciamento === 'LOC' ? (
         <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">

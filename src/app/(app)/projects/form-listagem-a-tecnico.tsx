@@ -22,8 +22,17 @@ import {
   TextField,
 } from './form-listagem-a-helpers';
 
+export type FormListagemATecnicoParte = 'completo' | '27-36' | '37-53' | '57-59';
+
 interface FormListagemATecnicoProps {
   form: any;
+  /** Permite reutilizar blocos do TR em fichas específicas (ex.: lavra subterrânea). */
+  parte?: FormListagemATecnicoParte;
+}
+
+function incluiParte(parte: FormListagemATecnicoParte, bloco: FormListagemATecnicoParte): boolean {
+  if (parte === 'completo') return true;
+  return parte === bloco;
 }
 
 const etapasTratamentoAgua = [
@@ -332,7 +341,7 @@ function EmissaoMatrix({
   );
 }
 
-export function FormListagemATecnico({ form }: FormListagemATecnicoProps) {
+export function FormListagemATecnico({ form, parte = 'completo' }: FormListagemATecnicoProps) {
   const utilizaEnergia = form.watch('listagemA.energetico.utilizaEnergia');
   const usaGeracaoDiesel = form.watch('listagemA.energetico.tipos')?.includes('geracao_diesel');
   const usaRedeEletrica = form.watch('listagemA.energetico.tipos')?.includes('rede_eletrica');
@@ -371,8 +380,14 @@ export function FormListagemATecnico({ form }: FormListagemATecnicoProps) {
     name: 'listagemA.caracteristicasEfluenteBruto.outrosParametros',
   });
 
+  const mostrar2736 = incluiParte(parte, '27-36');
+  const mostrar3753 = incluiParte(parte, '37-53');
+  const mostrar5759 = incluiParte(parte, '57-59');
+
   return (
     <div className="space-y-6">
+      {mostrar2736 ? (
+      <>
       {/* 27 */}
       <SectionCard title="27. ENERGÉTICO">
         <FormField
@@ -698,7 +713,11 @@ export function FormListagemATecnico({ form }: FormListagemATecnicoProps) {
           </div>
         )}
       </SectionCard>
+      </>
+      ) : null}
 
+      {mostrar3753 ? (
+      <>
       {/* 37 */}
       <SectionCard title="37. TRATAMENTO DE ÁGUA INDUSTRIAL DAS UNIDADES AUXILIARES DA LAVRA">
         <FormField
@@ -1287,7 +1306,11 @@ export function FormListagemATecnico({ form }: FormListagemATecnicoProps) {
         </Table>
         <TextField form={form} name="listagemA.residuosSolidos.outrosEspecificar" label="Outros resíduos – especificar" />
       </SectionCard>
+      </>
+      ) : null}
 
+      {mostrar5759 ? (
+      <>
       {/* 57 */}
       <SectionCard title="57. QUALIDADE DAS ÁGUAS SUBTERRÂNEAS">
         <FormField
@@ -1448,6 +1471,8 @@ export function FormListagemATecnico({ form }: FormListagemATecnicoProps) {
           Atenção: em caso de aquisição de terreno ou instalação industrial em operação ou desativada, recomenda-se levantamento prévio de passivos ambientais.
         </p>
       </SectionCard>
+      </>
+      ) : null}
     </div>
   );
 }

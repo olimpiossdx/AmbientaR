@@ -20,6 +20,10 @@ import { FormListagemBEspecifico } from './form-listagem-b-especifico';
 
 interface FormListagemBComumProps {
   form: any;
+  /** Oculta o bloco técnico padrão (processos + ambiental) — usar com slotEspecifico */
+  hideEspecifico?: boolean;
+  /** Bloco técnico substituto (ficha específica por atividade) */
+  slotEspecifico?: React.ReactNode;
 }
 
 const datums = ['SAD-69', 'WGS-84', 'Córrego Alegre'] as const;
@@ -57,7 +61,7 @@ function BooleanRadio({
   );
 }
 
-export function FormListagemBPrincipal({ form }: FormListagemBComumProps) {
+export function FormListagemBPrincipal({ form, hideEspecifico, slotEspecifico }: FormListagemBComumProps) {
   const coordinateFormat = form.watch('geographicLocation.format');
   const faseLicenciamento = form.watch('listagemB.regularizacaoAmbiental.fase');
   const isAmpliacao = form.watch('listagemB.regularizacaoAmbiental.ampliacaoEmpreendimentoLicenciado');
@@ -526,7 +530,8 @@ export function FormListagemBPrincipal({ form }: FormListagemBComumProps) {
           )}
         />
       </div>
-      <FormListagemBEspecifico form={form} />
+      {slotEspecifico}
+      {!hideEspecifico && !slotEspecifico ? <FormListagemBEspecifico form={form} /> : null}
 
       {faseLicenciamento === 'LO' || faseLicenciamento === 'LOC' ? (
         <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">

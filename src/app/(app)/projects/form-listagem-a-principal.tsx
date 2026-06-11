@@ -20,6 +20,10 @@ import { FormListagemATecnico } from './form-listagem-a-tecnico';
 
 interface FormListagemAProps {
   form: any;
+  /** Oculta o bloco técnico padrão (barragem/desmonte) — usado por fichas específicas. */
+  hideTecnico?: boolean;
+  /** Conteúdo inserido após o item 26 e antes do bloco técnico. */
+  slotAntesTecnico?: React.ReactNode;
 }
 
 const datums = ['SAD-69', 'WGS-84', 'Córrego Alegre'] as const;
@@ -57,7 +61,7 @@ function BooleanRadio({
   );
 }
 
-export function FormListagemAPrincipal({ form }: FormListagemAProps) {
+export function FormListagemAPrincipal({ form, hideTecnico, slotAntesTecnico }: FormListagemAProps) {
   const coordinateFormat = form.watch('geographicLocation.format');
   const faseLicenciamento = form.watch('listagemA.regularizacaoAmbiental.fase');
   const isAmpliacao = form.watch('listagemA.regularizacaoAmbiental.ampliacaoEmpreendimentoLicenciado');
@@ -568,7 +572,9 @@ export function FormListagemAPrincipal({ form }: FormListagemAProps) {
         <FormField control={form.control} name="listagemA.acessos.caracterizacao" render={({ field }) => (<FormItem><FormLabel>Caracterização dos acessos</FormLabel><FormControl><Textarea placeholder="ID acesso, extensão, pavimentação, controle de emissões e erosões..." {...field} /></FormControl></FormItem>)} />
       </div>
 
-      <FormListagemATecnico form={form} />
+      {slotAntesTecnico}
+
+      {!hideTecnico ? <FormListagemATecnico form={form} /> : null}
 
       {faseLicenciamento === 'LO' || faseLicenciamento === 'LOC' ? (
         <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">

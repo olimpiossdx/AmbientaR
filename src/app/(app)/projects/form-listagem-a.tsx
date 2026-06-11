@@ -1,6 +1,8 @@
 'use client';
 
 import { FormListagemAPrincipal } from './form-listagem-a-principal';
+import { FormListagemALavraSubterranea } from './form-listagem-a-lavra-subterranea';
+import { FormListagemARochasOrnamentais } from './form-listagem-a-rochas-ornamentais';
 import { FormListagemAGeral } from './form-listagem-a-geral';
 import { ListagemFormularioTipoCard } from './listagem-formulario-tipo-card';
 import { useListagemFormularioTipo } from './use-listagem-formulario-tipo';
@@ -23,9 +25,17 @@ export function FormListagemA({ form }: { form: any }) {
         defaultTipo={LISTAGEM_A_FORM_CONFIG.defaultTipo}
         currentTipo={tipo}
         onTipoChange={setFormularioTipo}
-        description="Atividades minerárias com formulário completo usam a ficha principal. Demais atividades da Listagem A usam o formulário geral até haver anexo específico."
+        description="Lavra subterrânea (A-01-01-*) e rochas ornamentais (A-02-06-2 e correlatos) têm fichas específicas. Demais atividades minerárias usam o formulário principal ou o geral."
       />
-      {tipo === 'geral' ? <FormListagemAGeral form={form} /> : <FormListagemAPrincipal form={form} />}
+      {tipo === 'geral' ? (
+        <FormListagemAGeral form={form} />
+      ) : tipo === 'lavra_subterranea' ? (
+        <FormListagemALavraSubterranea form={form} />
+      ) : tipo === 'rochas_ornamentais' ? (
+        <FormListagemARochasOrnamentais form={form} />
+      ) : (
+        <FormListagemAPrincipal form={form} />
+      )}
     </div>
   );
 }

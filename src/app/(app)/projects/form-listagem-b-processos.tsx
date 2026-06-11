@@ -115,6 +115,7 @@ function MaquinasSetor({
 }
 
 export function FormListagemBProcessos({ form }: { form: any }) {
+  const recirculaAgua = form.watch('listagemB.usoAguaFundicao.recirculaAgua');
   const { fields: linhasProducao, append: appendLinha, remove: removeLinha } = useFieldArray({
     control: form.control,
     name: 'listagemB.linhaProducao.itens',
@@ -122,7 +123,25 @@ export function FormListagemBProcessos({ form }: { form: any }) {
 
   return (
     <div className="space-y-6">
-      <SectionCard title="Uso de água e efluentes (fundição)">
+      <SectionCard title="33. Uso de água">
+        <FormField
+          control={form.control}
+          name="listagemB.usoAguaFundicao.recirculaAgua"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>O empreendimento recircula a água utilizada?</FormLabel>
+              <FormControl>
+                <BooleanRadio value={field.value} onChange={field.onChange} />
+              </FormControl>
+            </FormItem>
+          )}
+        />
+        {recirculaAgua && (
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <NumField form={form} name="listagemB.usoAguaFundicao.volumeRecirculadoM3Mes" label="Volume recirculado (m³/mês)" />
+            <NumField form={form} name="listagemB.usoAguaFundicao.percentualRecirculado" label="Porcentagem de água recirculada (%)" />
+          </div>
+        )}
         <FormDescription>Consumo por finalidade (m³/dia) — consumo diário máximo e médio</FormDescription>
         <Table>
           <TableHeader>

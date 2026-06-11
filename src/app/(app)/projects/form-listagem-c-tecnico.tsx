@@ -91,7 +91,7 @@ const materiasPrimas = [
   { id: 'cola', label: 'Cola' },
   { id: 'camara_ar', label: 'Câmara de ar' },
   { id: 'sacos_ar', label: 'Sacos de ar' },
-  { id: 'banca_premoldada', label: 'Banca pré-moldada' },
+  { id: 'banda_premoldada', label: 'Banda pré-moldada' },
   { id: 'machoes', label: 'Machões' },
   { id: 'outros', label: 'Outros' },
 ];
@@ -182,6 +182,7 @@ export function FormListagemCTecnico({ form }: { form: any }) {
   const geraEfluenteIndustrial = form.watch('listagemC.efluentesIndustriais.gera');
   const haPassivo = form.watch('listagemC.passivosAmbientais.existePassivo');
   const possuiCaldeira = form.watch('listagemC.equipamentosApoio.caldeira.ativa');
+  const combustivelCaldeira = form.watch('listagemC.equipamentosApoio.caldeira.combustivel');
   const possuiPosto = form.watch('listagemC.equipamentosApoio.postoAbastecimento.ativa');
 
   const { fields: turnosFields, append: appendTurno, remove: removeTurno } = useFieldArray({
@@ -199,6 +200,10 @@ export function FormListagemCTecnico({ form }: { form: any }) {
   const { fields: outrosEquipamentos, append: appendOutroEquip, remove: removeOutroEquip } = useFieldArray({
     control: form.control,
     name: 'listagemC.equipamentosOutros.linhasExtras',
+  });
+  const { fields: outrosResiduos, append: appendResiduo, remove: removeResiduo } = useFieldArray({
+    control: form.control,
+    name: 'listagemC.residuosSolidos.linhasExtras',
   });
 
   return (
@@ -379,7 +384,62 @@ export function FormListagemCTecnico({ form }: { form: any }) {
                 { id: 'outro', label: 'Outro combustível' },
               ]}
             />
-            <TextField form={form} name="listagemC.equipamentosApoio.caldeira.combustivelDetalhes" label="Detalhes do combustível e armazenamento" />
+            {combustivelCaldeira?.includes('madeira') && (
+              <div className="grid grid-cols-1 gap-3 rounded-md border p-3 md:grid-cols-2">
+                <NumField form={form} name="listagemC.equipamentosApoio.caldeira.madeiraVolumeM3Mes" label="Volume madeira (m³/mês)" />
+                <CheckboxOptions
+                  form={form}
+                  name="listagemC.equipamentosApoio.caldeira.madeiraOrigem"
+                  options={[
+                    { id: 'floresta_nativa', label: 'Floresta nativa' },
+                    { id: 'reflorestamento', label: 'Reflorestamento' },
+                  ]}
+                />
+                <FormField
+                  control={form.control}
+                  name="listagemC.equipamentosApoio.caldeira.madeiraCertificadoIef"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Certificado IEF?</FormLabel>
+                      <FormControl>
+                        <BooleanRadio value={field.value} onChange={field.onChange} />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+                <TextField form={form} name="listagemC.equipamentosApoio.caldeira.madeiraNumeroIef" label="Nº certificado IEF" />
+              </div>
+            )}
+            {combustivelCaldeira?.includes('oleo') && (
+              <div className="grid grid-cols-1 gap-3 rounded-md border p-3 md:grid-cols-2">
+                <CheckboxOptions
+                  form={form}
+                  name="listagemC.equipamentosApoio.caldeira.oleoTipos"
+                  options={[
+                    { id: 'bpf_1a', label: 'BPF 1A' },
+                    { id: 'bpf_2a', label: 'BPF 2A' },
+                    { id: 'diesel', label: 'Diesel' },
+                    { id: 'biodiesel', label: 'Biodiesel' },
+                    { id: 'xisto', label: 'Xisto' },
+                  ]}
+                />
+                <NumField form={form} name="listagemC.equipamentosApoio.caldeira.oleoVolumeM3Mes" label="Volume óleo (m³/mês)" />
+                <NumField form={form} name="listagemC.equipamentosApoio.caldeira.oleoTanqueM3" label="Volume tanque (m³)" />
+                <FormField
+                  control={form.control}
+                  name="listagemC.equipamentosApoio.caldeira.oleoBaciaContencao"
+                  render={({ field }) => (
+                    <FormItem className="md:col-span-2">
+                      <FormLabel>Tanque com bacia de contenção (NBR 17505/2007)?</FormLabel>
+                      <FormControl>
+                        <BooleanRadio value={field.value} onChange={field.onChange} />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+              </div>
+            )}
+            <TextField form={form} name="listagemC.equipamentosApoio.caldeira.combustivelDetalhes" label="Outros detalhes de combustível e armazenamento" />
           </div>
         )}
 
@@ -473,6 +533,14 @@ export function FormListagemCTecnico({ form }: { form: any }) {
             { key: 'producaoMedia', label: 'Produção mensal média', type: 'number' },
           ]}
         />
+      </SectionCard>
+
+      <SectionCard title="28. Fluxograma do processo">
+        <FormDescription>
+          Apresentar no Anexo XXX o fluxograma com entradas de matérias-primas, reagentes, insumos, água e saídas de
+          efluentes líquidos, emissões atmosféricas e resíduos.
+        </FormDescription>
+        <TextField form={form} name="listagemC.fluxograma.referenciaAnexo" label="Referência / observações ao anexo" />
       </SectionCard>
 
       <SectionCard title="29. Uso de água">
@@ -722,6 +790,29 @@ export function FormListagemCTecnico({ form }: { form: any }) {
             { id: 'outro', label: 'Outro' },
           ]}
         />
+        <p className="mt-4 text-sm font-medium">Lavagem de pisos e equipamentos</p>
+        <CheckboxOptions
+          form={form}
+          name="listagemC.destinoEfluentes.lavagemPisos"
+          options={[
+            { id: 'reutilizacao', label: 'Reutilização no processo' },
+            { id: 'tratamento_conjunto', label: 'Tratamento conjunto com efluente industrial' },
+            { id: 'outro', label: 'Outro' },
+          ]}
+        />
+        <FormField
+          control={form.control}
+          name="listagemC.destinoEfluentes.municipioTrataEsgoto"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>O município possui tratamento de esgotos sanitários?</FormLabel>
+              <FormControl>
+                <BooleanRadio value={field.value} onChange={field.onChange} />
+              </FormControl>
+            </FormItem>
+          )}
+        />
+        <NumField form={form} name="listagemC.destinoEfluentes.percentualEsgotoTratado" label="Percentual de esgoto tratado (%)" />
       </SectionCard>
 
       <SectionCard title="33. Tratamento do efluente atmosférico">
@@ -758,6 +849,22 @@ export function FormListagemCTecnico({ form }: { form: any }) {
             { key: 'localAcondicionamento', label: 'Local de acondicionamento' },
           ]}
         />
+        {outrosResiduos.map((item, index) => (
+          <div key={item.id} className="mt-2 grid grid-cols-1 gap-2 rounded-md border p-2 md:grid-cols-5">
+            <TextField form={form} name={`listagemC.residuosSolidos.linhasExtras.${index}.nome`} label="Resíduo" />
+            <TextField form={form} name={`listagemC.residuosSolidos.linhasExtras.${index}.equipamentoGerador`} label="Gerador" />
+            <TextField form={form} name={`listagemC.residuosSolidos.linhasExtras.${index}.classeResiduo`} label="Classe" />
+            <TextField form={form} name={`listagemC.residuosSolidos.linhasExtras.${index}.taxaMaximaGeracao`} label="Taxa máx." />
+            <div className="flex items-end justify-end">
+              <Button type="button" variant="outline" size="sm" onClick={() => removeResiduo(index)}>
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        ))}
+        <Button type="button" variant="outline" className="mt-2" onClick={() => appendResiduo({ nome: '' })}>
+          <PlusCircle className="mr-2 h-4 w-4" />Adicionar resíduo
+        </Button>
       </SectionCard>
 
       <SectionCard title="35. Documentação junto ao Corpo de Bombeiros">
