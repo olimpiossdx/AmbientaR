@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { z } from "zod";
-import { useForm } from "react-hook-form";
+import { useForm, type Control } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import {
@@ -59,6 +59,7 @@ import {
   buildCpfCnpjVariants,
   normalizeDocumentDigits,
 } from "@/lib/document-lookup";
+import { MtrIntegracaoFields, type MtrIntegracaoFormValues } from "@/components/empreendedores/mtr-integracao-fields";
 
 const entityTypes = [
   { id: "Pessoa Física", label: "Pessoa Física" },
@@ -110,6 +111,12 @@ const formSchema = z.object({
     }
     return [];
   }, z.array(z.string())),
+  mtrPessoaCodigo: z.string().optional(),
+  mtrUsuarioCpf: z.string().optional(),
+  mtrSenha: z.string().optional(),
+  mtrAutoSyncEnabled: z.boolean().optional(),
+  mtrAutoBaixarPdf: z.boolean().optional(),
+  mtrAutoSyncIntervalHours: z.string().optional(),
 });
 
 type EmpreendedorFormValues = z.infer<typeof formSchema>;
@@ -264,6 +271,18 @@ export function EmpreendedorForm({
       cep: currentItem?.cep || "",
       userId: currentItem?.userId || "",
       representativeUserIds: currentItem?.approvedUserIds || [],
+      mtrPessoaCodigo:
+        currentItem?.mtrIntegracao?.pessoaCodigo != null
+          ? String(currentItem.mtrIntegracao.pessoaCodigo)
+          : "",
+      mtrUsuarioCpf: currentItem?.mtrIntegracao?.usuarioCpf || "",
+      mtrSenha: "",
+      mtrAutoSyncEnabled: currentItem?.mtrIntegracao?.autoSyncEnabled ?? false,
+      mtrAutoBaixarPdf: currentItem?.mtrIntegracao?.autoBaixarPdf ?? false,
+      mtrAutoSyncIntervalHours:
+        currentItem?.mtrIntegracao?.autoSyncIntervalHours != null
+          ? String(currentItem.mtrIntegracao.autoSyncIntervalHours)
+          : "24",
     },
   });
 
@@ -711,10 +730,51 @@ export function EmpreendedorForm({
       return;
     }
 
-    const { representativeUserIds, ...baseValues } = values;
+    const {
+      representativeUserIds,
+      mtrPessoaCodigo,
+      mtrUsuarioCpf,
+      mtrSenha,
+      mtrAutoSyncEnabled,
+      mtrAutoBaixarPdf,
+      mtrAutoSyncIntervalHours,
+      ...baseValues
+    } = values;
     const safeRepresentativeUserIds = Array.isArray(representativeUserIds)
       ? representativeUserIds
       : [];
+
+    const mtrIntegracao: Record<string, unknown> = {
+      ...(currentItem?.mtrIntegracao ?? {}),
+    };
+    const pessoaCodigo = mtrPessoaCodigo?.trim()
+      ? Number(mtrPessoaCodigo.trim())
+      : undefined;
+    if (pessoaCodigo && !Number.isNaN(pessoaCodigo)) {
+      mtrIntegracao.pessoaCodigo = pessoaCodigo;
+    }
+    if (mtrUsuarioCpf?.trim()) {
+      mtrIntegracao.usuarioCpf = mtrUsuarioCpf.replace(/\D/g, "");
+    }
+    if (mtrSenha?.trim()) {
+      mtrIntegracao.senha = mtrSenha;
+    } else if (currentItem?.mtrIntegracao?.senha) {
+      mtrIntegracao.senha = currentItem.mtrIntegracao.senha;
+    }
+    mtrIntegracao.autoSyncEnabled = mtrAutoSyncEnabled === true;
+    mtrIntegracao.autoBaixarPdf = mtrAutoBaixarPdf === true;
+    const intervalHours = mtrAutoSyncIntervalHours?.trim()
+      ? Number(mtrAutoSyncIntervalHours.trim())
+      : 24;
+    if (!Number.isNaN(intervalHours) && intervalHours >= 6) {
+      mtrIntegracao.autoSyncIntervalHours = Math.min(168, intervalHours);
+    }
+
+    const hasMtrFields =
+      mtrIntegracao.pessoaCodigo ||
+      mtrIntegracao.usuarioCpf ||
+      mtrIntegracao.senha;
+
     const dataToSave = {
       ...baseValues,
       dataNascimento: values.dataNascimento
@@ -725,6 +785,9 @@ export function EmpreendedorForm({
         currentItem?.userId ||
         (isClientePortalRole(user?.role) ? user?.id ?? null : null),
       approvedUserIds: safeRepresentativeUserIds,
+      ...(hasMtrFields || currentItem?.mtrIntegracao
+        ? { mtrIntegracao }
+        : {}),
     };
 
     try {
@@ -1069,6 +1132,19 @@ export function EmpreendedorForm({
               />
             </div>
           </div>
+
+          <MtrIntegracaoFields
+            control={form.control as unknown as Control<MtrIntegracaoFormValues>}
+            showLastSync={
+              currentItem?.mtrIntegracao
+                ? {
+                    lastSyncAt: currentItem.mtrIntegracao.lastSyncAt,
+                    lastSyncSummary: currentItem.mtrIntegracao.lastSyncSummary,
+                    lastSyncError: currentItem.mtrIntegracao.lastSyncError,
+                  }
+                : undefined
+            }
+          />
 
           <div className="space-y-4 rounded-md border p-4">
             <h3 className="text-lg font-medium">Contato e Endereço</h3>

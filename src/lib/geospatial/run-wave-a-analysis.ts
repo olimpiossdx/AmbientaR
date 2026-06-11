@@ -13,9 +13,16 @@ import {
 } from "@/lib/geospatial/influence-areas";
 import { FEDERAL_FONTES } from "@/lib/geospatial/wave-federal-catalog";
 import {
+  federalMapBiomasAlertaLabelFields,
+  fetchFederalWfsForEntry,
+  isFederalWfsEntry,
+  isMapBiomasMataAtlanticaProxyResult,
+} from "@/lib/geospatial/federal-wfs-fetch";
+import {
   enrichEmbargosLayerSummary,
   enrichMapBiomasAlertaLayerSummary,
   enrichProdesLayerSummary,
+  enrichProdesMataAtlanticaProxySummary,
   federalLayerUnavailableSummary,
   isEmbargosLayer,
   isMapBiomasAlertaLayer,
@@ -61,8 +68,12 @@ function geometryKindFromFeatures(
 function layerUnavailableSummary(entry: WaveACatalogEntry, wfs: {
   noFeaturesInExtent?: boolean;
   upstreamWfsDegraded?: boolean;
+  skippedOutsideExtent?: boolean;
   ok: boolean;
 }): string {
+  if (wfs.skippedOutsideExtent) {
+    return "Camada não aplicável ao recorte geográfico do perímetro (fora da Amazônia Legal).";
+  }
   if (wfs.upstreamWfsDegraded) {
     return "WFS INPE temporariamente degradado (bug GeoServer uid). Consulte mapas em terrabrasilis.dpi.inpe.br.";
   }
@@ -143,25 +154,37 @@ async function analyzeCatalogLayer(params: {
   const expandedBbox = expandBbox(params.bbox, margin);
 
   const usesArcgis = Boolean(params.entry.arcgisLayerUrl);
+  const usesFederalFetch = isFederalWfsEntry(params.entry);
   const wfs = usesArcgis
     ? await fetchArcGisFeaturesInBbox({
         layerUrl: params.entry.arcgisLayerUrl!,
         bbox: expandedBbox,
         maxFeatures: params.entry.maxWfsFeatures,
       })
-    : await fetchWfsFeaturesInBbox({
-        baseUrls: params.entry.wfsBaseUrls,
-        typeNames: params.entry.typeNames,
-        bbox: expandedBbox,
-        maxFeatures: params.entry.maxWfsFeatures,
-      });
+    : usesFederalFetch
+      ? await fetchFederalWfsForEntry(params.entry, expandedBbox)
+      : await fetchWfsFeaturesInBbox({
+          baseUrls: params.entry.wfsBaseUrls,
+          typeNames: params.entry.typeNames,
+          bbox: expandedBbox,
+          maxFeatures: params.entry.maxWfsFeatures,
+        });
+  const proxiedMa = isMapBiomasMataAtlanticaProxyResult(params.entry.layerId, wfs);
+  const labelFields = proxiedMa
+    ? federalMapBiomasAlertaLabelFields()
+    : params.entry.labelFields;
   const queryMethod = usesArcgis
     ? "ArcGIS REST Query (bbox)"
-    : "WFS GetFeature (bbox)";
+    : proxiedMa
+      ? "WFS MapBiomas Alerta (proxy MA — PRODES indisponível)"
+      : "WFS GetFeature (bbox)";
 
   if (!wfs.ok || wfs.features.length === 0) {
     const status =
-      wfs.ok || wfs.noFeaturesInExtent || wfs.upstreamWfsDegraded
+      wfs.ok ||
+      wfs.noFeaturesInExtent ||
+      wfs.upstreamWfsDegraded ||
+      wfs.skippedOutsideExtent
         ? "partial"
         : "unavailable";
     return {
@@ -173,7 +196,9 @@ async function analyzeCatalogLayer(params: {
       errorMessage: wfs.noFeaturesInExtent ? undefined : wfs.error,
       source: wfs.baseUrl
         ? {
-            name: wfsSourceLabel(wfs.baseUrl, params.entry),
+            name: proxiedMa
+              ? "MapBiomas Alerta (proxy PRODES MA)"
+              : wfsSourceLabel(wfs.baseUrl, params.entry),
             url: wfs.baseUrl,
             layerName: wfs.typeName ?? params.entry.typeNames[0],
             queriedAtUtc,
@@ -189,19 +214,19 @@ async function analyzeCatalogLayer(params: {
       ? aggregateLineLayerStats({
           perimeter: params.perimeter,
           features: wfs.features,
-          labelFields: params.entry.labelFields,
+          labelFields,
         })
       : geomKind === "point"
         ? aggregatePointLayerStats({
             perimeter: params.perimeter,
             features: wfs.features,
-            labelFields: params.entry.labelFields,
+            labelFields,
           })
         : aggregatePolygonLayerStats({
             perimeter: params.perimeter,
             perimeterAreaHa: params.perimeterAreaHa,
             features: wfs.features,
-            labelFields: params.entry.labelFields,
+            labelFields,
           });
 
   const status = stats.length > 0 ? "ok" : "partial";
@@ -228,7 +253,9 @@ async function analyzeCatalogLayer(params: {
     if (isEmbargosLayer(params.entry.layerId)) {
       summary = enrichEmbargosLayerSummary(stats, summary);
     }
-    if (isProdesLayer(params.entry.layerId)) {
+    if (proxiedMa) {
+      summary = enrichProdesMataAtlanticaProxySummary(stats, summary);
+    } else if (isProdesLayer(params.entry.layerId)) {
       summary = enrichProdesLayerSummary(stats, summary);
     }
     if (isMapBiomasAlertaLayer(params.entry.layerId)) {
@@ -243,7 +270,9 @@ async function analyzeCatalogLayer(params: {
     stats,
     summary,
     source: {
-      name: wfsSourceLabel(wfs.baseUrl, params.entry),
+      name: proxiedMa
+        ? "MapBiomas Alerta (proxy PRODES MA)"
+        : wfsSourceLabel(wfs.baseUrl, params.entry),
       url: wfs.baseUrl ?? params.entry.wfsBaseUrls[0],
       layerName: wfs.typeName ?? params.entry.typeNames[0],
       queriedAtUtc,
@@ -254,10 +283,20 @@ async function analyzeCatalogLayer(params: {
 
 export const WAVE_ALL_LAYER_COUNT = GEO_ALL_LAYER_COUNT;
 
+export type WaveAAnalysisOptions = {
+  /** Se definido, consulta apenas estas camadas (por layerId). */
+  layerIds?: string[];
+};
+
 function waveLayersForAnalysis(
   bbox: [number, number, number, number],
+  options?: WaveAAnalysisOptions,
 ): WaveACatalogEntry[] {
-  return resolveAllLayersForBbox(bbox);
+  const all = resolveAllLayersForBbox(bbox);
+  const filter = options?.layerIds;
+  if (!filter?.length) return all;
+  const wanted = new Set(filter);
+  return all.filter((e) => wanted.has(e.layerId));
 }
 
 const WAVE_A_BATCH_SIZE = 8;
@@ -293,6 +332,7 @@ export async function runWaveAAnalysis(
   input: PerimeterParseInput,
   influenceConfig: GeoInfluenceAreaConfig = DEFAULT_INFLUENCE_CONFIG,
   onLayerComplete?: (progress: WaveAAnalysisProgress) => void,
+  options?: WaveAAnalysisOptions,
 ): Promise<WaveAAnalysisResult> {
   const parsed = await parsePerimeterPolygon(input);
   if (!parsed) {
@@ -302,7 +342,7 @@ export async function runWaveAAnalysis(
   }
 
   const influenceAreas = await resolveInfluenceAreas(input, influenceConfig);
-  const catalog = waveLayersForAnalysis(parsed.bbox);
+  const catalog = waveLayersForAnalysis(parsed.bbox, options);
 
   const layerResults = await mapInBatches(
     catalog,

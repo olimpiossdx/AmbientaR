@@ -15,6 +15,7 @@ type BodyShape = {
   dataType?: PerimeterParseInput["dataType"];
   data?: string;
   influenceConfig?: GeoInfluenceAreaConfig;
+  layerIds?: string[];
 };
 
 export async function POST(req: Request) {
@@ -62,6 +63,7 @@ export async function POST(req: Request) {
           ({ layer, index, total }) => {
             send({ type: "layer", layer, index, total });
           },
+          body.layerIds?.length ? { layerIds: body.layerIds } : undefined,
         );
 
         if (input.dataType !== "car") {

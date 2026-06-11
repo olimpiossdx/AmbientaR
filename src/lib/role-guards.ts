@@ -245,6 +245,9 @@ export function canManageAutoInfracaoDefesa(
  * Quem pode vincular CAR no projeto (recibo PDF, geometria, nº recibo).
  * Cliente Autônomo: nos próprios empreendimentos. Cliente Gestão e representante: só consulta na UI.
  */
+/** Documentos CTF/IBAMA (cartão e certificado de regularidade). */
+export { canManageCtfIbamaDocs } from "@/lib/ctf-ibama-utils";
+
 export function canManageCarUploadsOnProject(
   role: UserRole | undefined | null,
 ): boolean {

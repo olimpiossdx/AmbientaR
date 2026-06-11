@@ -1,21 +1,12 @@
 "use client";
 
 import * as React from "react";
-import { GeoJSON, MapContainer, TileLayer, FeatureGroup, useMap } from "react-leaflet";
+import { GeoJSON, TileLayer, FeatureGroup, useMap } from "react-leaflet";
 import { EditControl } from "react-leaflet-draw";
 import L from "leaflet";
-import "leaflet/dist/leaflet.css";
 import "leaflet-draw/dist/leaflet.draw.css";
+import { LeafletMapShell } from "./leaflet-map-shell";
 import type { StudyAreaGeoJSON } from "./study-area-map";
-
-// @ts-expect-error Leaflet default icon workaround
-delete L.Icon.Default.prototype._getIconUrl;
-
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: "/leaflet/marker-icon-2x.png",
-  iconUrl: "/leaflet/marker-icon.png",
-  shadowUrl: "/leaflet/marker-shadow.png",
-});
 
 const MapUpdater = ({ polygon }: { polygon: StudyAreaGeoJSON }) => {
   const map = useMap();
@@ -60,10 +51,9 @@ export function McaPerimeterDrawMap({ polygon, onPolygonChange }: McaPerimeterDr
   };
 
   return (
-    <MapContainer
+    <LeafletMapShell
       center={[-18.5122, -44.555]}
       zoom={5}
-      style={{ height: "100%", width: "100%" }}
       scrollWheelZoom
     >
       <TileLayer
@@ -100,6 +90,6 @@ export function McaPerimeterDrawMap({ polygon, onPolygonChange }: McaPerimeterDr
           </>
         ) : null}
       </FeatureGroup>
-    </MapContainer>
+    </LeafletMapShell>
   );
 }

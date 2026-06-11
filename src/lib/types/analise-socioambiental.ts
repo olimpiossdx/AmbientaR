@@ -88,6 +88,13 @@ export type AnaliseSocioambiental = {
   detalhesAnalise: DetalheAnalise[];
   /** URL do PDF anexo, se importado */
   pdfUrl?: string;
+  /** Blocos do pacote automatizado (ids de report-blocks-catalog). */
+  pacoteBlocos?: string[];
+  /** Preset de bioma usado na execução automatizada. */
+  biomaPreset?: string;
+  /** Resumo do parecer IA, se gerado. */
+  parecerIaResumo?: string;
+  parecerIaProvider?: string;
   createdAt?: unknown;
   updatedAt?: unknown;
   createdBy?: string;

@@ -46,6 +46,14 @@ export type Empreendedor = {
   sourceClientId?: string;
   dataNascimento?: string;
   ctfIbama?: string;
+  /** Cartão de Cadastro CTF/IBAMA (PDF ou imagem). */
+  ctfIbamaCartaoUrl?: string;
+  ctfIbamaCartaoUpdatedAt?: string;
+  /** Certificado de Regularidade CTF/IBAMA. */
+  ctfIbamaCertificadoUrl?: string;
+  /** Validade do certificado (ISO yyyy-MM-dd). */
+  ctfIbamaCertificadoValidade?: string;
+  ctfIbamaCertificadoUpdatedAt?: string;
   /** UID do titular que criou/possui este empreendedor base. */
   ownerUserId?: string;
   titularDocument?: string;
@@ -53,6 +61,21 @@ export type Empreendedor = {
   cadastroIncompleto?: boolean;
   onboardingStep?: string;
   cnpjLookupStatus?: "not_applicable" | "success" | "failed" | "not_found";
+  /** Credenciais e preferências MTR-MG (sync automático / PDF). */
+  mtrIntegracao?: {
+    pessoaCodigo?: number;
+    usuarioCpf?: string;
+    senha?: string;
+    /** Busca periódica CDF/manifestos no WebService. */
+    autoSyncEnabled?: boolean;
+    /** Intervalo mínimo entre syncs automáticos (horas; padrão 24). */
+    autoSyncIntervalHours?: number;
+    /** Após sync, baixa PDF do MTR para novos registros (limite por execução). */
+    autoBaixarPdf?: boolean;
+    lastSyncAt?: string;
+    lastSyncSummary?: string;
+    lastSyncError?: string;
+  };
 };
 
 export type CompanyBankAccountType = 'corrente' | 'poupanca';
@@ -149,6 +172,11 @@ export type Client = {
   estadoCivil?: string;
   dataNascimento?: string;
   ctfIbama?: string;
+  ctfIbamaCartaoUrl?: string;
+  ctfIbamaCartaoUpdatedAt?: string;
+  ctfIbamaCertificadoUrl?: string;
+  ctfIbamaCertificadoValidade?: string;
+  ctfIbamaCertificadoUpdatedAt?: string;
   address?: string;
   numero?: string;
   bairro?: string;
@@ -2088,6 +2116,26 @@ export type FaunaStudy = {
     status?: 'draft' | 'completed';
     createdAt?: any;
     ownerId?: string;
+};
+
+export type MtrDeclaracaoTipo = "cdf" | "manifesto" | "declaracao" | "outro";
+export type MtrDeclaracaoSource = "upload" | "api_cdf" | "api_manifesto";
+
+export type MtrDeclaracao = {
+  id: string;
+  empreendedorId: string;
+  titulo: string;
+  tipo: MtrDeclaracaoTipo;
+  source: MtrDeclaracaoSource;
+  fileUrl?: string;
+  /** Código CDF, código de barras do manifesto ou identificador externo. */
+  externalCodigo?: string;
+  periodoInicio?: string;
+  periodoFim?: string;
+  listaMtr?: number[];
+  createdAt?: unknown;
+  syncedAt?: string;
+  ownerId?: string;
 };
 
 export type Inconformidade = {

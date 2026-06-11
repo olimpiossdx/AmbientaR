@@ -63,6 +63,7 @@ import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
 import { formatCepDisplay, formatCpfCnpjDisplay } from "@/lib/masks";
 import { CardSearchInput } from "@/components/card-search-input";
+import { CtfIbamaDetailSection } from "@/components/ctf-ibama/ctf-ibama-detail-section";
 import { resolvePortalAuthUid } from "@/lib/auth-user-id";
 import { buildCpfCnpjVariants } from "@/lib/document-lookup";
 import {
@@ -475,8 +476,7 @@ export default function EmpreendedoresPage() {
                 />
                 <DetailItem label="Tipo" value={itemToView.entityType} />
               </div>
-              <DetailItem label="CTF/IBAMA" value={itemToView.ctfIbama} />
-              <Separator />
+              <CtfIbamaDetailSection entity={itemToView} />
               <h4 className="font-semibold text-foreground">
                 Contato & Endereço
               </h4>

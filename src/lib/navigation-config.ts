@@ -731,7 +731,7 @@ export const allNavItems: NavItem[] = [
       },
       {
         href: "/studies/analise-socioambiental",
-        label: "Análise socioambiental",
+        label: "Análise Socioambiental",
         icon: FileText,
         roles: [
           "admin",

@@ -152,12 +152,11 @@ export const FEDERAL_PRODES_CERRADO_LAYER: WaveACatalogEntry = {
 };
 
 /**
- * Supressão de vegetação — PRODES Mata Atlântica (INPE / TerraBrasilis).
- * WFS degradado upstream (bug GeoServer `uid` em 2026) — análise retorna status partial.
+ * Supressão MA — PRODES (INPE) com fallback MapBiomas Alerta quando WFS INPE degradado.
  */
 export const FEDERAL_PRODES_MATA_ATLANTICA_LAYER: WaveACatalogEntry = {
   layerId: FEDERAL_PRODES_MATA_ATLANTICA_LAYER_ID,
-  title: "Desmatamento PRODES — Mata Atlântica (INPE)",
+  title: "Desmatamento MA — PRODES / MapBiomas Alerta",
   wave: "G",
   geometryKind: "polygon",
   typeNames: ["prodes-mata-atlantica-nb:yearly_deforestation"],

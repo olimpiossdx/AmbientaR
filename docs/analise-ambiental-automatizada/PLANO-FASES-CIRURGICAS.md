@@ -251,7 +251,25 @@ Registar resultado de cada debug em `REGISTRO-TESTES-PRODUCAO.md` (data + políg
 
 ## M1.13 — Mini-mapas / figuras restantes | M1.14 — Aprovação M1
 
-| M1.14 | Reunião: “SIG utilizável?” → assinar gate para M2. |
+| M1.14 | Reunião: “SIG utilizável?” → assinar gate para M2 **e** para macro **L** (Localizador). |
+
+---
+
+# L — Localizador CAR / GPS / coordenadas (após M1.14)
+
+Plano detalhado: [PLANO-LOCALIZADOR-CAR-GPS-SOCIOAMBIENTAL.md](./PLANO-LOCALIZADOR-CAR-GPS-SOCIOAMBIENTAL.md)
+
+| Macro | Objetivo | Gate saída |
+|-------|----------|------------|
+| **L1** | Resolver CAR → geometria (nacional); piloto CAR no pacote socioambiental | REF-01-A T1 |
+| **L2** | GPS + coordenadas no Executar pacote | T8 celular |
+| **L3** | Card confirmação + mobile | T13–T16 |
+| **L4** | Unificar `/analise-ambiental`, licenciamento | — |
+| **L5** | Conecta Gov (pós-MVP) | credenciais |
+
+🚫 **Não iniciar L1.1** sem M1.14 assinado.
+
+Decisões fechadas: D1 bloquear Executar com 0 CAR; D2 pré-selecionar maior interseção; D7 Conecta Gov em L5.
 
 ---
 

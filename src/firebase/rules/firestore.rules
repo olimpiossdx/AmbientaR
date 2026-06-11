@@ -530,6 +530,14 @@ service cloud.firestore {
     }
 
     /**
+     * Declarações / CDF / manifestos MTR por empreendedor (upload ou sync API).
+     * @path /mtrDeclaracoes/{docId}
+     */
+    match /mtrDeclaracoes/{docId} {
+      allow read, write: if isSignedIn();
+    }
+
+    /**
      * @description Allows any authenticated user to manage inventory projects.
      * @path /databases/{database}/documents/inventories/{inventoryId}
      */

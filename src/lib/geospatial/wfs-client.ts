@@ -82,6 +82,10 @@ export type WfsFetchResult = {
   noFeaturesInExtent?: boolean;
   /** Bug conhecido no GeoServer INPE (uid) — WFS degradado, não é falha do catálogo. */
   upstreamWfsDegraded?: boolean;
+  /** Feições MapBiomas Alerta usadas como proxy (ex.: PRODES MA degradado). */
+  proxiedFromMapBiomasAlerta?: boolean;
+  /** Camada ignorada sem chamada WFS (ex.: PRODES AL fora do bioma). */
+  skippedOutsideExtent?: boolean;
 };
 
 const INPE_UID_WFS_BUG = "does not have a property named uid";

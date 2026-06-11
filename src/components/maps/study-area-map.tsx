@@ -1,20 +1,11 @@
 "use client";
 
 import * as React from "react";
-import { MapContainer, TileLayer, FeatureGroup, useMap } from "react-leaflet";
+import { TileLayer, FeatureGroup, useMap } from "react-leaflet";
 import { EditControl } from "react-leaflet-draw";
 import L from "leaflet";
-import "leaflet/dist/leaflet.css";
 import "leaflet-draw/dist/leaflet.draw.css";
-
-// @ts-expect-error Leaflet default icon workaround
-delete L.Icon.Default.prototype._getIconUrl;
-
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: "/leaflet/marker-icon-2x.png",
-  iconUrl: "/leaflet/marker-icon.png",
-  shadowUrl: "/leaflet/marker-shadow.png",
-});
+import { LeafletMapShell } from "./leaflet-map-shell";
 
 export type StudyAreaGeoJSON = {
   type: string;
@@ -63,10 +54,9 @@ export function StudyAreaMap({ polygon, onPolygonChange }: StudyAreaMapProps) {
   };
 
   return (
-    <MapContainer
+    <LeafletMapShell
       center={[-18.5122, -44.555]}
       zoom={5}
-      style={{ height: "100%", width: "100%" }}
       scrollWheelZoom
     >
       <TileLayer
@@ -89,6 +79,6 @@ export function StudyAreaMap({ polygon, onPolygonChange }: StudyAreaMapProps) {
         />
         {polygon ? <MapUpdater polygon={polygon} /> : null}
       </FeatureGroup>
-    </MapContainer>
+    </LeafletMapShell>
   );
 }

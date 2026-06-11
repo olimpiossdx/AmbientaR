@@ -1,21 +1,12 @@
 "use client";
 
 import * as React from "react";
-import { MapContainer, TileLayer, FeatureGroup, GeoJSON, useMap } from "react-leaflet";
+import { TileLayer, FeatureGroup, GeoJSON, useMap } from "react-leaflet";
 import { EditControl } from "react-leaflet-draw";
 import L from "leaflet";
-import "leaflet/dist/leaflet.css";
 import "leaflet-draw/dist/leaflet.draw.css";
 import type { InfluenceDrawTarget } from "@/components/geospatial/geo-influence-areas-panel";
-
-// @ts-expect-error leaflet icon workaround
-delete L.Icon.Default.prototype._getIconUrl;
-
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: "/leaflet/marker-icon-2x.png",
-  iconUrl: "/leaflet/marker-icon.png",
-  shadowUrl: "/leaflet/marker-shadow.png",
-});
+import { LeafletMapShell } from "@/components/maps/leaflet-map-shell";
 
 type GeoJSONLike = {
   type: string;
@@ -131,10 +122,9 @@ const LeafletMap = ({
   const fitPolygons = [adaPolygon, aidPolygon, aiiPolygon].filter(Boolean) as GeoJSONLike[];
 
   return (
-    <MapContainer
+    <LeafletMapShell
       center={[-18.5122, -44.555]}
       zoom={5}
-      style={{ height: "100%", width: "100%" }}
       scrollWheelZoom
     >
       <TileLayer
@@ -164,7 +154,7 @@ const LeafletMap = ({
       </FeatureGroup>
 
       {fitPolygons.length ? <MapUpdater polygons={fitPolygons} /> : null}
-    </MapContainer>
+    </LeafletMapShell>
   );
 };
 

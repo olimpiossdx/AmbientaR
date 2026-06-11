@@ -1,5 +1,6 @@
 import {
   collection,
+  documentId,
   getDocs,
   query,
   where,
@@ -306,6 +307,48 @@ async function runOutorgaExpirationAlerts(
   }
 }
 
+async function runCtfIbamaExpirationAlerts(
+  firestore: Firestore,
+  empreendedorIds: string[],
+  options?: { excludeUserId?: string },
+): Promise<void> {
+  for (const chunk of chunkArray(empreendedorIds, 10)) {
+    const snap = await getDocs(
+      query(collection(firestore, "empreendedores"), where(documentId(), "in", chunk)),
+    );
+    for (const docSnap of snap.docs) {
+      const data = docSnap.data() as {
+        name?: string;
+        ctfIbama?: string;
+        ctfIbamaCertificadoValidade?: string;
+        ctfIbamaCertificadoUrl?: string;
+      };
+      if (!data.ctfIbamaCertificadoUrl?.trim()) continue;
+
+      const dias = daysUntilIsoDate(data.ctfIbamaCertificadoValidade);
+      if (dias === null || dias < 0 || dias > 5 || !isPrazoAlertDay(dias)) continue;
+
+      const recipients = await getRecipientUserIdsForEmpreendedor(
+        firestore,
+        docSnap.id,
+      );
+      await notifyDocumentExpiration(
+        firestore,
+        recipients,
+        {
+          dias,
+          label: "Certificado CTF/IBAMA",
+          permitNumber: data.ctfIbama,
+          link: NOTIFICATION_LINKS.ctfIbama,
+          sourceType: NOTIFICATION_SOURCE.prazo_ctf_ibama,
+          sourceId: `${docSnap.id}_ctf_d${dias}`,
+        },
+        options,
+      );
+    }
+  }
+}
+
 async function runIntervencaoExpirationAlerts(
   firestore: Firestore,
   empreendedorIds: string[],
@@ -365,6 +408,7 @@ export async function runClientPortalDeadlineAlerts(
   await runCondicionanteDeadlineAlerts(firestore, allowedPortalUsers, options);
   await runLicencaExpirationAlerts(firestore, uniqueEmp, options);
   await runOutorgaExpirationAlerts(firestore, uniqueEmp, options);
+  await runCtfIbamaExpirationAlerts(firestore, uniqueEmp, options);
   await runIntervencaoExpirationAlerts(firestore, uniqueEmp, options);
 }
 

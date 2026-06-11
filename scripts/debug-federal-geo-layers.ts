@@ -9,8 +9,8 @@
 import fs from "node:fs";
 import path from "node:path";
 import { expandBbox } from "../src/lib/geospatial/perimeter";
+import { fetchFederalWfsForEntry } from "../src/lib/geospatial/federal-wfs-fetch";
 import { FEDERAL_STATIC_LAYERS } from "../src/lib/geospatial/wave-federal-catalog";
-import { fetchWfsFeaturesInBbox } from "../src/lib/geospatial/wfs-client";
 
 const DEFAULT_FIXTURE = path.join(
   process.cwd(),
@@ -45,7 +45,13 @@ function bboxFromFixture(filePath: string): [number, number, number, number] {
   return [minX, minY, maxX, maxY];
 }
 
-type ProbeStatus = "ok" | "no_features" | "degraded" | "error";
+type ProbeStatus =
+  | "ok"
+  | "ok_proxy"
+  | "no_features"
+  | "skipped"
+  | "degraded"
+  | "error";
 
 async function probeEntry(
   entry: (typeof FEDERAL_WFS_LAYERS)[number],
@@ -56,15 +62,12 @@ async function probeEntry(
     (entry.geometryKind === "point" ? 0.05 : 0.02);
   const queryBbox = expandBbox(bbox, margin);
 
-  const wfs = await fetchWfsFeaturesInBbox({
-    baseUrls: entry.wfsBaseUrls,
-    typeNames: entry.typeNames,
-    bbox: queryBbox,
-    maxFeatures: entry.maxWfsFeatures ?? 5,
-  });
+  const wfs = await fetchFederalWfsForEntry(entry, queryBbox);
 
   let status: ProbeStatus = "error";
-  if (wfs.ok) status = "ok";
+  if (wfs.ok && wfs.proxiedFromMapBiomasAlerta) status = "ok_proxy";
+  else if (wfs.ok) status = "ok";
+  else if (wfs.skippedOutsideExtent) status = "skipped";
   else if (wfs.upstreamWfsDegraded) status = "degraded";
   else if (wfs.noFeaturesInExtent) status = "no_features";
 
@@ -94,11 +97,15 @@ async function main() {
     const tag =
       row.status === "ok"
         ? "OK"
-        : row.status === "no_features"
-          ? "SEM_FEICOES"
-          : row.status === "degraded"
-            ? "DEGRADADO"
-            : "ERRO";
+        : row.status === "ok_proxy"
+          ? "OK_PROXY"
+          : row.status === "skipped"
+            ? "IGNORADA"
+            : row.status === "no_features"
+              ? "SEM_FEICOES"
+              : row.status === "degraded"
+                ? "DEGRADADO"
+                : "ERRO";
     console.log(
       `[${tag}] ${row.layerId}`,
       row.featureCount ? `${row.featureCount} feat` : "",
@@ -108,13 +115,15 @@ async function main() {
 
   const summary = {
     ok: results.filter((r) => r.status === "ok").length,
+    okProxy: results.filter((r) => r.status === "ok_proxy").length,
+    skipped: results.filter((r) => r.status === "skipped").length,
     noFeatures: results.filter((r) => r.status === "no_features").length,
     degraded: results.filter((r) => r.status === "degraded").length,
     error: results.filter((r) => r.status === "error").length,
   };
 
   console.log(
-    `\nResumo: OK=${summary.ok} sem feições=${summary.noFeatures} degradado=${summary.degraded} erro=${summary.error}`,
+    `\nResumo: OK=${summary.ok} proxy=${summary.okProxy} ignorada=${summary.skipped} sem feições=${summary.noFeatures} degradado=${summary.degraded} erro=${summary.error}`,
   );
 
   const outPath = path.join(

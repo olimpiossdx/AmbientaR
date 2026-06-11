@@ -49,9 +49,10 @@ function LayerCard({ layer }: { layer: GeoLayerResult }) {
       <CardContent className="pt-0">
         {layer.stats.length === 0 ? (
           <p className="text-xs text-muted-foreground">
-            {layer.errorMessage
-              ? `Erro: ${layer.errorMessage}`
-              : "Sem estatísticas no recorte."}
+            {layer.summary ||
+              (layer.errorMessage
+                ? `Erro: ${layer.errorMessage}`
+                : "Sem estatísticas no recorte.")}
           </p>
         ) : (
           <div className="overflow-x-auto">

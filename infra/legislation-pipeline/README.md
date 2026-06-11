@@ -4,6 +4,18 @@ Worker Python para ingestão de **Legislação Mineira (ALMG)** com destino **Po
 
 ## Local
 
+### Windows sem Docker (recomendado no dev)
+
+Na raiz do repositório:
+
+```bash
+npm run legislation-pipeline:dev
+```
+
+Stub Node na porta **8092** (mesma API `/health` e `/v1/ingest/run`). Configure `.env.local` com `LEGISLATION_PIPELINE_*` e reinicie `npm run dev`.
+
+### Python / uvicorn
+
 ```bash
 cd infra/legislation-pipeline
 pip install -r requirements.txt
@@ -11,7 +23,7 @@ set WORKER_SHARED_SECRET=dev-legislation-secret
 uvicorn main:app --reload --port 8092
 ```
 
-Ou Docker:
+### Docker
 
 ```bash
 docker compose up --build

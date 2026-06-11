@@ -40,7 +40,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, PlusCircle, Pencil, Trash2, Eye, UserPlus, FileText, Link2 } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, Pencil, Trash2, Eye, UserPlus, FileText, Link2, ClipboardList } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { SocioambientalExecutarTab } from './socioambiental-executar-tab';
 import { useCollection, useFirebase, useMemoFirebase, errorEmitter } from '@/firebase';
 import { collection, doc, deleteDoc, updateDoc } from 'firebase/firestore';
 import type { AnaliseSocioambiental } from '@/lib/types/analise-socioambiental';
@@ -143,11 +145,28 @@ export default function AnaliseSocioambientalPage() {
         </Button>
       </PageHeader>
       <main className="flex-1 overflow-auto p-4 md:p-6">
+        <Tabs defaultValue="extratos" className="space-y-4">
+          <TabsList>
+            <TabsTrigger value="extratos" className="gap-1.5">
+              <FileText className="h-4 w-4" />
+              Extratos salvos
+            </TabsTrigger>
+            <TabsTrigger value="executar" className="gap-1.5">
+              <ClipboardList className="h-4 w-4" />
+              Executar pacote
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="executar">
+            <SocioambientalExecutarTab />
+          </TabsContent>
+
+          <TabsContent value="extratos">
         <Card>
           <CardHeader>
             <CardTitle>Extratos de Análise Socioambiental</CardTitle>
             <CardDescription>
-              Cadastre extratos (ex.: Sicoob/AgroTools) para gerar relatórios similares, preencher automaticamente o cadastro do cliente e reutilizar dados em estudos.
+              Cadastre extratos manualmente ou execute um pacote na aba &quot;Executar pacote&quot; (blocos temáticos com critérios Apto/Inapto). Reutilize em estudos e preencha o cadastro do cliente.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -248,6 +267,8 @@ export default function AnaliseSocioambientalPage() {
             </TooltipProvider>
           </CardContent>
         </Card>
+          </TabsContent>
+        </Tabs>
       </main>
 
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
@@ -279,6 +300,21 @@ export default function AnaliseSocioambientalPage() {
               <p><strong>Status CAR:</strong> {viewingItem.informacoesPropriedade?.statusCAR ?? '—'}</p>
               {viewingItem.agentes?.length > 0 && (
                 <p><strong>Agente:</strong> {viewingItem.agentes[0].nome} ({viewingItem.agentes[0].documento})</p>
+              )}
+              {viewingItem.criteriosResultados?.length > 0 && (
+                <div className="space-y-2 pt-2 border-t">
+                  <p className="font-medium">Critérios</p>
+                  <ul className="space-y-1">
+                    {viewingItem.criteriosResultados.map((c) => (
+                      <li key={c.criterio} className="flex flex-wrap items-center justify-between gap-2">
+                        <span>{c.criterio}</span>
+                        <Badge variant={c.resultado === 'Inapto' ? 'destructive' : c.resultado === 'Apto' ? 'default' : 'secondary'}>
+                          {c.resultado}
+                        </Badge>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               )}
               <DialogFooter>
                 <DialogClose asChild>

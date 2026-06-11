@@ -17,6 +17,12 @@ Pasta de **discussão e planeamento** (não substitui código). Serve para retom
 | [MVP-CAMADAS-IDE-SISEMA-MG.md](./MVP-CAMADAS-IDE-SISEMA-MG.md) | Catálogo 8 camadas IDE-Sisema (nomes a confirmar) |
 | [COLIGACAO-DADOS-PUBLICOS.md](./COLIGACAO-DADOS-PUBLICOS.md) | Coligação de dados públicos |
 
+### Localizador CAR / GPS / coordenadas (jun/2026)
+
+| Ficheiro | Conteúdo |
+|----------|----------|
+| [PLANO-LOCALIZADOR-CAR-GPS-SOCIOAMBIENTAL.md](./PLANO-LOCALIZADOR-CAR-GPS-SOCIOAMBIENTAL.md) | **Após M1.14:** resolver CAR→geometria (L1), GPS pacote socioambiental (L2), card mobile (L3); MG piloto, SICAR nacional |
+
 ### Passo 3 — Linha de montagem SaaS (estudos + licenciamento)
 
 | Ficheiro | Conteúdo |

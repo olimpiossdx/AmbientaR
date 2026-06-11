@@ -58,6 +58,9 @@ export async function POST(req: Request) {
     "/retornaListaAcondicionamento",
     "/consultaListaCdf",
     "/retornaListaCodigoBarasManifesto",
+    "/buscaPdfCdf/",
+    "/buscaPdfManifestoPorCodigoBarras/",
+    "/retornaManifesto/",
   ];
   if (!allowed.some((p) => body.path.startsWith(p))) {
     return NextResponse.json({ error: "path MTR não permitido neste proxy." }, { status: 403 });

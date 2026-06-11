@@ -53,6 +53,23 @@ export function enrichProdesLayerSummary(
     .join(" ");
 }
 
+export function enrichProdesMataAtlanticaProxySummary(
+  stats: GeoLayerStat[],
+  fallback: string,
+): string {
+  if (!stats.length) return fallback;
+  const totalHa = stats.reduce((s, row) => s + (row.areaHa ?? 0), 0);
+  const top = stats[0];
+  return [
+    `${stats.length} alerta(s) MapBiomas (Mata Atlântica) no perímetro`,
+    top?.label ? `(destaque: ${top.label})` : "",
+    totalHa > 0 ? `~${totalHa.toFixed(2)} ha` : "",
+    "PRODES MA indisponível via WFS INPE — proxy MapBiomas Alerta; confira série PRODES em terrabrasilis.dpi.inpe.br.",
+  ]
+    .filter(Boolean)
+    .join(" ");
+}
+
 export function enrichMapBiomasAlertaLayerSummary(
   stats: GeoLayerStat[],
   fallback: string,
@@ -96,6 +113,9 @@ export function federalLayerUnavailableSummary(
   }
   if (layerId === FEDERAL_TI_LAYER_ID) {
     return "Nenhuma terra indígena intersectou o perímetro (PAMGIA/FUNAI).";
+  }
+  if (layerId === FEDERAL_PRODES_MATA_ATLANTICA_LAYER_ID) {
+    return "Nenhum alerta MapBiomas (Mata Atlântica) no perímetro. PRODES MA indisponível via WFS — consulte terrabrasilis.dpi.inpe.br.";
   }
   if (isProdesLayer(layerId)) {
     return "Nenhum polígono PRODES anual intersectou o perímetro no recorte WFS INPE.";

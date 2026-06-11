@@ -11,11 +11,16 @@ export type WaveAStreamEvent =
   | { type: "error"; error: string };
 
 /** Executa análise Onda A com progresso por camada (SSE). */
+export type WaveAStreamClientOptions = {
+  layerIds?: string[];
+};
+
 export async function runWaveAAnalysisStreamClient(
   idToken: string,
   input: PerimeterParseInput,
   influenceConfig: GeoInfluenceAreaConfig,
   onEvent: (event: WaveAStreamEvent) => void,
+  streamOptions?: WaveAStreamClientOptions,
 ): Promise<WaveAAnalysisResult> {
   const res = await fetch("/api/geospatial/wave-a/stream", {
     method: "POST",
@@ -27,6 +32,9 @@ export async function runWaveAAnalysisStreamClient(
       dataType: input.dataType,
       data: input.data,
       influenceConfig,
+      ...(streamOptions?.layerIds?.length
+        ? { layerIds: streamOptions.layerIds }
+        : {}),
     }),
   });
 

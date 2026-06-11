@@ -83,6 +83,7 @@ import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
 import { CardSearchInput } from "@/components/card-search-input";
 import { CreatePortalAccessDialog } from "@/components/clients/create-portal-access-dialog";
+import { CtfIbamaDetailSection } from "@/components/ctf-ibama/ctf-ibama-detail-section";
 import { UserPlus } from "lucide-react";
 
 const DetailItem = ({
@@ -689,8 +690,7 @@ export default function ClientsPage() {
                     : ""
                 }
               />
-              <DetailItem label="CTF/IBAMA" value={clientToView.ctfIbama} />
-              <Separator />
+              <CtfIbamaDetailSection entity={clientToView} />
               <h4 className="font-semibold text-foreground">
                 Contato & Endereço
               </h4>

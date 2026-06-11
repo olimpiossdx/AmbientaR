@@ -1,10 +1,10 @@
 "use client";
 
 import * as React from "react";
-import { GeoJSON, MapContainer, TileLayer, useMap } from "react-leaflet";
+import { GeoJSON, TileLayer, useMap } from "react-leaflet";
 import type { FeatureCollection } from "geojson";
 import L from "leaflet";
-import "leaflet/dist/leaflet.css";
+import { LeafletMapShell } from "./leaflet-map-shell";
 import type { StudyAreaGeoJSON } from "./study-area-map";
 
 const LAYER_STYLE: Record<string, { color: string; fillColor?: string; weight: number }> = {
@@ -57,10 +57,9 @@ export function McaProjectMap({ perimeter, layers }: McaProjectMapProps) {
   const fitGeo = perimeter ?? overlayEntries[0]?.[1] ?? null;
 
   return (
-    <MapContainer
+    <LeafletMapShell
       center={[-18.5122, -44.555]}
       zoom={5}
-      style={{ height: "100%", width: "100%" }}
       scrollWheelZoom
     >
       <TileLayer
@@ -82,6 +81,6 @@ export function McaProjectMap({ perimeter, layers }: McaProjectMapProps) {
           style={() => styleForLayerId(id)}
         />
       ))}
-    </MapContainer>
+    </LeafletMapShell>
   );
 }
