@@ -24,6 +24,9 @@ interface FormListagemCComumProps {
   form: any;
   hideEspecifico?: boolean;
   slotEspecifico?: React.ReactNode;
+  slotSecao6?: React.ReactNode;
+  slotModulo4Complemento?: React.ReactNode;
+  hideLegislacaoMunicipal?: boolean;
 }
 
 const datums = ['SAD-69', 'WGS-84', 'Córrego Alegre'] as const;
@@ -58,7 +61,14 @@ function BooleanRadio({
   );
 }
 
-export function FormListagemCPrincipal({ form, hideEspecifico, slotEspecifico }: FormListagemCComumProps) {
+export function FormListagemCPrincipal({
+  form,
+  hideEspecifico,
+  slotEspecifico,
+  slotSecao6,
+  slotModulo4Complemento,
+  hideLegislacaoMunicipal,
+}: FormListagemCComumProps) {
   const coordinateFormat = form.watch('geographicLocation.format');
   const faseLicenciamento = form.watch('listagemC.regularizacaoAmbiental.fase');
   const isAmpliacao = form.watch('listagemC.regularizacaoAmbiental.ampliacaoEmpreendimentoLicenciado');
@@ -216,7 +226,7 @@ export function FormListagemCPrincipal({ form, hideEspecifico, slotEspecifico }:
           <FormField control={form.control} name="geographicLocation.nearestWaterCourse" render={({ field }) => (<FormItem><FormLabel>Curso d&apos;água mais próximo</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
         </div>
       </div>
-      <FormListagemCSecao6 form={form} />
+      {slotSecao6 ?? <FormListagemCSecao6 form={form} />}
 
 <div className="space-y-4 rounded-md border p-4">
         <h3 className="text-lg font-medium">7. Outras Atividades no Empreendimento</h3>
@@ -434,6 +444,7 @@ export function FormListagemCPrincipal({ form, hideEspecifico, slotEspecifico }:
         />
       </div>
 
+      {!hideLegislacaoMunicipal && (
       <div className="space-y-4 rounded-md border p-4">
         <h3 className="text-lg font-medium">16. Caracterização frente à legislação municipal</h3>
         <FormField control={form.control} name="listagemC.legislacaoMunicipal.temPlanoDiretor" render={({ field }) => (<FormItem><FormLabel>Município tem Plano Diretor / Lei de Uso e Ocupação do Solo?</FormLabel><FormControl><BooleanRadio value={field.value} onChange={field.onChange} /></FormControl></FormItem>)} />
@@ -491,8 +502,9 @@ export function FormListagemCPrincipal({ form, hideEspecifico, slotEspecifico }:
         )}
         <FormDescription>Planta georreferenciada: Anexo XXII.</FormDescription>
       </div>
+      )}
 
-      <FormListagemCModulo4Complemento form={form} />
+      {slotModulo4Complemento ?? <FormListagemCModulo4Complemento form={form} />}
 
       {hideEspecifico ? slotEspecifico : <FormListagemCEspecifico form={form} />}
 

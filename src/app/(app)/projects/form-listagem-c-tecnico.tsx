@@ -125,6 +125,146 @@ const residuosSolidosC = [
   { id: 'outros', label: 'Outros' },
 ];
 
+const equipamentosPapel = [
+  { id: 'digestor', label: 'Digestor' },
+  { id: 'prensa', label: 'Prensa' },
+  { id: 'evaporador', label: 'Evaporador' },
+  { id: 'moega', label: 'Moega' },
+  { id: 'pulper', label: 'Pulper' },
+  { id: 'mandril', label: 'Mandril' },
+  { id: 'cortadeira', label: 'Cortadeira' },
+  { id: 'empacotadeira', label: 'Empacotadeira' },
+  { id: 'paletizadora', label: 'Paletizadora' },
+  { id: 'enfardadora', label: 'Enfardadora' },
+  { id: 'tanque', label: 'Tanque' },
+  { id: 'outros', label: 'Outros' },
+];
+
+const materiasPrimasPapel = [
+  { id: 'madeira', label: 'Madeira' },
+  { id: 'celulose', label: 'Celulose' },
+  { id: 'papel_reciclado', label: 'Papel reciclado' },
+  { id: 'palha', label: 'Palha' },
+  { id: 'bagaco', label: 'Bagaço' },
+  { id: 'cana', label: 'Cana' },
+  { id: 'sisal', label: 'Sisal' },
+  { id: 'linho', label: 'Linho' },
+  { id: 'juta', label: 'Juta' },
+  { id: 'cloro', label: 'Cloro' },
+  { id: 'cola_sintetica', label: 'Cola sintética' },
+  { id: 'hidroxido_sodio', label: 'Hidróxido de sódio' },
+  { id: 'hidrossulfito_sodio', label: 'Hidrossulfito de sódio' },
+  { id: 'sulfato_sodio', label: 'Sulfato de sódio' },
+  { id: 'carbonato_calcio', label: 'Carbonato de cálcio' },
+  { id: 'dioxido_cloro', label: 'Dióxido de cloro' },
+  { id: 'peroxidos', label: 'Peróxidos' },
+  { id: 'ozonio', label: 'Ozônio' },
+  { id: 'combustivel', label: 'Combustível' },
+  { id: 'outros', label: 'Outros' },
+];
+
+const produtosPapel = [
+  { id: 'papel_acido', label: 'Papel ácido' },
+  { id: 'papel_alcalino', label: 'Papel alcalino' },
+  { id: 'papel_jornal', label: 'Papel jornal' },
+  { id: 'glinter', label: 'Glinter' },
+  { id: 'cartolina', label: 'Cartolina' },
+  { id: 'papel_cartao', label: 'Papel cartão' },
+  { id: 'papelao', label: 'Papelão' },
+  { id: 'celulose_produto', label: 'Celulose' },
+  { id: 'papel_higienico', label: 'Papel higiênico' },
+  { id: 'papel_sulfite', label: 'Papel sulfite' },
+  { id: 'outros', label: 'Outros' },
+];
+
+const equipamentosDomissanitarios = [
+  { id: 'ensacadeira', label: 'Ensacadeira' },
+  { id: 'refiladeira', label: 'Refiladeira' },
+  { id: 'aglutinador', label: 'Aglutinador' },
+  { id: 'balanca', label: 'Balança' },
+  { id: 'envasadeira', label: 'Envasadeira' },
+  { id: 'extrusora', label: 'Extrusora' },
+  { id: 'fechamento_caixas', label: 'Fechamento de caixas' },
+  { id: 'maquina_solda', label: 'Máquina de solda' },
+  { id: 'maquina_tampar', label: 'Máquina de tampar garrafas' },
+  { id: 'moinho', label: 'Moinho' },
+  { id: 'moldadeira', label: 'Moldadeira' },
+  { id: 'reator', label: 'Reator' },
+  { id: 'sopradeira', label: 'Sopradeira' },
+  { id: 'cortadeira', label: 'Cortadeira' },
+  { id: 'rotuladeira', label: 'Rotuladeira' },
+  { id: 'tanques', label: 'Tanques' },
+  { id: 'outros', label: 'Outros' },
+];
+
+const materiasPrimasDomissanitarios = [
+  { id: 'hipoclorito_sodio', label: 'Hipoclorito de sódio' },
+  { id: 'soda_caustica', label: 'Soda cáustica' },
+  { id: 'essencias', label: 'Essências' },
+  { id: 'calcario', label: 'Calcário' },
+  { id: 'barrilha', label: 'Barrilha' },
+  { id: 'bicarbonato_sodio', label: 'Bicarbonato de sódio' },
+  { id: 'acido_borico', label: 'Ácido bórico' },
+  { id: 'lauril_sulfato', label: 'Lauril sulfato de sódio' },
+  { id: 'alcool_etilico', label: 'Álcool etílico' },
+  { id: 'metilparabeno', label: 'Metilparabeno' },
+  { id: 'silicato_sodio', label: 'Silicato de sódio' },
+  { id: 'eter', label: 'Éter' },
+  { id: 'formol', label: 'Formol' },
+  { id: 'polietileno', label: 'Polietileno' },
+  { id: 'caixas_papelao', label: 'Caixas de papelão' },
+  { id: 'outros', label: 'Outros' },
+];
+
+const produtosDomissanitarios = [
+  { id: 'agua_sanitaria', label: 'Água sanitária' },
+  { id: 'alvejante', label: 'Alvejante' },
+  { id: 'saponaceo', label: 'Saponáceo' },
+  { id: 'detergente', label: 'Detergente' },
+  { id: 'cera', label: 'Cera' },
+  { id: 'desinfetante', label: 'Desinfetante' },
+  { id: 'creme_dental', label: 'Creme dental' },
+  { id: 'inseticida', label: 'Inseticida' },
+  { id: 'amaciantes', label: 'Amaciantes' },
+  { id: 'agua_oxigenada', label: 'Água oxigenada' },
+  { id: 'sabonete', label: 'Sabonete' },
+  { id: 'vaselina', label: 'Vaselina' },
+  { id: 'glicerina', label: 'Glicerina' },
+  { id: 'embalagens', label: 'Embalagens' },
+  { id: 'outros', label: 'Outros' },
+];
+
+const residuosDomissanitarios = [
+  { id: 'lodo_eta', label: 'Lodo da ETA' },
+  { id: 'lodo_ete', label: 'Lodo da ETE' },
+  { id: 'embalagens_nao_reciclaveis', label: 'Embalagens e materiais não recicláveis' },
+  { id: 'embalagens_reciclaveis', label: 'Embalagens e materiais recicláveis' },
+  { id: 'lixo_domestico', label: 'Lixo doméstico' },
+  { id: 'cinzas_caldeira', label: 'Cinzas ou fuligem da caldeira' },
+  { id: 'epi', label: 'Equipamentos de proteção individual usados' },
+  { id: 'produto_nao_conforme', label: 'Produto não conforme' },
+  { id: 'residuos_laboratorio', label: 'Resíduos do laboratório' },
+  { id: 'oleo_usado', label: 'Óleo usado' },
+  { id: 'materiais_contaminados_oleo', label: 'Materiais contaminados com óleo' },
+  { id: 'outros', label: 'Outros' },
+];
+
+const residuosPapel = [
+  { id: 'lodo_eta', label: 'Lodo da ETA' },
+  { id: 'lodo_ete', label: 'Lodo da ETE' },
+  { id: 'embalagens_nao_reciclaveis', label: 'Embalagens e materiais não recicláveis' },
+  { id: 'embalagens_reciclaveis', label: 'Embalagens e materiais recicláveis' },
+  { id: 'lixo_domestico', label: 'Lixo doméstico' },
+  { id: 'cinzas_caldeira', label: 'Cinzas ou fuligem da caldeira' },
+  { id: 'epi', label: 'Equipamentos de proteção individual' },
+  { id: 'produto_nao_conforme', label: 'Produto não conforme' },
+  { id: 'residuos_laboratorio', label: 'Resíduos do laboratório' },
+  { id: 'oleo_usado', label: 'Óleo usado' },
+  { id: 'materiais_contaminados_oleo', label: 'Materiais contaminados com óleo' },
+  { id: 'licor_negro_concentrado', label: 'Licor negro concentrado' },
+  { id: 'outros', label: 'Outros' },
+];
+
 const parametrosEfluenteIndustrial = [
   'pH',
   'Condutividade elétrica',
@@ -176,7 +316,48 @@ function OrigemFuncionarios({ form, basePath }: { form: any; basePath: string })
   );
 }
 
-export function FormListagemCTecnico({ form }: { form: any }) {
+export function FormListagemCTecnico({
+  form,
+  variant = 'borracha',
+}: {
+  form: any;
+  variant?: 'borracha' | 'papel' | 'domissanitarios';
+}) {
+  const isPapel = variant === 'papel';
+  const isDomissanitarios = variant === 'domissanitarios';
+  const isTrExtended = isPapel || isDomissanitarios;
+  const item = (n: number, suffix?: string) => `${isTrExtended ? n + 1 : n}${suffix ? `.${suffix}` : ''}`;
+  const equipamentosLista = isPapel
+    ? equipamentosPapel
+    : isDomissanitarios
+      ? equipamentosDomissanitarios
+      : equipamentosOutros;
+  const materiasLista = isPapel
+    ? materiasPrimasPapel
+    : isDomissanitarios
+      ? materiasPrimasDomissanitarios
+      : materiasPrimas;
+  const produtosLista = isPapel
+    ? produtosPapel
+    : isDomissanitarios
+      ? produtosDomissanitarios
+      : produtosFabricados;
+  const residuosLista = isPapel
+    ? residuosPapel
+    : isDomissanitarios
+      ? residuosDomissanitarios
+      : residuosSolidosC;
+  const setoresRh = isPapel
+    ? [
+        { key: 'producao', label: 'Setor de produção' },
+        { key: 'administrativo', label: 'Setor administrativo' },
+        { key: 'terceirizados', label: 'Terceirizados' },
+      ]
+    : [
+        { key: 'producao', label: 'Setor de produção' },
+        { key: 'administrativo', label: 'Setor administrativo' },
+        { key: 'outros', label: 'Outros setores' },
+      ];
   const recirculaAgua = form.watch('listagemC.usoAgua.recirculaAgua');
   const trataAgua = form.watch('listagemC.tratamentoAgua.trataAgua');
   const geraEfluenteIndustrial = form.watch('listagemC.efluentesIndustriais.gera');
@@ -184,6 +365,19 @@ export function FormListagemCTecnico({ form }: { form: any }) {
   const possuiCaldeira = form.watch('listagemC.equipamentosApoio.caldeira.ativa');
   const combustivelCaldeira = form.watch('listagemC.equipamentosApoio.caldeira.combustivel');
   const possuiPosto = form.watch('listagemC.equipamentosApoio.postoAbastecimento.ativa');
+  const fontesPontuais = form.watch('listagemC.emissoesAtmosfericas.fontesPontuais');
+  const substanciasOdoriferas = form.watch('listagemC.emissoesAtmosfericas.substanciasOdoriferas');
+  const controleEmissoes = form.watch('listagemC.emissoesAtmosfericas.sistemaControle');
+  const fontesDifusas = form.watch('listagemC.emissoesAtmosfericas.fontesDifusas');
+
+  const { fields: fontesEmissao, append: appendFonte, remove: removeFonte } = useFieldArray({
+    control: form.control,
+    name: 'listagemC.emissoesAtmosfericas.fontes',
+  });
+  const { fields: controleEquip, append: appendControle, remove: removeControle } = useFieldArray({
+    control: form.control,
+    name: 'listagemC.emissoesAtmosfericas.equipamentosControle',
+  });
 
   const { fields: turnosFields, append: appendTurno, remove: removeTurno } = useFieldArray({
     control: form.control,
@@ -208,12 +402,15 @@ export function FormListagemCTecnico({ form }: { form: any }) {
 
   return (
     <div className="space-y-6">
+      {!isTrExtended && (
       <SectionCard title="21. Caracterização técnica do empreendimento">
         <FormDescription>
           A partir deste item, apresentar as informações técnicas específicas da atividade de indústria de borracha em regularização.
         </FormDescription>
       </SectionCard>
+      )}
 
+      {!isTrExtended && (
       <SectionCard title="22. Área do empreendimento">
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           <NumField form={form} name="listagemC.areaEmpreendimento.areaTotalM2" label="Área total do terreno (m²)" />
@@ -221,14 +418,11 @@ export function FormListagemCTecnico({ form }: { form: any }) {
           <NumField form={form} name="listagemC.areaEmpreendimento.areaConstruidaM2" label="Área construída (m²)" />
         </div>
       </SectionCard>
+      )}
 
-      <SectionCard title="23. Recursos humanos">
+      <SectionCard title={`${item(23)}. Recursos humanos`}>
         <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-          {[
-            { key: 'producao', label: 'Setor de produção' },
-            { key: 'administrativo', label: 'Setor administrativo' },
-            { key: 'outros', label: 'Outros setores' },
-          ].map((setor) => (
+          {setoresRh.map((setor) => (
             <div key={setor.key} className="rounded-md border p-3">
               <p className="mb-2 font-medium">{setor.label}</p>
               <NumField form={form} name={`listagemC.recursosHumanos.${setor.key}.quantidade`} label="Nº de funcionários" />
@@ -239,7 +433,7 @@ export function FormListagemCTecnico({ form }: { form: any }) {
         </div>
       </SectionCard>
 
-      <SectionCard title="24. Regime de operação do empreendimento">
+      <SectionCard title={`${item(24)}. Regime de operação do empreendimento`}>
         {turnosFields.map((item, index) => (
           <div key={item.id} className="mb-3 grid grid-cols-1 gap-3 rounded-md border p-3 md:grid-cols-6">
             <TextField form={form} name={`listagemC.regimeOperacao.turnos.${index}.setor`} label="Setor" />
@@ -312,7 +506,7 @@ export function FormListagemCTecnico({ form }: { form: any }) {
         />
       </SectionCard>
 
-      <SectionCard title="25. Equipamentos e sistemas de apoio ao processo produtivo">
+      <SectionCard title={`${item(25)}. Equipamentos e sistemas de apoio ao processo produtivo`}>
         <FormField
           control={form.control}
           name="listagemC.equipamentosApoio.resfriamento.ativa"
@@ -381,6 +575,7 @@ export function FormListagemCTecnico({ form }: { form: any }) {
               options={[
                 { id: 'madeira', label: 'Madeira' },
                 { id: 'oleo', label: 'Óleo' },
+                ...(isPapel ? [{ id: 'licor_negro', label: 'Resíduo da evaporação do licor negro' }] : []),
                 { id: 'outro', label: 'Outro combustível' },
               ]}
             />
@@ -409,6 +604,9 @@ export function FormListagemCTecnico({ form }: { form: any }) {
                 />
                 <TextField form={form} name="listagemC.equipamentosApoio.caldeira.madeiraNumeroIef" label="Nº certificado IEF" />
               </div>
+            )}
+            {combustivelCaldeira?.includes('licor_negro') && isPapel && (
+              <NumField form={form} name="listagemC.equipamentosApoio.caldeira.licorNegroVolumeM3Mes" label="Volume licor negro (m³/mês)" />
             )}
             {combustivelCaldeira?.includes('oleo') && (
               <div className="grid grid-cols-1 gap-3 rounded-md border p-3 md:grid-cols-2">
@@ -474,11 +672,17 @@ export function FormListagemCTecnico({ form }: { form: any }) {
         )}
       </SectionCard>
 
-      <SectionCard title="25.1 Outros equipamentos ou sistemas utilizados">
+      <SectionCard
+        title={
+          isDomissanitarios
+            ? `${item(25)}. Outros equipamentos ou sistemas utilizados`
+            : `${item(25, '1')} Outros equipamentos ou sistemas utilizados`
+        }
+      >
         <TabelaLinhasFixas
           form={form}
           basePath="listagemC.equipamentosOutros.itens"
-          linhas={equipamentosOutros}
+          linhas={equipamentosLista}
           colunas={[
             { key: 'descricao', label: 'Descrição' },
             { key: 'capacidadeMaxima', label: 'Capacidade máxima de produção' },
@@ -506,11 +710,17 @@ export function FormListagemCTecnico({ form }: { form: any }) {
         </Button>
       </SectionCard>
 
-      <SectionCard title="26. Relação de matérias-primas e insumos">
+      <SectionCard
+        title={
+          isDomissanitarios
+            ? `${item(25, '1')}. Relação de matérias-primas e insumos`
+            : `${item(26)}. Relação de matérias-primas e insumos`
+        }
+      >
         <TabelaLinhasFixas
           form={form}
           basePath="listagemC.materiasPrimas.itens"
-          linhas={materiasPrimas}
+          linhas={materiasLista}
           colunas={[
             { key: 'identificacaoTecnica', label: 'Identificação técnica' },
             { key: 'tipoEmbalagem', label: 'Tipo de embalagem' },
@@ -521,11 +731,11 @@ export function FormListagemCTecnico({ form }: { form: any }) {
         />
       </SectionCard>
 
-      <SectionCard title="27. Produtos fabricados e/ou processados">
+      <SectionCard title={`${item(27)}. Produtos fabricados e/ou processados`}>
         <TabelaLinhasFixas
           form={form}
           basePath="listagemC.produtos.itens"
-          linhas={produtosFabricados}
+          linhas={produtosLista}
           colunas={[
             { key: 'descricao', label: 'Descrição' },
             { key: 'localArmazenamento', label: 'Local de armazenamento' },
@@ -535,15 +745,15 @@ export function FormListagemCTecnico({ form }: { form: any }) {
         />
       </SectionCard>
 
-      <SectionCard title="28. Fluxograma do processo">
+      <SectionCard title={`${item(28)}. Fluxograma do processo`}>
         <FormDescription>
-          Apresentar no Anexo XXX o fluxograma com entradas de matérias-primas, reagentes, insumos, água e saídas de
-          efluentes líquidos, emissões atmosféricas e resíduos.
+          Apresentar no Anexo {isPapel ? 'XXXI' : 'XXX'} o fluxograma com entradas de matérias-primas, reagentes, insumos,
+          água e saídas de efluentes líquidos, emissões atmosféricas e resíduos.
         </FormDescription>
         <TextField form={form} name="listagemC.fluxograma.referenciaAnexo" label="Referência / observações ao anexo" />
       </SectionCard>
 
-      <SectionCard title="29. Uso de água">
+      <SectionCard title={`${item(29)}. Uso de água`}>
         <FormField
           control={form.control}
           name="listagemC.usoAgua.recirculaAgua"
@@ -566,8 +776,8 @@ export function FormListagemCTecnico({ form }: { form: any }) {
           <TableHeader>
             <TableRow>
               <TableHead>Finalidade</TableHead>
-              <TableHead>Consumo diário máximo (m³/dia)</TableHead>
-              <TableHead>Consumo diário médio (m³/dia)</TableHead>
+              <TableHead>{isPapel ? 'Consumo mensal máximo (m³/mês)' : 'Consumo diário máximo (m³/dia)'}</TableHead>
+              <TableHead>{isPapel ? 'Consumo mensal médio (m³/mês)' : 'Consumo diário médio (m³/dia)'}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -608,12 +818,20 @@ export function FormListagemCTecnico({ form }: { form: any }) {
           </TableBody>
         </Table>
         <div className="mt-2 grid grid-cols-1 gap-4 md:grid-cols-2">
-          <NumField form={form} name="listagemC.usoAgua.consumoTotalMaximo" label="Consumo total diário máximo (m³/dia)" />
-          <NumField form={form} name="listagemC.usoAgua.consumoTotalMedio" label="Consumo total diário médio (m³/dia)" />
+          <NumField
+            form={form}
+            name="listagemC.usoAgua.consumoTotalMaximo"
+            label={isPapel ? 'Consumo total mensal máximo (m³/mês)' : 'Consumo total diário máximo (m³/dia)'}
+          />
+          <NumField
+            form={form}
+            name="listagemC.usoAgua.consumoTotalMedio"
+            label={isPapel ? 'Consumo total mensal médio (m³/mês)' : 'Consumo total diário médio (m³/dia)'}
+          />
         </div>
       </SectionCard>
 
-      <SectionCard title="30. Tratamento de água">
+      <SectionCard title={`${item(30)}. Tratamento de água`}>
         <FormField
           control={form.control}
           name="listagemC.tratamentoAgua.trataAgua"
@@ -635,7 +853,7 @@ export function FormListagemCTecnico({ form }: { form: any }) {
         )}
       </SectionCard>
 
-      <SectionCard title="31. Efluentes sanitários">
+      <SectionCard title={`${item(31)}. Efluentes sanitários`}>
         <NumField form={form} name="listagemC.efluentesSanitarios.volumeM3Dia" label="Volume gerado (m³/dia)" />
         <NumField form={form} name="listagemC.efluentesSanitarios.numSistemas" label="Quantidade de sistemas de tratamento" />
         {pontosSanitarios.map((item, index) => (
@@ -676,7 +894,7 @@ export function FormListagemCTecnico({ form }: { form: any }) {
         />
       </SectionCard>
 
-      <SectionCard title="32. Efluentes industriais">
+      <SectionCard title={`${item(32)}. Efluentes industriais`}>
         <FormField
           control={form.control}
           name="listagemC.efluentesIndustriais.gera"
@@ -745,7 +963,7 @@ export function FormListagemCTecnico({ form }: { form: any }) {
         )}
       </SectionCard>
 
-      <SectionCard title="32.2 Destino final dos efluentes">
+      <SectionCard title={`${item(32, '2')} Destino final dos efluentes`}>
         <p className="text-sm font-medium">Industrial</p>
         <TextField form={form} name="listagemC.destinoEfluentes.industrial.corpoHidrico" label="Corpo hídrico (se aplicável)" />
         <CheckboxOptions
@@ -800,6 +1018,21 @@ export function FormListagemCTecnico({ form }: { form: any }) {
             { id: 'outro', label: 'Outro' },
           ]}
         />
+        {isPapel && (
+          <>
+            <p className="mt-4 text-sm font-medium">Licor negro</p>
+            <CheckboxOptions
+              form={form}
+              name="listagemC.destinoEfluentes.licorNegro"
+              options={[
+                { id: 'nao_gera', label: 'Não gera' },
+                { id: 'evaporacao', label: 'Evaporação' },
+                { id: 'recuperacao', label: 'Recuperação' },
+                { id: 'outro', label: 'Outro' },
+              ]}
+            />
+          </>
+        )}
         <FormField
           control={form.control}
           name="listagemC.destinoEfluentes.municipioTrataEsgoto"
@@ -815,32 +1048,212 @@ export function FormListagemCTecnico({ form }: { form: any }) {
         <NumField form={form} name="listagemC.destinoEfluentes.percentualEsgotoTratado" label="Percentual de esgoto tratado (%)" />
       </SectionCard>
 
-      <SectionCard title="33. Tratamento do efluente atmosférico">
-        <CheckboxOptions
-          form={form}
-          name="listagemC.emissoesAtmosfericas.descarregamentoNegroFumo"
-          options={[
-            { id: 'filtro_mangas', label: 'Descarregamento negro de fumo – filtro de mangas' },
-            { id: 'ciclone', label: 'Descarregamento negro de fumo – ciclone' },
-            { id: 'outros_nf', label: 'Descarregamento – outros' },
-          ]}
-        />
-        <CheckboxOptions
-          form={form}
-          name="listagemC.emissoesAtmosfericas.caldeira"
-          options={[
-            { id: 'ciclone', label: 'Caldeira – ciclone' },
-            { id: 'lavador_gases', label: 'Caldeira – lavador de gases' },
-            { id: 'outros_caldeira', label: 'Caldeira – outros' },
-          ]}
-        />
+      {isPapel && (
+        <SectionCard title={`${item(35)}. Emissões atmosféricas`}>
+          <FormField
+            control={form.control}
+            name="listagemC.emissoesAtmosfericas.fontesPontuais"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Existem fontes pontuais de emissão atmosférica?</FormLabel>
+                <FormControl>
+                  <BooleanRadio value={field.value} onChange={field.onChange} />
+                </FormControl>
+              </FormItem>
+            )}
+          />
+          {fontesPontuais &&
+            fontesEmissao.map((item, index) => (
+              <div key={item.id} className="grid grid-cols-1 gap-2 rounded-md border p-3 md:grid-cols-4">
+                <TextField form={form} name={`listagemC.emissoesAtmosfericas.fontes.${index}.fonte`} label="Fonte" />
+                <TextField form={form} name={`listagemC.emissoesAtmosfericas.fontes.${index}.combustivel`} label="Combustível" />
+                <TextField form={form} name={`listagemC.emissoesAtmosfericas.fontes.${index}.poluentes`} label="Poluentes emitidos" />
+                <div className="flex items-end justify-end">
+                  <Button type="button" variant="outline" size="sm" onClick={() => removeFonte(index)}>
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            ))}
+          {fontesPontuais && (
+            <Button type="button" variant="outline" onClick={() => appendFonte({})}>
+              <PlusCircle className="mr-2 h-4 w-4" />Adicionar fonte
+            </Button>
+          )}
+          <FormField
+            control={form.control}
+            name="listagemC.emissoesAtmosfericas.substanciasOdoriferas"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Equipamentos com substâncias odoríferas (DN COPAM 11/1986)?</FormLabel>
+                <FormControl>
+                  <BooleanRadio value={field.value} onChange={field.onChange} />
+                </FormControl>
+                <FormDescription>Apresentar Anexo XXXVII (amostragem isocinética).</FormDescription>
+              </FormItem>
+            )}
+          />
+          {substanciasOdoriferas && (
+            <FormField
+              control={form.control}
+              name="listagemC.emissoesAtmosfericas.descricaoOdoriferas"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Descrição das substâncias odoríferas</FormLabel>
+                  <FormControl>
+                    <Textarea rows={3} {...field} />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+          )}
+          <FormField
+            control={form.control}
+            name="listagemC.emissoesAtmosfericas.sistemaControle"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Sistema de controle de emissões atmosféricas em operação?</FormLabel>
+                <FormControl>
+                  <BooleanRadio value={field.value} onChange={field.onChange} />
+                </FormControl>
+              </FormItem>
+            )}
+          />
+          {controleEmissoes &&
+            controleEquip.map((item, index) => (
+              <div key={item.id} className="grid grid-cols-1 gap-2 rounded-md border p-3 md:grid-cols-4">
+                <TextField form={form} name={`listagemC.emissoesAtmosfericas.equipamentosControle.${index}.nome`} label="Equipamento" />
+                <NumField form={form} name={`listagemC.emissoesAtmosfericas.equipamentosControle.${index}.tempoOperacaoHDia`} label="Tempo médio (h/dia)" />
+                <TextField form={form} name={`listagemC.emissoesAtmosfericas.equipamentosControle.${index}.capacidade`} label="Capacidade nominal" />
+                <div className="flex items-end justify-end">
+                  <Button type="button" variant="outline" size="sm" onClick={() => removeControle(index)}>
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            ))}
+          {controleEmissoes && (
+            <Button type="button" variant="outline" onClick={() => appendControle({})}>
+              <PlusCircle className="mr-2 h-4 w-4" />Adicionar equipamento de controle
+            </Button>
+          )}
+          <FormField
+            control={form.control}
+            name="listagemC.emissoesAtmosfericas.fontesDifusas"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Existem fontes difusas de emissão atmosférica?</FormLabel>
+                <FormControl>
+                  <BooleanRadio value={field.value} onChange={field.onChange} />
+                </FormControl>
+                <FormDescription>{fontesDifusas ? 'Apresentar Anexo XXXIII.' : ''}</FormDescription>
+              </FormItem>
+            )}
+          />
+        </SectionCard>
+      )}
+
+      <SectionCard
+        title={`${isPapel ? item(35, '1') : isDomissanitarios ? item(33) : '33'}. Tratamento do efluente atmosférico`}
+      >
+        {isPapel ? (
+          <>
+            <CheckboxOptions
+              form={form}
+              name="listagemC.emissoesAtmosfericas.fornoRecuperacaoLicor"
+              options={[
+                { id: 'lavador_gases', label: 'Forno de recuperação do licor – lavador de gases' },
+                { id: 'outros', label: 'Forno de recuperação – outros' },
+              ]}
+            />
+            <CheckboxOptions
+              form={form}
+              name="listagemC.emissoesAtmosfericas.caldeira"
+              options={[
+                { id: 'ciclone', label: 'Caldeira – ciclone' },
+                { id: 'lavador_gases', label: 'Caldeira – lavador de gases' },
+                { id: 'outros_caldeira', label: 'Caldeira – outros' },
+              ]}
+            />
+            <CheckboxOptions
+              form={form}
+              name="listagemC.emissoesAtmosfericas.digestores"
+              options={[
+                { id: 'pos_queimador', label: 'Digestores – pós-queimador' },
+                { id: 'outros', label: 'Digestores – outros' },
+              ]}
+            />
+          </>
+        ) : isDomissanitarios ? (
+          <>
+            <CheckboxOptions
+              form={form}
+              name="listagemC.emissoesAtmosfericas.capela"
+              options={[
+                { id: 'lavador_gases', label: 'Capela – lavador de gases' },
+                { id: 'nao_trata_limites', label: 'Capela – não trata (não ultrapassa limites de emissão)' },
+                { id: 'outros_capela', label: 'Capela – outros' },
+              ]}
+            />
+            <CheckboxOptions
+              form={form}
+              name="listagemC.emissoesAtmosfericas.caldeira"
+              options={[
+                { id: 'ciclone', label: 'Caldeira – ciclone' },
+                { id: 'lavador_gases', label: 'Caldeira – lavador de gases' },
+                { id: 'outros_caldeira', label: 'Caldeira – outros' },
+              ]}
+            />
+            <CheckboxOptions
+              form={form}
+              name="listagemC.emissoesAtmosfericas.reatores"
+              options={[
+                { id: 'ciclone', label: 'Reatores – ciclone' },
+                { id: 'lavador_gases', label: 'Reatores – lavador de gases' },
+                { id: 'outros_reatores', label: 'Reatores – outros' },
+              ]}
+            />
+            <CheckboxOptions
+              form={form}
+              name="listagemC.emissoesAtmosfericas.tanqueArmazenamento"
+              options={[
+                { id: 'ciclone', label: 'Tanque de armazenamento – ciclone' },
+                { id: 'lavador_gases', label: 'Tanque de armazenamento – lavador de gases' },
+                { id: 'outros_tanque', label: 'Tanque de armazenamento – outros' },
+              ]}
+            />
+          </>
+        ) : (
+          <>
+            <CheckboxOptions
+              form={form}
+              name="listagemC.emissoesAtmosfericas.descarregamentoNegroFumo"
+              options={[
+                { id: 'filtro_mangas', label: 'Descarregamento negro de fumo – filtro de mangas' },
+                { id: 'ciclone', label: 'Descarregamento negro de fumo – ciclone' },
+                { id: 'outros_nf', label: 'Descarregamento – outros' },
+              ]}
+            />
+            <CheckboxOptions
+              form={form}
+              name="listagemC.emissoesAtmosfericas.caldeira"
+              options={[
+                { id: 'ciclone', label: 'Caldeira – ciclone' },
+                { id: 'lavador_gases', label: 'Caldeira – lavador de gases' },
+                { id: 'outros_caldeira', label: 'Caldeira – outros' },
+              ]}
+            />
+          </>
+        )}
       </SectionCard>
 
-      <SectionCard title="34. Subprodutos e/ou resíduos sólidos">
+      <SectionCard
+        title={`${isPapel ? item(35) : isDomissanitarios ? item(34) : '34'}. Subprodutos e/ou resíduos sólidos`}
+      >
         <TabelaLinhasFixas
           form={form}
           basePath="listagemC.residuosSolidos.itens"
-          linhas={residuosSolidosC}
+          linhas={residuosLista}
           colunas={[
             { key: 'equipamentoGerador', label: 'Equipamento/operação geradora' },
             { key: 'classeResiduo', label: 'Classe do resíduo' },
@@ -867,6 +1280,7 @@ export function FormListagemCTecnico({ form }: { form: any }) {
         </Button>
       </SectionCard>
 
+      {!isTrExtended && (
       <SectionCard title="35. Documentação junto ao Corpo de Bombeiros">
         <FormField
           control={form.control}
@@ -884,7 +1298,9 @@ export function FormListagemCTecnico({ form }: { form: any }) {
           )}
         />
       </SectionCard>
+      )}
 
+      {!isTrExtended && (
       <SectionCard title="36. Passivos ambientais">
         <FormField
           control={form.control}
@@ -916,6 +1332,7 @@ export function FormListagemCTecnico({ form }: { form: any }) {
           Atenção: em aquisição de terreno ou instalação industrial, recomenda-se levantamento prévio de passivos ambientais.
         </p>
       </SectionCard>
+      )}
     </div>
   );
 }
