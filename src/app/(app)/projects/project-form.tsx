@@ -347,12 +347,6 @@ export function ProjectForm({ currentItem, onSuccess, onCancel }: ProjectFormPro
     clients: clients || [],
     isLoadingClients,
     hideEmpreendedorSelect: usesCentralEmpreendedorResponsavel,
-    projectId: currentItem?.id,
-    perimetroReferencia,
-    onPerimetroReferenciaChange: setPerimetroReferencia,
-    onPendingPerimetroFileChange: (file: File | null) => {
-      pendingPerimetroFileRef.current = file;
-    },
   };
 
   return (
@@ -451,6 +445,20 @@ export function ProjectForm({ currentItem, onSuccess, onCancel }: ProjectFormPro
                        )}
                      </div>
                    ) : null}
+                   <div
+                     className="mb-4"
+                     data-empreendimento-perimetro-cadastro
+                     aria-label="Perímetro do empreendimento"
+                   >
+                     <ProjectPerimetroReferenciaSection
+                       projectId={currentItem?.id}
+                       value={perimetroReferencia}
+                       onChange={setPerimetroReferencia}
+                       onPendingFileChange={(file) => {
+                         pendingPerimetroFileRef.current = file;
+                       }}
+                     />
+                   </div>
                    <TabsContent value="default" className="mt-4">
                        <FormDefault {...formProps} />
                    </TabsContent>

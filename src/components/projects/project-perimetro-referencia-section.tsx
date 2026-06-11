@@ -84,10 +84,12 @@ export function ProjectPerimetroReferenciaSection({
       <div className="flex items-start gap-2">
         <MapPin className="mt-0.5 h-5 w-5 shrink-0 text-muted-foreground" />
         <div className="space-y-1">
-          <h3 className="text-lg font-medium">Perímetro de referência (opcional)</h3>
+          <h3 className="text-lg font-medium">Perímetro do empreendimento (opcional)</h3>
           <FormDescription>
-            Envie KML, KMZ ou shapefile (ZIP) da propriedade. Referência auxiliar para
-            análises — não substitui CAR, mapas técnicos nem upload na hora da análise.
+            Cadastro único da área da propriedade em KML, KMZ ou shapefile (ZIP). Este arquivo
+            fica vinculado ao empreendimento e servirá de base para montagem de processos,
+            análises ambientais, estudos técnicos e automações de IA. Não substitui o CAR nem
+            uploads pontuais em outras telas (análise geoespacial, mapas, PEA, etc.).
           </FormDescription>
         </div>
       </div>

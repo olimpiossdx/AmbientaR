@@ -21,8 +21,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { MapPin, PlusCircle, Trash2 } from 'lucide-react';
-import type { AnaliseSolo, AtividadeAgropecuaria, Biome, CoordinateFormat, Datum, Empreendedor, Fuso, Irrigacao, Jurisdiction, ManagementCategory, OutraAtividade, OwnerCondition, PhysicalStructure, ProjectPerimetroReferencia } from '@/lib/types';
-import { ProjectPerimetroReferenciaSection } from '@/components/projects/project-perimetro-referencia-section';
+import type { AnaliseSolo, AtividadeAgropecuaria, Biome, CoordinateFormat, Datum, Empreendedor, Fuso, Irrigacao, Jurisdiction, ManagementCategory, OutraAtividade, OwnerCondition, PhysicalStructure } from '@/lib/types';
 import * as React from 'react';
 import { ibgeData } from '@/lib/ibge-data';
 import { Textarea } from '@/components/ui/textarea';
@@ -36,10 +35,6 @@ interface FormDefaultProps {
     isLoadingClients: boolean;
     /** Quando true, o vínculo fica no bloco "Empreendedor responsável" no topo do formulário. */
     hideEmpreendedorSelect?: boolean;
-    projectId?: string;
-    perimetroReferencia?: ProjectPerimetroReferencia;
-    onPerimetroReferenciaChange?: (next: ProjectPerimetroReferencia | undefined) => void;
-    onPendingPerimetroFileChange?: (file: File | null) => void;
 }
 
 const ownerConditions: { value: OwnerCondition, label: string }[] = [
@@ -115,10 +110,6 @@ export function FormDefault({
     clients,
     isLoadingClients,
     hideEmpreendedorSelect = false,
-    projectId,
-    perimetroReferencia,
-    onPerimetroReferenciaChange,
-    onPendingPerimetroFileChange,
 }: FormDefaultProps) {
     
     const clientsMap = React.useMemo(() => new Map(clients?.map(c => [c.id, c])), [clients]);
@@ -323,15 +314,6 @@ export function FormDefault({
                 <FormField control={form.control} name="geographicLocation.nearestWaterCourse" render={({ field }) => ( <FormItem><FormLabel>Curso d&apos;água mais próximo</FormLabel><FormControl><Input {...field}/></FormControl></FormItem> )} />
             </div>
 
-            {onPerimetroReferenciaChange ? (
-                <ProjectPerimetroReferenciaSection
-                    projectId={projectId}
-                    value={perimetroReferencia}
-                    onChange={onPerimetroReferenciaChange}
-                    onPendingFileChange={onPendingPerimetroFileChange}
-                />
-            ) : null}
-            
             <div className="space-y-4 rounded-md border p-4">
                 <h3 className="text-lg font-medium">Restrições Locacionais</h3>
                 <FormField
