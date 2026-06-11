@@ -50,6 +50,13 @@ import {
   GEOREF_TIPO_LABELS,
 } from "@/lib/georeferenciamento/types";
 import { mapGeorefProjectDoc } from "@/lib/georeferenciamento/map-doc";
+import {
+  clearGeorefLocalizadorDrafts,
+  readGeorefLocalizadorDraft,
+  GEOREF_CAR_DRAFT_KEY,
+  GEOREF_CAMPO_DRAFT_KEY,
+  type GeorefLocalizadorDraft,
+} from "@/lib/geospatial/localizacao-request-snapshot";
 import { GeorefClientProjectFields } from "@/components/georeferenciamento/georef-client-project-fields";
 import {
   projectToGeorefFields,
@@ -69,8 +76,31 @@ export function GeorefProjectsPanel() {
   const [municipio, setMunicipio] = React.useState("");
   const [clientId, setClientId] = React.useState("");
   const [projectId, setProjectId] = React.useState("");
+  const [localizadorDraft, setLocalizadorDraft] =
+    React.useState<GeorefLocalizadorDraft | null>(null);
 
   const { selectedClient, selectedProject } = useGeorefClientProject(clientId, projectId);
+
+  React.useEffect(() => {
+    if (!open) {
+      setLocalizadorDraft(null);
+      return;
+    }
+    const carDraft = readGeorefLocalizadorDraft(GEOREF_CAR_DRAFT_KEY);
+    const campoDraft = readGeorefLocalizadorDraft(GEOREF_CAMPO_DRAFT_KEY);
+    const draft = carDraft ?? campoDraft;
+    if (!draft) return;
+    setLocalizadorDraft(draft);
+    if (carDraft) setTipo("ambiental");
+    else if (campoDraft) setTipo("rural");
+    if (draft.municipio) setMunicipio(draft.municipio);
+    if (!title.trim()) {
+      const label = draft.municipio
+        ? `${draft.municipio}${draft.uf ? `/${draft.uf}` : ""}`
+        : draft.car ?? "Imóvel";
+      setTitle(carDraft ? `CAR — ${label}` : `Campo — ${label}`);
+    }
+  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps -- preenche só ao abrir dialog
 
   React.useEffect(() => {
     if (!selectedProject) return;
@@ -114,6 +144,7 @@ export function GeorefProjectsPanel() {
     setSaving(true);
     const now = new Date().toISOString();
     const pf = selectedProject ? projectToGeorefFields(selectedProject) : null;
+    const draft = localizadorDraft;
     try {
       await addDoc(collection(firestore, "georef_projects"), {
         title: title.trim(),
@@ -123,22 +154,27 @@ export function GeorefProjectsPanel() {
         clientName: selectedClient?.name ?? null,
         projectId: projectId || null,
         projectName: pf?.projectName ?? null,
-        municipio: municipio.trim() || pf?.municipio || null,
-        uf: pf?.uf ?? "MG",
+        municipio: municipio.trim() || draft?.municipio || pf?.municipio || null,
+        uf: draft?.uf ?? pf?.uf ?? "MG",
         matricula: pf?.matricula ?? null,
-        car: pf?.car ?? null,
+        car: draft?.car ?? pf?.car ?? null,
+        areaHa: draft?.areaHa ?? null,
+        polygonGeojson: draft?.polygonGeojson ?? null,
+        localizacaoImovel: draft?.localizacaoImovel ?? null,
         checklist: {},
         vertices: [],
         createdBy: user.id,
         createdAt: now,
         updatedAt: now,
       });
+      clearGeorefLocalizadorDrafts();
       toast({ title: "Processo de georreferenciamento criado." });
       setOpen(false);
       setTitle("");
       setMunicipio("");
       setClientId("");
       setProjectId("");
+      setLocalizadorDraft(null);
     } catch (e) {
       toast({
         title: "Erro ao salvar",
@@ -232,6 +268,15 @@ export function GeorefProjectsPanel() {
                   placeholder="Ex.: Belo Horizonte"
                 />
               </div>
+              {localizadorDraft ? (
+                <p className="rounded-md border border-dashed p-3 text-xs text-muted-foreground">
+                  Rascunho SICAR/campo carregado: CAR{" "}
+                  <span className="font-mono">{localizadorDraft.car ?? "—"}</span>
+                  {localizadorDraft.areaHa != null
+                    ? ` · ${localizadorDraft.areaHa.toFixed(2)} ha`
+                    : null}
+                </p>
+              ) : null}
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setOpen(false)}>

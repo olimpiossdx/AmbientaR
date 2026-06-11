@@ -18,7 +18,7 @@ Complementa:
 |------|---------|
 | **Gate mínimo L1** | **G0-min** (§1.2) — não exige M1.14 completo; exige REF-01-A + ≥1 camada federal OK |
 | **M1.14** | Continua **em paralelo** com L1–L2; obrigatório antes de **L3** e promoção comercial plena |
-| **Piloto comercial** | **Minas Gerais** — preset `mg_padrao`, testes Coronel Fabriciano |
+| **Piloto comercial** | **Minas Gerais** — preset `mg_padrao`, testes Unaí (IBGE 3170404) |
 | **Arquitectura** | **SICAR nacional (27 UFs)** desde L1; catálogo extrato MG no pacote |
 | **UI piloto** | Pacote socioambiental (`/studies/analise-socioambiental`) |
 | **Ordem interna** | L1 → L2 → L3 → L4 → L5 |
@@ -112,7 +112,7 @@ Localizar imóvel via CAR, coordenadas, GPS ou perímetro; resolver geometria SI
 | Camada | MG (piloto) | Outras UFs |
 |--------|-------------|------------|
 | Marketing | Extrato socioambiental MG | CAR nacional; expansão estadual futura |
-| Testes | REF-01-A/B (Coronel Fabriciano) | REF-07 smoke resolver |
+| Testes | REF-01-A/B (Unaí / MG) | REF-07 smoke resolver |
 | **Executar pacote** | Imóvel **MG** | **Bloqueado** (D9) — ver §2.3 |
 | Código resolver | — | 27 UFs via `sicar-uf-bounds` |
 
@@ -304,7 +304,7 @@ Ordem: `/analise-ambiental` → licenciamento → georef → **CRM campo (D8)**
 
 ## 11. Plano de testes
 
-### 11.1 Referências (Coronel Fabriciano / MG)
+### 11.1 Referências (Unaí / MG — IBGE 3170404)
 
 | ID | Entrada | Uso |
 |----|---------|-----|
@@ -405,4 +405,5 @@ Ordem: `/analise-ambiental` → licenciamento → georef → **CRM campo (D8)**
 |------|-----------|
 | 2026-06-11 | v1 — plano híbrido F1–F4 |
 | 2026-06-11 | v2 — M1; REF-01-A/B; fases L |
-| 2026-06-11 | v3 — G0-min; D3–D6, D8, D9 fechados; D9 bloqueia Executar UF≠MG; L1 paralelo M1; ordem execução §12 |
+| 2026-06-11 | v3 — G0-min; D3–D6, D8, D9 fechados; L1 paralelo M1 |
+| 2026-06-11 | **L1.1–L1.5** código: resolver, `/resolve-location`, Wave A, pacote CAR; T1/T1b ✅ |

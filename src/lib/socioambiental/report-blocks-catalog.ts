@@ -1,27 +1,18 @@
 /**
  * Blocos temáticos de relatório socioambiental (padrão Sicoob/AgroTools).
- * Cada bloco agrupa camadas do motor geoespacial Wave A.
+ * Agrupam critérios do catálogo fechado (`socioambiental-criteria-catalog.ts`).
  */
 
-import {
-  FEDERAL_MAPBIOMAS_ALERTA_LAYER_ID,
-  FEDERAL_PRODES_CERRADO_LAYER_ID,
-  FEDERAL_PRODES_LEGAL_AMZ_LAYER_ID,
-  FEDERAL_PRODES_MATA_ATLANTICA_LAYER_ID,
-  FEDERAL_TI_LAYER_ID,
-  FEDERAL_UC_LAYER_ID,
-  IBAMA_EMBARGOS_LAYER_ID,
-} from "@/lib/geospatial/wave-federal-catalog";
+import type { ProdesModoCriterio } from "@/lib/types/analise-socioambiental";
 import { resolveAllLayersForBbox } from "@/lib/geospatial/geo-all-layers";
+import {
+  countCriteriaForBlocks,
+  getCriteriaForReportBlock,
+  resolveLayerIdsForBlocks,
+  type SocioambientalReportBlockId,
+} from "@/lib/socioambiental/socioambiental-criteria-catalog";
 
-export type SocioambientalReportBlockId =
-  | "extrato_cadastro"
-  | "desmatamento"
-  | "embargos_sancoes"
-  | "areas_protegidas"
-  | "recursos_hidricos"
-  | "contexto_ambiental"
-  | "licenciamento_mg";
+export type { SocioambientalReportBlockId };
 
 export type SocioambientalReportBlock = {
   id: SocioambientalReportBlockId;
@@ -33,87 +24,72 @@ export type SocioambientalReportBlock = {
   defaultSelected: boolean;
 };
 
+function layerIdsForBlock(blockId: SocioambientalReportBlockId): readonly string[] {
+  return resolveLayerIdsForBlocks([blockId], "agregado", "MG");
+}
+
+function criterioLabelForBlock(blockId: SocioambientalReportBlockId): string {
+  const criteria = getCriteriaForReportBlock(blockId);
+  if (criteria.length === 0) return blockId;
+  if (criteria.length === 1) return criteria[0].label;
+  return `${criteria[0].label} (+${criteria.length - 1} critérios)`;
+}
+
 export const SOCIOAMBIENTAL_REPORT_BLOCKS: SocioambientalReportBlock[] = [
   {
     id: "extrato_cadastro",
     title: "Cadastro rural (CAR/SICAR)",
-    description: "Imóveis rurais no recorte e APP hídrica (MapBiomas/CAR).",
-    criterioLabel: "Cadastro Rural (CAR)",
-    layerIds: ["br_sicar_imoveis", "mg_app_hidrica_mapcar"],
+    description: "Imóveis rurais no recorte, APP hídrica e cruzamento bioma.",
+    criterioLabel: criterioLabelForBlock("extrato_cadastro"),
+    layerIds: layerIdsForBlock("extrato_cadastro"),
     defaultSelected: true,
   },
   {
     id: "desmatamento",
     title: "Desmatamento e supressão",
     description: "PRODES (Cerrado, Mata Atlântica, Amazônia Legal) e MapBiomas Alerta.",
-    criterioLabel: "Desmatamento / Supressão de vegetação",
-    layerIds: [
-      FEDERAL_PRODES_CERRADO_LAYER_ID,
-      FEDERAL_PRODES_MATA_ATLANTICA_LAYER_ID,
-      FEDERAL_PRODES_LEGAL_AMZ_LAYER_ID,
-      FEDERAL_MAPBIOMAS_ALERTA_LAYER_ID,
-    ],
+    criterioLabel: criterioLabelForBlock("desmatamento"),
+    layerIds: layerIdsForBlock("desmatamento"),
     defaultSelected: true,
   },
   {
     id: "embargos_sancoes",
     title: "Embargos e sanções",
-    description: "Embargos IBAMA (SISCOM) e ICMBio no território.",
-    criterioLabel: "Embargos ambientais",
-    layerIds: [IBAMA_EMBARGOS_LAYER_ID, "br_icmbio_embargos"],
+    description: "Embargos IBAMA/ICMBio (polígono) e listas por CPF/CNPJ (Fase 3).",
+    criterioLabel: criterioLabelForBlock("embargos_sancoes"),
+    layerIds: layerIdsForBlock("embargos_sancoes"),
     defaultSelected: true,
   },
   {
     id: "areas_protegidas",
-    title: "Áreas protegidas",
-    description: "UC federal/estadual, TI e sobreposição com unidades de conservação.",
-    criterioLabel: "Unidades de Conservação e Terras Indígenas",
-    layerIds: [
-      FEDERAL_UC_LAYER_ID,
-      FEDERAL_TI_LAYER_ID,
-      "br_mma_uc_cnuc",
-      "br_icmbio_uc_federal",
-      "mg_unidades_conservacao",
-    ],
+    title: "Áreas protegidas e comunidades",
+    description: "UC, TI, quilombolas, assentamentos, buffers 3 km e IPHAN.",
+    criterioLabel: criterioLabelForBlock("areas_protegidas"),
+    layerIds: layerIdsForBlock("areas_protegidas"),
     defaultSelected: true,
   },
   {
     id: "recursos_hidricos",
     title: "Recursos hídricos",
     description: "Hidrografia, massas d'água, APP e outorgas IGAM.",
-    criterioLabel: "Recursos hídricos e outorgas",
-    layerIds: [
-      "mg_hidrografia",
-      "mg_massas_dagua",
-      "mg_hidrografia_classe_especial",
-      "mg_outorgas_igam",
-    ],
+    criterioLabel: criterioLabelForBlock("recursos_hidricos"),
+    layerIds: layerIdsForBlock("recursos_hidricos"),
     defaultSelected: false,
   },
   {
     id: "contexto_ambiental",
     title: "Contexto ambiental (MG)",
     description: "Bioma, solos, geologia, fauna, ZEE e ICMS ecológico.",
-    criterioLabel: "Contexto ambiental estadual",
-    layerIds: [
-      "mg_bioma",
-      "mg_solos",
-      "mg_geologia",
-      "mg_geomorfologia",
-      "mg_pedologia",
-      "mg_inventario_florestal",
-      "mg_fauna",
-      "mg_zee_zonas",
-      "mg_icms_ecologico",
-    ],
+    criterioLabel: criterioLabelForBlock("contexto_ambiental"),
+    layerIds: layerIdsForBlock("contexto_ambiental"),
     defaultSelected: false,
   },
   {
     id: "licenciamento_mg",
     title: "Licenciamento (MG)",
     description: "Empreendimentos licenciados e licenciamento municipal.",
-    criterioLabel: "Licenciamento ambiental",
-    layerIds: ["mg_licenciamento_municipal", "mg_empreendimentos_licenciados"],
+    criterioLabel: criterioLabelForBlock("licenciamento_mg"),
+    layerIds: layerIdsForBlock("licenciamento_mg"),
     defaultSelected: false,
   },
 ];
@@ -139,29 +115,31 @@ export function getDefaultSelectedBlockIds(): SocioambientalReportBlockId[] {
 /** União de layerIds dos blocos selecionados (deduplicado). */
 export function resolveLayerIdsFromBlocks(
   blockIds: SocioambientalReportBlockId[],
+  prodesModo: ProdesModoCriterio = "agregado",
+  uf = "MG",
 ): string[] {
-  const seen = new Set<string>();
-  const out: string[] = [];
-  for (const id of blockIds) {
-    const block = BLOCKS_BY_ID.get(id);
-    if (!block) continue;
-    for (const layerId of block.layerIds) {
-      if (seen.has(layerId)) continue;
-      seen.add(layerId);
-      out.push(layerId);
-    }
-  }
-  return out;
+  return resolveLayerIdsForBlocks(blockIds, prodesModo, uf);
 }
 
 /** Camadas resolvidas para o bbox que pertencem aos blocos (para contagem na UI). */
 export function countLayersForBlocks(
   blockIds: SocioambientalReportBlockId[],
   bbox: [number, number, number, number],
+  prodesModo: ProdesModoCriterio = "agregado",
+  uf = "MG",
 ): number {
-  const wanted = new Set(resolveLayerIdsFromBlocks(blockIds));
+  const wanted = new Set(resolveLayerIdsFromBlocks(blockIds, prodesModo, uf));
   return resolveAllLayersForBbox(bbox).filter((e) => wanted.has(e.layerId))
     .length;
+}
+
+/** Critérios ativos nos blocos (para UI avançada). */
+export function countCriteriosForBlocks(
+  blockIds: SocioambientalReportBlockId[],
+  prodesModo: ProdesModoCriterio = "agregado",
+  uf = "MG",
+): number {
+  return countCriteriaForBlocks(blockIds, prodesModo, uf);
 }
 
 /** Bbox MG continental — contagem de referência na UI. */

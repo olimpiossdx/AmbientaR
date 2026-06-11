@@ -69,6 +69,7 @@ export const RCA_SUBACTIVITIES: Record<string, string[]> = {
     'Suinocultura',
     'Avicultura',
   ],
-  'LISTAGEM H – OUTRAS ATIVIDADES - H-01-01-1 Atividades e empreendimentos não listados ou não enquadrados em outros códigos, com supressão de vegetação primária ou secundária nativa pertencente ao bioma Mata Atlântica, em estágios médio e/ou avançado de regeneração, sujeita a EIA/Rima nos termos da Lei Federal nº 11.428, de 22 de dezembro de 2006, exceto árvores isoladas.':
-    [],
+  'LISTAGEM H – OUTRAS ATIVIDADES - H-01-01-1 Atividades e empreendimentos não listados ou não enquadrados em outros códigos, com supressão de vegetação primária ou secundária nativa pertencente ao bioma Mata Atlântica, em estágios médio e/ou avançado de regeneração, sujeita a EIA/Rima nos termos da Lei Federal nº 11.428, de 22 de dezembro de 2006, exceto árvores isoladas.': [
+    'Supressão de vegetação – Mata Atlântica (H-01-01-1)',
+  ],
 };

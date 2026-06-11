@@ -35,6 +35,9 @@ import {
   useGeorefClientProject,
 } from "@/hooks/use-georef-client-project";
 import type { StudyAreaGeoJSON } from "@/components/maps/study-area-map";
+import { ImovelLocalizadorPanel } from "@/components/geospatial/imovel-localizador-panel";
+import { localizacaoToGeorefPatch } from "@/lib/geospatial/localizacao-request-snapshot";
+import type { LocalizacaoResolvida } from "@/lib/types/localizacao-imovel";
 import { ArrowLeft, Save } from "lucide-react";
 
 export default function GeorefProcessoDetailPage() {
@@ -93,6 +96,25 @@ export default function GeorefProcessoDetailPage() {
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleLocalizacaoConfirmed = (resolved: LocalizacaoResolvida) => {
+    if (!project) return;
+    const patch = localizacaoToGeorefPatch(resolved);
+    setProject((prev) =>
+      prev
+        ? {
+            ...prev,
+            car: patch.car ?? undefined,
+            areaHa: patch.areaHa,
+            municipio: patch.municipio ?? undefined,
+            uf: patch.uf ?? undefined,
+            polygonGeojson: patch.polygonGeojson,
+            localizacaoImovel: patch.localizacaoImovel,
+          }
+        : prev,
+    );
+    void save(patch);
   };
 
   const applyClientProject = () => {
@@ -155,6 +177,20 @@ export default function GeorefProcessoDetailPage() {
             <Button type="button" variant="outline" size="sm" onClick={applyClientProject}>
               Vincular cliente / empreendimento
             </Button>
+            <ImovelLocalizadorPanel
+              initialCarCod={project.car}
+              defaultInputMode={project.tipo === "ambiental" ? "car" : "gps"}
+              extratoMgObrigatorioParaConfirmar={false}
+              disabled={saving}
+              onConfirmed={handleLocalizacaoConfirmed}
+            />
+            {project.localizacaoImovel ? (
+              <p className="text-xs text-muted-foreground">
+                Localização SICAR confirmada · {project.localizacaoImovel.areaHa.toFixed(2)} ha ·{" "}
+                {project.localizacaoImovel.municipio}/{project.localizacaoImovel.uf} · método{" "}
+                {project.localizacaoImovel.metodoEntrada}
+              </p>
+            ) : null}
             <div className="grid gap-3">
               <div className="grid gap-2">
                 <Label>Status</Label>
@@ -175,6 +211,38 @@ export default function GeorefProcessoDetailPage() {
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+              <div className="grid gap-2 sm:grid-cols-2">
+                <div className="grid gap-2">
+                  <Label>Área (ha)</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    value={project.areaHa ?? ""}
+                    onChange={(e) =>
+                      setProject({
+                        ...project,
+                        areaHa: e.target.value ? Number(e.target.value) : undefined,
+                      })
+                    }
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label>Município / UF</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      value={project.municipio ?? ""}
+                      onChange={(e) => setProject({ ...project, municipio: e.target.value })}
+                      placeholder="Município"
+                    />
+                    <Input
+                      className="w-20"
+                      value={project.uf ?? ""}
+                      onChange={(e) => setProject({ ...project, uf: e.target.value })}
+                      placeholder="UF"
+                    />
+                  </div>
+                </div>
               </div>
               <div className="grid gap-2">
                 <Label>Matrícula</Label>
@@ -242,6 +310,10 @@ export default function GeorefProcessoDetailPage() {
                   matricula: project.matricula,
                   car: project.car,
                   ccir: project.ccir,
+                  areaHa: project.areaHa ?? null,
+                  municipio: project.municipio ?? null,
+                  uf: project.uf ?? null,
+                  localizacaoImovel: project.localizacaoImovel ?? null,
                   responsavelTecnico: project.responsavelTecnico,
                   artRrt: project.artRrt,
                   sigefParcelaId: project.sigefParcelaId,

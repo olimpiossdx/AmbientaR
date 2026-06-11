@@ -89,20 +89,49 @@ Documento vivo para refinamento. **Não substitui código** — regista o que o 
 | G0.2 | Pacote socioambiental + polígono teste ≥1 camada OK | | |
 | G0.3 | ≥1 camada federal OK (SICAR ou embargos) | | |
 | G0.4 | `npm run geo:probe` SICAR 200 | ✅ P0 | 2026-06 |
+| G0.1 | REF-01-A via `npm run geo:resolve-car-test` | ✅ | 2026-06-11 |
+| G0.2 | Pacote + polígono ≥1 camada OK | _pendente UI_ | |
+| G0.3 | ≥1 camada federal OK | ✅ probe SICAR 120 feat | 2026-06 |
 
 ---
 
-## Referências CAR — localizador (Coronel Fabriciano / MG)
+## Referências CAR — localizador (Unaí / MG — IBGE 3170404)
 
-Município IBGE **3170404**. Usar **após G0-min**; preencher `areaHa` na primeira execução L1.
+Município IBGE **3170404** = **Unaí / MG**. Usar **após G0-min**; áreas validadas L1.1 (2026-06-11).
 
-| ID | CAR / teste | Fase | areaHa (portal) | Notas | Passou? |
-|----|-------------|------|-----------------|-------|---------|
-| REF-01-A | `MG-3170404-3DBDB334242844B392639D3237B27E10` | L1 | _preencher_ | T1, G0.1 | |
-| REF-01-B | `MG-3170404-CB2D550172B2405AAA6CF6479E2215B1` | L1 | _preencher_ | ambiguidade D2 | |
-| REF-02 | Centróide REF-01-A | L1 | — | T3 → A | |
+| ID | CAR / teste | Fase | areaHa (resolver) | Notas | Passou? |
+|----|-------------|------|-------------------|-------|---------|
+| REF-01-A | `MG-3170404-3DBDB334242844B392639D3237B27E10` | L1 | **1139,53** | Unaí/MG; sicar; confiança alta | ✅ T1 |
+| REF-01-B | `MG-3170404-CB2D550172B2405AAA6CF6479E2215B1` | L1 | **940,14** | Unaí/MG; par ambiguidade D2 | ✅ T1b |
+| REF-02 | Centróide REF-01-A | L1/L2 | — | T3 → A; `geo:resolve-car-test` ✅ | ✅ |
 | REF-02-ambig | Ponto entre A e B | L2 | — | D2 | |
-| REF-07 | CAR SP ou GO | L2 | _preencher_ | T18: Localizar OK; Executar MG bloqueado (D9) | |
+| REF-07 | CAR SP ou GO | L2 | _preencher_ | T18: Localizar OK; Executar MG bloqueado (D9) | ✅ auto GO-5219902… |
+
+### L4 — Rollout localizador
+
+| ID | Entrega | Estado |
+|----|---------|--------|
+| L4.1 | `/analise-ambiental` — localizador + card L3 (nacional, confirma fora MG) | ✅ L4.6 unificado 2026-06-11 |
+| L4.2 | Licenciamento — CAR/localização em nova solicitação + edit | ✅ código 2026-06-11 |
+| L4.3 | Georeferenciamento — CAR/campo + trâmite + detalhe processo | ✅ código 2026-06-11 |
+| L4.4 | CRM — oportunidade com GPS/campo (`localizacaoImovel`) | ✅ código 2026-06-11 |
+| L4.5 | Hook `useImovelLocalizador` + pacote socioambiental (localizador L2 no wizard) | ✅ código 2026-06-11 |
+| L4.6 | `/analise-ambiental` — unificação UI via `ImovelLocalizadorPanel` (elimina duplicação CAR/coord/GPS) | ✅ código 2026-06-11 |
+| L4.7 | Página `/georeferenciamento/historico-car` + item menu **Histórico CAR** | ✅ código 2026-06-11 |
+| L5.0 | Conecta Gov — API `/api/geospatial/conecta-gov/demonstrativo` (503 sem credenciais) | ✅ scaffold 2026-06-11 |
+| L5.1 | Snapshots CAR Firestore `car_snapshots/{cod}/records` | ✅ código 2026-06-11 |
+| L5.2 | UI Histórico CAR + critério `car_historico_omissao` no pacote | ✅ código 2026-06-11 |
+| L5.3 | Conecta Gov no card confirmação + persistência APP/RL em trâmites | ✅ código 2026-06-11 |
+| L5.4 | Histórico CAR + Conecta Gov em licenciamento / análise geoespacial | ✅ código 2026-06-11 |
+
+| ID | Entrega | Estado |
+|----|---------|--------|
+| L3.1 | `ImovelLocalizadorConfirmacao` | ✅ |
+| L3.2 | Estados 0 / 1 / N imóveis | ✅ |
+| L3.3 | Layout mobile (mapa → dados → sticky Confirmar) | ✅ |
+| L3.4 | Link car.gov.br nova aba (D6) | ✅ |
+| L3.5 | PDF metadados localização | ✅ |
+| L3.6 | Banner D9 no card (UF ≠ MG) | ✅ |
 
 Checklist por entrada:
 

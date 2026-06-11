@@ -51,6 +51,8 @@ type LicensingLocationalBlockProps = {
   onSuggestedCriterio: (payload: LocationalAnalysisPayload) => void;
   /** Snapshot salvo no processo (edição ou após salvar). */
   savedAnalysis?: LocationalAnalysisPayload | null;
+  /** CAR confirmado no localizador do trâmite (L4.2). */
+  prefillCar?: string;
 };
 
 export function LicensingLocationalBlock({
@@ -58,6 +60,7 @@ export function LicensingLocationalBlock({
   onManualLockChange,
   onSuggestedCriterio,
   savedAnalysis,
+  prefillCar,
 }: LicensingLocationalBlockProps) {
   const { auth } = useFirebase();
   const { toast } = useToast();
@@ -79,6 +82,12 @@ export function LicensingLocationalBlock({
       setMode(savedAnalysis.inputMode);
     }
   }, [savedAnalysis?.inputPreview, savedAnalysis?.inputMode]);
+
+  React.useEffect(() => {
+    if (!prefillCar?.trim()) return;
+    setMode("car");
+    setTextPayload(prefillCar.trim());
+  }, [prefillCar]);
 
   const serializedDraw = React.useMemo(
     () => (drawn ? JSON.stringify(drawn) : ""),

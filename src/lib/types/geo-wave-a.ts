@@ -6,6 +6,10 @@ export const GeoLayerStatSchema = z.object({
   lengthKm: z.number().optional(),
   pctOfPerimeter: z.number().optional(),
   count: z.number().optional(),
+  /** Distância mínima ao perímetro (m) — extrato socioambiental / Sicredi. */
+  proximityM: z.number().optional(),
+  /** Área no buffer regulatório (ha) — critérios buffer 3 km. */
+  bufferOverlapHa: z.number().optional(),
 });
 
 export type GeoLayerStat = z.infer<typeof GeoLayerStatSchema>;

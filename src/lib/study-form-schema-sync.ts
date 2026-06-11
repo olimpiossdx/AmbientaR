@@ -1,10 +1,15 @@
 import { access } from 'fs/promises';
 import type { StudyTypeKey } from '@/lib/study-form-resolution-catalog';
-import { LISTAGEM_ACTIVITY_BY_CODE, LISTAGEM_CODES } from '@/lib/listagem-activities';
+import {
+  extractListagemCode,
+  LISTAGEM_ACTIVITY_BY_CODE,
+  LISTAGEM_CODES,
+} from '@/lib/listagem-activities';
 import {
   RCA_LISTAGEM_ACTIVITIES,
   RCA_SUBACTIVITIES,
 } from '@/lib/rca-listagem-catalog';
+import { resolveRcaTermosReferenciaPath } from '@/lib/rca/rca-termos-referencia-paths';
 import { getTermosReferenciaPathForStudy } from '@/lib/termos-referencia-paths';
 import { resolveAndCacheStudyFormSchema } from '@/lib/study-form-schema-cache';
 
@@ -99,25 +104,36 @@ export async function syncAllStudyFormSchemaCaches(
       continue;
     }
 
-    try {
-      await access(dirPath);
-    } catch {
-      items.push({
-        studySlug,
-        activity: null,
-        subactivity: null,
-        status: 'skipped',
-        message: `Pasta TR não encontrada: ${dirPath}`,
-      });
-      continue;
+    if (studySlug !== 'rca') {
+      try {
+        await access(dirPath);
+      } catch {
+        items.push({
+          studySlug,
+          activity: null,
+          subactivity: null,
+          status: 'skipped',
+          message: `Pasta TR não encontrada: ${dirPath}`,
+        });
+        continue;
+      }
     }
 
     const targets = buildSyncTargets(studySlug);
     for (const target of targets) {
+      let targetDirPath = dirPath;
+      if (studySlug === 'rca' && target.activity) {
+        const listagemCode = extractListagemCode(target.activity);
+        if (listagemCode) {
+          const rcaPath = await resolveRcaTermosReferenciaPath(listagemCode);
+          if (rcaPath) targetDirPath = rcaPath;
+        }
+      }
+
       try {
         const result = await resolveAndCacheStudyFormSchema({
           studySlug,
-          dirPath,
+          dirPath: targetDirPath,
           activity: target.activity,
           subactivity: target.subactivity,
           refresh,

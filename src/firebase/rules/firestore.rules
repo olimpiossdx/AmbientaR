@@ -1274,6 +1274,15 @@ service cloud.firestore {
     }
 
     /**
+     * @description Snapshots SICAR por CAR (histórico AmbientaR — WFS público não expõe versões).
+     * @path /databases/{database}/documents/car_snapshots/{codImovel}/records/{recordId}
+     */
+    match /car_snapshots/{codImovel}/records/{recordId} {
+      allow read, create: if isSignedIn();
+      allow update, delete: if isAdmin() || isSupervisor();
+    }
+
+    /**
      * @description Rascunhos de compensação ambiental (checklist por tipo, um doc por utilizador+tipo).
      * @path /databases/{database}/documents/compensacao_drafts/{draftId}
      */

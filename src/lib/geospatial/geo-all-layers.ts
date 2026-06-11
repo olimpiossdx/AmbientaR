@@ -7,6 +7,7 @@ import { resolveFederalLayersForBbox } from "@/lib/geospatial/wave-federal-catal
 import { ICMBIO_LAYERS } from "@/lib/geospatial/wave-icmbio-catalog";
 import { MMA_LAYERS } from "@/lib/geospatial/wave-mma-catalog";
 import { resolveMapcarAppTypeNamesForBbox } from "@/lib/geospatial/mapcar-app-layers";
+import { resolveSocioambientalLayersForBbox } from "@/lib/geospatial/wave-socioambiental-catalog";
 import type { WaveACatalogEntry } from "@/lib/geospatial/wave-a-catalog";
 
 function patchLayerTypeNamesForBbox(
@@ -29,11 +30,14 @@ export function resolveAllLayersForBbox(
   const seen = new Set<string>();
   const out: WaveACatalogEntry[] = [];
 
+  const socioambiental = resolveSocioambientalLayersForBbox(bbox);
+
   for (const entry of [
     ...SIG_MG_ALL_LAYERS,
     ...federal,
     ...ICMBIO_LAYERS,
     ...MMA_LAYERS,
+    ...socioambiental,
   ]) {
     if (seen.has(entry.layerId)) continue;
     seen.add(entry.layerId);

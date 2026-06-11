@@ -33,6 +33,12 @@ Pasta de **discussão e planeamento** (não substitui código). Serve para retom
 | [PASSO-3-LINHA-DE-MONTAGEM-SAAS.md](./PASSO-3-LINHA-DE-MONTAGEM-SAAS.md) | **Arquitetura:** Estudos técnicos, Word/PDF, PIA, inventário, licenciamento |
 | [ROTEIRO-REPLICAR-SAAS.md](./ROTEIRO-REPLICAR-SAAS.md) | Blueprint para replicar em novo software / SaaS |
 
+### Arquivo CBERS (INPE) — raster + mudanças temporais
+
+| Ficheiro | Conteúdo |
+|----------|----------|
+| [../CBERS-ARQUIVO-INPE-PLANO.md](../CBERS-ARQUIVO-INPE-PLANO.md) | **Plano v3.1 — Fase 1 aprovada:** MVP leigo, CAR, GeoTIFF, pré-aquecimento, sem limite ha, STAC INPE, relatórios PRODES (Fase 3) |
+
 ### Visão e histórico
 
 | Ficheiro | Conteúdo |

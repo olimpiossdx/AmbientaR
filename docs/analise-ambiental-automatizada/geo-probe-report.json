@@ -1,5 +1,5 @@
 {
-  "generatedAtUtc": "2026-06-11T15:16:22.108Z",
+  "generatedAtUtc": "2026-06-11T19:54:15.292Z",
   "fixture": "D:\\AmbientaR\\fixtures\\geo\\test-polygon-mg-850ha.geojson",
   "bbox": [
     -45.5234,
@@ -13,56 +13,56 @@
       "url": "https://geoserver.meioambiente.mg.gov.br/ows?service=WFS&version=1.1.0&request=GetCapabilities",
       "status": 200,
       "ok": true,
-      "ms": 250
+      "ms": 1586
     },
     {
       "id": "sicar",
       "url": "https://geoserver.car.gov.br/geoserver/sicar/ows?service=WFS&version=1.1.0&request=GetCapabilities",
       "status": 200,
       "ok": true,
-      "ms": 194
+      "ms": 838
     },
     {
       "id": "ibama_siscom",
       "url": "https://siscom.ibama.gov.br/geoserver/publica/ows?service=WFS&version=1.1.0&request=GetCapabilities",
       "status": 404,
       "ok": false,
-      "ms": 210
+      "ms": 306
     },
     {
       "id": "icmbio_inde",
       "url": "https://geoservicos.inde.gov.br/geoserver/ICMBio/ows?service=WFS&version=2.0.0&request=GetCapabilities",
       "status": 200,
       "ok": true,
-      "ms": 222
+      "ms": 294
     },
     {
       "id": "mma_inde",
       "url": "https://geoservicos.inde.gov.br/geoserver/MMA/ows?service=WFS&version=2.0.0&request=GetCapabilities",
       "status": 200,
       "ok": true,
-      "ms": 173
+      "ms": 155
     },
     {
       "id": "terrabrasilis",
       "url": "https://terrabrasilis.dpi.inpe.br/geoserver/ows?service=WFS&version=1.1.0&request=GetCapabilities",
-      "status": 502,
-      "ok": false,
-      "ms": 110
+      "status": 200,
+      "ok": true,
+      "ms": 233
     },
     {
       "id": "mapbiomas_alerta",
       "url": "https://production.alerta.mapbiomas.org/geoserver/ows?service=WFS&version=1.1.0&request=GetCapabilities",
       "status": 200,
       "ok": true,
-      "ms": 1937
+      "ms": 561
     },
     {
       "id": "geonetwork_csw",
       "url": "https://idesisema.meioambiente.mg.gov.br/geonetwork/srv/por/csw?service=CSW&version=2.0.2&request=GetCapabilities",
       "status": 200,
       "ok": true,
-      "ms": 890
+      "ms": 443
     }
   ],
   "layers": [
@@ -394,14 +394,14 @@
     {
       "layerId": "br_prodes_cerrado",
       "title": "Desmatamento PRODES — Cerrado (INPE)",
-      "status": "error",
+      "status": "ok",
+      "featureCount": 2,
       "typeName": "prodes-cerrado-nb:yearly_deforestation",
-      "baseUrl": "https://terrabrasilis.dpi.inpe.br/geoserver/ows",
-      "error": "prodes-cerrado-nb:yearly_deforestation: Tempo limite WFS excedido."
+      "baseUrl": "https://terrabrasilis.dpi.inpe.br/geoserver/ows"
     },
     {
       "layerId": "br_prodes_mata_atlantica",
-      "title": "Desmatamento PRODES — Mata Atlântica (INPE)",
+      "title": "Desmatamento MA — PRODES / MapBiomas Alerta",
       "status": "degraded",
       "typeName": "prodes-mata-atlantica-nb:yearly_deforestation",
       "baseUrl": "https://terrabrasilis.dpi.inpe.br/geoserver/ows",
@@ -418,10 +418,10 @@
     {
       "layerId": "br_mapbiomas_alerta",
       "title": "Alertas de desmatamento (MapBiomas Alerta)",
-      "status": "ok",
-      "featureCount": 1,
+      "status": "no_features",
       "typeName": "mapbiomas-alertas:dashboard_alerts-shapefile",
-      "baseUrl": "https://production.alerta.mapbiomas.org/geoserver/ows"
+      "baseUrl": "https://production.alerta.mapbiomas.org/geoserver/ows",
+      "error": "mapbiomas-alertas:dashboard_alerts-shapefile: sem feições no recorte"
     },
     {
       "layerId": "br_icmbio_embargos",
@@ -451,8 +451,8 @@
   "summary": {
     "total": 48,
     "ok": 41,
-    "noFeatures": 5,
+    "noFeatures": 6,
     "degraded": 1,
-    "error": 1
+    "error": 0
   }
 }

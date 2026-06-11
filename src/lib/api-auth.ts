@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { verifyAdminBearer, type VerifiedAdmin } from "@/lib/admin/verify-admin";
+import { adminApiErrorResponse } from "@/lib/admin/admin-api-error";
+import { formatFirebaseAdminError } from "@/lib/firebase-admin";
 import { verifyIdTokenAndLoadUser } from "@/lib/package-enforcement-server";
 import type { AppUser } from "@/lib/types";
 
@@ -32,9 +34,10 @@ export function apiUnauthorizedResponse(
 }
 
 export function apiAuthErrorResponse(err: unknown) {
-  const message =
-    err instanceof Error ? err.message : "Falha de autenticação.";
-  return NextResponse.json({ error: message }, { status: 401 });
+  const { message, status } = adminApiErrorResponse(
+    formatFirebaseAdminError(err),
+  );
+  return NextResponse.json({ error: message }, { status });
 }
 
 export { adminApiErrorResponse, adminApiErrorNextResponse } from "@/lib/admin/admin-api-error";

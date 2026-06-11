@@ -33,6 +33,7 @@ import { getTermosReferenciaPathForStudy } from '@/lib/termos-referencia-config.
 import { resolveAndCacheStudyFormSchema } from '@/lib/study-form-schema-cache';
 import { enhanceStudyFormSchema } from '@/lib/study-form-schema-enhance';
 import { extractListagemCode } from '@/lib/listagem-activities';
+import { resolveRcaTermosReferenciaPath } from '@/lib/rca/rca-termos-referencia-paths';
 
 
 
@@ -155,7 +156,16 @@ export async function GET(
 
 
 
-  const dirPath = getTermosReferenciaPathForStudy(studySlug);
+  let dirPath = getTermosReferenciaPathForStudy(studySlug);
+
+  if (studySlug === 'rca') {
+    const listagemCode =
+      extractListagemCode(listagemQuery) ?? extractListagemCode(subactivityQuery);
+    if (listagemCode) {
+      const rcaPath = await resolveRcaTermosReferenciaPath(listagemCode);
+      if (rcaPath) dirPath = rcaPath;
+    }
+  }
 
   if (!dirPath) {
 

@@ -2,6 +2,14 @@ import type { Feature, Geometry } from "geojson";
 import { expandBbox } from "@/lib/geospatial/perimeter";
 import { fetchArcGisFeaturesInBbox } from "@/lib/geospatial/arcgis-feature-client";
 import { fetchWfsFeaturesInBbox } from "@/lib/geospatial/wfs-client";
+import { fetchIncraGmlFeaturesInBbox } from "@/lib/geospatial/incra-wfs-gml-client";
+import {
+  INCRA_ASSENTAMENTOS_LAYER_ID,
+  INCRA_QUILOMBOLAS_LAYER_ID,
+  patchIncraLayerForBbox,
+  INCRA_ASSENTAMENTOS_LAYER,
+  INCRA_QUILOMBOLAS_LAYER,
+} from "@/lib/geospatial/wave-socioambiental-catalog";
 import type { CartographicOverlayRing } from "@/lib/geospatial/cartographic-layout";
 import { resolveAllLayersForBbox } from "@/lib/geospatial/geo-all-layers";
 import {
@@ -117,18 +125,39 @@ export async function fetchThematicWfsOverlays(
   const margin = entry.bboxMarginDegrees ?? (entry.geometryKind === "point" ? 0.05 : 0.02);
   const expanded = expandBbox(perimeterBbox, margin);
 
-  const wfs = entry.arcgisLayerUrl
-    ? await fetchArcGisFeaturesInBbox({
-        layerUrl: entry.arcgisLayerUrl,
-        bbox: expanded,
-        maxFeatures: entry.maxWfsFeatures ?? 120,
-      })
-    : await fetchWfsFeaturesInBbox({
-        baseUrls: entry.wfsBaseUrls,
-        typeNames: entry.typeNames,
-        bbox: expanded,
-        maxFeatures: entry.maxWfsFeatures ?? 120,
-      });
+  const isIncra =
+    layerId === INCRA_ASSENTAMENTOS_LAYER_ID ||
+    layerId === INCRA_QUILOMBOLAS_LAYER_ID;
+
+  const wfs = isIncra
+    ? await (async () => {
+        const incraEntry =
+          layerId === INCRA_ASSENTAMENTOS_LAYER_ID
+            ? patchIncraLayerForBbox(INCRA_ASSENTAMENTOS_LAYER, expanded)
+            : patchIncraLayerForBbox(INCRA_QUILOMBOLAS_LAYER, expanded);
+        const incra = await fetchIncraGmlFeaturesInBbox({
+          baseUrl: incraEntry.wfsBaseUrls[0],
+          typeNames: incraEntry.typeNames,
+          bbox: expanded,
+          maxFeatures: incraEntry.maxWfsFeatures ?? 80,
+        });
+        return {
+          ok: incra.ok,
+          features: incra.features,
+        };
+      })()
+    : entry.arcgisLayerUrl
+      ? await fetchArcGisFeaturesInBbox({
+          layerUrl: entry.arcgisLayerUrl,
+          bbox: expanded,
+          maxFeatures: entry.maxWfsFeatures ?? 120,
+        })
+      : await fetchWfsFeaturesInBbox({
+          baseUrls: entry.wfsBaseUrls,
+          typeNames: entry.typeNames,
+          bbox: expanded,
+          maxFeatures: entry.maxWfsFeatures ?? 120,
+        });
   if (!wfs.ok || !wfs.features.length) return [];
   return featuresToOverlayRings(wfs.features, entry);
 }

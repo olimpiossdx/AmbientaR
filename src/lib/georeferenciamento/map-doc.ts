@@ -35,6 +35,7 @@ export function mapGeorefProjectDoc(
     polygonGeojson: data.polygonGeojson as object | undefined,
     vertices: data.vertices as GeorefVertice[] | undefined,
     verticesMeta: data.verticesMeta as GeorefProject["verticesMeta"],
+    localizacaoImovel: data.localizacaoImovel as GeorefProject["localizacaoImovel"],
     createdBy: String(data.createdBy ?? ""),
     createdAt: String(data.createdAt ?? ""),
     updatedAt: String(data.updatedAt ?? ""),

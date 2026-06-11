@@ -1,1 +1,1 @@
-// This file is intentionally blank. The content has been moved to rca/page.tsx for dynamic loading.
+export { RcaFormEsgotamentoSanitario } from './listagem-e/rca-form-listagem-e-activity';

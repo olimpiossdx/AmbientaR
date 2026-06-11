@@ -47,6 +47,13 @@ import {
   LicensingLocationalBlock,
   type LocationalAnalysisPayload,
 } from '@/components/licensing/licensing-locational-block';
+import { ImovelLocalizadorPanel } from '@/components/geospatial/imovel-localizador-panel';
+import {
+  localizacaoToImovelSnapshot,
+  localizacaoToRequestSnapshot,
+  conectaGovExtrasFromDemonstrativo,
+} from '@/lib/geospatial/localizacao-request-snapshot';
+import type { LocalizacaoResolvida, RequestLocalizacaoImovel } from '@/lib/types/localizacao-imovel';
 import {
   LICENSING_CRITERIO_LOCACIONAL_OPTIONS,
   LICENSING_DOCS_TEMPLATE,
@@ -123,6 +130,7 @@ const LicenciamentoCard = ({
   locationalManualLock,
   onLocationalManualLockChange,
   onLocationalSuggested,
+  locationalPrefillCar,
 }: {
   grading: LicensingGrading;
   activities: LicensingActivity[];
@@ -138,6 +146,7 @@ const LicenciamentoCard = ({
   locationalManualLock: boolean;
   onLocationalManualLockChange: (locked: boolean) => void;
   onLocationalSuggested: (payload: LocationalAnalysisPayload) => void;
+  locationalPrefillCar?: string;
 }) => {
     const classe = classByMatrix[grading.porte][grading.potencial];
     const modalidade =
@@ -267,6 +276,7 @@ const LicenciamentoCard = ({
                   onManualLockChange={onLocationalManualLockChange}
                   savedAnalysis={locationalSavedAnalysis}
                   onSuggestedCriterio={onLocationalSuggested}
+                  prefillCar={locationalPrefillCar}
                 />
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   <div className="space-y-2">
@@ -454,6 +464,9 @@ function NewRequestPageContent() {
     const [uploadingLicensingDocId, setUploadingLicensingDocId] = React.useState<string | null>(null);
     const [licLocManual, setLicLocManual] = React.useState(false);
     const [licLocAnalysis, setLicLocAnalysis] = React.useState<LocationalAnalysisPayload | null>(null);
+    const [localizacaoImovel, setLocalizacaoImovel] =
+        React.useState<RequestLocalizacaoImovel | null>(null);
+    const [licCarPrefill, setLicCarPrefill] = React.useState<string | undefined>();
     const [loading, setLoading] = React.useState(false);
 
     const empreendedoresQuery = useMemoFirebase(
@@ -508,6 +521,56 @@ function NewRequestPageContent() {
         if (!selectedProject) return;
         setImovelSnapshot((prev) => applyImovelFromProject(selectedProject, prev));
     }, [selectedProject]);
+
+    const projectCarPrefill = React.useMemo(
+        () =>
+            selectedProject?.car?.receiptNumber?.trim() ||
+            imovelSnapshot.codigoCar?.trim() ||
+            localizacaoImovel?.codImovel,
+        [selectedProject, imovelSnapshot.codigoCar, localizacaoImovel?.codImovel],
+    );
+
+    const handleLocalizacaoConfirmed = React.useCallback(
+        (resolved: LocalizacaoResolvida, extras?: { conectaGov?: import('@/lib/geospatial/conecta-gov-sicar').ConectaGovDemonstrativo | null }) => {
+            setImovelSnapshot((prev) => localizacaoToImovelSnapshot(resolved, prev));
+            const cg = extras?.conectaGov
+                ? conectaGovExtrasFromDemonstrativo(extras.conectaGov)
+                : undefined;
+            const snap = localizacaoToRequestSnapshot(resolved, cg);
+            setLocalizacaoImovel(snap);
+            setLicCarPrefill(snap.codImovel);
+            setLicensingActivities((prev) => {
+                if (!prev.length) return prev;
+                const [first, ...rest] = prev;
+                const next = [
+                    {
+                        ...first,
+                        enterpriseSize: resolved.areaHa,
+                        sizeUnit: 'ha' as const,
+                        autoPorte: getAutoPorteFromSize(resolved.areaHa),
+                        autoPotencial: getAutoPotencialFromCode(first.codeGroup),
+                    },
+                    ...rest,
+                ];
+                const porte = next.reduce<'P' | 'M' | 'G'>((acc, activity) => {
+                    const rank = getAutoPorteFromSize(activity.enterpriseSize);
+                    return getHighestRank(rank) > getHighestRank(acc) ? rank : acc;
+                }, 'P');
+                const potencial = next.reduce<'P' | 'M' | 'G'>((acc, activity) => {
+                    const rank = getAutoPotencialFromCode(activity.codeGroup);
+                    return getHighestRank(rank) > getHighestRank(acc) ? rank : acc;
+                }, 'P');
+                setLicensingGrading((g) => ({ ...g, porte, potencial }));
+                return next;
+            });
+        },
+        [],
+    );
+
+    const handleLocalizacaoCleared = React.useCallback(() => {
+        setLocalizacaoImovel(null);
+        setLicCarPrefill(undefined);
+    }, []);
 
     useAiaChecklistSubserviceSync(
         hasInterventionService,
@@ -630,6 +693,10 @@ function NewRequestPageContent() {
             projectId: selectedEmpreendimento,
             services: selectedServices,
             status: 'Draft' as const,
+            ...(localizacaoImovel ? { localizacaoImovel } : {}),
+            ...(imovelSnapshot && Object.keys(imovelSnapshot).length > 0
+                ? { imovelSnapshot }
+                : {}),
             ...(selectedServices.includes(INTERVENTION_SERVICE_LABEL)
                 ? {
                     interventionChecklist: resolveAiaChecklistForSave(
@@ -764,6 +831,16 @@ function NewRequestPageContent() {
                                     </Select>
                                 </div>
                             </div>
+
+                            <ImovelLocalizadorPanel
+                                initialCarCod={projectCarPrefill}
+                                onConfirmed={handleLocalizacaoConfirmed}
+                                onCleared={handleLocalizacaoCleared}
+                                extratoMgObrigatorioParaConfirmar={false}
+                                showCarHistorico
+                                disabled={loading}
+                            />
+
                             <div className="space-y-2 pt-4">
                                 <Label>Serviços Requeridos</Label>
                                 <div className="space-y-2 rounded-md border p-4 grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2">
@@ -843,6 +920,7 @@ function NewRequestPageContent() {
                                             locationalManualLock={licLocManual}
                                             onLocationalManualLockChange={setLicLocManual}
                                             onLocationalSuggested={handleLocationalSuggested}
+                                            locationalPrefillCar={licCarPrefill ?? localizacaoImovel?.codImovel}
                                         />
                                     );
                                 }

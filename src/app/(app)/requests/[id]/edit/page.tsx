@@ -48,6 +48,14 @@ import {
   LicensingLocationalBlock,
   type LocationalAnalysisPayload,
 } from '@/components/licensing/licensing-locational-block';
+import { ImovelLocalizadorPanel } from '@/components/geospatial/imovel-localizador-panel';
+import { CarHistoricoPanel } from '@/components/geospatial/car-historico-panel';
+import {
+  localizacaoToImovelSnapshot,
+  localizacaoToRequestSnapshot,
+  conectaGovExtrasFromDemonstrativo,
+} from '@/lib/geospatial/localizacao-request-snapshot';
+import type { LocalizacaoResolvida, RequestLocalizacaoImovel } from '@/lib/types/localizacao-imovel';
 import { LICENCIAMENTO_MENU_LABEL } from '@/lib/licenciamento-menu';
 import { isProcessosPortalReadOnlyRole } from '@/lib/role-guards';
 import { fetchEmpreendedorIdsForProcessosPortal } from '@/lib/requests-portal-empreendedor-ids';
@@ -132,6 +140,7 @@ const LicenciamentoCard = ({
   locationalManualLock,
   onLocationalManualLockChange,
   onLocationalSuggested,
+  locationalPrefillCar,
 }: {
   grading: LicensingGrading;
   activities: LicensingActivity[];
@@ -147,6 +156,7 @@ const LicenciamentoCard = ({
   locationalManualLock: boolean;
   onLocationalManualLockChange: (locked: boolean) => void;
   onLocationalSuggested: (payload: LocationalAnalysisPayload) => void;
+  locationalPrefillCar?: string;
 }) => {
     const classe = classByMatrix[grading.porte][grading.potencial];
     const modalidade =
@@ -276,6 +286,7 @@ const LicenciamentoCard = ({
                   onManualLockChange={onLocationalManualLockChange}
                   savedAnalysis={locationalSavedAnalysis}
                   onSuggestedCriterio={onLocationalSuggested}
+                  prefillCar={locationalPrefillCar}
                 />
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   <div className="space-y-2">
@@ -480,6 +491,9 @@ function EditRequestPageContent() {
     const [uploadingLicensingDocId, setUploadingLicensingDocId] = React.useState<string | null>(null);
     const [licLocManual, setLicLocManual] = React.useState(false);
     const [licLocAnalysis, setLicLocAnalysis] = React.useState<LocationalAnalysisPayload | null>(null);
+    const [localizacaoImovel, setLocalizacaoImovel] =
+        React.useState<RequestLocalizacaoImovel | null>(null);
+    const [licCarPrefill, setLicCarPrefill] = React.useState<string | undefined>();
     const [loading, setLoading] = React.useState(false);
     const isHydratingFromRequestRef = React.useRef(false);
 
@@ -520,6 +534,13 @@ function EditRequestPageContent() {
             setSelectedEmpreendimento(normalizeEntityId(request.projectId));
             setSelectedServices(request.services);
             setSelectedStatus(request.status);
+            if (request.localizacaoImovel) {
+                setLocalizacaoImovel(request.localizacaoImovel);
+                setLicCarPrefill(request.localizacaoImovel.codImovel);
+            } else {
+                setLocalizacaoImovel(null);
+                setLicCarPrefill(undefined);
+            }
             if (request.services.includes(INTERVENTION_SERVICE_LABEL)) {
                 const subs = normalizeInterventionSubserviceIds(request.interventionSubservices);
                 const imovel = request.imovelSnapshot ?? {};
@@ -544,7 +565,7 @@ function EditRequestPageContent() {
                 setInterventionChecklist([]);
                 setInterventionSubservices([]);
                 setTipoIntervencao(undefined);
-                setImovelSnapshot({});
+                setImovelSnapshot(request.imovelSnapshot ?? {});
                 setLinkedArtifacts({});
             }
             if (request.licensingData) {
@@ -639,6 +660,56 @@ function EditRequestPageContent() {
         if (!selectedProject || readOnly) return;
         setImovelSnapshot((prev) => applyImovelFromProject(selectedProject, prev));
     }, [selectedProject, readOnly]);
+
+    const projectCarPrefill = React.useMemo(
+        () =>
+            selectedProject?.car?.receiptNumber?.trim() ||
+            imovelSnapshot.codigoCar?.trim() ||
+            localizacaoImovel?.codImovel,
+        [selectedProject, imovelSnapshot.codigoCar, localizacaoImovel?.codImovel],
+    );
+
+    const handleLocalizacaoConfirmed = React.useCallback(
+        (resolved: LocalizacaoResolvida, extras?: { conectaGov?: import('@/lib/geospatial/conecta-gov-sicar').ConectaGovDemonstrativo | null }) => {
+            setImovelSnapshot((prev) => localizacaoToImovelSnapshot(resolved, prev));
+            const cg = extras?.conectaGov
+                ? conectaGovExtrasFromDemonstrativo(extras.conectaGov)
+                : undefined;
+            const snap = localizacaoToRequestSnapshot(resolved, cg);
+            setLocalizacaoImovel(snap);
+            setLicCarPrefill(snap.codImovel);
+            setLicensingActivities((prev) => {
+                if (!prev.length) return prev;
+                const [first, ...rest] = prev;
+                const next = [
+                    {
+                        ...first,
+                        enterpriseSize: resolved.areaHa,
+                        sizeUnit: 'ha' as const,
+                        autoPorte: getAutoPorteFromSize(resolved.areaHa),
+                        autoPotencial: getAutoPotencialFromCode(first.codeGroup),
+                    },
+                    ...rest,
+                ];
+                const porte = next.reduce<'P' | 'M' | 'G'>((acc, activity) => {
+                    const rank = getAutoPorteFromSize(activity.enterpriseSize);
+                    return getHighestRank(rank) > getHighestRank(acc) ? rank : acc;
+                }, 'P');
+                const potencial = next.reduce<'P' | 'M' | 'G'>((acc, activity) => {
+                    const rank = getAutoPotencialFromCode(activity.codeGroup);
+                    return getHighestRank(rank) > getHighestRank(acc) ? rank : acc;
+                }, 'P');
+                setLicensingGrading((g) => ({ ...g, porte, potencial }));
+                return next;
+            });
+        },
+        [],
+    );
+
+    const handleLocalizacaoCleared = React.useCallback(() => {
+        setLocalizacaoImovel(null);
+        setLicCarPrefill(undefined);
+    }, []);
 
     useAiaChecklistSubserviceSync(
         hasInterventionService && !readOnly,
@@ -763,6 +834,10 @@ function EditRequestPageContent() {
             projectId: selectedEmpreendimento,
             services: selectedServices,
             status: selectedStatus,
+            ...(localizacaoImovel ? { localizacaoImovel } : {}),
+            ...(imovelSnapshot && Object.keys(imovelSnapshot).length > 0
+                ? { imovelSnapshot }
+                : {}),
             ...(selectedServices.includes(INTERVENTION_SERVICE_LABEL)
                 ? {
                     interventionChecklist: resolveAiaChecklistForSave(
@@ -966,6 +1041,37 @@ function EditRequestPageContent() {
                                     </Select>
                                 </div>
                             </div>
+
+                            {!readOnly ? (
+                                <ImovelLocalizadorPanel
+                                    initialCarCod={projectCarPrefill}
+                                    onConfirmed={handleLocalizacaoConfirmed}
+                                    onCleared={handleLocalizacaoCleared}
+                                    extratoMgObrigatorioParaConfirmar={false}
+                                    showCarHistorico
+                                    disabled={loading}
+                                />
+                            ) : localizacaoImovel ? (
+                                <div className="rounded-md border bg-muted/20 p-3 text-sm space-y-3">
+                                    <div className="space-y-1">
+                                    <p className="font-medium">Imóvel vinculado (SICAR)</p>
+                                    <p className="text-xs font-mono break-all">{localizacaoImovel.codImovel}</p>
+                                    <p className="text-xs text-muted-foreground">
+                                        {localizacaoImovel.areaHa.toFixed(2)} ha ·{' '}
+                                        {localizacaoImovel.municipio}/{localizacaoImovel.uf} · confiança{' '}
+                                        {localizacaoImovel.confianca}
+                                    </p>
+                                    {localizacaoImovel.areaAppHa != null ? (
+                                        <p className="text-xs text-muted-foreground">
+                                            APP {localizacaoImovel.areaAppHa.toFixed(2)} ha · RL{' '}
+                                            {localizacaoImovel.areaRlHa?.toFixed(2) ?? '—'} ha (Conecta Gov)
+                                        </p>
+                                    ) : null}
+                                    </div>
+                                    <CarHistoricoPanel codImovel={localizacaoImovel.codImovel} />
+                                </div>
+                            ) : null}
+
                             <div className="space-y-2 pt-4">
                                 <Label>Serviços Requeridos</Label>
                                 <div className="space-y-2 rounded-md border p-4 grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2">
@@ -1071,6 +1177,7 @@ function EditRequestPageContent() {
                                             locationalManualLock={licLocManual}
                                             onLocationalManualLockChange={setLicLocManual}
                                             onLocationalSuggested={handleLocationalSuggested}
+                                            locationalPrefillCar={licCarPrefill ?? localizacaoImovel?.codImovel}
                                         />
                                     );
                                 }

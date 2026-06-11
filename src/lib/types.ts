@@ -1556,6 +1556,44 @@ export type PCA = {
   id: string;
   status?: 'Rascunho' | 'Aprovado';
   activity: string;
+  /** Código da listagem DN 217 (A–H) quando formulário estruturado. */
+  listagemCode?: string;
+  subActivity?: string;
+  formularioTipo?: 'geral' | 'principal' | 'lavra_subterranea' | 'fundidos_ferro_aco' | string;
+  formSource?: 'react' | 'dynamic' | 'legacy';
+  /** Snapshot congelado na aprovação (modelo híbrido). */
+  projectSnapshot?: {
+    projectId?: string | null;
+    listagemCode?: string;
+    subActivity?: string;
+    formularioTipo?: string;
+    listagemA?: Record<string, unknown>;
+    listagemB?: Record<string, unknown>;
+    listagemC?: Record<string, unknown>;
+    listagemD?: Record<string, unknown>;
+    listagemE?: Record<string, unknown>;
+    listagemF?: Record<string, unknown>;
+    listagemG?: Record<string, unknown>;
+    listagemH?: Record<string, unknown>;
+    empreendimento?: Record<string, unknown>;
+    snapshotAt?: string;
+  };
+  /** Dados técnicos PCA Listagem A (formulário próprio). */
+  listagemA?: Record<string, unknown>;
+  /** Dados técnicos PCA Listagem B (formulário próprio). */
+  listagemB?: Record<string, unknown>;
+  /** Dados técnicos PCA Listagem C (formulário próprio). */
+  listagemC?: Record<string, unknown>;
+  /** Dados técnicos PCA Listagem D (formulário próprio). */
+  listagemD?: Record<string, unknown>;
+  /** Dados técnicos PCA Listagem E (formulário próprio). */
+  listagemE?: Record<string, unknown>;
+  /** Dados técnicos PCA Listagem F (formulário próprio). */
+  listagemF?: Record<string, unknown>;
+  /** Dados técnicos PCA Listagem G (formulário próprio). */
+  listagemG?: Record<string, unknown>;
+  /** Dados técnicos PCA Listagem H (formulário próprio). */
+  listagemH?: Record<string, unknown>;
   termoReferencia: {
     titulo: string;
     processo: string;
@@ -1805,6 +1843,8 @@ export type Opportunity = {
     closeDate: string;
     stage: OpportunityStage;
     assignedTo?: string;
+    /** Visita de campo / prospecção com GPS (L4.4). */
+    localizacaoImovel?: import("@/lib/types/localizacao-imovel").RequestLocalizacaoImovel;
 };
 
 export type CommercialProposalItem = {
@@ -2248,6 +2288,8 @@ export type Request = {
     tipoIntervencao?: TipoIntervencaoAia;
     /** Snapshot do imóvel para regras condicionais do checklist. */
     imovelSnapshot?: AiaImovelSnapshot;
+    /** Imóvel localizado via SICAR (L4.2 localizador). */
+    localizacaoImovel?: import("@/lib/types/localizacao-imovel").RequestLocalizacaoImovel;
     /** Vínculos com PIA, inventário, mapas e georef. */
     linkedArtifacts?: AiaLinkedArtifacts;
     licensingData?: {

@@ -18,9 +18,9 @@ import {
   Sparkles,
   Globe,
   FileDown,
-  Database,
   Share2,
   ChevronDown,
+  Database,
 } from "lucide-react";
 import type {
   AnaliseAmbientalOutput,
@@ -78,6 +78,10 @@ import { GeoAnalysisComplementPanel } from "@/components/geospatial/geo-analysis
 import { AiProviderBadge } from "@/components/ai/ai-provider-badge";
 import type { AiProviderId } from "@/lib/ai-provider-labels";
 import type { PerimeterParseInput } from "@/lib/geospatial/perimeter";
+import type { LocalizacaoResolvida } from "@/lib/types/localizacao-imovel";
+import { localizacaoToPerimeterInput } from "@/lib/geospatial/resolve-localizacao-imovel";
+import { ImovelLocalizadorPanel } from "@/components/geospatial/imovel-localizador-panel";
+import type { ImovelLocalizadorInputMode } from "@/hooks/use-imovel-localizador";
 import {
   SESSION_GEO_ANALYSIS_ID,
   isSessionGeoAnalysisId,
@@ -90,11 +94,15 @@ import {
 
 const LeafletMap = dynamic(() => import("./leaflet-map"), { ssr: false });
 
-type InputMode = "car" | "coordinates" | "polygon" | "shp" | "kml";
+type InputMode = "car" | "coordinates" | "gps" | "polygon" | "shp" | "kml";
 type GeoJSONLike = {
   type: string;
   [key: string]: unknown;
 };
+
+function needsLocalization(mode: InputMode): boolean {
+  return mode === "car" || mode === "coordinates" || mode === "gps";
+}
 
 export default function AnaliseAmbientalPage() {
   const { firestore, user, auth } = useFirebase();
@@ -133,10 +141,9 @@ export default function AnaliseAmbientalPage() {
   const [isWaveALoading, setIsWaveALoading] = React.useState(false);
   const [waveALayersDone, setWaveALayersDone] = React.useState(0);
   const [waveALayersTotal, setWaveALayersTotal] = React.useState(WAVE_ALL_LAYER_COUNT);
-  const [carNumber, setCarNumber] = React.useState("");
-  const [sicarPreview, setSicarPreview] = React.useState<string | null>(null);
-  const [isConsultingSicar, setIsConsultingSicar] = React.useState(false);
-  const [coordinateInput, setCoordinateInput] = React.useState("");
+  const [localizacao, setLocalizacao] =
+    React.useState<LocalizacaoResolvida | null>(null);
+  const [localizacaoConfirmada, setLocalizacaoConfirmada] = React.useState(false);
   const [polygonInput, setPolygonInput] = React.useState("");
   const [drawnPolygon, setDrawnPolygon] = React.useState<GeoJSONLike | null>(null);
   const [shpZipBase64, setShpZipBase64] = React.useState("");
@@ -217,20 +224,28 @@ export default function AnaliseAmbientalPage() {
   }, [firestore, empreendimentoId]);
 
   const hasValidInput = React.useMemo(() => {
-    if (inputMode === "car") return carNumber.trim().length > 3;
-    if (inputMode === "coordinates") return coordinateInput.trim().length > 3;
+    if (needsLocalization(inputMode)) {
+      return localizacaoConfirmada && localizacao?.status === "ok";
+    }
     if (inputMode === "shp") return shpZipBase64.length > 20;
     if (inputMode === "kml") return kmlText.trim().length > 20;
     return polygonInput.trim().length > 3 || !!drawnPolygon;
   }, [
-    carNumber,
-    coordinateInput,
     drawnPolygon,
     inputMode,
     kmlText,
+    localizacao,
+    localizacaoConfirmada,
     polygonInput,
     shpZipBase64,
   ]);
+
+  React.useEffect(() => {
+    if (!needsLocalization(inputMode)) {
+      setLocalizacao(null);
+      setLocalizacaoConfirmada(false);
+    }
+  }, [inputMode]);
 
   const serializedPolygon = React.useMemo(() => {
     if (drawnPolygon) return JSON.stringify(drawnPolygon);
@@ -238,11 +253,8 @@ export default function AnaliseAmbientalPage() {
   }, [drawnPolygon, polygonInput]);
 
   const buildAnalysisInput = React.useCallback((): AnaliseAmbientalInput | null => {
-    if (inputMode === "car" && carNumber.trim()) {
-      return { dataType: "car", data: carNumber.trim() };
-    }
-    if (inputMode === "coordinates" && coordinateInput.trim()) {
-      return { dataType: "coordinates", data: coordinateInput.trim() };
+    if (needsLocalization(inputMode) && localizacao?.status === "ok") {
+      return localizacaoToPerimeterInput(localizacao) as AnaliseAmbientalInput;
     }
     if (inputMode === "polygon" && serializedPolygon.trim()) {
       return { dataType: "polygon", data: serializedPolygon.trim() };
@@ -254,7 +266,7 @@ export default function AnaliseAmbientalPage() {
       return { dataType: "kml", data: kmlText.trim() };
     }
     return null;
-  }, [carNumber, coordinateInput, inputMode, kmlText, serializedPolygon, shpZipBase64]);
+  }, [inputMode, kmlText, localizacao, serializedPolygon, shpZipBase64]);
 
   const buildPerimeterInput = React.useCallback((): PerimeterParseInput | null => {
     const input = buildAnalysisInput();
@@ -266,6 +278,37 @@ export default function AnaliseAmbientalPage() {
     () => buildPerimeterInput(),
     [buildPerimeterInput],
   );
+
+  const wavePerimeterInput = React.useMemo((): PerimeterParseInput | null => {
+    if (needsLocalization(inputMode)) {
+      if (
+        !localizacao ||
+        localizacao.status !== "ok" ||
+        !localizacaoConfirmada
+      ) {
+        return null;
+      }
+      return localizacaoToPerimeterInput(localizacao);
+    }
+    return perimeterInput;
+  }, [inputMode, localizacao, localizacaoConfirmada, perimeterInput]);
+
+  const canStartWaveA = React.useMemo(() => {
+    if (needsLocalization(inputMode)) {
+      return (
+        localizacao?.status === "ok" &&
+        localizacaoConfirmada &&
+        !!wavePerimeterInput
+      );
+    }
+    return hasValidInput;
+  }, [
+    hasValidInput,
+    inputMode,
+    localizacao,
+    localizacaoConfirmada,
+    wavePerimeterInput,
+  ]);
 
   const handleAidManualChange = React.useCallback(
     (geo: GeoJSONLike | null) => {
@@ -333,6 +376,21 @@ export default function AnaliseAmbientalPage() {
             ? { hidrologiaContext: result.hidrologiaContext }
             : {}),
           ...(result.influenceAreas ? { influenceAreas: result.influenceAreas } : {}),
+          ...(localizacao
+            ? {
+                carCodImovel: localizacao.imovelSelecionadoCod,
+                metodoLocalizacao: localizacao.metodoEntrada,
+                perimetroFonte: localizacao.perimetroFonte,
+                confiancaLocalizacao: localizacao.confianca,
+                gpsAccuracyM: localizacao.gpsAccuracyM,
+                municipioImovel: localizacao.imoveis.find(
+                  (i) => i.codImovel === localizacao.imovelSelecionadoCod,
+                )?.municipio,
+                ufImovel: localizacao.imoveis.find(
+                  (i) => i.codImovel === localizacao.imovelSelecionadoCod,
+                )?.uf,
+              }
+            : {}),
         });
         return ref.id;
       } catch (error) {
@@ -346,7 +404,7 @@ export default function AnaliseAmbientalPage() {
         return null;
       }
     },
-    [empreendimentoId, firestore, influenceConfig, toast, user?.uid],
+    [empreendimentoId, firestore, influenceConfig, localizacao, toast, user?.uid],
   );
 
   const saveAnalysisSnapshot = React.useCallback(
@@ -374,19 +432,36 @@ export default function AnaliseAmbientalPage() {
 
   const handleStartWaveA = async () => {
     const input = buildAnalysisInput();
-    if (!input) {
+    const waveInput = wavePerimeterInput;
+    if (!input || !waveInput) {
       toast({
         variant: "destructive",
         title: "Dados insuficientes",
-        description: "Preencha CAR, coordenadas, polígono, KML ou SHP para iniciar a análise.",
+        description: needsLocalization(inputMode)
+          ? "Localize e confirme o imóvel antes de consultar as camadas."
+          : "Preencha CAR, coordenadas, polígono, KML ou SHP para iniciar a análise.",
       });
       return;
     }
-    if (input.dataType === "coordinates") {
+    if (
+      needsLocalization(inputMode) &&
+      (!localizacao || localizacao.status !== "ok" || !localizacaoConfirmada)
+    ) {
+      toast({
+        variant: "destructive",
+        title: "Confirme o imóvel",
+        description: "Revise o card SICAR e clique em Confirmar imóvel.",
+      });
+      return;
+    }
+    if (
+      input.dataType === "coordinates" &&
+      localizacao?.perimetroFonte !== "sicar"
+    ) {
       toast({
         title: "Coordenada com buffer mínimo",
         description:
-          "Para relatório Onda A com % confiável, prefira desenhar o polígono no mapa.",
+          "Para relatório Onda A com % confiável, prefira localizar o CAR ou desenhar o polígono no mapa.",
       });
     }
 
@@ -399,10 +474,6 @@ export default function AnaliseAmbientalPage() {
     setLastPayload(input.data);
 
     try {
-      const perimeterInput: PerimeterParseInput = {
-        dataType: input.dataType,
-        data: input.data,
-      };
       const idToken = await auth?.currentUser?.getIdToken();
       let result: WaveAAnalysisResult;
 
@@ -417,7 +488,7 @@ export default function AnaliseAmbientalPage() {
             perimeter: prev?.perimeter ?? {
               geojson: { type: "FeatureCollection", features: [] },
               areaHa: 0,
-              source: input.dataType,
+              source: waveInput.dataType,
               bbox: [0, 0, 0, 0],
             },
             layers,
@@ -430,7 +501,7 @@ export default function AnaliseAmbientalPage() {
       if (idToken) {
         result = await runWaveAAnalysisStreamClient(
           idToken,
-          perimeterInput,
+          waveInput,
           influenceConfig,
           (event) => {
             if (event.type === "layer") {
@@ -439,7 +510,7 @@ export default function AnaliseAmbientalPage() {
           },
         );
       } else {
-        const actionResult = await handleWaveAAnalysis(perimeterInput, influenceConfig);
+        const actionResult = await handleWaveAAnalysis(waveInput, influenceConfig);
         if (!actionResult.success) {
           throw new Error(actionResult.error);
         }
@@ -447,7 +518,7 @@ export default function AnaliseAmbientalPage() {
       }
 
       setWaveAResult(result);
-      const docId = await saveWaveASnapshot(perimeterInput, result);
+      const docId = await saveWaveASnapshot(waveInput, result);
       setSavedGeoAnalysisId(docId ?? SESSION_GEO_ANALYSIS_ID);
       const okCount = result.layers.filter((l) => l.status === "ok").length;
       const partialCount = result.layers.filter(
@@ -473,11 +544,14 @@ export default function AnaliseAmbientalPage() {
 
   const handleStartAnalysis = async () => {
     const input = buildAnalysisInput();
-    if (!input) {
+    const waveInput = wavePerimeterInput;
+    if (!input || (needsLocalization(inputMode) && !waveInput)) {
       toast({
         variant: "destructive",
         title: "Dados insuficientes",
-        description: "Preencha CAR, coordenadas, polígono, KML ou SHP para iniciar a análise.",
+        description: needsLocalization(inputMode)
+          ? "Localize e confirme o imóvel antes da análise IA."
+          : "Preencha CAR, coordenadas, polígono, KML ou SHP para iniciar a análise.",
       });
       return;
     }
@@ -489,7 +563,11 @@ export default function AnaliseAmbientalPage() {
 
     try {
       const idToken = await auth?.currentUser?.getIdToken();
-      const actionResult = await handleAnalyseArea(input, idToken ?? null);
+      const analysisPayload: AnaliseAmbientalInput = needsLocalization(inputMode)
+        && waveInput
+        ? { dataType: waveInput.dataType, data: waveInput.data }
+        : input;
+      const actionResult = await handleAnalyseArea(analysisPayload, idToken ?? null);
       if (!actionResult.success) {
         throw new Error(actionResult.error);
       }
@@ -514,98 +592,39 @@ export default function AnaliseAmbientalPage() {
     }
   };
 
-  const handleConsultSicar = async () => {
-    const input = buildAnalysisInput();
-    if (!input) {
-      toast({
-        variant: "destructive",
-        title: "Dados insuficientes",
-        description: "Informe CAR, coordenadas ou perímetro para consultar o SICAR.",
-      });
-      return;
-    }
-
-    setIsConsultingSicar(true);
-    setSicarPreview(null);
-    try {
-      const idToken = await auth?.currentUser?.getIdToken();
-      if (!idToken) {
-        throw new Error("Sessão expirada. Faça login novamente.");
-      }
-
-      const body =
-        input.dataType === "car"
-          ? { codImovel: input.data }
-          : { dataType: input.dataType, data: input.data };
-
-      const res = await fetch("/api/geospatial/car", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${idToken}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(body),
-      });
-      const json = (await res.json()) as {
-        resumo?: string;
-        error?: string;
-        imoveis?: Array<{ codImovel: string; situacao: string }>;
-      };
-
-      if (!res.ok || !json.imoveis?.length) {
-        throw new Error(json.error || json.resumo || "Nenhum CAR encontrado.");
-      }
-
-      setSicarPreview(json.resumo ?? json.imoveis[0].situacao);
-      if (input.dataType === "car" && json.imoveis[0]?.codImovel) {
-        setCarNumber(json.imoveis[0].codImovel);
-      }
-      toast({
-        title: "Consulta SICAR",
-        description: json.resumo ?? "Imóvel localizado na base pública.",
-      });
-    } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Erro na consulta SICAR",
-        description:
-          error instanceof Error ? error.message : "Serviço indisponível.",
-      });
-    } finally {
-      setIsConsultingSicar(false);
-    }
+  const syncMapFromLocalizacao = (resolved: LocalizacaoResolvida) => {
+    const feature = resolved.perimetroFinal;
+    if (!feature?.geometry) return;
+    setDrawnPolygon(feature as unknown as GeoJSONLike);
+    setPolygonInput(JSON.stringify(feature.geometry));
   };
 
-  const handleUseCurrentCoordinates = () => {
-    if (!navigator.geolocation) {
-      toast({
-        variant: "destructive",
-        title: "Geolocalização indisponível",
-        description: "Este navegador não suporta captura automática de coordenadas.",
-      });
-      return;
-    }
+  const handleLocalizacaoResolved = React.useCallback(
+    (resolved: LocalizacaoResolvida) => {
+      setLocalizacao(resolved);
+      setLocalizacaoConfirmada(false);
+      if (resolved.status === "ok") syncMapFromLocalizacao(resolved);
+    },
+    [],
+  );
 
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const { latitude, longitude } = position.coords;
-        setInputMode("coordinates");
-        setCoordinateInput(`${latitude.toFixed(6)}, ${longitude.toFixed(6)}`);
-        toast({
-          title: "Coordenadas capturadas",
-          description: "As coordenadas atuais foram preenchidas automaticamente.",
-        });
-      },
-      () => {
-        toast({
-          variant: "destructive",
-          title: "Falha na captura",
-          description: "Não foi possível capturar coordenadas automaticamente.",
-        });
-      },
-      { enableHighAccuracy: true, timeout: 12000 },
-    );
-  };
+  const handleLocalizacaoConfirmed = React.useCallback(
+    (resolved: LocalizacaoResolvida) => {
+      setLocalizacao(resolved);
+      setLocalizacaoConfirmada(true);
+      syncMapFromLocalizacao(resolved);
+      toast({
+        title: "Imóvel confirmado",
+        description: "Geometria SICAR pronta para análise geoespacial.",
+      });
+    },
+    [toast],
+  );
+
+  const handleLocalizacaoCleared = React.useCallback(() => {
+    setLocalizacao(null);
+    setLocalizacaoConfirmada(false);
+  }, []);
 
   const downloadTextFile = (fileName: string, content: string, mimeType: string) => {
     const blob = new Blob([content], { type: mimeType });
@@ -751,6 +770,14 @@ export default function AnaliseAmbientalPage() {
   };
 
   const analysisPreviewValue = React.useMemo(() => {
+    if (needsLocalization(inputMode)) {
+      if (localizacao?.status === "ok") {
+        const cod =
+          localizacao.imovelSelecionadoCod ?? localizacao.imoveis[0]?.codImovel;
+        return `${cod ?? "CAR"} · ${localizacao.areaHa.toFixed(2)} ha · confiança ${localizacao.confianca}${localizacaoConfirmada ? " · confirmado" : ""}`;
+      }
+      return "";
+    }
     if (inputMode === "shp" && shpFileName) {
       return `[SHP] ${shpFileName} (${Math.round(shpZipBase64.length * 0.75)} bytes no pacote)`;
     }
@@ -760,7 +787,7 @@ export default function AnaliseAmbientalPage() {
       return `${built.data.slice(0, 2000)}… (${built.data.length} caracteres)`;
     }
     return built.data;
-  }, [buildAnalysisInput, inputMode, shpFileName, shpZipBase64]);
+  }, [buildAnalysisInput, inputMode, localizacao, localizacaoConfirmada, shpFileName, shpZipBase64]);
 
   const handleUseProjectPerimetro = async () => {
     const perimetro = linkedProject?.perimetroReferencia;
@@ -781,8 +808,8 @@ export default function AnaliseAmbientalPage() {
       setInputMode("polygon");
       setDrawnPolygon(resolved.polygon as unknown as GeoJSONLike);
       setPolygonInput(JSON.stringify(resolved.polygon.geometry));
-      setCarNumber("");
-      setCoordinateInput("");
+      setLocalizacao(null);
+      setLocalizacaoConfirmada(false);
       setKmlText("");
       setKmlFileName("");
       setShpZipBase64("");
@@ -850,9 +877,6 @@ export default function AnaliseAmbientalPage() {
               </div>
             </div>
             <div className="flex flex-wrap gap-2">
-              <Button type="button" variant="outline" onClick={handleUseCurrentCoordinates}>
-                Capturar coordenada atual
-              </Button>
               <Button
                 type="button"
                 variant="outline"
@@ -986,6 +1010,7 @@ export default function AnaliseAmbientalPage() {
                   <SelectContent>
                     <SelectItem value="car">Número do CAR</SelectItem>
                     <SelectItem value="coordinates">Coordenadas</SelectItem>
+                    <SelectItem value="gps">Localização GPS (celular)</SelectItem>
                     <SelectItem value="polygon">Polígono (WKT/GeoJSON)</SelectItem>
                     <SelectItem value="kml">Perímetro KML (.kml)</SelectItem>
                     <SelectItem value="shp">Perímetro SHP (.zip)</SelectItem>
@@ -994,29 +1019,22 @@ export default function AnaliseAmbientalPage() {
               </div>
 
               <div className="space-y-2 md:col-span-2">
-              {inputMode === "car" && (
-                <div className="space-y-2">
-                  <Label htmlFor="car-input">Número do CAR</Label>
-                  <Input
-                    id="car-input"
-                    placeholder="Ex: MG-3106200-1234.ABCD.EF12.3456.7890.ABCD.EF12.3456"
-                    value={carNumber}
-                    onChange={(e) => setCarNumber(e.target.value)}
-                  />
-                </div>
-              )}
-
-              {inputMode === "coordinates" && (
-                <div className="space-y-2">
-                  <Label htmlFor="coords-input">Coordenadas (lat, lng)</Label>
-                  <Input
-                    id="coords-input"
-                    placeholder="Ex: -19.922731, -43.945095"
-                    value={coordinateInput}
-                    onChange={(e) => setCoordinateInput(e.target.value)}
-                  />
-                </div>
-              )}
+              {needsLocalization(inputMode) ? (
+                <ImovelLocalizadorPanel
+                  key={inputMode}
+                  variant="embedded"
+                  hideModeSelector
+                  controlledInputMode={inputMode as ImovelLocalizadorInputMode}
+                  extratoMgObrigatorioParaConfirmar={false}
+                  extratoUfEsperada="MG"
+                  showCarHistorico
+                  showConectaGov
+                  disabled={isWaveALoading || isLoading}
+                  onResolved={handleLocalizacaoResolved}
+                  onConfirmed={handleLocalizacaoConfirmed}
+                  onCleared={handleLocalizacaoCleared}
+                />
+              ) : null}
 
               {inputMode === "polygon" && (
                 <div className="space-y-2">
@@ -1120,34 +1138,11 @@ export default function AnaliseAmbientalPage() {
                 />
               </div>
               </div>
-              {sicarPreview ? (
-                <p className="text-sm text-muted-foreground">
-                  <strong>SICAR:</strong> {sicarPreview}
-                </p>
-              ) : null}
+
               <div className="flex flex-col gap-2 sm:flex-row">
               <Button
-                type="button"
-                variant="secondary"
-                disabled={isConsultingSicar || !hasValidInput}
-                onClick={() => void handleConsultSicar()}
-                className="sm:w-auto"
-              >
-                {isConsultingSicar ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Consultando SICAR…
-                  </>
-                ) : (
-                  <>
-                    <Database className="mr-2 h-4 w-4" />
-                    Consultar CAR (SICAR)
-                  </>
-                )}
-              </Button>
-              <Button
                 onClick={handleStartWaveA}
-                disabled={isWaveALoading || isLoading || !hasValidInput}
+                disabled={isWaveALoading || isLoading || !canStartWaveA}
                 className="flex-1"
               >
                 {isWaveALoading ? (
@@ -1175,7 +1170,7 @@ export default function AnaliseAmbientalPage() {
                 <CollapsibleContent className="pt-2">
                   <Button
                     onClick={handleStartAnalysis}
-                    disabled={isLoading || isWaveALoading || !hasValidInput}
+                    disabled={isLoading || isWaveALoading || !canStartWaveA}
                     variant="outline"
                     className="w-full"
                   >

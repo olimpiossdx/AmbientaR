@@ -70,6 +70,8 @@ export type GeorefProject = {
   polygonGeojson?: object;
   vertices?: GeorefVertice[];
   verticesMeta?: Omit<GeorefVerticesMeta, "vertices">;
+  /** Imóvel confirmado via localizador SICAR (L4.3). */
+  localizacaoImovel?: import("@/lib/types/localizacao-imovel").RequestLocalizacaoImovel;
   createdBy: string;
   createdAt: string;
   updatedAt: string;

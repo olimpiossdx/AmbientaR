@@ -26,6 +26,9 @@ import { Loader2 } from 'lucide-react';
 import { BrDateFormControl } from '@/components/form/br-date-input';
 import { useToast } from '@/hooks/use-toast';
 import type { Opportunity, OpportunityStage, Client } from '@/lib/types';
+import type { RequestLocalizacaoImovel } from '@/lib/types/localizacao-imovel';
+import { ImovelLocalizadorPanel } from '@/components/geospatial/imovel-localizador-panel';
+import { localizacaoToRequestSnapshot } from '@/lib/geospatial/localizacao-request-snapshot';
 import { useFirebase, errorEmitter, useCollection, useMemoFirebase } from '@/firebase';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { collection, doc, addDoc, updateDoc } from 'firebase/firestore';
@@ -90,6 +93,9 @@ CurrencyInput.displayName = "CurrencyInput";
 
 export function OpportunityForm({ currentItem, onSuccess }: OpportunityFormProps) {
   const [loading, setLoading] = React.useState(false);
+  const [localizacaoImovel, setLocalizacaoImovel] = React.useState<
+    RequestLocalizacaoImovel | undefined
+  >(currentItem?.localizacaoImovel);
   const { toast } = useToast();
   const { firestore } = useFirebase();
 
@@ -119,6 +125,7 @@ export function OpportunityForm({ currentItem, onSuccess }: OpportunityFormProps
     const dataToSave = {
         ...values,
         closeDate: values.closeDate.toISOString(),
+        ...(localizacaoImovel ? { localizacaoImovel } : {}),
     };
 
     if (currentItem) {
@@ -240,6 +247,28 @@ export function OpportunityForm({ currentItem, onSuccess }: OpportunityFormProps
             </FormItem>
           )}
         />
+        <div className="space-y-2 rounded-lg border p-4">
+          <p className="text-sm font-medium">Localização do imóvel (visita de campo)</p>
+          <p className="text-xs text-muted-foreground">
+            Use GPS no celular para registrar o ponto da prospecção. Opcional — pode confirmar depois.
+          </p>
+          <ImovelLocalizadorPanel
+            defaultInputMode="gps"
+            extratoMgObrigatorioParaConfirmar={false}
+            disabled={loading}
+            onConfirmed={(resolved) => {
+              setLocalizacaoImovel(localizacaoToRequestSnapshot(resolved));
+            }}
+            onCleared={() => setLocalizacaoImovel(undefined)}
+          />
+          {localizacaoImovel ? (
+            <p className="text-xs text-muted-foreground">
+              Confirmado · {localizacaoImovel.areaHa.toFixed(2)} ha ·{' '}
+              {localizacaoImovel.municipio}/{localizacaoImovel.uf} · CAR{' '}
+              <span className="font-mono">{localizacaoImovel.codImovel || '—'}</span>
+            </p>
+          ) : null}
+        </div>
         <div className="flex justify-end pt-2">
           <Button type="submit" disabled={loading}>
             {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Salvando...</> : 'Salvar Oportunidade'}

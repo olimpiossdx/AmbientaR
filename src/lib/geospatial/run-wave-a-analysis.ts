@@ -1,8 +1,11 @@
 import type { Feature, Geometry, Polygon } from "geojson";
 import type { GeoLayerResult, WaveAAnalysisResult } from "@/lib/types/geo-wave-a";
 import {
+  parseAnalysisPerimeter,
+  type ParsedAnalysisPerimeter,
+} from "@/lib/geospatial/resolve-localizacao-imovel";
+import {
   expandBbox,
-  parsePerimeterPolygon,
   perimeterToGeoJson,
   type PerimeterParseInput,
 } from "@/lib/geospatial/perimeter";
@@ -43,6 +46,15 @@ import {
   zeeContextToFactualParagraph,
 } from "@/lib/geospatial/geo-national-context";
 import { fetchWfsFeaturesInBbox } from "@/lib/geospatial/wfs-client";
+import { fetchIncraGmlFeaturesInBbox } from "@/lib/geospatial/incra-wfs-gml-client";
+import {
+  INCRA_ASSENTAMENTOS_LAYER_ID,
+  INCRA_QUILOMBOLAS_LAYER_ID,
+} from "@/lib/geospatial/wave-socioambiental-catalog";
+import {
+  enrichSocioambientalLayerStats,
+  layerNeedsSocioambientalEnrichment,
+} from "@/lib/socioambiental/socioambiental-spatial-enrich";
 import {
   aggregateLineLayerStats,
   aggregatePointLayerStats,
@@ -126,6 +138,12 @@ function wfsSourceLabel(baseUrl: string | undefined, entry: WaveACatalogEntry): 
   if (baseUrl?.includes("geoservicos.inde.gov.br/geoserver/MMA")) {
     return "MMA (INDE WFS)";
   }
+  if (baseUrl?.includes("acervofundiariomaps.incra.gov.br")) {
+    return "INCRA Acervo Fundiário (GML2)";
+  }
+  if (baseUrl?.includes("geoserver.funai.gov.br")) {
+    return "FUNAI GeoServer (WFS)";
+  }
   if (entry.wfsBaseUrls.some((u) => u.includes("car.gov.br"))) {
     return "SICAR GeoServer (MAPA)";
   }
@@ -155,29 +173,54 @@ async function analyzeCatalogLayer(params: {
 
   const usesArcgis = Boolean(params.entry.arcgisLayerUrl);
   const usesFederalFetch = isFederalWfsEntry(params.entry);
-  const wfs = usesArcgis
-    ? await fetchArcGisFeaturesInBbox({
-        layerUrl: params.entry.arcgisLayerUrl!,
-        bbox: expandedBbox,
-        maxFeatures: params.entry.maxWfsFeatures,
-      })
-    : usesFederalFetch
-      ? await fetchFederalWfsForEntry(params.entry, expandedBbox)
-      : await fetchWfsFeaturesInBbox({
-          baseUrls: params.entry.wfsBaseUrls,
+  const usesIncraGml =
+    params.entry.layerId === INCRA_ASSENTAMENTOS_LAYER_ID ||
+    params.entry.layerId === INCRA_QUILOMBOLAS_LAYER_ID;
+
+  const wfs = usesIncraGml
+    ? await (async () => {
+        const incra = await fetchIncraGmlFeaturesInBbox({
+          baseUrl: params.entry.wfsBaseUrls[0],
           typeNames: params.entry.typeNames,
           bbox: expandedBbox,
           maxFeatures: params.entry.maxWfsFeatures,
         });
+        return {
+          ok: incra.ok,
+          features: incra.features,
+          baseUrl: params.entry.wfsBaseUrls[0],
+          typeName: incra.typeName,
+          error: incra.error,
+          noFeaturesInExtent: incra.noFeaturesInExtent,
+          upstreamWfsDegraded: false,
+          skippedOutsideExtent: false,
+        };
+      })()
+    : usesArcgis
+      ? await fetchArcGisFeaturesInBbox({
+          layerUrl: params.entry.arcgisLayerUrl!,
+          bbox: expandedBbox,
+          maxFeatures: params.entry.maxWfsFeatures,
+        })
+      : usesFederalFetch
+        ? await fetchFederalWfsForEntry(params.entry, expandedBbox)
+        : await fetchWfsFeaturesInBbox({
+            baseUrls: params.entry.wfsBaseUrls,
+            typeNames: params.entry.typeNames,
+            bbox: expandedBbox,
+            maxFeatures: params.entry.maxWfsFeatures,
+          });
   const proxiedMa = isMapBiomasMataAtlanticaProxyResult(params.entry.layerId, wfs);
   const labelFields = proxiedMa
     ? federalMapBiomasAlertaLabelFields()
     : params.entry.labelFields;
-  const queryMethod = usesArcgis
-    ? "ArcGIS REST Query (bbox)"
-    : proxiedMa
-      ? "WFS MapBiomas Alerta (proxy MA — PRODES indisponível)"
-      : "WFS GetFeature (bbox)";
+  const queryMethod = usesIncraGml
+    ? "WFS INCRA GetFeature (GML2 bbox)"
+    : usesArcgis
+      ? "ArcGIS REST Query (bbox)"
+      : proxiedMa
+        ? "WFS MapBiomas Alerta (proxy MA — PRODES indisponível)"
+        : "WFS GetFeature (bbox)";
 
   if (!wfs.ok || wfs.features.length === 0) {
     const status =
@@ -209,7 +252,7 @@ async function analyzeCatalogLayer(params: {
   }
 
   const geomKind = geometryKindFromFeatures(wfs.features, params.entry.geometryKind);
-  const stats =
+  let stats =
     geomKind === "line"
       ? aggregateLineLayerStats({
           perimeter: params.perimeter,
@@ -228,6 +271,15 @@ async function analyzeCatalogLayer(params: {
             features: wfs.features,
             labelFields,
           });
+
+  if (layerNeedsSocioambientalEnrichment(params.entry.layerId)) {
+    stats = enrichSocioambientalLayerStats({
+      layerId: params.entry.layerId,
+      perimeter: params.perimeter,
+      features: wfs.features,
+      stats,
+    });
+  }
 
   const status = stats.length > 0 ? "ok" : "partial";
   let summary = "";
@@ -328,20 +380,46 @@ export type WaveAAnalysisProgress = {
   total: number;
 };
 
+function mapPerimeterSourceForResult(
+  source: ParsedAnalysisPerimeter["source"],
+  fallback: PerimeterParseInput["dataType"],
+): PerimeterParseInput["dataType"] {
+  if (source === "sicar") return "car";
+  if (source === "buffer_ponto") return "coordinates";
+  if (source === "desenho" || source === "upload") return "polygon";
+  if (
+    source === "car" ||
+    source === "coordinates" ||
+    source === "polygon" ||
+    source === "kml" ||
+    source === "shp"
+  ) {
+    return source;
+  }
+  return fallback;
+}
+
 export async function runWaveAAnalysis(
   input: PerimeterParseInput,
   influenceConfig: GeoInfluenceAreaConfig = DEFAULT_INFLUENCE_CONFIG,
   onLayerComplete?: (progress: WaveAAnalysisProgress) => void,
   options?: WaveAAnalysisOptions,
 ): Promise<WaveAAnalysisResult> {
-  const parsed = await parsePerimeterPolygon(input);
-  if (!parsed) {
-    throw new Error(
-      "Perímetro inválido. Desenhe um polígono no mapa ou informe GeoJSON/WKT válido. Coordenada isolada gera apenas um buffer mínimo.",
-    );
-  }
+  const parsed: ParsedAnalysisPerimeter = await parseAnalysisPerimeter(input);
+  const perimeterSource = mapPerimeterSourceForResult(
+    parsed.source,
+    input.dataType,
+  );
 
-  const influenceAreas = await resolveInfluenceAreas(input, influenceConfig);
+  const influenceAreas = await resolveInfluenceAreas(
+    input.dataType === "car" || input.dataType === "coordinates"
+      ? {
+          dataType: "polygon",
+          data: JSON.stringify(parsed.polygon),
+        }
+      : input,
+    influenceConfig,
+  );
   const catalog = waveLayersForAnalysis(parsed.bbox, options);
 
   const layerResults = await mapInBatches(
@@ -363,7 +441,7 @@ export async function runWaveAAnalysis(
   );
   const hidrologiaContext = await buildHidrologiaContext(parsed.bbox, 50);
 
-  const factualSummary = [
+  let factualSummary = [
     buildFactualSummary(
       parsed.areaHa,
       layerResults.map((l) => ({
@@ -378,13 +456,22 @@ export async function runWaveAAnalysis(
     .filter(Boolean)
     .join("\n\n");
 
+  if (parsed.resolved?.imovelSelecionadoCod && parsed.resolved.imoveis.length) {
+    const i = parsed.resolved.imoveis.find(
+      (x) => x.codImovel === parsed.resolved!.imovelSelecionadoCod,
+    );
+    if (i) {
+      factualSummary = `CAR/SICAR: ${i.codImovel} · ${i.situacao} · ${i.areaHa.toFixed(2)} ha · ${i.municipio}/${i.uf}\n\n${factualSummary}`;
+    }
+  }
+
   return {
     wave: "ABC",
     generatedAtUtc,
     perimeter: {
       geojson: perimeterToGeoJson(parsed.polygon),
       areaHa: Number(parsed.areaHa.toFixed(4)),
-      source: input.dataType,
+      source: perimeterSource,
       bbox: parsed.bbox,
     },
     layers: layerResults,

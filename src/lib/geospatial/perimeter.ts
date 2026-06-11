@@ -24,6 +24,12 @@ function closeRing(ring: Position[]): Position[] {
   return [...ring, first];
 }
 
+export function geometryToFeaturePolygon(
+  geometry: Geometry,
+): Feature<Polygon> | null {
+  return normalizeToFeaturePolygon(geometry);
+}
+
 function normalizeToFeaturePolygon(geometry: Geometry): Feature<Polygon> | null {
   if (geometry.type === "Polygon") {
     const coords = geometry.coordinates.map((ring) => closeRing(ring));
@@ -150,7 +156,7 @@ export async function parsePerimeterPolygon(
     } catch {
       feature = null;
     }
-  } else if (input.dataType === "polygon" || input.dataType === "car") {
+  } else if (input.dataType === "polygon") {
     if (trimmed.toUpperCase().startsWith("POLYGON")) {
       feature = parseWktPolygon(trimmed);
     } else {

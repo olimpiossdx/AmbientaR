@@ -1,13 +1,15 @@
 
 'use client';
 import { Suspense } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { PcaForm } from '../pca-form';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 
 function NewPcaModalContent() {
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const initialListagemCode = searchParams?.get('listagem') ?? undefined;
 
     const handleSuccess = () => {
       router.back();
@@ -25,6 +27,7 @@ function NewPcaModalContent() {
                 <PcaForm
                     currentItem={null}
                     onSuccess={handleSuccess}
+                    initialListagemCode={initialListagemCode}
                 />
             </DialogContent>
         </Dialog>

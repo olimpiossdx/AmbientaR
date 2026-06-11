@@ -43,6 +43,12 @@ import {
 import { MoreHorizontal, PlusCircle, Pencil, Trash2, Eye, UserPlus, FileText, Link2, ClipboardList } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { SocioambientalExecutarTab } from './socioambiental-executar-tab';
+import {
+  criterioBadgeClassName,
+  criterioBadgeVariant,
+} from '@/lib/socioambiental/criterio-resultado-display';
+import { modoRelatorioLabel } from '@/lib/socioambiental/socioambiental-wizard-state';
+import { VEREDITO_LABELS } from '@/lib/socioambiental/veredito-socioambiental';
 import { useCollection, useFirebase, useMemoFirebase, errorEmitter } from '@/firebase';
 import { collection, doc, deleteDoc, updateDoc } from 'firebase/firestore';
 import type { AnaliseSocioambiental } from '@/lib/types/analise-socioambiental';
@@ -166,7 +172,7 @@ export default function AnaliseSocioambientalPage() {
           <CardHeader>
             <CardTitle>Extratos de Análise Socioambiental</CardTitle>
             <CardDescription>
-              Cadastre extratos manualmente ou execute um pacote na aba &quot;Executar pacote&quot; (blocos temáticos com critérios Apto/Inapto). Reutilize em estudos e preencha o cadastro do cliente.
+              Cadastre extratos manualmente ou use o assistente na aba &quot;Executar pacote&quot; (Extrato Socioambiental, Risco ou completo). Critérios: Apto, Alerta, Inapto.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -298,6 +304,15 @@ export default function AnaliseSocioambientalPage() {
               <p><strong>Bioma:</strong> {viewingItem.informacoesPropriedade?.bioma ?? '—'}</p>
               <p><strong>Área informada:</strong> {viewingItem.informacoesPropriedade?.areaInformadaHa != null ? `${viewingItem.informacoesPropriedade.areaInformadaHa} ha` : '—'}</p>
               <p><strong>Status CAR:</strong> {viewingItem.informacoesPropriedade?.statusCAR ?? '—'}</p>
+              {viewingItem.modoRelatorio && (
+                <p><strong>Modo:</strong> {modoRelatorioLabel(viewingItem.modoRelatorio)}</p>
+              )}
+              {viewingItem.vereditoGlobal && (
+                <p><strong>Veredito:</strong> {VEREDITO_LABELS[viewingItem.vereditoGlobal] ?? viewingItem.vereditoGlobal}</p>
+              )}
+              {viewingItem.glebas && viewingItem.glebas.length > 0 && (
+                <p><strong>Glebas:</strong> {viewingItem.glebas.map((g) => g.rotulo).join(', ')}</p>
+              )}
               {viewingItem.agentes?.length > 0 && (
                 <p><strong>Agente:</strong> {viewingItem.agentes[0].nome} ({viewingItem.agentes[0].documento})</p>
               )}
@@ -308,7 +323,10 @@ export default function AnaliseSocioambientalPage() {
                     {viewingItem.criteriosResultados.map((c) => (
                       <li key={c.criterio} className="flex flex-wrap items-center justify-between gap-2">
                         <span>{c.criterio}</span>
-                        <Badge variant={c.resultado === 'Inapto' ? 'destructive' : c.resultado === 'Apto' ? 'default' : 'secondary'}>
+                        <Badge
+                          variant={criterioBadgeVariant(c.resultado)}
+                          className={criterioBadgeClassName(c.resultado)}
+                        >
                           {c.resultado}
                         </Badge>
                       </li>

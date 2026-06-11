@@ -15,6 +15,11 @@ import {
 } from "@/components/ui/card";
 import type { GeorefProcessoDef } from "@/lib/georeferenciamento/processos";
 import type { GeorefChecklistState } from "@/lib/georeferenciamento/types";
+import {
+  ImovelLocalizadorPanel,
+  type ImovelLocalizadorInputMode,
+} from "@/components/geospatial/imovel-localizador-panel";
+import type { LocalizacaoResolvida } from "@/lib/types/localizacao-imovel";
 import { ExternalLink, Map } from "lucide-react";
 
 type GeorefSectionPageProps = {
@@ -27,6 +32,12 @@ type GeorefSectionPageProps = {
   showMapLink?: boolean;
   /** Atalho para Análise Geoespacial (8 camadas MG) */
   showAnaliseLink?: boolean;
+  /** Localizador SICAR (L4.3) — CAR / coord / GPS */
+  localizador?: {
+    initialCarCod?: string;
+    defaultInputMode?: ImovelLocalizadorInputMode;
+    onConfirmed?: (resolved: LocalizacaoResolvida) => void;
+  };
 };
 
 export function GeorefSectionPage({
@@ -36,6 +47,7 @@ export function GeorefSectionPage({
   links = [],
   showMapLink = false,
   showAnaliseLink = false,
+  localizador,
 }: GeorefSectionPageProps) {
   const storageKey = `georef-checklist-${processo.id}`;
   const [checklist, setChecklist] = React.useState<GeorefChecklistState>({});
@@ -99,6 +111,14 @@ export function GeorefSectionPage({
             </CardContent>
           </Card>
         )}
+        {localizador ? (
+          <ImovelLocalizadorPanel
+            initialCarCod={localizador.initialCarCod}
+            defaultInputMode={localizador.defaultInputMode}
+            extratoMgObrigatorioParaConfirmar={false}
+            onConfirmed={localizador.onConfirmed}
+          />
+        ) : null}
         <div className="grid gap-6 lg:grid-cols-2">
           <GeorefProcessoEtapas processo={processo} />
           <GeorefChecklist

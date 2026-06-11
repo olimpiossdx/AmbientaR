@@ -1,99 +1,193 @@
 /**
- * Converte resultados geoespaciais em critérios Apto/Inapto do extrato socioambiental.
+ * Converte resultados geoespaciais em critérios Apto/Alerta/Inapto do extrato socioambiental.
  */
 
 import type { GeoLayerResult } from "@/lib/types/geo-wave-a";
 import type {
   DetalheAnalise,
+  ProdesModoCriterio,
   ResultadoCriterio,
 } from "@/lib/types/analise-socioambiental";
+import type { SocioambientalReportBlockId } from "@/lib/socioambiental/report-blocks-catalog";
 import {
-  SOCIOAMBIENTAL_REPORT_BLOCKS,
-  type SocioambientalReportBlock,
-  type SocioambientalReportBlockId,
-} from "@/lib/socioambiental/report-blocks-catalog";
+  resolveActiveCriteria,
+  type SocioambientalCriterioCatalogEntry,
+} from "@/lib/socioambiental/socioambiental-criteria-catalog";
+import {
+  avaliarResultadoCriterio,
+  extractSpatialSignals,
+  prodesModoFromWizard,
+} from "@/lib/socioambiental/regras-criterio";
+import type { CarHistoricoAvaliacao } from "@/lib/geospatial/car-snapshot-compare";
+import type { ListasAgenteResult } from "@/lib/socioambiental/listas-agente-types";
 
-function layerHasRestrictionSignal(layer: GeoLayerResult): boolean {
-  if (layer.status === "unavailable") return false;
-  const noFeatures =
-    /sem fei[cç][oõ]es|nenhuma fei[cç][aã]o|fora do recorte|ignorad[oa]/i.test(
-      layer.summary,
-    );
-  if (noFeatures && layer.stats.length === 0) return false;
-
-  return layer.stats.some(
-    (s) =>
-      (s.areaHa != null && s.areaHa > 0.01) ||
-      (s.count != null && s.count > 0) ||
-      (s.pctOfPerimeter != null && s.pctOfPerimeter > 0.01),
-  );
-}
-
-function layersForBlock(
-  block: SocioambientalReportBlock,
+function layerById(
   layers: GeoLayerResult[],
-): GeoLayerResult[] {
-  const ids = new Set(block.layerIds);
-  return layers.filter((l) => ids.has(l.layerId));
+  layerId: string | undefined,
+): GeoLayerResult | undefined {
+  if (!layerId) return undefined;
+  return layers.find((l) => l.layerId === layerId);
 }
 
-function buildDetalhesForBlock(
-  block: SocioambientalReportBlock,
-  blockLayers: GeoLayerResult[],
-): DetalheAnalise[] {
-  const out: DetalheAnalise[] = [];
-  for (const layer of blockLayers) {
-    if (!layerHasRestrictionSignal(layer)) continue;
-    const areaHa = layer.stats.find((s) => s.areaHa != null)?.areaHa;
-    const count = layer.stats.find((s) => s.count != null)?.count;
-    out.push({
-      criterio: block.criterioLabel,
-      numeroDeteccoes: count,
-      tamanhoDeteccoesHa: areaHa,
-      areaSobreposicaoHa: areaHa,
-      observacao: `${layer.title}: ${layer.summary}`,
-    });
+function buildDetalhe(
+  criterio: SocioambientalCriterioCatalogEntry,
+  layer: GeoLayerResult | undefined,
+  signals: ReturnType<typeof extractSpatialSignals>,
+  resultado: ResultadoCriterio["resultado"],
+): DetalheAnalise | null {
+  if (resultado === "Apto") return null;
+
+  if (resultado === "Não Analisado") {
+    return {
+      criterio: criterio.label,
+      observacao:
+        criterio.motivoNaoAnalisado ??
+        (layer?.summary ? layer.summary : "Critério não analisado nesta execução."),
+    };
   }
-  return out;
+
+  const detalhe: DetalheAnalise = {
+    criterio: criterio.label,
+    areaSobreposicaoHa: signals.overlapHa > 0 ? signals.overlapHa : undefined,
+    observacao: layer?.summary,
+  };
+
+  if (criterio.prodesAno) detalhe.ano = criterio.prodesAno;
+  if (signals.bufferOverlapHa > 0) {
+    detalhe.tamanhoDeteccoesHa = signals.bufferOverlapHa;
+    detalhe.observacao = `Área no buffer ${criterio.bufferKm ?? 3} km: ~${signals.bufferOverlapHa.toFixed(2)} ha. ${layer?.summary ?? ""}`.trim();
+  }
+  if (signals.proximityM != null && signals.proximityM > 0) {
+    detalhe.observacao = `Proximidade mínima: ${Math.round(signals.proximityM)} m. ${layer?.summary ?? ""}`.trim();
+  }
+
+  return detalhe;
 }
 
-function resultadoForBlock(
-  block: SocioambientalReportBlock,
-  blockLayers: GeoLayerResult[],
-): ResultadoCriterio {
-  if (blockLayers.length === 0) {
-    return {
-      criterio: block.criterioLabel,
-      resultado: "Não Analisado",
-      detalhe: "Nenhuma camada consultada para este bloco.",
-    };
+function resultadoDetalheTexto(
+  criterio: SocioambientalCriterioCatalogEntry,
+  signals: ReturnType<typeof extractSpatialSignals>,
+  resultado: ResultadoCriterio["resultado"],
+  layer: GeoLayerResult | undefined,
+): string {
+  if (resultado === "Não Analisado") {
+    return (
+      criterio.motivoNaoAnalisado ??
+      layer?.summary ??
+      "Critério não analisado nesta execução."
+    );
   }
-
-  const unavailable = blockLayers.every((l) => l.status === "unavailable");
-  if (unavailable) {
-    return {
-      criterio: block.criterioLabel,
-      resultado: "Não Analisado",
-      detalhe: "Camadas indisponíveis no momento da consulta.",
-    };
+  if (resultado === "Apto") {
+    return "Nenhuma restrição identificada para este critério.";
   }
-
-  const hits = blockLayers.filter(layerHasRestrictionSignal);
-  if (hits.length === 0) {
-    return {
-      criterio: block.criterioLabel,
-      resultado: "Apto",
-      detalhe: "Nenhuma restrição identificada nas camadas consultadas.",
-    };
+  if (criterio.tipoConsulta === "buffer" && signals.bufferOverlapHa > 0) {
+    return `Interseção no buffer de ${criterio.bufferKm ?? 3} km (~${signals.bufferOverlapHa.toFixed(2)} ha).`;
   }
+  if (criterio.tipoConsulta === "proximidade" && signals.proximityM != null) {
+    return `Feição a ${Math.round(signals.proximityM)} m do perímetro (limite ${criterio.proximidadeLimiteM ?? 3000} m).`;
+  }
+  if (signals.overlapHa > 0) {
+    return `Sobreposição de ~${signals.overlapHa.toFixed(2)} ha${layer?.title ? ` (${layer.title})` : ""}.`;
+  }
+  return layer?.summary ?? "Restrição identificada.";
+}
 
-  const titles = hits.map((h) => h.title).join("; ");
+function buildDetalheLista(
+  criterio: SocioambientalCriterioCatalogEntry,
+  detalhe: string,
+  registros?: { rotulo: string; data?: string; uf?: string }[],
+): DetalheAnalise | undefined {
+  if (!registros?.length) return undefined;
+  const extra = registros
+    .map((r) => [r.rotulo, r.uf, r.data].filter(Boolean).join(" — "))
+    .join("; ");
   return {
-    criterio: block.criterioLabel,
-    resultado: "Inapto",
-    detalhe: `Restrição ou sobreposição em: ${titles}.`,
+    criterio: criterio.label,
+    observacao: `${detalhe} ${extra}`.trim(),
   };
 }
+
+function avaliarCriterio(
+  criterio: SocioambientalCriterioCatalogEntry,
+  layers: GeoLayerResult[],
+  uf?: string,
+  carHistorico?: CarHistoricoAvaliacao | null,
+  listasAgente?: ListasAgenteResult | null,
+): { resultado: ResultadoCriterio; detalhe?: DetalheAnalise } {
+  if (criterio.tipoConsulta === "lista") {
+    const hit = listasAgente?.hits.find((h) => h.criterioId === criterio.id);
+    if (hit) {
+      const detalheAnalise =
+        hit.resultado !== "Apto"
+          ? buildDetalheLista(criterio, hit.detalhe, hit.registros) ?? {
+              criterio: criterio.label,
+              observacao: hit.detalhe,
+            }
+          : undefined;
+      return {
+        resultado: {
+          criterio: criterio.label,
+          resultado: hit.resultado,
+          detalhe: hit.detalhe,
+        },
+        detalhe: detalheAnalise,
+      };
+    }
+    return {
+      resultado: {
+        criterio: criterio.label,
+        resultado: "Não Analisado",
+        detalhe:
+          criterio.motivoNaoAnalisado ??
+          "Informe CPF/CNPJ do agente para consulta em listas.",
+      },
+    };
+  }
+
+  if (
+    criterio.id === "car_historico_omissao" &&
+    criterio.tipoConsulta === "car_historico" &&
+    carHistorico
+  ) {
+    const resultado = carHistorico.resultado;
+    const detalhe: DetalheAnalise | undefined =
+      resultado !== "Apto"
+        ? {
+            criterio: criterio.label,
+            observacao: carHistorico.detalhe,
+          }
+        : undefined;
+    return {
+      resultado: {
+        criterio: criterio.label,
+        resultado,
+        detalhe: carHistorico.detalhe,
+      },
+      detalhe,
+    };
+  }
+
+  const layer = layerById(layers, criterio.fonte.layerId);
+  const signals = extractSpatialSignals(layer, criterio);
+  const resultado = avaliarResultadoCriterio({ criterio, signals, uf });
+  const detalhe = buildDetalhe(criterio, layer, signals, resultado);
+
+  return {
+    resultado: {
+      criterio: criterio.label,
+      resultado,
+      detalhe: resultadoDetalheTexto(criterio, signals, resultado, layer),
+    },
+    detalhe: detalhe ?? undefined,
+  };
+}
+
+export type MapLayersToCriteriosOptions = {
+  prodesModo?: ProdesModoCriterio;
+  uf?: string;
+  carHistorico?: CarHistoricoAvaliacao | null;
+  listasAgente?: ListasAgenteResult | null;
+};
 
 export type MapLayersToCriteriosResult = {
   criteriosResultados: ResultadoCriterio[];
@@ -103,16 +197,28 @@ export type MapLayersToCriteriosResult = {
 export function mapLayersToCriterios(
   layers: GeoLayerResult[],
   selectedBlockIds: SocioambientalReportBlockId[],
+  options?: MapLayersToCriteriosOptions,
 ): MapLayersToCriteriosResult {
+  const prodesModo = prodesModoFromWizard(options?.prodesModo);
+  const criteria = resolveActiveCriteria({
+    blockIds: selectedBlockIds,
+    prodesModo,
+    uf: options?.uf,
+  });
+
   const criteriosResultados: ResultadoCriterio[] = [];
   const detalhesAnalise: DetalheAnalise[] = [];
 
-  for (const blockId of selectedBlockIds) {
-    const block = SOCIOAMBIENTAL_REPORT_BLOCKS.find((b) => b.id === blockId);
-    if (!block) continue;
-    const blockLayers = layersForBlock(block, layers);
-    criteriosResultados.push(resultadoForBlock(block, blockLayers));
-    detalhesAnalise.push(...buildDetalhesForBlock(block, blockLayers));
+  for (const criterio of criteria) {
+    const { resultado, detalhe } = avaliarCriterio(
+      criterio,
+      layers,
+      options?.uf,
+      options?.carHistorico,
+      options?.listasAgente,
+    );
+    criteriosResultados.push(resultado);
+    if (detalhe) detalhesAnalise.push(detalhe);
   }
 
   return { criteriosResultados, detalhesAnalise };

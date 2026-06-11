@@ -15,6 +15,7 @@ import {
   MULTAS_E_DEFESAS_MENU_LABEL,
 } from "@/lib/multas-defesas-menu";
 import { OFICIOS_MENU_LABEL } from "@/lib/oficios-menu";
+import { buildPcaNavSubItems, PCA_MENU_LABEL, PCA_NAV_ROLES } from "@/lib/pca-menu";
 import {
   LayoutDashboard,
   Users,
@@ -947,10 +948,10 @@ export const allNavItems: NavItem[] = [
         ],
       },
       {
-        href: "/studies/pca",
-        label: "PCA",
+        label: PCA_MENU_LABEL,
         icon: BookMarked,
-        roles: ["admin", "technical", "gestor", "supervisor", "advogado"],
+        roles: PCA_NAV_ROLES,
+        subItems: buildPcaNavSubItems(),
       },
       {
         href: "/studies/pia",
@@ -1103,6 +1104,12 @@ export const allNavItems: NavItem[] = [
         href: "/georeferenciamento/ambiental",
         label: "CAR / SICAR",
         icon: Leaf,
+        roles: ["admin", "gestor", "supervisor", "diretor_fauna", "advogado"],
+      },
+      {
+        href: "/georeferenciamento/historico-car",
+        label: "Histórico CAR",
+        icon: History,
         roles: ["admin", "gestor", "supervisor", "diretor_fauna", "advogado"],
       },
       {

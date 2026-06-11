@@ -1,1 +1,1 @@
-// This file is intentionally blank. The content has been moved to rca/page.tsx for dynamic loading.
+export { RcaFormPostoCombustivel } from './listagem-f/rca-form-posto-combustivel';
