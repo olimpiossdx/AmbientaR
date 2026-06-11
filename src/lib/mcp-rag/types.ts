@@ -109,6 +109,8 @@ export type McpRagHubOverview = {
   pipeline: {
     legislationPipelineEnabled: boolean;
     legislationPipelineUrl?: string;
+    legislationPipelineHealthy?: boolean;
+    legislationPipelineDetail?: Record<string, unknown>;
     almgOpenDataBaseUrl?: string;
     portalScraperFallback: boolean;
   };

@@ -90,9 +90,17 @@ export function OfficialSourcesPanel({ className }: { className?: string }) {
           </p>
           <div className="flex flex-wrap gap-2">
             <Badge variant={pipeline?.legislationPipelineEnabled ? "default" : "secondary"}>
-              Pipeline Cloud Run{" "}
-              {pipeline?.legislationPipelineEnabled ? "ligado" : "off"}
+              Pipeline {pipeline?.legislationPipelineEnabled ? "ligado" : "off"}
             </Badge>
+            {pipeline?.legislationPipelineEnabled ? (
+              <Badge
+                variant={
+                  pipeline.legislationPipelineHealthy ? "default" : "destructive"
+                }
+              >
+                Worker {pipeline.legislationPipelineHealthy ? "ok" : "down"}
+              </Badge>
+            ) : null}
             <Badge variant={pipeline?.portalScraperFallback ? "destructive" : "secondary"}>
               Scraper portal {pipeline?.portalScraperFallback ? "ativo" : "off"}
             </Badge>

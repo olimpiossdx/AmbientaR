@@ -1,23 +1,28 @@
 import {
   createIngestionRun,
   getOfficialSource,
+  seedOfficialSourcesIfEmpty,
   touchOfficialSourceAfterRun,
   updateIngestionRun,
 } from "@/lib/mcp-rag/store.server";
+import {
+  ALMG_LEGISLATION_CSV_DOC,
+  getAlmgOpenDataBaseUrl,
+  probeAlmgApiV2,
+} from "@/lib/mcp-rag/almg-client.server";
 import type { McpRagIngestionRun } from "@/lib/mcp-rag/types";
-
-const DEFAULT_ALMG_BASE = "https://dadosabertos.almg.gov.br";
 
 export type AlmgDiscoverResult = {
   run: McpRagIngestionRun;
 };
 
 export async function runAlmgOpenDataDiscover(): Promise<AlmgDiscoverResult> {
+  await seedOfficialSourcesIfEmpty();
+
   const sourceId = "almg-open-data";
   const source = await getOfficialSource(sourceId);
   const sourceName = source?.name || "ALMG Dados Abertos";
-  const baseUrl =
-    process.env.ALMG_OPEN_DATA_BASE_URL?.trim() || DEFAULT_ALMG_BASE;
+  const baseUrl = getAlmgOpenDataBaseUrl();
 
   const startedAt = new Date().toISOString();
   let run = await createIngestionRun({
@@ -42,51 +47,73 @@ export async function runAlmgOpenDataDiscover(): Promise<AlmgDiscoverResult> {
 
   const errors: string[] = [];
   let documentsSeen = 0;
-  let metadata: Record<string, unknown> = { baseUrl };
+  let metadata: Record<string, unknown> = {
+    baseUrl,
+    legislationCsvDoc: ALMG_LEGISLATION_CSV_DOC,
+  };
 
-  try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 15000);
-    const res = await fetch(baseUrl, {
-      method: "GET",
-      signal: controller.signal,
-      headers: { Accept: "text/html,application/json" },
-    });
-    clearTimeout(timeout);
+  const apiProbe = await probeAlmgApiV2();
+  metadata = {
+    ...metadata,
+    apiV2: apiProbe,
+  };
 
-    metadata = {
-      ...metadata,
-      httpStatus: res.status,
-      reachable: res.ok,
-    };
-
-    if (!res.ok) {
-      errors.push(`HTTP ${res.status} ao aceder ${baseUrl}`);
-    } else {
-      const body = await res.text();
-      const docHints = [
-        /legislacao/i,
-        /csv/i,
-        /download/i,
-        /arquivo/i,
-      ].filter((re) => re.test(body)).length;
-      documentsSeen = Math.max(1, docHints);
-      metadata = {
-        ...metadata,
-        bodyLength: body.length,
-        catalogHints: docHints,
-        note:
-          "Descoberta inicial — ingestão completa requer pipeline Python/Cloud Run (Fase enterprise).",
-      };
-    }
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e);
-    errors.push(`Falha de rede: ${msg}`);
-    metadata = { ...metadata, reachable: false };
+  if (!apiProbe.reachable) {
+    errors.push(
+      apiProbe.error ||
+        "API v2 ALMG inacessível (/api/v2/pronunciamentos/tipos).",
+    );
+  } else {
+    documentsSeen += 1;
   }
 
+  let docPageOk = false;
+  let docPageStatus = 0;
+  try {
+    await new Promise((r) => setTimeout(r, 1100));
+    const docRes = await fetch(ALMG_LEGISLATION_CSV_DOC, {
+      headers: { Accept: "text/html" },
+      signal: AbortSignal.timeout(15000),
+    });
+    docPageStatus = docRes.status;
+    docPageOk = docRes.ok;
+  } catch {
+    docPageOk = false;
+  }
+
+  if (docPageOk) {
+    metadata = {
+      ...metadata,
+      legislationCatalogPage: { reachable: true, url: ALMG_LEGISLATION_CSV_DOC },
+    };
+    documentsSeen += 1;
+  } else {
+    metadata = {
+      ...metadata,
+      legislationCatalogPage: {
+        reachable: false,
+        url: ALMG_LEGISLATION_CSV_DOC,
+        status: docPageStatus,
+      },
+    };
+    if (apiProbe.reachable) {
+      errors.push(
+        "Página do catálogo CSV de Legislação Mineira não respondeu como esperado.",
+      );
+    }
+  }
+
+  metadata = {
+    ...metadata,
+    note:
+      documentsSeen > 0
+        ? `Descoberta OK: API v2 ativa; catálogo CSV documentado em ${ALMG_LEGISLATION_CSV_DOC}. Ingestão completa (texto + embeddings) via worker Python.`
+        : "Falha na descoberta — verifique conectividade com dadosabertos.almg.gov.br.",
+    pipelineNextStep: "POST /api/mcp-rag/ingestion/pipeline com mode=incremental",
+  };
+
   const finishedAt = new Date().toISOString();
-  const status = errors.length ? "failed" : "completed";
+  const status = errors.length && !apiProbe.reachable ? "failed" : "completed";
 
   await updateIngestionRun(run.id, {
     status,

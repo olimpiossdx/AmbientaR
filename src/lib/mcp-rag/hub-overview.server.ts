@@ -28,6 +28,10 @@ import {
   getGraphAccessTokenForMode,
   getGraphAuthMode,
 } from "@/lib/onedrive/graph";
+import {
+  isLegislationPipelineEnabled,
+  probeLegislationPipelineHealth,
+} from "@/lib/mcp-rag/pipeline-client.server";
 
 export async function buildMcpRagHubOverview(): Promise<McpRagHubOverview> {
   await seedOfficialSourcesIfEmpty();
@@ -68,6 +72,7 @@ export async function buildMcpRagHubOverview(): Promise<McpRagHubOverview> {
     recentCloudJobs,
     syncSource,
     delegatedDoc,
+    pipelineHealth,
   ] = await Promise.all([
     countKnowledgeSources().catch(() => 0),
     countRagIndexChunks().catch(() => 0),
@@ -81,6 +86,12 @@ export async function buildMcpRagHubOverview(): Promise<McpRagHubOverview> {
     listRecentCloudRagJobs(10),
     onedriveEnabled ? getSyncSource().catch(() => null) : Promise.resolve(null),
     getDelegatedTokenDoc().catch(() => null),
+    isLegislationPipelineEnabled()
+      ? probeLegislationPipelineHealth().catch(() => ({
+          ok: false,
+          error: "probe failed",
+        }))
+      : Promise.resolve({ ok: false, error: "disabled" }),
   ]);
 
   const pendingIndex = Number(
@@ -113,10 +124,11 @@ export async function buildMcpRagHubOverview(): Promise<McpRagHubOverview> {
     mcpTools: getMcpToolsRegistry(),
     permissions: MCP_RAG_PERMISSION_MATRIX,
     pipeline: {
-      legislationPipelineEnabled:
-        process.env.LEGISLATION_PIPELINE_ENABLED === "true" ||
-        process.env.LEGISLATION_PIPELINE_ENABLED === "1",
+      legislationPipelineEnabled: isLegislationPipelineEnabled(),
       legislationPipelineUrl: process.env.LEGISLATION_PIPELINE_URL,
+      legislationPipelineHealthy: pipelineHealth.ok,
+      legislationPipelineDetail:
+        "detail" in pipelineHealth ? pipelineHealth.detail : undefined,
       almgOpenDataBaseUrl:
         process.env.ALMG_OPEN_DATA_BASE_URL ||
         "https://dadosabertos.almg.gov.br",

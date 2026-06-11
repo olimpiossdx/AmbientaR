@@ -17,7 +17,7 @@ import { parseApiJsonResponse } from "@/lib/parse-api-json";
 import { useMcpRagHubOverview } from "@/components/mcp-rag/use-mcp-rag-hub-overview";
 import { mcpRagTabQuery } from "@/components/mcp-rag/mcp-rag-tabs";
 import Link from "next/link";
-import { Play, RefreshCw } from "lucide-react";
+import { Database, Play, RefreshCw, Zap } from "lucide-react";
 
 function runStatusBadge(status: string) {
   if (status === "completed") return <Badge>Concluída</Badge>;
@@ -30,6 +30,9 @@ export function IngestionPanel({ className }: { className?: string }) {
   const { auth } = useFirebase();
   const { loading, overview, error, refresh } = useMcpRagHubOverview(auth);
   const [discovering, setDiscovering] = React.useState(false);
+  const [pipelining, setPipelining] = React.useState(false);
+
+  const pipeline = overview?.pipeline;
 
   const runAlmgDiscover = async () => {
     setDiscovering(true);
@@ -46,6 +49,25 @@ export function IngestionPanel({ className }: { className?: string }) {
       alert(e instanceof Error ? e.message : String(e));
     } finally {
       setDiscovering(false);
+    }
+  };
+
+  const runPipelineIngest = async (mode: "incremental" | "full") => {
+    setPipelining(true);
+    try {
+      const headers = await getAdminApiRequestHeaders(auth);
+      const res = await fetch("/api/mcp-rag/ingestion/pipeline", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ sourceId: "almg-open-data", mode, limit: 50 }),
+      });
+      const data = await parseApiJsonResponse<{ error?: string }>(res);
+      if (!res.ok) throw new Error(data.error || "Falha na ingestão via pipeline.");
+      await refresh();
+    } catch (e) {
+      alert(e instanceof Error ? e.message : String(e));
+    } finally {
+      setPipelining(false);
     }
   };
 
@@ -71,6 +93,30 @@ export function IngestionPanel({ className }: { className?: string }) {
           <RefreshCw className="mr-1 h-4 w-4" />
           Atualizar
         </Button>
+        {pipeline?.legislationPipelineEnabled ? (
+          <>
+            <Button
+              type="button"
+              size="sm"
+              variant="secondary"
+              disabled={pipelining || !pipeline.legislationPipelineHealthy}
+              onClick={() => void runPipelineIngest("incremental")}
+            >
+              <Zap className="mr-1 h-4 w-4" />
+              {pipelining ? "A ingerir…" : "Ingestão incremental (worker)"}
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              disabled={pipelining || !pipeline.legislationPipelineHealthy}
+              onClick={() => void runPipelineIngest("full")}
+            >
+              <Database className="mr-1 h-4 w-4" />
+              Ingestão completa
+            </Button>
+          </>
+        ) : null}
         <Button asChild variant="ghost" size="sm">
           <Link href={mcpRagTabQuery("logs")}>Ver logs completos</Link>
         </Button>
@@ -82,11 +128,37 @@ export function IngestionPanel({ className }: { className?: string }) {
         <CardHeader className="pb-2">
           <CardTitle className="text-base">O que está disponível agora</CardTitle>
           <CardDescription>
-            Fase C no stack atual: registo de execuções e descoberta de
-            conectividade. Ingestão completa (PDF, OCR, embeddings) depende do
-            pipeline Python / Cloud Run.
+            Descoberta via Next.js (Firestore). Ingestão com embeddings e
+            pgvector via worker Python quando{" "}
+            <code className="text-xs">LEGISLATION_PIPELINE_ENABLED=true</code>.
           </CardDescription>
         </CardHeader>
+        <CardContent className="space-y-2 text-sm">
+          <div className="flex flex-wrap gap-2">
+            <Badge
+              variant={
+                pipeline?.legislationPipelineEnabled ? "default" : "secondary"
+              }
+            >
+              Pipeline {pipeline?.legislationPipelineEnabled ? "ligado" : "off"}
+            </Badge>
+            {pipeline?.legislationPipelineEnabled ? (
+              <Badge
+                variant={
+                  pipeline.legislationPipelineHealthy ? "default" : "destructive"
+                }
+              >
+                Worker {pipeline.legislationPipelineHealthy ? "ok" : "indisponível"}
+              </Badge>
+            ) : null}
+          </div>
+          {!pipeline?.legislationPipelineEnabled ? (
+            <p className="text-xs text-muted-foreground">
+              Local: <code>infra/legislation-pipeline</code> na porta 8092. Ver
+              README do worker.
+            </p>
+          ) : null}
+        </CardContent>
       </Card>
 
       <div className="space-y-3">
