@@ -90,7 +90,8 @@ export type FadTimelineEventKind =
   | "satellite_mosaic_created"
   | "manual_note"
   | "change_analysis_completed"
-  | "fiscal_check_completed";
+  | "fiscal_check_completed"
+  | "monitoring_run_completed";
 
 export type FadTimelineEvent = {
   id: string;
@@ -278,4 +279,112 @@ export type FadSmartReport = {
   createdAt: string;
   createdBy: string;
   updatedAt?: string;
+};
+
+export type FadMonitoringFrequency =
+  | "monthly"
+  | "bimonthly"
+  | "quarterly"
+  | "semiannual"
+  | "annual"
+  | "manual";
+
+export type FadMonitoringRule = {
+  id: string;
+  workspaceId: string;
+  ownerId: string;
+  name: string;
+  frequency: FadMonitoringFrequency;
+  enabled: boolean;
+  lastRunAt?: string;
+  createdAt: string;
+  createdBy: string;
+  updatedAt?: string;
+};
+
+export type CreateFadMonitoringRuleInput = {
+  name: string;
+  frequency: FadMonitoringFrequency;
+};
+
+export type FadMonitoringRunStatus = "running" | "completed" | "failed" | "skipped";
+
+export type FadMonitoringAlertLevel = "none" | "low" | "medium" | "high" | "critical";
+
+export type FadMonitoringRunStep = {
+  step: string;
+  status: "ok" | "skipped" | "failed";
+  message?: string;
+};
+
+export type FadMonitoringRun = {
+  id: string;
+  workspaceId: string;
+  ruleId: string;
+  ownerId: string;
+  status: FadMonitoringRunStatus;
+  steps: FadMonitoringRunStep[];
+  summary?: {
+    latestMosaicId?: string;
+    beforeMosaicId?: string;
+    analysisId?: string;
+    findingsCreated?: number;
+    openFindings?: number;
+    alertLevel?: FadMonitoringAlertLevel;
+    latestDate?: string;
+    previousDate?: string;
+  };
+  errorMessage?: string;
+  startedAt: string;
+  completedAt?: string;
+  createdBy: string;
+};
+
+export type FadEsgIndicators = {
+  mosaicCount: number;
+  vegetationGainHa: number;
+  vegetationLossHa: number;
+  bareSoilHa: number;
+  preservedAreaHa: number;
+  anthropizedAreaHa: number;
+  vegetationCoverPct: number;
+  openFindings: number;
+  criticalFindings: number;
+  highFindings: number;
+  prodesAlerts: number;
+  appInterventionFindings: number;
+  analysisPeriod?: string;
+};
+
+export type FadEsgScores = {
+  environmental: number;
+  compliance: number;
+  risk: number;
+};
+
+export type FadEsgExplanations = {
+  environmental: string[];
+  compliance: string[];
+  risk: string[];
+};
+
+export type FadEsgSnapshot = {
+  id: string;
+  workspaceId: string;
+  ownerId: string;
+  indicators: FadEsgIndicators;
+  scores: FadEsgScores;
+  explanations: FadEsgExplanations;
+  createdAt: string;
+  createdBy: string;
+};
+
+export type FadEsgDashboard = {
+  workspaceId: string;
+  workspaceName: string;
+  indicators: FadEsgIndicators;
+  scores: FadEsgScores;
+  explanations: FadEsgExplanations;
+  latestSnapshot?: FadEsgSnapshot;
+  snapshots: FadEsgSnapshot[];
 };

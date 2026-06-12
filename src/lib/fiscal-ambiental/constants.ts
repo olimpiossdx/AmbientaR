@@ -8,8 +8,8 @@ export const FISCAL_AMBIENTAL_FLAGS = {
   ENABLE_INTELLIGENCE: true,
   ENABLE_FISCAL_CHECKS: true,
   ENABLE_REPORTS: true,
-  ENABLE_MONITORING: false,
-  ENABLE_ESG: false,
+  ENABLE_MONITORING: true,
+  ENABLE_ESG: true,
 } as const;
 
 export const FAD_ATTRIBUTION = "CBERS/INPE" as const;

@@ -1,11 +1,9 @@
-import { FadComingSoon } from "@/components/fiscal-ambiental/fad-coming-soon";
+import { FadMonitoramentoClient } from "@/components/fiscal-ambiental/fad-monitoramento-client";
+
+export const metadata = {
+  title: "Monitoramento — Fiscal Ambiental Digital",
+};
 
 export default function FadMonitoramentoPage() {
-  return (
-    <FadComingSoon
-      title="Monitoramento automático"
-      description="Vigilância periódica e alertas."
-      phase="Fase 6"
-    />
-  );
+  return <FadMonitoramentoClient />;
 }

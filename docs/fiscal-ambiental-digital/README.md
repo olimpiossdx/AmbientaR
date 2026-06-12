@@ -30,6 +30,6 @@ Este ficheiro **substitui** o pacote externo de 14 documentos e o antigo `PLANO-
 - **Dados:** `fad_workspaces/{id}/...`
 - **MVP:** Fases 0–1 (workspace + acervo INPE + GeoTIFF)
 - **Worker:** `infra/fiscal-satellite-worker` (opcional; sem URL usa modo inline na API)
-- **Estado:** **Fases 0–5 implementadas** — acervo, timeline, comparador, inteligência, fiscalização, **relatórios PDF** (acervo/mudanças/fiscalização/consolidado + ressalva). Fases 6–7 (monitoramento/ESG) pendentes.
+- **Estado:** **Fases 0–7 implementadas** (plano MVP/Enterprise FAD). Acervo INPE, timeline, comparador, inteligência, fiscalização, relatórios PDF, monitoramento manual e **auditoria ESG** (scores transparentes + snapshots). Cruzamento SIG/PRODES (v2) e scheduler automático ficam como evolução.
 
 Última atualização: 2026-06-12

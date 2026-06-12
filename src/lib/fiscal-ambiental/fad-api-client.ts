@@ -418,3 +418,110 @@ export async function getFadReportDownloadUrl(
     token,
   );
 }
+
+export type FadMonitoringRuleDto = {
+  id: string;
+  name: string;
+  frequency: string;
+  enabled: boolean;
+  lastRunAt?: string;
+  createdAt: string;
+};
+
+export type FadMonitoringRunDto = {
+  id: string;
+  ruleId: string;
+  status: string;
+  steps?: Array<{ step: string; status: string; message?: string }>;
+  summary?: {
+    alertLevel?: string;
+    latestDate?: string;
+    previousDate?: string;
+    openFindings?: number;
+    findingsCreated?: number;
+  };
+  startedAt: string;
+  completedAt?: string;
+};
+
+export async function listMonitoringRules(token: string, workspaceId: string) {
+  return fadFetch<FadMonitoringRuleDto[]>(
+    `/api/fiscal-ambiental/monitoring/rules?workspaceId=${encodeURIComponent(workspaceId)}`,
+    token,
+  );
+}
+
+export async function createMonitoringRule(
+  token: string,
+  workspaceId: string,
+  input: { name: string; frequency: string },
+) {
+  return fadFetch<FadMonitoringRuleDto>("/api/fiscal-ambiental/monitoring/rules", token, {
+    method: "POST",
+    body: JSON.stringify({ workspaceId, ...input }),
+  });
+}
+
+export async function deleteMonitoringRule(token: string, workspaceId: string, ruleId: string) {
+  return fadFetch<{ deleted: true }>(
+    `/api/fiscal-ambiental/monitoring/rules/${ruleId}?workspaceId=${encodeURIComponent(workspaceId)}`,
+    token,
+    { method: "DELETE" },
+  );
+}
+
+export async function runMonitoring(token: string, workspaceId: string, ruleId: string) {
+  return fadFetch<FadMonitoringRunDto>("/api/fiscal-ambiental/monitoring/run", token, {
+    method: "POST",
+    body: JSON.stringify({ workspaceId, ruleId }),
+  });
+}
+
+export async function listMonitoringRuns(token: string, workspaceId: string) {
+  return fadFetch<FadMonitoringRunDto[]>(
+    `/api/fiscal-ambiental/monitoring/runs?workspaceId=${encodeURIComponent(workspaceId)}`,
+    token,
+  );
+}
+
+export type FadEsgDashboardDto = {
+  workspaceId: string;
+  workspaceName: string;
+  indicators: {
+    mosaicCount: number;
+    vegetationGainHa: number;
+    vegetationLossHa: number;
+    bareSoilHa: number;
+    preservedAreaHa: number;
+    anthropizedAreaHa: number;
+    vegetationCoverPct: number;
+    openFindings: number;
+    criticalFindings: number;
+    highFindings: number;
+    prodesAlerts: number;
+    appInterventionFindings: number;
+    analysisPeriod?: string;
+  };
+  scores: { environmental: number; compliance: number; risk: number };
+  explanations: { environmental: string[]; compliance: string[]; risk: string[] };
+  snapshots: Array<{
+    id: string;
+    scores: { environmental: number; compliance: number; risk: number };
+    createdAt: string;
+  }>;
+};
+
+export async function fetchEsgDashboard(token: string, workspaceId: string) {
+  return fadFetch<FadEsgDashboardDto>(
+    `/api/fiscal-ambiental/esg/dashboard?workspaceId=${encodeURIComponent(workspaceId)}`,
+    token,
+  );
+}
+
+export async function createEsgSnapshot(token: string, workspaceId: string) {
+  return fadFetch<{ id: string; scores: FadEsgDashboardDto["scores"]; createdAt: string }>(
+    "/api/fiscal-ambiental/esg/snapshot",
+    token,
+    { method: "POST", body: JSON.stringify({ workspaceId }) },
+  );
+}

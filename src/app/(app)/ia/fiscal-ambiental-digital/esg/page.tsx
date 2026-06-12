@@ -1,11 +1,9 @@
-import { FadComingSoon } from "@/components/fiscal-ambiental/fad-coming-soon";
+import { FadEsgClient } from "@/components/fiscal-ambiental/fad-esg-client";
+
+export const metadata = {
+  title: "Auditoria ESG — Fiscal Ambiental Digital",
+};
 
 export default function FadEsgPage() {
-  return (
-    <FadComingSoon
-      title="Auditoria ESG"
-      description="Indicadores e scores para visão enterprise."
-      phase="Fase 7"
-    />
-  );
+  return <FadEsgClient />;
 }

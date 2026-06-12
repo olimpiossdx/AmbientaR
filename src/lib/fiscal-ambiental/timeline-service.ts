@@ -159,6 +159,30 @@ export async function recordFiscalCheckEvent(
   await ref.set(payload);
 }
 
+export async function recordMonitoringRunEvent(
+  workspaceId: string,
+  ownerId: string,
+  ruleName: string,
+  alertLevel: string,
+): Promise<void> {
+  const ref = timelineRef(workspaceId);
+  const now = new Date().toISOString();
+
+  const payload: Omit<FadTimelineEvent, "id"> = {
+    workspaceId,
+    ownerId,
+    kind: "monitoring_run_completed",
+    title: `Monitoramento · ${ruleName}`,
+    body: `Ciclo concluído. Nível de alerta: ${alertLevel}.`,
+    occurredAt: now,
+    createdAt: now,
+    createdBy: ownerId,
+    updatedAt: now,
+  };
+
+  await ref.set(payload);
+}
+
 export async function recordChangeAnalysisEvent(analysis: FadChangeAnalysis): Promise<void> {
   const ref = timelineRef(analysis.workspaceId);
   const now = new Date().toISOString();

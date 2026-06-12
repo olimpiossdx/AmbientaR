@@ -24,10 +24,10 @@ export const FAD_ACTIVE_TABS = [
   { href: `${FAD_ROUTE_BASE}/inteligencia`, label: "Inteligência" },
   { href: `${FAD_ROUTE_BASE}/fiscalizacao`, label: "Fiscalização" },
   { href: `${FAD_ROUTE_BASE}/relatorios`, label: "Relatórios" },
+  { href: `${FAD_ROUTE_BASE}/monitoramento`, label: "Monitoramento" },
+  { href: `${FAD_ROUTE_BASE}/esg`, label: "Auditoria ESG" },
 ] as const;
 
 export const FAD_COMING_SOON_TABS = [
-  { href: `${FAD_ROUTE_BASE}/monitoramento`, label: "Monitoramento" },
-  { href: `${FAD_ROUTE_BASE}/esg`, label: "Auditoria ESG" },
   { href: `${FAD_ROUTE_BASE}/configuracoes`, label: "Configurações" },
 ] as const;
