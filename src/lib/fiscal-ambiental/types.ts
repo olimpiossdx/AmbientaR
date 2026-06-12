@@ -388,3 +388,25 @@ export type FadEsgDashboard = {
   latestSnapshot?: FadEsgSnapshot;
   snapshots: FadEsgSnapshot[];
 };
+
+export type FadDashboardStats = {
+  workspaceCount: number;
+  readyMosaicCount: number;
+  totalMosaicCount: number;
+  lastMosaicDate: string | null;
+  openFindingsCount: number;
+  monitoringRuleCount: number;
+  reportCount: number;
+  evidenceCount: number;
+  changeAnalysisCount: number;
+};
+
+export type FadModuleSettings = {
+  enabled: boolean;
+  standaloneMode: boolean;
+  sigCrosscheckEnabled: boolean;
+  satelliteWorkerConfigured: boolean;
+  intelligenceWorkerConfigured: boolean;
+  flags: typeof import("./constants").FISCAL_AMBIENTAL_FLAGS;
+  attribution: string;
+};

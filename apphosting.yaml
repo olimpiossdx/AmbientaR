@@ -27,3 +27,13 @@ env:
   #   value: "true"
   #   availability:
   #     - RUNTIME
+
+  # Fiscal Ambiental Digital — workers Cloud Run (WORKER_SHARED_SECRET: definir na consola, não commitar)
+  - variable: FISCAL_SATELLITE_WORKER_URL
+    value: https://ambientar-fiscal-satellite-485112911461.southamerica-east1.run.app
+    availability:
+      - RUNTIME
+  - variable: FISCAL_INTELLIGENCE_WORKER_URL
+    value: https://ambientar-fiscal-intelligence-485112911461.southamerica-east1.run.app
+    availability:
+      - RUNTIME

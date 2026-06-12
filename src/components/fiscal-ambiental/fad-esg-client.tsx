@@ -37,10 +37,12 @@ function ScoreCard({
   label,
   score,
   explanations,
+  invertColor,
 }: {
   label: string;
   score: number;
   explanations: string[];
+  invertColor?: boolean;
 }) {
   return (
     <Card>
@@ -48,7 +50,9 @@ function ScoreCard({
         <CardTitle className="text-sm font-medium text-muted-foreground">{label}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
-        <p className={cn("text-3xl font-bold tabular-nums", scoreColor(score))}>{score}</p>
+        <p className={cn("text-3xl font-bold tabular-nums", scoreColor(score, invertColor))}>
+          {score}
+        </p>
         <Progress value={score} className="h-2" />
         <ul className="space-y-1 text-xs text-muted-foreground">
           {explanations.map((line, i) => (
@@ -183,8 +187,8 @@ export function FadEsgClient() {
               label={SCORE_LABELS.risk}
               score={dashboard.scores.risk}
               explanations={dashboard.explanations.risk}
+              invertColor
             />
-            {/* risk: higher = more attention needed — color inverted in ScoreCard via prop below */}
           </div>
 
           {ind ? (
