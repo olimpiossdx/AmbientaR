@@ -1283,6 +1283,43 @@ service cloud.firestore {
     }
 
     /**
+     * @description Fiscal Ambiental Digital — workspaces standalone (imóvel + AOI).
+     * @path /databases/{database}/documents/fad_workspaces/{workspaceId}
+     */
+    match /fad_workspaces/{workspaceId} {
+      allow read: if isSignedIn() && (
+        resource.data.ownerId == request.auth.uid || isAdmin()
+      );
+      allow create: if isSignedIn()
+        && request.resource.data.ownerId == request.auth.uid
+        && request.resource.data.createdBy == request.auth.uid;
+      allow update: if isSignedIn() && (
+        resource.data.ownerId == request.auth.uid || isAdmin()
+      ) && (
+        !request.resource.data.diff(resource.data).affectedKeys().hasAny(['ownerId'])
+        || isAdmin()
+      );
+      allow delete: if isSignedIn() && (
+        resource.data.ownerId == request.auth.uid || isAdmin()
+      );
+      match /{subcollection}/{docId} {
+        allow read, write: if isSignedIn() && (
+          get(/databases/$(database)/documents/fad_workspaces/$(workspaceId)).data.ownerId == request.auth.uid
+          || isAdmin()
+        );
+      }
+    }
+
+    /**
+     * @description Índice de disponibilidade INPE (calendário L2) — leitura autenticada; escrita servidor.
+     * @path /databases/{database}/documents/fad_availability/{docId}
+     */
+    match /fad_availability/{docId} {
+      allow read: if isSignedIn();
+      allow write: if false;
+    }
+
+    /**
      * @description Rascunhos de compensação ambiental (checklist por tipo, um doc por utilizador+tipo).
      * @path /databases/{database}/documents/compensacao_drafts/{draftId}
      */

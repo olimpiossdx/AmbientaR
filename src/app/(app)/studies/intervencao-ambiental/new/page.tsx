@@ -1,55 +1,18 @@
-'use client';
-import { PageHeader } from '@/components/page-header';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { PiaForm } from '../pia-form';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { Suspense } from 'react';
-import type { PiaType } from '@/lib/types';
+import { redirect } from 'next/navigation';
 
-function NewPiaPageContent() {
-    const router = useRouter();
-    const searchParams = useSearchParams();
-    const piaType = searchParams?.get('type') as PiaType | null;
+type Props = {
+  searchParams?: Record<string, string | string[] | undefined>;
+};
 
-    const handleSuccess = () => {
-      router.push('/studies/intervencao-ambiental');
-    };
-  
-    return (
-      <div className="flex flex-col h-full">
-        <PageHeader title="Novo Plano de Intervenção Ambiental" />
-        <main className="flex-1 overflow-auto p-4 md:p-6">
-          <div className="max-w-7xl mx-auto">
-               <Card>
-                  <CardHeader>
-                      <CardTitle>Adicionar Novo PIA ({piaType || 'Tipo não selecionado'})</CardTitle>
-                      <CardDescription>
-                          Preencha os detalhes para criar um novo Plano de Intervenção Ambiental.
-                      </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                      <PiaForm
-                          currentItem={null}
-                          piaType={piaType}
-                          onSuccess={handleSuccess}
-                          linkContext={{
-                            requestId: searchParams?.get('requestId') ?? undefined,
-                            projectId: searchParams?.get('projectId') ?? undefined,
-                            empreendedorId: searchParams?.get('empreendedorId') ?? undefined,
-                          }}
-                      />
-                  </CardContent>
-              </Card>
-          </div>
-        </main>
-      </div>
-    );
-}
-
-export default function NewPiaPage() {
-    return (
-        <Suspense fallback={<div>Carregando...</div>}>
-            <NewPiaPageContent />
-        </Suspense>
-    )
+/** Legado: intervenção ambiental unificada em PIA. */
+export default function IntervencaoAmbientalNewRedirectPage({ searchParams }: Props) {
+  const params = new URLSearchParams();
+  if (searchParams) {
+    for (const [key, value] of Object.entries(searchParams)) {
+      if (typeof value === 'string') params.set(key, value);
+      else if (Array.isArray(value)) value.forEach((v) => params.append(key, v));
+    }
+  }
+  const query = params.toString();
+  redirect(query ? `/studies/pia/new?${query}` : '/studies/pia/new');
 }

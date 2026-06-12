@@ -53,6 +53,7 @@ export const ICMBIO_CAVERNAS_LAYER: WaveACatalogEntry = {
 };
 
 export const ICMBIO_LAYERS: WaveACatalogEntry[] = [
+  ICMBIO_UC_LAYER,
   ICMBIO_EMBARGOS_LAYER,
   ICMBIO_CAVERNAS_LAYER,
 ];

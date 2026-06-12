@@ -33,11 +33,18 @@ Pasta de **discussão e planeamento** (não substitui código). Serve para retom
 | [PASSO-3-LINHA-DE-MONTAGEM-SAAS.md](./PASSO-3-LINHA-DE-MONTAGEM-SAAS.md) | **Arquitetura:** Estudos técnicos, Word/PDF, PIA, inventário, licenciamento |
 | [ROTEIRO-REPLICAR-SAAS.md](./ROTEIRO-REPLICAR-SAAS.md) | Blueprint para replicar em novo software / SaaS |
 
+### Fiscal Ambiental Digital (produto standalone — satélite INPE)
+
+| Ficheiro | Conteúdo |
+|----------|----------|
+| [../fiscal-ambiental-digital/PLANO-UNICO.md](../fiscal-ambiental-digital/PLANO-UNICO.md) | **Plano v2.0 (2026-06-12):** documento único consolidado (14 docs + CBERS + correções); **sem dependência** do Passo 1–2 SIG |
+| [../fiscal-ambiental-digital/README.md](../fiscal-ambiental-digital/README.md) | Índice da pasta FAD |
+
 ### Arquivo CBERS (INPE) — raster + mudanças temporais
 
 | Ficheiro | Conteúdo |
 |----------|----------|
-| [../CBERS-ARQUIVO-INPE-PLANO.md](../CBERS-ARQUIVO-INPE-PLANO.md) | **Plano v3.1 — Fase 1 aprovada:** MVP leigo, CAR, GeoTIFF, pré-aquecimento, sem limite ha, STAC INPE, relatórios PRODES (Fase 3) |
+| [../CBERS-ARQUIVO-INPE-PLANO.md](../CBERS-ARQUIVO-INPE-PLANO.md) | **Plano v3.1 — Fase 1 aprovada** (detalhe técnico GDAL/STAC; implementação via FAD acima) |
 
 ### Visão e histórico
 

@@ -20,7 +20,6 @@ export const FINANCIAL_ROUTES = [
   '/clients',
   '/suppliers',
   '/invoices',
-  '/proposals',
   '/commercial-proposals',
   '/financial/painel',
   '/financial/projetos-roi',

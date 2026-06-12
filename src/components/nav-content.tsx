@@ -176,9 +176,9 @@ function NavContentInner() {
       let bestLen = -1;
       for (const h of hrefs) {
         if (!isPathMatch(h)) continue;
-        const pathPart = h.split("?")[0];
-        if (pathPart.length > bestLen) {
-          bestLen = pathPart.length;
+        const score = h.length;
+        if (score > bestLen) {
+          bestLen = score;
           best = h;
         }
       }

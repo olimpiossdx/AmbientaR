@@ -31,19 +31,38 @@ function normalizarPathname(pathname: string): string {
   return pathname.split('?')[0] || pathname;
 }
 
-function matchPath(current: string, href: string | undefined): boolean {
+function splitHref(href: string): { path: string; search: string } {
+  const [path, search = ''] = href.split('?');
+  return { path, search };
+}
+
+function matchPath(current: string, href: string | undefined, currentSearch = ''): boolean {
   if (!href || href.startsWith('/external')) return false;
   const norm = normalizarPathname(current);
-  if (norm === href) return true;
-  // Rotas dinâmicas: /invoices/123 → match em /invoices
-  if (href.endsWith('/') && norm === href.slice(0, -1)) return true;
-  if (norm.startsWith(href + '/')) return true;
+  const { path: hrefPath, search: hrefSearch } = splitHref(href);
+
+  if (hrefSearch) {
+    if (norm !== hrefPath && !(hrefPath.endsWith('/') && norm === hrefPath.slice(0, -1))) {
+      return false;
+    }
+    const expected = new URLSearchParams(hrefSearch);
+    const actual = new URLSearchParams(currentSearch.startsWith('?') ? currentSearch.slice(1) : currentSearch);
+    for (const [key, value] of expected.entries()) {
+      if (actual.get(key) !== value) return false;
+    }
+    return true;
+  }
+
+  if (norm === hrefPath) return true;
+  if (hrefPath.endsWith('/') && norm === hrefPath.slice(0, -1)) return true;
+  if (norm.startsWith(hrefPath + '/')) return true;
   return false;
 }
 
 function buscarRecursivo(
   pathname: string,
   pathNorm: string,
+  currentSearch: string,
   items: (NavItem | NavSubItem)[],
   menuPrincipal: string | null,
   breadcrumb: string[],
@@ -56,7 +75,7 @@ function buscarRecursivo(
     const roles = item.roles;
     const entry: NavDebugEntry = { label, href, depth, roles };
 
-    if (href && matchPath(pathNorm, href)) {
+    if (href && matchPath(pathNorm, href, currentSearch)) {
       return {
         pathname,
         pathnameNormalizado: pathNorm,
@@ -74,6 +93,7 @@ function buscarRecursivo(
       const resultado = buscarRecursivo(
         pathname,
         pathNorm,
+        currentSearch,
         item.subItems,
         novoMenu,
         [...breadcrumb, label],
@@ -89,7 +109,7 @@ function buscarRecursivo(
 /**
  * Retorna informações pormenorizadas de debug para a rota atual em relação aos menus da barra lateral.
  */
-export function getNavDebugInfo(pathname: string): NavDebugInfo {
+export function getNavDebugInfo(pathname: string, search = ''): NavDebugInfo {
   const pathNorm = normalizarPathname(pathname);
 
   // Itens de primeiro nível: podem ser link direto (href) ou menu com subItems
@@ -99,7 +119,7 @@ export function getNavDebugInfo(pathname: string): NavDebugInfo {
     const href = item.href;
     const entry: NavDebugEntry = { label, href, depth: 0, roles: item.roles };
 
-    if (href && matchPath(pathNorm, href)) {
+    if (href && matchPath(pathNorm, href, search)) {
       return {
         pathname,
         pathnameNormalizado: pathNorm,
@@ -116,6 +136,7 @@ export function getNavDebugInfo(pathname: string): NavDebugInfo {
       const resultado = buscarRecursivo(
         pathname,
         pathNorm,
+        search,
         item.subItems,
         label,
         [label],

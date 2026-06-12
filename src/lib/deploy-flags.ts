@@ -24,3 +24,12 @@ export function isLaudoWebhookEnabled(): boolean {
 export function isDebugAgentIngestEnabled(): boolean {
   return parseBooleanEnv(process.env.NEXT_PUBLIC_ENABLE_AGENT_INGEST_DEBUG, false);
 }
+
+/** Fiscal Ambiental Digital — módulo satelital INPE/CBERS */
+export function isFadEnabled(): boolean {
+  return parseBooleanEnv(process.env.FAD_ENABLED, true);
+}
+
+export function isFadStandaloneMode(): boolean {
+  return parseBooleanEnv(process.env.FAD_STANDALONE_MODE, true);
+}

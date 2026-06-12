@@ -39,6 +39,7 @@ const PATH_PREFIXES_DENIED_FOR_CLIENTE_AUTONOMO: readonly string[] = [
   '/studies',
   '/georeferenciamento',
   '/analise-ambiental',
+  '/ia/fiscal-ambiental-digital',
   '/requests',
 ];
 

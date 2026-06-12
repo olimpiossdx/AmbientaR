@@ -11,62 +11,9 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import {
-  Crosshair,
-  Trees,
-  Building2,
-  Leaf,
-  FileSpreadsheet,
-  Scale,
-  BookOpen,
-  ArrowRight,
-} from "lucide-react";
+import { ArrowRight } from "lucide-react";
+import { GEOREF_HUB_MODULES } from "@/lib/georef-menu";
 import { GEOREF_PRAZOS_OBRIGATORIEDADE } from "@/lib/georeferenciamento/referencias";
-
-const MODULOS = [
-  {
-    href: "/georeferenciamento/rural",
-    title: "Rural — SIGEF / INCRA",
-    description: "Certificação eletrônica, planilha de vértices, planta e memorial (MTGIR).",
-    icon: Trees,
-  },
-  {
-    href: "/georeferenciamento/urbano",
-    title: "Urbano — Cartório",
-    description: "Lotes, desmembramentos e memorial em SIRGAS2000 para registro no RI.",
-    icon: Building2,
-  },
-  {
-    href: "/georeferenciamento/ambiental",
-    title: "CAR / SICAR",
-    description: "Perímetro georreferenciado, APP, RL e compatibilização com certificação fundiária.",
-    icon: Leaf,
-  },
-  {
-    href: "/georeferenciamento/campo",
-    title: "Campo e levantamento",
-    description: "GNSS/RTK, QA de precisão e integração com Mapas.",
-    icon: Crosshair,
-  },
-  {
-    href: "/georeferenciamento/documentos",
-    title: "Documentação técnica",
-    description: "Memorial descritivo, planta, ART/RRT e anuências.",
-    icon: FileSpreadsheet,
-  },
-  {
-    href: "/georeferenciamento/validacoes",
-    title: "Validações",
-    description: "Sobreposição, área, sistema de coordenadas e fechamento de polígono.",
-    icon: Scale,
-  },
-  {
-    href: "/georeferenciamento/registro",
-    title: "Cartório e registro",
-    description: "Pacote documental para protocolo no Registro de Imóveis.",
-    icon: BookOpen,
-  },
-] as const;
 
 export default function GeoreferenciamentoDashboardPage() {
   return (
@@ -81,7 +28,7 @@ export default function GeoreferenciamentoDashboardPage() {
       </PageHeader>
       <main className="flex-1 space-y-8 overflow-auto p-4 md:p-6">
         <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {MODULOS.map((m) => (
+          {GEOREF_HUB_MODULES.map((m) => (
             <Card key={m.href} className="flex flex-col">
               <CardHeader>
                 <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">

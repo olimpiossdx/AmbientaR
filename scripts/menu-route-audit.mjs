@@ -2,10 +2,55 @@ import { readdirSync, statSync, mkdirSync, writeFileSync, readFileSync } from "n
 import path from "node:path";
 
 const appRoot = path.join("src", "app", "(app)");
-const navConfig = readFileSync(path.join("src", "lib", "navigation-config.ts"), "utf8");
-const hrefs = [...navConfig.matchAll(/href:\s*"([^"]+)"/g)]
-  .map((m) => m[1])
-  .filter((href) => href.startsWith("/"));
+const libDir = path.join("src", "lib");
+
+function extractHrefs(content) {
+  return [...content.matchAll(/href:\s*["']([^"']+)["']/g)]
+    .map((m) => m[1])
+    .filter((href) => href.startsWith("/"));
+}
+
+const menuSources = [
+  path.join(libDir, "navigation-config.ts"),
+  ...readdirSync(libDir)
+    .filter((name) => name.endsWith("-menu.ts"))
+    .map((name) => path.join(libDir, name)),
+];
+
+const hrefs = menuSources.flatMap((file) =>
+  extractHrefs(readFileSync(file, "utf8")),
+);
+
+// Rotas com query (?listagem=) geradas em pca-menu / rca-menu
+hrefs.push("/studies/pca", "/studies/pca/new", "/studies/rca", "/studies/rca/new");
+for (const code of ["A", "B", "C", "D", "E", "F", "G", "H"]) {
+  hrefs.push(`/studies/pca/new?listagem=${code}`);
+  hrefs.push(`/studies/rca/new?listagem=${code}`);
+}
+
+/** Aliases com redirect intencional (não aparecem como string literal no navigation-config). */
+hrefs.push(
+  "/multas-defesas",
+  "/multas-defesas/nova",
+  "/ai-lab",
+  "/app-campo",
+  "/autos-infracao-defesa",
+  "/environmental-company",
+  "/inventarios",
+  "/inventarios/new",
+  "/monitoring",
+  "/proposals",
+  "/proposals/new",
+  "/studies",
+  "/studies/intervencao-ambiental",
+  "/studies/intervencao-ambiental/new",
+  "/studies/relatorios-diversos/carvao-vegetal",
+  "/studies/relatorios-diversos/ptrf-prad",
+  "/studies/relatorios-diversos/transporte-residuos",
+  "/webmail",
+  "/knowledge-sources/new",
+  "/crm/new",
+);
 
 function normalizeMenuHref(href) {
   if (href.startsWith("/external")) return "/external";

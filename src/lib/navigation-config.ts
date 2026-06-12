@@ -2,7 +2,6 @@
 
 import type { NavItem } from "@/lib/types";
 import {
-  GEOREF_TRAMITES_SUBMENU_LABEL,
   LICENCIAMENTO_LIST_SUBITEM_LABEL,
   LICENCIAMENTO_MENU_LABEL,
   LICENCIAMENTO_NEW_SUBITEM_LABEL,
@@ -15,7 +14,20 @@ import {
   MULTAS_E_DEFESAS_MENU_LABEL,
 } from "@/lib/multas-defesas-menu";
 import { OFICIOS_MENU_LABEL } from "@/lib/oficios-menu";
+import { buildFinanceiroNfeNavItem } from "@/lib/financeiro-external-menu";
+import {
+  buildGovAccessNavSubItems,
+  GOV_ACCESS_MENU_LABEL,
+} from "@/lib/gov-access-menu";
 import { buildPcaNavSubItems, PCA_MENU_LABEL, PCA_NAV_ROLES } from "@/lib/pca-menu";
+import { buildRcaNavSubItems, RCA_MENU_LABEL, RCA_NAV_ROLES } from "@/lib/rca-menu";
+import {
+  buildGeorefNavSubItems,
+  GEOREF_MENU_LABEL,
+  GEOREF_NAV_ROLES,
+} from "@/lib/georef-menu";
+import { buildIaNavSubItems, IA_MENU_LABEL } from "@/lib/ia-menu";
+import { buildCrmNavSubItems, CRM_MENU_LABEL, CRM_NAV_ROLES } from "@/lib/crm-menu";
 import {
   LayoutDashboard,
   Users,
@@ -94,8 +106,7 @@ import {
 /** Rótulo do grupo de menu (licenças, CAR, outorgas, fauna, monitoramento, etc.). */
 export const DOCUMENTOS_AMBIENTAIS_MENU_LABEL = "Documentos Ambientais";
 
-/** Rótulo do menu de IA (análises, assistente, relatórios de IA). */
-export const IA_MENU_LABEL = "IA";
+export { IA_MENU_LABEL };
 
 /** Rótulo do menu de vistorias em campo. */
 export const VISTORIA_TECNICA_MENU_LABEL = "Vistoria Técnica";
@@ -220,12 +231,7 @@ export const allNavItems: NavItem[] = [
         icon: Landmark,
         roles: ["admin", "financial"],
       },
-      {
-        href: "/external?url=https%3A%2F%2Fwww.nfse.gov.br%2FEmissorNacional%2FLogin%3FReturnUrl%3D%252fEmissorNacional&title=NFe-Eletr%C3%B4nica",
-        label: "NFe-Eletrônica",
-        icon: FileText,
-        roles: ["admin", "financial"],
-      },
+      buildFinanceiroNfeNavItem(),
       {
         href: "/commercial-proposals",
         label: "Orçamentos e Propostas",
@@ -583,21 +589,6 @@ export const allNavItems: NavItem[] = [
           "advogado",
         ],
       },
-      {
-        href: "/inspections/reports",
-        label: "Relatórios de Campo",
-        icon: FileText,
-        roles: [
-          "admin",
-          "client",
-          "cliente_autonomo",
-          "representative",
-          "gestor",
-          "supervisor",
-          "technical",
-          "advogado",
-        ],
-      },
     ],
   },
   {
@@ -703,111 +694,7 @@ export const allNavItems: NavItem[] = [
       "diretor_fauna",
       "advogado",
     ],
-    subItems: [
-      {
-        href: "/studies/assistant?tipo=mira",
-        label: "Águas / MIRA-IGAM",
-        icon: Droplets,
-        roles: [
-          "admin",
-          "technical",
-          "gestor",
-          "supervisor",
-          "diretor_fauna",
-          "advogado",
-        ],
-      },
-      {
-        href: "/analise-ambiental",
-        label: "Análise Geoespacial (IA)",
-        icon: Globe,
-        roles: [
-          "admin",
-          "technical",
-          "gestor",
-          "supervisor",
-          "diretor_fauna",
-          "advogado",
-        ],
-      },
-      {
-        href: "/studies/analise-socioambiental",
-        label: "Análise Socioambiental",
-        icon: FileText,
-        roles: [
-          "admin",
-          "technical",
-          "gestor",
-          "supervisor",
-          "diretor_fauna",
-          "advogado",
-        ],
-      },
-      {
-        href: "/studies/assistant?tipo=mcp",
-        label: "Cruzamento de dados",
-        icon: Workflow,
-        roles: [
-          "admin",
-          "technical",
-          "gestor",
-          "supervisor",
-          "diretor_fauna",
-          "advogado",
-        ],
-      },
-      {
-        href: "/studies/assistant?tipo=financeiro",
-        label: "Custos e contratos",
-        icon: BarChart2,
-        roles: ["admin", "technical", "gestor", "supervisor", "diretor_fauna", "advogado"],
-      },
-      {
-        href: "/studies/assistant?tipo=geral",
-        label: "Legislação e estudos",
-        icon: BookOpenCheck,
-        roles: [
-          "admin",
-          "technical",
-          "gestor",
-          "supervisor",
-          "diretor_fauna",
-          "advogado",
-        ],
-      },
-      {
-        href: "/reporting",
-        label: "Relatórios de IA",
-        icon: Recycle,
-        roles: ["admin", "financial"],
-      },
-      {
-        href: "/studies/assistant?tipo=rag",
-        label: "Síntese de texto",
-        icon: FileArchive,
-        roles: [
-          "admin",
-          "technical",
-          "gestor",
-          "supervisor",
-          "diretor_fauna",
-          "advogado",
-        ],
-      },
-      {
-        label: "Automações",
-        icon: Bot,
-        roles: ["admin"],
-        subItems: [
-          {
-            href: "/ai-lab/automations",
-            label: "Automações IA",
-            icon: Bot,
-            roles: ["admin"],
-          },
-        ],
-      },
-    ],
+    subItems: buildIaNavSubItems(),
   },
   {
     label: ESTUDOS_TECNICOS_MENU_LABEL,
@@ -984,13 +871,12 @@ export const allNavItems: NavItem[] = [
         roles: ["admin", "technical", "gestor", "supervisor", "advogado"],
       },
       {
-        href: "/studies/rca",
-        label: "RCA",
+        label: RCA_MENU_LABEL,
         icon: NotebookText,
-        roles: ["admin", "technical", "gestor", "supervisor", "advogado"],
+        roles: RCA_NAV_ROLES,
+        subItems: buildRcaNavSubItems(),
       },
       {
-        href: "/studies/relatorios-diversos",
         label: "Relatórios Diversos",
         icon: FileArchive,
         roles: [
@@ -1000,6 +886,60 @@ export const allNavItems: NavItem[] = [
           "supervisor",
           "diretor_fauna",
           "advogado",
+        ],
+        subItems: [
+          {
+            href: "/studies/relatorios-diversos",
+            label: "Visão geral",
+            icon: FileArchive,
+            roles: [
+              "admin",
+              "technical",
+              "gestor",
+              "supervisor",
+              "diretor_fauna",
+              "advogado",
+            ],
+          },
+          {
+            href: "/studies/relatorios-diversos/carvao-vegetal",
+            label: "Carvão vegetal",
+            icon: FileText,
+            roles: [
+              "admin",
+              "technical",
+              "gestor",
+              "supervisor",
+              "diretor_fauna",
+              "advogado",
+            ],
+          },
+          {
+            href: "/studies/relatorios-diversos/ptrf-prad",
+            label: "PTRF / PRAD",
+            icon: Trees,
+            roles: [
+              "admin",
+              "technical",
+              "gestor",
+              "supervisor",
+              "diretor_fauna",
+              "advogado",
+            ],
+          },
+          {
+            href: "/studies/relatorios-diversos/transporte-residuos",
+            label: "Transporte de resíduos",
+            icon: Truck,
+            roles: [
+              "admin",
+              "technical",
+              "gestor",
+              "supervisor",
+              "diretor_fauna",
+              "advogado",
+            ],
+          },
         ],
       },
       {
@@ -1066,144 +1006,16 @@ export const allNavItems: NavItem[] = [
     ],
   },
   {
-    label: "Georeferenciamento",
+    label: GEOREF_MENU_LABEL,
     icon: Crosshair,
-    roles: [
-      "admin",
-      "gestor",
-      "supervisor",
-      "diretor_fauna",
-      "advogado",
-    ],
-    subItems: [
-      {
-        href: "/georeferenciamento",
-        label: "Painel",
-        icon: LayoutDashboard,
-        roles: ["admin", "gestor", "supervisor", "diretor_fauna", "advogado"],
-      },
-      {
-        href: "/georeferenciamento/processos",
-        label: GEOREF_TRAMITES_SUBMENU_LABEL,
-        icon: FolderKanban,
-        roles: ["admin", "gestor", "supervisor", "diretor_fauna", "advogado"],
-      },
-      {
-        href: "/georeferenciamento/rural",
-        label: "Rural (SIGEF/INCRA)",
-        icon: Trees,
-        roles: ["admin", "gestor", "supervisor", "diretor_fauna", "advogado"],
-      },
-      {
-        href: "/georeferenciamento/urbano",
-        label: "Urbano (cartório)",
-        icon: Building2,
-        roles: ["admin", "gestor", "supervisor", "diretor_fauna", "advogado"],
-      },
-      {
-        href: "/georeferenciamento/ambiental",
-        label: "CAR / SICAR",
-        icon: Leaf,
-        roles: ["admin", "gestor", "supervisor", "diretor_fauna", "advogado"],
-      },
-      {
-        href: "/georeferenciamento/historico-car",
-        label: "Histórico CAR",
-        icon: History,
-        roles: ["admin", "gestor", "supervisor", "diretor_fauna", "advogado"],
-      },
-      {
-        href: "/georeferenciamento/campo",
-        label: "Campo e levantamento",
-        icon: Crosshair,
-        roles: ["admin", "gestor", "supervisor", "diretor_fauna", "advogado"],
-      },
-      {
-        href: "/georeferenciamento/documentos",
-        label: "Documentação técnica",
-        icon: FileSpreadsheet,
-        roles: ["admin", "gestor", "supervisor", "diretor_fauna", "advogado"],
-      },
-      {
-        href: "/georeferenciamento/validacoes",
-        label: "Validações",
-        icon: Scale,
-        roles: ["admin", "gestor", "supervisor", "diretor_fauna", "advogado"],
-      },
-      {
-        href: "/georeferenciamento/registro",
-        label: "Cartório e registro",
-        icon: BookOpen,
-        roles: ["admin", "gestor", "supervisor", "diretor_fauna", "advogado"],
-      },
-      {
-        href: "/georeferenciamento/referencias",
-        label: "Referências normativas",
-        icon: BookOpenCheck,
-        roles: ["admin", "gestor", "supervisor", "diretor_fauna", "advogado"],
-      },
-    ],
+    roles: GEOREF_NAV_ROLES,
+    subItems: buildGeorefNavSubItems(),
   },
   {
-    label: "Vendas & CRM",
+    label: CRM_MENU_LABEL,
     icon: ShoppingCart,
-    roles: ["admin", "sales", "supervisor", "financial"],
-    subItems: [
-      {
-        href: "/crm/alerts",
-        label: "Alertas & Notificações",
-        icon: Bell,
-        roles: ["admin", "sales", "supervisor", "financial"],
-      },
-      {
-        href: "/crm/settings",
-        label: "Configurações CRM",
-        icon: Settings,
-        roles: ["admin", "sales", "supervisor", "financial"],
-      },
-      {
-        href: "/crm/team",
-        label: "Equipe & Desempenho",
-        icon: Users,
-        roles: ["admin", "sales", "supervisor", "financial"],
-      },
-      {
-        href: "/crm/clients",
-        label: "Gestão de Clientes",
-        icon: Users,
-        roles: ["admin", "sales", "supervisor", "financial"],
-      },
-      {
-        href: "/social-media",
-        label: "Mídias Sociais",
-        icon: Share2,
-        roles: ["admin", "sales", "supervisor", "financial"],
-      },
-      {
-        href: "/crm/opportunities",
-        label: "Oportunidades & Pipeline",
-        icon: FolderKanban,
-        roles: ["admin", "sales", "supervisor", "financial"],
-      },
-      {
-        href: "/crm",
-        label: "Painel de Vendas",
-        icon: LayoutDashboard,
-        roles: ["admin", "sales", "supervisor", "financial"],
-      },
-      {
-        href: "/crm/reports",
-        label: "Relatórios & Análises",
-        icon: BarChart2,
-        roles: ["admin", "sales", "supervisor", "financial"],
-      },
-      {
-        href: "/crm/proposals",
-        label: "Vendas & Propostas",
-        icon: FileText,
-        roles: ["admin", "sales", "supervisor", "financial"],
-      },
-    ],
+    roles: CRM_NAV_ROLES,
+    subItems: buildCrmNavSubItems(),
   },
   {
     href: "/external?url=https%3A%2F%2Fconsultoriapimenta.com.br%3A2096%2F&title=Webmail",
@@ -1238,7 +1050,7 @@ export const allNavItems: NavItem[] = [
     ],
   },
   {
-    label: "Acessos Governamentais",
+    label: GOV_ACCESS_MENU_LABEL,
     icon: LinkIcon,
     roles: [
       "admin",
@@ -1250,119 +1062,7 @@ export const allNavItems: NavItem[] = [
       "diretor_fauna",
       "advogado",
     ],
-    subItems: [
-      {
-        href: "/external?url=https%3A%2F%2Fsistemas.meioambiente.mg.gov.br%2Fconsulta-intervencao%2Fsite%2Flistar-decisoes&title=Consulta%20Interven%C3%A7%C3%A3o%20Ambiental",
-        label: "Consulta Intervenção Ambiental",
-        icon: BookText,
-        roles: [
-          "admin",
-          "technical",
-          "gestor",
-          "financial",
-          "sales",
-          "supervisor",
-          "diretor_fauna",
-          "advogado",
-        ],
-      },
-      {
-        href: "/external?url=https%3A%2F%2Fsistemas.meioambiente.mg.gov.br%2Flicenciamento%2Fsite%2Fconsulta-licenca&title=Consulta%20de%20Licen%C3%A7as",
-        label: "Consulta Licenciamento",
-        icon: BookText,
-        roles: [
-          "admin",
-          "technical",
-          "gestor",
-          "financial",
-          "sales",
-          "supervisor",
-          "diretor_fauna",
-          "advogado",
-        ],
-      },
-      {
-        href: "/external?url=https%3A%2F%2Fsistemas.meioambiente.mg.gov.br%2Flicenciamento%2Fsite%2Flista-outorgas&title=Consulta%20de%20Outorgas",
-        label: "Consulta Outorgas",
-        icon: BookText,
-        roles: [
-          "admin",
-          "technical",
-          "gestor",
-          "financial",
-          "sales",
-          "supervisor",
-          "diretor_fauna",
-          "advogado",
-        ],
-      },
-      {
-        href: "/external?url=https%3A%2F%2Fservicos.ibama.gov.br%2Fctf%2F&title=CTF%2FIBAMA&newTab=true",
-        label: "CTF/IBAMA",
-        icon: LinkIcon,
-        roles: [
-          "admin",
-          "technical",
-          "gestor",
-          "financial",
-          "sales",
-          "supervisor",
-          "diretor_fauna",
-          "advogado",
-        ],
-      },
-      {
-        href: "/external?url=https%3A%2F%2Fvisualizador.idesisema.meioambiente.mg.gov.br%2F&title=IDE-SisemaNet-MG",
-        label: "IDE-SisemaNet-MG",
-        icon: Globe,
-        roles: ["admin", "technical", "gestor", "supervisor", "diretor_fauna", "advogado"],
-      },
-      {
-        href: "/external?url=https%3A%2F%2Fsei.ibama.gov.br%2Fcontrolador_externo.php%3Facao%3Dusuario_externo_logar%26id_orgao_acesso_externo%3D0&title=SEI-IBAMA&newTab=true",
-        label: "SEI-IBAMA",
-        icon: LinkIcon,
-        roles: [
-          "admin",
-          "technical",
-          "gestor",
-          "financial",
-          "sales",
-          "supervisor",
-          "diretor_fauna",
-          "advogado",
-        ],
-      },
-      {
-        href: "/external?url=https%3A%2F%2Fwww.sei.mg.gov.br%2Fsei%2Fcontrolador_externo.php%3Facao%3Dusuario_externo_logar%26id_orgao_acesso_externo%3D0&title=SEI-MG&newTab=true",
-        label: "SEI-MG",
-        icon: LinkIcon,
-        roles: [
-          "admin",
-          "technical",
-          "gestor",
-          "financial",
-          "sales",
-          "supervisor",
-          "diretor_fauna",
-          "advogado",
-        ],
-      },
-      {
-        href: "/external?url=https%3A%2F%2Fecosistemas.meioambiente.mg.gov.br%2Fportalseguranca%2Flogin&title=SLA-Ecossistemas-MG&newTab=true",
-        label: "SLA-Ecossistemas/MG",
-        icon: LinkIcon,
-        roles: [
-          "admin",
-          "technical",
-          "gestor",
-          "financial",
-          "sales",
-          "supervisor",
-          "diretor_fauna",
-          "advogado",
-        ],
-      },
-    ],
+    subItems: buildGovAccessNavSubItems(),
   },
   {
     label: "Configurações",
@@ -1388,10 +1088,52 @@ export const allNavItems: NavItem[] = [
         roles: ["admin"],
       },
       {
+        href: "/knowledge-sources",
+        label: "Fontes de Conhecimento (RAG)",
+        icon: BookMarked,
+        roles: ["admin"],
+      },
+      {
+        href: "/ai-lab/mcp",
+        label: "Ferramentas MCP (lab)",
+        icon: Workflow,
+        roles: ["admin"],
+      },
+      {
+        href: "/ai-lab/rag",
+        label: "Laboratório RAG",
+        icon: BookMarked,
+        roles: ["admin"],
+      },
+      {
+        href: "/ai-lab/cloud-library",
+        label: "Biblioteca IA (OneDrive)",
+        icon: Folder,
+        roles: ["admin"],
+      },
+      {
+        href: "/settings/onedrive-integration",
+        label: "Integração OneDrive",
+        icon: LinkIcon,
+        roles: ["admin"],
+      },
+      {
+        href: "/settings",
+        label: "Central de Configurações",
+        icon: Settings,
+        roles: ["admin"],
+      },
+      {
         href: "/settings/deleted-backups",
         label: "Backup de Dados Apagados",
         icon: History,
         roles: ["admin", "supervisor"],
+      },
+      {
+        href: "/settings/ai-local-source",
+        label: "Importação IA (legado local)",
+        icon: DatabaseZap,
+        roles: ["admin"],
       },
       {
         href: "/settings/files",

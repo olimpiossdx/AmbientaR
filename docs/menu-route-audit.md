@@ -1,12 +1,12 @@
 # Auditoria de Rotas e Menu
 
-Gerado em: 2026-06-03T13:27:55.744Z
+Gerado em: 2026-06-12T11:18:17.916Z
 
 Classificação inicial para limpeza cirúrgica. Rotas órfãs não devem ser removidas automaticamente; precisam de validação funcional antes.
 
 ## Código ativo ou coberto por menu
 
-Total: 227
+Total: 260
 
 | Rota | Arquivo |
 |------|---------|
@@ -17,7 +17,9 @@ Total: 227
 | `/ai-lab/mcp` | `src/app/(app)/ai-lab/mcp/page.tsx` |
 | `/ai-lab/rag` | `src/app/(app)/ai-lab/rag/page.tsx` |
 | `/analise-ambiental` | `src/app/(app)/analise-ambiental/page.tsx` |
+| `/app-campo` | `src/app/(app)/app-campo/page.tsx` |
 | `/audit-log` | `src/app/(app)/audit-log/page.tsx` |
+| `/autos-infracao-defesa` | `src/app/(app)/autos-infracao-defesa/page.tsx` |
 | `/bank-access` | `src/app/(app)/bank-access/page.tsx` |
 | `/calendar` | `src/app/(app)/calendar/page.tsx` |
 | `/canais` | `src/app/(app)/canais/page.tsx` |
@@ -38,6 +40,7 @@ Total: 227
 | `/commercial-proposals/[id]/edit` | `src/app/(app)/commercial-proposals/[id]/edit/page.tsx` |
 | `/commercial-proposals/new` | `src/app/(app)/commercial-proposals/new/page.tsx` |
 | `/compliance` | `src/app/(app)/compliance/page.tsx` |
+| `/configuracoes/mcp-rag` | `src/app/(app)/configuracoes/mcp-rag/page.tsx` |
 | `/consultas` | `src/app/(app)/consultas/page.tsx` |
 | `/consultas/[id]` | `src/app/(app)/consultas/[id]/page.tsx` |
 | `/consultas/[id]/edit` | `src/app/(app)/consultas/[id]/edit/page.tsx` |
@@ -56,10 +59,12 @@ Total: 227
 | `/crm/reports` | `src/app/(app)/crm/reports/page.tsx` |
 | `/crm/settings` | `src/app/(app)/crm/settings/page.tsx` |
 | `/crm/team` | `src/app/(app)/crm/team/page.tsx` |
+| `/ctf-ibama` | `src/app/(app)/ctf-ibama/page.tsx` |
 | `/documentos-ambientais/pasta-cliente` | `src/app/(app)/documentos-ambientais/pasta-cliente/page.tsx` |
 | `/empreendedores` | `src/app/(app)/empreendedores/page.tsx` |
 | `/empreendedores/[id]/edit` | `src/app/(app)/empreendedores/[id]/edit/page.tsx` |
 | `/empreendedores/new` | `src/app/(app)/empreendedores/new/page.tsx` |
+| `/environmental-company` | `src/app/(app)/environmental-company/page.tsx` |
 | `/external` | `src/app/(app)/external/page.tsx` |
 | `/fauna` | `src/app/(app)/fauna/page.tsx` |
 | `/financial/abc-curve` | `src/app/(app)/financial/abc-curve/page.tsx` |
@@ -81,6 +86,7 @@ Total: 227
 | `/georeferenciamento/ambiental` | `src/app/(app)/georeferenciamento/ambiental/page.tsx` |
 | `/georeferenciamento/campo` | `src/app/(app)/georeferenciamento/campo/page.tsx` |
 | `/georeferenciamento/documentos` | `src/app/(app)/georeferenciamento/documentos/page.tsx` |
+| `/georeferenciamento/historico-car` | `src/app/(app)/georeferenciamento/historico-car/page.tsx` |
 | `/georeferenciamento/processos` | `src/app/(app)/georeferenciamento/processos/page.tsx` |
 | `/georeferenciamento/processos/[id]` | `src/app/(app)/georeferenciamento/processos/[id]/page.tsx` |
 | `/georeferenciamento/referencias` | `src/app/(app)/georeferenciamento/referencias/page.tsx` |
@@ -93,6 +99,10 @@ Total: 227
 | `/inspections/new` | `src/app/(app)/inspections/new/page.tsx` |
 | `/inspections/reports` | `src/app/(app)/inspections/reports/page.tsx` |
 | `/intervencoes` | `src/app/(app)/intervencoes/page.tsx` |
+| `/inventarios` | `src/app/(app)/inventarios/page.tsx` |
+| `/inventarios/[id]` | `src/app/(app)/inventarios/[id]/page.tsx` |
+| `/inventarios/[id]/parcelas/[parcelaId]` | `src/app/(app)/inventarios/[id]/parcelas/[parcelaId]/page.tsx` |
+| `/inventarios/new` | `src/app/(app)/inventarios/new/page.tsx` |
 | `/invoices` | `src/app/(app)/invoices/page.tsx` |
 | `/invoices/[id]/edit` | `src/app/(app)/invoices/(.)[id]/edit/page.tsx` |
 | `/invoices/[id]/edit` | `src/app/(app)/invoices/[id]/edit/page.tsx` |
@@ -109,17 +119,27 @@ Total: 227
 | `/licenses/[id]/edit` | `src/app/(app)/licenses/[id]/edit/page.tsx` |
 | `/licenses/new` | `src/app/(app)/licenses/(.)new/page.tsx` |
 | `/licenses/new` | `src/app/(app)/licenses/new/page.tsx` |
+| `/monitoring` | `src/app/(app)/monitoring/page.tsx` |
 | `/monitoring/manual` | `src/app/(app)/monitoring/manual/page.tsx` |
 | `/monitoring/telemetric` | `src/app/(app)/monitoring/telemetric/page.tsx` |
+| `/mtr-declaracao` | `src/app/(app)/mtr-declaracao/page.tsx` |
+| `/multas-defesas` | `src/app/(app)/multas-defesas/page.tsx` |
+| `/multas-defesas/[id]` | `src/app/(app)/multas-defesas/[id]/page.tsx` |
+| `/multas-defesas/nova` | `src/app/(app)/multas-defesas/nova/page.tsx` |
 | `/oficios` | `src/app/(app)/oficios/page.tsx` |
 | `/oficios/[id]/edit` | `src/app/(app)/oficios/[id]/edit/page.tsx` |
 | `/oficios/new` | `src/app/(app)/oficios/new/page.tsx` |
 | `/outorgas` | `src/app/(app)/outorgas/page.tsx` |
 | `/outorgas/[id]/edit` | `src/app/(app)/outorgas/(.)[id]/edit/page.tsx` |
+| `/outorgas/[id]/edit` | `src/app/(app)/outorgas/[id]/edit/page.tsx` |
 | `/outorgas/new` | `src/app/(app)/outorgas/(.)new/page.tsx` |
+| `/outorgas/new` | `src/app/(app)/outorgas/new/page.tsx` |
 | `/projects` | `src/app/(app)/projects/page.tsx` |
 | `/projects/[id]/edit` | `src/app/(app)/projects/[id]/edit/page.tsx` |
 | `/projects/new` | `src/app/(app)/projects/new/page.tsx` |
+| `/proposals` | `src/app/(app)/proposals/page.tsx` |
+| `/proposals/[id]/edit` | `src/app/(app)/proposals/[id]/edit/page.tsx` |
+| `/proposals/new` | `src/app/(app)/proposals/new/page.tsx` |
 | `/reporting` | `src/app/(app)/reporting/page.tsx` |
 | `/requests` | `src/app/(app)/requests/page.tsx` |
 | `/requests/[id]/aia` | `src/app/(app)/requests/[id]/aia/page.tsx` |
@@ -143,6 +163,8 @@ Total: 227
 | `/settings/templates` | `src/app/(app)/settings/templates/page.tsx` |
 | `/settings/templates/rca` | `src/app/(app)/settings/templates/rca/page.tsx` |
 | `/social-media` | `src/app/(app)/social-media/page.tsx` |
+| `/studies` | `src/app/(app)/studies/page.tsx` |
+| `/studies/acao-emergencial` | `src/app/(app)/studies/acao-emergencial/page.tsx` |
 | `/studies/analise-socioambiental` | `src/app/(app)/studies/analise-socioambiental/page.tsx` |
 | `/studies/assistant` | `src/app/(app)/studies/assistant/page.tsx` |
 | `/studies/barragem` | `src/app/(app)/studies/barragem/page.tsx` |
@@ -177,6 +199,11 @@ Total: 227
 | `/studies/fauna/resgate-relatorio/[id]` | `src/app/(app)/studies/fauna/resgate-relatorio/[id]/page.tsx` |
 | `/studies/fauna/resgate/[id]` | `src/app/(app)/studies/fauna/resgate/[id]/page.tsx` |
 | `/studies/ide-sisemanet` | `src/app/(app)/studies/ide-sisemanet/page.tsx` |
+| `/studies/intervencao-ambiental` | `src/app/(app)/studies/intervencao-ambiental/page.tsx` |
+| `/studies/intervencao-ambiental/[id]/edit` | `src/app/(app)/studies/intervencao-ambiental/(.)[id]/edit/page.tsx` |
+| `/studies/intervencao-ambiental/[id]/edit` | `src/app/(app)/studies/intervencao-ambiental/[id]/edit/page.tsx` |
+| `/studies/intervencao-ambiental/new` | `src/app/(app)/studies/intervencao-ambiental/(.)new/page.tsx` |
+| `/studies/intervencao-ambiental/new` | `src/app/(app)/studies/intervencao-ambiental/new/page.tsx` |
 | `/studies/inventario` | `src/app/(app)/studies/inventario/page.tsx` |
 | `/studies/inventario/[id]` | `src/app/(app)/studies/inventario/[id]/page.tsx` |
 | `/studies/inventario/[id]/arvores` | `src/app/(app)/studies/inventario/[id]/arvores/page.tsx` |
@@ -189,6 +216,7 @@ Total: 227
 | `/studies/las-ras/[id]/edit` | `src/app/(app)/studies/las-ras/[id]/edit/page.tsx` |
 | `/studies/las-ras/new` | `src/app/(app)/studies/las-ras/new/page.tsx` |
 | `/studies/mapas` | `src/app/(app)/studies/mapas/page.tsx` |
+| `/studies/mtr` | `src/app/(app)/studies/mtr/page.tsx` |
 | `/studies/outorgas` | `src/app/(app)/studies/outorgas/page.tsx` |
 | `/studies/outorgas/[id]/edit` | `src/app/(app)/studies/outorgas/[id]/edit/page.tsx` |
 | `/studies/outorgas/new` | `src/app/(app)/studies/outorgas/new/page.tsx` |
@@ -203,11 +231,15 @@ Total: 227
 | `/studies/pia/[id]/edit` | `src/app/(app)/studies/pia/[id]/edit/page.tsx` |
 | `/studies/pia/new` | `src/app/(app)/studies/pia/(.)new/page.tsx` |
 | `/studies/pia/new` | `src/app/(app)/studies/pia/new/page.tsx` |
+| `/studies/piscinao-off-stream` | `src/app/(app)/studies/piscinao-off-stream/page.tsx` |
 | `/studies/prada` | `src/app/(app)/studies/prada/page.tsx` |
 | `/studies/prada/[id]/edit` | `src/app/(app)/studies/prada/(.)[id]/edit/page.tsx` |
 | `/studies/prada/[id]/edit` | `src/app/(app)/studies/prada/[id]/edit/page.tsx` |
 | `/studies/prada/new` | `src/app/(app)/studies/prada/(.)new/page.tsx` |
 | `/studies/prada/new` | `src/app/(app)/studies/prada/new/page.tsx` |
+| `/studies/procuracao` | `src/app/(app)/studies/procuracao/page.tsx` |
+| `/studies/procuracao/[id]/edit` | `src/app/(app)/studies/procuracao/[id]/edit/page.tsx` |
+| `/studies/procuracao/new` | `src/app/(app)/studies/procuracao/new/page.tsx` |
 | `/studies/ptrf` | `src/app/(app)/studies/ptrf/page.tsx` |
 | `/studies/ptrf/[id]/edit` | `src/app/(app)/studies/ptrf/(.)[id]/edit/page.tsx` |
 | `/studies/ptrf/[id]/edit` | `src/app/(app)/studies/ptrf/[id]/edit/page.tsx` |
@@ -237,38 +269,18 @@ Total: 227
 | `/technical-responsible/new` | `src/app/(app)/technical-responsible/new/page.tsx` |
 | `/users` | `src/app/(app)/users/page.tsx` |
 | `/usos-insignificantes` | `src/app/(app)/usos-insignificantes/page.tsx` |
+| `/webmail` | `src/app/(app)/webmail/page.tsx` |
 
 ## Rotas dinâmicas sem entrada direta no menu
 
-Total: 6
+Total: 0
 
 | Rota | Arquivo |
 |------|---------|
-| `/inventarios/[id]` | `src/app/(app)/inventarios/[id]/page.tsx` |
-| `/inventarios/[id]/parcelas/[parcelaId]` | `src/app/(app)/inventarios/[id]/parcelas/[parcelaId]/page.tsx` |
-| `/multas-defesas/[id]` | `src/app/(app)/multas-defesas/[id]/page.tsx` |
-| `/proposals/[id]/edit` | `src/app/(app)/proposals/[id]/edit/page.tsx` |
-| `/studies/intervencao-ambiental/[id]/edit` | `src/app/(app)/studies/intervencao-ambiental/(.)[id]/edit/page.tsx` |
-| `/studies/intervencao-ambiental/[id]/edit` | `src/app/(app)/studies/intervencao-ambiental/[id]/edit/page.tsx` |
 
 ## Rotas estáticas sem entrada direta no menu
 
-Total: 15
+Total: 0
 
 | Rota | Arquivo |
 |------|---------|
-| `/app-campo` | `src/app/(app)/app-campo/page.tsx` |
-| `/autos-infracao-defesa` | `src/app/(app)/autos-infracao-defesa/page.tsx` |
-| `/environmental-company` | `src/app/(app)/environmental-company/page.tsx` |
-| `/inventarios` | `src/app/(app)/inventarios/page.tsx` |
-| `/inventarios/new` | `src/app/(app)/inventarios/new/page.tsx` |
-| `/monitoring` | `src/app/(app)/monitoring/page.tsx` |
-| `/multas-defesas` | `src/app/(app)/multas-defesas/page.tsx` |
-| `/multas-defesas/nova` | `src/app/(app)/multas-defesas/nova/page.tsx` |
-| `/proposals` | `src/app/(app)/proposals/page.tsx` |
-| `/proposals/new` | `src/app/(app)/proposals/new/page.tsx` |
-| `/studies` | `src/app/(app)/studies/page.tsx` |
-| `/studies/intervencao-ambiental` | `src/app/(app)/studies/intervencao-ambiental/page.tsx` |
-| `/studies/intervencao-ambiental/new` | `src/app/(app)/studies/intervencao-ambiental/(.)new/page.tsx` |
-| `/studies/intervencao-ambiental/new` | `src/app/(app)/studies/intervencao-ambiental/new/page.tsx` |
-| `/webmail` | `src/app/(app)/webmail/page.tsx` |

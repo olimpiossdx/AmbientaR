@@ -5,6 +5,8 @@
 **Estado:** **aprovado para implementação — Fase 1 (MVP leigo)** (sem código ainda)  
 **Ficheiro:** `docs/CBERS-ARQUIVO-INPE-PLANO.md`
 
+> **Nota (2026-06-12):** Este plano foi **absorvido** pelo produto **Fiscal Ambiental Digital**. Documento único de implementação: [`docs/fiscal-ambiental-digital/PLANO-UNICO.md`](fiscal-ambiental-digital/PLANO-UNICO.md). Mantém-se aqui o detalhe técnico dos pipelines GDAL e STAC (§8–11).
+
 | Campo | Valor |
 |-------|-------|
 | Menu proposto | IA → **Imagens de satélite (INPE)** |
