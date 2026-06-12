@@ -1,12 +1,12 @@
 # Auditoria de Rotas e Menu
 
-Gerado em: 2026-06-12T11:18:17.916Z
+Gerado em: 2026-06-12T13:22:48.170Z
 
 Classificação inicial para limpeza cirúrgica. Rotas órfãs não devem ser removidas automaticamente; precisam de validação funcional antes.
 
 ## Código ativo ou coberto por menu
 
-Total: 260
+Total: 275
 
 | Rota | Arquivo |
 |------|---------|
@@ -94,6 +94,21 @@ Total: 260
 | `/georeferenciamento/rural` | `src/app/(app)/georeferenciamento/rural/page.tsx` |
 | `/georeferenciamento/urbano` | `src/app/(app)/georeferenciamento/urbano/page.tsx` |
 | `/georeferenciamento/validacoes` | `src/app/(app)/georeferenciamento/validacoes/page.tsx` |
+| `/ia/fiscal-ambiental-digital` | `src/app/(app)/ia/fiscal-ambiental-digital/page.tsx` |
+| `/ia/fiscal-ambiental-digital/biblioteca` | `src/app/(app)/ia/fiscal-ambiental-digital/biblioteca/page.tsx` |
+| `/ia/fiscal-ambiental-digital/comparador` | `src/app/(app)/ia/fiscal-ambiental-digital/comparador/page.tsx` |
+| `/ia/fiscal-ambiental-digital/configuracoes` | `src/app/(app)/ia/fiscal-ambiental-digital/configuracoes/page.tsx` |
+| `/ia/fiscal-ambiental-digital/dashboard` | `src/app/(app)/ia/fiscal-ambiental-digital/dashboard/page.tsx` |
+| `/ia/fiscal-ambiental-digital/esg` | `src/app/(app)/ia/fiscal-ambiental-digital/esg/page.tsx` |
+| `/ia/fiscal-ambiental-digital/evidencias` | `src/app/(app)/ia/fiscal-ambiental-digital/evidencias/page.tsx` |
+| `/ia/fiscal-ambiental-digital/fiscalizacao` | `src/app/(app)/ia/fiscal-ambiental-digital/fiscalizacao/page.tsx` |
+| `/ia/fiscal-ambiental-digital/inteligencia` | `src/app/(app)/ia/fiscal-ambiental-digital/inteligencia/page.tsx` |
+| `/ia/fiscal-ambiental-digital/linha-do-tempo` | `src/app/(app)/ia/fiscal-ambiental-digital/linha-do-tempo/page.tsx` |
+| `/ia/fiscal-ambiental-digital/monitoramento` | `src/app/(app)/ia/fiscal-ambiental-digital/monitoramento/page.tsx` |
+| `/ia/fiscal-ambiental-digital/montar-acervo` | `src/app/(app)/ia/fiscal-ambiental-digital/montar-acervo/page.tsx` |
+| `/ia/fiscal-ambiental-digital/relatorios` | `src/app/(app)/ia/fiscal-ambiental-digital/relatorios/page.tsx` |
+| `/ia/fiscal-ambiental-digital/workspace/[workspaceId]` | `src/app/(app)/ia/fiscal-ambiental-digital/workspace/[workspaceId]/page.tsx` |
+| `/ia/fiscal-ambiental-digital/workspace/novo` | `src/app/(app)/ia/fiscal-ambiental-digital/workspace/novo/page.tsx` |
 | `/inspections` | `src/app/(app)/inspections/page.tsx` |
 | `/inspections/[id]/edit` | `src/app/(app)/inspections/[id]/edit/page.tsx` |
 | `/inspections/new` | `src/app/(app)/inspections/new/page.tsx` |

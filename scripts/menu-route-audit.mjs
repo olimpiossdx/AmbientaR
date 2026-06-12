@@ -21,6 +21,18 @@ const hrefs = menuSources.flatMap((file) =>
   extractHrefs(readFileSync(file, "utf8")),
 );
 
+// FAD: ia-menu usa `href: FAD_ROUTE_BASE` (sem string literal)
+const fadMenuPath = path.join(libDir, "fiscal-ambiental", "fad-menu.ts");
+if (statSync(fadMenuPath).isFile()) {
+  const fadMenu = readFileSync(fadMenuPath, "utf8");
+  const fadBase = "/ia/fiscal-ambiental-digital";
+  hrefs.push(fadBase);
+  for (const m of fadMenu.matchAll(/\$\{FAD_ROUTE_BASE\}([^`']+)/g)) {
+    hrefs.push(`${fadBase}${m[1]}`);
+  }
+  hrefs.push(`${fadBase}/workspace/novo`);
+}
+
 // Rotas com query (?listagem=) geradas em pca-menu / rca-menu
 hrefs.push("/studies/pca", "/studies/pca/new", "/studies/rca", "/studies/rca/new");
 for (const code of ["A", "B", "C", "D", "E", "F", "G", "H"]) {
