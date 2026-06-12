@@ -17,8 +17,8 @@ export function FadComingSoon({ title, description, phase }: FadComingSoonProps)
         </CardDescription>
       </CardHeader>
       <CardContent className="text-sm text-muted-foreground">
-        Esta área será activada nas próximas fases de implantação. Continue pelo{" "}
-        <strong>Início</strong> ou <strong>Montar acervo</strong> quando a Fase 1 estiver disponível.
+        Esta área ainda não está disponível nesta versão. Continue pelo <strong>Início</strong> ou
+        consulte <strong>Configurações</strong> para o estado do módulo.
       </CardContent>
     </Card>
   );

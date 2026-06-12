@@ -1,4 +1,5 @@
 import type { GeoJSON } from "geojson";
+import type { FISCAL_AMBIENTAL_FLAGS } from "./constants";
 
 export type FadWorkspaceStatus = "draft" | "ready" | "archived";
 
@@ -407,6 +408,6 @@ export type FadModuleSettings = {
   sigCrosscheckEnabled: boolean;
   satelliteWorkerConfigured: boolean;
   intelligenceWorkerConfigured: boolean;
-  flags: typeof import("./constants").FISCAL_AMBIENTAL_FLAGS;
+  flags: typeof FISCAL_AMBIENTAL_FLAGS;
   attribution: string;
 };

@@ -525,3 +525,14 @@ export async function createEsgSnapshot(token: string, workspaceId: string) {
     { method: "POST", body: JSON.stringify({ workspaceId }) },
   );
 }
+
+export async function fetchFadDashboardStats(token: string) {
+  return fadFetch<import("./types").FadDashboardStats>(
+    "/api/fiscal-ambiental/dashboard/stats",
+    token,
+  );
+}
+
+export async function fetchFadModuleSettings(token: string) {
+  return fadFetch<import("./types").FadModuleSettings>("/api/fiscal-ambiental/settings", token);
+}

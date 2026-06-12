@@ -1,11 +1,5 @@
-import { FadComingSoon } from "@/components/fiscal-ambiental/fad-coming-soon";
+import { FadConfiguracoesClient } from "@/components/fiscal-ambiental/fad-configuracoes-client";
 
 export default function FadConfiguracoesPage() {
-  return (
-    <FadComingSoon
-      title="Configurações"
-      description="Preferências do módulo e ligações opcionais ao SaaS."
-      phase="Futuro"
-    />
-  );
+  return <FadConfiguracoesClient />;
 }
