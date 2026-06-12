@@ -409,6 +409,9 @@ export type FadModuleSettings = {
   monitoringCronConfigured: boolean;
   satelliteWorkerConfigured: boolean;
   intelligenceWorkerConfigured: boolean;
+  satelliteWorkerUrl?: string;
+  intelligenceWorkerUrl?: string;
+  workerSecretConfigured: boolean;
   flags: typeof FISCAL_AMBIENTAL_FLAGS;
   attribution: string;
 };

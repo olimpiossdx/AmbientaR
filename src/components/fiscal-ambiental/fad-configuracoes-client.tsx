@@ -143,12 +143,22 @@ export function FadConfiguracoesClient() {
             <StatusRow
               label="Worker satelital (GDAL)"
               ok={settings.satelliteWorkerConfigured}
-              detail="FISCAL_SATELLITE_WORKER_URL"
+              detail={
+                settings.satelliteWorkerUrl ??
+                "FISCAL_SATELLITE_WORKER_URL — revisao GDAL em Cloud Run"
+              }
             />
             <StatusRow
               label="Worker de inteligência"
               ok={settings.intelligenceWorkerConfigured}
-              detail="FISCAL_INTELLIGENCE_WORKER_URL"
+              detail={
+                settings.intelligenceWorkerUrl ?? "FISCAL_INTELLIGENCE_WORKER_URL"
+              }
+            />
+            <StatusRow
+              label="Segredo partilhado (app)"
+              ok={settings.workerSecretConfigured}
+              detail="WORKER_SHARED_SECRET — deve coincidir com os servicos Cloud Run"
             />
           </CardContent>
         </Card>

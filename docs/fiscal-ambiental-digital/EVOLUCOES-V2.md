@@ -151,8 +151,17 @@ Redeploy workers (GDAL v2):
 
 ```powershell
 $env:WORKER_SHARED_SECRET = "..."
-.\scripts\deploy-fad-workers.ps1
+npm run fad:deploy-workers
 ```
+
+**Deploy concluído (2026-06-12):**
+
+| Serviço | Revisão | URL |
+|---------|---------|-----|
+| `ambientar-fiscal-satellite` | `00005-6zm` | `https://ambientar-fiscal-satellite-485112911461.southamerica-east1.run.app` |
+| `ambientar-fiscal-intelligence` | `00003-ngp` | `https://ambientar-fiscal-intelligence-485112911461.southamerica-east1.run.app` |
+
+URLs já alinhadas com `apphosting.yaml`. Confirme `WORKER_SHARED_SECRET` na consola App Hosting **e** em cada serviço Cloud Run.
 
 ---
 

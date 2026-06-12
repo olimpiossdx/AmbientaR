@@ -1,7 +1,9 @@
+import { isFadSigCrosscheckEnabled } from "@/lib/deploy-flags";
 import { adminDb } from "@/lib/firebase-admin";
 import { listChangeAnalyses } from "./change-analysis-service";
 import { listFiscalFindings, summarizeFindings } from "./fiscal-finding-service";
 import { listMosaicsForWorkspace } from "./mosaic-service";
+import { runSigCrosscheck } from "./sig-crosscheck-service";
 import { getFadWorkspace } from "./workspace-service";
 import type {
   FadEsgDashboard,
@@ -216,6 +218,14 @@ export async function createEsgSnapshot(
   const workspace = await getFadWorkspace(workspaceId);
   if (!workspace) {
     throw Object.assign(new Error("Workspace não encontrado."), { status: 404 });
+  }
+
+  if (isFadSigCrosscheckEnabled() && workspace.aoi) {
+    await runSigCrosscheck({
+      workspaceId,
+      ownerId,
+      aoi: workspace.aoi,
+    }).catch(() => undefined);
   }
 
   const metrics = await gatherMetrics(workspace);

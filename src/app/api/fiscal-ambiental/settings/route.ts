@@ -19,6 +19,9 @@ export async function GET(req: Request) {
       monitoringCronConfigured: Boolean(process.env.FAD_MONITORING_CRON_SECRET?.trim()),
       satelliteWorkerConfigured: Boolean(process.env.FISCAL_SATELLITE_WORKER_URL?.trim()),
       intelligenceWorkerConfigured: Boolean(process.env.FISCAL_INTELLIGENCE_WORKER_URL?.trim()),
+      satelliteWorkerUrl: process.env.FISCAL_SATELLITE_WORKER_URL?.trim() || undefined,
+      intelligenceWorkerUrl: process.env.FISCAL_INTELLIGENCE_WORKER_URL?.trim() || undefined,
+      workerSecretConfigured: Boolean(process.env.WORKER_SHARED_SECRET?.trim()),
       flags: FISCAL_AMBIENTAL_FLAGS,
       attribution: FAD_ATTRIBUTION,
     };
