@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Calendar, Loader2, Satellite, StickyNote, Trash2 } from "lucide-react";
+import { Calendar, Loader2, Satellite, ShieldCheck, Sparkles, StickyNote, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -173,16 +173,32 @@ export function FadTimelineClient() {
         <ol className="relative space-y-0 border-l border-border pl-6">
           {events.map((ev, i) => {
             const isMosaic = ev.kind === "satellite_mosaic_created";
+            const isAnalysis = ev.kind === "change_analysis_completed";
+            const isFiscal = ev.kind === "fiscal_check_completed";
             const isSynthetic = ev.id.startsWith("mosaic_");
             return (
               <li key={ev.id} className={cn("relative pb-8", i === events.length - 1 && "pb-0")}>
                 <span
                   className={cn(
                     "absolute -left-[1.65rem] flex h-7 w-7 items-center justify-center rounded-full border bg-background",
-                    isMosaic ? "text-sky-600" : "text-amber-600",
+                    isMosaic
+                      ? "text-sky-600"
+                      : isFiscal
+                        ? "text-rose-600"
+                        : isAnalysis
+                          ? "text-violet-600"
+                          : "text-amber-600",
                   )}
                 >
-                  {isMosaic ? <Satellite className="h-3.5 w-3.5" /> : <StickyNote className="h-3.5 w-3.5" />}
+                  {isMosaic ? (
+                    <Satellite className="h-3.5 w-3.5" />
+                  ) : isFiscal ? (
+                    <ShieldCheck className="h-3.5 w-3.5" />
+                  ) : isAnalysis ? (
+                    <Sparkles className="h-3.5 w-3.5" />
+                  ) : (
+                    <StickyNote className="h-3.5 w-3.5" />
+                  )}
                 </span>
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div>

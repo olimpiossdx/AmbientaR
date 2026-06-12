@@ -139,9 +139,19 @@ export function FadEvidenciasClient() {
                   </Button>
                 </CardHeader>
                 <CardContent>
-                  {item.kind === "comparison" &&
-                  item.beforePreviewUrl &&
-                  item.afterPreviewUrl ? (
+                  {item.kind === "change_analysis" ? (
+                    <p className="text-sm">
+                      {item.description ?? "Análise de mudanças guardada."}{" "}
+                      <Link
+                        href={`${FAD_ROUTE_BASE}/inteligencia`}
+                        className="text-primary underline"
+                      >
+                        Abrir inteligência
+                      </Link>
+                    </p>
+                  ) : item.kind === "comparison" &&
+                    item.beforePreviewUrl &&
+                    item.afterPreviewUrl ? (
                     <FadImageCompareSlider
                       beforeUrl={item.beforePreviewUrl}
                       afterUrl={item.afterPreviewUrl}

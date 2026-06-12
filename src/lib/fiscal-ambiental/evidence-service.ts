@@ -100,6 +100,12 @@ export async function createEvidenceItem(
     }
   }
 
+  if (input.kind === "change_analysis") {
+    if (!input.changeAnalysisId) {
+      throw Object.assign(new Error("changeAnalysisId é obrigatório."), { status: 400 });
+    }
+  }
+
   const payload: Omit<FadEvidenceItem, "id"> = {
     workspaceId,
     ownerId,
@@ -109,6 +115,7 @@ export async function createEvidenceItem(
     beforeMosaicId: input.beforeMosaicId,
     afterMosaicId: input.afterMosaicId,
     mosaicIds: input.mosaicIds,
+    changeAnalysisId: input.changeAnalysisId,
     beforeDate,
     afterDate,
     createdAt: now,

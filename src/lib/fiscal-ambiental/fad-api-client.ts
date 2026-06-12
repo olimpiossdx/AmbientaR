@@ -241,16 +241,73 @@ export async function listEvidence(token: string, workspaceId: string) {
   );
 }
 
+export type FadChangeAnalysisDto = {
+  id: string;
+  workspaceId: string;
+  status: string;
+  beforeMosaicId: string;
+  afterMosaicId: string;
+  beforeDate: string;
+  afterDate: string;
+  summary: {
+    lossHa: number;
+    gainHa: number;
+    bareHa: number;
+    totalChangedHa: number;
+  };
+  polygons: Array<{
+    type: string;
+    geometry: GeoJSON.Polygon;
+    areaHa: number;
+    confidence: number;
+  }>;
+  confidence: number;
+  disclaimer: string;
+  mode: string;
+  previewUrl?: string;
+};
+
+export async function detectChanges(
+  token: string,
+  workspaceId: string,
+  beforeMosaicId: string,
+  afterMosaicId: string,
+) {
+  return fadFetch<FadChangeAnalysisDto>(
+    "/api/fiscal-ambiental/intelligence/detect-changes",
+    token,
+    {
+      method: "POST",
+      body: JSON.stringify({ workspaceId, beforeMosaicId, afterMosaicId }),
+    },
+  );
+}
+
+export async function getChangeAnalysis(token: string, workspaceId: string, analysisId: string) {
+  return fadFetch<FadChangeAnalysisDto>(
+    `/api/fiscal-ambiental/intelligence/analysis/${analysisId}?workspaceId=${encodeURIComponent(workspaceId)}`,
+    token,
+  );
+}
+
+export async function listChangeAnalyses(token: string, workspaceId: string) {
+  return fadFetch<FadChangeAnalysisDto[]>(
+    `/api/fiscal-ambiental/intelligence/analyses?workspaceId=${encodeURIComponent(workspaceId)}`,
+    token,
+  );
+}
+
 export async function saveEvidence(
   token: string,
   workspaceId: string,
   input: {
-    kind: "comparison" | "timelapse";
+    kind: "comparison" | "timelapse" | "change_analysis";
     title: string;
     description?: string;
     beforeMosaicId?: string;
     afterMosaicId?: string;
     mosaicIds?: string[];
+    changeAnalysisId?: string;
   },
 ) {
   return fadFetch<FadEvidenceDto>("/api/fiscal-ambiental/evidence", token, {
@@ -264,5 +321,62 @@ export async function deleteEvidence(token: string, workspaceId: string, evidenc
     `/api/fiscal-ambiental/evidence/${evidenceId}?workspaceId=${encodeURIComponent(workspaceId)}`,
     token,
     { method: "DELETE" },
+  );
+}
+
+export type FadFiscalFindingDto = {
+  id: string;
+  workspaceId: string;
+  type: string;
+  severity: "low" | "medium" | "high" | "critical";
+  status: "open" | "under_review" | "dismissed";
+  title: string;
+  description: string;
+  areaHa?: number;
+  confidence?: number;
+  changeAnalysisId?: string;
+  source: string;
+  createdAt: string;
+};
+
+export async function listFiscalFindings(token: string, workspaceId: string) {
+  return fadFetch<FadFiscalFindingDto[]>(
+    `/api/fiscal-ambiental/findings?workspaceId=${encodeURIComponent(workspaceId)}`,
+    token,
+  );
+}
+
+export async function createManualFinding(
+  token: string,
+  workspaceId: string,
+  input: { title: string; description: string },
+) {
+  return fadFetch<FadFiscalFindingDto>("/api/fiscal-ambiental/findings", token, {
+    method: "POST",
+    body: JSON.stringify({ workspaceId, ...input }),
+  });
+}
+
+export async function updateFiscalFinding(
+  token: string,
+  workspaceId: string,
+  findingId: string,
+  input: { status: "open" | "under_review" | "dismissed"; dismissedReason?: string },
+) {
+  return fadFetch<FadFiscalFindingDto>(
+    `/api/fiscal-ambiental/findings/${findingId}`,
+    token,
+    {
+      method: "PATCH",
+      body: JSON.stringify({ workspaceId, ...input }),
+    },
+  );
+}
+
+export async function runFiscalChecks(token: string, workspaceId: string) {
+  return fadFetch<{ created: number; findings: FadFiscalFindingDto[] }>(
+    "/api/fiscal-ambiental/fiscalizacao/run-checks",
+    token,
+    { method: "POST", body: JSON.stringify({ workspaceId }) },
   );
 }

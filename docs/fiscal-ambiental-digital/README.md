@@ -30,6 +30,6 @@ Este ficheiro **substitui** o pacote externo de 14 documentos e o antigo `PLANO-
 - **Dados:** `fad_workspaces/{id}/...`
 - **MVP:** Fases 0–1 (workspace + acervo INPE + GeoTIFF)
 - **Worker:** `infra/fiscal-satellite-worker` (opcional; sem URL usa modo inline na API)
-- **Estado:** **Fases 0–2 implementadas** — acervo INPE (Fase 1), linha do tempo, comparador slider, timelapse, evidências guardadas. GDAL/recorte AOI real e inteligência (Fase 3) pendentes.
+- **Estado:** **Fases 0–4 implementadas** — acervo, timeline, comparador, inteligência, **fiscalização preventiva** (achados + semáforo). Cruzamento SIG (PRODES/IDE) fica para v2 com `FAD_ENABLE_SIG_CROSSCHECK`. Fase 5 (relatórios) pendente.
 
 Última atualização: 2026-06-12

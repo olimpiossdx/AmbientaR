@@ -1,11 +1,9 @@
-import { FadComingSoon } from "@/components/fiscal-ambiental/fad-coming-soon";
+import { FadFiscalizacaoClient } from "@/components/fiscal-ambiental/fad-fiscalizacao-client";
+
+export const metadata = {
+  title: "Fiscalização — Fiscal Ambiental Digital",
+};
 
 export default function FadFiscalizacaoPage() {
-  return (
-    <FadComingSoon
-      title="Fiscalização preventiva"
-      description="Achados e cruzamentos com bases ambientais."
-      phase="Fase 4"
-    />
-  );
+  return <FadFiscalizacaoClient />;
 }

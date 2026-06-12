@@ -1,11 +1,9 @@
-import { FadComingSoon } from "@/components/fiscal-ambiental/fad-coming-soon";
+import { FadIntelligenceClient } from "@/components/fiscal-ambiental/fad-intelligence-client";
+
+export const metadata = {
+  title: "Inteligência — Fiscal Ambiental Digital",
+};
 
 export default function FadInteligenciaPage() {
-  return (
-    <FadComingSoon
-      title="Inteligência ambiental"
-      description="Detecção de mudanças e análise sobre o acervo."
-      phase="Fase 3"
-    />
-  );
+  return <FadIntelligenceClient />;
 }

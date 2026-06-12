@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 import {
-  createEvidenceItem,
-  listEvidenceWithUrls,
-} from "@/lib/fiscal-ambiental/evidence-service";
+  createManualFinding,
+  listFiscalFindings,
+} from "@/lib/fiscal-ambiental/fiscal-finding-service";
 import { requireFadWorkspaceRead } from "@/lib/fiscal-ambiental/fad-workspace-access";
+import type { CreateFadManualFindingInput } from "@/lib/fiscal-ambiental/types";
 import { handleFadApiError, requireFadApiAuth } from "../_fad-api-guard";
 
 export async function GET(req: Request) {
@@ -19,8 +20,8 @@ export async function GET(req: Request) {
     }
 
     await requireFadWorkspaceRead(workspaceId, user.uid, user.role === "admin");
-    const items = await listEvidenceWithUrls(workspaceId);
-    return NextResponse.json({ ok: true, data: items });
+    const findings = await listFiscalFindings(workspaceId);
+    return NextResponse.json({ ok: true, data: findings });
   } catch (err) {
     if (err instanceof Error && "status" in err) {
       const status = (err as Error & { status: number }).status;
@@ -38,37 +39,40 @@ export async function POST(req: Request) {
     const user = await requireFadApiAuth(req);
     const body = (await req.json()) as {
       workspaceId?: string;
-      kind?: "comparison" | "timelapse" | "change_analysis";
       title?: string;
       description?: string;
-      beforeMosaicId?: string;
-      afterMosaicId?: string;
-      mosaicIds?: string[];
-      changeAnalysisId?: string;
+      type?: CreateFadManualFindingInput["type"];
+      severity?: CreateFadManualFindingInput["severity"];
     };
 
     const workspaceId = body.workspaceId?.trim();
-    const title = body.title?.trim();
-    if (!workspaceId || !body.kind || !title) {
+    if (!workspaceId || !body.title?.trim() || !body.description?.trim()) {
       return NextResponse.json(
-        { ok: false, error: { code: "INVALID_BODY", message: "workspaceId, kind e title são obrigatórios." } },
+        {
+          ok: false,
+          error: {
+            code: "INVALID_BODY",
+            message: "workspaceId, title e description são obrigatórios.",
+          },
+        },
         { status: 400 },
       );
     }
 
     await requireFadWorkspaceRead(workspaceId, user.uid, user.role === "admin");
 
-    const item = await createEvidenceItem(workspaceId, user.uid, {
-      kind: body.kind,
-      title,
-      description: body.description,
-      beforeMosaicId: body.beforeMosaicId,
-      afterMosaicId: body.afterMosaicId,
-      mosaicIds: body.mosaicIds,
-      changeAnalysisId: body.changeAnalysisId,
+    const finding = await createManualFinding({
+      workspaceId,
+      ownerId: user.uid,
+      input: {
+        title: body.title,
+        description: body.description,
+        type: body.type,
+        severity: body.severity,
+      },
     });
 
-    return NextResponse.json({ ok: true, data: item }, { status: 201 });
+    return NextResponse.json({ ok: true, data: finding });
   } catch (err) {
     if (err instanceof Error && "status" in err) {
       const status = (err as Error & { status: number }).status;

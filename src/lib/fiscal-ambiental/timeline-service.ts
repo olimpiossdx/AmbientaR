@@ -2,6 +2,7 @@ import { adminDb } from "@/lib/firebase-admin";
 import { listMosaicsForWorkspace } from "./mosaic-service";
 import type {
   CreateFadTimelineEventInput,
+  FadChangeAnalysis,
   FadMosaic,
   FadTimelineEvent,
   UpdateFadTimelineEventInput,
@@ -133,6 +134,52 @@ export async function deleteTimelineEvent(workspaceId: string, eventId: string):
 
   await ref.delete();
   return true;
+}
+
+export async function recordFiscalCheckEvent(
+  workspaceId: string,
+  ownerId: string,
+  findingCount: number,
+): Promise<void> {
+  const ref = timelineRef(workspaceId);
+  const now = new Date().toISOString();
+
+  const payload: Omit<FadTimelineEvent, "id"> = {
+    workspaceId,
+    ownerId,
+    kind: "fiscal_check_completed",
+    title: `Verificação preventiva · ${findingCount} achado(s)`,
+    body: "Achados gerados a partir de análises de mudanças (caráter auxiliar).",
+    occurredAt: now,
+    createdAt: now,
+    createdBy: ownerId,
+    updatedAt: now,
+  };
+
+  await ref.set(payload);
+}
+
+export async function recordChangeAnalysisEvent(analysis: FadChangeAnalysis): Promise<void> {
+  const ref = timelineRef(analysis.workspaceId);
+  const now = new Date().toISOString();
+  const changed = analysis.summary.totalChangedHa;
+
+  const payload: Omit<FadTimelineEvent, "id"> = {
+    workspaceId: analysis.workspaceId,
+    ownerId: analysis.ownerId,
+    kind: "change_analysis_completed",
+    title: `Análise de mudanças · ${analysis.beforeDate} → ${analysis.afterDate}`,
+    body:
+      changed > 0
+        ? `Área com indícios de alteração: ~${changed} ha (análise auxiliar).`
+        : "Nenhuma alteração significativa detectada nas previews.",
+    occurredAt: now,
+    createdAt: now,
+    createdBy: analysis.createdBy,
+    updatedAt: now,
+  };
+
+  await ref.set(payload);
 }
 
 export async function recordMosaicCreatedEvent(mosaic: FadMosaic): Promise<void> {
