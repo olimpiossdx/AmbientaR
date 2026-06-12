@@ -4,7 +4,7 @@ import {
 } from "./workspace-service";
 import type { FadWorkspace } from "./types";
 
-export async function requireFadWorkspaceAccess(
+export async function requireFadWorkspaceRead(
   workspaceId: string,
   uid: string,
   isAdmin: boolean,
@@ -17,6 +17,15 @@ export async function requireFadWorkspaceAccess(
   if (!allowed) {
     throw Object.assign(new Error("Sem permissão."), { status: 403 });
   }
+  return workspace;
+}
+
+export async function requireFadWorkspaceAccess(
+  workspaceId: string,
+  uid: string,
+  isAdmin: boolean,
+): Promise<FadWorkspace> {
+  const workspace = await requireFadWorkspaceRead(workspaceId, uid, isAdmin);
   if (!workspace.aoi) {
     throw Object.assign(new Error("Defina a área do imóvel antes de pedir imagens."), {
       status: 400,

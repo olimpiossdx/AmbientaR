@@ -16,6 +16,7 @@ import {
   uploadBufferToStorage,
 } from "./mosaic-service";
 import { callFiscalSatelliteWorkerAssemble } from "./worker-client";
+import { recordMosaicCreatedEvent } from "./timeline-service";
 import type { FadMosaicWithUrls } from "./types";
 
 function qualityFromCloud(cloud: number | null): "good" | "fair" | "poor" {
@@ -137,6 +138,7 @@ export async function assembleMosaicForDate(params: {
     });
 
     await bumpWorkspaceArchiveSummary(params.workspaceId);
+    await recordMosaicCreatedEvent(completed).catch(() => undefined);
     return attachSignedUrls(completed);
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Falha ao montar imagem.";

@@ -1,11 +1,9 @@
-import { FadComingSoon } from "@/components/fiscal-ambiental/fad-coming-soon";
+import { FadTimelineClient } from "@/components/fiscal-ambiental/fad-timeline-client";
+
+export const metadata = {
+  title: "Linha do tempo — Fiscal Ambiental Digital",
+};
 
 export default function FadLinhaDoTempoPage() {
-  return (
-    <FadComingSoon
-      title="Linha do tempo ambiental"
-      description="Histórico visual das imagens do acervo."
-      phase="Fase 2"
-    />
-  );
+  return <FadTimelineClient />;
 }

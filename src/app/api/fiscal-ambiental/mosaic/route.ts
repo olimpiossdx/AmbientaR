@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { attachSignedUrls, listMosaicsForWorkspace } from "@/lib/fiscal-ambiental/mosaic-service";
-import { requireFadWorkspaceAccess } from "@/lib/fiscal-ambiental/fad-workspace-access";
+import { requireFadWorkspaceRead } from "@/lib/fiscal-ambiental/fad-workspace-access";
 import { handleFadApiError, requireFadApiAuth } from "../_fad-api-guard";
 
 export async function GET(req: Request) {
@@ -15,7 +15,7 @@ export async function GET(req: Request) {
       );
     }
 
-    await requireFadWorkspaceAccess(workspaceId, user.uid, user.role === "admin");
+    await requireFadWorkspaceRead(workspaceId, user.uid, user.role === "admin");
 
     const mosaics = await listMosaicsForWorkspace(workspaceId);
     const withUrls = await Promise.all(

@@ -85,3 +85,74 @@ export type FadMosaicWithUrls = FadMosaic & {
   previewUrl?: string;
   geotiffUrl?: string;
 };
+
+export type FadTimelineEventKind = "satellite_mosaic_created" | "manual_note";
+
+export type FadTimelineEvent = {
+  id: string;
+  workspaceId: string;
+  ownerId: string;
+  kind: FadTimelineEventKind;
+  title: string;
+  body?: string;
+  occurredAt: string;
+  mosaicId?: string;
+  createdAt: string;
+  createdBy: string;
+  updatedAt?: string;
+};
+
+export type CreateFadTimelineEventInput = {
+  kind: "manual_note";
+  title: string;
+  body?: string;
+  occurredAt?: string;
+};
+
+export type UpdateFadTimelineEventInput = {
+  title?: string;
+  body?: string;
+  occurredAt?: string;
+};
+
+export type FadEvidenceKind = "comparison" | "timelapse";
+
+export type FadEvidenceItem = {
+  id: string;
+  workspaceId: string;
+  ownerId: string;
+  kind: FadEvidenceKind;
+  title: string;
+  description?: string;
+  beforeMosaicId?: string;
+  afterMosaicId?: string;
+  mosaicIds?: string[];
+  beforeDate?: string;
+  afterDate?: string;
+  createdAt: string;
+  createdBy: string;
+  updatedAt?: string;
+};
+
+export type CreateFadEvidenceInput = {
+  kind: FadEvidenceKind;
+  title: string;
+  description?: string;
+  beforeMosaicId?: string;
+  afterMosaicId?: string;
+  mosaicIds?: string[];
+};
+
+export type FadCompareSession = {
+  workspaceId: string;
+  before: FadMosaicWithUrls;
+  after: FadMosaicWithUrls;
+  aoi: GeoJSON.Polygon | GeoJSON.MultiPolygon;
+};
+
+export type FadTimelapseFrame = {
+  mosaicId: string;
+  date: string;
+  previewUrl?: string;
+  sceneDate?: string;
+};

@@ -1,11 +1,9 @@
-import { FadComingSoon } from "@/components/fiscal-ambiental/fad-coming-soon";
+import { FadEvidenciasClient } from "@/components/fiscal-ambiental/fad-evidencias-client";
+
+export const metadata = {
+  title: "Evidências — Fiscal Ambiental Digital",
+};
 
 export default function FadEvidenciasPage() {
-  return (
-    <FadComingSoon
-      title="Central de evidências"
-      description="Comparações, capturas e anexos do dossiê ambiental."
-      phase="Fase 2+"
-    />
-  );
+  return <FadEvidenciasClient />;
 }

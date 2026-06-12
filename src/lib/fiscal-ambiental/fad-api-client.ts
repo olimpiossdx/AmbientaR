@@ -1,3 +1,4 @@
+import type { GeoJSON } from "geojson";
 import type {
   CreateFadWorkspaceInput,
   FadWorkspace,
@@ -145,5 +146,123 @@ export async function getGeotiffDownloadUrl(
   return fadFetch<{ downloadUrl: string }>(
     `/api/fiscal-ambiental/mosaic/${mosaicId}/download?workspaceId=${encodeURIComponent(workspaceId)}`,
     token,
+  );
+}
+
+export type FadTimelineEventDto = {
+  id: string;
+  kind: string;
+  title: string;
+  body?: string;
+  occurredAt: string;
+  mosaicId?: string;
+};
+
+export async function listTimeline(token: string, workspaceId: string) {
+  return fadFetch<FadTimelineEventDto[]>(
+    `/api/fiscal-ambiental/timeline?workspaceId=${encodeURIComponent(workspaceId)}`,
+    token,
+  );
+}
+
+export async function createTimelineNote(
+  token: string,
+  workspaceId: string,
+  input: { title: string; body?: string; occurredAt?: string },
+) {
+  return fadFetch<FadTimelineEventDto>("/api/fiscal-ambiental/timeline", token, {
+    method: "POST",
+    body: JSON.stringify({ workspaceId, ...input }),
+  });
+}
+
+export async function deleteTimelineNote(token: string, workspaceId: string, eventId: string) {
+  return fadFetch<{ deleted: true }>(
+    `/api/fiscal-ambiental/timeline/${eventId}?workspaceId=${encodeURIComponent(workspaceId)}`,
+    token,
+    { method: "DELETE" },
+  );
+}
+
+export type FadCompareSessionDto = {
+  workspaceId: string;
+  before: FadMosaicDto;
+  after: FadMosaicDto;
+  aoi: GeoJSON.Polygon | GeoJSON.MultiPolygon;
+};
+
+export async function createCompareSession(
+  token: string,
+  workspaceId: string,
+  beforeMosaicId: string,
+  afterMosaicId: string,
+) {
+  return fadFetch<FadCompareSessionDto>("/api/fiscal-ambiental/compare/create-session", token, {
+    method: "POST",
+    body: JSON.stringify({ workspaceId, beforeMosaicId, afterMosaicId }),
+  });
+}
+
+export type FadTimelapseFrameDto = {
+  mosaicId: string;
+  date: string;
+  previewUrl?: string;
+  sceneDate?: string;
+};
+
+export async function fetchTimelapse(token: string, workspaceId: string, mosaicIds?: string[]) {
+  return fadFetch<{ frames: FadTimelapseFrameDto[] }>(
+    "/api/fiscal-ambiental/compare/timelapse",
+    token,
+    { method: "POST", body: JSON.stringify({ workspaceId, mosaicIds }) },
+  );
+}
+
+export type FadEvidenceDto = {
+  id: string;
+  kind: string;
+  title: string;
+  description?: string;
+  beforeMosaicId?: string;
+  afterMosaicId?: string;
+  beforeDate?: string;
+  afterDate?: string;
+  mosaicIds?: string[];
+  beforePreviewUrl?: string;
+  afterPreviewUrl?: string;
+  framePreviewUrls?: string[];
+  createdAt: string;
+};
+
+export async function listEvidence(token: string, workspaceId: string) {
+  return fadFetch<FadEvidenceDto[]>(
+    `/api/fiscal-ambiental/evidence?workspaceId=${encodeURIComponent(workspaceId)}`,
+    token,
+  );
+}
+
+export async function saveEvidence(
+  token: string,
+  workspaceId: string,
+  input: {
+    kind: "comparison" | "timelapse";
+    title: string;
+    description?: string;
+    beforeMosaicId?: string;
+    afterMosaicId?: string;
+    mosaicIds?: string[];
+  },
+) {
+  return fadFetch<FadEvidenceDto>("/api/fiscal-ambiental/evidence", token, {
+    method: "POST",
+    body: JSON.stringify({ workspaceId, ...input }),
+  });
+}
+
+export async function deleteEvidence(token: string, workspaceId: string, evidenceId: string) {
+  return fadFetch<{ deleted: true }>(
+    `/api/fiscal-ambiental/evidence/${evidenceId}?workspaceId=${encodeURIComponent(workspaceId)}`,
+    token,
+    { method: "DELETE" },
   );
 }
