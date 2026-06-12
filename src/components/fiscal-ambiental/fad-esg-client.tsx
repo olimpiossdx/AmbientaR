@@ -110,7 +110,10 @@ export function FadEsgClient() {
         return;
       }
       await loadDashboard(workspaceId);
-      toast({ title: "Snapshot ESG guardado." });
+      toast({
+        title: "Snapshot ESG guardado",
+        description: "Com SIG activo, alertas PRODES/MapBiomas são atualizados antes do registo.",
+      });
     } finally {
       setSaving(false);
     }
