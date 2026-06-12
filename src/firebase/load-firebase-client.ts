@@ -48,6 +48,7 @@ function createFirestore(app: FirebaseApp): Firestore {
     try {
       return initializeFirestore(app, {
         localCache: memoryLocalCache(),
+        experimentalAutoDetectLongPolling: true,
       });
     } catch (e) {
       const code = (e as { code?: string })?.code;
@@ -71,6 +72,7 @@ function createFirestore(app: FirebaseApp): Firestore {
       localCache: persistentLocalCache({
         tabManager: persistentMultipleTabManager(),
       }),
+      experimentalAutoDetectLongPolling: true,
     });
   } catch (e) {
     const code = (e as { code?: string })?.code;
@@ -88,6 +90,7 @@ function createFirestore(app: FirebaseApp): Firestore {
     try {
       return initializeFirestore(app, {
         localCache: memoryLocalCache(),
+        experimentalAutoDetectLongPolling: true,
       });
     } catch (memErr) {
       const memCode = (memErr as { code?: string })?.code;

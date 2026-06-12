@@ -33,3 +33,8 @@ export function isFadEnabled(): boolean {
 export function isFadStandaloneMode(): boolean {
   return parseBooleanEnv(process.env.FAD_STANDALONE_MODE, true);
 }
+
+/** Fase 4 v2 — cruzamento SIG (PRODES, CAR, IDE, etc.) */
+export function isFadSigCrosscheckEnabled(): boolean {
+  return parseBooleanEnv(process.env.FAD_ENABLE_SIG_CROSSCHECK, false);
+}

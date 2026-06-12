@@ -73,11 +73,8 @@ import type {
   PlatformPaymentMethod,
 } from "@/lib/types";
 import { createNotificationForUser } from "@/lib/notifications";
-import {
-  buildCpfCnpjIdentityFields,
-  detectCpfCnpjKind,
-  isValidCpfCnpj,
-} from "@/lib/cpf-cnpj";
+import { detectCpfCnpjKind, isValidCpfCnpj } from "@/lib/cpf-cnpj";
+import { buildTitularProfileDocumentFields } from "@/lib/titular-profile-document";
 import { lookupCnpjPublicData } from "@/lib/cnpj-lookup";
 import {
   buildPlatformSubscriptionFieldsForNewTitular,
@@ -524,12 +521,10 @@ function RegisterPageContent() {
         return;
       }
       const userCpfNormalized = normalizeDocument(values.cpf);
-      const titularIdentity = isValidCpfCnpj(values.cpfCnpjTitular)
-        ? buildCpfCnpjIdentityFields(values.cpfCnpjTitular)
-        : null;
-      const titularDocument = titularIdentity?.cpfCnpj ?? "";
+      const titularProfileFields = buildTitularProfileDocumentFields(values.cpfCnpjTitular);
+      const titularDocument = titularProfileFields?.titularDocument ?? "";
       const hasExistingLink = Boolean(linkedClientId || linkedEmpreendedorId);
-      const hasTitularDoc = Boolean(titularIdentity);
+      const hasTitularDoc = Boolean(titularProfileFields);
       const shouldCreateInitialTitularRecords =
         isTitularPlanMode && (hasExistingLink || hasTitularDoc);
 
@@ -597,10 +592,10 @@ function RegisterPageContent() {
               onboardingStep: "solicitar_acesso",
             }
           : {}),
-        ...(isTitularPlanMode && titularIdentity
+        ...(isTitularPlanMode && titularProfileFields
           ? {
-              titularDocument: titularIdentity.titularDocument,
-              titularType: titularIdentity.titularType,
+              titularDocument: titularProfileFields.titularDocument,
+              titularType: titularProfileFields.titularType ?? undefined,
               onboardingStep: "completar_empreendedor",
             }
           : {}),
@@ -714,10 +709,10 @@ function RegisterPageContent() {
       }
 
       // Cliente Autônomo: vincular a registros existentes ou criar empreendedor base incompleto.
-      if (shouldCreateInitialTitularRecords && titularIdentity) {
+      if (shouldCreateInitialTitularRecords && titularProfileFields) {
         try {
-          const docForRecords = titularIdentity.titularDocument;
-          const entityForRecords = titularIdentity.entityType;
+          const docForRecords = titularProfileFields.titularDocument;
+          const entityForRecords = titularProfileFields.entityType;
 
           const empreendedorData = {
             name: values.name,
@@ -738,7 +733,7 @@ function RegisterPageContent() {
             cpfCnpj: docForRecords,
             entityType: [entityForRecords],
             titularDocument: docForRecords,
-            titularType: titularIdentity.titularType,
+            titularType: titularProfileFields.titularType,
           };
           const clientData = {
             name: values.name,
@@ -757,7 +752,7 @@ function RegisterPageContent() {
             cpfCnpj: docForRecords,
             entityType: entityForRecords,
             titularDocument: docForRecords,
-            titularType: titularIdentity.titularType,
+            titularType: titularProfileFields.titularType,
           };
 
           if (hasExistingLink) {

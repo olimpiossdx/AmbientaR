@@ -49,6 +49,15 @@ if (process.cwd() !== projectRoot) {
 const appHostingStrictBuild = process.env.APPHOSTING_STRICT_BUILD === "1";
 
 const nextConfig = {
+  async redirects() {
+    return [
+      {
+        source: "/manifest.json",
+        destination: "/manifest.webmanifest",
+        permanent: false,
+      },
+    ];
+  },
   /**
    * Evita `distDir: ".next"` explícito com `output: "standalone"`: em dev (14.1+)
    * isso pode disparar "missing required error components, refreshing...".

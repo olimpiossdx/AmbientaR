@@ -50,10 +50,17 @@ import {
 import { Label } from '@/components/ui/label';
 import { DialogFooter } from '@/components/ui/dialog';
 import { logUserAction } from '@/lib/audit-log';
-import { formatCpfCnpjDisplay, maskCnpj } from '@/lib/masks';
+import { formatCpfCnpjDisplay } from '@/lib/masks';
 import { lookupClientAndEmpreendedorByDocument, normalizeDocumentDigits } from '@/lib/document-lookup';
-import { resolveEntityType } from '@/lib/cpf-cnpj';
+import { isValidCpfCnpj, resolveEntityType } from '@/lib/cpf-cnpj';
 import { linkClientGestaoToExistingRecords } from '@/lib/link-client-gestao-records';
+import {
+  buildTitularProfileDocumentFields,
+  isTitularPortalRole,
+  isValidTitularLinkDocument,
+  resolveTitularDocumentFromProfile,
+  splitAccessDocuments,
+} from '@/lib/titular-profile-document';
 
 const baseSchema = z.object({
   name: z.string().min(2, 'O nome é obrigatório.'),
@@ -61,9 +68,8 @@ const baseSchema = z.object({
   role: z.enum(['admin', 'client', 'cliente_autonomo', 'representative', 'consultor_representante', 'technical', 'sales', 'financial', 'gestor', 'supervisor', 'diretor_fauna', 'advogado']),
   status: z.enum(['active', 'inactive', 'pending_invite']),
   userCpf: z.string().optional(),
-  cpf: z.string().optional(),
-  cpfs: z.array(z.object({ value: z.string().min(11, 'CPF deve ter 11 dígitos.') })).optional(),
-  cnpjs: z.array(z.object({ value: z.string().min(14, "O CNPJ deve ser válido.") })).optional(),
+  titularDocument: z.string().optional(),
+  accessDocuments: z.array(z.object({ value: z.string() })).optional(),
   dataNascimento: z.date().optional(),
   photoURL: z.string().optional(),
 });
@@ -82,25 +88,26 @@ const createFormSchema = baseSchema
   .refine(
     (data) => {
       if (data.role !== 'representative' && data.role !== 'consultor_representante') return true;
-      const hasCpfs = data.cpfs && data.cpfs.some((c: { value: string }) => (c.value || '').replace(/\D/g, '').length >= 11);
-      const hasCnpjs = data.cnpjs && data.cnpjs.some((c: { value: string }) => (c.value || '').replace(/\D/g, '').length >= 14);
-      return !!hasCpfs || !!hasCnpjs;
+      const docs =
+        data.accessDocuments
+          ?.map((entry) => normalizeDocumentDigits(entry.value))
+          .filter((digits) => isValidCpfCnpj(digits)) ?? [];
+      return docs.length > 0;
     },
     {
       message:
         'Informe ao menos um CPF ou CNPJ do titular ao qual solicita acesso.',
-      path: ['cpfs'],
+      path: ['accessDocuments'],
     },
   )
   .refine(
     (data) => {
-      if (data.role !== 'cliente_autonomo') return true;
-      const digits = normalizeDocumentDigits(data.userCpf);
-      return digits.length === 11;
+      if (!isTitularPortalRole(data.role)) return true;
+      return isValidTitularLinkDocument(data.titularDocument);
     },
     {
-      message: 'Informe o CPF do usuário para vincular automaticamente ao empreendedor.',
-      path: ['userCpf'],
+      message: 'Informe um CPF ou CNPJ válido do empreendedor/titular.',
+      path: ['titularDocument'],
     },
   );
 
@@ -128,25 +135,26 @@ const editFormSchema = baseSchema
   .refine(
     (data) => {
       if (data.role !== 'representative' && data.role !== 'consultor_representante') return true;
-      const hasCpfs = data.cpfs && data.cpfs.some((c: { value: string }) => (c.value || '').replace(/\D/g, '').length >= 11);
-      const hasCnpjs = data.cnpjs && data.cnpjs.some((c: { value: string }) => (c.value || '').replace(/\D/g, '').length >= 14);
-      return !!hasCpfs || !!hasCnpjs;
+      const docs =
+        data.accessDocuments
+          ?.map((entry) => normalizeDocumentDigits(entry.value))
+          .filter((digits) => isValidCpfCnpj(digits)) ?? [];
+      return docs.length > 0;
     },
     {
       message:
         'Informe ao menos um CPF ou CNPJ do titular ao qual solicita acesso.',
-      path: ['cpfs'],
+      path: ['accessDocuments'],
     },
   )
   .refine(
     (data) => {
-      if (data.role !== 'cliente_autonomo') return true;
-      const digits = normalizeDocumentDigits(data.userCpf);
-      return digits.length === 11;
+      if (!isTitularPortalRole(data.role)) return true;
+      return isValidTitularLinkDocument(data.titularDocument);
     },
     {
-      message: 'Informe o CPF do usuário para vincular automaticamente ao empreendedor.',
-      path: ['userCpf'],
+      message: 'Informe um CPF ou CNPJ válido do empreendedor/titular.',
+      path: ['titularDocument'],
     },
   );
 
@@ -188,26 +196,34 @@ const roles: { value: UserRole; label: string }[] = [
   { value: 'advogado', label: 'Advogado' },
 ];
 
-const isTitularRole = (role: UserRole | undefined) =>
-  role === 'client' || role === 'cliente_autonomo';
-
 const isClienteAutonomoRole = (role: UserRole | undefined) =>
   role === 'cliente_autonomo';
 
-/** Documento usado no portal: autônomo usa CPF pessoal; gestão usa o mesmo para casar com cadastro existente. */
-const resolvePortalDocument = (
-  role: UserRole,
-  cpf: string | undefined,
-  userCpf: string | undefined,
-): string => {
-  const fromCpf = normalizeDocumentDigits(cpf);
-  if (fromCpf.length === 11 || fromCpf.length === 14) return fromCpf;
-  if (role === 'client' || role === 'cliente_autonomo') {
-    const fromUser = normalizeDocumentDigits(userCpf);
-    if (fromUser.length === 11 || fromUser.length === 14) return fromUser;
-  }
+const isDelegateRole = (role: UserRole | undefined) =>
+  role === 'representative' || role === 'consultor_representante';
+
+const resolvePortalDocument = (titularDocument: string | undefined): string => {
+  const digits = normalizeDocumentDigits(titularDocument);
+  if (digits.length === 11 || digits.length === 14) return digits;
   return '';
 };
+
+function buildDefaultAccessDocuments(
+  currentUser: AppUser | null | undefined,
+  representativeRequestedCpfsCnpjs?: string[],
+): { value: string }[] {
+  if (representativeRequestedCpfsCnpjs?.length) {
+    return representativeRequestedCpfsCnpjs.map((value) => ({ value: value || '' }));
+  }
+  if (!currentUser || !isDelegateRole(currentUser.role)) return [];
+
+  const docs: string[] = [];
+  if (currentUser.cpf) docs.push(currentUser.cpf);
+  currentUser.cnpjs?.forEach((cnpj) => {
+    if (cnpj) docs.push(cnpj);
+  });
+  return docs.map((value) => ({ value }));
+}
 
 export function UserForm({ currentUser, onSuccess, representativeRequestedCpf, representativesForThisClient, representativeRequestedCpfsCnpjs }: UserFormProps) {
   const [loading, setLoading] = React.useState(false);
@@ -234,25 +250,21 @@ export function UserForm({ currentUser, onSuccess, representativeRequestedCpf, r
       status: currentUser?.status || 'active',
       password: '',
       confirmPassword: '',
-      userCpf: currentUser?.userCpf || currentUser?.cpf || '',
-      cpf: currentUser?.cpf || '',
-      cpfs: (currentUser?.role === 'representative' || currentUser?.role === 'consultor_representante') && representativeRequestedCpfsCnpjs?.length
-        ? representativeRequestedCpfsCnpjs.filter(v => (v || '').replace(/\D/g, '').length === 11).map(v => ({ value: v || '' }))
-        : [],
-      cnpjs: currentUser?.cnpjs?.length ? currentUser.cnpjs.map(c => ({ value: c })) : ((currentUser?.role === 'representative' || currentUser?.role === 'consultor_representante') && representativeRequestedCpfsCnpjs?.length ? representativeRequestedCpfsCnpjs.filter(v => (v || '').replace(/\D/g, '').length === 14).map(v => ({ value: v || '' })) : []),
+      userCpf: currentUser?.userCpf || '',
+      titularDocument: resolveTitularDocumentFromProfile(currentUser),
+      accessDocuments: buildDefaultAccessDocuments(currentUser, representativeRequestedCpfsCnpjs),
       dataNascimento: currentUser?.dataNascimento ? new Date(currentUser.dataNascimento) : undefined,
       photoURL: currentUser?.photoURL || '',
     },
   });
 
-  const { fields, append, remove } = useFieldArray({
+  const {
+    fields: accessDocumentFields,
+    append: accessDocumentAppend,
+    remove: accessDocumentRemove,
+  } = useFieldArray({
     control: form.control,
-    name: "cnpjs",
-  });
-
-  const { fields: cpfsFields, append: cpfsAppend, remove: cpfsRemove } = useFieldArray({
-    control: form.control,
-    name: "cpfs",
+    name: 'accessDocuments',
   });
   
   const selectedRole = form.watch('role');
@@ -261,14 +273,10 @@ export function UserForm({ currentUser, onSuccess, representativeRequestedCpf, r
     form.setValue('userCpf', value, { shouldValidate: true });
   };
 
-  const handleUserCpfBlur = async () => {
-    if (!firestore || (selectedRole !== 'client' && !isClienteAutonomoRole(selectedRole))) return;
-    const portalDoc = resolvePortalDocument(
-      selectedRole,
-      form.getValues('cpf'),
-      form.getValues('userCpf'),
-    );
-    if (portalDoc.length !== 11 && portalDoc.length !== 14) return;
+  const handleTitularDocumentBlur = async () => {
+    if (!firestore || !isTitularPortalRole(selectedRole)) return;
+    const portalDoc = resolvePortalDocument(form.getValues('titularDocument'));
+    if (!isValidTitularLinkDocument(portalDoc)) return;
 
     try {
       const { client, empreendedor } = await lookupClientAndEmpreendedorByDocument(
@@ -287,20 +295,16 @@ export function UserForm({ currentUser, onSuccess, representativeRequestedCpf, r
         title: 'Cadastro existente encontrado',
         description:
           selectedRole === 'client'
-            ? 'Cliente/Empreendedor já cadastrado pela consultoria. Ao salvar, a conta será vinculada pelo CPF informado.'
-            : 'Os dados foram preenchidos a partir do cadastro existente. Ao salvar, sua conta será vinculada automaticamente.',
+            ? 'Cliente/Empreendedor já cadastrado pela consultoria. Ao salvar, a conta será vinculada pelo documento informado.'
+            : 'Os dados foram preenchidos a partir do cadastro existente. Ao salvar, a conta será vinculada automaticamente.',
       });
     } catch (e) {
-      console.warn('Busca por CPF no perfil:', e);
+      console.warn('Busca por documento no perfil:', e);
     }
   };
-  
-  const handleCnpjChange = (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
-    form.setValue(`cnpjs.${index}.value`, maskCnpj(e.target.value), { shouldValidate: true });
-  };
 
-  const handleCpfListItemChange = (value: string, index: number) => {
-    form.setValue(`cpfs.${index}.value`, value, { shouldValidate: true });
+  const handleAccessDocumentChange = (value: string, index: number) => {
+    form.setValue(`accessDocuments.${index}.value`, value, { shouldValidate: true });
   };
 
   async function onSubmit(values: UserFormValues) {
@@ -312,13 +316,17 @@ export function UserForm({ currentUser, onSuccess, representativeRequestedCpf, r
       return;
     }
     
-    const cnpjsArray = values.cnpjs?.map(c => normalizeDocumentDigits(c.value)).filter(v => v.length === 14) || [];
-    const cpfsArray = (values.cpfs || []).map(c => normalizeDocumentDigits(c.value)).filter(v => v.length === 11);
-    const portalDocument = resolvePortalDocument(values.role, values.cpf, values.userCpf);
-    const storedCpf =
-      values.role === 'representative'
-        ? cpfsArray[0] || ''
-        : portalDocument;
+    const accessDocumentValues =
+      values.accessDocuments?.map((entry) => entry.value).filter(Boolean) ?? [];
+    const { cpfs: cpfsArray, cnpjs: cnpjsArray } = splitAccessDocuments(accessDocumentValues);
+    const portalDocument = resolvePortalDocument(values.titularDocument);
+    const titularProfileFields = isTitularPortalRole(values.role)
+      ? buildTitularProfileDocumentFields(values.titularDocument)
+      : null;
+    const personalCpf = normalizeDocumentDigits(values.userCpf);
+    const storedCpf = isDelegateRole(values.role)
+      ? cpfsArray[0] || personalCpf
+      : titularProfileFields?.cpf ?? portalDocument;
 
     if (currentUser) {
       // --- Update existing user logic ---
@@ -326,13 +334,15 @@ export function UserForm({ currentUser, onSuccess, representativeRequestedCpf, r
       const updateData: Partial<AppUser> = {
         name: values.name,
         email: values.email,
-        userCpf: normalizeDocumentDigits(values.userCpf),
-        cpf: storedCpf,
-        cnpjs: values.role === 'representative'
-          ? cnpjsArray
-          : storedCpf.length === 14
-            ? [storedCpf]
-            : cnpjsArray,
+        userCpf: personalCpf,
+        cpf: titularProfileFields?.cpf ?? storedCpf,
+        cnpjs: titularProfileFields?.cnpjs ?? (isDelegateRole(values.role) ? cnpjsArray : []),
+        ...(titularProfileFields
+          ? {
+              titularDocument: titularProfileFields.titularDocument,
+              titularType: titularProfileFields.titularType ?? undefined,
+            }
+          : {}),
         photoURL: values.photoURL || '',
         dataNascimento: values.dataNascimento?.toISOString() || '',
         ...(isEditingSelf ? { cadastroIncompleto: false } : {}),
@@ -466,13 +476,15 @@ export function UserForm({ currentUser, onSuccess, representativeRequestedCpf, r
                 email: values.email,
                 role: values.role,
                 status: values.status,
-                userCpf: normalizeDocumentDigits(values.userCpf),
-                cpf: storedCpf,
-                cnpjs: values.role === 'representative'
-                  ? cnpjsArray
-                  : storedCpf.length === 14
-                    ? [storedCpf]
-                    : cnpjsArray,
+                userCpf: personalCpf,
+                cpf: titularProfileFields?.cpf ?? storedCpf,
+                cnpjs: titularProfileFields?.cnpjs ?? (isDelegateRole(values.role) ? cnpjsArray : []),
+                ...(titularProfileFields
+                  ? {
+                      titularDocument: titularProfileFields.titularDocument,
+                      titularType: titularProfileFields.titularType ?? undefined,
+                    }
+                  : {}),
                 photoURL: values.photoURL || '',
                 dataNascimento: values.dataNascimento?.toISOString() || '',
                 isOnline: false,
@@ -599,47 +611,68 @@ export function UserForm({ currentUser, onSuccess, representativeRequestedCpf, r
             <form id="user-form" onSubmit={form.handleSubmit(onSubmit)} className="flex-1 flex flex-col overflow-hidden">
                 <div className="form-scroll-body space-y-4">
                     <div className="space-y-4 rounded-md border p-4 bg-muted/30">
-                        <h3 className="text-sm font-medium">Checagem inicial — CPF</h3>
+                        <h3 className="text-sm font-medium">
+                          {isTitularPortalRole(selectedRole)
+                            ? 'Vínculo com empreendedor'
+                            : 'Identificação do usuário'}
+                        </h3>
                         <p className="text-xs text-muted-foreground">
-                          {selectedRole === 'representative'
-                            ? 'Informe o CPF pessoal do representante. Os CPFs/CNPJs dos titulares são informados mais abaixo.'
-                            : selectedRole === 'cliente_autonomo'
-                              ? 'O CPF pessoal vincula automaticamente a conta ao cadastro de empreendedor com o mesmo documento.'
-                              : selectedRole === 'client'
-                                ? 'O CPF pessoal identifica o usuário e casa com empreendedores já cadastrados pela consultoria (sem campo extra de vínculo).'
-                                : 'Informe o CPF pessoal do usuário (documento de identificação).'}
+                          {isTitularPortalRole(selectedRole)
+                            ? 'Informe o CPF ou CNPJ do empreendedor/titular já cadastrado (ou a ser criado). O login da conta é feito pelo e-mail abaixo.'
+                            : isDelegateRole(selectedRole)
+                              ? 'Informe o CPF pessoal do representante. Os CPFs/CNPJs dos titulares são informados mais abaixo.'
+                              : 'Informe o CPF pessoal do usuário (documento de identificação).'}
                         </p>
+                    {isTitularPortalRole(selectedRole) ? (
+                    <FormField
+                    control={form.control}
+                    name="titularDocument"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>CPF ou CNPJ do empreendedor/titular</FormLabel>
+                        <FormControl>
+                            <MaskedInput
+                              mask="cpfCnpj"
+                              placeholder="000.000.000-00 ou 00.000.000/0000-00"
+                              {...field}
+                              onBlur={() => {
+                                field.onBlur();
+                                void handleTitularDocumentBlur();
+                              }}
+                            />
+                        </FormControl>
+                        <FormDescription>
+                          O sistema detecta automaticamente CPF (11 dígitos) ou CNPJ (14 dígitos), como no Cadastre-se.
+                        </FormDescription>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
+                    ) : (
                     <FormField
                     control={form.control}
                     name="userCpf"
                     render={({ field }) => (
                         <FormItem>
-                        <FormLabel>CPF do Usuário (pessoal)</FormLabel>
+                        <FormLabel>CPF do usuário (pessoal)</FormLabel>
                         <FormControl>
                             <MaskedInput
                               mask="cpf"
                               placeholder="000.000.000-00"
                               {...field}
                               onChange={handleUserCpfChange}
-                              onBlur={() => {
-                                field.onBlur();
-                                void handleUserCpfBlur();
-                              }}
                             />
                         </FormControl>
                         <FormDescription>
-                          {selectedRole === 'representative'
-                            ? 'Documento do próprio usuário. O vínculo a titulares é feito na seção de CPFs/CNPJs abaixo.'
-                            : selectedRole === 'cliente_autonomo'
-                              ? 'Usado para criar ou ligar Cliente e Empreendedor ao salvar.'
-                              : selectedRole === 'client'
-                                ? 'Deve coincidir com o CPF/CNPJ do empreendedor já cadastrado na consultoria.'
-                                : 'Documento de identificação do usuário.'}
+                          {isDelegateRole(selectedRole)
+                            ? 'Documento do próprio usuário. O vínculo a titulares é feito na seção de documentos abaixo.'
+                            : 'Documento de identificação do usuário.'}
                         </FormDescription>
                         <FormMessage />
                         </FormItem>
                     )}
                     />
+                    )}
                     {currentUser?.role === 'representative' && representativeRequestedCpf && (
                         <div className="rounded border bg-muted/50 p-3">
                             <p className="text-xs font-medium text-muted-foreground">CPF ao qual solicita acesso</p>
@@ -766,7 +799,7 @@ export function UserForm({ currentUser, onSuccess, representativeRequestedCpf, r
                         )}
                     />
                     )}
-                    {isTitularRole(selectedRole) && (
+                    {isTitularPortalRole(selectedRole) && (
                     <div className='space-y-4 rounded-md border p-4'>
                         <h3 className="text-sm font-medium">Acesso aos seus dados (Cliente titular)</h3>
                         <p className='text-sm text-muted-foreground'>Como titular, você aprova ou rejeita pedidos de representantes que informarem o mesmo CPF/CNPJ vinculado ao seu cadastro.</p>
@@ -788,64 +821,42 @@ export function UserForm({ currentUser, onSuccess, representativeRequestedCpf, r
                         )}
                     </div>
                     )}
-                    {(form.watch('role') === 'representative' ||
-                      form.watch('role') === 'consultor_representante') && (
+                    {isDelegateRole(form.watch('role')) && (
                     <div className='space-y-4 rounded-md border p-4'>
-                        <h3 className="text-sm font-medium">CPFs/CNPJs ao qual solicito acesso</h3>
+                        <h3 className="text-sm font-medium">CPFs/CNPJs aos quais solicita acesso</h3>
                         <p className='text-sm text-muted-foreground'>
                           Informe o CPF ou CNPJ de cada titular ou empreendedor cujos dados você deseja acessar.
                           O titular aprovará (ou não) em Configurações → Usuários → consentimento de acesso.
                         </p>
                         <div>
-                          <Label>CPFs</Label>
-                          {cpfsFields.map((field, index) => (
+                          <Label>Documentos dos titulares</Label>
+                          {accessDocumentFields.map((field, index) => (
                             <div key={field.id} className="flex items-center gap-2 mt-2">
                               <FormField
                                 control={form.control}
-                                name={`cpfs.${index}.value`}
+                                name={`accessDocuments.${index}.value`}
                                 render={({ field: f }) => (
                                   <FormItem className="flex-1">
                                     <FormControl>
-                                      <MaskedInput mask="cpf" placeholder="000.000.000-00" {...f} onChange={(val) => handleCpfListItemChange(val, index)} />
+                                      <MaskedInput
+                                        mask="cpfCnpj"
+                                        placeholder="000.000.000-00 ou 00.000.000/0000-00"
+                                        {...f}
+                                        onChange={(val) => handleAccessDocumentChange(val, index)}
+                                      />
                                     </FormControl>
                                     <FormMessage />
                                   </FormItem>
                                 )}
                               />
-                              <Button type="button" variant="destructive" size="icon" onClick={() => cpfsRemove(index)}>
+                              <Button type="button" variant="destructive" size="icon" onClick={() => accessDocumentRemove(index)}>
                                 <Trash2 className="h-4 w-4" />
                               </Button>
                             </div>
                           ))}
-                          <Button type="button" variant="outline" size="sm" className="mt-2" onClick={() => cpfsAppend({ value: "" })}>
+                          <Button type="button" variant="outline" size="sm" className="mt-2" onClick={() => accessDocumentAppend({ value: '' })}>
                             <PlusCircle className="mr-2 h-4 w-4" />
-                            Adicionar CPF
-                          </Button>
-                        </div>
-                        <div>
-                          <Label>CNPJs</Label>
-                          {fields.map((field, index) => (
-                            <div key={field.id} className="flex items-center gap-2 mt-2">
-                              <FormField
-                                control={form.control}
-                                name={`cnpjs.${index}.value`}
-                                render={({ field: f }) => (
-                                  <FormItem className="flex-1">
-                                    <FormControl>
-                                      <Input placeholder="00.000.000/0000-00" {...f} onChange={(e) => handleCnpjChange(e, index)} maxLength={18} />
-                                    </FormControl>
-                                    <FormMessage />
-                                  </FormItem>
-                                )}
-                              />
-                              <Button type="button" variant="destructive" size="icon" onClick={() => remove(index)}>
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          ))}
-                          <Button type="button" variant="outline" size="sm" className="mt-2" onClick={() => append({ value: "" })}>
-                            <PlusCircle className="mr-2 h-4 w-4" />
-                            Adicionar CNPJ
+                            Adicionar documento
                           </Button>
                         </div>
                     </div>

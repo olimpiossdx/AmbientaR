@@ -15,7 +15,7 @@ export const metadata: Metadata = {
   title: "AmbientaR",
   description:
     "ERP de gestão ambiental para pequenas empresas no estado de Minas Gerais.",
-  manifest: "/manifest.json",
+  /** Gerado por src/app/manifest.ts → /manifest.webmanifest (não depende de public/). */
 };
 
 export const viewport: Viewport = {

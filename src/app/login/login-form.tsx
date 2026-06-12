@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -23,10 +24,10 @@ import { useToast } from '@/hooks/use-toast';
 const formSchema = z.object({
   email: z
     .string()
-    .min(1, 'O campo de usuário é obrigatório.')
-    .transform((v) => v.trim())
+    .min(1, 'O e-mail é obrigatório.')
+    .transform((v) => v.trim().toLowerCase())
     .refine((v) => v.length > 0, {
-      message: 'O campo de usuário é obrigatório.',
+      message: 'O e-mail é obrigatório.',
     })
     .refine((v) => /\S+@\S+\.\S+/.test(v), {
       message: 'Informe um e-mail válido.',
@@ -71,7 +72,8 @@ export function LoginForm() {
           Acesse sua Conta
         </CardTitle>
         <CardDescription className="text-muted-foreground">
-          Insira suas credenciais para entrar no sistema.
+          Use o e-mail cadastrado na sua conta e a senha. O CPF/CNPJ do empreendedor
+          serve para vincular seus dados na plataforma, não para entrar no sistema.
         </CardDescription>
       </CardHeader>
       <CardContent className="pt-0">
@@ -82,10 +84,18 @@ export function LoginForm() {
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Usuário ou Email</FormLabel>
+                  <FormLabel>E-mail</FormLabel>
                   <FormControl>
-                    <Input placeholder="adm@adm.com" {...field} />
+                    <Input
+                      type="email"
+                      autoComplete="email"
+                      placeholder="seu@email.com"
+                      {...field}
+                    />
                   </FormControl>
+                  <FormDescription>
+                    O acesso é feito somente com e-mail e senha.
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}

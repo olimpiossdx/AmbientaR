@@ -8,15 +8,16 @@ import {
   Firestore,
   collection,
   doc,
-  getDoc,
   getDocs,
   limit,
+  onSnapshot,
   query,
   setDoc,
   updateDoc,
   serverTimestamp,
   where,
 } from 'firebase/firestore';
+import { readDocViaSnapshot } from '@/firebase/firestore-snapshot-read';
 import { Auth, User, onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
 import { AppUser } from '@/lib/types';
@@ -176,7 +177,7 @@ export const FirebaseProvider: React.FC<{ children: ReactNode; firebaseApp: Fire
       const normalizedEmail = (firebaseUser.email || '').trim().toLowerCase();
       const sessionUid = firebaseUser.uid;
 
-      let userDoc = await getDoc(userDocRef);
+      let userDoc = await readDocViaSnapshot(userDocRef);
 
       if (!userDoc.exists() && normalizedEmail) {
         try {
@@ -202,7 +203,7 @@ export const FirebaseProvider: React.FC<{ children: ReactNode; firebaseApp: Fire
                 lastSeenAt: serverTimestamp(),
                 isOnline: true,
               });
-              userDoc = await getDoc(userDocRef);
+              userDoc = await readDocViaSnapshot(userDocRef);
             }
           }
         } catch (migrationError) {
@@ -308,6 +309,10 @@ export const FirebaseProvider: React.FC<{ children: ReactNode; firebaseApp: Fire
       setIsInitialized((prev) => (prev ? prev : true));
     }, 5000);
 
+    // Mantém um alvo de watch aberto antes de leituras transitórias (workaround SDK ca9/b815).
+    const anchorRef = doc(firestore, '_meta', 'client');
+    const anchorUnsub = onSnapshot(anchorRef, () => {});
+
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
         if (firebaseUser) {
             setIsProfileLoading(true);
@@ -367,6 +372,7 @@ export const FirebaseProvider: React.FC<{ children: ReactNode; firebaseApp: Fire
 
     return () => {
       clearTimeout(safetyTimeout);
+      anchorUnsub();
       unsubscribe();
       window.removeEventListener('beforeunload', handleBeforeUnload);
       document.removeEventListener('visibilitychange', handleVisibilityChange);

@@ -47,15 +47,48 @@ child.on("error", (error) => {
 });
 
 child.on("close", (code, signal) => {
-  const footer = [
-    "",
-    "## result",
-    `finishedAt=${new Date().toISOString()}`,
-    `status=${code}`,
-    `signal=${signal ?? ""}`,
-    "",
-  ].join("\n");
-  appendFileSync(logPath, footer);
-  console.log(`\n[apphosting-check] status=${code}; log=${logPath}`);
-  process.exit(code ?? 1);
+  if (code !== 0) {
+    const footer = [
+      "",
+      "## result",
+      `finishedAt=${new Date().toISOString()}`,
+      `status=${code}`,
+      `signal=${signal ?? ""}`,
+      "",
+    ].join("\n");
+    appendFileSync(logPath, footer);
+    console.log(`\n[apphosting-check] status=${code}; log=${logPath}`);
+    process.exit(code ?? 1);
+    return;
+  }
+
+  const copy = spawn(process.execPath, ["scripts/copy-standalone-assets.mjs"], {
+    env: {
+      ...process.env,
+      NEXT_DIST_DIR: ".next-apphosting-check",
+    },
+  });
+
+  copy.stdout.on("data", (chunk) => {
+    process.stdout.write(chunk);
+    appendFileSync(logPath, chunk);
+  });
+  copy.stderr.on("data", (chunk) => {
+    process.stderr.write(chunk);
+    appendFileSync(logPath, chunk);
+  });
+
+  copy.on("close", (copyCode) => {
+    const footer = [
+      "",
+      "## result",
+      `finishedAt=${new Date().toISOString()}`,
+      `status=${copyCode ?? code}`,
+      `signal=${signal ?? ""}`,
+      "",
+    ].join("\n");
+    appendFileSync(logPath, footer);
+    console.log(`\n[apphosting-check] status=${copyCode ?? code}; log=${logPath}`);
+    process.exit(copyCode ?? 1);
+  });
 });
