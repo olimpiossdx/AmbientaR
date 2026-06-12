@@ -258,3 +258,24 @@ export type UpdateFadFiscalFindingInput = {
   status?: FadFiscalFindingStatus;
   dismissedReason?: string;
 };
+
+export type FadReportType = "acervo" | "mudancas" | "fiscalizacao" | "consolidado";
+
+export type FadSmartReportStatus = "generating" | "ready" | "failed";
+
+export type FadSmartReport = {
+  id: string;
+  workspaceId: string;
+  ownerId: string;
+  type: FadReportType;
+  title: string;
+  status: FadSmartReportStatus;
+  storage?: {
+    pdfPath: string;
+    bytes?: number;
+  };
+  errorMessage?: string;
+  createdAt: string;
+  createdBy: string;
+  updatedAt?: string;
+};

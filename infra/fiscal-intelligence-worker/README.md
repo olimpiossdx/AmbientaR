@@ -20,3 +20,10 @@ WORKER_SHARED_SECRET=...
 ```
 
 Sem worker, a API usa **modo inline** (diff simplificado nas previews).
+
+## Deploy (resumo)
+
+```bash
+cd infra/fiscal-intelligence-worker
+gcloud run deploy ambientar-fiscal-intelligence --source . --region southamerica-east1
+```

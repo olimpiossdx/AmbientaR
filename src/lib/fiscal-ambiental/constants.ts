@@ -7,6 +7,7 @@ export const FISCAL_AMBIENTAL_FLAGS = {
   ENABLE_COMPARISON: true,
   ENABLE_INTELLIGENCE: true,
   ENABLE_FISCAL_CHECKS: true,
+  ENABLE_REPORTS: true,
   ENABLE_MONITORING: false,
   ENABLE_ESG: false,
 } as const;

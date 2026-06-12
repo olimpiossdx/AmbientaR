@@ -380,3 +380,41 @@ export async function runFiscalChecks(token: string, workspaceId: string) {
     { method: "POST", body: JSON.stringify({ workspaceId }) },
   );
 }
+
+export type FadSmartReportDto = {
+  id: string;
+  type: string;
+  title: string;
+  status: string;
+  downloadUrl?: string;
+  createdAt: string;
+};
+
+export async function generateFadReport(
+  token: string,
+  workspaceId: string,
+  type: "acervo" | "mudancas" | "fiscalizacao" | "consolidado",
+) {
+  return fadFetch<FadSmartReportDto>("/api/fiscal-ambiental/reports/generate", token, {
+    method: "POST",
+    body: JSON.stringify({ workspaceId, type }),
+  });
+}
+
+export async function listFadReports(token: string, workspaceId: string) {
+  return fadFetch<FadSmartReportDto[]>(
+    `/api/fiscal-ambiental/reports?workspaceId=${encodeURIComponent(workspaceId)}`,
+    token,
+  );
+}
+
+export async function getFadReportDownloadUrl(
+  token: string,
+  workspaceId: string,
+  reportId: string,
+) {
+  return fadFetch<{ downloadUrl: string; report: FadSmartReportDto }>(
+    `/api/fiscal-ambiental/reports/${reportId}/download?workspaceId=${encodeURIComponent(workspaceId)}`,
+    token,
+  );
+}
