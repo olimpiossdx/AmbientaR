@@ -2,6 +2,8 @@
 
 Worker Cloud Run para o **Fiscal Ambiental Digital**: lê cena STAC INPE, grava preview (e GeoTIFF quando existir asset COG) no Firebase Storage.
 
+**v2:** imagem Docker inclui `gdal-bin`; quando há GeoTIFF no item STAC, tenta **recorte à AOI** (`gdalwarp -crop_to_cutline`). O manifest indica `worker_gdal_clip` ou `worker_stac_asset`.
+
 ## Endpoints
 
 - `GET /health`

@@ -58,6 +58,8 @@
     "typecheck": "tsc --noEmit",
     "check:uploads": "node scripts/check-upload-patterns.cjs",
     "deploy:rules": "npx firebase deploy --only firestore:rules",
+    "fad:cron-smoke": "node scripts/fad-cron-smoke.mjs",
+    "fad:deploy-workers": "powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/deploy-fad-workers.ps1",
     "seed:outorga-knowledge": "node scripts/seed-outorga-knowledge-sources.mjs",
     "tr:sync-forms": "npx tsx scripts/sync-tr-form-schemas.ts",
     "deploy:storage": "npx firebase deploy --only storage",

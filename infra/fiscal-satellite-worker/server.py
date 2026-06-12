@@ -8,6 +8,8 @@ from __future__ import annotations
 import json
 import os
 import re
+import subprocess
+import tempfile
 import urllib.request
 from typing import Any
 
@@ -72,6 +74,42 @@ def _download(url: str) -> bytes:
         return resp.read()
 
 
+def _clip_geotiff_to_aoi(src_bytes: bytes, aoi: dict[str, Any]) -> bytes | None:
+    """Recorte GDAL por AOI (GeoJSON). Falha silenciosa mantém TIFF original."""
+    try:
+        with tempfile.TemporaryDirectory() as td:
+            src = os.path.join(td, "src.tif")
+            dst = os.path.join(td, "out.tif")
+            cutline = os.path.join(td, "aoi.geojson")
+            with open(src, "wb") as f:
+                f.write(src_bytes)
+            feature = {"type": "Feature", "geometry": aoi, "properties": {}}
+            with open(cutline, "w", encoding="utf-8") as f:
+                json.dump(feature, f)
+            subprocess.run(
+                [
+                    "gdalwarp",
+                    "-cutline",
+                    cutline,
+                    "-crop_to_cutline",
+                    "-dstalpha",
+                    "-co",
+                    "COMPRESS=DEFLATE",
+                    "-co",
+                    "TILED=YES",
+                    src,
+                    dst,
+                ],
+                check=True,
+                capture_output=True,
+                timeout=600,
+            )
+            with open(dst, "rb") as f:
+                return f.read()
+    except Exception:
+        return None
+
+
 @app.get("/health")
 def health():
     return {"ok": True, "service": "fiscal-satellite-worker"}
@@ -99,10 +137,15 @@ def assemble(body: AssembleBody, x_worker_secret: str | None = Header(default=No
     total_bytes = len(preview_bytes)
 
     geotiff_out: str | None = None
+    geotiff_mode = "worker_stac_asset"
     geotiff_href = _pick_asset_href(item, ("BAND1", "tci", "visual"))
     if geotiff_href and re.search(r"\.tif(f)?$", geotiff_href, re.I):
         try:
             tif_bytes = _download(geotiff_href)
+            clipped = _clip_geotiff_to_aoi(tif_bytes, body.aoi)
+            if clipped:
+                tif_bytes = clipped
+                geotiff_mode = "worker_gdal_clip"
             bucket.blob(geotiff_path).upload_from_string(tif_bytes, content_type="image/tiff")
             geotiff_out = geotiff_path
             total_bytes += len(tif_bytes)
@@ -113,7 +156,8 @@ def assemble(body: AssembleBody, x_worker_secret: str | None = Header(default=No
         "stac_item_id": body.stac_item_id,
         "stac_collection": body.stac_collection,
         "preview_source": preview_href,
-        "mode": "worker_stac_asset",
+        "mode": geotiff_mode,
+        "aoi_clipped": geotiff_mode == "worker_gdal_clip",
     }
     bucket.blob(manifest_path).upload_from_string(
         json.dumps(manifest, indent=2), content_type="application/json"

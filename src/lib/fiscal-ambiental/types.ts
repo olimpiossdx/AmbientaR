@@ -406,6 +406,7 @@ export type FadModuleSettings = {
   enabled: boolean;
   standaloneMode: boolean;
   sigCrosscheckEnabled: boolean;
+  monitoringCronConfigured: boolean;
   satelliteWorkerConfigured: boolean;
   intelligenceWorkerConfigured: boolean;
   flags: typeof FISCAL_AMBIENTAL_FLAGS;

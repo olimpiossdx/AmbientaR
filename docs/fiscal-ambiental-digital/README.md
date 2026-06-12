@@ -7,6 +7,7 @@ Produto **standalone** de acervo satelital INPE/CBERS, comparação temporal, in
 | Ficheiro | Conteúdo |
 |----------|----------|
 | **[PLANO-UNICO.md](./PLANO-UNICO.md)** | Plano consolidado v2.0 — visão, arquitetura, dados, APIs, workers, fases 0–7, ganhos, riscos, prompts Cursor |
+| **[EVOLUCOES-V2.md](./EVOLUCOES-V2.md)** | SIG/PRODES, scheduler Cloud, worker GDAL, checklist E2E |
 
 Este ficheiro **substitui** o pacote externo de 14 documentos e o antigo `PLANO-CONSOLIDADO-IMPLANTACAO.md`.
 
@@ -30,6 +31,6 @@ Este ficheiro **substitui** o pacote externo de 14 documentos e o antigo `PLANO-
 - **Dados:** `fad_workspaces/{id}/...`
 - **MVP:** Fases 0–1 (workspace + acervo INPE + GeoTIFF)
 - **Worker:** `infra/fiscal-satellite-worker` (opcional; sem URL usa modo inline na API)
-- **Estado:** **Fases 0–7 implementadas** + dashboard com contadores e **Configurações** v1 (flags, workers, atribuição). Cruzamento SIG/PRODES (v2) e scheduler automático ficam como evolução.
+- **Estado:** Fases 0–7 + **evoluções v2** (SIG/PRODES com flag, scheduler cron, worker GDAL). Ver [EVOLUCOES-V2.md](./EVOLUCOES-V2.md).
 
 Última atualização: 2026-06-12

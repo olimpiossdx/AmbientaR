@@ -9,7 +9,7 @@ $Bucket = "studio-316805764-e4d13.firebasestorage.app"
 
 $secret = $env:WORKER_SHARED_SECRET
 if (-not $secret) {
-  Write-Warning "WORKER_SHARED_SECRET nao definido — configure no Cloud Run apos o deploy."
+  Write-Warning "WORKER_SHARED_SECRET nao definido - configure no Cloud Run apos o deploy."
   $envBlock = "FIREBASE_STORAGE_BUCKET=$Bucket"
 } else {
   $envBlock = "FIREBASE_STORAGE_BUCKET=$Bucket,WORKER_SHARED_SECRET=$secret"

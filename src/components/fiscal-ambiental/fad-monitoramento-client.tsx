@@ -158,7 +158,8 @@ export function FadMonitoramentoClient() {
         <div>
           <h1 className="text-xl font-semibold">Monitoramento</h1>
           <p className="text-sm text-muted-foreground">
-            Vigilância periódica — execução manual na v1 (INPE → mudanças → achados).
+            Vigilância periódica (INPE → mudanças → achados). Regras não-manuais podem correr
+            automaticamente via Cloud Scheduler — ver Configurações.
           </p>
         </div>
         <div className="space-y-1">

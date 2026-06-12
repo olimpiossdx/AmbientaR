@@ -374,11 +374,26 @@ export async function updateFiscalFinding(
 }
 
 export async function runFiscalChecks(token: string, workspaceId: string) {
-  return fadFetch<{ created: number; findings: FadFiscalFindingDto[] }>(
-    "/api/fiscal-ambiental/fiscalizacao/run-checks",
-    token,
-    { method: "POST", body: JSON.stringify({ workspaceId }) },
-  );
+  return fadFetch<{
+    created: number;
+    findings: FadFiscalFindingDto[];
+    sigCrosscheck?: { created: number; prodesAlerts: number; enabled: boolean };
+  }>("/api/fiscal-ambiental/fiscalizacao/run-checks", token, {
+    method: "POST",
+    body: JSON.stringify({ workspaceId }),
+  });
+}
+
+export async function runSigCrosscheck(token: string, workspaceId: string) {
+  return fadFetch<{
+    created: number;
+    prodesAlerts: number;
+    layersQueried: number;
+    findings: FadFiscalFindingDto[];
+  }>("/api/fiscal-ambiental/fiscalizacao/sig-crosscheck", token, {
+    method: "POST",
+    body: JSON.stringify({ workspaceId }),
+  });
 }
 
 export type FadSmartReportDto = {

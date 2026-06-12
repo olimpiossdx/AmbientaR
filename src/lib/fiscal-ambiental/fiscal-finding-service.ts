@@ -1,9 +1,12 @@
+import { isFadSigCrosscheckEnabled } from "@/lib/deploy-flags";
 import { adminDb } from "@/lib/firebase-admin";
 import {
   changeTypeToFindingType,
   FINDING_TYPE_LABELS,
   severityFromAreaHa,
 } from "./fiscal-finding-labels";
+import { runSigCrosscheck } from "./sig-crosscheck-service";
+import { getFadWorkspace } from "./workspace-service";
 import type {
   CreateFadManualFindingInput,
   FadChangeAnalysis,
@@ -179,7 +182,11 @@ function analysisFromDoc(id: string, data: FirebaseFirestore.DocumentData): FadC
 export async function runFiscalChecks(params: {
   workspaceId: string;
   ownerId: string;
-}): Promise<{ created: number; findings: FadFiscalFinding[] }> {
+}): Promise<{
+  created: number;
+  findings: FadFiscalFinding[];
+  sigCrosscheck?: { created: number; prodesAlerts: number; enabled: boolean };
+}> {
   const snap = await adminDb()
     .collection("fad_workspaces")
     .doc(params.workspaceId)
@@ -198,7 +205,31 @@ export async function runFiscalChecks(params: {
     all.push(...batch);
   }
 
-  return { created, findings: all };
+  let sigCrosscheck:
+    | { created: number; prodesAlerts: number; enabled: boolean }
+    | undefined;
+
+  if (isFadSigCrosscheckEnabled()) {
+    const workspace = await getFadWorkspace(params.workspaceId);
+    if (workspace?.aoi) {
+      const sig = await runSigCrosscheck({
+        workspaceId: params.workspaceId,
+        ownerId: params.ownerId,
+        aoi: workspace.aoi,
+      });
+      created += sig.created;
+      all.push(...sig.findings);
+      sigCrosscheck = {
+        created: sig.created,
+        prodesAlerts: sig.prodesAlerts,
+        enabled: true,
+      };
+    } else {
+      sigCrosscheck = { created: 0, prodesAlerts: 0, enabled: true };
+    }
+  }
+
+  return { created, findings: all, sigCrosscheck };
 }
 
 export function summarizeFindings(findings: FadFiscalFinding[]) {

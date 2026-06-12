@@ -238,7 +238,7 @@ export async function executeMonitoringRun(params: {
       });
     }
 
-    // 3. Fiscalização preventiva
+    // 3. Fiscalização preventiva (+ SIG opcional)
     let findingsCreated = 0;
     try {
       const fiscal = await runFiscalChecks({
@@ -246,10 +246,14 @@ export async function executeMonitoringRun(params: {
         ownerId: params.ownerId,
       });
       findingsCreated = fiscal.created;
+      const sigNote =
+        fiscal.sigCrosscheck?.enabled && fiscal.sigCrosscheck.created > 0
+          ? ` (incl. ${fiscal.sigCrosscheck.created} SIG)`
+          : "";
       steps.push({
         step: "fiscal_checks",
         status: "ok",
-        message: `${findingsCreated} achado(s) novo(s)`,
+        message: `${findingsCreated} achado(s) novo(s)${sigNote}`,
       });
     } catch (e) {
       steps.push({

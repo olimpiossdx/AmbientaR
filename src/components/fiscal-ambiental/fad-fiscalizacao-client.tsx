@@ -28,9 +28,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { FAD_ROUTE_BASE } from "@/lib/fiscal-ambiental/constants";
 import {
   createManualFinding,
+  fetchFadModuleSettings,
   listFadWorkspaces,
   listFiscalFindings,
   runFiscalChecks,
+  runSigCrosscheck,
   updateFiscalFinding,
   type FadFiscalFindingDto,
 } from "@/lib/fiscal-ambiental/fad-api-client";
@@ -66,6 +68,8 @@ export function FadFiscalizacaoClient() {
   const [manualBody, setManualBody] = React.useState("");
   const [saving, setSaving] = React.useState(false);
   const [syncing, setSyncing] = React.useState(false);
+  const [sigEnabled, setSigEnabled] = React.useState(false);
+  const [sigRunning, setSigRunning] = React.useState(false);
 
   const loadFindings = React.useCallback(async (wsId: string) => {
     const token = await getFadAuthToken();
@@ -77,6 +81,8 @@ export function FadFiscalizacaoClient() {
     (async () => {
       try {
         const token = await getFadAuthToken();
+        const settingsRes = await fetchFadModuleSettings(token);
+        if (settingsRes.ok) setSigEnabled(settingsRes.data.sigCrosscheckEnabled);
         const res = await listFadWorkspaces(token);
         if (res.ok && res.data.length) {
           setWorkspaces(res.data);
@@ -265,9 +271,13 @@ export function FadFiscalizacaoClient() {
                 return;
               }
               await loadFindings(workspaceId);
+              const sigNote =
+                res.data.sigCrosscheck?.enabled && res.data.sigCrosscheck.created > 0
+                  ? ` Inclui ${res.data.sigCrosscheck.created} achado(s) SIG (PRODES/MapBiomas).`
+                  : "";
               toast({
                 title: "Verificação concluída",
-                description: `${res.data.created} achado(s) gerado(s) a partir das análises.`,
+                description: `${res.data.created} achado(s) gerado(s).${sigNote}`,
               });
             } finally {
               setSyncing(false);
@@ -277,6 +287,38 @@ export function FadFiscalizacaoClient() {
           {syncing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
           Sincronizar análises
         </Button>
+        {sigEnabled ? (
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={sigRunning || !workspaceId}
+            onClick={async () => {
+              if (!workspaceId) return;
+              setSigRunning(true);
+              try {
+                const token = await getFadAuthToken();
+                const res = await runSigCrosscheck(token, workspaceId);
+                if (!res.ok) {
+                  toast({ variant: "destructive", title: "SIG", description: res.error });
+                  return;
+                }
+                await loadFindings(workspaceId);
+                toast({
+                  title: "Cruzamento SIG",
+                  description:
+                    res.data.created > 0
+                      ? `${res.data.prodesAlerts} alerta(s) · ${res.data.created} achado(s) criado(s).`
+                      : "Nenhuma coincidência PRODES/MapBiomas/embargo no perímetro.",
+                });
+              } finally {
+                setSigRunning(false);
+              }
+            }}
+          >
+            {sigRunning ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+            Cruzar PRODES/SIG
+          </Button>
+        ) : null}
         <Button variant="link" className="h-auto p-0" asChild>
           <Link href={`${FAD_ROUTE_BASE}/inteligencia`}>Nova análise em Inteligência →</Link>
         </Button>
@@ -315,6 +357,9 @@ export function FadFiscalizacaoClient() {
                     <Badge variant="outline">
                       {FINDING_TYPE_LABELS[f.type as FadFiscalFindingType]}
                     </Badge>
+                    {f.source === "sig_crosscheck" ? (
+                      <Badge variant="secondary">SIG</Badge>
+                    ) : null}
                   </div>
                   <p className="text-sm text-muted-foreground">{f.description}</p>
                   {f.areaHa != null ? (

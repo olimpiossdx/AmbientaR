@@ -120,9 +120,14 @@ export function FadConfiguracoesClient() {
               detail="Dados isolados em fad_workspaces, sem CRM."
             />
             <StatusRow
-              label="Cruzamento SIG (v2)"
+              label="Cruzamento SIG"
               ok={settings.sigCrosscheckEnabled}
-              detail="PRODES, IDE e camadas externas — previsto para evolução."
+              detail="FAD_ENABLE_SIG_CROSSCHECK — PRODES, MapBiomas Alerta, embargos IBAMA."
+            />
+            <StatusRow
+              label="Scheduler de monitoramento"
+              ok={settings.monitoringCronConfigured}
+              detail="FAD_MONITORING_CRON_SECRET → POST /api/fiscal-ambiental/monitoring/scheduler/run"
             />
           </CardContent>
         </Card>

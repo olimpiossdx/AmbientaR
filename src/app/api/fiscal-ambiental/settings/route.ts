@@ -16,6 +16,7 @@ export async function GET(req: Request) {
       enabled: isFadEnabled(),
       standaloneMode: isFadStandaloneMode(),
       sigCrosscheckEnabled: isFadSigCrosscheckEnabled(),
+      monitoringCronConfigured: Boolean(process.env.FAD_MONITORING_CRON_SECRET?.trim()),
       satelliteWorkerConfigured: Boolean(process.env.FISCAL_SATELLITE_WORKER_URL?.trim()),
       intelligenceWorkerConfigured: Boolean(process.env.FISCAL_INTELLIGENCE_WORKER_URL?.trim()),
       flags: FISCAL_AMBIENTAL_FLAGS,

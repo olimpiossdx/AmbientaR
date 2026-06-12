@@ -193,20 +193,50 @@ export async function buildFadReportPdf(data: FadReportData): Promise<Buffer> {
     const sec = includeMudancas ? (includeTimeline ? "6" : "4") : "3";
     y = addSectionTitle(doc, y, `${sec}. Achados preventivos`);
     const open = data.findings.filter((f) => f.status !== "dismissed");
+    const sigFindings = open.filter((f) => f.source === "sig_crosscheck");
+    const visualFindings = open.filter((f) => f.source !== "sig_crosscheck");
+
     if (!open.length) {
       y = addParagraph(doc, y, "Nenhum achado aberto ou em análise.");
     } else {
-      y = addTable(
-        doc,
-        y,
-        ["Tipo", "Severidade", "Status", "Área (ha)"],
-        open.map((f) => [
-          FINDING_TYPE_LABELS[f.type],
-          SEVERITY_LABELS[f.severity],
-          f.status,
-          f.areaHa != null ? String(f.areaHa) : "—",
-        ]),
-      );
+      if (visualFindings.length) {
+        y = addParagraph(doc, y, "Indícios a partir de análise satelital (mudanças visuais):");
+        y = addTable(
+          doc,
+          y,
+          ["Tipo", "Severidade", "Status", "Área (ha)"],
+          visualFindings.map((f) => [
+            FINDING_TYPE_LABELS[f.type],
+            SEVERITY_LABELS[f.severity],
+            f.status,
+            f.areaHa != null ? String(f.areaHa) : "—",
+          ]),
+        );
+      }
+
+      if (sigFindings.length) {
+        y = addParagraph(
+          doc,
+          y,
+          "Cruzamento SIG — bases públicas (PRODES INPE, MapBiomas Alerta, embargos IBAMA):",
+        );
+        y = addTable(
+          doc,
+          y,
+          ["Achado", "Severidade", "Status", "Área (ha)"],
+          sigFindings.map((f) => [
+            f.title,
+            SEVERITY_LABELS[f.severity],
+            f.status,
+            f.areaHa != null ? String(f.areaHa) : "—",
+          ]),
+        );
+        for (const f of sigFindings.slice(0, 8)) {
+          const detail =
+            f.description.length > 200 ? `${f.description.slice(0, 200)}…` : f.description;
+          y = addParagraph(doc, y, `• ${f.title}: ${detail}`);
+        }
+      }
     }
   }
 

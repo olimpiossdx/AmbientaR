@@ -38,6 +38,7 @@ export function computeEsgMetrics(params: {
   };
   findingStats: ReturnType<typeof summarizeFindings>;
   appInterventionCount: number;
+  prodesAlerts?: number;
 }): { indicators: FadEsgIndicators; scores: FadEsgScores; explanations: FadEsgExplanations } {
   const areaHa = params.workspace.areaHa ?? 100;
   const gain = params.latestAnalysis?.gainHa ?? 0;
@@ -58,7 +59,7 @@ export function computeEsgMetrics(params: {
     openFindings: params.findingStats.open,
     criticalFindings: params.findingStats.bySeverity.critical,
     highFindings: params.findingStats.bySeverity.high,
-    prodesAlerts: 0,
+    prodesAlerts: params.prodesAlerts ?? 0,
     appInterventionFindings: params.appInterventionCount,
     analysisPeriod: params.latestAnalysis
       ? `${params.latestAnalysis.beforeDate} → ${params.latestAnalysis.afterDate}`
@@ -116,6 +117,13 @@ export function computeEsgMetrics(params: {
       `-${params.appInterventionCount * 5}: ${params.appInterventionCount} indício(s) de intervenção em área sensível.`,
     );
   }
+  if ((params.prodesAlerts ?? 0) > 0) {
+    const penalty = clamp((params.prodesAlerts ?? 0) * 4, 0, 20);
+    compliance -= penalty;
+    compExpl.push(
+      `-${penalty}: ${params.prodesAlerts} alerta(s) PRODES/MapBiomas no perímetro (SIG).`,
+    );
+  }
   compliance = clamp(compliance);
 
   const riskExpl: string[] = [];
@@ -148,7 +156,14 @@ async function gatherMetrics(workspace: FadWorkspace) {
       (f.status === "open" || f.status === "under_review"),
   ).length;
 
-  return computeEsgMetrics({
+  const prodesFromFindings = findings.filter(
+    (f) =>
+      f.source === "sig_crosscheck" &&
+      (f.status === "open" || f.status === "under_review") &&
+      /prodes|mapbiomas/i.test(f.title),
+  ).length;
+
+  const metrics = computeEsgMetrics({
     workspace,
     mosaicCount: readyMosaics.length,
     latestAnalysis: latestAnalysis
@@ -162,7 +177,10 @@ async function gatherMetrics(workspace: FadWorkspace) {
       : undefined,
     findingStats,
     appInterventionCount: appCount,
+    prodesAlerts: prodesFromFindings,
   });
+
+  return metrics;
 }
 
 export async function getEsgDashboard(workspaceId: string): Promise<FadEsgDashboard | null> {

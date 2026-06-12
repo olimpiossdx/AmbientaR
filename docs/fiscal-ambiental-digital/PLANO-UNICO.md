@@ -8,7 +8,7 @@
 **Worker:** `infra/fiscal-satellite-worker`  
 **Versão:** 2.0 (documento único)  
 **Data:** 2026-06-12  
-**Estado:** Fases 0–7 implementadas · dashboard com contadores · configurações v1
+**Estado:** Fases 0–7 + evoluções v2 (SIG, scheduler, GDAL) — ver [EVOLUCOES-V2.md](./EVOLUCOES-V2.md)
 
 > Este ficheiro substitui o pacote externo de 14 documentos e o plano CBERS para fins de implementação.  
 > Detalhe técnico GDAL/STAC complementar: [`../CBERS-ARQUIVO-INPE-PLANO.md`](../CBERS-ARQUIVO-INPE-PLANO.md) (§4–11).
