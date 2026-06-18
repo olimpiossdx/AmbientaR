@@ -17,7 +17,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
@@ -71,10 +71,6 @@ export function LoginForm() {
         <CardTitle className="text-lg font-semibold text-foreground">
           Acesse sua Conta
         </CardTitle>
-        <CardDescription className="text-muted-foreground">
-          Use o e-mail cadastrado na sua conta e a senha. O CPF/CNPJ do empreendedor
-          serve para vincular seus dados na plataforma, não para entrar no sistema.
-        </CardDescription>
       </CardHeader>
       <CardContent className="pt-0">
         <Form {...form}>

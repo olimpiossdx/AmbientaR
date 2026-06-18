@@ -142,12 +142,12 @@ export async function fetchEmpreendedorIdsForClientGestao(
   return ids.size > 0 ? Array.from(ids) : ["invalid-placeholder"];
 }
 
-/** Escopo de trâmites para Cliente Gestão ou Representante (consulta). */
+/** Escopo de trâmites para perfis portal (consulta). */
 export async function fetchEmpreendedorIdsForProcessosPortal(
   firestore: Firestore,
   user: AppUser,
 ): Promise<string[]> {
-  if (user.role === "client") {
+  if (user.role === "client" || user.role === "cliente_autonomo") {
     return fetchEmpreendedorIdsForClientGestao(firestore, user);
   }
   if (user.role === "representative") {

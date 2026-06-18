@@ -426,12 +426,12 @@ export default function SettingsPage() {
                         <div className="flex items-center space-x-2">
                           <RadioGroupItem value="pdf_only" id="pdf_only" />
                           <Label htmlFor="pdf_only" className="font-normal">
-                            Apenas em documentos PDF (Padrão)
+                            Documentos PDF (Padrão) e Word
                           </Label>
                         </div>
                         <p className="text-xs text-muted-foreground pl-6">
                           Mantém o logo &quot;AmbientaR&quot; na interface do
-                          sistema e usa sua marca apenas nos PDFs.
+                          sistema e usa sua marca nos documentos PDF e Word.
                         </p>
                         <div className="flex items-center space-x-2">
                           <RadioGroupItem

@@ -656,6 +656,26 @@ service cloud.firestore {
     match /autoInfracaoDefesas/{defesaId} {
       allow read, write: if isAdmin() || (isSignedIn() && getRole() in ['advogado', 'technical', 'gestor', 'supervisor']);
     }
+
+    /**
+     * Gestão de Processos — hub de processos SEI/SLA do escritório.
+     * Leitura: utilizadores autenticados (app filtra escopo portal).
+     * Escrita: admin, técnico e gestor.
+     * @path /databases/{database}/documents/officeProcesses/{processId}
+     */
+    function canWriteOfficeProcess() {
+      return isAdmin() || (isSignedIn() && getRole() in ['technical', 'gestor']);
+    }
+
+    match /officeProcesses/{processId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if canWriteOfficeProcess();
+
+      match /events/{eventId} {
+        allow read: if isSignedIn();
+        allow create, update, delete: if canWriteOfficeProcess();
+      }
+    }
     
     /**
      * @description Managers can write and list all. Clients can list (app filtra por empreendedor do titular).

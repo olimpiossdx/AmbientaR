@@ -637,7 +637,7 @@ const AppLayoutClientInner = ({ children }: { children: React.ReactNode }) => {
               )}
               {isRoleAllowedForPath(user.role, "/settings") && (
                 <DropdownMenuItem asChild>
-                  <Link href="/settings">Configurações</Link>
+                  <Link href="/settings">Ferramentas do Sistema</Link>
                 </DropdownMenuItem>
               )}
               {isRoleAllowedForPath(user.role, "/settings/appearance") &&
