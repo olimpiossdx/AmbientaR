@@ -4,6 +4,7 @@ import * as React from 'react';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useFirebase } from '@/firebase';
+import { useFirestoreAuthReady } from '@/firebase/use-firestore-auth-ready';
 import { collection, query, where, getDocs, type QuerySnapshot, type DocumentData } from 'firebase/firestore';
 import type { Appointment } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -40,11 +41,12 @@ const MAX_ITEMS = 10;
 
 export default function AgendaWidget() {
   const { firestore, user } = useFirebase();
+  const firestoreAuthReady = useFirestoreAuthReady();
   const [events, setEvents] = React.useState<Appointment[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
 
   React.useEffect(() => {
-    if (!firestore || !user) return;
+    if (!firestore || !user || !firestoreAuthReady) return;
 
     setIsLoading(true);
     const fetchEvents = async () => {
@@ -103,7 +105,7 @@ export default function AgendaWidget() {
     };
 
     fetchEvents();
-  }, [firestore, user]);
+  }, [firestore, user, firestoreAuthReady]);
 
   return (
     <Card>

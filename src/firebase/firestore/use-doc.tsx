@@ -11,6 +11,7 @@ import {
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import type { WithId } from './use-collection';
+import { useFirestoreAuthReady } from '@/firebase/use-firestore-auth-ready';
 
 /**
  * Interface for the return value of the useDoc hook.
@@ -44,11 +45,12 @@ export function useDoc<T = any>(
   const [data, setData] = useState<StateDataType>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<FirestoreError | Error | null>(null);
+  const firestoreAuthReady = useFirestoreAuthReady();
 
   const docPath = memoizedDocRef?.path;
 
   useEffect(() => {
-    if (!memoizedDocRef) {
+    if (!memoizedDocRef || !firestoreAuthReady) {
       setData(null);
       setIsLoading(false);
       setError(null);
@@ -88,7 +90,7 @@ export function useDoc<T = any>(
     );
 
     return () => unsubscribe();
-  }, [docPath, memoizedDocRef]); // Re-run if the document ref/path changes.
+  }, [docPath, memoizedDocRef, firestoreAuthReady]); // Re-run if the document ref/path changes.
 
   return { data, isLoading, error };
 }

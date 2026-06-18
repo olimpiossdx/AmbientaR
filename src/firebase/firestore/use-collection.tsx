@@ -13,6 +13,7 @@ import {
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { sortFirestoreDocsForSelect } from '@/lib/sort-pt-br';
+import { useFirestoreAuthReady } from '@/firebase/use-firestore-auth-ready';
 
 /** Utility type to add an 'id' field to a given type T. */
 export type WithId<T> = T & { id: string };
@@ -62,6 +63,7 @@ export function useCollection<T = any>(
   const [data, setData] = useState<StateDataType>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<FirestoreError | Error | null>(null);
+  const firestoreAuthReady = useFirestoreAuthReady();
 
   const queryKey = React.useMemo(() => {
     if (!memoizedTargetRefOrQuery) return null;
@@ -74,7 +76,7 @@ export function useCollection<T = any>(
 
 
   useEffect(() => {
-    if (!memoizedTargetRefOrQuery) {
+    if (!memoizedTargetRefOrQuery || !firestoreAuthReady) {
       setData(null);
       setIsLoading(false);
       setError(null);
@@ -131,7 +133,7 @@ export function useCollection<T = any>(
     );
 
     return () => unsubscribe();
-  }, [queryKey, memoizedTargetRefOrQuery]); // Re-run if key/object changes.
+  }, [queryKey, memoizedTargetRefOrQuery, firestoreAuthReady]); // Re-run if key/object changes.
   
   return { data, isLoading, error };
 }

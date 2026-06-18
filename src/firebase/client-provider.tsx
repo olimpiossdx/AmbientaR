@@ -10,6 +10,8 @@ import {
   getInstances,
 } from "@/firebase/load-firebase-client";
 import { firebaseConfig } from "@/firebase/config";
+import { registerIndexedDbQuotaWatcher } from "@/lib/browser-storage-recovery";
+import { IndexedDbRecoveryBanner } from "@/components/indexeddb-recovery-banner";
 
 interface FirebaseClientProviderProps {
   children: ReactNode;
@@ -41,6 +43,10 @@ export function FirebaseClientProvider({
     () => readInstances(),
   );
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    return registerIndexedDbQuotaWatcher();
+  }, []);
 
   useEffect(() => {
     if (instances) return;
@@ -126,6 +132,7 @@ export function FirebaseClientProvider({
       firestore={firestore}
     >
       {children}
+      <IndexedDbRecoveryBanner />
     </FirebaseProvider>
   );
 }

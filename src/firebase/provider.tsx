@@ -173,6 +173,7 @@ export const FirebaseProvider: React.FC<{ children: ReactNode; firebaseApp: Fire
 
   const loadUserProfile = useCallback(
     async (firebaseUser: User): Promise<AppUser> => {
+      await auth.authStateReady();
       const userDocRef = doc(firestore, 'users', firebaseUser.uid);
       const normalizedEmail = (firebaseUser.email || '').trim().toLowerCase();
       const sessionUid = firebaseUser.uid;
@@ -295,7 +296,7 @@ export const FirebaseProvider: React.FC<{ children: ReactNode; firebaseApp: Fire
       });
       return { ...newUser, id: sessionUid };
     },
-    [firestore],
+    [firestore, auth],
   );
 
   useEffect(() => {

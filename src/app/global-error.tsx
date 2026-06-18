@@ -1,6 +1,11 @@
 'use client';
 
 import { useEffect } from 'react';
+import {
+  clearBrowserStorageForRecovery,
+  clearSkipPersistentFirestoreCache,
+} from '@/lib/browser-storage-recovery';
+import { clearFirebaseClientInstancesCache } from '@/firebase/load-firebase-client';
 
 /**
  * Captura erros na raiz do app (layout, providers).
@@ -16,6 +21,18 @@ export default function GlobalError({
   useEffect(() => {
     console.error('Erro global:', error.message, error.digest, error.stack);
   }, [error]);
+
+  const isPermissionError =
+    /permission-denied|insufficient permissions|auth": null/i.test(
+      error.message ?? '',
+    );
+
+  const handleClearStorage = async () => {
+    await clearBrowserStorageForRecovery();
+    clearFirebaseClientInstancesCache();
+    clearSkipPersistentFirestoreCache();
+    window.location.reload();
+  };
 
   return (
     <html lang="pt-BR">
@@ -45,22 +62,53 @@ export default function GlobalError({
             border-radius: 0.375rem;
             cursor: pointer;
           }
+          button.secondary {
+            background: #b45309;
+            margin-left: 0.5rem;
+          }
+          p.hint {
+            color: #57534e;
+            font-size: 0.9rem;
+            line-height: 1.5;
+          }
         `}</style>
       </head>
       <body>
-        <h1>Erro no servidor</h1>
-        <p>Ocorreu um erro ao carregar a aplicação. Verifique o terminal onde <code>npm run dev</code> está rodando.</p>
+        <h1>Erro ao carregar a aplicação</h1>
+        {isPermissionError ? (
+          <p className="hint">
+            A sessão ou o armazenamento local do navegador pode estar corrompido
+            (IndexedDB cheio). Tente limpar os dados locais deste site e voltar a
+            entrar. Em alternativa: DevTools → Application → Clear site data.
+          </p>
+        ) : (
+          <p className="hint">
+            Ocorreu um erro inesperado. Se estiver em desenvolvimento, verifique o
+            terminal onde <code>npm run dev</code> está a correr.
+          </p>
+        )}
         {error.message && (
           <pre>
             {error.message}
           </pre>
         )}
-        <button
-          type="button"
-          onClick={() => reset()}
-        >
-          Tentar novamente
-        </button>
+        <div>
+          <button
+            type="button"
+            onClick={() => reset()}
+          >
+            Tentar novamente
+          </button>
+          {isPermissionError && (
+            <button
+              type="button"
+              className="secondary"
+              onClick={() => void handleClearStorage()}
+            >
+              Limpar dados locais e recarregar
+            </button>
+          )}
+        </div>
       </body>
     </html>
   );
