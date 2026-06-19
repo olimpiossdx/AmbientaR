@@ -38,6 +38,7 @@ import {
   shouldPrefillFromProject,
 } from './rca-project-prefill';
 import { getRcaListagemAInitialValues } from '../lib/rca-form-initial-values';
+import { RcaGeographicLocationSection } from '../lib/rca-geographic-location-section';
 
 interface RcaFormListagemAProps {
   currentItem?: RCA | null;
@@ -255,6 +256,8 @@ export function RcaFormListagemA({ currentItem, onSuccess }: RcaFormListagemAPro
             currentTipo={formularioTipo}
             onTipoChange={setFormularioTipo}
           />
+
+          <RcaGeographicLocationSection form={form} metadataVariant="project" />
 
           {formularioTipo === 'lavra_subterranea' && (
             <RcaFormLavraSubterranea {...formProps} />

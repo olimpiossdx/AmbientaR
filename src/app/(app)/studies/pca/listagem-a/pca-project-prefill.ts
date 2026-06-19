@@ -7,6 +7,10 @@ import {
   normalizarFormularioTipoPcaListagemA,
 } from './pca-listagem-a-registry';
 import { PCA_LISTAGEM_A_ACTIVITY } from '@/lib/pca/pca-listagem-a-catalog';
+import {
+  deepCloneRecord,
+  enrichPcaGeographicLocationForFirestore,
+} from '../lib/pca-prefill-shared';
 
 function formatCoordenadas(project: Project): string {
   const geo = project.geographicLocation;
@@ -23,15 +27,6 @@ function formatCoordenadas(project: Project): string {
     return `Lat ${fmt(lat)} / Long ${fmt(lng)}`.trim();
   }
   return '';
-}
-
-function deepCloneRecord<T>(value: T | undefined | null): T | undefined {
-  if (value === undefined || value === null) return undefined;
-  try {
-    return JSON.parse(JSON.stringify(value)) as T;
-  } catch {
-    return undefined;
-  }
 }
 
 export type PcaProjectPrefillResult = Partial<PcaListagemAFormValues> & {
@@ -83,6 +78,7 @@ export function prefillPcaListagemAFromProject(
         }
       : undefined,
     listagemA: deepCloneRecord(projectRecord.listagemA as Record<string, unknown>) ?? {},
+    geographicLocation: deepCloneRecord(project.geographicLocation),
     conservationUnit: deepCloneRecord(
       project.conservationUnit ?? projectRecord.conservationUnit,
     ) as PcaProjectPrefillResult['conservationUnit'],
@@ -108,18 +104,21 @@ export function buildPcaProjectSnapshot(values: PcaListagemAFormValues) {
 }
 
 export function serializePcaListagemAForFirestore(values: PcaListagemAFormValues, status: 'Rascunho' | 'Aprovado') {
+  const enriched = enrichPcaGeographicLocationForFirestore(
+    values as Record<string, unknown>,
+  ) as PcaListagemAFormValues;
   const payload: Record<string, unknown> = {
-    ...values,
+    ...enriched,
     status,
-    formSource: values.formSource ?? 'react',
+    formSource: enriched.formSource ?? 'react',
     termoReferencia: {
-      ...values.termoReferencia,
-      dataEmissao: values.termoReferencia.dataEmissao.toISOString(),
+      ...enriched.termoReferencia,
+      dataEmissao: enriched.termoReferencia.dataEmissao.toISOString(),
     },
   };
 
   if (status === 'Aprovado') {
-    payload.projectSnapshot = buildPcaProjectSnapshot(values);
+    payload.projectSnapshot = buildPcaProjectSnapshot(enriched);
   }
 
   return payload;

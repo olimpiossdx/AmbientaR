@@ -25,6 +25,7 @@ import {
   type PcaListagemAFormValues,
 } from './pca-listagem-a-schema';
 import { PcaFormListagemAShell } from './pca-form-listagem-a-shell';
+import { PcaGeographicLocationSection } from '../lib/pca-geographic-location-section';
 import { PcaListagemAFormularioTipoCard } from './pca-form-listagem-a-tipo-card';
 import { PcaFormListagemAGeral } from './pca-form-listagem-a-geral';
 import { PcaFormListagemALavraSubterranea } from './pca-form-listagem-a-lavra-subterranea';
@@ -136,6 +137,9 @@ export function PcaFormListagemA({ currentItem, onSuccess }: PcaFormListagemAPro
     if (patch.locationalRestrictions) {
       form.setValue('locationalRestrictions' as never, patch.locationalRestrictions as never);
     }
+    if (patch.geographicLocation) {
+      form.setValue('geographicLocation', patch.geographicLocation as never);
+    }
   }, [selectedProjectId, projects, clients, selectedClientId, form, currentItem?.status, hasSnapshot]);
 
   async function handleSave(status: 'Rascunho' | 'Aprovado') {
@@ -228,6 +232,8 @@ export function PcaFormListagemA({ currentItem, onSuccess }: PcaFormListagemAPro
             isLoadingProjects={isLoadingProjects}
             readOnlyEmpreendimento={isApproved}
           />
+
+          <PcaGeographicLocationSection form={form} />
 
           {formularioTipo === 'geral' && <PcaFormListagemAGeral form={form} />}
           {formularioTipo === 'lavra_subterranea' && (
