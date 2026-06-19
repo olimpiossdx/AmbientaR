@@ -11,6 +11,8 @@ import type {
   FieldInspectionIdentificacao,
 } from '@/lib/types';
 import type { FieldInspectionMotivo } from '@/lib/field-inspection-checklist';
+import { geographicLocationToBarragemCoordenadas } from '@/lib/barragem/barragem-coordenadas';
+import { formatCoordinateBlockForLegacyString } from '@/lib/monitoring-pontos-form';
 
 function joinAddress(parts: (string | undefined)[]): string {
   return parts.filter((p) => p && String(p).trim()).join(', ');
@@ -21,27 +23,10 @@ export function formatProjectCoordinates(project: Project | null | undefined): s
   const geo = project?.geographicLocation;
   if (!geo) return '';
 
-  if (geo.latLong?.lat?.grau != null && geo.latLong?.long?.grau != null) {
-    const lat = [
-      geo.latLong.lat.grau,
-      geo.latLong.lat.min,
-      geo.latLong.lat.seg,
-    ]
-      .filter((v) => v != null && String(v).trim() !== '')
-      .join('° ');
-    const lng = [
-      geo.latLong.long.grau,
-      geo.latLong.long.min,
-      geo.latLong.long.seg,
-    ]
-      .filter((v) => v != null && String(v).trim() !== '')
-      .join('° ');
-    if (lat && lng) return `Lat: ${lat} | Long: ${lng}`;
-  }
-
-  if (geo.utm?.x && geo.utm?.y) {
-    return `UTM X: ${geo.utm.x}, Y: ${geo.utm.y}, Fuso: ${geo.utm.fuso ?? '—'}`;
-  }
+  const formatted = formatCoordinateBlockForLegacyString(
+    geographicLocationToBarragemCoordenadas(geo),
+  );
+  if (formatted) return formatted;
 
   if (geo.local?.trim()) return geo.local.trim();
   if (geo.additionalLocationInfo?.trim()) return geo.additionalLocationInfo.trim();

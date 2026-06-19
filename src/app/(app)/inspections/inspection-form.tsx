@@ -96,6 +96,7 @@ import { InspectionAttachmentList } from './inspection-attachment-list';
 import { AtosVinculadosPicker } from '@/components/inspections/atos-vinculados-picker';
 import { CriticalitySelect } from '@/components/inspections/criticality-select';
 import { inconformidadeCriticalityCardClass } from '@/lib/status-display-classes';
+import { CoordinateStringField } from '@/components/coordinates';
 
 const MAX_LAUDO_ATTACHMENTS = 24;
 const MAX_INCONF_IMAGES = 12;
@@ -870,15 +871,11 @@ export function InspectionForm({ onSuccess, currentItem }: InspectionFormProps) 
                   name="identificacao.coordenadasGeograficas"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Coordenadas geográficas (Latitude / Longitude)</FormLabel>
-                      <FormControl>
-                        <Input
-                          className="min-h-10"
-                          placeholder="Ex.: -16.123456, -46.123456"
-                          {...field}
-                          value={field.value ?? ''}
-                        />
-                      </FormControl>
+                      <FormLabel>Coordenadas geográficas</FormLabel>
+                      <CoordinateStringField
+                        value={field.value ?? ''}
+                        onChange={field.onChange}
+                      />
                       <Button
                         type="button"
                         variant="outline"
@@ -893,6 +890,10 @@ export function InspectionForm({ onSuccess, currentItem }: InspectionFormProps) 
                         )}
                         Capturar coordenadas (GPS)
                       </Button>
+                      <FormDescription>
+                        SIRGAS 2000 — GMS ou UTM. O GPS preenche o par decimal; a precisão
+                        (± m) é guardada no texto do relatório.
+                      </FormDescription>
                     </FormItem>
                   )}
                 />

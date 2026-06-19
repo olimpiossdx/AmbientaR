@@ -297,6 +297,7 @@ export default function ConsultoriaProjectDetailPage() {
           PLANNED_PROCESS_TYPE_INTERVENCAO[activePlannedType],
         processGroup: PLANNED_PROCESS_TYPE_GROUP[activePlannedType],
         plannedProcessType: activePlannedType,
+        ...defaultPipelineFieldsForNewProcess(),
         fase: values.fase,
         prioridade: values.prioridade || undefined,
         statusDetalhe: values.statusDetalhe.trim() || undefined,
@@ -306,7 +307,6 @@ export default function ConsultoriaProjectDetailPage() {
         projectId: project.projectId,
         consultoriaProjectId: project.id,
         fonte: "app",
-        ...defaultPipelineFieldsForNewProcess(),
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       }));

@@ -211,6 +211,25 @@ function emptyDefaults(): CavidadesFormValues {
   };
 }
 
+function mapCavidadeRegistroToForm(
+  reg: EstudoCavidadeCavidadeRegistro,
+): NonNullable<CavidadesFormValues['cavidadesRegistradas']>[number] {
+  return {
+    ...reg,
+    coordenadas: barragemLatLngStringsToCoordenadas(reg.latitude, reg.longitude),
+  };
+}
+
+function mapCavidadeRegistroToFirestore(
+  reg: NonNullable<CavidadesFormValues['cavidadesRegistradas']>[number],
+): EstudoCavidadeCavidadeRegistro {
+  const { coordenadas: _coordenadas, ...rest } = reg;
+  const { latitude, longitude } = barragemCoordenadasToLatLngStrings(
+    reg.coordenadas as MonitoringPontoCoordenadasForm | undefined,
+  );
+  return { ...rest, latitude, longitude };
+}
+
 function mapItemToForm(item: EstudoCavidade): CavidadesFormValues {
   const base = emptyDefaults();
   return {
@@ -223,7 +242,7 @@ function mapItemToForm(item: EstudoCavidade): CavidadesFormValues {
     triagem: { ...base.triagem, ...item.triagem },
     prospecao: { ...base.prospecao, ...item.prospecao },
     impactos: { ...base.impactos, ...item.impactos },
-    cavidadesRegistradas: item.cavidadesRegistradas ?? [],
+    cavidadesRegistradas: (item.cavidadesRegistradas ?? []).map(mapCavidadeRegistroToForm),
     checklistIs08: { ...base.checklistIs08, ...item.checklistIs08 },
     linksUteis: { ...base.linksUteis, ...item.linksUteis },
     memorialApresentacao: item.apresentacao ?? base.memorialApresentacao,
@@ -248,7 +267,9 @@ function mapFormToFirestore(values: CavidadesFormValues, status: 'Rascunho' | 'A
     triagem: values.triagem,
     prospecao: values.prospecao,
     impactos: values.impactos,
-    cavidadesRegistradas: values.cavidadesRegistradas,
+    cavidadesRegistradas: (values.cavidadesRegistradas ?? []).map(
+      mapCavidadeRegistroToFirestore,
+    ),
     apresentacao: values.memorialApresentacao,
     memorialCriterioLocacional: values.memorialCriterioLocacional,
     checklistIs08: values.checklistIs08,
@@ -1008,6 +1029,7 @@ export function CavidadesForm({ currentItem, onCreated, onCancel }: CavidadesFor
                     codigo: '',
                     denominacao: '',
                     tipo: 'caverna',
+                    coordenadas: createDefaultMonitoringPontoCoordenadas(),
                     latitude: '',
                     longitude: '',
                     desenvolvimentoLinearM: '',
@@ -1074,30 +1096,16 @@ export function CavidadesForm({ currentItem, onCreated, onCancel }: CavidadesFor
                       </FormItem>
                     )}
                   />
-                  <FormField
-                    control={form.control}
-                    name={`cavidadesRegistradas.${index}.latitude`}
-                    render={({ field: f }) => (
-                      <FormItem>
-                        <FormLabel>Latitude</FormLabel>
-                        <FormControl>
-                          <Input {...f} />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name={`cavidadesRegistradas.${index}.longitude`}
-                    render={({ field: f }) => (
-                      <FormItem>
-                        <FormLabel>Longitude</FormLabel>
-                        <FormControl>
-                          <Input {...f} />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
+                  <div className="md:col-span-3">
+                    <CoordinateInput
+                      form={form}
+                      basePath={`cavidadesRegistradas.${index}.coordenadas`}
+                      variant="coords-only"
+                      title="Coordenadas da entrada (SIRGAS 2000)"
+                      lockDatum
+                      showLegacyDatums={false}
+                    />
+                  </div>
                   <FormField
                     control={form.control}
                     name={`cavidadesRegistradas.${index}.desenvolvimentoLinearM`}
