@@ -1,10 +1,25 @@
 import { z } from "zod";
 import type { PontoDeMonitoramento, PontoMonitoramentoTipo } from "@/lib/types";
+import {
+  createDefaultCoordinateBlock,
+  deriveDecimalFromLocationFields,
+} from "@/lib/coordinates";
+import { decimalToDmsMagnitudes } from "@/lib/coordinates/dms";
+import type { CoordinateFormat } from "@/lib/types";
+
+export type MonitoringPontoCoordenadasForm = ReturnType<
+  typeof createDefaultCoordinateBlock
+> & {
+  format: CoordinateFormat;
+};
 
 export const pontoMonitoramentoFormSchema = z.object({
   id: z.string(),
   nome: z.string().min(1, "Nome do ponto é obrigatório."),
   tipo: z.enum(["bomba", "jusante"]).optional(),
+  /** Entrada uniforme GMS/UTM (SIRGAS 2000). Persistência continua em `lat`/`lng`. */
+  coordenadas: z.any().optional(),
+  /** Legado — usos insignificantes até F23; fallback no submit se `coordenadas` vazio. */
   latStr: z.string().optional(),
   lngStr: z.string().optional(),
   rtdbDeviceId: z.string().optional(),
@@ -27,6 +42,44 @@ export function newMonitoringPontoId(): string {
   return `ponto-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 }
 
+export function createDefaultMonitoringPontoCoordenadas(): MonitoringPontoCoordenadasForm {
+  return createDefaultCoordinateBlock("format", "UTM") as MonitoringPontoCoordenadasForm;
+}
+
+/** Reconstrói bloco de formulário a partir de `lat`/`lng` gravados no Firestore. */
+export function latLngToMonitoringCoordenadas(
+  lat?: number,
+  lng?: number,
+): MonitoringPontoCoordenadasForm {
+  const block = createDefaultMonitoringPontoCoordenadas();
+  if (
+    lat != null &&
+    lng != null &&
+    Number.isFinite(lat) &&
+    Number.isFinite(lng)
+  ) {
+    block.format = "Lat/Long";
+    block.latLong = {
+      lat: decimalToDmsMagnitudes(lat),
+      long: decimalToDmsMagnitudes(lng),
+    };
+  }
+  return block;
+}
+
+/** Deriva `lat`/`lng` decimais a partir do bloco de coordenadas do formulário. */
+export function monitoringCoordenadasToLatLng(
+  coordenadas?: MonitoringPontoCoordenadasForm | null,
+): { lat?: number; lng?: number } {
+  if (!coordenadas?.format) return {};
+  const decimal = deriveDecimalFromLocationFields(coordenadas.format, {
+    latLong: coordenadas.latLong,
+    utm: coordenadas.utm,
+  });
+  if (!decimal) return {};
+  return { lat: decimal.lat, lng: decimal.lng };
+}
+
 export function parseOptionalNumber(s?: string | null): number | undefined {
   if (s == null || String(s).trim() === "") return undefined;
   const n = Number(String(s).replace(",", "."));
@@ -40,6 +93,7 @@ export function mapFirestorePontoToForm(
     id: p.id,
     nome: p.nome,
     tipo: p.tipo,
+    coordenadas: latLngToMonitoringCoordenadas(p.lat, p.lng),
     latStr: p.lat != null ? String(p.lat) : "",
     lngStr: p.lng != null ? String(p.lng) : "",
     rtdbDeviceId: p.rtdbDeviceId ?? "",
@@ -62,8 +116,11 @@ export function formPontosToFirestore(
   rows: PontoMonitoramentoFormValues[],
 ): PontoDeMonitoramento[] {
   return rows.map((p) => {
-    const lat = parseOptionalNumber(p.latStr);
-    const lng = parseOptionalNumber(p.lngStr);
+    const fromCoords = monitoringCoordenadasToLatLng(
+      p.coordenadas as MonitoringPontoCoordenadasForm | undefined,
+    );
+    const lat = fromCoords.lat ?? parseOptionalNumber(p.latStr);
+    const lng = fromCoords.lng ?? parseOptionalNumber(p.lngStr);
     const pulsesPerLiter = parseOptionalNumber(p.pulsesPerLiterStr);
     const internalDiameterM = parseOptionalNumber(p.internalDiameterMStr);
     const base: PontoDeMonitoramento = {
@@ -88,6 +145,7 @@ export function emptyMonitoringPontoFormRow(): PontoMonitoramentoFormValues {
   return {
     id: newMonitoringPontoId(),
     nome: "",
+    coordenadas: createDefaultMonitoringPontoCoordenadas(),
     latStr: "",
     lngStr: "",
     rtdbDeviceId: "",

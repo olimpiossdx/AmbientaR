@@ -79,6 +79,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Separator } from "@/components/ui/separator";
+import { CoordinateInput } from "@/components/coordinates";
 
 const formSchema = z
   .object({
@@ -762,34 +763,13 @@ export function OutorgaForm({ currentItem, onSuccess }: OutorgaFormProps) {
                       </FormItem>
                     )}
                   />
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <FormField
-                      control={form.control}
-                      name={`pontosDeMonitoramento.${index}.latStr`}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Latitude</FormLabel>
-                          <FormControl>
-                            <Input placeholder="-19.9167" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name={`pontosDeMonitoramento.${index}.lngStr`}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Longitude</FormLabel>
-                          <FormControl>
-                            <Input placeholder="-43.9345" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
+                  <CoordinateInput
+                    form={form}
+                    basePath={`pontosDeMonitoramento.${index}.coordenadas`}
+                    variant="coords-only"
+                    lockDatum
+                    showLegacyDatums={false}
+                  />
                   {monitoringTypeWatch === "telemetric" && (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 border-t border-dashed">
                       <FormField
