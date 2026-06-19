@@ -23,10 +23,11 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import type { Empreendedor as Client, Project, OwnerCondition, Datum, CoordinateFormat, Fuso, RegularizacaoSituacao, ManagementCategory, Jurisdiction, Biome, AtividadeAgricola, ZeeGeofisicoItem, ZeeSocioeconomicoItem } from '@/lib/types';
+import type { Empreendedor as Client, Project, OwnerCondition, Datum, RegularizacaoSituacao, ManagementCategory, Jurisdiction, Biome, AtividadeAgricola, ZeeGeofisicoItem, ZeeSocioeconomicoItem } from '@/lib/types';
 import { Textarea } from '@/components/ui/textarea';
 import { PlusCircle, Trash2 } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { CoordinateInput } from '@/components/coordinates';
 
 interface RcaFormCulturasProps {
     form: any;
@@ -42,18 +43,6 @@ const ownerConditions: { value: OwnerCondition, label: string }[] = [
     { value: 'Parceiro', label: 'Parceiro' },
     { value: 'Posseiro', label: 'Posseiro' },
     { value: 'Outros', label: 'Outros' },
-];
-
-const datums: { value: Datum, label: string }[] = [
-    { value: 'SAD-69', label: 'SAD 69' },
-    { value: 'WGS-84', label: 'WGS 84' },
-    { value: 'Córrego Alegre', label: 'Córrego Alegre' },
-];
-
-const fusos: { value: Fuso, label: string }[] = [
-    { value: '22', label: '22' },
-    { value: '23', label: '23' },
-    { value: '24', label: '24' },
 ];
 
 const regularizacaoSituacoes: RegularizacaoSituacao[] = ['Regularizada', 'Em Análise', 'Não Regularizada'];
@@ -135,6 +124,11 @@ const anexoOptions = [
 
 export function RcaFormCulturas({ form, clients, isLoadingClients, projects, isLoadingProjects }: RcaFormCulturasProps) {
     
+    const geoDatum = form.watch('geographicLocation.datum') as Datum | undefined;
+    const isLegacyDatum =
+        geoDatum != null &&
+        String(geoDatum).trim() !== '' &&
+        geoDatum !== 'SIRGAS2000';
     const selectedClientId = form.watch('empreendedor.clientId');
     const selectedProjectId = form.watch('empreendimento.projectId');
     const correspondenceIsSame = form.watch('empreendimento.correspondenceIsSame');
@@ -368,71 +362,15 @@ export function RcaFormCulturas({ form, clients, isLoadingClients, projects, isL
                     </div>
 
 
-                    {/* 5. LOCALIZAÇÃO GEOGRÁFICA */}
-                    <div className="space-y-4 p-4 border rounded-md">
-                        <h3 className="font-semibold">5. LOCALIZAÇÃO GEOGRÁFICA</h3>
-                        <FormField control={form.control} name="geographicLocation.datum" render={({ field }) => (
-                            <FormItem className="space-y-2"><FormLabel>Assinalar Datum (Obrigatório)</FormLabel><FormControl>
-                                <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="flex space-x-4">
-                                    {datums.map(d => (<FormItem key={d.value} className="flex items-center space-x-2"><FormControl><RadioGroupItem value={d.value} /></FormControl><FormLabel className="font-normal">{d.label}</FormLabel></FormItem>))}
-                                </RadioGroup>
-                            </FormControl><FormMessage /></FormItem>
-                        )} />
-                        <p className="text-sm text-muted-foreground">Preencha a coordenada desejada em um dos formatos abaixo</p>
-                        <div className="p-4 border rounded-md">
-                            <h4 className="font-medium">Formato Lat/Long</h4>
-                            <div className="grid grid-cols-2 gap-4 mt-2">
-                                <div>
-                                    <FormLabel>Latitude</FormLabel>
-                                    <div className="grid grid-cols-3 gap-2 mt-1">
-                                        <FormField control={form.control} name="geographicLocation.latLong.lat.grau" render={({ field }) => ( <FormItem><FormControl><Input placeholder="Grau" {...field}/></FormControl></FormItem> )} />
-                                        <FormField control={form.control} name="geographicLocation.latLong.lat.min" render={({ field }) => ( <FormItem><FormControl><Input placeholder="Min" {...field}/></FormControl></FormItem> )} />
-                                        <FormField control={form.control} name="geographicLocation.latLong.lat.seg" render={({ field }) => ( <FormItem><FormControl><Input placeholder="Seg" {...field}/></FormControl></FormItem> )} />
-                                    </div>
-                                </div>
-                                <div>
-                                    <FormLabel>Longitude</FormLabel>
-                                    <div className="grid grid-cols-3 gap-2 mt-1">
-                                        <FormField control={form.control} name="geographicLocation.latLong.long.grau" render={({ field }) => ( <FormItem><FormControl><Input placeholder="Grau" {...field}/></FormControl></FormItem> )} />
-                                        <FormField control={form.control} name="geographicLocation.latLong.long.min" render={({ field }) => ( <FormItem><FormControl><Input placeholder="Min" {...field}/></FormControl></FormItem> )} />
-                                        <FormField control={form.control} name="geographicLocation.latLong.long.seg" render={({ field }) => ( <FormItem><FormControl><Input placeholder="Seg" {...field}/></FormControl></FormItem> )} />
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div className="p-4 border rounded-md">
-                            <h4 className="font-medium">Formato UTM (X, Y)</h4>
-                            <div className="grid grid-cols-2 gap-4 mt-2">
-                                <FormField control={form.control} name="geographicLocation.utm.x" render={({ field }) => ( <FormItem><FormLabel>X (6 dígitos)</FormLabel><FormControl><Input {...field}/></FormControl><FormDescription>Não considerar casas decimais</FormDescription></FormItem> )} />
-                                <FormField control={form.control} name="geographicLocation.utm.y" render={({ field }) => ( <FormItem><FormLabel>Y (7 dígitos)</FormLabel><FormControl><Input {...field}/></FormControl><FormDescription>Não considerar casas decimais</FormDescription></FormItem> )} />
-                            </div>
-                             <FormField
-                                control={form.control}
-                                name="geographicLocation.utm.fuso"
-                                render={({ field }) => (
-                                    <FormItem className="space-y-3 mt-4">
-                                        <FormLabel>Fuso</FormLabel>
-                                        <FormControl>
-                                            <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="flex space-x-4">
-                                                {fusos.map(f => (
-                                                    <FormItem key={f.value} className="flex items-center space-x-2">
-                                                        <FormControl><RadioGroupItem value={f.value} /></FormControl>
-                                                        <FormLabel className="font-normal">{f.label}</FormLabel>
-                                                    </FormItem>
-                                                ))}
-                                            </RadioGroup>
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                        </div>
-                         <FormField control={form.control} name="geographicLocation.local" render={({ field }) => (<FormItem><FormLabel>Local (fazenda, sítio, etc.)</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
-                         <FormField control={form.control} name="geographicLocation.hydrographicBasin" render={({ field }) => (<FormItem><FormLabel>Bacia Hidrográfica</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
-                         <FormField control={form.control} name="geographicLocation.upgrh" render={({ field }) => (<FormItem><FormLabel>UPGRH</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
-                         <FormField control={form.control} name="geographicLocation.nearestWaterCourse" render={({ field }) => (<FormItem><FormLabel>Curso d&apos;água mais próximo</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
-
-                    </div>
+                    <CoordinateInput
+                        form={form}
+                        basePath="geographicLocation"
+                        variant="full"
+                        metadataVariant="project"
+                        title="5. LOCALIZAÇÃO GEOGRÁFICA"
+                        lockDatum={!isLegacyDatum}
+                        showLegacyDatums={isLegacyDatum}
+                    />
                 </AccordionContent>
             </AccordionItem>
              <AccordionItem value="item-2">
