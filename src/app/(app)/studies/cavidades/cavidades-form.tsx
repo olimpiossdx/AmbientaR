@@ -50,11 +50,22 @@ import {
   CAVIDADES_MAPA_POTENCIAL_MODELO,
   CAVIDADES_PROSPECCAO_MODELO,
 } from './cavidades-defaults';
+import { CoordinateInput } from '@/components/coordinates';
+import {
+  barragemCoordenadasToLatLngStrings,
+  barragemLatLngStringsToCoordenadas,
+} from '@/lib/barragem/barragem-coordenadas';
+import {
+  createDefaultMonitoringPontoCoordenadas,
+  type MonitoringPontoCoordenadasForm,
+} from '@/lib/monitoring-pontos-form';
+import type { EstudoCavidadeCavidadeRegistro } from '@/lib/types';
 
 const cavidadeRegistroSchema = z.object({
   codigo: z.string().optional(),
   denominacao: z.string().optional(),
   tipo: z.enum(['caverna', 'abismo', 'abrigo', 'outro']).optional(),
+  coordenadas: z.any().optional(),
   latitude: z.string().optional(),
   longitude: z.string().optional(),
   desenvolvimentoLinearM: z.string().optional(),

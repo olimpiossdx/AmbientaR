@@ -24,6 +24,7 @@ import {
   deleteDoc,
   doc,
   serverTimestamp,
+  setDoc,
   updateDoc,
 } from "firebase/firestore";
 import {
@@ -45,13 +46,19 @@ import {
 } from "@/lib/gestao-processos/role-guards";
 import type {
   ConsultoriaProject,
+  ConsultoriaProjectPlannedProcessType,
   OfficeProcess,
 } from "@/lib/gestao-processos/types";
 import {
   CONSULTORIA_PROJECT_STATUS_LABELS,
   buildConsultoriaProjectCode,
   consultoriaProjectVisibleToPortal,
+  PLANNED_PROCESS_TYPE_GROUP,
+  PLANNED_PROCESS_TYPE_INTERVENCAO,
+  PLANNED_PROCESS_TYPE_LABELS,
 } from "@/lib/gestao-processos/consultoria-project-utils";
+import { defaultPipelineFieldsForNewProcess } from "@/lib/gestao-processos/pipeline-utils";
+import { buildOfficeProcessExternalKey } from "@/lib/gestao-processos/utils";
 import {
   computeConsultoriaProjectProcessStats,
   summarizeProjectAlerts,
@@ -68,6 +75,10 @@ import {
   ConsultoriaProjectFormDialog,
   type ConsultoriaProjectFormValues,
 } from "@/components/gestao-processos/consultoria-project-form-dialog";
+import {
+  ProcessFormDialog,
+  type ProcessFormValues,
+} from "@/components/gestao-processos/process-form-dialog";
 import { LinkProcessesDialog } from "@/components/gestao-processos/link-processes-dialog";
 import { fetchEmpreendedorIdsForProcessosPortal } from "@/lib/requests-portal-empreendedor-ids";
 import { cn } from "@/lib/utils";
@@ -101,9 +112,13 @@ export default function ConsultoriaProjectDetailPage() {
   const [formOpen, setFormOpen] = React.useState(false);
   const [deleteOpen, setDeleteOpen] = React.useState(false);
   const [linkOpen, setLinkOpen] = React.useState(false);
+  const [activePlannedType, setActivePlannedType] =
+    React.useState<ConsultoriaProjectPlannedProcessType | null>(null);
+  const [processFormOpen, setProcessFormOpen] = React.useState(false);
   const [linking, setLinking] = React.useState(false);
   const [unlinkingId, setUnlinkingId] = React.useState<string | null>(null);
   const [saving, setSaving] = React.useState(false);
+  const [savingProcess, setSavingProcess] = React.useState(false);
   const [deleting, setDeleting] = React.useState(false);
 
   const projectRef = useMemoFirebase(
@@ -175,6 +190,42 @@ export default function ConsultoriaProjectDetailPage() {
     [linkedProcesses],
   );
 
+  const processDefaults = React.useMemo<Partial<ProcessFormValues> | undefined>(() => {
+    if (!project || !activePlannedType) return undefined;
+    const shortCode: Record<ConsultoriaProjectPlannedProcessType, string> = {
+      licenca_ambiental: "LIC",
+      daia_supressao: "DAIA",
+      outorga: "OUT",
+      uso_insignificante: "USI",
+    };
+    return {
+      tipoProcesso: "sei",
+      numeroProcesso: `${project.code ?? "PRJ"}-${shortCode[activePlannedType]}`,
+      empreendedorName: project.empreendedorName ?? "",
+      empreendimentoName: project.empreendimentoName ?? project.name,
+      municipio: project.municipio ?? "",
+      tipoIntervencao: PLANNED_PROCESS_TYPE_INTERVENCAO[activePlannedType],
+      fase: "elaboracao",
+      prioridade: "media",
+      statusDetalhe: "Previsto / em preparação",
+      observacoes: `Processo criado a partir da frente ${PLANNED_PROCESS_TYPE_LABELS[activePlannedType]} do projeto ${project.name}.`,
+    };
+  }, [activePlannedType, project]);
+
+  const openLinkForPlannedType = (
+    plannedType?: ConsultoriaProjectPlannedProcessType,
+  ) => {
+    setActivePlannedType(plannedType ?? null);
+    setLinkOpen(true);
+  };
+
+  const openCreateProcessForPlannedType = (
+    plannedType: ConsultoriaProjectPlannedProcessType,
+  ) => {
+    setActivePlannedType(plannedType);
+    setProcessFormOpen(true);
+  };
+
   const handleLinkProcesses = async (processIds: string[]) => {
     if (!firestore || !project) return;
     setLinking(true);
@@ -183,12 +234,18 @@ export default function ConsultoriaProjectDetailPage() {
         firestore,
         processIds,
         project.id,
+        activePlannedType,
       );
       toast({
         title: "Processos vinculados",
-        description: `${count} processo(s) associado(s) ao projeto.`,
+        description: `${count} processo(s) associado(s) ao projeto${
+          activePlannedType
+            ? ` na frente ${PLANNED_PROCESS_TYPE_LABELS[activePlannedType]}`
+            : ""
+        }.`,
       });
       setLinkOpen(false);
+      setActivePlannedType(null);
     } catch (e) {
       toast({
         variant: "destructive",
@@ -214,6 +271,59 @@ export default function ConsultoriaProjectDetailPage() {
       });
     } finally {
       setUnlinkingId(null);
+    }
+  };
+
+  const persistOfficeProcess = async (values: ProcessFormValues) => {
+    if (!firestore || !project || !activePlannedType) return;
+    setSavingProcess(true);
+    try {
+      const numeroProcesso = values.numeroProcesso.trim();
+      const externalKey = buildOfficeProcessExternalKey(
+        values.tipoProcesso,
+        numeroProcesso,
+      );
+      const ref = doc(collection(firestore, "officeProcesses"));
+      await setDoc(ref, omitUndefined({
+        externalKey,
+        tipoProcesso: values.tipoProcesso,
+        numeroProcesso,
+        empreendedorName: values.empreendedorName.trim() || project.empreendedorName || "—",
+        empreendimentoName:
+          values.empreendimentoName.trim() || project.empreendimentoName || project.name,
+        municipio: values.municipio.trim() || project.municipio,
+        tipoIntervencao:
+          values.tipoIntervencao.trim() ||
+          PLANNED_PROCESS_TYPE_INTERVENCAO[activePlannedType],
+        processGroup: PLANNED_PROCESS_TYPE_GROUP[activePlannedType],
+        plannedProcessType: activePlannedType,
+        fase: values.fase,
+        prioridade: values.prioridade || undefined,
+        statusDetalhe: values.statusDetalhe.trim() || undefined,
+        prazo: values.prazo || undefined,
+        observacoes: values.observacoes.trim() || undefined,
+        empreendedorId: project.empreendedorId,
+        projectId: project.projectId,
+        consultoriaProjectId: project.id,
+        fonte: "app",
+        ...defaultPipelineFieldsForNewProcess(),
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      }));
+      toast({
+        title: "Processo criado",
+        description: `${PLANNED_PROCESS_TYPE_LABELS[activePlannedType]} vinculado ao projeto.`,
+      });
+      setProcessFormOpen(false);
+      setActivePlannedType(null);
+    } catch (e) {
+      toast({
+        variant: "destructive",
+        title: "Erro ao criar processo",
+        description: (e as Error).message,
+      });
+    } finally {
+      setSavingProcess(false);
     }
   };
 
@@ -243,6 +353,7 @@ export default function ConsultoriaProjectDetailPage() {
         municipio: values.municipio.trim() || undefined,
         area: values.area.trim() || undefined,
         description: values.description.trim() || undefined,
+        plannedProcessTypes: values.plannedProcessTypes,
         managerName: values.managerName.trim() || project.managerName,
         updatedAt: serverTimestamp(),
       });
@@ -462,10 +573,10 @@ export default function ConsultoriaProjectDetailPage() {
         <Card>
           <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-2 space-y-0">
             <CardTitle className="text-base">
-              Processos vinculados ({linkedProcesses.length})
+              Frentes ambientais do projeto
             </CardTitle>
             {canWrite ? (
-              <Button size="sm" variant="outline" onClick={() => setLinkOpen(true)}>
+              <Button size="sm" variant="outline" onClick={() => openLinkForPlannedType()}>
                 <Link2 className="mr-2 h-4 w-4" />
                 Vincular processos
               </Button>
@@ -473,10 +584,12 @@ export default function ConsultoriaProjectDetailPage() {
           </CardHeader>
           <CardContent>
             <ConsultoriaProjectProcessGroups
+              plannedProcessTypes={project.plannedProcessTypes}
               processes={linkedProcesses}
               canWrite={canWrite}
               unlinkingId={unlinkingId}
-              onLink={canWrite ? () => setLinkOpen(true) : undefined}
+              onCreateFromPlanned={canWrite ? openCreateProcessForPlannedType : undefined}
+              onLink={canWrite ? openLinkForPlannedType : undefined}
               onUnlink={canWrite ? handleUnlinkProcess : undefined}
               defaultOpenAll={!isPortalReadOnly}
             />
@@ -486,11 +599,26 @@ export default function ConsultoriaProjectDetailPage() {
 
       <LinkProcessesDialog
         open={linkOpen}
-        onOpenChange={setLinkOpen}
+        onOpenChange={(open) => {
+          setLinkOpen(open);
+          if (!open) setActivePlannedType(null);
+        }}
         project={project}
         processes={officeProcesses ?? []}
+        plannedProcessType={activePlannedType}
         linking={linking}
         onConfirm={handleLinkProcesses}
+      />
+
+      <ProcessFormDialog
+        open={processFormOpen}
+        onOpenChange={(open) => {
+          setProcessFormOpen(open);
+          if (!open) setActivePlannedType(null);
+        }}
+        defaults={processDefaults}
+        saving={savingProcess}
+        onSubmit={persistOfficeProcess}
       />
 
       <ConsultoriaProjectFormDialog

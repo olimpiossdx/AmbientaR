@@ -46,6 +46,14 @@ import {
   BarragemMemorialSection,
   BARRAGEM_MEMORIAL_TEXTAREA_CLASS,
 } from './barragem-memorial-section';
+import { CoordinateInput } from '@/components/coordinates';
+import type { Datum } from '@/lib/types';
+import {
+  barragemCoordenadasToLatLngStrings,
+  barragemLatLngStringsToCoordenadas,
+  geographicLocationToBarragemCoordenadas,
+} from '@/lib/barragem/barragem-coordenadas';
+import { createDefaultMonitoringPontoCoordenadas } from '@/lib/monitoring-pontos-form';
 
 const nivelSchema = z.object({
   cota: z.string().optional(),
@@ -90,6 +98,7 @@ const formSchema = z.object({
   informacoesBasicas: z
     .object({
       topograficas: z.string().optional(),
+      coordenadas: z.any().optional(),
       latitude: z.string().optional(),
       longitude: z.string().optional(),
       altitude: z.string().optional(),
@@ -168,6 +177,7 @@ function emptyDefaults(): BarragemFormValues {
     dataEmissao: new Date().toLocaleDateString('pt-BR'),
     informacoesBasicas: {
       topograficas: BARRAGEM_INFO_TOPOGRAFICAS_MODELO,
+      coordenadas: createDefaultMonitoringPontoCoordenadas(),
       latitude: '',
       longitude: '',
       altitude: '',
@@ -221,7 +231,18 @@ export function BarragemForm({ currentItem, onCreated, onCancel }: BarragemFormP
   const form = useForm<BarragemFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: currentItem
-      ? { ...emptyDefaults(), ...currentItem }
+      ? {
+          ...emptyDefaults(),
+          ...currentItem,
+          informacoesBasicas: {
+            ...emptyDefaults().informacoesBasicas,
+            ...currentItem.informacoesBasicas,
+            coordenadas: barragemLatLngStringsToCoordenadas(
+              currentItem.informacoesBasicas?.latitude,
+              currentItem.informacoesBasicas?.longitude,
+            ),
+          },
+        }
       : emptyDefaults(),
   });
 
@@ -232,6 +253,11 @@ export function BarragemForm({ currentItem, onCreated, onCancel }: BarragemFormP
 
   const selectedRequerenteId = form.watch('requerente.clientId');
   const selectedProjectId = form.watch('empreendimento.projectId');
+  const geoDatum = form.watch('informacoesBasicas.coordenadas.datum') as Datum | undefined;
+  const isLegacyDatum =
+    geoDatum != null &&
+    String(geoDatum).trim() !== '' &&
+    geoDatum !== 'SIRGAS2000';
 
   React.useEffect(() => {
     if (selectedRequerenteId) {
@@ -254,21 +280,11 @@ export function BarragemForm({ currentItem, onCreated, onCancel }: BarragemFormP
         form.setValue('empreendimento.car', project.car?.receiptNumber || '');
         form.setValue('empreendimento.matricula', project.matricula || '');
         const geo = project.geographicLocation;
-        if (geo?.latLong) {
-          const lat = geo.latLong.lat;
-          const lng = geo.latLong.long;
-          if (lat?.grau) {
-            form.setValue(
-              'informacoesBasicas.latitude',
-              `${lat.grau}°${lat.min || '0'}'${lat.seg || '0'}"S`,
-            );
-          }
-          if (lng?.grau) {
-            form.setValue(
-              'informacoesBasicas.longitude',
-              `${lng.grau}°${lng.min || '0'}'${lng.seg || '0'}"O`,
-            );
-          }
+        if (geo) {
+          form.setValue(
+            'informacoesBasicas.coordenadas',
+            geographicLocationToBarragemCoordenadas(geo),
+          );
         }
         if (geo?.additionalLocationInfo) {
           form.setValue('informacoesBasicas.altitude', geo.additionalLocationInfo);
@@ -297,8 +313,21 @@ export function BarragemForm({ currentItem, onCreated, onCancel }: BarragemFormP
       return;
     }
 
+    const { latitude, longitude } = barragemCoordenadasToLatLngStrings(
+      values.informacoesBasicas?.coordenadas as Parameters<
+        typeof barragemCoordenadasToLatLngStrings
+      >[0],
+    );
+    const { coordenadas: _coordenadas, ...infoSemCoordenadas } =
+      values.informacoesBasicas ?? {};
+
     const dataToSave = {
       ...values,
+      informacoesBasicas: {
+        ...infoSemCoordenadas,
+        latitude,
+        longitude,
+      },
       status: (currentItem?.status === 'Aprovado' ? 'Aprovado' : 'Rascunho') as 'Rascunho' | 'Aprovado',
     };
 
@@ -685,44 +714,26 @@ export function BarragemForm({ currentItem, onCreated, onCancel }: BarragemFormP
                   </FormItem>
                 )}
               />
-              <div className="grid gap-4 md:grid-cols-3">
-                <FormField
-                  control={form.control}
-                  name="informacoesBasicas.latitude"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Latitude</FormLabel>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="informacoesBasicas.longitude"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Longitude</FormLabel>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="informacoesBasicas.altitude"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Altitude (m)</FormLabel>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-              </div>
+              <CoordinateInput
+                form={form}
+                basePath="informacoesBasicas.coordenadas"
+                variant="coords-only"
+                title="Coordenadas geográficas"
+                lockDatum={!isLegacyDatum}
+                showLegacyDatums={isLegacyDatum}
+              />
+              <FormField
+                control={form.control}
+                name="informacoesBasicas.altitude"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Altitude (m)</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
               </BarragemMemorialSection>
 
               <BarragemMemorialSection title="2. Definição da barragem">

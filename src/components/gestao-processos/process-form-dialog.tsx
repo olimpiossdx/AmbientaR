@@ -87,6 +87,7 @@ type ProcessFormDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   initial?: OfficeProcess | null;
+  defaults?: Partial<ProcessFormValues>;
   saving?: boolean;
   onSubmit: (values: ProcessFormValues) => void | Promise<void>;
 };
@@ -95,14 +96,20 @@ export function ProcessFormDialog({
   open,
   onOpenChange,
   initial,
+  defaults,
   saving,
   onSubmit,
 }: ProcessFormDialogProps) {
   const [form, setForm] = React.useState<ProcessFormValues>(toFormValues(initial));
 
   React.useEffect(() => {
-    if (open) setForm(toFormValues(initial));
-  }, [open, initial]);
+    if (open) {
+      setForm({
+        ...toFormValues(initial),
+        ...(initial ? {} : defaults),
+      });
+    }
+  }, [open, initial, defaults]);
 
   const set =
     (key: keyof ProcessFormValues) =>

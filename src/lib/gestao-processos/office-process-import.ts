@@ -10,12 +10,14 @@ import {
 import type { Empreendedor } from "@/lib/types";
 import type {
   ConsultoriaProject,
+  ConsultoriaProjectPlannedProcessType,
   OfficeProcess,
   OfficeProcessImportPreview,
   OfficeProcessPipeline,
 } from "@/lib/gestao-processos/types";
 import { resolveEmpreendedorIdByName } from "@/lib/gestao-processos/match-empreendedor";
 import {
+  inferPlannedProcessType,
   inferProcessGroup,
   resolveImportRows,
   suggestConsultoriaProjectForProcess,
@@ -93,6 +95,10 @@ export async function commitOfficeProcessImport(
       pipeline: pipelineFields.pipeline,
       etapa: pipelineFields.etapa,
       processGroup,
+      plannedProcessType: inferPlannedProcessType({
+        processGroup,
+        tipoIntervencao: row.tipoIntervencao,
+      }),
       statusDetalhe: row.statusDetalhe,
       prazo: row.prazo,
       empreendedorId,
@@ -123,25 +129,34 @@ export async function linkProcessToConsultoriaProject(
   firestore: Firestore,
   processId: string,
   consultoriaProjectId: string | null,
+  plannedProcessType?: ConsultoriaProjectPlannedProcessType | null,
 ): Promise<void> {
-  await updateDoc(doc(firestore, "officeProcesses", processId), {
+  const payload: Record<string, unknown> = {
     consultoriaProjectId: consultoriaProjectId
       ? consultoriaProjectId
       : deleteField(),
     updatedAt: serverTimestamp(),
-  });
+  };
+  if (!consultoriaProjectId) {
+    payload.plannedProcessType = deleteField();
+  } else if (plannedProcessType) {
+    payload.plannedProcessType = plannedProcessType;
+  }
+  await updateDoc(doc(firestore, "officeProcesses", processId), payload);
 }
 
 export async function linkProcessesToConsultoriaProject(
   firestore: Firestore,
   processIds: string[],
   consultoriaProjectId: string,
+  plannedProcessType?: ConsultoriaProjectPlannedProcessType | null,
 ): Promise<number> {
   if (!processIds.length) return 0;
   const batch = writeBatch(firestore);
   for (const id of processIds) {
     batch.update(doc(firestore, "officeProcesses", id), {
       consultoriaProjectId,
+      ...(plannedProcessType ? { plannedProcessType } : {}),
       updatedAt: serverTimestamp(),
     });
   }
@@ -163,6 +178,7 @@ export async function clearConsultoriaProjectLinks(
   for (const p of toClear) {
     batch.update(doc(firestore, "officeProcesses", p.id), {
       consultoriaProjectId: deleteField(),
+      plannedProcessType: deleteField(),
       updatedAt: serverTimestamp(),
     });
   }
@@ -175,22 +191,31 @@ export async function autoLinkProcessesToProjects(
   processes: OfficeProcess[],
   projects: ConsultoriaProject[],
 ): Promise<number> {
-  const toLink: { processId: string; projectId: string }[] = [];
+  const toLink: {
+    processId: string;
+    projectId: string;
+    plannedProcessType: ConsultoriaProjectPlannedProcessType;
+  }[] = [];
 
   for (const process of processes) {
     if (process.consultoriaProjectId) continue;
     const suggested = suggestConsultoriaProjectForProcess(process, projects);
     if (suggested) {
-      toLink.push({ processId: process.id, projectId: suggested.id });
+      toLink.push({
+        processId: process.id,
+        projectId: suggested.id,
+        plannedProcessType: inferPlannedProcessType(process),
+      });
     }
   }
 
   if (!toLink.length) return 0;
 
   const batch = writeBatch(firestore);
-  for (const { processId, projectId } of toLink) {
+  for (const { processId, projectId, plannedProcessType } of toLink) {
     batch.update(doc(firestore, "officeProcesses", processId), {
       consultoriaProjectId: projectId,
+      plannedProcessType,
       updatedAt: serverTimestamp(),
     });
   }

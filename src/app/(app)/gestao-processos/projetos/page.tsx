@@ -262,6 +262,7 @@ export default function GestaoProcessosProjetosPage() {
         municipio: values.municipio.trim() || undefined,
         area: values.area.trim() || undefined,
         description: values.description.trim() || undefined,
+        plannedProcessTypes: values.plannedProcessTypes,
         managerName: values.managerName.trim() || user?.name || undefined,
         managerUid: user?.uid || undefined,
         updatedAt: serverTimestamp(),

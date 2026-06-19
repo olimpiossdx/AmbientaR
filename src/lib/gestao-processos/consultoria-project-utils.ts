@@ -1,9 +1,11 @@
 import type {
   ConsultoriaProject,
+  ConsultoriaProjectPlannedProcessType,
   ConsultoriaProjectStatus,
   OfficeProcess,
   OfficeProcessExcelRow,
   OfficeProcessImportPreview,
+  OfficeProcessProcessGroup,
 } from "@/lib/gestao-processos/types";
 import { normalizeProcessText } from "@/lib/gestao-processos/utils";
 
@@ -65,6 +67,93 @@ export const PROCESS_GROUP_LABELS: Record<ProcessGroup, string> = {
   intervencao: "Intervenção Ambiental (APP/ASV)",
   outros: "Outros",
 };
+
+export const PLANNED_PROCESS_TYPE_ORDER: ConsultoriaProjectPlannedProcessType[] = [
+  "licenca_ambiental",
+  "outorga",
+  "uso_insignificante",
+  "daia_supressao",
+];
+
+export const PLANNED_PROCESS_TYPE_LABELS: Record<
+  ConsultoriaProjectPlannedProcessType,
+  string
+> = {
+  licenca_ambiental: "Licença Ambiental",
+  daia_supressao: "Supressão de Vegetação / DAIA",
+  outorga: "Outorga",
+  uso_insignificante: "Uso Insignificante",
+};
+
+export const PLANNED_PROCESS_TYPE_DESCRIPTIONS: Record<
+  ConsultoriaProjectPlannedProcessType,
+  string
+> = {
+  licenca_ambiental: "Licenciamento, dispensa, LAP, LAS, LAI, LAO ou estudos ambientais.",
+  daia_supressao: "Intervenção ambiental, APP, ASV, corte ou supressão de vegetação.",
+  outorga: "Outorga de recursos hídricos para captação, barramento ou lançamento.",
+  uso_insignificante: "Cadastro ou regularização de uso insignificante de recursos hídricos.",
+};
+
+export const PLANNED_PROCESS_TYPE_GROUP: Record<
+  ConsultoriaProjectPlannedProcessType,
+  OfficeProcessProcessGroup
+> = {
+  licenca_ambiental: "licenciamento",
+  daia_supressao: "intervencao",
+  outorga: "outorga",
+  uso_insignificante: "outorga",
+};
+
+export const PLANNED_PROCESS_TYPE_INTERVENCAO: Record<
+  ConsultoriaProjectPlannedProcessType,
+  string
+> = {
+  licenca_ambiental: "Licença Ambiental",
+  daia_supressao: "Supressão de Vegetação / DAIA",
+  outorga: "Outorga",
+  uso_insignificante: "Uso Insignificante",
+};
+
+export function plannedProcessTypeLabel(
+  type: ConsultoriaProjectPlannedProcessType,
+): string {
+  return PLANNED_PROCESS_TYPE_LABELS[type];
+}
+
+export function plannedProcessTypeGroup(
+  type: ConsultoriaProjectPlannedProcessType,
+): OfficeProcessProcessGroup {
+  return PLANNED_PROCESS_TYPE_GROUP[type];
+}
+
+export function inferPlannedProcessType(
+  process: Pick<OfficeProcess, "plannedProcessType" | "processGroup" | "tipoIntervencao">,
+): ConsultoriaProjectPlannedProcessType {
+  if (process.plannedProcessType) return process.plannedProcessType;
+  const text = normalizeRef(process.tipoIntervencao ?? "");
+  if (/uso.*insign|insignificante/.test(text)) return "uso_insignificante";
+  if (/outorga|oua|hidric|captacao|capta|barramento|igam/.test(text)) {
+    return "outorga";
+  }
+  if (/daia|asv|supress|veget|intervenc|app/.test(text)) return "daia_supressao";
+  if (process.processGroup === "outorga") return "outorga";
+  if (process.processGroup === "intervencao") return "daia_supressao";
+  return "licenca_ambiental";
+}
+
+export function resolveProjectPlannedProcessTypes(
+  project: Pick<ConsultoriaProject, "plannedProcessTypes">,
+  processes: OfficeProcess[] = [],
+): ConsultoriaProjectPlannedProcessType[] {
+  const selected = new Set<ConsultoriaProjectPlannedProcessType>(
+    project.plannedProcessTypes ?? [],
+  );
+  for (const process of processes) {
+    selected.add(inferPlannedProcessType(process));
+  }
+  return PLANNED_PROCESS_TYPE_ORDER.filter((type) => selected.has(type));
+}
 
 export function inferProcessGroup(tipoIntervencao?: string): ProcessGroup {
   const s = normalizeProcessText(tipoIntervencao).toLowerCase();

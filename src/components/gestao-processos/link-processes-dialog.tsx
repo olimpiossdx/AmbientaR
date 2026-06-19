@@ -14,15 +14,24 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { CardSearchInput } from "@/components/card-search-input";
 import { Loader2 } from "lucide-react";
-import type { ConsultoriaProject, OfficeProcess } from "@/lib/gestao-processos/types";
+import type {
+  ConsultoriaProject,
+  ConsultoriaProjectPlannedProcessType,
+  OfficeProcess,
+} from "@/lib/gestao-processos/types";
 import { OFFICE_PROCESS_FASE_LABELS } from "@/lib/gestao-processos/utils";
-import { suggestConsultoriaProjectForProcess } from "@/lib/gestao-processos/consultoria-project-utils";
+import {
+  inferPlannedProcessType,
+  PLANNED_PROCESS_TYPE_LABELS,
+  suggestConsultoriaProjectForProcess,
+} from "@/lib/gestao-processos/consultoria-project-utils";
 
 type LinkProcessesDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   project: ConsultoriaProject;
   processes: OfficeProcess[];
+  plannedProcessType?: ConsultoriaProjectPlannedProcessType | null;
   linking?: boolean;
   onConfirm: (processIds: string[]) => void | Promise<void>;
 };
@@ -32,6 +41,7 @@ export function LinkProcessesDialog({
   onOpenChange,
   project,
   processes,
+  plannedProcessType,
   linking,
   onConfirm,
 }: LinkProcessesDialogProps) {
@@ -45,6 +55,9 @@ export function LinkProcessesDialog({
         (p) =>
           !p.empreendedorId || p.empreendedorId === project.empreendedorId,
       );
+    }
+    if (plannedProcessType) {
+      list = list.filter((p) => inferPlannedProcessType(p) === plannedProcessType);
     }
     const term = search.trim().toLowerCase();
     if (term) {
@@ -65,7 +78,7 @@ export function LinkProcessesDialog({
     return list.sort((a, b) =>
       a.numeroProcesso.localeCompare(b.numeroProcesso, "pt-BR"),
     );
-  }, [processes, project.empreendedorId, search]);
+  }, [processes, project.empreendedorId, plannedProcessType, search]);
 
   React.useEffect(() => {
     if (!open) {
@@ -98,7 +111,10 @@ export function LinkProcessesDialog({
           <DialogTitle>Vincular processos ao projeto</DialogTitle>
           <DialogDescription>
             Selecione processos sem projeto vinculado para associar a{" "}
-            <strong>{project.name}</strong>.
+            <strong>{project.name}</strong>
+            {plannedProcessType
+              ? ` na frente ${PLANNED_PROCESS_TYPE_LABELS[plannedProcessType]}.`
+              : "."}
           </DialogDescription>
         </DialogHeader>
 

@@ -38,6 +38,12 @@ export type OfficeProcessProcessGroup =
   | "intervencao"
   | "outros";
 
+export type ConsultoriaProjectPlannedProcessType =
+  | "licenca_ambiental"
+  | "daia_supressao"
+  | "outorga"
+  | "uso_insignificante";
+
 export type OfficeProcess = {
   id: string;
   externalKey: string;
@@ -62,6 +68,8 @@ export type OfficeProcess = {
   projectId?: string;
   /** Projeto de consultoria (`consultoriaProjects/{id}`). */
   consultoriaProjectId?: string;
+  /** Frente ambiental planejada no projeto que originou ou organiza este processo. */
+  plannedProcessType?: ConsultoriaProjectPlannedProcessType;
   requestId?: string;
   fonte: OfficeProcessFonte;
   seedValidation?: boolean;
@@ -135,6 +143,8 @@ export type ConsultoriaProject = {
   area?: string;
   managerUid?: string;
   managerName?: string;
+  /** Frentes ambientais previstas para apresentação e lançamento de processos. */
+  plannedProcessTypes?: ConsultoriaProjectPlannedProcessType[];
   createdAt?: unknown;
   updatedAt?: unknown;
 };

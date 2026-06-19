@@ -10,6 +10,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -25,9 +26,15 @@ import { collection, limit, query } from "firebase/firestore";
 import type { Empreendedor, Project } from "@/lib/types";
 import type {
   ConsultoriaProject,
+  ConsultoriaProjectPlannedProcessType,
   ConsultoriaProjectStatus,
 } from "@/lib/gestao-processos/types";
-import { CONSULTORIA_PROJECT_STATUS_LABELS } from "@/lib/gestao-processos/consultoria-project-utils";
+import {
+  CONSULTORIA_PROJECT_STATUS_LABELS,
+  PLANNED_PROCESS_TYPE_DESCRIPTIONS,
+  PLANNED_PROCESS_TYPE_LABELS,
+  PLANNED_PROCESS_TYPE_ORDER,
+} from "@/lib/gestao-processos/consultoria-project-utils";
 import { Loader2 } from "lucide-react";
 
 export type ConsultoriaProjectFormValues = {
@@ -41,6 +48,7 @@ export type ConsultoriaProjectFormValues = {
   area: string;
   description: string;
   managerName: string;
+  plannedProcessTypes: ConsultoriaProjectPlannedProcessType[];
 };
 
 const EMPTY_FORM: ConsultoriaProjectFormValues = {
@@ -54,6 +62,7 @@ const EMPTY_FORM: ConsultoriaProjectFormValues = {
   area: "",
   description: "",
   managerName: "",
+  plannedProcessTypes: ["licenca_ambiental"],
 };
 
 function toFormValues(project?: ConsultoriaProject | null): ConsultoriaProjectFormValues {
@@ -69,6 +78,7 @@ function toFormValues(project?: ConsultoriaProject | null): ConsultoriaProjectFo
     area: project.area ?? "",
     description: project.description ?? "",
     managerName: project.managerName ?? "",
+    plannedProcessTypes: project.plannedProcessTypes ?? [],
   };
 }
 
@@ -155,6 +165,20 @@ export function ConsultoriaProjectFormDialog({
       projectId,
       municipio: project?.municipio?.trim() || prev.municipio,
     }));
+  };
+
+  const togglePlannedProcessType = (type: ConsultoriaProjectPlannedProcessType) => {
+    setForm((prev) => {
+      const selected = new Set(prev.plannedProcessTypes);
+      if (selected.has(type)) selected.delete(type);
+      else selected.add(type);
+      return {
+        ...prev,
+        plannedProcessTypes: PLANNED_PROCESS_TYPE_ORDER.filter((item) =>
+          selected.has(item),
+        ),
+      };
+    });
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -331,6 +355,38 @@ export function ConsultoriaProjectFormDialog({
                 rows={3}
                 placeholder="Resumo do escopo e conjunto de processos previstos…"
               />
+            </div>
+
+            <div className="space-y-2 rounded-lg border border-dashed p-3">
+              <div>
+                <Label>Frentes ambientais do projeto</Label>
+                <p className="text-xs text-muted-foreground">
+                  Marque os tipos de processo que devem aparecer no detalhe do projeto
+                  para lançamento ou vínculo posterior.
+                </p>
+              </div>
+              <div className="grid gap-2 sm:grid-cols-2">
+                {PLANNED_PROCESS_TYPE_ORDER.map((type) => (
+                  <label
+                    key={type}
+                    className="flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition-colors hover:bg-muted/50"
+                  >
+                    <Checkbox
+                      checked={form.plannedProcessTypes.includes(type)}
+                      onCheckedChange={() => togglePlannedProcessType(type)}
+                      className="mt-0.5"
+                    />
+                    <span className="min-w-0 space-y-1">
+                      <span className="block text-sm font-medium">
+                        {PLANNED_PROCESS_TYPE_LABELS[type]}
+                      </span>
+                      <span className="block text-xs text-muted-foreground">
+                        {PLANNED_PROCESS_TYPE_DESCRIPTIONS[type]}
+                      </span>
+                    </span>
+                  </label>
+                ))}
+              </div>
             </div>
           </div>
 
