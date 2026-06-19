@@ -29,6 +29,7 @@ import {
 } from "@/lib/outorga-estudo-tr";
 import { formatTaxaBrl } from "@/lib/outorga-mg-catalog";
 import { OutorgaFinalidadeSelect } from "@/components/outorgas/outorga-finalidade-select";
+import { CoordinateStringField } from "@/components/coordinates";
 
 type Props = {
   modoUsoCodigo: string;
@@ -58,6 +59,14 @@ function FieldControl({
         id={id}
         value={value}
         onValueChange={onChange}
+      />
+    );
+  }
+  if (field.type === "coordenadas") {
+    return (
+      <CoordinateStringField
+        value={value}
+        onChange={onChange}
       />
     );
   }

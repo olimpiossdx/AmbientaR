@@ -73,6 +73,7 @@ import {
   buildProjectSelectOptions,
   normalizeEntityId,
 } from "@/lib/empreendedor-project-select";
+import { CoordinateStringField } from "@/components/coordinates";
 
 type Props = {
   processo: OutorgaProcesso;
@@ -477,12 +478,11 @@ export function OutorgaProcessoWizard({ processo, onUpdated }: Props) {
           </div>
           <div className="space-y-2">
             <Label>Coordenadas / localização</Label>
-            <Input
+            <CoordinateStringField
               value={local.coordenadas ?? ""}
-              onChange={(e) =>
-                setLocal((s) => ({ ...s, coordenadas: e.target.value }))
+              onChange={(coordenadas) =>
+                setLocal((s) => ({ ...s, coordenadas }))
               }
-              placeholder="Lat/long ou referência ao ponto de intervenção"
             />
           </div>
           <div className="space-y-2">

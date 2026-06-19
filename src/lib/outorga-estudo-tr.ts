@@ -5,7 +5,8 @@ export type OutorgaEstudoTrFieldType =
   | "text"
   | "textarea"
   | "number"
-  | "finalidade_tabela03";
+  | "finalidade_tabela03"
+  | "coordenadas";
 
 export type OutorgaEstudoTrFieldDef = {
   id: string;
@@ -48,7 +49,7 @@ const SECOES_COMUNS: OutorgaEstudoTrSectionDef[] = [
     fields: [
       { id: "nome_empreendimento", label: "Nome do empreendimento / propriedade", type: "text" },
       { id: "municipio_uf", label: "Município / UF", type: "text", placeholder: "Ex.: Unaí — MG" },
-      { id: "coordenadas_ponto", label: "Coordenadas do ponto (SIRGAS 2000)", type: "text" },
+      { id: "coordenadas_ponto", label: "Coordenadas do ponto (SIRGAS 2000)", type: "coordenadas" },
       { id: "bacia_hidrografica", label: "Bacia hidrográfica", type: "text" },
       { id: "denominacao_corpo_hidrico", label: "Denominação do corpo hídrico / aquífero", type: "text" },
       { id: "trecho_intervencao", label: "Trecho / local da intervenção", type: "textarea", rows: 2 },

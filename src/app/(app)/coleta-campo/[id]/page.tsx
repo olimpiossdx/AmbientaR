@@ -37,9 +37,10 @@ import { consolidateCampanhaToStorage } from '@/lib/coleta-campo/consolidate-cam
 import {
   buildAreaAmarracaoFromInputs,
   emptyVerticesForm,
-  parseCoordInput,
+  parseLatLngFromCoordenadasString,
   type VerticeForm,
 } from '@/lib/coleta-campo/coords';
+import { CoordinateStringField } from '@/components/coordinates';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
 function formatDate(value: unknown): string {
@@ -60,8 +61,7 @@ export default function CampanhaDetailPage() {
   const [newParcelaOpen, setNewParcelaOpen] = useState(false);
   const [codigo, setCodigo] = useState('');
   const [area, setArea] = useState('');
-  const [latitude, setLatitude] = useState('');
-  const [longitude, setLongitude] = useState('');
+  const [centralCoordenadas, setCentralCoordenadas] = useState('');
   const [vertices, setVertices] = useState<VerticeForm[]>(emptyVerticesForm);
   const [up, setUp] = useState('');
   const [us, setUs] = useState('');
@@ -143,8 +143,7 @@ export default function CampanhaDetailPage() {
   const openNovaParcela = useCallback(() => {
     setCodigo(suggestParcelaCodigo(parcelas?.length ?? 0));
     setArea('');
-    setLatitude('');
-    setLongitude('');
+    setCentralCoordenadas('');
     setVertices(emptyVerticesForm());
     setUp('');
     setUs('');
@@ -158,12 +157,13 @@ export default function CampanhaDetailPage() {
     setSubmitting(true);
     try {
       const ordem = (parcelas?.length ?? 0) + 1;
+      const central = parseLatLngFromCoordenadasString(centralCoordenadas);
       const parcelaId = await addColetaDoc(firestore, 'inventario_parcelas', {
         inventarioId: campanha.id,
         codigo: codigo.trim() || suggestParcelaCodigo(parcelas?.length ?? 0),
         area: area.trim() ? Number(area.replace(',', '.')) : undefined,
-        latitude: parseCoordInput(latitude),
-        longitude: parseCoordInput(longitude),
+        latitude: central.latitude,
+        longitude: central.longitude,
         areaAmarracao: buildAreaAmarracaoFromInputs(vertices),
         ...(isMultinivel
           ? {
@@ -188,8 +188,7 @@ export default function CampanhaDetailPage() {
     campanha,
     codigo,
     area,
-    latitude,
-    longitude,
+    centralCoordenadas,
     vertices,
     up,
     us,
@@ -513,65 +512,32 @@ export default function CampanhaDetailPage() {
             </div>
             <div className="space-y-2 rounded-lg border p-3">
               <p className="text-sm font-medium">Coordenada central</p>
-              <div className="grid grid-cols-2 gap-2">
-                <div className="grid gap-2">
-                  <Label>Latitude central</Label>
-                  <Input
-                    className="min-h-11"
-                    inputMode="decimal"
-                    value={latitude}
-                    onChange={(e) => setLatitude(e.target.value)}
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label>Longitude central</Label>
-                  <Input
-                    className="min-h-11"
-                    inputMode="decimal"
-                    value={longitude}
-                    onChange={(e) => setLongitude(e.target.value)}
-                  />
-                </div>
-              </div>
+              <CoordinateStringField
+                value={centralCoordenadas}
+                onChange={setCentralCoordenadas}
+              />
             </div>
             <div className="space-y-3 rounded-lg border p-3">
               <div>
                 <p className="text-sm font-medium">Área de amarração</p>
                 <p className="text-xs text-muted-foreground">
-                  Quatro vértices (polígono fechado). Preencha lat/long de cada canto da parcela.
+                  Quatro vértices (polígono fechado). Informe GMS ou UTM de cada canto (SIRGAS 2000).
                 </p>
               </div>
               {vertices.map((v, index) => (
-                <div key={index} className="grid grid-cols-2 gap-2">
-                  <div className="col-span-2 text-xs font-medium text-muted-foreground">
+                <div key={index} className="space-y-2 border-t pt-3 first:border-t-0 first:pt-0">
+                  <p className="text-xs font-medium text-muted-foreground">
                     Vértice {index + 1}
-                  </div>
-                  <div className="grid gap-2">
-                    <Label>Latitude</Label>
-                    <Input
-                      className="min-h-11"
-                      inputMode="decimal"
-                      value={v.lat}
-                      onChange={(e) => {
-                        const next = [...vertices];
-                        next[index] = { ...next[index], lat: e.target.value };
-                        setVertices(next);
-                      }}
-                    />
-                  </div>
-                  <div className="grid gap-2">
-                    <Label>Longitude</Label>
-                    <Input
-                      className="min-h-11"
-                      inputMode="decimal"
-                      value={v.lng}
-                      onChange={(e) => {
-                        const next = [...vertices];
-                        next[index] = { ...next[index], lng: e.target.value };
-                        setVertices(next);
-                      }}
-                    />
-                  </div>
+                  </p>
+                  <CoordinateStringField
+                    value={v.coordenadas}
+                    onChange={(coordenadas) => {
+                      const next = [...vertices];
+                      next[index] = { coordenadas };
+                      setVertices(next);
+                    }}
+                    className="border-0 p-0"
+                  />
                 </div>
               ))}
             </div>

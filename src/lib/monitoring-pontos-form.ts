@@ -19,9 +19,6 @@ export const pontoMonitoramentoFormSchema = z.object({
   tipo: z.enum(["bomba", "jusante"]).optional(),
   /** Entrada uniforme GMS/UTM (SIRGAS 2000). Persistência continua em `lat`/`lng`. */
   coordenadas: z.any().optional(),
-  /** Legado — usos insignificantes até F23; fallback no submit se `coordenadas` vazio. */
-  latStr: z.string().optional(),
-  lngStr: z.string().optional(),
   rtdbDeviceId: z.string().optional(),
   pulsesPerLiterStr: z.string().optional(),
   internalDiameterMStr: z.string().optional(),
@@ -80,6 +77,61 @@ export function monitoringCoordenadasToLatLng(
   return { lat: decimal.lat, lng: decimal.lng };
 }
 
+/** Serializa bloco de formulário para string legada (`coordenadas`, `coordenadas_ponto`). */
+export function formatCoordinateBlockForLegacyString(
+  coordenadas?: MonitoringPontoCoordenadasForm | null,
+): string {
+  const { lat, lng } = monitoringCoordenadasToLatLng(coordenadas);
+  if (lat != null && lng != null) {
+    return `${lat}, ${lng}`;
+  }
+  if (
+    coordenadas?.format === "UTM" &&
+    coordenadas.utm?.x?.toString().trim() &&
+    coordenadas.utm?.y?.toString().trim()
+  ) {
+    const fuso = coordenadas.utm.fuso ?? "23";
+    return `UTM fuso ${fuso}S — E ${coordenadas.utm.x}, N ${coordenadas.utm.y} (SIRGAS 2000)`;
+  }
+  return "";
+}
+
+/** Reconstrói bloco a partir de string legada (par decimal lat,lng quando reconhecível). */
+export function parseLegacyCoordenadasString(
+  raw?: string | null,
+): MonitoringPontoCoordenadasForm {
+  const trimmed = raw?.trim();
+  if (!trimmed) return createDefaultMonitoringPontoCoordenadas();
+  const match = trimmed.match(
+    /(-?\d+[.,]?\d*)\s*[,;\s]\s*(-?\d+[.,]?\d*)/,
+  );
+  if (match) {
+    const lat = parseOptionalNumber(match[1]);
+    const lng = parseOptionalNumber(match[2]);
+    if (
+      lat != null &&
+      lng != null &&
+      Math.abs(lat) <= 90 &&
+      Math.abs(lng) <= 180
+    ) {
+      return latLngToMonitoringCoordenadas(lat, lng);
+    }
+  }
+  return createDefaultMonitoringPontoCoordenadas();
+}
+
+/** Texto livre anterior que não pôde ser convertido automaticamente. */
+export function getUnparsedLegacyCoordenadasString(
+  raw?: string | null,
+): string | undefined {
+  const trimmed = raw?.trim();
+  if (!trimmed) return undefined;
+  if (formatCoordinateBlockForLegacyString(parseLegacyCoordenadasString(trimmed))) {
+    return undefined;
+  }
+  return trimmed;
+}
+
 export function parseOptionalNumber(s?: string | null): number | undefined {
   if (s == null || String(s).trim() === "") return undefined;
   const n = Number(String(s).replace(",", "."));
@@ -94,8 +146,6 @@ export function mapFirestorePontoToForm(
     nome: p.nome,
     tipo: p.tipo,
     coordenadas: latLngToMonitoringCoordenadas(p.lat, p.lng),
-    latStr: p.lat != null ? String(p.lat) : "",
-    lngStr: p.lng != null ? String(p.lng) : "",
     rtdbDeviceId: p.rtdbDeviceId ?? "",
     pulsesPerLiterStr:
       p.pulsesPerLiter != null ? String(p.pulsesPerLiter) : "",
@@ -119,8 +169,8 @@ export function formPontosToFirestore(
     const fromCoords = monitoringCoordenadasToLatLng(
       p.coordenadas as MonitoringPontoCoordenadasForm | undefined,
     );
-    const lat = fromCoords.lat ?? parseOptionalNumber(p.latStr);
-    const lng = fromCoords.lng ?? parseOptionalNumber(p.lngStr);
+    const lat = fromCoords.lat;
+    const lng = fromCoords.lng;
     const pulsesPerLiter = parseOptionalNumber(p.pulsesPerLiterStr);
     const internalDiameterM = parseOptionalNumber(p.internalDiameterMStr);
     const base: PontoDeMonitoramento = {
@@ -146,8 +196,6 @@ export function emptyMonitoringPontoFormRow(): PontoMonitoramentoFormValues {
     id: newMonitoringPontoId(),
     nome: "",
     coordenadas: createDefaultMonitoringPontoCoordenadas(),
-    latStr: "",
-    lngStr: "",
     rtdbDeviceId: "",
     pulsesPerLiterStr: "",
     internalDiameterMStr: "",
