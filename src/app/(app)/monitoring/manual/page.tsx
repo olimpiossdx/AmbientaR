@@ -28,7 +28,14 @@ import {
   limit,
   getDocs,
 } from "firebase/firestore";
-import type { ManualMonitoringLog, WaterPermit, AppUser, Empreendedor, Project } from "@/lib/types";
+import type {
+  ManualMonitoringLog,
+  WaterPermit,
+  AppUser,
+  Empreendedor,
+  Project,
+  PontoDeMonitoramento,
+} from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Dialog,
@@ -88,6 +95,8 @@ const canPerformWriteActions = (user: AppUser | null): boolean => {
   if (!user) return false;
   return canPerformManualMonitoringWrite(user.role);
 };
+
+const EMPTY_PONTOS_DE_MONITORAMENTO: PontoDeMonitoramento[] = [];
 
 export default function ManualMonitoringPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -197,6 +206,8 @@ export default function ManualMonitoringPage() {
     () => outorgasManuais.find((o) => o.id === selectedOutorga),
     [outorgasManuais, selectedOutorga],
   );
+  const outorgaPontos =
+    outorga?.pontosDeMonitoramento ?? EMPTY_PONTOS_DE_MONITORAMENTO;
 
   const isLoadingOutorgasList =
     isLoadingOutorgas ||
@@ -380,12 +391,12 @@ export default function ManualMonitoringPage() {
       const utm = project.geographicLocation.utm;
       return `UTM X:${utm.x || "-"} Y:${utm.y || "-"} Fuso:${utm.fuso || "-"}`;
     }
-    const ponto = outorga.pontosDeMonitoramento?.find((p) => p.lat != null && p.lng != null);
+    const ponto = outorgaPontos.find((p) => p.lat != null && p.lng != null);
     if (ponto?.lat != null && ponto?.lng != null) {
       return `${ponto.lat}, ${ponto.lng}`;
     }
     return "N/A";
-  }, [outorga, projects]);
+  }, [outorga, outorgaPontos, projects]);
 
   const handleExportCompliancePdf = async () => {
     if (!outorga) return;
@@ -462,9 +473,7 @@ export default function ManualMonitoringPage() {
               <Select
                 value={selectedPonto}
                 onValueChange={setSelectedPonto}
-                disabled={
-                  !outorga || outorga.pontosDeMonitoramento.length === 0
-                }
+                disabled={!outorga || outorgaPontos.length === 0}
               >
                 <SelectTrigger>
                   <SelectValue
@@ -476,7 +485,7 @@ export default function ManualMonitoringPage() {
                   />
                 </SelectTrigger>
                 <SelectContent>
-                  {outorga?.pontosDeMonitoramento.map((p) => (
+                  {outorgaPontos.map((p) => (
                     <SelectItem key={p.id} value={p.id}>
                       {p.nome}
                     </SelectItem>

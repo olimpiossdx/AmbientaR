@@ -93,6 +93,7 @@ const InfoWindow = dynamic(
 
 const DEFAULT_CENTER = { lat: -19.9167, lng: -43.9345 }; // Belo Horizonte, MG
 const MAP_CONTAINER_STYLE = { width: "100%", height: "400px", borderRadius: 8 };
+const EMPTY_PONTOS_DE_MONITORAMENTO: PontoDeMonitoramento[] = [];
 
 /** Mensagem de erro quando o mapa não carrega (chave inválida, API não ativada, restrições ou faturamento). */
 function MapErrorHelp() {
@@ -349,6 +350,8 @@ export default function TelemetricMonitoringPage() {
   const registroAtivo = useMemo(() => {
     return telemetryFonte === "outorga" ? selectedOutorga ?? null : selectedUso ?? null;
   }, [telemetryFonte, selectedOutorga, selectedUso]);
+  const registroAtivoPontos =
+    registroAtivo?.pontosDeMonitoramento ?? EMPTY_PONTOS_DE_MONITORAMENTO;
 
   const miraExportAlvo = useMemo((): MiraExportAlvo | null => {
     if (telemetryFonte === "outorga" && selectedOutorga) {
@@ -418,7 +421,13 @@ export default function TelemetricMonitoringPage() {
 
   const compliancePermit = useMemo<WaterPermit | null>(() => {
     if (telemetryFonte === "outorga") {
-      return selectedOutorga ?? null;
+      if (!selectedOutorga) return null;
+      return {
+        ...selectedOutorga,
+        pontosDeMonitoramento:
+          selectedOutorga.pontosDeMonitoramento ??
+          EMPTY_PONTOS_DE_MONITORAMENTO,
+      };
     }
     if (!selectedUso) return null;
     return {
@@ -433,7 +442,8 @@ export default function TelemetricMonitoringPage() {
       description: selectedUso.description,
       fileUrl: selectedUso.fileUrl,
       monitoringType: selectedUso.monitoringType,
-      pontosDeMonitoramento: selectedUso.pontosDeMonitoramento,
+      pontosDeMonitoramento:
+        selectedUso.pontosDeMonitoramento ?? EMPTY_PONTOS_DE_MONITORAMENTO,
       miraStationId: selectedUso.miraStationId,
       condicionanteFlowLimitM3s: selectedUso.condicionanteFlowLimitM3s,
       monthlyLimitM3: selectedUso.monthlyLimitM3,
@@ -485,12 +495,10 @@ export default function TelemetricMonitoringPage() {
   }, [compliancePermit, projects]);
 
   const pontosComCoordenadas = useMemo(() => {
-    const pontos = registroAtivo?.pontosDeMonitoramento;
-    if (!pontos) return [];
-    return pontos.filter(
+    return registroAtivoPontos.filter(
       (p: PontoDeMonitoramento) => p.lat != null && p.lng != null,
     ) as PontoDeMonitoramento[];
-  }, [registroAtivo]);
+  }, [registroAtivoPontos]);
 
   const mapCenter = useMemo(() => {
     if (pontosComCoordenadas.length === 0) return DEFAULT_CENTER;
@@ -973,7 +981,7 @@ export default function TelemetricMonitoringPage() {
                         />
                       )}
                     </div>
-                    {registroAtivo.pontosDeMonitoramento.length > 0 &&
+                    {registroAtivoPontos.length > 0 &&
                       pontosComCoordenadas.length === 0 && (
                         <p className="text-sm text-muted-foreground">
                           Adicione coordenadas (lat/lng) aos pontos de
