@@ -1,6 +1,7 @@
 export { CoordinateInput } from "./coordinate-input";
 export { TrechoCoordenadasBlock } from "./trecho-coordenadas-block";
 export { CoordinateStringField } from "./coordinate-string-field";
+export { CoordinateStringFormField } from "./coordinate-string-form-field";
 export type {
   CoordinateInputProps,
   CoordinateInputVariant,

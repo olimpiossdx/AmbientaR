@@ -6,6 +6,7 @@ import { FormControl, FormDescription, FormField, FormItem, FormLabel } from '@/
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { PlusCircle, Trash2 } from 'lucide-react';
+import { CoordinateStringFormField } from '@/components/coordinates';
 import {
   BooleanRadio,
   CheckboxOptions,
@@ -479,8 +480,13 @@ function LavraSubterraneaImpactosMonitoramento({ form }: { form: any }) {
             <TextField form={form} name={`listagemA.lavraSubterranea.monitoramentoHidrico.pontos.${index}.codigo`} label="Código" />
             <TextField form={form} name={`listagemA.lavraSubterranea.monitoramentoHidrico.pontos.${index}.tipo`} label="Tipo de ponto" />
             <TextField form={form} name={`listagemA.lavraSubterranea.monitoramentoHidrico.pontos.${index}.descricao`} label="Descrição" className="md:col-span-2" />
-            <TextField form={form} name={`listagemA.lavraSubterranea.monitoramentoHidrico.pontos.${index}.utm`} label="UTM (X, Y, Z)" />
             <TextField form={form} name={`listagemA.lavraSubterranea.monitoramentoHidrico.pontos.${index}.frequencia`} label="Frequência" />
+            <CoordinateStringFormField
+              form={form}
+              name={`listagemA.lavraSubterranea.monitoramentoHidrico.pontos.${index}.utm`}
+              label="Coordenadas UTM (SIRGAS 2000)"
+              className="md:col-span-6"
+            />
             <div className="md:col-span-6 flex justify-end">
               <Button type="button" variant="outline" size="sm" onClick={() => removePonto(index)}>
                 <Trash2 className="mr-2 h-4 w-4" />Remover

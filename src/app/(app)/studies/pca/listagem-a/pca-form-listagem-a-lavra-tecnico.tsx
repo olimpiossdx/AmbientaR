@@ -21,6 +21,7 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 import { PlusCircle, Trash2 } from 'lucide-react';
+import { CoordinateStringFormField } from '@/components/coordinates';
 
 import type { UseFormReturn } from 'react-hook-form';
 
@@ -422,8 +423,13 @@ function LavraSubterraneaImpactosMonitoramento({ form }: { form: any }) {
             <PcaTextField form={form} name={`listagemA.lavraSubterranea.monitoramentoHidrico.pontos.${index}.codigo`} label="Código" />
             <PcaTextField form={form} name={`listagemA.lavraSubterranea.monitoramentoHidrico.pontos.${index}.tipo`} label="Tipo de ponto" />
             <PcaTextField form={form} name={`listagemA.lavraSubterranea.monitoramentoHidrico.pontos.${index}.descricao`} label="Descrição" className="md:col-span-2" />
-            <PcaTextField form={form} name={`listagemA.lavraSubterranea.monitoramentoHidrico.pontos.${index}.utm`} label="UTM (X, Y, Z)" />
             <PcaTextField form={form} name={`listagemA.lavraSubterranea.monitoramentoHidrico.pontos.${index}.frequencia`} label="Frequência" />
+            <CoordinateStringFormField
+              form={form}
+              name={`listagemA.lavraSubterranea.monitoramentoHidrico.pontos.${index}.utm`}
+              label="Coordenadas UTM (SIRGAS 2000)"
+              className="md:col-span-6"
+            />
             <div className="md:col-span-6 flex justify-end">
               <Button type="button" variant="outline" size="sm" onClick={() => removePonto(index)}>
                 <Trash2 className="mr-2 h-4 w-4" />Remover
