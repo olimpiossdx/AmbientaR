@@ -27,6 +27,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { BrDateFormControl } from '@/components/form/br-date-input';
+import { CoordinateStringField } from '@/components/coordinates';
+import { formatCoordenadasProject } from './lib/pca-prefill-shared';
 
 const formSchema = z.object({
   status: z.enum(['Rascunho', 'Aprovado']).optional(),
@@ -150,7 +152,7 @@ export function PcaFormLegacy({ currentItem, onSuccess }: PcaFormProps) {
         form.setValue('empreendimento.municipio', project.municipio || '');
         form.setValue('empreendimento.endereco', project.address || '');
         form.setValue('empreendimento.atividade', project.activity || '');
-        // Coordenadas podem precisar de um tratamento especial
+        form.setValue('empreendimento.coordenadas', formatCoordenadasProject(project));
       }
     }
   }, [selectedProjectId, projects, form]);
@@ -262,7 +264,19 @@ export function PcaFormLegacy({ currentItem, onSuccess }: PcaFormProps) {
                     <FormField control={form.control} name="empreendimento.nome" render={({ field }) => (<FormItem><FormLabel>Nome do Empreendimento</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
                     <FormField control={form.control} name="empreendimento.municipio" render={({ field }) => (<FormItem><FormLabel>Município</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
                     <FormField control={form.control} name="empreendimento.endereco" render={({ field }) => (<FormItem><FormLabel>Endereço</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
-                    <FormField control={form.control} name="empreendimento.coordenadas" render={({ field }) => (<FormItem><FormLabel>Coordenadas Geográficas (UTM, SIRGAS 2000)</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                    <FormField control={form.control} name="empreendimento.coordenadas" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Coordenadas Geográficas (SIRGAS 2000)</FormLabel>
+                        <FormControl>
+                          <CoordinateStringField
+                            value={field.value}
+                            onChange={field.onChange}
+                            variant="coords-only"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
                     <FormField control={form.control} name="empreendimento.atividade" render={({ field }) => (<FormItem><FormLabel>Atividade/Finalidade</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
                     <FormField control={form.control} name="empreendimento.tipologia" render={({ field }) => (<FormItem><FormLabel>Tipologia/Porte/Classe</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
                     <FormField control={form.control} name="empreendimento.faseLicenciamento" render={({ field }) => (

@@ -35,6 +35,7 @@ import {
 } from './rca-project-prefill';
 import { shouldPrefillFromProject } from '../listagem-a/rca-project-prefill';
 import { getRcaListagemHInitialValues } from '../lib/rca-form-initial-values';
+import { RcaGeographicLocationSection } from '../lib/rca-geographic-location-section';
 
 interface RcaFormListagemHProps {
   currentItem?: RCA | null;
@@ -252,6 +253,8 @@ export function RcaFormListagemH({ currentItem, onSuccess }: RcaFormListagemHPro
             currentTipo={formularioTipo}
             onTipoChange={setFormularioTipo}
           />
+
+          <RcaGeographicLocationSection form={form} />
 
           {formularioTipo === 'supressao_mata_atlantica' && (
             <RcaFormSupressaoMataAtlantica {...formProps} />

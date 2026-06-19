@@ -1,4 +1,5 @@
-import type { Empreendedor, Project } from '@/lib/types';
+import type { Empreendedor, Project, CoordinateFormat, GeographicLocationFields } from '@/lib/types';
+import { enrichCoordinateBlockWithDecimal } from '@/lib/coordinates';
 import { RCA_LISTAGEM_C_ACTIVITY } from '@/lib/rca/rca-listagem-c-catalog';
 import type { RcaListagemCFormValues } from './rca-listagem-c-schema';
 import {
@@ -85,8 +86,18 @@ export function serializeRcaListagemCForFirestore(
   const termo = values.termoReferencia as
     | { dataEmissao?: Date | string; titulo?: string; processo?: string; versao?: string }
     | undefined;
+  const geo = values.geographicLocation as
+    | (Pick<GeographicLocationFields, 'latLong' | 'utm' | 'decimal'> & {
+        format?: CoordinateFormat;
+      })
+    | undefined;
+  const geographicLocation =
+    geo?.format != null
+      ? enrichCoordinateBlockWithDecimal(geo, 'format')
+      : values.geographicLocation;
   const payload: Record<string, unknown> = {
     ...values,
+    geographicLocation,
     status,
     listagemCode: 'C',
     formularioTipo: normalizarFormularioTipoRcaListagemC(values.formularioTipo),

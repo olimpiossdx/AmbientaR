@@ -86,6 +86,15 @@ export function serializeRcaListagemEForFirestore(
   const termo = values.termoReferencia as
     | { dataEmissao?: Date | string; titulo?: string; processo?: string; versao?: string }
     | undefined;
+  const geo = values.geographicLocation as
+    | (Pick<GeographicLocationFields, 'latLong' | 'utm' | 'decimal'> & {
+        format?: CoordinateFormat;
+      })
+    | undefined;
+  const geographicLocation =
+    geo?.format != null
+      ? enrichCoordinateBlockWithDecimal(geo, 'format')
+      : values.geographicLocation;
   const listagemE = values.listagemE as
     | {
         geoTrecho?: {
@@ -118,6 +127,7 @@ export function serializeRcaListagemEForFirestore(
       : listagemE;
   const payload: Record<string, unknown> = {
     ...values,
+    geographicLocation,
     listagemE: enrichedListagemE,
     status,
     listagemCode: 'E',

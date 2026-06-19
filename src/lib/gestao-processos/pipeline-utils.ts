@@ -23,6 +23,7 @@ export const ORGAO_ETAPAS: OrgaoEtapa[] = [
   "analise_documental",
   "analise_tecnica",
   "vistoria_campo",
+  "informacao_complementar",
   "parecer_tecnico",
   "aprovacao_despacho",
   "concluido_arquivado",
@@ -43,6 +44,7 @@ export const ORGAO_ETAPA_LABELS: Record<OrgaoEtapa, string> = {
   analise_documental: "Análise Documental",
   analise_tecnica: "Análise Técnica",
   vistoria_campo: "Vistoria de Campo",
+  informacao_complementar: "Informação Complementar",
   parecer_tecnico: "Parecer Técnico",
   aprovacao_despacho: "Aprovação / Despacho",
   concluido_arquivado: "Concluído / Arquivado",
@@ -81,6 +83,12 @@ export function resolveProcessPipelineState(
       const etapa = ORGAO_ETAPAS.includes(process.etapa as OrgaoEtapa)
         ? (process.etapa as OrgaoEtapa)
         : "entrada_protocolo";
+      if (
+        etapa === "entrada_protocolo" &&
+        isInformacaoComplementarStatus(process.statusDetalhe)
+      ) {
+        return { pipeline: "orgao", etapa: "informacao_complementar", processGroup };
+      }
       return { pipeline: "orgao", etapa, processGroup };
     }
     return {
@@ -115,6 +123,9 @@ function inferOrgaoEtapaFromFase(
   fase: OfficeProcessFase,
   statusDetalhe?: string,
 ): OrgaoEtapa {
+  if (isInformacaoComplementarStatus(statusDetalhe)) {
+    return "informacao_complementar";
+  }
   if (fase === "protocolado") return "entrada_protocolo";
   if (fase === "exigencia") return "analise_documental";
   if (fase === "em_analise") {
@@ -125,6 +136,15 @@ function inferOrgaoEtapaFromFase(
     return "analise_tecnica";
   }
   return "entrada_protocolo";
+}
+
+function isInformacaoComplementarStatus(statusDetalhe?: string): boolean {
+  const s = normalizeProcessText(statusDetalhe)
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+
+  return /\bic\b/.test(s) || s.includes("informacao complementar");
 }
 
 export function inferConsultoriaEtapaFromFase(fase: OfficeProcessFase): ConsultoriaEtapa {
@@ -144,6 +164,7 @@ export function syncFaseFromPipeline(
     return "elaboracao";
   }
   if (etapa === "entrada_protocolo") return "protocolado";
+  if (etapa === "informacao_complementar") return "exigencia";
   if (etapa === "analise_documental") return "exigencia";
   if (
     etapa === "analise_tecnica" ||

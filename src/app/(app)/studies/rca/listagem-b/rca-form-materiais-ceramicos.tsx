@@ -21,7 +21,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import type { Empreendedor as Client, Project, OwnerCondition, Datum, Fuso, RegularizacaoSituacao, ManagementCategory, Jurisdiction, Biome, AtividadeAgricola, ZeeGeofisicoItem, ZeeSocioeconomicoItem } from '@/lib/types';
+import type { Empreendedor as Client, Project, OwnerCondition, RegularizacaoSituacao, ManagementCategory, Jurisdiction, Biome, AtividadeAgricola, ZeeGeofisicoItem, ZeeSocioeconomicoItem } from '@/lib/types';
 import { Textarea } from '@/components/ui/textarea';
 import { PlusCircle, Trash2 } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -40,18 +40,6 @@ const ownerConditions: { value: OwnerCondition, label: string }[] = [
     { value: 'Parceiro', label: 'Parceiro' },
     { value: 'Posseiro', label: 'Posseiro' },
     { value: 'Outros', label: 'Outros' },
-];
-
-const datums: { value: Datum, label: string }[] = [
-    { value: 'SAD-69', label: 'SAD 69' },
-    { value: 'WGS-84', label: 'WGS 84' },
-    { value: 'Córrego Alegre', label: 'Córrego Alegre' },
-];
-
-const fusos: { value: Fuso, label: string }[] = [
-    { value: '22', label: '22' },
-    { value: '23', label: '23' },
-    { value: '24', label: '24' },
 ];
 
 export function RcaFormMateriaisCeramicos({ form, clients, isLoadingClients, projects, isLoadingProjects }: RcaFormMateriaisCeramicosProps) {

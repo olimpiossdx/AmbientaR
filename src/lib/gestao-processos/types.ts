@@ -26,6 +26,7 @@ export type OrgaoEtapa =
   | "analise_documental"
   | "analise_tecnica"
   | "vistoria_campo"
+  | "informacao_complementar"
   | "parecer_tecnico"
   | "aprovacao_despacho"
   | "concluido_arquivado";
@@ -57,7 +58,7 @@ export type OfficeProcess = {
   fase: OfficeProcessFase;
   /** Pipeline kanban: consultoria (pré-protocolo) ou órgão (pós-protocolo). */
   pipeline?: OfficeProcessPipeline;
-  /** Etapa dentro do pipeline ativo (7 valores por pipeline). */
+  /** Etapa dentro do pipeline ativo. */
   etapa?: ConsultoriaEtapa | OrgaoEtapa;
   processGroup?: OfficeProcessProcessGroup;
   prioridade?: OfficeProcessPrioridade;
