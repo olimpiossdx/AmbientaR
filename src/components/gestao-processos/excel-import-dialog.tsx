@@ -74,7 +74,7 @@ export function ExcelImportDialog({
           <DialogTitle>Importar planilha Excel</DialogTitle>
           <DialogDescription>
             Aba PROCESSO com colunas: PROCESSO, EMPREENDEDOR, EMPREENDIMENTO,
-            MUNICIPIO, TIPO DE INTERVENÇÃO, STATUS, PRAZO.
+            MUNICIPIO, TIPO DE INTERVENÇÃO, PROJETO (código ou nome), STATUS, PRAZO.
           </DialogDescription>
         </DialogHeader>
 
@@ -146,6 +146,7 @@ export function ExcelImportDialog({
                   <TableRow>
                     <TableHead>Processo</TableHead>
                     <TableHead>Empreendedor</TableHead>
+                    <TableHead>Projeto</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Fase</TableHead>
                   </TableRow>
@@ -158,6 +159,9 @@ export function ExcelImportDialog({
                       </TableCell>
                       <TableCell className="max-w-[160px] truncate text-sm">
                         {row.empreendedorName}
+                      </TableCell>
+                      <TableCell className="max-w-[120px] truncate text-sm">
+                        {row.projetoRef ?? "—"}
                       </TableCell>
                       <TableCell className="max-w-[140px] truncate text-sm">
                         {row.statusDetalhe ?? "—"}

@@ -1,8 +1,8 @@
-
-
 'use client';
 
-// Function to convert Latitude and Longitude to UTM coordinates
+/**
+ * @deprecated Use `@/lib/coordinates` (proj4 + SIRGAS2000). Placeholder matemático inválido.
+ */
 export function convertLatLngToUtm(lat: number, lng: number): { easting: number; northing: number; zoneNum: number; zoneLetter: string; } {
   // This is a complex conversion. For a real-world scenario, you would use a robust library like 'proj4'.
   // For this example, we will simulate the conversion.

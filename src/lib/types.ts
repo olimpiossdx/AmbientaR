@@ -275,9 +275,50 @@ export type Appointment = {
 export type PermitType = 'LP' | 'LI' | 'LO' | 'LAS' | 'AAF' | 'Outra';
 export type PermitStatus = 'Válida' | 'Vencida' | 'Em Renovação' | 'Suspensa' | 'Cancelada' | 'Em Andamento';
 export type OwnerCondition = 'Proprietário' | 'Arrendatário' | 'Parceiro' | 'Posseiro' | 'Outros';
-export type Datum = 'SAD-69' | 'WGS-84' | 'Córrego Alegre';
+/** Referencial geodésico. Padrão operacional AmbientaR (MG): SIRGAS2000. */
+export type Datum = 'SIRGAS2000' | 'SAD-69' | 'WGS-84' | 'Córrego Alegre';
 export type CoordinateFormat = 'Lat/Long' | 'UTM';
+/** Fuso UTM; padrão MG: 23S (SIRGAS2000 / EPSG:31983). */
 export type Fuso = '22' | '23' | '24';
+
+/** Par lat/lng decimal derivado (WGS84/SIRGAS2000 geográfico, sinal Sul/Oeste). */
+export type CoordinateDecimal = {
+  lat: number;
+  lng: number;
+};
+
+/** Campos comuns de localização geográfica (GMS ou UTM + metadados). */
+export type GeographicLocationFields = {
+  latLong?: {
+    lat: { grau?: string; min?: string; seg?: string };
+    long: { grau?: string; min?: string; seg?: string };
+  };
+  utm?: {
+    x?: string;
+    y?: string;
+    fuso?: Fuso;
+  };
+  /** Derivado no submit a partir de GMS ou UTM; opcional em registros legados. */
+  decimal?: CoordinateDecimal;
+  local?: string;
+  additionalLocationInfo?: string;
+  hydrographicBasin?: string;
+  hydrographicSubBasin?: string;
+  upgrh?: string;
+  nearestWaterCourse?: string;
+};
+
+/** Localização geográfica completa (empreendimento / formulários com datum obrigatório). */
+export type GeographicLocation = GeographicLocationFields & {
+  datum: Datum;
+  format: CoordinateFormat;
+};
+
+/** Variante parcial (RCA e documentos espelhados). */
+export type GeographicLocationPartial = GeographicLocationFields & {
+  datum?: Datum;
+  format?: CoordinateFormat;
+};
 export type Biome = 'Cerrado' | 'Mata Atlântica' | 'Outro' | 'Não';
 export type ManagementCategory = 'Uso Sustentável' | 'Proteção Integral';
 export type Jurisdiction = 'Federal' | 'Estadual' | 'Municipal' | 'Privada';
@@ -441,25 +482,7 @@ export type Project = {
   district?: string;
   uf?: string;
   ownerCondition?: OwnerCondition[];
-  geographicLocation?: {
-    datum: Datum;
-    format: CoordinateFormat;
-    latLong?: {
-      lat: { grau?: string; min?: string; seg?: string; };
-      long: { grau?: string; min?: string; seg?: string; };
-    };
-    utm?: {
-      x?: string;
-      y?: string;
-      fuso: Fuso;
-    };
-    local?: string;
-    additionalLocationInfo?: string;
-    hydrographicBasin?: string;
-    hydrographicSubBasin?: string;
-    upgrh?: string;
-    nearestWaterCourse?: string;
-  };
+  geographicLocation?: GeographicLocation;
   locationalRestrictions?: {
     biome: Biome;
     biomeOther?: string;
@@ -1301,25 +1324,7 @@ export type RCA = {
       art?: string;
     }[],
   };
-  geographicLocation?: {
-    datum?: Datum;
-    format?: CoordinateFormat;
-    latLong?: {
-      lat: { grau?: string; min?: string; seg?: string; };
-      long: { grau?: string; min?: string; seg?: string; };
-    };
-    utm?: {
-      x?: string;
-      y?: string;
-      fuso?: Fuso;
-    };
-    local?: string;
-    additionalLocationInfo?: string;
-    hydrographicBasin?: string;
-    hydrographicSubBasin?: string;
-    upgrh?: string;
-    nearestWaterCourse?: string;
-  };
+  geographicLocation?: GeographicLocationPartial;
   atividades?: {
     principal?: string;
     codigo?: string;

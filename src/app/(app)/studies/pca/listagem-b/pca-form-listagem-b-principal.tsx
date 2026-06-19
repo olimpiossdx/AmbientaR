@@ -31,6 +31,8 @@ import {
 } from '../lib/pca-form-helpers';
 import { PcaMedidasSection } from '../lib/pca-medidas-section';
 import { PcaFormListagemBEspecifico } from './pca-form-listagem-b-especifico';
+import { CoordinateInput } from '@/components/coordinates';
+import type { Datum } from '@/lib/types';
 interface PcaFormListagemBComumProps {
   form: any;
   /** Oculta o bloco técnico padrão (processos + ambiental) — usar com slotEspecifico */
@@ -39,8 +41,6 @@ interface PcaFormListagemBComumProps {
   slotEspecifico?: React.ReactNode;
 }
 
-const datums = ['SAD-69', 'WGS-84', 'Córrego Alegre'] as const;
-const fusos = ['22', '23', '24'] as const;
 const biomas = ['Cerrado', 'Mata Atlântica', 'Outro'] as const;
 const diasSemana = ['2a Feira', '3a Feira', '4a Feira', '5a Feira', '6a Feira', 'Sábado', 'Domingo'] as const;
 const mesesAno = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'] as const;
@@ -75,7 +75,11 @@ function BooleanRadio({
 }
 
 export function PcaFormListagemBPrincipal({ form, hideEspecifico, slotEspecifico }: PcaFormListagemBComumProps) {
-  const coordinateFormat = form.watch('geographicLocation.format');
+  const geoDatum = form.watch('geographicLocation.datum') as Datum | undefined;
+  const isLegacyDatum =
+    geoDatum != null &&
+    String(geoDatum).trim() !== '' &&
+    geoDatum !== 'SIRGAS2000';
   const faseLicenciamento = form.watch('listagemB.regularizacaoAmbiental.fase');
   const isAmpliacao = form.watch('listagemB.regularizacaoAmbiental.ampliacaoEmpreendimentoLicenciado');
 
@@ -154,90 +158,15 @@ export function PcaFormListagemBPrincipal({ form, hideEspecifico, slotEspecifico
         )}
       </div>
 
-      <div className="space-y-4 rounded-md border p-4">
-        <h3 className="text-lg font-medium">5. Localização Geográfica</h3>
-        <FormField
-          control={form.control}
-          name="geographicLocation.datum"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Assinalar Datum (Obrigatório)</FormLabel>
-              <RadioGroup onValueChange={field.onChange} value={field.value} className="flex flex-wrap gap-4">
-                {datums.map((datum) => (
-                  <FormItem key={datum} className="flex items-center gap-2">
-                    <FormControl><RadioGroupItem value={datum} /></FormControl>
-                    <FormLabel className="font-normal">{datum}</FormLabel>
-                  </FormItem>
-                ))}
-              </RadioGroup>
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="geographicLocation.format"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Formato da coordenada</FormLabel>
-              <RadioGroup onValueChange={field.onChange} value={field.value} className="flex flex-wrap gap-4">
-                <FormItem className="flex items-center gap-2"><FormControl><RadioGroupItem value="Lat/Long" /></FormControl><FormLabel className="font-normal">Lat/Long</FormLabel></FormItem>
-                <FormItem className="flex items-center gap-2"><FormControl><RadioGroupItem value="UTM" /></FormControl><FormLabel className="font-normal">UTM (X,Y)</FormLabel></FormItem>
-              </RadioGroup>
-            </FormItem>
-          )}
-        />
-        {coordinateFormat === 'Lat/Long' ? (
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <div className="space-y-2 rounded-md border p-3">
-              <p className="text-sm font-medium">Latitude</p>
-              <div className="grid grid-cols-3 gap-2">
-                <FormField control={form.control} name="geographicLocation.latLong.lat.grau" render={({ field }) => (<FormItem><FormLabel>Grau</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
-                <FormField control={form.control} name="geographicLocation.latLong.lat.min" render={({ field }) => (<FormItem><FormLabel>Min</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
-                <FormField control={form.control} name="geographicLocation.latLong.lat.seg" render={({ field }) => (<FormItem><FormLabel>Seg</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
-              </div>
-            </div>
-            <div className="space-y-2 rounded-md border p-3">
-              <p className="text-sm font-medium">Longitude</p>
-              <div className="grid grid-cols-3 gap-2">
-                <FormField control={form.control} name="geographicLocation.latLong.long.grau" render={({ field }) => (<FormItem><FormLabel>Grau</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
-                <FormField control={form.control} name="geographicLocation.latLong.long.min" render={({ field }) => (<FormItem><FormLabel>Min</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
-                <FormField control={form.control} name="geographicLocation.latLong.long.seg" render={({ field }) => (<FormItem><FormLabel>Seg</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-            <FormField control={form.control} name="geographicLocation.utm.x" render={({ field }) => (<FormItem><FormLabel>X (6 dígitos)</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
-            <FormField control={form.control} name="geographicLocation.utm.y" render={({ field }) => (<FormItem><FormLabel>Y (7 dígitos)</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
-            <FormField
-              control={form.control}
-              name="geographicLocation.utm.fuso"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Fuso</FormLabel>
-                  <RadioGroup onValueChange={field.onChange} value={field.value} className="flex gap-4">
-                    {fusos.map((fuso) => (
-                      <FormItem key={fuso} className="flex items-center gap-2">
-                        <FormControl><RadioGroupItem value={fuso} /></FormControl>
-                        <FormLabel className="font-normal">{fuso}</FormLabel>
-                      </FormItem>
-                    ))}
-                  </RadioGroup>
-                </FormItem>
-              )}
-            />
-          </div>
-        )}
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <FormField control={form.control} name="geographicLocation.local" render={({ field }) => (<FormItem><FormLabel>Local (fazenda, sítio etc.)</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
-          <FormField control={form.control} name="geographicLocation.municipio" render={({ field }) => (<FormItem><FormLabel>Município(s)</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
-          <FormField control={form.control} name="geographicLocation.additionalLocationInfo" render={({ field }) => (<FormItem className="md:col-span-2"><FormLabel>Referência adicional para localização</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
-          <FormField control={form.control} name="geographicLocation.hydrographicBasin" render={({ field }) => (<FormItem><FormLabel>Bacia hidrográfica</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
-          <FormField control={form.control} name="geographicLocation.hydrographicSubBasin" render={({ field }) => (<FormItem><FormLabel>Sub-bacia hidrográfica</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
-          <FormField control={form.control} name="geographicLocation.upgrh" render={({ field }) => (<FormItem><FormLabel>UPGRH</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
-          <FormField control={form.control} name="geographicLocation.nearestWaterCourse" render={({ field }) => (<FormItem><FormLabel>Curso d&apos;água mais próximo</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
-        </div>
-      </div>
+      <CoordinateInput
+        form={form}
+        basePath="geographicLocation"
+        variant="full"
+        metadataVariant="listagem"
+        title="5. Localização Geográfica"
+        lockDatum={!isLegacyDatum}
+        showLegacyDatums={isLegacyDatum}
+      />
 
       <div className="space-y-4 rounded-md border p-4">
         <h3 className="text-lg font-medium">6. Atividades do Empreendimento conforme DN 217/17</h3>

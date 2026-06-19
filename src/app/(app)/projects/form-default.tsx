@@ -21,7 +21,8 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { MapPin, PlusCircle, Trash2 } from 'lucide-react';
-import type { AnaliseSolo, AtividadeAgropecuaria, Biome, CoordinateFormat, Datum, Empreendedor, Fuso, Irrigacao, Jurisdiction, ManagementCategory, OutraAtividade, OwnerCondition, PhysicalStructure } from '@/lib/types';
+import type { AnaliseSolo, AtividadeAgropecuaria, Biome, Datum, Empreendedor, Irrigacao, Jurisdiction, ManagementCategory, OutraAtividade, OwnerCondition, PhysicalStructure } from '@/lib/types';
+import { CoordinateInput } from '@/components/coordinates';
 import * as React from 'react';
 import { ibgeData } from '@/lib/ibge-data';
 import { Textarea } from '@/components/ui/textarea';
@@ -43,23 +44,6 @@ const ownerConditions: { value: OwnerCondition, label: string }[] = [
     { value: 'Parceiro', label: 'Parceiro' },
     { value: 'Posseiro', label: 'Posseiro' },
     { value: 'Outros', label: 'Outros' },
-];
-
-const datums: { value: Datum, label: string }[] = [
-    { value: 'SAD-69', label: 'SAD-69' },
-    { value: 'WGS-84', label: 'WGS-84' },
-    { value: 'Córrego Alegre', label: 'Córrego Alegre' },
-];
-
-const coordinateFormats: { value: CoordinateFormat, label: string }[] = [
-    { value: 'Lat/Long', label: 'Geográficas (Lat/Long)' },
-    { value: 'UTM', label: 'UTM (X,Y)' },
-];
-
-const fusos: { value: Fuso, label: string }[] = [
-    { value: '22', label: '22' },
-    { value: '23', label: '23' },
-    { value: '24', label: '24' },
 ];
 
 const biomas: { value: Biome; label: string }[] = [
@@ -115,7 +99,11 @@ export function FormDefault({
     const clientsMap = React.useMemo(() => new Map(clients?.map(c => [c.id, c])), [clients]);
     
     const selectedClientId = form.watch('empreendedorId');
-    const coordinateFormat = form.watch('geographicLocation.format');
+    const geoDatum = form.watch('geographicLocation.datum') as Datum | undefined;
+    const isLegacyDatum =
+      geoDatum != null &&
+      String(geoDatum).trim() !== '' &&
+      geoDatum !== 'SIRGAS2000';
     const selectedUf = form.watch('uf');
     
     const citiesForSelectedUf = React.useMemo(() => {
@@ -234,85 +222,13 @@ export function FormDefault({
                 )} />
             </div>
 
-            <div className="space-y-4 rounded-md border p-4">
-                <div className="flex items-center justify-between">
-                    <h3 className="text-lg font-medium">Localização Geográfica</h3>
-                </div>
-                <FormField control={form.control} name="geographicLocation.datum" render={({ field }) => (
-                    <FormItem className="space-y-3"><FormLabel>Assinalar Datum (Obrigatório)</FormLabel>
-                    <FormControl><RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="flex space-x-4">
-                        {datums.map(d => (
-                            <FormItem key={d.value} className="flex items-center space-x-2">
-                                <FormControl><RadioGroupItem value={d.value} /></FormControl>
-                                <FormLabel className="font-normal">{d.label}</FormLabel>
-                            </FormItem>
-                        ))}
-                    </RadioGroup></FormControl><FormMessage /></FormItem>
-                )} />
-                <FormField control={form.control} name="geographicLocation.format" render={({ field }) => (
-                    <FormItem className="space-y-3"><FormLabel>Formato da Coordenada</FormLabel>
-                    <FormControl><RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="flex space-x-4">
-                        {coordinateFormats.map(f => (
-                            <FormItem key={f.value} className="flex items-center space-x-2">
-                                <FormControl><RadioGroupItem value={f.value} /></FormControl>
-                                <FormLabel className="font-normal">{f.label}</FormLabel>
-                            </FormItem>
-                        ))}
-                    </RadioGroup></FormControl><FormMessage /></FormItem>
-                )} />
-                
-                {coordinateFormat === 'Lat/Long' && (
-                    <div className="grid grid-cols-2 gap-x-8 gap-y-4 pt-4 border-t">
-                        <div>
-                            <FormLabel className="text-center block mb-2 font-semibold">Latitude</FormLabel>
-                            <div className="grid grid-cols-3 gap-2">
-                                <FormField control={form.control} name="geographicLocation.latLong.lat.grau" render={({ field }) => ( <FormItem><FormLabel className="text-xs">Grau</FormLabel><FormControl><Input placeholder="00" {...field}/></FormControl></FormItem> )} />
-                                <FormField control={form.control} name="geographicLocation.latLong.lat.min" render={({ field }) => ( <FormItem><FormLabel className="text-xs">Min</FormLabel><FormControl><Input placeholder="00" {...field}/></FormControl></FormItem> )} />
-                                <FormField control={form.control} name="geographicLocation.latLong.lat.seg" render={({ field }) => ( <FormItem><FormLabel className="text-xs">Seg</FormLabel><FormControl><Input placeholder="00" {...field}/></FormControl></FormItem> )} />
-                            </div>
-                        </div>
-                        <div>
-                            <FormLabel className="text-center block mb-2 font-semibold">Longitude</FormLabel>
-                            <div className="grid grid-cols-3 gap-2">
-                                <FormField control={form.control} name="geographicLocation.latLong.long.grau" render={({ field }) => ( <FormItem><FormLabel className="text-xs">Grau</FormLabel><FormControl><Input placeholder="00" {...field}/></FormControl></FormItem> )} />
-                                <FormField control={form.control} name="geographicLocation.latLong.long.min" render={({ field }) => ( <FormItem><FormLabel className="text-xs">Min</FormLabel><FormControl><Input placeholder="00" {...field}/></FormControl></FormItem> )} />
-                                <FormField control={form.control} name="geographicLocation.latLong.long.seg" render={({ field }) => ( <FormItem><FormLabel className="text-xs">Seg</FormLabel><FormControl><Input placeholder="00" {...field}/></FormControl></FormItem> )} />
-                            </div>
-                        </div>
-                    </div>
-                )}
-                {coordinateFormat === 'UTM' && (
-                    <div className="space-y-4 pt-4 border-t">
-                        <div className="grid grid-cols-2 gap-4">
-                            <FormField control={form.control} name="geographicLocation.utm.x" render={({ field }) => ( <FormItem><FormLabel>X (6 dígitos)</FormLabel><FormControl><Input {...field}/></FormControl><FormDescription>Não considerar casas decimais</FormDescription></FormItem> )} />
-                            <FormField control={form.control} name="geographicLocation.utm.y" render={({ field }) => ( <FormItem><FormLabel>Y (7 dígitos)</FormLabel><FormControl><Input {...field}/></FormControl><FormDescription>Não considerar casas decimais</FormDescription></FormItem> )} />
-                        </div>
-                        <FormField control={form.control} name="geographicLocation.utm.fuso" render={({ field }) => (
-                            <FormItem className="space-y-3 mt-4">
-                                <FormLabel>Fuso</FormLabel>
-                                <FormControl><RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="flex space-x-4">
-                                    {fusos.map(f => (
-                                    <FormItem key={f.value} className="flex items-center space-x-2">
-                                        <FormControl><RadioGroupItem value={f.value} /></FormControl>
-                                        <FormLabel className="font-normal">{f.label}</FormLabel>
-                                    </FormItem>
-                                    ))}
-                                </RadioGroup></FormControl><FormMessage />
-                            </FormItem>
-                        )} />
-                    </div>
-                )}
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t">
-                    <FormField control={form.control} name="geographicLocation.local" render={({ field }) => ( <FormItem><FormLabel>Local (Fazenda, Sítio, etc.)</FormLabel><FormControl><Input {...field}/></FormControl></FormItem> )} />
-                    <FormField control={form.control} name="geographicLocation.additionalLocationInfo" render={({ field }) => ( <FormItem><FormLabel>Informação adicional para localização</FormLabel><FormControl><Input placeholder="Ex: Próximo à ponte sobre o Rio..." {...field}/></FormControl></FormItem> )} />
-                </div>
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <FormField control={form.control} name="geographicLocation.hydrographicBasin" render={({ field }) => ( <FormItem><FormLabel>Bacia Hidrográfica</FormLabel><FormControl><Input {...field}/></FormControl></FormItem> )} />
-                    <FormField control={form.control} name="geographicLocation.upgrh" render={({ field }) => ( <FormItem><FormLabel>UPGRH</FormLabel><FormControl><Input {...field}/></FormControl></FormItem> )} />
-                </div>
-                <FormField control={form.control} name="geographicLocation.nearestWaterCourse" render={({ field }) => ( <FormItem><FormLabel>Curso d&apos;água mais próximo</FormLabel><FormControl><Input {...field}/></FormControl></FormItem> )} />
-            </div>
+            <CoordinateInput
+                form={form}
+                basePath="geographicLocation"
+                variant="full"
+                lockDatum={!isLegacyDatum}
+                showLegacyDatums={isLegacyDatum}
+            />
 
             <div className="space-y-4 rounded-md border p-4">
                 <h3 className="text-lg font-medium">Restrições Locacionais</h3>

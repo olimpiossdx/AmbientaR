@@ -6,6 +6,8 @@ import {
   normalizarFormularioTipoRcaListagemA,
   subatividadeParaFormularioRcaListagemA,
 } from './rca-listagem-a-registry';
+import { enrichCoordinateBlockWithDecimal } from '@/lib/coordinates';
+import type { CoordinateFormat, GeographicLocationFields } from '@/lib/types';
 
 function deepCloneRecord<T>(value: T | undefined | null): T | undefined {
   if (value === undefined || value === null) return undefined;
@@ -82,8 +84,18 @@ export function serializeRcaListagemAForFirestore(
   const termo = values.termoReferencia as
     | { dataEmissao?: Date | string; titulo?: string; processo?: string; versao?: string }
     | undefined;
+  const geo = values.geographicLocation as
+    | (Pick<GeographicLocationFields, 'latLong' | 'utm' | 'decimal'> & {
+        format?: CoordinateFormat;
+      })
+    | undefined;
+  const geographicLocation =
+    geo?.format != null
+      ? enrichCoordinateBlockWithDecimal(geo, 'format')
+      : values.geographicLocation;
   const payload: Record<string, unknown> = {
     ...values,
+    geographicLocation,
     status,
     listagemCode: 'A',
     formularioTipo: normalizarFormularioTipoRcaListagemA(values.formularioTipo),

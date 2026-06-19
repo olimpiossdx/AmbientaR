@@ -1,6 +1,7 @@
 import { hasAnyRoleOrAdmin } from "@/lib/role-guards";
 import type { UserRole } from "@/lib/types";
 import {
+  GESTAO_PROCESSOS_INTERNAL_READ_ROLES,
   GESTAO_PROCESSOS_PORTAL_READ_ROLES,
   GESTAO_PROCESSOS_WRITE_ROLES,
 } from "@/lib/gestao-processos-menu";
@@ -16,6 +17,16 @@ export function isGestaoProcessosPortalReadOnly(
 ): boolean {
   if (!role) return false;
   return GESTAO_PROCESSOS_PORTAL_READ_ROLES.includes(role);
+}
+
+/** Fluxo operacional — equipa interna (escrita) ou portal (somente leitura filtrada). */
+export function canAccessGestaoProcessosFluxo(
+  role: UserRole | undefined | null,
+): boolean {
+  return (
+    hasAnyRoleOrAdmin(role, GESTAO_PROCESSOS_INTERNAL_READ_ROLES) ||
+    isGestaoProcessosPortalReadOnly(role)
+  );
 }
 
 export function canAccessGestaoProcessosMenu(

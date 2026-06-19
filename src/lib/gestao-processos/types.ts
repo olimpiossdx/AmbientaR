@@ -10,6 +10,34 @@ export type OfficeProcessFase =
 
 export type OfficeProcessFonte = "excel" | "app" | "licenciamento";
 
+export type OfficeProcessPipeline = "consultoria" | "orgao" | "encerrado";
+
+export type ConsultoriaEtapa =
+  | "entrada"
+  | "analise_documental"
+  | "analise_tecnica_inicial"
+  | "vistoria_campo"
+  | "relatorio_estudos"
+  | "aprovacao_despacho"
+  | "concluido_protocolo";
+
+export type OrgaoEtapa =
+  | "entrada_protocolo"
+  | "analise_documental"
+  | "analise_tecnica"
+  | "vistoria_campo"
+  | "parecer_tecnico"
+  | "aprovacao_despacho"
+  | "concluido_arquivado";
+
+export type OfficeProcessPrioridade = "baixa" | "media" | "alta";
+
+export type OfficeProcessProcessGroup =
+  | "licenciamento"
+  | "outorga"
+  | "intervencao"
+  | "outros";
+
 export type OfficeProcess = {
   id: string;
   externalKey: string;
@@ -21,10 +49,19 @@ export type OfficeProcess = {
   tipoIntervencao?: string;
   orgao?: string;
   fase: OfficeProcessFase;
+  /** Pipeline kanban: consultoria (pré-protocolo) ou órgão (pós-protocolo). */
+  pipeline?: OfficeProcessPipeline;
+  /** Etapa dentro do pipeline ativo (7 valores por pipeline). */
+  etapa?: ConsultoriaEtapa | OrgaoEtapa;
+  processGroup?: OfficeProcessProcessGroup;
+  prioridade?: OfficeProcessPrioridade;
+  dataProtocolo?: string;
   statusDetalhe?: string;
   prazo?: string;
   empreendedorId?: string;
   projectId?: string;
+  /** Projeto de consultoria (`consultoriaProjects/{id}`). */
+  consultoriaProjectId?: string;
   requestId?: string;
   fonte: OfficeProcessFonte;
   seedValidation?: boolean;
@@ -64,6 +101,8 @@ export type OfficeProcessExcelRow = {
   statusDetalhe?: string;
   prazo?: string;
   fase?: OfficeProcessFase;
+  /** Código, nome ou id do projeto de consultoria (coluna PROJETO). */
+  projetoRef?: string;
   rowNumber: number;
 };
 
@@ -71,4 +110,31 @@ export type OfficeProcessImportPreview = {
   rows: OfficeProcessExcelRow[];
   errors: { rowNumber: number; message: string }[];
   duplicatesInFile: string[];
+};
+
+/** Projeto de consultoria (caso) — coleção Firestore `consultoriaProjects`. */
+export type ConsultoriaProjectStatus =
+  | "ativo"
+  | "suspenso"
+  | "concluido"
+  | "cancelado";
+
+export type ConsultoriaProject = {
+  id: string;
+  code?: string;
+  name: string;
+  description?: string;
+  status: ConsultoriaProjectStatus;
+  empreendedorId?: string;
+  empreendedorName?: string;
+  /** Empreendimento cadastral (`projects/{id}`). */
+  projectId?: string;
+  empreendimentoName?: string;
+  municipio?: string;
+  tipoAtividade?: string;
+  area?: string;
+  managerUid?: string;
+  managerName?: string;
+  createdAt?: unknown;
+  updatedAt?: unknown;
 };

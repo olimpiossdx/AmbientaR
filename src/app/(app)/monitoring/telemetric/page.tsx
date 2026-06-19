@@ -39,9 +39,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { BrDateInput } from "@/components/form/br-date-input";
 import { useCollection } from "@/firebase";
-import { useJsApiLoader } from "@react-google-maps/api";
 import dynamic from "next/dynamic";
-import { GOOGLE_MAPS_API_KEY, hasGoogleMapsApiKey } from "@/lib/google-maps";
 import {
   Tooltip,
   TooltipContent,
@@ -52,7 +50,6 @@ import {
   FileText,
   Droplets,
   Calendar,
-  Zap,
   AlertTriangle,
   Download,
   FileJson,
@@ -77,128 +74,16 @@ import {
 import { fetchEmpreendedorIdsForPortalScope, isEmpreendedorScopedPortalRole } from "@/lib/portal-empreendedor-scope";
 import { isClientePortalRole, isRepresentativeLikePortalRole } from "@/lib/role-guards";
 
-// Carrega componentes do Google Maps sob demanda (reduz tamanho do bundle inicial).
-const GoogleMap = dynamic(
-  () => import("@react-google-maps/api").then((m) => m.GoogleMap),
-  { ssr: false },
-);
-const Marker = dynamic(
-  () => import("@react-google-maps/api").then((m) => m.Marker),
-  { ssr: false },
-);
-const InfoWindow = dynamic(
-  () => import("@react-google-maps/api").then((m) => m.InfoWindow),
-  { ssr: false },
+const TelemetricPointsMap = dynamic(
+  () =>
+    import("@/components/maps/telemetric-points-map").then(
+      (m) => m.TelemetricPointsMap,
+    ),
+  { ssr: false, loading: () => <Skeleton className="w-full h-[400px]" /> },
 );
 
 const DEFAULT_CENTER = { lat: -19.9167, lng: -43.9345 }; // Belo Horizonte, MG
-const MAP_CONTAINER_STYLE = { width: "100%", height: "400px", borderRadius: 8 };
 const EMPTY_PONTOS_DE_MONITORAMENTO: PontoDeMonitoramento[] = [];
-
-/** Mensagem de erro quando o mapa não carrega (chave inválida, API não ativada, restrições ou faturamento). */
-function MapErrorHelp() {
-  return (
-    <div className="flex flex-col items-center justify-center h-64 px-4 text-center">
-      <p className="font-medium text-destructive mb-2">
-        Não foi possível carregar o Google Maps.
-      </p>
-      <p className="text-sm text-muted-foreground mb-3">
-        Se aparecer &quot;Oops! Something went wrong&quot;, confira no Google
-        Cloud Console (mesmo projeto do Firebase):
-      </p>
-      <ul className="text-left text-sm text-muted-foreground space-y-1 list-disc list-inside">
-        <li>
-          <strong>APIs e serviços → Biblioteca</strong>: ative a{" "}
-          <strong>Maps JavaScript API</strong>.
-        </li>
-        <li>
-          <strong>Faturamento</strong>: vincule uma conta de faturamento ao
-          projeto (há crédito gratuito).
-        </li>
-        <li>
-          <strong>Credenciais → sua chave API</strong>: em &quot;Restrições de
-          aplicativo&quot;, adicione como referenciador{" "}
-          <code className="bg-muted px-1 rounded">http://localhost:9002/*</code>{" "}
-          (e seu domínio em produção).
-        </li>
-      </ul>
-    </div>
-  );
-}
-
-/** Carrega o script do Maps apenas quando a chave existe e renderiza o mapa. */
-function TelemetricMapBlock({
-  mapCenter,
-  pontosComCoordenadas,
-  infoMarkerId,
-  setInfoMarkerId,
-}: {
-  mapCenter: { lat: number; lng: number };
-  pontosComCoordenadas: PontoDeMonitoramento[];
-  infoMarkerId: string | null;
-  setInfoMarkerId: (id: string | null) => void;
-}) {
-  const { isLoaded: isMapLoaded, loadError: mapLoadError } = useJsApiLoader({
-    googleMapsApiKey: GOOGLE_MAPS_API_KEY,
-    preventGoogleFontsLoading: true,
-  });
-
-  if (mapLoadError) return <MapErrorHelp />;
-  if (!isMapLoaded) return <Skeleton className="w-full h-64" />;
-
-  return (
-    <GoogleMap
-      mapContainerStyle={MAP_CONTAINER_STYLE}
-      center={mapCenter}
-      zoom={pontosComCoordenadas.length > 0 ? 14 : 10}
-      options={{ fullscreenControl: true, streetViewControl: false }}
-    >
-      {pontosComCoordenadas.map((p) => (
-        <Marker
-          key={p.id}
-          position={{ lat: p.lat!, lng: p.lng! }}
-          title={p.nome}
-          onClick={() => setInfoMarkerId(infoMarkerId === p.id ? null : p.id)}
-          icon={undefined}
-        />
-      ))}
-      {infoMarkerId &&
-        (() => {
-          const p = pontosComCoordenadas.find((x) => x.id === infoMarkerId);
-          if (!p || p.lat == null || p.lng == null) return null;
-          return (
-            <InfoWindow
-              position={{ lat: p.lat, lng: p.lng }}
-              onCloseClick={() => setInfoMarkerId(null)}
-            >
-              <div className="p-1 min-w-[180px]">
-                <p className="font-semibold">{p.nome}</p>
-                <p className="text-xs text-muted-foreground capitalize">
-                  {p.tipo || "Ponto"}
-                </p>
-                <p className="text-xs mt-1">
-                  Vazão instantânea: — m³/s / — m³/h
-                  <span className="block text-muted-foreground">
-                    (dados da telemetria em implementação)
-                  </span>
-                </p>
-                <p className="text-xs flex items-center gap-1 mt-1">
-                  <Zap className="h-3 w-3" /> Bomba: —
-                  <span className="text-muted-foreground">
-                    (ligada/desligada)
-                  </span>
-                </p>
-                <p className="text-xs flex items-center gap-1">
-                  <AlertTriangle className="h-3 w-3" /> Alertas: residual a
-                  jusante conforme IGAM/ANA
-                </p>
-              </div>
-            </InfoWindow>
-          );
-        })()}
-    </GoogleMap>
-  );
-}
 
 type TelemetriaFonte = "outorga" | "uso_insignificante";
 
@@ -207,7 +92,6 @@ export default function TelemetricMonitoringPage() {
     useState<TelemetriaFonte>("outorga");
   const [selectedOutorgaId, setSelectedOutorgaId] = useState<string>("");
   const [selectedUsoId, setSelectedUsoId] = useState<string>("");
-  const [infoMarkerId, setInfoMarkerId] = useState<string | null>(null);
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [yearFilter, setYearFilter] = useState<string>(String(new Date().getFullYear()));
@@ -967,19 +851,11 @@ export default function TelemetricMonitoringPage() {
                     )}
 
                     <div className="rounded-lg border overflow-hidden bg-muted/30">
-                      {!hasGoogleMapsApiKey() ? (
-                        <div className="flex items-center justify-center h-64 text-muted-foreground">
-                          Configure NEXT_PUBLIC_GOOGLE_MAPS_API_KEY no .env e
-                          reinicie o servidor.
-                        </div>
-                      ) : (
-                        <TelemetricMapBlock
-                          mapCenter={mapCenter}
-                          pontosComCoordenadas={pontosComCoordenadas}
-                          infoMarkerId={infoMarkerId}
-                          setInfoMarkerId={setInfoMarkerId}
-                        />
-                      )}
+                      <TelemetricPointsMap
+                        center={mapCenter}
+                        pontos={pontosComCoordenadas}
+                        height={400}
+                      />
                     </div>
                     {registroAtivoPontos.length > 0 &&
                       pontosComCoordenadas.length === 0 && (

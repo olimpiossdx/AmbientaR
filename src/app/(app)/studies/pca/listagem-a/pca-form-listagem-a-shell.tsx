@@ -20,7 +20,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import type { UseFormReturn } from 'react-hook-form';
 import type { Empreendedor, Project } from '@/lib/types';
 import { filterProjectsByEmpreendedorId } from '@/lib/processos-form-order';
-import { PcaTextField, PcaTextAreaField } from './pca-form-listagem-a-helpers';
+import { PcaTextField, PcaTextAreaField, PcaCoordenadasReadOnlyField } from './pca-form-listagem-a-helpers';
 import type { PcaListagemAFormValues } from './pca-listagem-a-schema';
 import { PCA_LISTAGEM_A_SUBACTIVITIES } from '@/lib/pca/pca-listagem-a-catalog';
 
@@ -172,7 +172,7 @@ export function PcaFormListagemAShell({
             <PcaTextField form={form} name="empreendimento.codigoDn" label="Código DN-217/2017" />
           </div>
           <PcaTextField form={form} name="empreendimento.endereco" label="Endereço" />
-          <PcaTextField form={form} name="empreendimento.coordenadas" label="Coordenadas" />
+          <PcaCoordenadasReadOnlyField form={form} />
           <div className="grid gap-4 md:grid-cols-2">
             <PcaTextField form={form} name="empreendimento.tipologia" label="Classe / tipologia" />
             <FormField

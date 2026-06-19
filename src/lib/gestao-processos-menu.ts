@@ -1,14 +1,20 @@
 import type { NavSubItem, UserRole } from "@/lib/types";
-import { FolderOpen, PlusSquare } from "lucide-react";
+import { FolderKanban, GitBranch } from "lucide-react";
 
-export const GESTAO_PROCESSOS_MENU_LABEL = "Gestão de Processos";
+export const GESTAO_PROCESSOS_MENU_LABEL = "Gestão de Projetos e Processos";
 export const GESTAO_PROCESSOS_PATH = "/gestao-processos";
+export const GESTAO_PROCESSOS_PROJETOS_PATH = `${GESTAO_PROCESSOS_PATH}/projetos`;
+export const GESTAO_PROCESSOS_FLUXO_PATH = `${GESTAO_PROCESSOS_PATH}/fluxo`;
 export const GESTAO_PROCESSOS_PLANILHA_PATH = `${GESTAO_PROCESSOS_PATH}/planilha`;
-export const GESTAO_PROCESSOS_NOVO_PATH = `${GESTAO_PROCESSOS_PATH}?novo=1`;
+export const GESTAO_PROCESSOS_NOVO_PATH = `${GESTAO_PROCESSOS_FLUXO_PATH}?novo=1`;
 
-export const GESTAO_PROCESSOS_VISAO_LABEL = "Todos os processos";
+export const GESTAO_PROCESSOS_PROJETOS_LABEL = "Projetos";
+export const GESTAO_PROCESSOS_FLUXO_LABEL = "Fluxo de Processos";
 
-/** Equipa interna com leitura ampla. */
+/** @deprecated Use GESTAO_PROCESSOS_FLUXO_LABEL */
+export const GESTAO_PROCESSOS_VISAO_LABEL = GESTAO_PROCESSOS_FLUXO_LABEL;
+
+/** Equipa interna com leitura ampla (inclui Fluxo de Processos). */
 export const GESTAO_PROCESSOS_INTERNAL_READ_ROLES: UserRole[] = [
   "admin",
   "technical",
@@ -18,7 +24,7 @@ export const GESTAO_PROCESSOS_INTERNAL_READ_ROLES: UserRole[] = [
   "diretor_fauna",
 ];
 
-/** Portal: somente consulta (escopo por empreendedor na app). */
+/** Portal: Projetos + Fluxo (consulta filtrada por empreendedor). */
 export const GESTAO_PROCESSOS_PORTAL_READ_ROLES: UserRole[] = [
   "client",
   "cliente_autonomo",
@@ -39,22 +45,26 @@ export const GESTAO_PROCESSOS_WRITE_ROLES: UserRole[] = [
 ];
 
 export function gestaoProcessosDetailPath(id: string): string {
-  return `${GESTAO_PROCESSOS_PATH}?processo=${encodeURIComponent(id)}`;
+  return `${GESTAO_PROCESSOS_FLUXO_PATH}?processo=${encodeURIComponent(id)}`;
+}
+
+export function gestaoProcessosProjetoDetailPath(id: string): string {
+  return `${GESTAO_PROCESSOS_PROJETOS_PATH}/${encodeURIComponent(id)}`;
 }
 
 export function buildGestaoProcessosNavSubItems(): NavSubItem[] {
   return [
     {
-      href: GESTAO_PROCESSOS_PATH,
-      label: GESTAO_PROCESSOS_VISAO_LABEL,
-      icon: FolderOpen,
+      href: GESTAO_PROCESSOS_PROJETOS_PATH,
+      label: GESTAO_PROCESSOS_PROJETOS_LABEL,
+      icon: FolderKanban,
       roles: GESTAO_PROCESSOS_MENU_ROLES,
     },
     {
-      href: GESTAO_PROCESSOS_NOVO_PATH,
-      label: "Novo processo",
-      icon: PlusSquare,
-      roles: GESTAO_PROCESSOS_WRITE_ROLES,
+      href: GESTAO_PROCESSOS_FLUXO_PATH,
+      label: GESTAO_PROCESSOS_FLUXO_LABEL,
+      icon: GitBranch,
+      roles: GESTAO_PROCESSOS_MENU_ROLES,
     },
   ];
 }

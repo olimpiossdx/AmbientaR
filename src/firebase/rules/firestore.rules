@@ -676,6 +676,15 @@ service cloud.firestore {
         allow create, update, delete: if canWriteOfficeProcess();
       }
     }
+
+    /**
+     * Projetos de consultoria (casos) — Gestão de Projetos e Processos.
+     * @path /databases/{database}/documents/consultoriaProjects/{projectId}
+     */
+    match /consultoriaProjects/{projectId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if canWriteOfficeProcess();
+    }
     
     /**
      * @description Managers can write and list all. Clients can list (app filtra por empreendedor do titular).

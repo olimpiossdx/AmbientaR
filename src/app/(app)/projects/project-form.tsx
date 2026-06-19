@@ -28,6 +28,11 @@ import { FormListagemG } from './form-listagem-g';
 import { FormListagemH } from './form-listagem-h';
 import { onListagemTabSelect } from './listagem-form-registry-index';
 import { cleanEmptyValues } from '@/lib/utils';
+import {
+  createDefaultTrechoCoordinateBlock,
+  enrichProjectFormCoordinates,
+} from '@/lib/coordinates';
+import { DEFAULT_DATUM } from '@/lib/coordinates/constants';
 import _ from 'lodash';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
@@ -60,7 +65,7 @@ const formSchema = z.object({
   district: z.string().optional(),
   ownerCondition: z.array(z.string()).optional(),
   geographicLocation: z.object({
-    datum: z.enum(['SAD-69', 'WGS-84', 'Córrego Alegre'], { required_error: 'O datum é obrigatório.'}),
+    datum: z.enum(['SIRGAS2000', 'SAD-69', 'WGS-84', 'Córrego Alegre'], { required_error: 'O datum é obrigatório.'}),
     format: z.enum(['Lat/Long', 'UTM'], { required_error: 'O formato da coordenada é obrigatório.'}),
     latLong: z.object({
       lat: z.object({ grau: z.string().optional(), min: z.string().optional(), seg: z.string().optional() }),
@@ -70,6 +75,10 @@ const formSchema = z.object({
       x: z.string().optional(),
       y: z.string().optional(),
       fuso: z.enum(['22', '23', '24'], { required_error: 'O fuso é obrigatório.'}),
+    }).optional(),
+    decimal: z.object({
+      lat: z.number(),
+      lng: z.number(),
     }).optional(),
   }).optional(),
 }).passthrough();
@@ -101,7 +110,7 @@ const getInitialValues = (currentItem?: Project | null): FormValues => {
         district: '',
         ownerCondition: [],
         geographicLocation: {
-            datum: 'WGS-84',
+            datum: DEFAULT_DATUM,
             format: 'UTM',
             latLong: { lat: { grau: '', min: '', seg: '' }, long: { grau: '', min: '', seg: '' } },
             utm: { x: '', y: '', fuso: '23' },
@@ -124,6 +133,12 @@ const getInitialValues = (currentItem?: Project | null): FormValues => {
         projectArea: {},
         atividadesAgricolas: {},
         atividadesFlorestais: {},
+        listagemE: {
+            geoTrecho: {
+                inicio: createDefaultTrechoCoordinateBlock(),
+                fim: createDefaultTrechoCoordinateBlock(),
+            },
+        },
     };
 
     if (currentItem) {
@@ -231,10 +246,12 @@ export function ProjectForm({ currentItem, onSuccess, onCancel }: ProjectFormPro
       return;
     }
     
-    const dataToSave = cleanEmptyValues({
-      ...values,
-      perimetroReferencia: perimetroReferencia ?? undefined,
-    });
+    const dataToSave = cleanEmptyValues(
+      enrichProjectFormCoordinates({
+        ...values,
+        perimetroReferencia: perimetroReferencia ?? undefined,
+      }),
+    );
 
 
     if (currentItem) {

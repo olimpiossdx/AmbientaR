@@ -1,5 +1,6 @@
 import * as XLSX from "@e965/xlsx";
 import type {
+  ConsultoriaProject,
   OfficeProcess,
   OfficeProcessExcelRow,
   OfficeProcessImportPreview,
@@ -25,6 +26,10 @@ const HEADER_ALIASES: Record<string, keyof OfficeProcessExcelRow | "ignore"> = {
   status: "statusDetalhe",
   prazo: "prazo",
   fase: "fase",
+  projeto: "projetoRef",
+  "codigo projeto": "projetoRef",
+  "código projeto": "projetoRef",
+  "projeto consultoria": "projetoRef",
 };
 
 function normalizeHeader(value: unknown): string {
@@ -146,6 +151,7 @@ export function parseOfficeProcessWorkbook(
       statusDetalhe,
       prazo,
       fase,
+      projetoRef: cellValue(row, headerMap.projetoRef) || undefined,
       rowNumber,
     });
   }
@@ -163,7 +169,12 @@ export async function parseOfficeProcessFile(
 
 export function buildOfficeProcessExportWorkbook(
   processes: OfficeProcess[],
+  consultoriaProjects?: ConsultoriaProject[],
 ): ArrayBuffer {
+  const projectById = new Map(
+    (consultoriaProjects ?? []).map((p) => [p.id, p.code ?? p.name]),
+  );
+
   const rows = [
     [
       "TIPO_PROCESSO",
@@ -172,6 +183,7 @@ export function buildOfficeProcessExportWorkbook(
       "EMPREENDIMENTO",
       "MUNICIPIO",
       "TIPO DE INTERVENÇÃO",
+      "PROJETO",
       "FASE",
       "STATUS",
       "PRAZO",
@@ -184,6 +196,9 @@ export function buildOfficeProcessExportWorkbook(
       p.empreendimentoName,
       p.municipio ?? "",
       p.tipoIntervencao ?? "",
+      p.consultoriaProjectId
+        ? (projectById.get(p.consultoriaProjectId) ?? p.consultoriaProjectId)
+        : "",
       p.fase,
       p.statusDetalhe ?? "",
       p.prazo ?? "",
@@ -200,8 +215,9 @@ export function buildOfficeProcessExportWorkbook(
 export function downloadOfficeProcessExport(
   processes: OfficeProcess[],
   filename = "gestao-processos.xlsx",
+  consultoriaProjects?: ConsultoriaProject[],
 ): void {
-  const buffer = buildOfficeProcessExportWorkbook(processes);
+  const buffer = buildOfficeProcessExportWorkbook(processes, consultoriaProjects);
   const blob = new Blob([buffer], {
     type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
   });

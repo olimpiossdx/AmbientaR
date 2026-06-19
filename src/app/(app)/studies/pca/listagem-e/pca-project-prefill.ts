@@ -11,6 +11,7 @@ import {
   shouldPrefillPcaFromProject,
   cloneProjectListagemBlock,
 } from '../lib/pca-prefill-shared';
+import { enrichListagemEGeoTrechoWithDecimal } from '@/lib/coordinates';
 
 function str(value: unknown): string {
   if (value == null || value === '') return '';
@@ -80,18 +81,19 @@ export function serializePcaListagemEForFirestore(
   values: PcaListagemEFormValues,
   status: 'Rascunho' | 'Aprovado',
 ) {
+  const enriched = enrichListagemEGeoTrechoWithDecimal(values);
   const payload: Record<string, unknown> = {
-    ...values,
+    ...enriched,
     status,
-    formSource: values.formSource ?? 'react',
+    formSource: enriched.formSource ?? 'react',
     termoReferencia: {
-      ...values.termoReferencia,
-      dataEmissao: values.termoReferencia.dataEmissao.toISOString(),
+      ...enriched.termoReferencia,
+      dataEmissao: enriched.termoReferencia.dataEmissao.toISOString(),
     },
   };
 
   if (status === 'Aprovado') {
-    payload.projectSnapshot = buildPcaListagemEProjectSnapshot(values);
+    payload.projectSnapshot = buildPcaListagemEProjectSnapshot(enriched);
   }
 
   return payload;

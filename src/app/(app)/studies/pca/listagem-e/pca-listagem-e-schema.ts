@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { PCA_LISTAGEM_E_ACTIVITY } from '@/lib/pca/pca-listagem-e-catalog';
+import { createDefaultTrechoCoordinateBlock } from '@/lib/coordinates';
 
 const termoReferenciaSchema = z.object({
   titulo: z.string().min(1, 'O título é obrigatório.'),
@@ -52,82 +53,11 @@ const equipeTecnicaSchema = z.object({
   arts: z.string().optional(),
 });
 
-export const pcaListagemETecnicoSchema = z
-  .object({
-    regularizacaoAmbiental: z
-      .object({
-        fase: z.string().optional(),
-        classe: z.string().optional(),
-        processoUltimaLicenca: z.string().optional(),
-      })
-      .optional(),
-    atividadesPrincipal: z
-      .array(
-        z.object({
-          atividade: z.string().optional(),
-          codigo: z.string().optional(),
-          quantidade: z.string().optional(),
-        }),
-      )
-      .optional(),
-    geoTrecho: z
-      .object({
-        extensaoKm: z.string().optional(),
-        municipiosAtendidos: z.string().optional(),
-        resumoCoordenadas: z.string().optional(),
-      })
-      .optional(),
-    legislacaoMunicipal: z
-      .object({
-        temPlanoDiretor: z.boolean().optional(),
-        interfereNucleos: z.boolean().optional(),
-        resumoNucleos: z.string().optional(),
-      })
-      .optional(),
-    caracterizacaoTecnica: z
-      .object({
-        vazaoNormal: z.string().optional(),
-        vazaoMaxima: z.string().optional(),
-        pressaoOperacao: z.string().optional(),
-        vidaUtilAnos: z.string().optional(),
-        linhaTronco: z.string().optional(),
-        produtosResumo: z.string().optional(),
-      })
-      .optional(),
-    recursosHidricos: z
-      .object({
-        intervencaoCursosAgua: z.boolean().optional(),
-        resumoCorpos: z.string().optional(),
-        observacoes: z.string().optional(),
-      })
-      .optional(),
-    supressaoVegetacao: z
-      .object({
-        necessaria: z.boolean().optional(),
-        areaHa: z.string().optional(),
-        resumo: z.string().optional(),
-      })
-      .optional(),
-    efluentes: z
-      .object({
-        resumoTratamento: z.string().optional(),
-        resumoTipologias: z.string().optional(),
-      })
-      .optional(),
-    residuos: z
-      .object({
-        resumoGestao: z.string().optional(),
-      })
-      .optional(),
-    emissoes: z
-      .object({
-        resumoControle: z.string().optional(),
-      })
-      .optional(),
-  })
-  .optional();
+/** Bloco técnico PCA Listagem E — espelha cadastro empreendimento (listagemE.*, geoTrecho.inicio/fim). */
+export const pcaListagemETecnicoSchema = z.any().optional();
 
-export const pcaListagemEFormSchema = z.object({
+export const pcaListagemEFormSchema = z
+  .object({
   status: z.enum(['Rascunho', 'Aprovado']).optional(),
   listagemCode: z.literal('E'),
   activity: z.string().min(1),
@@ -141,7 +71,7 @@ export const pcaListagemEFormSchema = z.object({
   conteudoEstudo: conteudoEstudoSchema,
   equipeTecnica: equipeTecnicaSchema,
   listagemE: pcaListagemETecnicoSchema,
-});
+}).passthrough();
 
 export type PcaListagemEFormValues = z.infer<typeof pcaListagemEFormSchema>;
 
@@ -201,6 +131,19 @@ export function getPcaListagemEDefaultValues(
       arts: '',
       ...partial?.equipeTecnica,
     },
-    listagemE: partial?.listagemE ?? {},
+    listagemE: {
+      ...(partial?.listagemE ?? {}),
+      geoTrecho: {
+        ...(partial?.listagemE?.geoTrecho ?? {}),
+        inicio: {
+          ...createDefaultTrechoCoordinateBlock(),
+          ...((partial?.listagemE?.geoTrecho as { inicio?: object } | undefined)?.inicio),
+        },
+        fim: {
+          ...createDefaultTrechoCoordinateBlock(),
+          ...((partial?.listagemE?.geoTrecho as { fim?: object } | undefined)?.fim),
+        },
+      },
+    },
   };
 }

@@ -23,10 +23,20 @@ import {
 import type {
   OfficeProcess,
   OfficeProcessFase,
+  OfficeProcessPrioridade,
   OfficeProcessTipo,
 } from "@/lib/gestao-processos/types";
 import { OFFICE_PROCESS_FASE_LABELS } from "@/lib/gestao-processos/utils";
 import { Loader2 } from "lucide-react";
+
+export const OFFICE_PROCESS_PRIORIDADE_LABELS: Record<
+  OfficeProcessPrioridade,
+  string
+> = {
+  baixa: "Baixa",
+  media: "Média",
+  alta: "Alta",
+};
 
 export type ProcessFormValues = {
   tipoProcesso: OfficeProcessTipo;
@@ -36,6 +46,7 @@ export type ProcessFormValues = {
   municipio: string;
   tipoIntervencao: string;
   fase: OfficeProcessFase;
+  prioridade: OfficeProcessPrioridade | "";
   statusDetalhe: string;
   prazo: string;
   observacoes: string;
@@ -48,7 +59,8 @@ const EMPTY_FORM: ProcessFormValues = {
   empreendimentoName: "",
   municipio: "",
   tipoIntervencao: "",
-  fase: "protocolado",
+  fase: "elaboracao",
+  prioridade: "media",
   statusDetalhe: "",
   prazo: "",
   observacoes: "",
@@ -64,6 +76,7 @@ function toFormValues(process?: OfficeProcess | null): ProcessFormValues {
     municipio: process.municipio ?? "",
     tipoIntervencao: process.tipoIntervencao ?? "",
     fase: process.fase,
+    prioridade: process.prioridade ?? "",
     statusDetalhe: process.statusDetalhe ?? "",
     prazo: process.prazo ?? "",
     observacoes: process.observacoes ?? "",
@@ -179,6 +192,35 @@ export function ProcessFormDialog({
                       </SelectItem>
                     ),
                   )}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Prioridade</Label>
+              <Select
+                value={form.prioridade || "__none__"}
+                onValueChange={(v) =>
+                  setForm((p) => ({
+                    ...p,
+                    prioridade: v === "__none__" ? "" : (v as OfficeProcessPrioridade),
+                  }))
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Sem prioridade" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">Sem prioridade</SelectItem>
+                  {(
+                    Object.entries(OFFICE_PROCESS_PRIORIDADE_LABELS) as [
+                      OfficeProcessPrioridade,
+                      string,
+                    ][]
+                  ).map(([value, label]) => (
+                    <SelectItem key={value} value={value}>
+                      {label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

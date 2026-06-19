@@ -24,24 +24,37 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type {
+  ConsultoriaProject,
   OfficeProcess,
   OfficeProcessEvent,
   OfficeProcessEventTipo,
   OfficeProcessFase,
+  OfficeProcessPrioridade,
 } from "@/lib/gestao-processos/types";
 import {
   OFFICE_PROCESS_FASE_LABELS,
   formatPrazoDisplay,
 } from "@/lib/gestao-processos/utils";
+import {
+  etapaLabel,
+  resolveProcessPipelineState,
+} from "@/lib/gestao-processos/pipeline-utils";
 import { LICENCIAMENTO_REQUESTS_PATH } from "@/lib/licenciamento-menu";
+import { gestaoProcessosProjetoDetailPath } from "@/lib/gestao-processos-menu";
+import { consultoriaProjectLabel } from "@/lib/gestao-processos/consultoria-project-utils";
+import { linkProcessToConsultoriaProject } from "@/lib/gestao-processos/office-process-import";
+import { OFFICE_PROCESS_PRIORIDADE_LABELS } from "@/components/gestao-processos/process-form-dialog";
+import { ProcessAlertsBadges } from "@/components/gestao-processos/process-alerts-badges";
 import { ExternalLink, Loader2, Plus, Trash2 } from "lucide-react";
 import { useCollection, useFirebase, useMemoFirebase } from "@/firebase";
 import {
   addDoc,
   collection,
   deleteDoc,
+  deleteField,
   doc,
   serverTimestamp,
+  updateDoc,
 } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -100,6 +113,7 @@ type ProcessDetailSheetProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   canWrite: boolean;
+  consultoriaProjects?: ConsultoriaProject[];
 };
 
 export function ProcessDetailSheet({
@@ -107,6 +121,7 @@ export function ProcessDetailSheet({
   open,
   onOpenChange,
   canWrite,
+  consultoriaProjects = [],
 }: ProcessDetailSheetProps) {
   const { firestore, user } = useFirebase();
   const { toast } = useToast();
@@ -114,6 +129,15 @@ export function ProcessDetailSheet({
   const [eventTitulo, setEventTitulo] = React.useState("");
   const [eventDescricao, setEventDescricao] = React.useState("");
   const [savingEvent, setSavingEvent] = React.useState(false);
+  const [linkProjectId, setLinkProjectId] = React.useState<string>("");
+  const [prioridade, setPrioridade] = React.useState<OfficeProcessPrioridade | "">("");
+  const [savingLink, setSavingLink] = React.useState(false);
+  const [savingPrioridade, setSavingPrioridade] = React.useState(false);
+
+  React.useEffect(() => {
+    setLinkProjectId(process?.consultoriaProjectId ?? "");
+    setPrioridade(process?.prioridade ?? "");
+  }, [process?.consultoriaProjectId, process?.prioridade, process?.id]);
 
   const eventsQuery = useMemoFirebase(() => {
     if (!firestore || !process?.id) return null;
@@ -175,6 +199,49 @@ export function ProcessDetailSheet({
         title: "Erro ao remover",
         description: (e as Error).message,
       });
+    }
+  };
+
+  const handleSaveProjectLink = async () => {
+    if (!firestore || !process) return;
+    setSavingLink(true);
+    try {
+      await linkProcessToConsultoriaProject(
+        firestore,
+        process.id,
+        linkProjectId || null,
+      );
+      toast({
+        title: linkProjectId ? "Projeto vinculado" : "Vínculo removido",
+      });
+    } catch (e) {
+      toast({
+        variant: "destructive",
+        title: "Erro ao vincular",
+        description: (e as Error).message,
+      });
+    } finally {
+      setSavingLink(false);
+    }
+  };
+
+  const handleSavePrioridade = async () => {
+    if (!firestore || !process) return;
+    setSavingPrioridade(true);
+    try {
+      await updateDoc(doc(firestore, "officeProcesses", process.id), {
+        prioridade: prioridade ? prioridade : deleteField(),
+        updatedAt: serverTimestamp(),
+      });
+      toast({ title: "Prioridade atualizada" });
+    } catch (e) {
+      toast({
+        variant: "destructive",
+        title: "Erro ao salvar",
+        description: (e as Error).message,
+      });
+    } finally {
+      setSavingPrioridade(false);
     }
   };
 
@@ -241,6 +308,8 @@ export function ProcessDetailSheet({
 
   if (!process) return null;
 
+  const pipelineState = resolveProcessPipelineState(process);
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
@@ -292,9 +361,27 @@ export function ProcessDetailSheet({
                     Dados de validação
                   </Badge>
                 ) : null}
+                {process.prioridade === "alta" ? (
+                  <Badge variant="destructive">Prioridade alta</Badge>
+                ) : null}
               </div>
+              <ProcessAlertsBadges process={process} />
 
               <div className="grid gap-3 sm:grid-cols-2">
+                <DetailField
+                  label="Pipeline"
+                  value={
+                    pipelineState.pipeline === "consultoria"
+                      ? "Consultoria (pré-protocolo)"
+                      : pipelineState.pipeline === "orgao"
+                        ? "Órgão (pós-protocolo)"
+                        : "Encerrado"
+                  }
+                />
+                <DetailField
+                  label="Etapa no kanban"
+                  value={etapaLabel(pipelineState.pipeline, pipelineState.etapa)}
+                />
                 <DetailField label="Empreendedor" value={process.empreendedorName} />
                 <DetailField label="Empreendimento" value={process.empreendimentoName} />
                 <DetailField label="Município" value={process.municipio} />
@@ -303,6 +390,112 @@ export function ProcessDetailSheet({
                 <DetailField label="Órgão" value={process.orgao} />
                 <DetailField label="Responsável" value={process.responsavelName} />
                 <DetailField label="Observações" value={process.observacoes} />
+              </div>
+
+              <Separator />
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground">Prioridade</Label>
+                {canWrite ? (
+                  <div className="flex flex-col gap-2 sm:flex-row">
+                    <Select
+                      value={prioridade || "__none__"}
+                      onValueChange={(v) =>
+                        setPrioridade(
+                          v === "__none__" ? "" : (v as OfficeProcessPrioridade),
+                        )
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Sem prioridade" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__none__">Sem prioridade</SelectItem>
+                        {(
+                          Object.entries(OFFICE_PROCESS_PRIORIDADE_LABELS) as [
+                            OfficeProcessPrioridade,
+                            string,
+                          ][]
+                        ).map(([value, label]) => (
+                          <SelectItem key={value} value={value}>
+                            {label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      type="button"
+                      size="sm"
+                      disabled={savingPrioridade}
+                      onClick={() => void handleSavePrioridade()}
+                    >
+                      {savingPrioridade ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        "Salvar"
+                      )}
+                    </Button>
+                  </div>
+                ) : process.prioridade ? (
+                  <p className="text-sm">
+                    {OFFICE_PROCESS_PRIORIDADE_LABELS[process.prioridade]}
+                  </p>
+                ) : (
+                  <p className="text-sm text-muted-foreground">—</p>
+                )}
+              </div>
+
+              <Separator />
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground">
+                  Projeto de consultoria
+                </Label>
+                {canWrite ? (
+                  <div className="flex flex-col gap-2 sm:flex-row">
+                    <Select
+                      value={linkProjectId || "__none__"}
+                      onValueChange={(v) =>
+                        setLinkProjectId(v === "__none__" ? "" : v)
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Sem projeto vinculado" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__none__">Sem projeto</SelectItem>
+                        {[...consultoriaProjects]
+                          .sort((a, b) => a.name.localeCompare(b.name, "pt-BR"))
+                          .map((p) => (
+                            <SelectItem key={p.id} value={p.id}>
+                              {p.code ? `${p.code} — ${p.name}` : p.name}
+                            </SelectItem>
+                          ))}
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      type="button"
+                      size="sm"
+                      disabled={savingLink}
+                      onClick={() => void handleSaveProjectLink()}
+                    >
+                      {savingLink ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        "Salvar vínculo"
+                      )}
+                    </Button>
+                  </div>
+                ) : process.consultoriaProjectId ? (
+                  <Button variant="outline" size="sm" asChild>
+                    <Link href={gestaoProcessosProjetoDetailPath(process.consultoriaProjectId)}>
+                      {consultoriaProjectLabel(
+                        process.consultoriaProjectId,
+                        consultoriaProjects,
+                      ) ?? "Ver projeto"}
+                    </Link>
+                  </Button>
+                ) : (
+                  <p className="text-sm text-muted-foreground">—</p>
+                )}
               </div>
 
               {process.requestId ? (

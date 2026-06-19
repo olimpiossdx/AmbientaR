@@ -18,30 +18,26 @@ import {
 import { useCollection, useFirebase, useMemoFirebase } from "@/firebase";
 import {
   collection,
-  doc,
   getDocs,
-  serverTimestamp,
   writeBatch,
 } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import {
   GESTAO_PROCESSOS_MENU_LABEL,
-  GESTAO_PROCESSOS_PATH,
+  GESTAO_PROCESSOS_FLUXO_PATH,
 } from "@/lib/gestao-processos-menu";
 import { canWriteGestaoProcessos } from "@/lib/gestao-processos/role-guards";
 import type {
+  ConsultoriaProject,
   OfficeProcess,
   OfficeProcessImportPreview,
 } from "@/lib/gestao-processos/types";
 import {
-  buildOfficeProcessExternalKey,
-  detectTipoProcesso,
-} from "@/lib/gestao-processos/utils";
-import {
   downloadOfficeProcessExport,
   parseOfficeProcessWorkbook,
 } from "@/lib/gestao-processos/excel";
-import { resolveEmpreendedorIdByName } from "@/lib/gestao-processos/match-empreendedor";
+import { commitOfficeProcessImport } from "@/lib/gestao-processos/office-process-import";
+import { buildOfficeProcessExternalKey } from "@/lib/gestao-processos/utils";
 import { ExcelImportDialog } from "@/components/gestao-processos/excel-import-dialog";
 import type { Empreendedor } from "@/lib/types";
 import * as XLSX from "@e965/xlsx";
@@ -54,12 +50,6 @@ import {
   Upload,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-
-function omitUndefinedValues(values: Record<string, unknown>): Record<string, unknown> {
-  return Object.fromEntries(
-    Object.entries(values).filter(([, value]) => value !== undefined),
-  );
-}
 
 export default function GestaoProcessosPlanilhaPage() {
   const router = useRouter();
@@ -81,13 +71,19 @@ export default function GestaoProcessosPlanilhaPage() {
     () => (firestore ? collection(firestore, "empreendedores") : null),
     [firestore],
   );
+  const consultoriaProjectsQuery = useMemoFirebase(
+    () => (firestore ? collection(firestore, "consultoriaProjects") : null),
+    [firestore],
+  );
 
   const { data: processes } = useCollection<OfficeProcess>(processesQuery);
   const { data: empreendedores } = useCollection<Empreendedor>(empreendedoresQuery);
+  const { data: consultoriaProjects } =
+    useCollection<ConsultoriaProject>(consultoriaProjectsQuery);
 
   React.useEffect(() => {
     if (user && !canWrite) {
-      router.replace(GESTAO_PROCESSOS_PATH);
+      router.replace(GESTAO_PROCESSOS_FLUXO_PATH);
     }
   }, [user, canWrite, router]);
 
@@ -117,54 +113,15 @@ export default function GestaoProcessosPlanilhaPage() {
     if (!firestore) return;
     setImporting(true);
     try {
-      const batch = writeBatch(firestore);
-      let created = 0;
-      let updated = 0;
-
-      for (const row of preview.rows) {
-        const tipoProcesso =
-          row.tipoProcesso ?? detectTipoProcesso(row.numeroProcesso);
-        const externalKey = buildOfficeProcessExternalKey(
-          tipoProcesso,
-          row.numeroProcesso,
-        );
-        const empreendedorId = resolveEmpreendedorIdByName(
-          row.empreendedorName,
-          empreendedores ?? undefined,
-        );
-
-        const payload = omitUndefinedValues({
-          externalKey,
-          tipoProcesso,
-          numeroProcesso: row.numeroProcesso,
-          empreendedorName: row.empreendedorName,
-          empreendimentoName: row.empreendimentoName,
-          municipio: row.municipio,
-          tipoIntervencao: row.tipoIntervencao,
-          fase: row.fase ?? "protocolado",
-          statusDetalhe: row.statusDetalhe,
-          prazo: row.prazo,
-          empreendedorId,
-          fonte: "excel" as const,
-          seedValidation: options.seedValidation,
-          updatedAt: serverTimestamp(),
-        });
-
-        const existing = existingByKey.get(externalKey);
-        if (existing) {
-          batch.update(doc(firestore, "officeProcesses", existing.id), payload);
-          updated++;
-        } else {
-          const ref = doc(collection(firestore, "officeProcesses"));
-          batch.set(ref, { ...payload, createdAt: serverTimestamp() });
-          created++;
-        }
-      }
-
-      await batch.commit();
+      const result = await commitOfficeProcessImport(firestore, preview, {
+        seedValidation: options.seedValidation,
+        empreendedores: empreendedores ?? undefined,
+        consultoriaProjects: consultoriaProjects ?? undefined,
+        existingByKey,
+      });
       toast({
         title: "Importação concluída",
-        description: `${created} criado(s), ${updated} atualizado(s).`,
+        description: `${result.created} criado(s), ${result.updated} atualizado(s), ${result.linked} vinculado(s).`,
       });
       setImportOpen(false);
     } catch (e) {
@@ -237,7 +194,7 @@ export default function GestaoProcessosPlanilhaPage() {
         description={`${GESTAO_PROCESSOS_MENU_LABEL} — acompanhamento e ferramentas operacionais.`}
       >
         <Button variant="outline" size="sm" asChild>
-          <Link href={GESTAO_PROCESSOS_PATH}>
+          <Link href={GESTAO_PROCESSOS_FLUXO_PATH}>
             <ArrowLeft className="mr-2 h-4 w-4" />
             Voltar
           </Link>
@@ -254,7 +211,7 @@ export default function GestaoProcessosPlanilhaPage() {
           </CardHeader>
           <CardContent>
             <Button variant="outline" asChild>
-              <Link href={GESTAO_PROCESSOS_PATH}>
+              <Link href={GESTAO_PROCESSOS_FLUXO_PATH}>
                 Abrir acompanhamento
               </Link>
             </Button>
@@ -303,6 +260,7 @@ export default function GestaoProcessosPlanilhaPage() {
                 downloadOfficeProcessExport(
                   processes ?? [],
                   "gestao-processos-export.xlsx",
+                  consultoriaProjects ?? undefined,
                 )
               }
             >

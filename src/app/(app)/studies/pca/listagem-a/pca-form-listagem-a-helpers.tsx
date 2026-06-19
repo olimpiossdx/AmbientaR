@@ -2,6 +2,7 @@
 
 import {
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -56,6 +57,43 @@ export function PcaTextField({
           <FormControl>
             <Input placeholder={placeholder} {...field} value={String(field.value ?? '')} />
           </FormControl>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
+  );
+}
+
+/** Resumo read-only de `empreendimento.coordenadas` (prefill do cadastro). */
+export function PcaCoordenadasReadOnlyField({
+  form,
+  className,
+}: {
+  form: UseFormReturn<any>;
+  className?: string;
+}) {
+  return (
+    <FormField
+      control={form.control}
+      name="empreendimento.coordenadas"
+      render={({ field }) => (
+        <FormItem className={className}>
+          <FormLabel>Coordenadas</FormLabel>
+          <FormControl>
+            <Input
+              readOnly
+              tabIndex={-1}
+              className="cursor-default bg-muted/50"
+              {...field}
+              value={String(field.value ?? '')}
+              placeholder="Vincule um empreendimento para exibir o resumo"
+            />
+          </FormControl>
+          <FormDescription>
+            Resumo SIRGAS 2000 preenchido a partir do empreendimento. Para editar coordenadas,
+            use o bloco de localização geográfica no formulário técnico ou no cadastro do
+            empreendimento.
+          </FormDescription>
           <FormMessage />
         </FormItem>
       )}
