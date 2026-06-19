@@ -1,5 +1,6 @@
 import type { GeoJSON } from "geojson";
 import * as turf from "@turf/turf";
+import { FieldValue } from "firebase-admin/firestore";
 import { adminDb } from "@/lib/firebase-admin";
 import { FAD_WORKSPACES_COLLECTION } from "./firestore-paths";
 import type {
@@ -7,9 +8,42 @@ import type {
   FadWorkspace,
   UpdateFadWorkspaceInput,
 } from "./types";
+import { isGeoPolygon } from "./validators";
 
 function docToWorkspace(id: string, data: FirebaseFirestore.DocumentData): FadWorkspace {
-  return { id, ...(data as Omit<FadWorkspace, "id">) };
+  const { aoiJson, aoi: legacyAoi, ...rest } = data;
+  const workspace = { id, ...(rest as Omit<FadWorkspace, "id">) };
+  const storedAoi = parseStoredAoi(aoiJson, legacyAoi);
+  if (storedAoi) workspace.aoi = storedAoi;
+  return workspace;
+}
+
+function normalizeAoiForJsonStorage(
+  aoi: GeoJSON.Polygon | GeoJSON.MultiPolygon,
+): GeoJSON.Polygon | GeoJSON.MultiPolygon {
+  return JSON.parse(JSON.stringify(aoi)) as
+    | GeoJSON.Polygon
+    | GeoJSON.MultiPolygon;
+}
+
+function parseStoredAoi(
+  aoiJson: unknown,
+  legacyAoi: unknown,
+): GeoJSON.Polygon | GeoJSON.MultiPolygon | undefined {
+  if (typeof aoiJson === "string" && aoiJson.trim()) {
+    try {
+      const parsed = JSON.parse(aoiJson) as unknown;
+      if (isGeoPolygon(parsed)) return normalizeAoiForJsonStorage(parsed);
+    } catch {
+      /* ignore invalid persisted AOI */
+    }
+  }
+
+  if (isGeoPolygon(legacyAoi)) {
+    return normalizeAoiForJsonStorage(legacyAoi);
+  }
+
+  return undefined;
 }
 
 function computeBboxAndArea(
@@ -55,8 +89,9 @@ export async function createFadWorkspace(
   };
 
   if (input.aoi) {
-    const { bbox, areaHa } = computeBboxAndArea(input.aoi);
-    payload.aoi = input.aoi;
+    const aoi = normalizeAoiForJsonStorage(input.aoi);
+    const { bbox, areaHa } = computeBboxAndArea(aoi);
+    payload.aoiJson = JSON.stringify(aoi);
     payload.bbox = bbox;
     payload.areaHa = areaHa;
   }
@@ -77,13 +112,19 @@ export async function updateFadWorkspace(
   if (!existing.exists) return null;
 
   const update: Record<string, unknown> = {
-    ...patch,
     updatedAt: new Date().toISOString(),
     updatedBy: userId,
   };
+  if (patch.name !== undefined) update.name = patch.name;
+  if (patch.aoiSource !== undefined) update.aoiSource = patch.aoiSource;
+  if (patch.carCode !== undefined) update.carCode = patch.carCode;
+  if (patch.status !== undefined) update.status = patch.status;
 
   if (patch.aoi) {
-    const { bbox, areaHa } = computeBboxAndArea(patch.aoi);
+    const aoi = normalizeAoiForJsonStorage(patch.aoi);
+    const { bbox, areaHa } = computeBboxAndArea(aoi);
+    update.aoiJson = JSON.stringify(aoi);
+    update.aoi = FieldValue.delete();
     update.bbox = bbox;
     update.areaHa = areaHa;
     if (!patch.status) {
