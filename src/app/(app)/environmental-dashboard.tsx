@@ -87,11 +87,6 @@ export default function EnvironmentalDashboard({ initialPermits, initialLicenses
   const finalOutorgas = initialOutorgas !== undefined ? initialOutorgas : outorgas;
   const finalIntervencoes = initialIntervencoes !== undefined ? initialIntervencoes : intervencoes;
 
-  /** Licenças para estatísticas: no painel do cliente vêm de `initialLicenses`; gestores usam projetos (legado). */
-  const licenseStatsSource =
-    finalLicenses !== null ? finalLicenses : (finalProjects || []);
-
-
   const projectsQuery = useMemoFirebase(
     () => {
       if (!firestore || isClientView) return null;
@@ -121,6 +116,10 @@ export default function EnvironmentalDashboard({ initialPermits, initialLicenses
   const { permitStats, complianceStats, outorgaStats, intervencaoStats } = useMemo(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0); 
+    
+    // Licenças para estatísticas: no painel do cliente vêm de `initialLicenses`; gestores usam projetos (legado).
+    const licenseStatsSource =
+      finalLicenses !== null ? finalLicenses : (finalProjects || []);
     
     const stats = {
       valid: 0,
@@ -213,7 +212,6 @@ export default function EnvironmentalDashboard({ initialPermits, initialLicenses
       }
     };
   }, [
-    licenseStatsSource,
     finalLicenses,
     finalProjects,
     finalCondicionantes,
