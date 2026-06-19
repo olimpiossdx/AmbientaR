@@ -1,4 +1,5 @@
-import type { Empreendedor, Project } from '@/lib/types';
+import { enrichCoordinateBlockWithDecimal } from '@/lib/coordinates';
+import type { CoordinateFormat, Empreendedor, GeographicLocationFields, Project } from '@/lib/types';
 import { RCA_LISTAGEM_E_ACTIVITY } from '@/lib/rca/rca-listagem-e-catalog';
 import type { RcaListagemEFormValues } from './rca-listagem-e-schema';
 import {
@@ -85,8 +86,39 @@ export function serializeRcaListagemEForFirestore(
   const termo = values.termoReferencia as
     | { dataEmissao?: Date | string; titulo?: string; processo?: string; versao?: string }
     | undefined;
+  const listagemE = values.listagemE as
+    | {
+        geoTrecho?: {
+          inicio?: Pick<GeographicLocationFields, 'latLong' | 'utm' | 'decimal'> & {
+            formato?: CoordinateFormat;
+          };
+          fim?: Pick<GeographicLocationFields, 'latLong' | 'utm' | 'decimal'> & {
+            formato?: CoordinateFormat;
+          };
+          [key: string]: unknown;
+        };
+        [key: string]: unknown;
+      }
+    | undefined;
+  const geoTrecho = listagemE?.geoTrecho;
+  const enrichedListagemE =
+    geoTrecho != null
+      ? {
+          ...listagemE,
+          geoTrecho: {
+            ...geoTrecho,
+            ...(geoTrecho.inicio?.formato != null
+              ? { inicio: enrichCoordinateBlockWithDecimal(geoTrecho.inicio, 'formato') }
+              : {}),
+            ...(geoTrecho.fim?.formato != null
+              ? { fim: enrichCoordinateBlockWithDecimal(geoTrecho.fim, 'formato') }
+              : {}),
+          },
+        }
+      : listagemE;
   const payload: Record<string, unknown> = {
     ...values,
+    listagemE: enrichedListagemE,
     status,
     listagemCode: 'E',
     formularioTipo: normalizarFormularioTipoRcaListagemE(values.formularioTipo),

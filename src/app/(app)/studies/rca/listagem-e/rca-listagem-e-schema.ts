@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { RCA_LISTAGEM_E_ACTIVITY } from '@/lib/rca/rca-listagem-e-catalog';
+import { createDefaultTrechoCoordinateBlock } from '@/lib/coordinates';
 import type { RcaFormValues } from '../lib/rca-form-initial-values';
 import { getRcaListagemEInitialValues } from '../lib/rca-form-initial-values';
 import {
@@ -23,6 +24,9 @@ const formularioTipoEnum = z.enum([
   'dragagem',
 ]);
 
+/** Bloco técnico RCA Listagem E — espelha cadastro empreendimento (listagemE.*, geoTrecho.inicio/fim). */
+export const rcaListagemETecnicoSchema = z.any().optional();
+
 export const rcaListagemEFormSchema = z
   .object({
     activity: z.string().min(1, 'A listagem é obrigatória.'),
@@ -32,6 +36,7 @@ export const rcaListagemEFormSchema = z
     formSource: z.enum(['react', 'dynamic']).optional(),
     empreendedor: z.object({}).passthrough(),
     empreendimento: z.object({}).passthrough(),
+    listagemE: rcaListagemETecnicoSchema,
   })
   .passthrough();
 
@@ -45,6 +50,10 @@ export function getRcaListagemEDefaultValues(
 ): RcaListagemEFormValues {
   const base = getRcaListagemEInitialValues(null);
   const formularioTipo = partial?.formularioTipo ?? RCA_LISTAGEM_E_FORM_TIPO_PADRAO;
+  const mergedListagemE = {
+    ...((base.listagemE as object) ?? {}),
+    ...(partial?.listagemE ?? {}),
+  };
   return {
     ...base,
     ...partial,
@@ -55,5 +64,19 @@ export function getRcaListagemEDefaultValues(
       subatividadeParaFormularioRcaListagemE(formularioTipo),
     formularioTipo,
     formSource: partial?.formSource ?? 'react',
+    listagemE: {
+      ...mergedListagemE,
+      geoTrecho: {
+        ...((mergedListagemE as { geoTrecho?: object }).geoTrecho ?? {}),
+        inicio: {
+          ...createDefaultTrechoCoordinateBlock(),
+          ...((mergedListagemE as { geoTrecho?: { inicio?: object } }).geoTrecho?.inicio),
+        },
+        fim: {
+          ...createDefaultTrechoCoordinateBlock(),
+          ...((mergedListagemE as { geoTrecho?: { fim?: object } }).geoTrecho?.fim),
+        },
+      },
+    },
   } as RcaListagemEFormValues;
 }
