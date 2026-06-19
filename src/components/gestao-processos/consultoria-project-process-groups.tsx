@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type {
   ConsultoriaProjectPlannedProcessType,
+  ConsultoriaProject,
   OfficeProcess,
 } from "@/lib/gestao-processos/types";
 import {
@@ -28,6 +29,8 @@ import {
   resolveProcessPipelineState,
 } from "@/lib/gestao-processos/pipeline-utils";
 import { OFFICE_PROCESS_FASE_LABELS, formatPrazoDisplay } from "@/lib/gestao-processos/utils";
+import { formatOfficeProcessCoordinates } from "@/lib/gestao-processos/cadastro-coordinates";
+import type { Project } from "@/lib/types";
 import { ProcessAlertsBadges } from "@/components/gestao-processos/process-alerts-badges";
 import { getProcessAlerts } from "@/lib/gestao-processos/process-alerts";
 import { Droplets, FileText, Leaf, Link2, Plus, TreePine, Unlink } from "lucide-react";
@@ -54,6 +57,8 @@ type ConsultoriaProjectProcessGroupsProps = {
   processes: OfficeProcess[];
   canWrite?: boolean;
   unlinkingId?: string | null;
+  cadastroById?: ReadonlyMap<string, Project>;
+  consultoriaProjects?: ConsultoriaProject[];
   onCreateFromPlanned?: (type: ConsultoriaProjectPlannedProcessType) => void;
   onLink?: (type?: ConsultoriaProjectPlannedProcessType) => void;
   onUnlink?: (processId: string) => void;
@@ -65,6 +70,8 @@ export function ConsultoriaProjectProcessGroups({
   processes,
   canWrite,
   unlinkingId,
+  cadastroById,
+  consultoriaProjects,
   onCreateFromPlanned,
   onLink,
   onUnlink,
@@ -164,6 +171,8 @@ export function ConsultoriaProjectProcessGroups({
                     process={proc}
                     canWrite={canWrite}
                     unlinkingId={unlinkingId}
+                    cadastroById={cadastroById}
+                    consultoriaProjects={consultoriaProjects}
                     onUnlink={onUnlink}
                   />
                 ))
@@ -216,14 +225,26 @@ function ProcessGroupRow({
   process,
   canWrite,
   unlinkingId,
+  cadastroById,
+  consultoriaProjects,
   onUnlink,
 }: {
   process: OfficeProcess;
   canWrite?: boolean;
   unlinkingId?: string | null;
+  cadastroById?: ReadonlyMap<string, Project>;
+  consultoriaProjects?: ConsultoriaProject[];
   onUnlink?: (id: string) => void;
 }) {
   const { pipeline, etapa } = resolveProcessPipelineState(process);
+  const coordResumo =
+    cadastroById != null
+      ? formatOfficeProcessCoordinates(
+          process,
+          cadastroById,
+          consultoriaProjects ?? [],
+        )
+      : "";
 
   return (
     <div className="flex flex-wrap items-start gap-2 rounded-lg border bg-muted/20 p-3 text-sm">
@@ -257,6 +278,14 @@ function ProcessGroupRow({
         <p className="text-xs text-muted-foreground">
           Prazo: {formatPrazoDisplay(process.prazo)}
         </p>
+        {coordResumo ? (
+          <p
+            className="truncate font-mono text-[10px] text-muted-foreground"
+            title={coordResumo}
+          >
+            {coordResumo}
+          </p>
+        ) : null}
       </Link>
       {canWrite && onUnlink ? (
         <Button

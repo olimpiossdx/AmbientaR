@@ -35,6 +35,7 @@ import {
   PLANNED_PROCESS_TYPE_LABELS,
   PLANNED_PROCESS_TYPE_ORDER,
 } from "@/lib/gestao-processos/consultoria-project-utils";
+import { formatProjectCoordinatesDisplay } from "@/lib/coordinates/format-project-display";
 import { Loader2 } from "lucide-react";
 
 export type ConsultoriaProjectFormValues = {
@@ -143,6 +144,19 @@ export function ConsultoriaProjectFormDialog({
       .filter((p) => p.empreendedorId === form.empreendedorId)
       .sort((a, b) => a.propertyName.localeCompare(b.propertyName, "pt-BR"));
   }, [allProjects, form.empreendedorId]);
+
+  const selectedCadastroProject = React.useMemo(
+    () =>
+      form.projectId
+        ? (allProjects ?? []).find((p) => p.id === form.projectId)
+        : undefined,
+    [allProjects, form.projectId],
+  );
+
+  const coordenadasPreview = React.useMemo(
+    () => formatProjectCoordinatesDisplay(selectedCadastroProject),
+    [selectedCadastroProject],
+  );
 
   const set =
     (key: keyof ConsultoriaProjectFormValues) =>
@@ -302,6 +316,11 @@ export function ConsultoriaProjectFormDialog({
                   ))}
                 </SelectContent>
               </Select>
+              {coordenadasPreview ? (
+                <p className="font-mono text-[11px] leading-snug text-muted-foreground">
+                  Coordenadas (SIRGAS 2000): {coordenadasPreview}
+                </p>
+              ) : null}
             </div>
 
             <div className="grid grid-cols-2 gap-3">

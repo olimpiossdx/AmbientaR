@@ -11,8 +11,7 @@ import type {
   FieldInspectionIdentificacao,
 } from '@/lib/types';
 import type { FieldInspectionMotivo } from '@/lib/field-inspection-checklist';
-import { geographicLocationToBarragemCoordenadas } from '@/lib/barragem/barragem-coordenadas';
-import { formatCoordinateBlockForLegacyString } from '@/lib/monitoring-pontos-form';
+import { formatProjectCoordinatesDisplay } from '@/lib/coordinates/format-project-display';
 
 function joinAddress(parts: (string | undefined)[]): string {
   return parts.filter((p) => p && String(p).trim()).join(', ');
@@ -20,18 +19,7 @@ function joinAddress(parts: (string | undefined)[]): string {
 
 /** Formata coordenadas do empreendimento para exibição no formulário/PDF. */
 export function formatProjectCoordinates(project: Project | null | undefined): string {
-  const geo = project?.geographicLocation;
-  if (!geo) return '';
-
-  const formatted = formatCoordinateBlockForLegacyString(
-    geographicLocationToBarragemCoordenadas(geo),
-  );
-  if (formatted) return formatted;
-
-  if (geo.local?.trim()) return geo.local.trim();
-  if (geo.additionalLocationInfo?.trim()) return geo.additionalLocationInfo.trim();
-
-  return '';
+  return formatProjectCoordinatesDisplay(project);
 }
 
 export function buildIdentificacaoFromCadastro(params: {

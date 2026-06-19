@@ -10,7 +10,6 @@ const ROOT = path.join(__dirname, "..", "src");
 /** Caminhos relativos a src/ — fluxos cartográficos ou só leitura. */
 const IGNORE_PREFIXES = [
   "app/(app)/studies/mapas/",
-  "app/(app)/monitoring/telemetric/",
   "features/mca/",
   "hooks/use-imovel-localizador.ts",
   "components/geospatial/imovel-localizador-panel.tsx",
@@ -53,6 +52,14 @@ function auditFile(file: string): Finding[] {
     });
   }
 
+  if (/const\s+datums\s*=/.test(content) || /const\s+fusos\s*=/.test(content)) {
+    findings.push({
+      file: r,
+      rule: "legacy-datum-fuso-arrays",
+      detail: "Arrays locais datums/fusos — usar COORDINATE_*_OPTIONS e CoordinateInput",
+    });
+  }
+
   if (
     /name=["'][^"']*\.latitude["']/.test(content) &&
     !content.includes("CoordinateStringField")
@@ -85,6 +92,18 @@ function auditFile(file: string): Finding[] {
       file: r,
       rule: "input-placeholder-lat",
       detail: "Input com placeholder de latitude sem componente de coordenadas",
+    });
+  }
+
+  if (
+    /`UTM X:/.test(content) ||
+    (/geographicLocation\?\.latLong/.test(content) && /latText/.test(content))
+  ) {
+    findings.push({
+      file: r,
+      rule: "inline-geo-display-formatter",
+      detail:
+        "Formatação manual de geographicLocation — use formatProjectCoordinatesDisplay ou formatEmpreendimentoCoordinatesForReport",
     });
   }
 

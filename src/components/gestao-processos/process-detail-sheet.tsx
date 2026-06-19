@@ -53,10 +53,14 @@ import {
   deleteDoc,
   deleteField,
   doc,
+  limit,
+  query,
   serverTimestamp,
   updateDoc,
 } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
+import type { Project } from "@/lib/types";
+import { formatOfficeProcessCoordinates } from "@/lib/gestao-processos/cadastro-coordinates";
 import { cn } from "@/lib/utils";
 
 const EVENT_TIPO_LABELS: Record<OfficeProcessEventTipo, string> = {
@@ -146,6 +150,21 @@ export function ProcessDetailSheet({
 
   const { data: events, isLoading: eventsLoading } =
     useCollection<OfficeProcessEvent>(eventsQuery);
+
+  const cadastroProjectsQuery = useMemoFirebase(
+    () =>
+      firestore && open
+        ? query(collection(firestore, "projects"), limit(500))
+        : null,
+    [firestore, open],
+  );
+  const { data: cadastroProjects } = useCollection<Project>(cadastroProjectsQuery);
+
+  const processCoordenadas = React.useMemo(() => {
+    if (!process) return "";
+    const byId = new Map((cadastroProjects ?? []).map((p) => [p.id, p]));
+    return formatOfficeProcessCoordinates(process, byId, consultoriaProjects);
+  }, [process, consultoriaProjects, cadastroProjects]);
 
   const sortedEvents = React.useMemo(
     () =>
@@ -385,6 +404,10 @@ export function ProcessDetailSheet({
                 <DetailField label="Empreendedor" value={process.empreendedorName} />
                 <DetailField label="Empreendimento" value={process.empreendimentoName} />
                 <DetailField label="Município" value={process.municipio} />
+                <DetailField
+                  label="Coordenadas (SIRGAS 2000)"
+                  value={processCoordenadas}
+                />
                 <DetailField label="Tipo de intervenção" value={process.tipoIntervencao} />
                 <DetailField label="Prazo" value={formatPrazoDisplay(process.prazo)} />
                 <DetailField label="Órgão" value={process.orgao} />

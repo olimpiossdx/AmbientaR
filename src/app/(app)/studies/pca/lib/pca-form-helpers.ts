@@ -22,7 +22,6 @@ export {
   PcaTextAreaField,
   PcaTextField,
   PcaCoordenadasReadOnlyField,
-  PcaCoordenadasStringField,
 } from '../listagem-a/pca-form-listagem-a-helpers';
 
 export { PcaGeographicLocationSection } from './pca-geographic-location-section';

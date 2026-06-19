@@ -65,6 +65,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { calculateWaterCompliance, mapManualLogToTelemetryReading } from "@/lib/water-compliance-engine";
+import { formatEmpreendimentoCoordinatesForReport } from "@/lib/coordinates/format-project-display";
 import { generateWaterCompliancePDF } from "@/lib/export-water-report";
 import { useLocalBranding } from "@/hooks/use-local-branding";
 import {
@@ -380,22 +381,8 @@ export default function ManualMonitoringPage() {
   const empreendimentoCoordinates = useMemo(() => {
     if (!outorga) return "N/A";
     const project = projects?.find((p) => p.id === outorga.projectId);
-    if (project?.geographicLocation?.latLong) {
-      const lat = project.geographicLocation.latLong.lat;
-      const long = project.geographicLocation.latLong.long;
-      const latText = [lat?.grau, lat?.min, lat?.seg].filter(Boolean).join(" ");
-      const longText = [long?.grau, long?.min, long?.seg].filter(Boolean).join(" ");
-      if (latText || longText) return `${latText} / ${longText}`.trim();
-    }
-    if (project?.geographicLocation?.utm) {
-      const utm = project.geographicLocation.utm;
-      return `UTM X:${utm.x || "-"} Y:${utm.y || "-"} Fuso:${utm.fuso || "-"}`;
-    }
     const ponto = outorgaPontos.find((p) => p.lat != null && p.lng != null);
-    if (ponto?.lat != null && ponto?.lng != null) {
-      return `${ponto.lat}, ${ponto.lng}`;
-    }
-    return "N/A";
+    return formatEmpreendimentoCoordinatesForReport(project, ponto ?? null, "N/A");
   }, [outorga, outorgaPontos, projects]);
 
   const handleExportCompliancePdf = async () => {

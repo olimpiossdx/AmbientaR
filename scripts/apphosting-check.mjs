@@ -3,7 +3,6 @@ import { appendFileSync, writeFileSync } from "node:fs";
 
 const startedAt = new Date().toISOString();
 const logPath = "apphosting-check.log";
-
 writeFileSync(
   logPath,
   [
@@ -15,8 +14,7 @@ writeFileSync(
   ].join("\n"),
 );
 
-const child = spawn(
-  process.execPath,
+const child = spawn(  process.execPath,
   ["node_modules/next/dist/bin/next", "build"],
   {
     env: {

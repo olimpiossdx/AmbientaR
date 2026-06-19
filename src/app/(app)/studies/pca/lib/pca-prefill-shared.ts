@@ -1,22 +1,6 @@
-import type { Project, CoordinateFormat, GeographicLocationFields } from '@/lib/types';
+import type { CoordinateFormat, GeographicLocationFields } from '@/lib/types';
 import { enrichCoordinateBlockWithDecimal } from '@/lib/coordinates';
-
-export function formatCoordenadasProject(project: Project): string {
-  const geo = project.geographicLocation;
-  if (!geo) return '';
-  if (geo.format === 'UTM' && geo.utm) {
-    const { x, y, fuso } = geo.utm;
-    if (x || y) return `E ${x ?? ''} N ${y ?? ''} Fuso ${fuso ?? ''}`.trim();
-  }
-  if (geo.format === 'Lat/Long' && geo.latLong) {
-    const lat = geo.latLong.lat;
-    const lng = geo.latLong.long;
-    const fmt = (c: { grau?: string; min?: string; seg?: string } | undefined) =>
-      [c?.grau, c?.min, c?.seg].filter(Boolean).join('° ');
-    return `Lat ${fmt(lat)} / Long ${fmt(lng)}`.trim();
-  }
-  return '';
-}
+export { formatCoordenadasProject } from '@/lib/coordinates/format-project-display';
 
 export function shouldPrefillPcaFromProject(
   status?: string,

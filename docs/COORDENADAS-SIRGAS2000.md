@@ -1,6 +1,6 @@
 # Coordenadas SIRGAS 2000 — guia de formulários (AmbientaR)
 
-Referência para desenvolvedores após a uniformização **F0–F36**. Objetivo: **entrada única** GMS ou UTM (datum **SIRGAS 2000**, fuso **23S** por omissão em MG) sem alterar paths downstream (Firestore, PDF, mapas, telemetria).
+Referência para desenvolvedores após a uniformização **F0–F44**. Objetivo: **entrada única** GMS ou UTM (datum **SIRGAS 2000**, fuso **23S** por omissão em MG) sem alterar paths downstream (Firestore, PDF, mapas, telemetria).
 
 ## Princípios
 
@@ -17,12 +17,14 @@ Referência para desenvolvedores após a uniformização **F0–F36**. Objetivo:
 | `dms`, `utm` | Conversões GMS ↔ decimal ↔ UTM 23S |
 | `validate` | Validação de blocos |
 | `derive-decimal` | `deriveDecimalFromLocationFields`, `enrichGeographicLocationWithDecimal`, `enrichListagemEGeoTrechoWithDecimal`, `enrichProjectFormCoordinates` |
+| `format-project-display` | `formatGeographicLocationDisplay`, `formatProjectCoordinatesDisplay`, `formatCoordenadasProject` (resumos read-only) |
 
 Verificação local:
 
 ```bash
-npm run coordinates:verify   # conversões SIRGAS / UTM / GMS
+npm run coordinates:verify   # conversões SIRGAS / UTM / GMS + helpers lat/lng
 npm run coordinates:audit    # auditoria estática de inputs soltos
+npm run coordinates:check    # verify + audit (também no início de apphosting:check)
 ```
 
 ## Componentes (`src/components/coordinates/`)
@@ -106,6 +108,18 @@ Listagem **E**: também `enrichListagemEGeoTrechoWithDecimal` para `listagemE.ge
 | Coleta de campo | `CoordinateStringField` por vértice; Firestore `areaAmarracao[]` string |
 | Vistoria | `CoordinateStringField` → `identificacao.coordenadasGeograficas` |
 | Mapas / MCA / localizador | Entrada cartográfica ou `lat, lng` — **fora** deste padrão de formulário DN |
+| Monitoramento hídrico (PDF) | `formatEmpreendimentoCoordinatesForReport` — empreendimento + fallback ponto |
+| Gestão processos (processo/kanban/lista/form/vincular) | `formatOfficeProcessCoordinates` em `src/lib/gestao-processos/cadastro-coordinates.ts` |
+
+## Exibição read-only (resumos)
+
+Use sempre `src/lib/coordinates/format-project-display.ts`:
+
+- `formatProjectCoordinatesDisplay(project)` — cards, vistoria, multas, gestão processos
+- `formatEmpreendimentoCoordinatesForReport(project, ponto?, emptyLabel)` — relatórios de outorga/telemetria
+- `formatCoordenadasProject(project)` — prefill PCA `empreendimento.coordenadas`
+
+O gate `npm run coordinates:check` corre automaticamente em `npm run build` (`prebuild`).
 
 ## O que não fazer
 
@@ -120,8 +134,7 @@ Listagem **E**: também `enrichListagemEGeoTrechoWithDecimal` para `listagemE.ge
 2. Escolher `CoordinateInput`, `CoordinateStringField` ou secção RCA/PCA.
 3. Prefill a partir de `project.geographicLocation` quando aplicável.
 4. No serialize, chamar enrich adequado se existir bloco com `format`.
-5. Correr `npm run coordinates:verify` após mudanças na lib.
-6. Correr `npm run coordinates:audit` para detectar inputs soltos fora das exceções cartográficas.
+5. Correr `npm run coordinates:check` antes de deploy (`prebuild` em `npm run build`; workflow `coordinates-check.yml` em PR/push; deploy Docker usa o mesmo `prebuild`).
 
 ## Histórico de fases (resumo)
 
@@ -136,3 +149,21 @@ Listagem **E**: também `enrichListagemEGeoTrechoWithDecimal` para `listagemE.ge
 | F37 | Este documento |
 | F38 | PCA listagens G/H/E — geo estruturado + serialize |
 | F39 | Inventário unidades primárias + `coordinates:audit` |
+| F40 | `coordinates:check` no apphosting + verify helpers + gestão processos (read-only) |
+| F41 | `format-project-display` — formatador único para resumos (PCA, vistoria, multas, gestão) |
+| F42 | Monitoramento manual/telemetria + `prebuild` coordinates:check + audit display |
+| F43 | Gestão processos (listagem cards) + gate CI GitHub Actions |
+| F44 | Gestão processos (form + processo sheet + busca) + workflow PR |
+| F45 | Helper `cadastro-coordinates` + kanban fluxo + CI dedup + runner tsx |
+| F46 | Fluxo vista lista + busca por coordenadas + verify `cadastro-coordinates` |
+| F47 | Form processo + grupos projeto + vincular processos (preview e busca) |
+
+## Encerramento da série (F0–F44)
+
+A uniformização de **entrada** GMS/UTM (SIRGAS 2000 / fuso 23S MG) está concluída nos formulários DN e resumos read-only principais.
+
+**Gates automáticos:** `npm run coordinates:check` · `prebuild` em `npm run build` · workflow `.github/workflows/coordinates-check.yml` (PR/push). O deploy Docker repete o gate via `prebuild`.
+
+**Exceções intencionais (não migrar):** mapas/MCA, localizador cartográfico, telemetria (mapa Leaflet com `lat`/`lng` de pontos), importação SIGEF/KML.
+
+**Manutenção:** novos formulários → checklist acima; regressões → `coordinates:audit` deteta inputs soltos e formatadores inline.

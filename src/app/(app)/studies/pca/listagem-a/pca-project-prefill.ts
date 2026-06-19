@@ -10,24 +10,8 @@ import { PCA_LISTAGEM_A_ACTIVITY } from '@/lib/pca/pca-listagem-a-catalog';
 import {
   deepCloneRecord,
   enrichPcaGeographicLocationForFirestore,
+  formatCoordenadasProject,
 } from '../lib/pca-prefill-shared';
-
-function formatCoordenadas(project: Project): string {
-  const geo = project.geographicLocation;
-  if (!geo) return '';
-  if (geo.format === 'UTM' && geo.utm) {
-    const { x, y, fuso } = geo.utm;
-    if (x || y) return `E ${x ?? ''} N ${y ?? ''} Fuso ${fuso ?? ''}`.trim();
-  }
-  if (geo.format === 'Lat/Long' && geo.latLong) {
-    const lat = geo.latLong.lat;
-    const lng = geo.latLong.long;
-    const fmt = (c: { grau?: string; min?: string; seg?: string } | undefined) =>
-      [c?.grau, c?.min, c?.seg].filter(Boolean).join('° ');
-    return `Lat ${fmt(lat)} / Long ${fmt(lng)}`.trim();
-  }
-  return '';
-}
 
 export type PcaProjectPrefillResult = Partial<PcaListagemAFormValues> & {
   conservationUnit?: Project['conservationUnit'];
@@ -60,7 +44,7 @@ export function prefillPcaListagemAFromProject(
       nome: project.fantasyName || project.propertyName || '',
       municipio: project.municipio ?? '',
       endereco: project.address ?? '',
-      coordenadas: formatCoordenadas(project),
+      coordenadas: formatCoordenadasProject(project),
       atividade: project.activity ?? PCA_LISTAGEM_A_ACTIVITY,
       tipologia: String(faseRaw?.classe ?? ''),
       faseLicenciamento: ['LP', 'LI', 'LO', 'AAF', 'Outra'].includes(faseLic ?? '')

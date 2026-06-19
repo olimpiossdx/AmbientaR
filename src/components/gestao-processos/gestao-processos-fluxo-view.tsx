@@ -71,8 +71,11 @@ import {
   buildOfficeProcessExternalKey,
   detectTipoProcesso,
   formatPrazoDisplay,
-  officeProcessSearchBlob,
 } from "@/lib/gestao-processos/utils";
+import {
+  formatOfficeProcessCoordinates,
+  officeProcessSearchBlobWithCadastro,
+} from "@/lib/gestao-processos/cadastro-coordinates";
 import {
   officeProcessVisibleToPortal,
   resolveEmpreendedorIdByName,
@@ -216,6 +219,11 @@ export function GestaoProcessosFluxoView() {
     [projects],
   );
 
+  const cadastroById = React.useMemo(
+    () => new Map((projects ?? []).map((p) => [p.id, p])),
+    [projects],
+  );
+
   const empreendedoresMap = empreendedorNameMap;
 
   const filteredProcesses = React.useMemo(() => {
@@ -237,7 +245,13 @@ export function GestaoProcessosFluxoView() {
     }
 
     if (term) {
-      list = list.filter((p) => officeProcessSearchBlob(p).includes(term));
+      list = list.filter((p) =>
+        officeProcessSearchBlobWithCadastro(
+          p,
+          cadastroById,
+          consultoriaProjects ?? [],
+        ).includes(term),
+      );
     }
 
     return list.sort((a, b) =>
@@ -253,6 +267,8 @@ export function GestaoProcessosFluxoView() {
     isPortalReadOnly,
     portalEmpIds,
     empreendedorNameMap,
+    cadastroById,
+    consultoriaProjects,
   ]);
 
   const pipelineFilteredProcesses = React.useMemo(() => {
@@ -578,7 +594,7 @@ export function GestaoProcessosFluxoView() {
         <CardSearchInput
           value={searchTerm}
           onChange={setSearchTerm}
-          placeholder="Buscar por processo, empreendedor, empreendimento ou status…"
+          placeholder="Buscar por processo, empreendedor, coordenadas ou status…"
         />
 
         {canWrite && orphanCount > 0 ? (
@@ -688,6 +704,7 @@ export function GestaoProcessosFluxoView() {
               pipeline={pipelineTab}
               processes={pipelineFilteredProcesses}
               consultoriaProjects={consultoriaProjects ?? []}
+              cadastroById={cadastroById}
               isLoading={isLoading}
               canWrite={canWrite}
               onOpenProcess={openProcess}
@@ -705,6 +722,7 @@ export function GestaoProcessosFluxoView() {
               isLoading={isLoading}
               canWrite={canWrite}
               consultoriaProjects={consultoriaProjects ?? []}
+              cadastroById={cadastroById}
               onOpenProcess={openProcess}
               onEdit={(item) => {
                 setEditing(item);
@@ -774,6 +792,8 @@ export function GestaoProcessosFluxoView() {
         }}
         initial={editing}
         saving={saving}
+        cadastroById={cadastroById}
+        consultoriaProjects={consultoriaProjects ?? []}
         onSubmit={(values) => persistProcess(values, editing)}
       />
 
@@ -827,6 +847,7 @@ type ProcessListSectionProps = {
   isLoading: boolean;
   canWrite: boolean;
   consultoriaProjects: ConsultoriaProject[];
+  cadastroById: ReadonlyMap<string, Project>;
   onOpenProcess: (id: string) => void;
   onEdit: (process: OfficeProcess) => void;
   onDelete: (process: OfficeProcess) => void;
@@ -837,6 +858,7 @@ function ProcessListSection({
   isLoading,
   canWrite,
   consultoriaProjects,
+  cadastroById,
   onOpenProcess,
   onEdit,
   onDelete,
@@ -864,6 +886,11 @@ function ProcessListSection({
       <div className="space-y-3">
         {processes.map((item) => {
           const { etapa, pipeline } = resolveProcessPipelineState(item);
+          const coordResumo = formatOfficeProcessCoordinates(
+            item,
+            cadastroById,
+            consultoriaProjects,
+          );
           return (
             <Tooltip key={item.id}>
               <TooltipTrigger asChild>
@@ -910,6 +937,14 @@ function ProcessListSection({
                         {item.municipio ? `${item.municipio} · ` : ""}
                         Prazo: {formatPrazoDisplay(item.prazo)}
                       </p>
+                      {coordResumo ? (
+                        <p
+                          className="truncate font-mono text-[10px] text-muted-foreground"
+                          title={coordResumo}
+                        >
+                          {coordResumo}
+                        </p>
+                      ) : null}
                     </div>
                     {canWrite ? (
                       <div
@@ -945,6 +980,11 @@ function ProcessListSection({
                 <p className="text-xs text-muted-foreground">
                   {item.tipoIntervencao ?? "Tipo não informado"}
                 </p>
+                {coordResumo ? (
+                  <p className="font-mono text-[10px] text-muted-foreground">
+                    {coordResumo}
+                  </p>
+                ) : null}
                 <p className="text-xs">{item.statusDetalhe ?? "Sem status"}</p>
               </TooltipContent>
             </Tooltip>

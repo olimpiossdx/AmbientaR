@@ -14,7 +14,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Checkbox } from '@/components/ui/checkbox';
 import type { UseFormReturn } from 'react-hook-form';
-import { CoordinateStringField } from '@/components/coordinates';
 
 export type PcaFieldPath = string;
 
@@ -58,38 +57,6 @@ export function PcaTextField({
           <FormControl>
             <Input placeholder={placeholder} {...field} value={String(field.value ?? '')} />
           </FormControl>
-          <FormMessage />
-        </FormItem>
-      )}
-    />
-  );
-}
-
-/** Entrada GMS/UTM com persistência em `empreendimento.coordenadas` (string). */
-export function PcaCoordenadasStringField({
-  form,
-  className,
-}: {
-  form: UseFormReturn<any>;
-  className?: string;
-}) {
-  return (
-    <FormField
-      control={form.control}
-      name="empreendimento.coordenadas"
-      render={({ field }) => (
-        <FormItem className={className}>
-          <FormLabel>Coordenadas (SIRGAS 2000)</FormLabel>
-          <FormControl>
-            <CoordinateStringField
-              value={String(field.value ?? '')}
-              onChange={field.onChange}
-              variant="coords-only"
-            />
-          </FormControl>
-          <FormDescription>
-            UTM (fuso 23S) ou GMS. Ao vincular um empreendimento, o resumo é preenchido automaticamente.
-          </FormDescription>
           <FormMessage />
         </FormItem>
       )}

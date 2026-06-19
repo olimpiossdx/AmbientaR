@@ -81,6 +81,7 @@ import {
 } from "@/components/gestao-processos/process-form-dialog";
 import { LinkProcessesDialog } from "@/components/gestao-processos/link-processes-dialog";
 import { fetchEmpreendedorIdsForProcessosPortal } from "@/lib/requests-portal-empreendedor-ids";
+import { formatProjectCoordinatesDisplay } from "@/lib/coordinates/format-project-display";
 import { cn } from "@/lib/utils";
 
 function omitUndefined(values: Record<string, unknown>): Record<string, unknown> {
@@ -188,6 +189,24 @@ export default function ConsultoriaProjectDetailPage() {
   const projectAlerts = React.useMemo(
     () => summarizeProjectAlerts(linkedProcesses),
     [linkedProcesses],
+  );
+
+  const linkedCadastroProject = React.useMemo(
+    () =>
+      project?.projectId
+        ? (cadastroProjects ?? []).find((p) => p.id === project.projectId)
+        : undefined,
+    [project?.projectId, cadastroProjects],
+  );
+
+  const cadastroById = React.useMemo(
+    () => new Map((cadastroProjects ?? []).map((p) => [p.id, p])),
+    [cadastroProjects],
+  );
+
+  const empreendimentoCoordenadas = React.useMemo(
+    () => formatProjectCoordinatesDisplay(linkedCadastroProject),
+    [linkedCadastroProject],
   );
 
   const processDefaults = React.useMemo<Partial<ProcessFormValues> | undefined>(() => {
@@ -554,6 +573,12 @@ export default function ConsultoriaProjectDetailPage() {
                   </div>
                 </div>
               ) : null}
+              {empreendimentoCoordenadas ? (
+                <div>
+                  <p className="text-xs text-muted-foreground">Coordenadas (SIRGAS 2000)</p>
+                  <p className="font-mono text-xs leading-relaxed">{empreendimentoCoordenadas}</p>
+                </div>
+              ) : null}
               {project.area ? (
                 <div>
                   <p className="text-xs text-muted-foreground">Área</p>
@@ -588,6 +613,8 @@ export default function ConsultoriaProjectDetailPage() {
               processes={linkedProcesses}
               canWrite={canWrite}
               unlinkingId={unlinkingId}
+              cadastroById={cadastroById}
+              consultoriaProjects={allConsultoriaProjects ?? []}
               onCreateFromPlanned={canWrite ? openCreateProcessForPlannedType : undefined}
               onLink={canWrite ? openLinkForPlannedType : undefined}
               onUnlink={canWrite ? handleUnlinkProcess : undefined}
@@ -607,6 +634,8 @@ export default function ConsultoriaProjectDetailPage() {
         processes={officeProcesses ?? []}
         plannedProcessType={activePlannedType}
         linking={linking}
+        cadastroById={cadastroById}
+        consultoriaProjects={allConsultoriaProjects ?? []}
         onConfirm={handleLinkProcesses}
       />
 
@@ -618,6 +647,12 @@ export default function ConsultoriaProjectDetailPage() {
         }}
         defaults={processDefaults}
         saving={savingProcess}
+        cadastroById={cadastroById}
+        consultoriaProjects={allConsultoriaProjects ?? []}
+        cadastroContext={{
+          projectId: project.projectId,
+          consultoriaProjectId: project.id,
+        }}
         onSubmit={persistOfficeProcess}
       />
 

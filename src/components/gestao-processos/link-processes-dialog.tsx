@@ -14,12 +14,17 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { CardSearchInput } from "@/components/card-search-input";
 import { Loader2 } from "lucide-react";
+import type { Project } from "@/lib/types";
 import type {
   ConsultoriaProject,
   ConsultoriaProjectPlannedProcessType,
   OfficeProcess,
 } from "@/lib/gestao-processos/types";
 import { OFFICE_PROCESS_FASE_LABELS } from "@/lib/gestao-processos/utils";
+import {
+  formatOfficeProcessCoordinates,
+  officeProcessSearchBlobWithCadastro,
+} from "@/lib/gestao-processos/cadastro-coordinates";
 import {
   inferPlannedProcessType,
   PLANNED_PROCESS_TYPE_LABELS,
@@ -33,6 +38,8 @@ type LinkProcessesDialogProps = {
   processes: OfficeProcess[];
   plannedProcessType?: ConsultoriaProjectPlannedProcessType | null;
   linking?: boolean;
+  cadastroById?: ReadonlyMap<string, Project>;
+  consultoriaProjects?: ConsultoriaProject[];
   onConfirm: (processIds: string[]) => void | Promise<void>;
 };
 
@@ -43,6 +50,8 @@ export function LinkProcessesDialog({
   processes,
   plannedProcessType,
   linking,
+  cadastroById,
+  consultoriaProjects,
   onConfirm,
 }: LinkProcessesDialogProps) {
   const [search, setSearch] = React.useState("");
@@ -62,23 +71,29 @@ export function LinkProcessesDialog({
     const term = search.trim().toLowerCase();
     if (term) {
       list = list.filter((p) =>
-        [
-          p.numeroProcesso,
-          p.empreendedorName,
-          p.empreendimentoName,
-          p.tipoIntervencao,
-          p.statusDetalhe,
-        ]
-          .filter(Boolean)
-          .join(" ")
-          .toLowerCase()
-          .includes(term),
+        cadastroById
+          ? officeProcessSearchBlobWithCadastro(
+              p,
+              cadastroById,
+              consultoriaProjects ?? [],
+            ).includes(term)
+          : [
+              p.numeroProcesso,
+              p.empreendedorName,
+              p.empreendimentoName,
+              p.tipoIntervencao,
+              p.statusDetalhe,
+            ]
+              .filter(Boolean)
+              .join(" ")
+              .toLowerCase()
+              .includes(term),
       );
     }
     return list.sort((a, b) =>
       a.numeroProcesso.localeCompare(b.numeroProcesso, "pt-BR"),
     );
-  }, [processes, project.empreendedorId, plannedProcessType, search]);
+  }, [processes, project.empreendedorId, plannedProcessType, search, cadastroById, consultoriaProjects]);
 
   React.useEffect(() => {
     if (!open) {
@@ -121,7 +136,7 @@ export function LinkProcessesDialog({
         <CardSearchInput
           value={search}
           onChange={setSearch}
-          placeholder="Buscar por número, empreendimento ou status…"
+          placeholder="Buscar por número, empreendimento, coordenadas ou status…"
         />
 
         <ScrollArea className="h-[min(50vh,320px)] rounded-md border">
@@ -131,7 +146,16 @@ export function LinkProcessesDialog({
             </p>
           ) : (
             <ul className="divide-y">
-              {candidates.map((p) => (
+              {candidates.map((p) => {
+                const coordResumo =
+                  cadastroById != null
+                    ? formatOfficeProcessCoordinates(
+                        p,
+                        cadastroById,
+                        consultoriaProjects ?? [],
+                      )
+                    : "";
+                return (
                 <li key={p.id}>
                   <label className="flex cursor-pointer items-start gap-3 p-3 hover:bg-muted/50">
                     <Checkbox
@@ -147,10 +171,19 @@ export function LinkProcessesDialog({
                         {p.empreendimentoName} ·{" "}
                         {OFFICE_PROCESS_FASE_LABELS[p.fase]}
                       </p>
+                      {coordResumo ? (
+                        <p
+                          className="truncate font-mono text-[10px] text-muted-foreground"
+                          title={coordResumo}
+                        >
+                          {coordResumo}
+                        </p>
+                      ) : null}
                     </div>
                   </label>
                 </li>
-              ))}
+                );
+              })}
             </ul>
           )}
         </ScrollArea>

@@ -66,6 +66,7 @@ import {
   type ConsultoriaProjectFormValues,
 } from "@/components/gestao-processos/consultoria-project-form-dialog";
 import { fetchEmpreendedorIdsForProcessosPortal } from "@/lib/requests-portal-empreendedor-ids";
+import { formatProjectCoordinatesDisplay } from "@/lib/coordinates/format-project-display";
 import { cn } from "@/lib/utils";
 
 function omitUndefined(values: Record<string, unknown>): Record<string, unknown> {
@@ -150,6 +151,11 @@ export default function GestaoProcessosProjetosPage() {
     [empreendedores],
   );
 
+  const cadastroById = React.useMemo(
+    () => new Map((cadastroProjects ?? []).map((p) => [p.id, p])),
+    [cadastroProjects],
+  );
+
   const processCountByProject = React.useMemo(() => {
     const map = new Map<string, number>();
     for (const p of officeProcesses ?? []) {
@@ -166,7 +172,12 @@ export default function GestaoProcessosProjetosPage() {
     }
     const term = searchTerm.trim().toLowerCase();
     if (term) {
-      list = list.filter((p) => consultoriaProjectSearchBlob(p).includes(term));
+      list = list.filter((p) =>
+        consultoriaProjectSearchBlob(
+          p,
+          p.projectId ? cadastroById.get(p.projectId) : undefined,
+        ).includes(term),
+      );
     }
     return list.sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
   }, [projects, searchTerm, isPortalReadOnly, portalEmpIds]);
@@ -399,7 +410,7 @@ export default function GestaoProcessosProjetosPage() {
         <CardSearchInput
           value={searchTerm}
           onChange={setSearchTerm}
-          placeholder="Buscar por projeto, empreendedor, município ou tipo…"
+          placeholder="Buscar por projeto, empreendedor, município, coordenadas ou tipo…"
         />
 
         {isLoading ? (
@@ -430,6 +441,9 @@ export default function GestaoProcessosProjetosPage() {
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {visibleProjects.map((project) => {
               const procCount = processCountByProject.get(project.id) ?? 0;
+              const coordResumo = project.projectId
+                ? formatProjectCoordinatesDisplay(cadastroById.get(project.projectId))
+                : "";
               return (
                 <Card
                   key={project.id}
@@ -475,6 +489,15 @@ export default function GestaoProcessosProjetosPage() {
                       <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
                         <MapPin className="h-3.5 w-3.5 shrink-0" />
                         {project.municipio}
+                      </p>
+                    ) : null}
+
+                    {coordResumo ? (
+                      <p
+                        className="line-clamp-1 font-mono text-[10px] leading-snug text-muted-foreground"
+                        title={coordResumo}
+                      >
+                        {coordResumo}
                       </p>
                     ) : null}
 

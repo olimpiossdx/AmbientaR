@@ -33,7 +33,9 @@ import {
   resolveProcessPipelineState,
 } from "@/lib/gestao-processos/pipeline-utils";
 import { consultoriaProjectLabel, PROCESS_GROUP_LABELS } from "@/lib/gestao-processos/consultoria-project-utils";
+import { formatOfficeProcessCoordinates } from "@/lib/gestao-processos/cadastro-coordinates";
 import { formatPrazoDisplay } from "@/lib/gestao-processos/utils";
+import type { Project } from "@/lib/types";
 import { ProcessAlertsBadges } from "@/components/gestao-processos/process-alerts-badges";
 import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -47,6 +49,7 @@ export type FluxoKanbanProps = {
   pipeline: FluxoKanbanPipeline;
   processes: OfficeProcess[];
   consultoriaProjects: ConsultoriaProject[];
+  cadastroById?: ReadonlyMap<string, Project>;
   isLoading?: boolean;
   canWrite?: boolean;
   onOpenProcess: (id: string) => void;
@@ -79,6 +82,7 @@ export function FluxoKanban({
   pipeline,
   processes,
   consultoriaProjects,
+  cadastroById,
   isLoading,
   canWrite,
   onOpenProcess,
@@ -87,6 +91,7 @@ export function FluxoKanban({
   onEdit,
   onDelete,
 }: FluxoKanbanProps) {
+  const cadastroMap = cadastroById ?? new Map<string, Project>();
   const stages = stagesForPipeline(pipeline);
   const labels = labelsForPipeline(pipeline);
 
@@ -139,6 +144,7 @@ export function FluxoKanban({
                       process={item}
                       pipeline={pipeline}
                       consultoriaProjects={consultoriaProjects}
+                      cadastroById={cadastroMap}
                       canWrite={canWrite}
                       onOpen={() => onOpenProcess(item.id)}
                       onMoveEtapa={(etapa) => onMoveEtapa(item, etapa)}
@@ -161,6 +167,7 @@ type KanbanProcessCardProps = {
   process: OfficeProcess;
   pipeline: FluxoKanbanPipeline;
   consultoriaProjects: ConsultoriaProject[];
+  cadastroById: ReadonlyMap<string, Project>;
   canWrite?: boolean;
   onOpen: () => void;
   onMoveEtapa: (etapa: ConsultoriaEtapa | OrgaoEtapa) => void;
@@ -173,6 +180,7 @@ function KanbanProcessCard({
   process,
   pipeline,
   consultoriaProjects,
+  cadastroById,
   canWrite,
   onOpen,
   onMoveEtapa,
@@ -181,6 +189,11 @@ function KanbanProcessCard({
   onDelete,
 }: KanbanProcessCardProps) {
   const { etapa, processGroup } = resolveProcessPipelineState(process);
+  const coordResumo = formatOfficeProcessCoordinates(
+    process,
+    cadastroById,
+    consultoriaProjects,
+  );
   const stages = stagesForPipeline(pipeline);
   const labels = labelsForPipeline(pipeline);
   const prazoDias = diasAtePrazo(process.prazo);
@@ -284,6 +297,14 @@ function KanbanProcessCard({
         {process.municipio ? (
           <p className="truncate text-[11px] text-muted-foreground">
             {process.municipio}
+          </p>
+        ) : null}
+        {coordResumo ? (
+          <p
+            className="truncate font-mono text-[10px] text-muted-foreground"
+            title={coordResumo}
+          >
+            {coordResumo}
           </p>
         ) : null}
         {process.prazo ? (

@@ -7,6 +7,8 @@ import type {
   OfficeProcessImportPreview,
   OfficeProcessProcessGroup,
 } from "@/lib/gestao-processos/types";
+import type { Project } from "@/lib/types";
+import { formatProjectCoordinatesDisplay } from "@/lib/coordinates/format-project-display";
 import { normalizeProcessText } from "@/lib/gestao-processos/utils";
 
 export const CONSULTORIA_PROJECT_STATUS_LABELS: Record<
@@ -42,7 +44,10 @@ export function consultoriaProjectVisibleToPortal(
   return allowedEmpreendedorIds.includes(project.empreendedorId);
 }
 
-export function consultoriaProjectSearchBlob(project: ConsultoriaProject): string {
+export function consultoriaProjectSearchBlob(
+  project: ConsultoriaProject,
+  cadastroProject?: Project | null,
+): string {
   return [
     project.code,
     project.name,
@@ -53,6 +58,7 @@ export function consultoriaProjectSearchBlob(project: ConsultoriaProject): strin
     project.tipoAtividade,
     project.managerName,
     CONSULTORIA_PROJECT_STATUS_LABELS[project.status],
+    cadastroProject ? formatProjectCoordinatesDisplay(cadastroProject) : "",
   ]
     .filter(Boolean)
     .join(" ")

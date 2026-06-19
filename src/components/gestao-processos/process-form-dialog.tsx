@@ -25,8 +25,11 @@ import type {
   OfficeProcessFase,
   OfficeProcessPrioridade,
   OfficeProcessTipo,
+  ConsultoriaProject,
 } from "@/lib/gestao-processos/types";
 import { OFFICE_PROCESS_FASE_LABELS } from "@/lib/gestao-processos/utils";
+import { formatOfficeProcessCoordinates } from "@/lib/gestao-processos/cadastro-coordinates";
+import type { Project } from "@/lib/types";
 import { Loader2 } from "lucide-react";
 
 export const OFFICE_PROCESS_PRIORIDADE_LABELS: Record<
@@ -83,6 +86,11 @@ function toFormValues(process?: OfficeProcess | null): ProcessFormValues {
   };
 }
 
+type ProcessFormCadastroContext = {
+  projectId?: string;
+  consultoriaProjectId?: string;
+};
+
 type ProcessFormDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -90,6 +98,10 @@ type ProcessFormDialogProps = {
   defaults?: Partial<ProcessFormValues>;
   saving?: boolean;
   onSubmit: (values: ProcessFormValues) => void | Promise<void>;
+  cadastroById?: ReadonlyMap<string, Project>;
+  consultoriaProjects?: ConsultoriaProject[];
+  /** Vínculo cadastral na criação (antes de existir `initial`). */
+  cadastroContext?: ProcessFormCadastroContext;
 };
 
 export function ProcessFormDialog({
@@ -99,6 +111,9 @@ export function ProcessFormDialog({
   defaults,
   saving,
   onSubmit,
+  cadastroById,
+  consultoriaProjects,
+  cadastroContext,
 }: ProcessFormDialogProps) {
   const [form, setForm] = React.useState<ProcessFormValues>(toFormValues(initial));
 
@@ -110,6 +125,19 @@ export function ProcessFormDialog({
       });
     }
   }, [open, initial, defaults]);
+
+  const coordenadasPreview = React.useMemo(() => {
+    if (!cadastroById) return "";
+    return formatOfficeProcessCoordinates(
+      {
+        projectId: initial?.projectId ?? cadastroContext?.projectId,
+        consultoriaProjectId:
+          initial?.consultoriaProjectId ?? cadastroContext?.consultoriaProjectId,
+      },
+      cadastroById,
+      consultoriaProjects ?? [],
+    );
+  }, [cadastroById, cadastroContext, consultoriaProjects, initial]);
 
   const set =
     (key: keyof ProcessFormValues) =>
@@ -175,6 +203,11 @@ export function ProcessFormDialog({
               onChange={set("empreendimentoName")}
             />
           </div>
+          {coordenadasPreview ? (
+            <p className="font-mono text-[11px] leading-snug text-muted-foreground">
+              Coordenadas (SIRGAS 2000): {coordenadasPreview}
+            </p>
+          ) : null}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label htmlFor="municipio">Município</Label>

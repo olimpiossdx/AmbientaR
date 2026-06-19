@@ -1,6 +1,7 @@
 import type { Project } from "@/lib/types";
 import type { AutoInfracaoDefesaRecord, MultaDefesaFase } from "@/lib/multas-defesas/types";
 import { inferMultaStatus, type MultaDefesaStatus } from "@/lib/multas-defesas";
+import { formatProjectCoordinatesDisplay } from "@/lib/coordinates/format-project-display";
 
 export function getNextProcessNumber(
   existing: Array<{ processYear: number; processSequence?: number }>,
@@ -14,31 +15,7 @@ export function getNextProcessNumber(
 }
 
 export function formatProjectCoordinates(project?: Project | null): string {
-  if (!project?.geographicLocation) return "";
-  const geo = project.geographicLocation;
-  if (geo.format === "UTM" && geo.utm) {
-    const x = geo.utm.x || "";
-    const y = geo.utm.y || "";
-    const fuso = geo.utm.fuso || "";
-    const parts = [
-      x ? `X: ${x}` : "",
-      y ? `Y: ${y}` : "",
-      fuso ? `Fuso: ${fuso}` : "",
-    ].filter(Boolean);
-    return parts.length > 0 ? `UTM ${parts.join(" | ")}` : "";
-  }
-  if (geo.format === "Lat/Long" && geo.latLong) {
-    const lat = geo.latLong.lat || {};
-    const lng = geo.latLong.long || {};
-    const latTxt = [lat.grau, lat.min, lat.seg].filter(Boolean).join(" ");
-    const lngTxt = [lng.grau, lng.min, lng.seg].filter(Boolean).join(" ");
-    const parts = [
-      latTxt ? `Lat: ${latTxt}` : "",
-      lngTxt ? `Long: ${lngTxt}` : "",
-    ].filter(Boolean);
-    return parts.join(" | ");
-  }
-  return "";
+  return formatProjectCoordinatesDisplay(project);
 }
 
 export function inferMultaDefesaFase(record: AutoInfracaoDefesaRecord): MultaDefesaFase {

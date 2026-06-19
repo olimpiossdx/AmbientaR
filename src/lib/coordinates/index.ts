@@ -6,3 +6,4 @@ export * from "./utm";
 export * from "./validate";
 export * from "./derive-decimal";
 export * from "./defaults";
+export * from "./format-project-display";

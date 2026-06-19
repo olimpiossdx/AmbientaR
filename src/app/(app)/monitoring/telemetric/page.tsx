@@ -57,6 +57,7 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { calculateWaterCompliance } from "@/lib/water-compliance-engine";
+import { formatEmpreendimentoCoordinatesForReport } from "@/lib/coordinates/format-project-display";
 import { generateWaterCompliancePDF } from "@/lib/export-water-report";
 import { useLocalBranding } from "@/hooks/use-local-branding";
 import { useToast } from "@/hooks/use-toast";
@@ -360,22 +361,10 @@ export default function TelemetricMonitoringPage() {
   const empreendimentoCoordinates = useMemo(() => {
     if (!compliancePermit) return "N/A";
     const project = projects?.find((p) => p.id === compliancePermit.projectId);
-    if (project?.geographicLocation?.latLong) {
-      const lat = project.geographicLocation.latLong.lat;
-      const long = project.geographicLocation.latLong.long;
-      const latText = [lat?.grau, lat?.min, lat?.seg].filter(Boolean).join(" ");
-      const longText = [long?.grau, long?.min, long?.seg].filter(Boolean).join(" ");
-      if (latText || longText) return `${latText} / ${longText}`.trim();
-    }
-    if (project?.geographicLocation?.utm) {
-      const utm = project.geographicLocation.utm;
-      return `UTM X:${utm.x || "-"} Y:${utm.y || "-"} Fuso:${utm.fuso || "-"}`;
-    }
-    const ponto = compliancePermit.pontosDeMonitoramento?.find((p) => p.lat != null && p.lng != null);
-    if (ponto?.lat != null && ponto?.lng != null) {
-      return `${ponto.lat}, ${ponto.lng}`;
-    }
-    return "N/A";
+    const ponto = compliancePermit.pontosDeMonitoramento?.find(
+      (p) => p.lat != null && p.lng != null,
+    );
+    return formatEmpreendimentoCoordinatesForReport(project, ponto ?? null, "N/A");
   }, [compliancePermit, projects]);
 
   const pontosComCoordenadas = useMemo(() => {
