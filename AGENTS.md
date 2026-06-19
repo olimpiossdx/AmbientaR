@@ -16,7 +16,7 @@ AmbientaR (EcoGestão MG) é uma aplicação Next.js (PWA) de gestão ambiental 
 - **Deploy Firebase App Hosting:** antes de push/rollout, correr `npm run apphosting:check` (lint + typecheck no build, como na nuvem). O adaptador App Hosting corre ESLint mesmo quando o build local ignora.
 - **Lint:** `npm run lint`
 - **Typecheck:** `npm run typecheck`
-- **Coordenadas (formulários):** entrada uniforme SIRGAS 2000 / UTM 23S / GMS — lib `src/lib/coordinates/`, componentes `src/components/coordinates/`. Ver `docs/COORDENADAS-SIRGAS2000.md`. Verificação: `npm run coordinates:verify`.
+- **Coordenadas (formulários):** entrada uniforme SIRGAS 2000 / UTM 23S / GMS — lib `src/lib/coordinates/`, componentes `src/components/coordinates/`. Ver `docs/COORDENADAS-SIRGAS2000.md`. Verificação: `npm run coordinates:verify` (conversões) e `npm run coordinates:audit` (inputs soltos).
 - **Genkit (IA):** `npm run genkit:dev` (opcional; requer `GOOGLE_GENAI_API_KEY`)
 - **Publicar regras Firestore:** `npm run deploy:rules` — faz deploy apenas das regras (`firebase.json` → `src/firebase/rules/firestore.rules`)
 

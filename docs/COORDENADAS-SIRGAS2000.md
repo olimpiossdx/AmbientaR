@@ -21,7 +21,8 @@ Referência para desenvolvedores após a uniformização **F0–F36**. Objetivo:
 Verificação local:
 
 ```bash
-npm run coordinates:verify
+npm run coordinates:verify   # conversões SIRGAS / UTM / GMS
+npm run coordinates:audit    # auditoria estática de inputs soltos
 ```
 
 ## Componentes (`src/components/coordinates/`)
@@ -100,6 +101,7 @@ Listagem **E**: também `enrichListagemEGeoTrechoWithDecimal` para `listagemE.ge
 | Caso | Abordagem |
 |------|-----------|
 | Dispensa PEA `{ latitude, longitude }` strings | `dispensaLatLngToInputString` / `inputStringToDispensaLatLng` (`src/lib/pea/dispensa-coordenadas.ts`) |
+| Inventário — unidade primária `{ lat1, lon1, lat2, lon2 }` | `inventoryUnitLatLngToInputString` / `inputStringToInventoryUnitLatLng` (`src/lib/inventario/inventory-unit-coordenadas.ts`) |
 | Barragem / cavidades | Form `coordenadas`; submit → strings memorial GMS/UTM (`barragem-coordenadas.ts`) |
 | Coleta de campo | `CoordinateStringField` por vértice; Firestore `areaAmarracao[]` string |
 | Vistoria | `CoordinateStringField` → `identificacao.coordenadasGeograficas` |
@@ -119,6 +121,7 @@ Listagem **E**: também `enrichListagemEGeoTrechoWithDecimal` para `listagemE.ge
 3. Prefill a partir de `project.geographicLocation` quando aplicável.
 4. No serialize, chamar enrich adequado se existir bloco com `format`.
 5. Correr `npm run coordinates:verify` após mudanças na lib.
+6. Correr `npm run coordinates:audit` para detectar inputs soltos fora das exceções cartográficas.
 
 ## Histórico de fases (resumo)
 
@@ -131,3 +134,5 @@ Listagem **E**: também `enrichListagemEGeoTrechoWithDecimal` para `listagemE.ge
 | F34–F35 | Pontos hídricos §56, ferroligas, dispensa PEA |
 | F36 | Revisão final + verify |
 | F37 | Este documento |
+| F38 | PCA listagens G/H/E — geo estruturado + serialize |
+| F39 | Inventário unidades primárias + `coordinates:audit` |

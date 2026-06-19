@@ -18,11 +18,21 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Plus, Trash2, Loader2 } from 'lucide-react';
+import { Plus, Trash2, Loader2, MapPin } from 'lucide-react';
 import { inventoryActionButtonClass } from '../inventory-module-chrome';
 import { cn } from '@/lib/utils';
 import { useDoc, useFirebase } from '@/firebase';
 import { doc, serverTimestamp, updateDoc } from 'firebase/firestore';
+import { CoordinateStringField } from '@/components/coordinates';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import {
+  inventoryUnitLatLngToInputString,
+  inputStringToInventoryUnitLatLng,
+} from '@/lib/inventario/inventory-unit-coordenadas';
 import type {
   InventoryInclusionLevel,
   InventoryPlotGroups,
@@ -38,6 +48,64 @@ function newId() {
 
 function emptyPlotGroups(): InventoryPlotGroups {
   return { inclusionLevels: [], strata: [], primaryUnits: [] };
+}
+
+function formatUnitCornerSummary(lat: string, lon: string): string {
+  const latT = lat.trim();
+  const lonT = lon.trim();
+  if (!latT && !lonT) return '—';
+  if (latT && lonT) return `${latT}, ${lonT}`;
+  return latT || lonT;
+}
+
+function UnitCornerCoordinateCell({
+  lat,
+  lon,
+  label,
+  onChange,
+}: {
+  lat: string;
+  lon: string;
+  label: string;
+  onChange: (lat: string, lon: string) => void;
+}) {
+  const inputValue = inventoryUnitLatLngToInputString({ lat, lon });
+  const summary = formatUnitCornerSummary(lat, lon);
+
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="h-8 min-w-[96px] max-w-[140px] justify-start truncate px-2 text-xs font-normal"
+          title={summary !== '—' ? `${label}: ${summary}` : label}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <MapPin className="mr-1 h-3 w-3 shrink-0 opacity-60" />
+          <span className="truncate">{summary}</span>
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent
+        className="w-[min(100vw-2rem,22rem)]"
+        align="start"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <p className="mb-2 text-xs font-medium text-muted-foreground">
+          {label} · SIRGAS 2000 (UTM 23S ou GMS)
+        </p>
+        <CoordinateStringField
+          value={inputValue}
+          onChange={(raw) => {
+            const pair = inputStringToInventoryUnitLatLng(raw);
+            onChange(pair.lat ?? '', pair.lon ?? '');
+          }}
+          variant="coords-only"
+        />
+      </PopoverContent>
+    </Popover>
+  );
 }
 
 export function PlotGroupsDialog({
@@ -359,10 +427,8 @@ export function PlotGroupsDialog({
                     <TableHead>Estrato</TableHead>
                     <TableHead>Larg.</TableHead>
                     <TableHead>Comp.</TableHead>
-                    <TableHead>Lat1</TableHead>
-                    <TableHead>Lon1</TableHead>
-                    <TableHead>Lat2</TableHead>
-                    <TableHead>Lon2</TableHead>
+                    <TableHead className="min-w-[108px]">Ponto 1</TableHead>
+                    <TableHead className="min-w-[108px]">Ponto 2</TableHead>
                     <TableHead>Decl.</TableHead>
                     <TableHead>Alt.</TableHead>
                   </TableRow>
@@ -370,7 +436,7 @@ export function PlotGroupsDialog({
                 <TableBody>
                   {filteredUnits.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={12} className="h-20 text-center text-sm text-muted-foreground">
+                      <TableCell colSpan={10} className="h-20 text-center text-sm text-muted-foreground">
                         Sem linhas para mostrar
                       </TableCell>
                     </TableRow>
@@ -436,35 +502,19 @@ export function PlotGroupsDialog({
                           />
                         </TableCell>
                         <TableCell className="p-1">
-                          <Input
-                            className="h-8 w-20"
-                            value={row.lat1}
-                            onChange={(e) => patchUnit(row.id, { lat1: e.target.value })}
-                            onClick={(e) => e.stopPropagation()}
+                          <UnitCornerCoordinateCell
+                            lat={row.lat1}
+                            lon={row.lon1}
+                            label="Ponto 1"
+                            onChange={(lat1, lon1) => patchUnit(row.id, { lat1, lon1 })}
                           />
                         </TableCell>
                         <TableCell className="p-1">
-                          <Input
-                            className="h-8 w-20"
-                            value={row.lon1}
-                            onChange={(e) => patchUnit(row.id, { lon1: e.target.value })}
-                            onClick={(e) => e.stopPropagation()}
-                          />
-                        </TableCell>
-                        <TableCell className="p-1">
-                          <Input
-                            className="h-8 w-20"
-                            value={row.lat2}
-                            onChange={(e) => patchUnit(row.id, { lat2: e.target.value })}
-                            onClick={(e) => e.stopPropagation()}
-                          />
-                        </TableCell>
-                        <TableCell className="p-1">
-                          <Input
-                            className="h-8 w-20"
-                            value={row.lon2}
-                            onChange={(e) => patchUnit(row.id, { lon2: e.target.value })}
-                            onClick={(e) => e.stopPropagation()}
+                          <UnitCornerCoordinateCell
+                            lat={row.lat2}
+                            lon={row.lon2}
+                            label="Ponto 2"
+                            onChange={(lat2, lon2) => patchUnit(row.id, { lat2, lon2 })}
                           />
                         </TableCell>
                         <TableCell className="p-1">

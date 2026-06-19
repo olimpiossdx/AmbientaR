@@ -24,6 +24,7 @@
     "verify:mcp-rag-hub": "node scripts/verify-mcp-rag-hub.mjs",
     "legislation-pipeline:dev": "node scripts/legislation-pipeline-dev-server.mjs",
     "coordinates:verify": "npx tsx scripts/coordinates-verify.ts",
+    "coordinates:audit": "npx tsx scripts/coordinates-audit.ts",
     "geo:probe": "npx tsx scripts/geo-probe.ts",
     "geo:resolve-car-test": "npx tsx scripts/test-resolve-car.ts",
     "probe:terrabrasilis": "node scripts/probe-terrabrasilis-prodes.mjs",
