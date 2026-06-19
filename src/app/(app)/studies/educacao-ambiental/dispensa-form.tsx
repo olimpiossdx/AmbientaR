@@ -39,6 +39,11 @@ import {
   sanitizeGeoAnalysisId,
   sanitizeGeoVinculo,
 } from '@/lib/pea/sanitize-geo-payload';
+import { CoordinateStringField } from '@/components/coordinates';
+import {
+  dispensaLatLngToInputString,
+  inputStringToDispensaLatLng,
+} from '@/lib/pea/dispensa-coordenadas';
 
 
 const formSchema = z.object({
@@ -427,10 +432,30 @@ export function DispensaForm({ currentItem, onSuccess, onCancel }: DispensaFormP
                 </div>
                  <FormField control={form.control} name="email" render={({ field }) => (<FormItem><FormLabel>2.7 E-mail</FormLabel><FormControl><Input type="email" {...field} /></FormControl></FormItem>)} />
                 <h4 className="font-semibold text-base pt-4">2.8 Coordenadas</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                     <FormField control={form.control} name="coordenadas.latitude" render={({ field }) => (<FormItem><FormLabel>2.8.1 Latitude</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
-                     <FormField control={form.control} name="coordenadas.longitude" render={({ field }) => (<FormItem><FormLabel>2.8.2 Longitude</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
-                </div>
+                <FormItem>
+                  <FormLabel>2.8 Coordenadas geográficas (SIRGAS 2000)</FormLabel>
+                  <FormControl>
+                    <CoordinateStringField
+                      value={dispensaLatLngToInputString({
+                        latitude: form.watch('coordenadas.latitude'),
+                        longitude: form.watch('coordenadas.longitude'),
+                      })}
+                      onChange={(next) => {
+                        const pair = inputStringToDispensaLatLng(next);
+                        form.setValue('coordenadas.latitude', pair.latitude ?? '', {
+                          shouldDirty: true,
+                        });
+                        form.setValue('coordenadas.longitude', pair.longitude ?? '', {
+                          shouldDirty: true,
+                        });
+                      }}
+                      variant="coords-only"
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    UTM (fuso 23S) ou GMS. Gravado como latitude e longitude decimais no documento.
+                  </FormDescription>
+                </FormItem>
             </CardContent>
         </Card>
 

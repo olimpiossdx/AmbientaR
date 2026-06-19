@@ -17,6 +17,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { PlusCircle, Trash2 } from 'lucide-react';
+import { CoordinateStringFormField } from '@/components/coordinates';
 import {
   BooleanRadio,
   CaracterizacaoEfluenteAntesDepois,
@@ -123,17 +124,10 @@ function MonitoramentoSection({
       />
       {realiza && (
         <>
-          <FormField
-            control={form.control}
+          <CoordinateStringFormField
+            form={form}
             name={`${path}.pontosCoordenadas`}
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Pontos / corpos hídricos e coordenadas</FormLabel>
-                <FormControl>
-                  <Textarea rows={2} {...field} />
-                </FormControl>
-              </FormItem>
-            )}
+            label="Pontos / corpos hídricos e coordenadas (SIRGAS 2000)"
           />
           <PcaTextField form={form} name={`${path}.frequencia`} label="Frequência de monitoramento" />
           <FormField
