@@ -22,4 +22,5 @@ export {
   PcaTextAreaField,
   PcaTextField,
   PcaCoordenadasReadOnlyField,
+  PcaCoordenadasStringField,
 } from '../listagem-a/pca-form-listagem-a-helpers';

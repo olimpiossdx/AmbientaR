@@ -41,6 +41,7 @@ import {
 } from './rca-project-prefill';
 import { shouldPrefillFromProject } from '../listagem-a/rca-project-prefill';
 import { getRcaListagemBInitialValues } from '../lib/rca-form-initial-values';
+import { RcaGeographicLocationSection } from '../lib/rca-geographic-location-section';
 
 interface RcaFormListagemBProps {
   currentItem?: RCA | null;
@@ -258,6 +259,8 @@ export function RcaFormListagemB({ currentItem, onSuccess }: RcaFormListagemBPro
             currentTipo={formularioTipo}
             onTipoChange={setFormularioTipo}
           />
+
+          <RcaGeographicLocationSection form={form} />
 
           {formularioTipo === 'telhas_tijolos' && <RcaFormTelhasTijolos {...formProps} />}
           {formularioTipo === 'materiais_ceramicos' && (
