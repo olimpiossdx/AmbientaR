@@ -56,13 +56,13 @@ import { RcaGeographicLocationSection } from '@/app/(app)/studies/rca/lib/rca-ge
 
 <RcaGeographicLocationSection form={form} metadataVariant="listagem" />
 
-// PCA — listagem A (e B/C/D/F no formulário principal)
+// PCA — listagens A–H (shell + bloco estruturado; B/C/D/F também no formulário principal)
 import { PcaGeographicLocationSection } from '@/app/(app)/studies/pca/lib/pca-geographic-location-section';
 
 <PcaGeographicLocationSection form={form} />
 ```
 
-Shell PCA com resumo read-only: `PcaCoordenadasReadOnlyField`. Shell sem bloco estruturado (G/H/E legacy): `PcaCoordenadasStringField`.
+Shell PCA: resumo read-only em `empreendimento.coordenadas` via `PcaCoordenadasReadOnlyField`; entrada editável no bloco `geographicLocation` acima.
 
 ## Serialize Firestore
 
@@ -80,11 +80,11 @@ const geographicLocation =
 
 Listagem **E**: também `listagemE.geoTrecho.inicio/fim` com campo `formato`.
 
-### PCA (listagens A, B, C, D, F)
+### PCA (listagens A–H)
 
-`enrichPcaGeographicLocationForFirestore` em `src/app/(app)/studies/pca/lib/pca-prefill-shared.ts`.
+`enrichPcaGeographicLocationForFirestore` em `src/app/(app)/studies/pca/lib/pca-prefill-shared.ts` (serialize em A e nos shells G/H/E; B/C/D/F no formulário principal).
 
-Listagem **E**: `enrichListagemEGeoTrechoWithDecimal`.
+Listagem **E**: também `enrichListagemEGeoTrechoWithDecimal` para `listagemE.geoTrecho.inicio/fim`.
 
 ### Empreendimento
 

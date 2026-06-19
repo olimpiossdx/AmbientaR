@@ -28,6 +28,7 @@ import { PcaFormListagemEShell } from './pca-form-listagem-e-shell';
 import { PcaListagemEFormularioTipoCard } from './pca-form-listagem-e-tipo-card';
 import { PcaFormListagemEGeral } from './pca-form-listagem-e-geral';
 import { PcaFormListagemEDutosGasodutos } from './pca-form-listagem-e-dutos-gasodutos';
+import { PcaGeographicLocationSection } from '../lib/pca-geographic-location-section';
 import {
   prefillPcaListagemEFromProject,
   serializePcaListagemEForFirestore,
@@ -121,6 +122,9 @@ export function PcaFormListagemE({ currentItem, onSuccess }: PcaFormListagemEPro
     if (patch.listagemE) {
       form.setValue('listagemE', { ...form.getValues('listagemE'), ...patch.listagemE });
     }
+    if (patch.geographicLocation) {
+      form.setValue('geographicLocation', patch.geographicLocation as never);
+    }
   }, [selectedProjectId, projects, clients, selectedClientId, form, currentItem?.status, hasSnapshot]);
 
   async function handleSave(status: 'Rascunho' | 'Aprovado') {
@@ -211,6 +215,8 @@ export function PcaFormListagemE({ currentItem, onSuccess }: PcaFormListagemEPro
             isLoadingProjects={isLoadingProjects}
             readOnlyEmpreendimento={isApproved}
           />
+
+          <PcaGeographicLocationSection form={form} />
 
           {formularioTipo === 'geral' && <PcaFormListagemEGeral form={form} />}
           {formularioTipo === 'dutos_gasodutos' && (

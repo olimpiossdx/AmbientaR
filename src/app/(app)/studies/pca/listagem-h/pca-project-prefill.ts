@@ -18,6 +18,8 @@ import {
   formatCoordenadasProject,
   shouldPrefillPcaFromProject,
   cloneProjectListagemBlock,
+  deepCloneRecord,
+  enrichPcaGeographicLocationForFirestore,
 } from '../lib/pca-prefill-shared';
 
 
@@ -124,6 +126,8 @@ export function prefillPcaListagemHFromProject(
 
     listagemH: cloneProjectListagemBlock(projectRecord, 'listagemH'),
 
+    geographicLocation: deepCloneRecord(project.geographicLocation),
+
   };
 
 }
@@ -162,19 +166,25 @@ export function serializePcaListagemHForFirestore(
 
 ) {
 
+  const enriched = enrichPcaGeographicLocationForFirestore(
+
+    values as Record<string, unknown>,
+
+  ) as PcaListagemHFormValues;
+
   const payload: Record<string, unknown> = {
 
-    ...values,
+    ...enriched,
 
     status,
 
-    formSource: values.formSource ?? 'react',
+    formSource: enriched.formSource ?? 'react',
 
     termoReferencia: {
 
-      ...values.termoReferencia,
+      ...enriched.termoReferencia,
 
-      dataEmissao: values.termoReferencia.dataEmissao.toISOString(),
+      dataEmissao: enriched.termoReferencia.dataEmissao.toISOString(),
 
     },
 
@@ -184,7 +194,7 @@ export function serializePcaListagemHForFirestore(
 
   if (status === 'Aprovado') {
 
-    payload.projectSnapshot = buildPcaListagemHProjectSnapshot(values);
+    payload.projectSnapshot = buildPcaListagemHProjectSnapshot(enriched);
 
   }
 

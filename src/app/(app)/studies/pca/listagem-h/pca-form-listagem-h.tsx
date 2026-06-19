@@ -28,6 +28,7 @@ import { PcaFormListagemHShell } from './pca-form-listagem-h-shell';
 import { PcaListagemHFormularioTipoCard } from './pca-form-listagem-h-tipo-card';
 import { PcaFormListagemHGeral } from './pca-form-listagem-h-geral';
 import { PcaFormListagemHPrincipal } from './pca-form-listagem-h-principal';
+import { PcaGeographicLocationSection } from '../lib/pca-geographic-location-section';
 import {
   prefillPcaListagemHFromProject,
   serializePcaListagemHForFirestore,
@@ -121,6 +122,9 @@ export function PcaFormListagemH({ currentItem, onSuccess }: PcaFormListagemHPro
     if (patch.listagemH) {
       form.setValue('listagemH', { ...form.getValues('listagemH'), ...patch.listagemH });
     }
+    if (patch.geographicLocation) {
+      form.setValue('geographicLocation', patch.geographicLocation as never);
+    }
   }, [selectedProjectId, projects, clients, selectedClientId, form, currentItem?.status, hasSnapshot]);
 
   async function handleSave(status: 'Rascunho' | 'Aprovado') {
@@ -211,6 +215,8 @@ export function PcaFormListagemH({ currentItem, onSuccess }: PcaFormListagemHPro
             isLoadingProjects={isLoadingProjects}
             readOnlyEmpreendimento={isApproved}
           />
+
+          <PcaGeographicLocationSection form={form} />
 
           {formularioTipo === 'geral' && <PcaFormListagemHGeral form={form} />}
           {formularioTipo === 'principal' && <PcaFormListagemHPrincipal form={form} />}
