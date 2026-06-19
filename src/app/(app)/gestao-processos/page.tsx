@@ -33,36 +33,47 @@ import {
   serverTimestamp,
   setDoc,
   updateDoc,
+  writeBatch,
 } from "firebase/firestore";
 import type { Empreendedor, Project, Request } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 import {
-  GESTAO_PROCESSOS_MENU_LABEL,
-  GESTAO_PROCESSOS_PLANILHA_PATH,
+  GESTAO_PROCESSOS_PATH,
 } from "@/lib/gestao-processos-menu";
 import {
   canWriteGestaoProcessos,
   isGestaoProcessosPortalReadOnly,
 } from "@/lib/gestao-processos/role-guards";
-import type { OfficeProcess, OfficeProcessFase } from "@/lib/gestao-processos/types";
+import type {
+  OfficeProcess,
+  OfficeProcessFase,
+  OfficeProcessImportPreview,
+} from "@/lib/gestao-processos/types";
 import {
   OFFICE_PROCESS_FASE_LABELS,
   buildOfficeProcessExternalKey,
+  detectTipoProcesso,
   formatPrazoDisplay,
   officeProcessSearchBlob,
 } from "@/lib/gestao-processos/utils";
-import { officeProcessVisibleToPortal } from "@/lib/gestao-processos/match-empreendedor";
+import {
+  officeProcessVisibleToPortal,
+  resolveEmpreendedorIdByName,
+} from "@/lib/gestao-processos/match-empreendedor";
 import { fetchEmpreendedorIdsForProcessosPortal } from "@/lib/requests-portal-empreendedor-ids";
 import { ProcessDetailSheet } from "@/components/gestao-processos/process-detail-sheet";
 import {
   ProcessFormDialog,
   type ProcessFormValues,
 } from "@/components/gestao-processos/process-form-dialog";
+import { ExcelImportDialog } from "@/components/gestao-processos/excel-import-dialog";
+import { downloadOfficeProcessExport } from "@/lib/gestao-processos/excel";
 import {
-  FileSpreadsheet,
+  FileDown,
   Pencil,
   PlusCircle,
   Trash2,
+  Upload,
 } from "lucide-react";
 import {
   getLicenciamentoStatusLabel,
@@ -81,6 +92,12 @@ function faseBadgeClass(fase: OfficeProcessFase): string {
   );
 }
 
+function omitUndefinedValues(values: Record<string, unknown>): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries(values).filter(([, value]) => value !== undefined),
+  );
+}
+
 export default function GestaoProcessosPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -89,6 +106,7 @@ export default function GestaoProcessosPage() {
 
   const faseFilter = searchParams?.get("fase") as OfficeProcessFase | null;
   const selectedId = searchParams?.get("processo");
+  const createRequested = searchParams?.get("novo") === "1";
 
   const canWrite = canWriteGestaoProcessos(user?.role);
   const isPortalReadOnly = isGestaoProcessosPortalReadOnly(user?.role);
@@ -99,8 +117,10 @@ export default function GestaoProcessosPage() {
   const [formOpen, setFormOpen] = React.useState(false);
   const [editing, setEditing] = React.useState<OfficeProcess | null>(null);
   const [deleteTarget, setDeleteTarget] = React.useState<OfficeProcess | null>(null);
+  const [importOpen, setImportOpen] = React.useState(false);
   const [saving, setSaving] = React.useState(false);
   const [deleting, setDeleting] = React.useState(false);
+  const [importing, setImporting] = React.useState(false);
 
   const processesQuery = useMemoFirebase(
     () => (firestore ? collection(firestore, "officeProcesses") : null),
@@ -123,6 +143,17 @@ export default function GestaoProcessosPage() {
   const { data: empreendedores } = useCollection<Empreendedor>(empreendedoresQuery);
   const { data: projects } = useCollection<Project>(projectsQuery);
   const { data: requests } = useCollection<Request>(requestsQuery);
+
+  const existingByKey = React.useMemo(() => {
+    const map = new Map<string, OfficeProcess>();
+    for (const p of processes ?? []) {
+      map.set(
+        p.externalKey || buildOfficeProcessExternalKey(p.tipoProcesso, p.numeroProcesso),
+        p,
+      );
+    }
+    return map;
+  }, [processes]);
 
   React.useEffect(() => {
     if (!firestore || !user || !isPortalReadOnly) {
@@ -204,19 +235,45 @@ export default function GestaoProcessosPage() {
     setSheetOpen(Boolean(selectedId && selectedProcess));
   }, [selectedId, selectedProcess]);
 
+  React.useEffect(() => {
+    if (!createRequested || !canWrite) return;
+    setEditing(null);
+    setFormOpen(true);
+  }, [createRequested, canWrite]);
+
+  const replaceProcessQuery = (params: URLSearchParams) => {
+    const q = params.toString();
+    router.replace(q ? `${GESTAO_PROCESSOS_PATH}?${q}` : GESTAO_PROCESSOS_PATH, {
+      scroll: false,
+    });
+  };
+
+  const removeCreateRequest = () => {
+    const params = new URLSearchParams(searchParams?.toString() ?? "");
+    params.delete("novo");
+    replaceProcessQuery(params);
+  };
+
+  const openCreateForm = () => {
+    const params = new URLSearchParams(searchParams?.toString() ?? "");
+    params.delete("processo");
+    params.set("novo", "1");
+    setEditing(null);
+    setFormOpen(true);
+    replaceProcessQuery(params);
+  };
+
   const openProcess = (id: string) => {
     const params = new URLSearchParams(searchParams?.toString() ?? "");
+    params.delete("novo");
     params.set("processo", id);
-    router.replace(`/gestao-processos?${params.toString()}`, { scroll: false });
+    replaceProcessQuery(params);
   };
 
   const closeSheet = () => {
     const params = new URLSearchParams(searchParams?.toString() ?? "");
     params.delete("processo");
-    const q = params.toString();
-    router.replace(q ? `/gestao-processos?${q}` : "/gestao-processos", {
-      scroll: false,
-    });
+    replaceProcessQuery(params);
     setSheetOpen(false);
   };
 
@@ -224,11 +281,12 @@ export default function GestaoProcessosPage() {
     if (!firestore) return;
     setSaving(true);
     try {
+      let createdProcessId: string | null = null;
       const externalKey = buildOfficeProcessExternalKey(
         values.tipoProcesso,
         values.numeroProcesso,
       );
-      const payload = {
+      const payload = omitUndefinedValues({
         externalKey,
         tipoProcesso: values.tipoProcesso,
         numeroProcesso: values.numeroProcesso.trim(),
@@ -242,7 +300,7 @@ export default function GestaoProcessosPage() {
         observacoes: values.observacoes.trim() || undefined,
         fonte: "app" as const,
         updatedAt: serverTimestamp(),
-      };
+      });
 
       if (existing?.id) {
         await updateDoc(doc(firestore, "officeProcesses", existing.id), payload);
@@ -254,10 +312,15 @@ export default function GestaoProcessosPage() {
           createdAt: serverTimestamp(),
         });
         toast({ title: "Processo criado" });
-        openProcess(ref.id);
+        createdProcessId = ref.id;
       }
       setFormOpen(false);
       setEditing(null);
+      if (createdProcessId) {
+        openProcess(createdProcessId);
+      } else if (createRequested) {
+        removeCreateRequest();
+      }
     } catch (e) {
       toast({
         variant: "destructive",
@@ -266,6 +329,74 @@ export default function GestaoProcessosPage() {
       });
     } finally {
       setSaving(false);
+    }
+  };
+
+  const runImport = async (
+    preview: OfficeProcessImportPreview,
+    options: { seedValidation: boolean },
+  ) => {
+    if (!firestore) return;
+    setImporting(true);
+    try {
+      const batch = writeBatch(firestore);
+      let created = 0;
+      let updated = 0;
+
+      for (const row of preview.rows) {
+        const tipoProcesso =
+          row.tipoProcesso ?? detectTipoProcesso(row.numeroProcesso);
+        const externalKey = buildOfficeProcessExternalKey(
+          tipoProcesso,
+          row.numeroProcesso,
+        );
+        const empreendedorId = resolveEmpreendedorIdByName(
+          row.empreendedorName,
+          empreendedores ?? undefined,
+        );
+
+        const payload = omitUndefinedValues({
+          externalKey,
+          tipoProcesso,
+          numeroProcesso: row.numeroProcesso,
+          empreendedorName: row.empreendedorName,
+          empreendimentoName: row.empreendimentoName,
+          municipio: row.municipio,
+          tipoIntervencao: row.tipoIntervencao,
+          fase: row.fase ?? "protocolado",
+          statusDetalhe: row.statusDetalhe,
+          prazo: row.prazo,
+          empreendedorId,
+          fonte: "excel" as const,
+          seedValidation: options.seedValidation,
+          updatedAt: serverTimestamp(),
+        });
+
+        const existing = existingByKey.get(externalKey);
+        if (existing) {
+          batch.update(doc(firestore, "officeProcesses", existing.id), payload);
+          updated++;
+        } else {
+          const ref = doc(collection(firestore, "officeProcesses"));
+          batch.set(ref, { ...payload, createdAt: serverTimestamp() });
+          created++;
+        }
+      }
+
+      await batch.commit();
+      toast({
+        title: "Importação concluída",
+        description: `${created} criado(s), ${updated} atualizado(s).`,
+      });
+      setImportOpen(false);
+    } catch (e) {
+      toast({
+        variant: "destructive",
+        title: "Erro na importação",
+        description: (e as Error).message,
+      });
+    } finally {
+      setImporting(false);
     }
   };
 
@@ -291,35 +422,21 @@ export default function GestaoProcessosPage() {
   const pageTitle =
     faseFilter === "elaboracao"
       ? "Em elaboração"
-      : faseFilter === "protocolado"
+    : faseFilter === "protocolado"
         ? "Protocolados (SEI/SLA)"
-        : GESTAO_PROCESSOS_MENU_LABEL;
+        : "Todos os processos";
 
   return (
     <>
       <PageHeader
         title={pageTitle}
-        description="Processos em andamento no escritório — elaboração interna e protocolados no SEI/SLA."
+        description="Acompanhamento unificado de processos, protocolos e trâmites de licenciamento."
       >
         {canWrite ? (
-          <>
-            <Button variant="outline" size="sm" asChild>
-              <Link href={GESTAO_PROCESSOS_PLANILHA_PATH}>
-                <FileSpreadsheet className="mr-2 h-4 w-4" />
-                Planilha
-              </Link>
-            </Button>
-            <Button
-              size="sm"
-              onClick={() => {
-                setEditing(null);
-                setFormOpen(true);
-              }}
-            >
-              <PlusCircle className="mr-2 h-4 w-4" />
-              Novo processo
-            </Button>
-          </>
+          <Button size="sm" onClick={openCreateForm}>
+            <PlusCircle className="mr-2 h-4 w-4" />
+            Novo processo
+          </Button>
         ) : null}
       </PageHeader>
 
@@ -329,6 +446,44 @@ export default function GestaoProcessosPage() {
           onChange={setSearchTerm}
           placeholder="Buscar por processo, empreendedor, empreendimento ou status…"
         />
+
+        {canWrite ? (
+          <Card className="border-dashed bg-muted/20">
+            <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="space-y-1">
+                <p className="text-sm font-medium">Ferramentas de acompanhamento</p>
+                <p className="text-xs text-muted-foreground">
+                  Importe dados de Excel ou exporte a base atual sem sair de Todos os processos.
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setImportOpen(true)}
+                >
+                  <Upload className="mr-2 h-4 w-4" />
+                  Importar Excel
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    downloadOfficeProcessExport(
+                      processes ?? [],
+                      "gestao-processos-export.xlsx",
+                    )
+                  }
+                >
+                  <FileDown className="mr-2 h-4 w-4" />
+                  Exportar
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        ) : null}
 
         <div className="space-y-3">
           <h2 className="text-sm font-medium text-muted-foreground">
@@ -347,11 +502,9 @@ export default function GestaoProcessosPage() {
                 <Button
                   variant="link"
                   className="ml-1"
-                  asChild
+                  onClick={() => setImportOpen(true)}
                 >
-                  <Link href={GESTAO_PROCESSOS_PLANILHA_PATH}>
-                    Importar planilha
-                  </Link>
+                  Importar planilha
                 </Button>
               ) : null}
             </div>
@@ -452,7 +605,7 @@ export default function GestaoProcessosPage() {
         {!faseFilter && activeRequests.length > 0 ? (
           <div className="space-y-3">
             <h2 className="text-sm font-medium text-muted-foreground">
-              Trâmites de Licenciamento em andamento ({activeRequests.length})
+              Trâmites de licenciamento integrados ({activeRequests.length})
             </h2>
             <div className="space-y-2">
               {activeRequests.map((req) => (
@@ -498,10 +651,23 @@ export default function GestaoProcessosPage() {
 
       <ProcessFormDialog
         open={formOpen}
-        onOpenChange={setFormOpen}
+        onOpenChange={(open) => {
+          setFormOpen(open);
+          if (!open) {
+            setEditing(null);
+            if (createRequested) removeCreateRequest();
+          }
+        }}
         initial={editing}
         saving={saving}
         onSubmit={(values) => persistProcess(values, editing)}
+      />
+
+      <ExcelImportDialog
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        importing={importing}
+        onConfirm={runImport}
       />
 
       <AlertDialog

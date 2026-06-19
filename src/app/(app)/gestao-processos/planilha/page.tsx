@@ -55,6 +55,12 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
+function omitUndefinedValues(values: Record<string, unknown>): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries(values).filter(([, value]) => value !== undefined),
+  );
+}
+
 export default function GestaoProcessosPlanilhaPage() {
   const router = useRouter();
   const { firestore, user } = useFirebase();
@@ -127,7 +133,7 @@ export default function GestaoProcessosPlanilhaPage() {
           empreendedores ?? undefined,
         );
 
-        const payload = {
+        const payload = omitUndefinedValues({
           externalKey,
           tipoProcesso,
           numeroProcesso: row.numeroProcesso,
@@ -140,9 +146,9 @@ export default function GestaoProcessosPlanilhaPage() {
           prazo: row.prazo,
           empreendedorId,
           fonte: "excel" as const,
-          seedValidation: options.seedValidation || undefined,
+          seedValidation: options.seedValidation,
           updatedAt: serverTimestamp(),
-        };
+        });
 
         const existing = existingByKey.get(externalKey);
         if (existing) {
@@ -227,8 +233,8 @@ export default function GestaoProcessosPlanilhaPage() {
   return (
     <>
       <PageHeader
-        title="Planilha Excel"
-        description={`${GESTAO_PROCESSOS_MENU_LABEL} — importar e exportar processos.`}
+        title="Geral"
+        description={`${GESTAO_PROCESSOS_MENU_LABEL} — acompanhamento e ferramentas operacionais.`}
       >
         <Button variant="outline" size="sm" asChild>
           <Link href={GESTAO_PROCESSOS_PATH}>
@@ -241,7 +247,23 @@ export default function GestaoProcessosPlanilhaPage() {
       <div className="grid gap-4 p-4 md:grid-cols-2 md:p-6">
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Importar</CardTitle>
+            <CardTitle className="text-base">Acompanhamento manual</CardTitle>
+            <CardDescription>
+              Lance processos e atualize status diretamente no painel de acompanhamento.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button variant="outline" asChild>
+              <Link href={GESTAO_PROCESSOS_PATH}>
+                Abrir acompanhamento
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Ferramenta de importação</CardTitle>
             <CardDescription>
               Carregue a planilha com a aba PROCESSO. Processos existentes (mesmo
               SEI/SLA) são atualizados.
@@ -250,7 +272,7 @@ export default function GestaoProcessosPlanilhaPage() {
           <CardContent className="flex flex-col gap-3">
             <Button onClick={() => setImportOpen(true)}>
               <Upload className="mr-2 h-4 w-4" />
-              Selecionar planilha (.xlsx)
+              Importar Excel (.xlsx)
             </Button>
             <Button
               variant="secondary"
@@ -269,7 +291,7 @@ export default function GestaoProcessosPlanilhaPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Exportar</CardTitle>
+            <CardTitle className="text-base">Ferramenta de exportação</CardTitle>
             <CardDescription>
               Baixe todos os processos atuais para editar no Excel e reimportar.
             </CardDescription>
