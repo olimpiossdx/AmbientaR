@@ -10,6 +10,7 @@ import {
   formatCoordenadasProject,
   shouldPrefillPcaFromProject,
   cloneProjectListagemBlock,
+  enrichPcaGeographicLocationForFirestore,
 } from '../lib/pca-prefill-shared';
 
 export type PcaListagemBProjectPrefillResult = Partial<PcaListagemBFormValues>;
@@ -77,18 +78,21 @@ export function serializePcaListagemBForFirestore(
   values: PcaListagemBFormValues,
   status: 'Rascunho' | 'Aprovado',
 ) {
+  const enriched = enrichPcaGeographicLocationForFirestore(
+    values as Record<string, unknown>,
+  ) as PcaListagemBFormValues;
   const payload: Record<string, unknown> = {
-    ...values,
+    ...enriched,
     status,
-    formSource: values.formSource ?? 'react',
+    formSource: enriched.formSource ?? 'react',
     termoReferencia: {
-      ...values.termoReferencia,
-      dataEmissao: values.termoReferencia.dataEmissao.toISOString(),
+      ...enriched.termoReferencia,
+      dataEmissao: enriched.termoReferencia.dataEmissao.toISOString(),
     },
   };
 
   if (status === 'Aprovado') {
-    payload.projectSnapshot = buildPcaListagemBProjectSnapshot(values);
+    payload.projectSnapshot = buildPcaListagemBProjectSnapshot(enriched);
   }
 
   return payload;

@@ -43,6 +43,7 @@ import {
 } from './rca-project-prefill';
 import { shouldPrefillFromProject } from '../listagem-a/rca-project-prefill';
 import { getRcaListagemGInitialValues } from '../lib/rca-form-initial-values';
+import { RcaGeographicLocationSection } from '../lib/rca-geographic-location-section';
 
 interface RcaFormListagemGProps {
   currentItem?: RCA | null;
@@ -263,6 +264,8 @@ export function RcaFormListagemG({ currentItem, onSuccess }: RcaFormListagemGPro
             currentTipo={formularioTipo}
             onTipoChange={setFormularioTipo}
           />
+
+          <RcaGeographicLocationSection form={form} />
 
           {formularioTipo === 'culturas' && <RcaFormCulturasListagemG {...formProps} />}
           {formularioTipo === 'bovinocultura' && <RcaFormBovinocultura {...formProps} />}

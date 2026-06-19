@@ -23,11 +23,10 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import type { Empreendedor as Client, Project, OwnerCondition, Datum, RegularizacaoSituacao, ManagementCategory, Jurisdiction, Biome, AtividadeAgricola, ZeeGeofisicoItem, ZeeSocioeconomicoItem } from '@/lib/types';
+import type { Empreendedor as Client, Project, OwnerCondition, RegularizacaoSituacao, ManagementCategory, Jurisdiction, Biome, AtividadeAgricola, ZeeGeofisicoItem, ZeeSocioeconomicoItem } from '@/lib/types';
 import { Textarea } from '@/components/ui/textarea';
 import { PlusCircle, Trash2 } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { CoordinateInput } from '@/components/coordinates';
 
 interface RcaFormCulturasProps {
     form: any;
@@ -124,11 +123,6 @@ const anexoOptions = [
 
 export function RcaFormCulturas({ form, clients, isLoadingClients, projects, isLoadingProjects }: RcaFormCulturasProps) {
     
-    const geoDatum = form.watch('geographicLocation.datum') as Datum | undefined;
-    const isLegacyDatum =
-        geoDatum != null &&
-        String(geoDatum).trim() !== '' &&
-        geoDatum !== 'SIRGAS2000';
     const selectedClientId = form.watch('empreendedor.clientId');
     const selectedProjectId = form.watch('empreendimento.projectId');
     const correspondenceIsSame = form.watch('empreendimento.correspondenceIsSame');
@@ -361,16 +355,6 @@ export function RcaFormCulturas({ form, clients, isLoadingClients, projects, isL
                         </div>
                     </div>
 
-
-                    <CoordinateInput
-                        form={form}
-                        basePath="geographicLocation"
-                        variant="full"
-                        metadataVariant="project"
-                        title="5. LOCALIZAÇÃO GEOGRÁFICA"
-                        lockDatum={!isLegacyDatum}
-                        showLegacyDatums={isLegacyDatum}
-                    />
                 </AccordionContent>
             </AccordionItem>
              <AccordionItem value="item-2">

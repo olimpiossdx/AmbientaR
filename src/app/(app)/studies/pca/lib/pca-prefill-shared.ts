@@ -1,4 +1,5 @@
-import type { Project } from '@/lib/types';
+import type { Project, CoordinateFormat, GeographicLocationFields } from '@/lib/types';
+import { enrichCoordinateBlockWithDecimal } from '@/lib/coordinates';
 
 export function formatCoordenadasProject(project: Project): string {
   const geo = project.geographicLocation;
@@ -42,4 +43,20 @@ export function cloneProjectListagemBlock(
   const block = project[key];
   if (!block || typeof block !== 'object') return {};
   return deepCloneRecord(block as Record<string, unknown>) ?? {};
+}
+
+/** Deriva `geographicLocation.decimal` no save quando o bloco estruturado está preenchido. */
+export function enrichPcaGeographicLocationForFirestore<T extends Record<string, unknown>>(
+  values: T,
+): T {
+  const geo = values.geographicLocation as
+    | (Pick<GeographicLocationFields, 'latLong' | 'utm' | 'decimal'> & {
+        format?: CoordinateFormat;
+      })
+    | undefined;
+  if (geo?.format == null) return values;
+  return {
+    ...values,
+    geographicLocation: enrichCoordinateBlockWithDecimal(geo, 'format'),
+  };
 }
