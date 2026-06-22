@@ -6,9 +6,11 @@ import { useCollection, useFirebase, useMemoFirebase } from "@/firebase";
 import { isUserProfileAlignedWithSession, useAuthUserId } from "@/lib/auth-user-id";
 import type { Notification } from "@/lib/types";
 import { isClientePortalRole } from "@/lib/role-guards";
+import { canAccessOfficeTasks } from "@/lib/gestao-processos/role-guards";
 import { getPackageLimits } from "@/lib/package-limits";
 import { fetchEmpreendedorIdsForRepresentative } from "@/lib/representative-empreendedor-ids";
 import { runClientPortalDeadlineAlerts } from "@/lib/client-deadline-alerts";
+import { runOfficeTaskDeadlineAlerts } from "@/lib/gestao-processos/office-task-deadline-alerts";
 import { registerDeviceFcmToken } from "@/lib/fcm-client";
 import {
   canUseBrowserNotifications,
@@ -27,6 +29,7 @@ export function NotificationPushProvider() {
   const seenIdsRef = React.useRef<Set<string>>(new Set());
   const initializedRef = React.useRef(false);
   const deadlinesRanRef = React.useRef(false);
+  const officeTasksDeadlinesRanRef = React.useRef(false);
 
   const notificationsQuery = useMemoFirebase(() => {
     if (!firestore || !profileAligned || !sessionUid) return null;
@@ -92,6 +95,23 @@ export function NotificationPushProvider() {
         });
       } catch (e) {
         console.warn("[NotificationPushProvider] prazos:", e);
+      }
+    })();
+  }, [firestore, user, profileAligned, sessionUid]);
+
+  React.useEffect(() => {
+    if (!firestore || !user || !profileAligned || !sessionUid) return;
+    if (!canAccessOfficeTasks(user.role)) return;
+    if (officeTasksDeadlinesRanRef.current) return;
+    officeTasksDeadlinesRanRef.current = true;
+
+    void (async () => {
+      try {
+        await runOfficeTaskDeadlineAlerts(firestore, sessionUid, {
+          excludeUserId: sessionUid,
+        });
+      } catch (e) {
+        console.warn("[NotificationPushProvider] tarefas:", e);
       }
     })();
   }, [firestore, user, profileAligned, sessionUid]);

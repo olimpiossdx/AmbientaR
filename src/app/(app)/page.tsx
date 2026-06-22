@@ -34,6 +34,9 @@ const BirthdayWidget = dynamic(() => import("./dashboards/birthday-widget"), {
 const AgendaWidget = dynamic(() => import("./dashboards/agenda-widget"), {
   loading: () => null,
 });
+const OfficeTasksWidget = dynamic(() => import("./dashboards/office-tasks-widget"), {
+  loading: () => null,
+});
 const FaunaDashboard = dynamic(() => import("./dashboards/fauna-dashboard"), {
   loading: DashboardLoading,
 });
@@ -96,6 +99,7 @@ export default function DashboardRouterPage() {
         <main className="flex-1 overflow-auto p-4 md:p-6 space-y-8">
           <DocumentosAmbientaisHubCard role="gestor" />
           <AgendaWidget />
+          <OfficeTasksWidget />
           <BirthdayWidget />
           <div className="mt-8">
             <EnvironmentalDashboard />
@@ -109,6 +113,7 @@ export default function DashboardRouterPage() {
         <main className="flex-1 overflow-auto p-4 md:p-6 space-y-8">
           <DocumentosAmbientaisHubCard role="technical" />
           <AgendaWidget />
+          <OfficeTasksWidget />
           <BirthdayWidget />
           <div className="mt-8">
             <EnvironmentalDashboard />
@@ -122,6 +127,7 @@ export default function DashboardRouterPage() {
         <main className="flex-1 overflow-auto p-4 md:p-6 space-y-8">
           <DocumentosAmbientaisHubCard role="advogado" />
           <AgendaWidget />
+          <OfficeTasksWidget />
           <BirthdayWidget />
           <div className="mt-8">
             <EnvironmentalDashboard />

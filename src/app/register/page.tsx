@@ -46,7 +46,6 @@ import {
 } from "@/components/ui/card";
 import {
   Loader2,
-  Leaf,
   ArrowLeft,
   ArrowRight,
   Check,
@@ -94,6 +93,7 @@ import {
 } from "@/app/register/contract-content";
 import { CLIENT_PACKAGE_CATALOG } from "@/lib/package-catalog";
 import { getAmbbotUsagePeriodKey } from "@/lib/package-limits";
+import { PublicAuthLayout } from "@/components/auth/public-auth-layout";
 
 const PACKAGES = CLIENT_PACKAGE_CATALOG;
 
@@ -1871,8 +1871,8 @@ function RegisterPageContent() {
   );
 
   return (
-    <div className="flex min-h-screen flex-col items-center p-4 pt-8 pb-8 bg-background">
-      <div className="w-full max-w-2xl flex-1 flex flex-col animate-fade-in-up">
+    <PublicAuthLayout wide alignTop>
+      <div className="w-full flex flex-col">
         <div className="mb-4 w-full">
           <Button
             variant="ghost"
@@ -1887,15 +1887,6 @@ function RegisterPageContent() {
           </Button>
         </div>
         <div className="mb-6 flex flex-col items-center">
-          <Link
-            href="/login"
-            className="flex items-center gap-2 text-foreground mb-2"
-          >
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-emerald-400 text-primary-foreground">
-              <Leaf className="h-6 w-6" />
-            </div>
-            <h1 className="text-4xl font-bold text-primary">AmbientaR</h1>
-          </Link>
           <p className="text-center text-muted-foreground text-sm">
             {hasChosenProfile
               ? mode === "representative"
@@ -2019,12 +2010,8 @@ function RegisterPageContent() {
             </div>
           </>
         )}
-
-        <p className="mt-12 text-center text-xs text-muted-foreground">
-          Desenvolvido por Barros e Sá Investimentos
-        </p>
       </div>
-    </div>
+    </PublicAuthLayout>
   );
 }
 

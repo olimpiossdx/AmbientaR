@@ -102,8 +102,6 @@ function main() {
   );
 
   const displayUtm = formatGeographicLocationDisplay({
-    format: "UTM",
-    datum: "SIRGAS2000",
     utm: {
       x: String(utm.easting),
       y: String(utm.northing),

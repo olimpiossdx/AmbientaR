@@ -123,7 +123,8 @@ export const pcaListagemGTecnicoSchema = z
   })
   .optional();
 
-export const pcaListagemGFormSchema = z.object({
+export const pcaListagemGFormSchema = z
+  .object({
   status: z.enum(['Rascunho', 'Aprovado']).optional(),
   listagemCode: z.literal('G'),
   activity: z.string().min(1),
@@ -137,7 +138,7 @@ export const pcaListagemGFormSchema = z.object({
   conteudoEstudo: conteudoEstudoSchema,
   equipeTecnica: equipeTecnicaSchema,
   listagemG: pcaListagemGTecnicoSchema,
-});
+}).passthrough();
 
 export type PcaListagemGFormValues = z.infer<typeof pcaListagemGFormSchema>;
 

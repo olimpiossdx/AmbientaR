@@ -35,7 +35,7 @@ import {
   setDoc,
   updateDoc,
 } from "firebase/firestore";
-import type { Empreendedor, Project, Request } from "@/lib/types";
+import type { Empreendedor, Project, Request, AppUser } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 import {
   GESTAO_PROCESSOS_FLUXO_PATH,
@@ -55,6 +55,7 @@ import {
   resolveProcessPipelineState,
 } from "@/lib/gestao-processos/pipeline-utils";
 import {
+  canAccessOfficeTasks,
   canWriteGestaoProcessos,
   isGestaoProcessosPortalReadOnly,
 } from "@/lib/gestao-processos/role-guards";
@@ -94,6 +95,12 @@ import { ProcessAlertsBadges } from "@/components/gestao-processos/process-alert
 import { FluxoKanban, type FluxoKanbanPipeline } from "@/components/gestao-processos/fluxo-kanban";
 import { ProtocolarProcessDialog } from "@/components/gestao-processos/protocolar-process-dialog";
 import { ExcelImportDialog } from "@/components/gestao-processos/excel-import-dialog";
+import {
+  OfficeTaskFormDialog,
+  type OfficeTaskFormValues,
+} from "@/components/gestao-processos/office-task-form-dialog";
+import { NOTIFICATION_LINKS, NOTIFICATION_SOURCE } from "@/lib/notification-events";
+import { notifyPortalUsers } from "@/lib/notifications";
 import { downloadOfficeProcessExport } from "@/lib/gestao-processos/excel";
 import {
   FileDown,
@@ -139,6 +146,7 @@ export function GestaoProcessosFluxoView() {
   const createRequested = searchParams?.get("novo") === "1";
 
   const canWrite = canWriteGestaoProcessos(user?.role);
+  const canViewTasks = canAccessOfficeTasks(user?.role);
   const isPortalReadOnly = isGestaoProcessosPortalReadOnly(user?.role);
 
   const [searchTerm, setSearchTerm] = React.useState("");
@@ -155,6 +163,9 @@ export function GestaoProcessosFluxoView() {
   const [viewMode, setViewMode] = React.useState<"kanban" | "lista">("kanban");
   const [protocolTarget, setProtocolTarget] = React.useState<OfficeProcess | null>(null);
   const [protocolSaving, setProtocolSaving] = React.useState(false);
+  const [taskFormOpen, setTaskFormOpen] = React.useState(false);
+  const [taskFormProcess, setTaskFormProcess] = React.useState<OfficeProcess | null>(null);
+  const [savingTask, setSavingTask] = React.useState(false);
 
   const processesQuery = useMemoFirebase(
     () => (firestore ? collection(firestore, "officeProcesses") : null),
@@ -176,6 +187,10 @@ export function GestaoProcessosFluxoView() {
     () => (firestore ? collection(firestore, "consultoriaProjects") : null),
     [firestore],
   );
+  const usersQuery = useMemoFirebase(
+    () => (firestore && canViewTasks ? collection(firestore, "users") : null),
+    [firestore, canViewTasks],
+  );
 
   const { data: processes, isLoading } = useCollection<OfficeProcess>(processesQuery);
   const { data: empreendedores } = useCollection<Empreendedor>(empreendedoresQuery);
@@ -183,6 +198,17 @@ export function GestaoProcessosFluxoView() {
   const { data: requests } = useCollection<Request>(requestsQuery);
   const { data: consultoriaProjects } =
     useCollection<ConsultoriaProject>(consultoriaProjectsQuery);
+  const { data: users } = useCollection<AppUser>(usersQuery);
+
+  const technicalUsers = React.useMemo(
+    () =>
+      users?.filter((u) =>
+        ["admin", "technical", "gestor", "supervisor", "diretor_fauna", "advogado"].includes(
+          u.role,
+        ),
+      ) ?? [],
+    [users],
+  );
 
   const existingByKey = React.useMemo(() => {
     const map = new Map<string, OfficeProcess>();
@@ -410,6 +436,56 @@ export function GestaoProcessosFluxoView() {
       });
     } finally {
       setSaving(false);
+    }
+  };
+
+  const persistOfficeTask = async (values: OfficeTaskFormValues) => {
+    if (!firestore || !user || !taskFormProcess) return;
+    setSavingTask(true);
+    try {
+      const assignee = values.assigneeUid
+        ? technicalUsers.find((u) => u.uid === values.assigneeUid)
+        : undefined;
+      const ref = doc(collection(firestore, "officeTasks"));
+      await setDoc(ref, omitUndefinedValues({
+        titulo: values.titulo.trim(),
+        descricao: values.descricao.trim() || undefined,
+        categoria: values.categoria,
+        status: values.status,
+        prioridade: values.prioridade || undefined,
+        prazo: values.prazo || undefined,
+        assigneeUid: values.assigneeUid || undefined,
+        assigneeName: assignee?.name || assignee?.email,
+        empreendedorId: values.empreendedorId || taskFormProcess.empreendedorId,
+        consultoriaProjectId:
+          values.consultoriaProjectId || taskFormProcess.consultoriaProjectId,
+        officeProcessId: taskFormProcess.id,
+        createdByUid: user.uid,
+        createdByName: user.name || user.email || user.uid,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      }));
+      if (values.assigneeUid && values.assigneeUid !== user.uid) {
+        await notifyPortalUsers(firestore, [values.assigneeUid], {
+          title: "Nova tarefa atribuída",
+          description: values.titulo.trim(),
+          link: `${NOTIFICATION_LINKS.gestaoProcessosTarefas}?tarefa=${encodeURIComponent(ref.id)}`,
+          sourceType: NOTIFICATION_SOURCE.office_task_assigned,
+          sourceId: ref.id,
+          actorRole: user.role ?? "gestor",
+        });
+      }
+      toast({ title: "Tarefa criada" });
+      setTaskFormOpen(false);
+      setTaskFormProcess(null);
+    } catch (e) {
+      toast({
+        variant: "destructive",
+        title: "Erro ao criar tarefa",
+        description: (e as Error).message,
+      });
+    } finally {
+      setSavingTask(false);
     }
   };
 
@@ -778,8 +854,34 @@ export function GestaoProcessosFluxoView() {
           else setSheetOpen(true);
         }}
         canWrite={canWrite}
+        canViewTasks={canViewTasks}
+        onNewTask={(process) => {
+          setTaskFormProcess(process);
+          setTaskFormOpen(true);
+        }}
         consultoriaProjects={consultoriaProjects ?? undefined}
       />
+
+      {canViewTasks && taskFormProcess ? (
+        <OfficeTaskFormDialog
+          open={taskFormOpen}
+          onOpenChange={(open) => {
+            setTaskFormOpen(open);
+            if (!open) setTaskFormProcess(null);
+          }}
+          defaults={{
+            consultoriaProjectId: taskFormProcess.consultoriaProjectId ?? "",
+            empreendedorId: taskFormProcess.empreendedorId ?? "",
+            officeProcessId: taskFormProcess.id,
+          }}
+          saving={savingTask}
+          onSubmit={persistOfficeTask}
+          technicalUsers={technicalUsers}
+          empreendedores={empreendedores ?? []}
+          consultoriaProjects={consultoriaProjects ?? []}
+          officeProcesses={processes ?? []}
+        />
+      ) : null}
 
       <ProcessFormDialog
         open={formOpen}

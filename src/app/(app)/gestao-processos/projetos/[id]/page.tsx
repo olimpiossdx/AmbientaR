@@ -36,11 +36,12 @@ import {
   Trash2,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import type { Empreendedor, Project } from "@/lib/types";
+import type { Empreendedor, Project, AppUser } from "@/lib/types";
 import {
   GESTAO_PROCESSOS_PROJETOS_PATH,
 } from "@/lib/gestao-processos-menu";
 import {
+  canAccessOfficeTasks,
   canWriteGestaoProcessos,
   isGestaoProcessosPortalReadOnly,
 } from "@/lib/gestao-processos/role-guards";
@@ -80,8 +81,15 @@ import {
   type ProcessFormValues,
 } from "@/components/gestao-processos/process-form-dialog";
 import { LinkProcessesDialog } from "@/components/gestao-processos/link-processes-dialog";
+import { ConsultoriaProjectTasks } from "@/components/gestao-processos/consultoria-project-tasks";
+import {
+  OfficeTaskFormDialog,
+  type OfficeTaskFormValues,
+} from "@/components/gestao-processos/office-task-form-dialog";
 import { fetchEmpreendedorIdsForProcessosPortal } from "@/lib/requests-portal-empreendedor-ids";
 import { formatProjectCoordinatesDisplay } from "@/lib/coordinates/format-project-display";
+import { NOTIFICATION_LINKS, NOTIFICATION_SOURCE } from "@/lib/notification-events";
+import { notifyPortalUsers } from "@/lib/notifications";
 import { cn } from "@/lib/utils";
 
 function omitUndefined(values: Record<string, unknown>): Record<string, unknown> {
@@ -107,6 +115,7 @@ export default function ConsultoriaProjectDetailPage() {
   const { toast } = useToast();
 
   const canWrite = canWriteGestaoProcessos(user?.role);
+  const canViewTasks = canAccessOfficeTasks(user?.role);
   const isPortalReadOnly = isGestaoProcessosPortalReadOnly(user?.role);
 
   const [portalEmpIds, setPortalEmpIds] = React.useState<string[] | null>(null);
@@ -121,6 +130,8 @@ export default function ConsultoriaProjectDetailPage() {
   const [saving, setSaving] = React.useState(false);
   const [savingProcess, setSavingProcess] = React.useState(false);
   const [deleting, setDeleting] = React.useState(false);
+  const [taskFormOpen, setTaskFormOpen] = React.useState(false);
+  const [savingTask, setSavingTask] = React.useState(false);
 
   const projectRef = useMemoFirebase(
     () =>
@@ -147,12 +158,27 @@ export default function ConsultoriaProjectDetailPage() {
     () => (firestore ? collection(firestore, "projects") : null),
     [firestore],
   );
+  const usersQuery = useMemoFirebase(
+    () => (firestore && canViewTasks ? collection(firestore, "users") : null),
+    [firestore, canViewTasks],
+  );
 
   const { data: allConsultoriaProjects } =
     useCollection<ConsultoriaProject>(allProjectsQuery);
   const { data: officeProcesses } = useCollection<OfficeProcess>(processesQuery);
   const { data: empreendedores } = useCollection<Empreendedor>(empreendedoresQuery);
   const { data: cadastroProjects } = useCollection<Project>(cadastroProjectsQuery);
+  const { data: users } = useCollection<AppUser>(usersQuery);
+
+  const technicalUsers = React.useMemo(
+    () =>
+      users?.filter((u) =>
+        ["admin", "technical", "gestor", "supervisor", "diretor_fauna", "advogado"].includes(
+          u.role,
+        ),
+      ) ?? [],
+    [users],
+  );
 
   React.useEffect(() => {
     if (!firestore || !user || !isPortalReadOnly) {
@@ -343,6 +369,54 @@ export default function ConsultoriaProjectDetailPage() {
       });
     } finally {
       setSavingProcess(false);
+    }
+  };
+
+  const persistOfficeTask = async (values: OfficeTaskFormValues) => {
+    if (!firestore || !project || !user) return;
+    setSavingTask(true);
+    try {
+      const assignee = values.assigneeUid
+        ? technicalUsers.find((u) => u.uid === values.assigneeUid)
+        : undefined;
+      const ref = doc(collection(firestore, "officeTasks"));
+      await setDoc(ref, omitUndefined({
+        titulo: values.titulo.trim(),
+        descricao: values.descricao.trim() || undefined,
+        categoria: values.categoria,
+        status: values.status,
+        prioridade: values.prioridade || undefined,
+        prazo: values.prazo || undefined,
+        assigneeUid: values.assigneeUid || undefined,
+        assigneeName: assignee?.name || assignee?.email,
+        empreendedorId: values.empreendedorId || project.empreendedorId,
+        consultoriaProjectId: project.id,
+        officeProcessId: values.officeProcessId || undefined,
+        createdByUid: user.uid,
+        createdByName: user.name || user.email || user.uid,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      }));
+      if (values.assigneeUid && values.assigneeUid !== user.uid) {
+        await notifyPortalUsers(firestore, [values.assigneeUid], {
+          title: "Nova tarefa atribuída",
+          description: values.titulo.trim(),
+          link: `${NOTIFICATION_LINKS.gestaoProcessosTarefas}?tarefa=${encodeURIComponent(ref.id)}`,
+          sourceType: NOTIFICATION_SOURCE.office_task_assigned,
+          sourceId: ref.id,
+          actorRole: user.role ?? "gestor",
+        });
+      }
+      toast({ title: "Tarefa criada" });
+      setTaskFormOpen(false);
+    } catch (e) {
+      toast({
+        variant: "destructive",
+        title: "Erro ao criar tarefa",
+        description: (e as Error).message,
+      });
+    } finally {
+      setSavingTask(false);
     }
   };
 
@@ -622,6 +696,14 @@ export default function ConsultoriaProjectDetailPage() {
             />
           </CardContent>
         </Card>
+
+        {canViewTasks ? (
+          <ConsultoriaProjectTasks
+            consultoriaProjectId={project.id}
+            canWrite={canWrite}
+            onNewTask={canWrite ? () => setTaskFormOpen(true) : undefined}
+          />
+        ) : null}
       </div>
 
       <LinkProcessesDialog
@@ -664,6 +746,23 @@ export default function ConsultoriaProjectDetailPage() {
         saving={saving}
         onSubmit={persistProject}
       />
+
+      {canViewTasks ? (
+        <OfficeTaskFormDialog
+          open={taskFormOpen}
+          onOpenChange={setTaskFormOpen}
+          defaults={{
+            consultoriaProjectId: project.id,
+            empreendedorId: project.empreendedorId ?? "",
+          }}
+          saving={savingTask}
+          onSubmit={persistOfficeTask}
+          technicalUsers={technicalUsers}
+          empreendedores={empreendedores ?? []}
+          consultoriaProjects={allConsultoriaProjects ?? []}
+          officeProcesses={officeProcesses ?? []}
+        />
+      ) : null}
 
       <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <AlertDialogContent>

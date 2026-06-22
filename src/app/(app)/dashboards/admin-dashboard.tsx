@@ -5,6 +5,7 @@ import FinancialDashboard from './financial-dashboard';
 import EnvironmentalDashboard from './environmental-dashboard';
 import CrmDashboard from '../crm/crm-dashboard';
 import AgendaWidget from './agenda-widget';
+import OfficeTasksWidget from './office-tasks-widget';
 import BirthdayWidget from './birthday-widget';
 import { DocumentosAmbientaisHubCard } from '@/components/documentos-ambientais-hub-card';
 import { useAuth } from '@/firebase';
@@ -24,6 +25,9 @@ export default function AdminDashboard() {
         <DocumentosAmbientaisHubCard role={hubRole} />
         <div>
           <AgendaWidget />
+        </div>
+        <div>
+          <OfficeTasksWidget />
         </div>
         <div>
           <BirthdayWidget />

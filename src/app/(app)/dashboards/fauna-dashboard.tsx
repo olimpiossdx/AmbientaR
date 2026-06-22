@@ -10,6 +10,7 @@ import type { FaunaStudy } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PageHeader } from '@/components/page-header';
 import AgendaWidget from './agenda-widget';
+import OfficeTasksWidget from './office-tasks-widget';
 import { DocumentosAmbientaisHubCard } from '@/components/documentos-ambientais-hub-card';
 
 export default function FaunaDashboard() {
@@ -91,6 +92,7 @@ export default function FaunaDashboard() {
        <main className="flex-1 overflow-auto p-4 md:p-6 space-y-8">
             <DocumentosAmbientaisHubCard role="diretor_fauna" />
             <AgendaWidget />
+            <OfficeTasksWidget />
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">

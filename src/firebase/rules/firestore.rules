@@ -685,6 +685,23 @@ service cloud.firestore {
       allow read: if isSignedIn();
       allow create, update, delete: if canWriteOfficeProcess();
     }
+
+    /**
+     * Tarefas avulsas do escritório — Gestão de Projetos e Processos.
+     * Leitura: equipa interna (sem portal cliente).
+     * Escrita: admin, técnico e gestor.
+     * @path /databases/{database}/documents/officeTasks/{taskId}
+     */
+    function canReadOfficeTask() {
+      return isAdmin() || (isSignedIn() && getRole() in [
+        'technical', 'gestor', 'supervisor', 'advogado', 'diretor_fauna'
+      ]);
+    }
+
+    match /officeTasks/{taskId} {
+      allow read: if canReadOfficeTask();
+      allow create, update, delete: if canWriteOfficeProcess();
+    }
     
     /**
      * @description Managers can write and list all. Clients can list (app filtra por empreendedor do titular).

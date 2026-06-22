@@ -45,6 +45,7 @@ import { consultoriaProjectLabel } from "@/lib/gestao-processos/consultoria-proj
 import { linkProcessToConsultoriaProject } from "@/lib/gestao-processos/office-process-import";
 import { OFFICE_PROCESS_PRIORIDADE_LABELS } from "@/components/gestao-processos/process-form-dialog";
 import { ProcessAlertsBadges } from "@/components/gestao-processos/process-alerts-badges";
+import { OfficeProcessTasks } from "@/components/gestao-processos/office-process-tasks";
 import { ExternalLink, Loader2, Plus, Trash2 } from "lucide-react";
 import { useCollection, useFirebase, useMemoFirebase } from "@/firebase";
 import {
@@ -117,6 +118,8 @@ type ProcessDetailSheetProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   canWrite: boolean;
+  canViewTasks?: boolean;
+  onNewTask?: (process: OfficeProcess) => void;
   consultoriaProjects?: ConsultoriaProject[];
 };
 
@@ -125,6 +128,8 @@ export function ProcessDetailSheet({
   open,
   onOpenChange,
   canWrite,
+  canViewTasks = false,
+  onNewTask,
   consultoriaProjects = [],
 }: ProcessDetailSheetProps) {
   const { firestore, user } = useFirebase();
@@ -346,8 +351,16 @@ export function ProcessDetailSheet({
         </SheetHeader>
 
         <Tabs defaultValue="resumo" className="flex min-h-0 flex-1 flex-col">
-          <TabsList className="grid w-full shrink-0 grid-cols-5">
+          <TabsList
+            className={cn(
+              "grid w-full shrink-0",
+              canViewTasks ? "grid-cols-6" : "grid-cols-5",
+            )}
+          >
             <TabsTrigger value="resumo">Resumo</TabsTrigger>
+            {canViewTasks ? (
+              <TabsTrigger value="tarefas">Tarefas</TabsTrigger>
+            ) : null}
             <TabsTrigger value="solicitacoes">Solicitações</TabsTrigger>
             <TabsTrigger value="recebimentos">Recebimentos</TabsTrigger>
             <TabsTrigger value="atendimentos">Atendimentos</TabsTrigger>
@@ -533,6 +546,21 @@ export function ProcessDetailSheet({
                 </>
               ) : null}
             </TabsContent>
+
+            {canViewTasks ? (
+              <TabsContent value="tarefas" className="mt-0 space-y-4">
+                <OfficeProcessTasks
+                  officeProcessId={process.id}
+                  canWrite={canWrite}
+                  onNewTask={
+                    canWrite && onNewTask
+                      ? () => onNewTask(process)
+                      : undefined
+                  }
+                  compact={false}
+                />
+              </TabsContent>
+            ) : null}
 
             {(["solicitacoes", "recebimentos", "atendimentos", "timeline"] as const).map(
               (tab) => (

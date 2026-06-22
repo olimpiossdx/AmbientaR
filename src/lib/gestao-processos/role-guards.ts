@@ -42,3 +42,10 @@ export function canAccessGestaoProcessosMenu(
     isGestaoProcessosPortalReadOnly(role)
   );
 }
+
+/** Tarefas avulsas — apenas equipa interna (sem portal). */
+export function canAccessOfficeTasks(
+  role: UserRole | undefined | null,
+): boolean {
+  return hasAnyRoleOrAdmin(role, GESTAO_PROCESSOS_INTERNAL_READ_ROLES);
+}

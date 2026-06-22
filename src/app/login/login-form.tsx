@@ -17,7 +17,13 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
@@ -66,11 +72,14 @@ export function LoginForm() {
   }
 
   return (
-    <Card className="border border-border bg-card shadow-sm">
-      <CardHeader className="space-y-1 pb-4">
-        <CardTitle className="text-lg font-semibold text-foreground">
+    <Card className="border border-border bg-card shadow-md">
+      <CardHeader className="space-y-1.5 pb-4">
+        <CardTitle className="text-xl font-semibold text-foreground">
           Acesse sua Conta
         </CardTitle>
+        <CardDescription>
+          Use seu e-mail e senha para acessar a plataforma.
+        </CardDescription>
       </CardHeader>
       <CardContent className="pt-0">
         <Form {...form}>

@@ -7,6 +7,8 @@ export const NOTIFICATION_SOURCE = {
   prazo_outorga: "prazo_outorga",
   prazo_ctf_ibama: "prazo_ctf_ibama",
   prazo_intervencao: "prazo_intervencao",
+  prazo_tarefa: "prazo_tarefa",
+  office_task_assigned: "office_task_assigned",
   licenca: "licenca",
   outorga: "outorga",
   intervencao: "intervencao",
@@ -40,4 +42,5 @@ export const NOTIFICATION_LINKS = {
   commercialProposals: "/commercial-proposals",
   contracts: "/contracts",
   inspectionsReports: "/inspections/reports",
+  gestaoProcessosTarefas: "/gestao-processos/tarefas",
 } as const;
