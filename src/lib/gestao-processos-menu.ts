@@ -1,5 +1,5 @@
 import type { NavSubItem, UserRole } from "@/lib/types";
-import { FolderKanban, GitBranch } from "lucide-react";
+import { FolderKanban, GitBranch, ListTodo } from "lucide-react";
 
 export const GESTAO_PROCESSOS_MENU_LABEL = "Gestão de Projetos e Processos";
 export const GESTAO_PROCESSOS_PATH = "/gestao-processos";
@@ -10,6 +10,8 @@ export const GESTAO_PROCESSOS_NOVO_PATH = `${GESTAO_PROCESSOS_FLUXO_PATH}?novo=1
 
 export const GESTAO_PROCESSOS_PROJETOS_LABEL = "Projetos";
 export const GESTAO_PROCESSOS_FLUXO_LABEL = "Fluxo de Processos";
+export const GESTAO_PROCESSOS_TAREFAS_LABEL = "Tarefas";
+export const GESTAO_PROCESSOS_TAREFAS_PATH = `${GESTAO_PROCESSOS_PATH}/tarefas`;
 
 /** @deprecated Use GESTAO_PROCESSOS_FLUXO_LABEL */
 export const GESTAO_PROCESSOS_VISAO_LABEL = GESTAO_PROCESSOS_FLUXO_LABEL;
@@ -65,6 +67,12 @@ export function buildGestaoProcessosNavSubItems(): NavSubItem[] {
       label: GESTAO_PROCESSOS_FLUXO_LABEL,
       icon: GitBranch,
       roles: GESTAO_PROCESSOS_MENU_ROLES,
+    },
+    {
+      href: GESTAO_PROCESSOS_TAREFAS_PATH,
+      label: GESTAO_PROCESSOS_TAREFAS_LABEL,
+      icon: ListTodo,
+      roles: GESTAO_PROCESSOS_INTERNAL_READ_ROLES,
     },
   ];
 }
