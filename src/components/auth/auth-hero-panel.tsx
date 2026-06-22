@@ -2,11 +2,11 @@ import { Check } from 'lucide-react';
 import { AmbientaRLogo } from './ambientar-logo';
 
 const FEATURES = [
-  'Licenças, outorgas, estudos e documentos ambientais centralizados',
-  'Relatórios e propostas com apoio de IA',
-  'Agenda, projetos e gestão para consultorias em MG',
-  'PWA offline-first — sincroniza quando voltar à rede',
-  'Propostas, contratos e fiscalização digital integrados',
+  'Licenças, outorgas e documentos do seu empreendimento em um só lugar',
+  'Prazos e alertas para não perder renovações nem exigências ambientais',
+  'Acompanhe processos com sua consultoria ou equipe interna em tempo real',
+  'Relatórios e propostas com apoio de IA quando precisar',
+  'Funciona offline no campo — sincroniza quando voltar à rede',
 ] as const;
 
 export function AuthHeroPanel() {
@@ -27,10 +27,10 @@ export function AuthHeroPanel() {
       <div className="relative z-10 max-w-lg space-y-8">
         <AmbientaRLogo size="lg" showWordmark variant="onDark" href="/" />
 
-        <p className="max-w-[36ch] text-lg leading-relaxed text-emerald-50/95">
-          Plataforma completa para consultorias ambientais em Minas Gerais —
-          organize licenças, estudos, relatórios e a rotina da sua equipe em um
-          só lugar.
+        <p className="max-w-[38ch] text-lg leading-relaxed text-emerald-50/95">
+          Para empresas, empreendedores e quem precisa cumprir exigências
+          ambientais em Minas Gerais — organize licenças, prazos, estudos e
+          documentos do seu negócio com clareza e segurança.
         </p>
 
         <ul className="space-y-3.5">
