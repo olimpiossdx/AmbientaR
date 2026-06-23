@@ -70,11 +70,14 @@ export function isQuotaOrIndexedDbError(error: unknown): boolean {
   const code = (error as { code?: string })?.code ?? "";
   return (
     name === "QuotaExceededError" ||
+    name === "UnknownError" ||
     code === "QuotaExceededError" ||
     /QuotaExceededError/i.test(message) ||
     /IndexedDbTransactionError/i.test(message) ||
     /backing store/i.test(message) ||
-    /app\/idb-set/i.test(message)
+    /indexedDB\.open/i.test(message) ||
+    /app\/idb-set/i.test(message) ||
+    (name === "AbortError" && /transaction was aborted/i.test(message))
   );
 }
 

@@ -5,6 +5,7 @@ import { AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   clearBrowserStorageForRecovery,
+  clearSkipAuthIndexedDbPersistence,
   clearSkipPersistentFirestoreCache,
   IDB_QUOTA_EVENT,
   isQuotaOrIndexedDbError,
@@ -31,6 +32,7 @@ export function IndexedDbRecoveryBanner() {
       await clearBrowserStorageForRecovery();
       clearFirebaseClientInstancesCache();
       clearSkipPersistentFirestoreCache();
+      clearSkipAuthIndexedDbPersistence();
       window.location.reload();
     } catch (error) {
       console.error('Falha ao limpar armazenamento local:', error);
