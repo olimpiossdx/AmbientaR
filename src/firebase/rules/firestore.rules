@@ -1112,14 +1112,20 @@ service cloud.firestore {
      * @path /databases/{database}/documents/platform_payment_requests/{requestId}
      */
     match /platform_payment_requests/{requestId} {
-      allow create: if isSignedIn()
-        && request.resource.data.userId == request.auth.uid
-        && request.resource.data.keys().hasAll(['userId', 'email', 'name', 'packageId', 'method', 'amountLabel', 'status', 'createdAt']);
+      allow create: if false;
       allow read: if isSignedIn() && (
-        isAdmin() || isSupervisor() ||
+        isAdmin() || isSupervisor() || isFinancial() ||
         resource.data.userId == request.auth.uid
       );
       allow update, delete: if isAdmin() || isSupervisor();
+    }
+
+    /**
+     * Eventos de billing (webhooks, confirmações) — somente Admin SDK.
+     */
+    match /platform_billing_events/{eventId} {
+      allow read: if isAdmin() || isFinancial() || isSupervisor();
+      allow create, update, delete: if false;
     }
 
     /**

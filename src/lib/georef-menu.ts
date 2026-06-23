@@ -6,6 +6,7 @@ import {
   Building2,
   Crosshair,
   FileSpreadsheet,
+  FileText,
   FolderKanban,
   History,
   LayoutDashboard,
@@ -77,6 +78,12 @@ export function buildGeorefNavSubItems(): NavSubItem[] {
       roles,
     },
     {
+      href: '/georeferenciamento/memorial-descritivo',
+      label: 'Memorial descritivo',
+      icon: FileText,
+      roles,
+    },
+    {
       href: '/georeferenciamento/validacoes',
       label: 'Validações',
       icon: Scale,
@@ -140,6 +147,12 @@ export const GEOREF_HUB_MODULES = [
     title: 'Documentação técnica',
     description: 'Memorial descritivo, planta, ART/RRT e anuências.',
     icon: FileSpreadsheet,
+  },
+  {
+    href: '/georeferenciamento/memorial-descritivo',
+    title: 'Memorial descritivo',
+    description: 'Gere memorial a partir de KML/SHP com coordenadas UTM, azimutes e exportação DOCX/PDF.',
+    icon: FileText,
   },
   {
     href: '/georeferenciamento/validacoes',

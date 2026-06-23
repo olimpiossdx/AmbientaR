@@ -1673,7 +1673,7 @@ export type PlatformPaymentStatus =
   | 'paid'
   | 'expired';
 
-/** Registo de pedido de pagamento no cadastro (confirmação manual ou webhook futuro). */
+/** Registo de pedido de pagamento (PIX dinâmico Sicoob / mock). */
 export type PlatformPaymentRequest = {
   id: string;
   userId: string;
@@ -1683,7 +1683,15 @@ export type PlatformPaymentRequest = {
   method: PlatformPaymentMethod;
   /** Valor exibido no cadastro (referência). */
   amountLabel: string;
-  status: 'pending_verification' | 'confirmed' | 'rejected';
+  amountBrl?: number;
+  status: 'pending_verification' | 'confirmed' | 'rejected' | 'expired';
+  provider?: 'sicoob' | 'mock';
+  txid?: string;
+  qrExpiresAt?: string | null;
+  pixCopiaECola?: string | null;
+  sicoobStatus?: string | null;
+  webhookLastEvent?: string | null;
+  resolvedBy?: 'webhook' | 'admin' | 'cron' | 'debug';
   createdAt: any;
   resolvedAt?: any;
 };

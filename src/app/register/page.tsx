@@ -13,8 +13,6 @@ import {
   updateDoc,
   getDoc,
   serverTimestamp,
-  collection,
-  addDoc,
 } from "firebase/firestore";
 import {
   isBootstrapAdminEmail,
@@ -82,7 +80,6 @@ import {
   PACKAGE_ANNUAL_AMOUNT_LABEL,
 } from "@/lib/platform-access";
 import {
-  resolvePlatformPixCopyPaste,
   hasPlatformBankDetails,
   formatBankAccountLabel,
 } from "@/lib/platform-company";
@@ -94,6 +91,11 @@ import {
 import { CLIENT_PACKAGE_CATALOG } from "@/lib/package-catalog";
 import { getAmbbotUsagePeriodKey } from "@/lib/package-limits";
 import { PublicAuthLayout } from "@/components/auth/public-auth-layout";
+import {
+  DynamicPixCheckout,
+  type DynamicPixChargeData,
+} from "@/components/billing/dynamic-pix-checkout";
+import { parseUnifiedApiResponse } from "@/lib/api-response";
 
 const PACKAGES = CLIENT_PACKAGE_CATALOG;
 
@@ -237,6 +239,8 @@ function RegisterPageContent() {
   const [cardExpiryYear, setCardExpiryYear] = React.useState("");
   const [cardBrand, setCardBrand] = React.useState("");
   const [paymentAcknowledged, setPaymentAcknowledged] = React.useState(false);
+  const [postRegisterPix, setPostRegisterPix] =
+    React.useState<DynamicPixChargeData | null>(null);
   const [linkedClientId, setLinkedClientId] = React.useState<string | null>(null);
   const [linkedEmpreendedorId, setLinkedEmpreendedorId] = React.useState<string | null>(null);
   const [cpfLinkHint, setCpfLinkHint] = React.useState<string | null>(null);
@@ -691,20 +695,41 @@ function RegisterPageContent() {
         clientPackageRequiresAnnualPaymentStep(values.selectedPackage) &&
         !isPlatformPaymentAutoApproveEnabled()
       ) {
-        try {
-          await addDoc(collection(firestore, "platform_payment_requests"), {
-            userId: uid,
-            email: values.email,
-            name: values.name,
-            packageId: values.selectedPackage,
-            method: paymentMethod,
-            amountLabel:
-              PACKAGE_ANNUAL_AMOUNT_LABEL[values.selectedPackage] ?? "",
-            status: "pending_verification",
-            createdAt: serverTimestamp(),
-          });
-        } catch (e) {
-          console.warn("platform_payment_requests não gravado:", e);
+        if (paymentMethod === "pix") {
+          try {
+            const token = await cred.user.getIdToken();
+            const chargeRes = await fetch("/api/billing/create-charge", {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ packageId: values.selectedPackage }),
+            });
+            const parsed = await parseUnifiedApiResponse<{
+              txid: string;
+              amountBrl: number;
+              pixCopiaECola: string;
+              expiresAt?: string | null;
+              mock?: boolean;
+            }>(chargeRes);
+            if (parsed.ok) {
+              setPostRegisterPix({
+                txid: parsed.data.txid,
+                amountBrl: parsed.data.amountBrl,
+                pixCopiaECola: parsed.data.pixCopiaECola,
+                expiresAt: parsed.data.expiresAt,
+                mock: parsed.data.mock,
+                packageLabel:
+                  PACKAGES.find((p) => p.id === values.selectedPackage)?.name ??
+                  values.selectedPackage,
+              });
+            } else {
+              console.warn("create-charge falhou:", parsed.message);
+            }
+          } catch (chargeErr) {
+            console.warn("PIX dinâmico não gerado:", chargeErr);
+          }
         }
       }
 
@@ -804,6 +829,8 @@ function RegisterPageContent() {
             ? "Sua conta de representante foi criada. Solicite acesso a um titular em Usuários, quando estiver pronto."
             : mode === "consultor_representante"
               ? "Sua conta de consultor foi criada. Solicite acesso a um titular em Usuários, quando estiver pronto."
+            : postRegisterPix
+              ? "Conta criada. Conclua o PIX abaixo para liberar o acesso automaticamente."
             : pendingPay
               ? "Sua conta foi criada. O acesso à plataforma será liberado após a confirmação do pagamento anual."
               : mode === "cliente_autonomo"
@@ -811,7 +838,9 @@ function RegisterPageContent() {
                 : "Bem-vindo ao AmbientaR. Você será redirecionado.",
       });
 
-      router.push("/");
+      if (!postRegisterPix) {
+        router.push("/");
+      }
     } catch (error: any) {
       let description = "Ocorreu um erro ao criar sua conta. Tente novamente.";
       if (error.code === "auth/email-already-in-use") {
@@ -1305,36 +1334,12 @@ function RegisterPageContent() {
     </Card>
   );
 
-  const copyPix = async () => {
-    const t = resolvePlatformPixCopyPaste(platformCompany);
-    if (!t) {
-      toast({
-        variant: "destructive",
-        title: "PIX não configurado",
-        description:
-          "Peça à equipe o código PIX ou cadastre o PIX copia e cola em Cadastro → Empresas (empresa da plataforma).",
-      });
-      return;
-    }
-    try {
-      await navigator.clipboard.writeText(t);
-      toast({ title: "Copiado", description: "Código PIX copiado." });
-    } catch {
-      toast({
-        variant: "destructive",
-        title: "Não foi possível copiar",
-        description: "Copie manualmente o código exibido.",
-      });
-    }
-  };
-
   const renderStep4 = () => {
     const pkg = selectedPackage;
     const isFreePlan = pkg === "gratuito";
     const annual = clientPackageRequiresAnnualPaymentStep(pkg);
     const amount =
       (pkg && PACKAGE_ANNUAL_AMOUNT_LABEL[pkg]) ?? "Consulte a equipe";
-    const pixCode = resolvePlatformPixCopyPaste(platformCompany);
 
     return (
       <Card className="shadow-lg bg-card/80 backdrop-blur-sm border">
@@ -1491,50 +1496,20 @@ function RegisterPageContent() {
                 <div className="space-y-2 rounded-lg border p-4">
                   <p className="text-sm font-medium">Pagamento via PIX</p>
                   <p className="text-xs text-muted-foreground">
-                    Transfira o valor indicado para{" "}
-                    <strong>{platformCompany?.name ?? "a CONTRATADA"}</strong>{" "}
-                    usando os dados abaixo. Envie o comprovante se solicitado pela
-                    equipe.
+                    Após concluir o cadastro, será gerado um{" "}
+                    <strong>QR code exclusivo</strong> com o valor exato do plano
+                    (PIX dinâmico Sicoob). A liberação do acesso é automática quando
+                    o pagamento for confirmado.
                   </p>
                   {hasPlatformBankDetails(platformCompany) && (
                     <ul className="text-sm space-y-1 text-muted-foreground list-disc pl-5">
                       {platformCompany?.bankName ? (
                         <li>Banco: {platformCompany.bankName}</li>
                       ) : null}
-                      {platformCompany?.bankAgency ? (
-                        <li>Agência: {platformCompany.bankAgency}</li>
-                      ) : null}
-                      {platformCompany?.bankAccount ? (
-                        <li>
-                          Conta{" "}
-                          {formatBankAccountLabel(platformCompany.bankAccountType)}:{" "}
-                          {platformCompany.bankAccount}
-                        </li>
-                      ) : null}
                       {platformCompany?.pixKey ? (
                         <li>Chave PIX: {platformCompany.pixKey}</li>
                       ) : null}
                     </ul>
-                  )}
-                  {pixCode ? (
-                    <>
-                      <div className="max-h-24 overflow-y-auto rounded bg-muted p-2 font-mono text-[11px] break-all">
-                        {pixCode}
-                      </div>
-                      <Button type="button" variant="secondary" onClick={copyPix}>
-                        Copiar código PIX
-                      </Button>
-                    </>
-                  ) : (
-                    <p className="text-sm text-amber-800 dark:text-amber-200">
-                      O administrador deve cadastrar o PIX copia e cola em{" "}
-                      <strong>Cadastro → Empresas</strong> (empresa da plataforma)
-                      ou configurar{" "}
-                      <code className="rounded bg-muted px-1">
-                        NEXT_PUBLIC_AMBIENTAR_PIX_COPIA_E_COLA
-                      </code>
-                      .
-                    </p>
                   )}
                 </div>
               )}
@@ -1688,7 +1663,9 @@ function RegisterPageContent() {
                 : annual
                   ? isPlatformPaymentAutoApproveEnabled()
                     ? "Confirmo que realizei o pagamento conforme as instruções acima e desejo concluir meu cadastro."
-                    : "Estou ciente de que o acesso à plataforma será liberado após a confirmação do pagamento pela equipe e desejo concluir meu cadastro."
+                    : paymentMethod === "pix"
+                      ? "Estou ciente de que receberei um QR PIX com valor fixo após o cadastro e que o acesso será liberado automaticamente após a confirmação do pagamento."
+                      : "Estou ciente de que o acesso à plataforma será liberado após a confirmação do pagamento pela equipe e desejo concluir meu cadastro."
                   : "Li as informações desta etapa e desejo concluir meu cadastro."}
             </Label>
           </div>
@@ -1955,6 +1932,19 @@ function RegisterPageContent() {
         {!clientGestaoInviteOnly && !hasChosenProfile && showProfileChoice && renderProfileChoice()}
 
         {!clientGestaoInviteOnly && hasChosenProfile && (
+          postRegisterPix ? (
+            <div className="space-y-4">
+              <DynamicPixCheckout
+                charge={postRegisterPix}
+                getAuthHeaders={async () => {
+                  const token = await auth?.currentUser?.getIdToken();
+                  return token ? { Authorization: `Bearer ${token}` } : {};
+                }}
+                onPaid={() => router.push("/")}
+                onCancel={() => router.push("/")}
+              />
+            </div>
+          ) : (
           <>
             {isTitularPlanMode && renderStepIndicator()}
 
@@ -2009,6 +1999,7 @@ function RegisterPageContent() {
               </p>
             </div>
           </>
+          )
         )}
       </div>
     </PublicAuthLayout>

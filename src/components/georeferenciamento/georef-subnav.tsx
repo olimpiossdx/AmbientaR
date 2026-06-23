@@ -13,6 +13,7 @@ const LINKS: { href: string; label: string; exact?: boolean }[] = [
   { href: "/georeferenciamento/ambiental", label: "CAR" },
   { href: "/georeferenciamento/campo", label: "Campo" },
   { href: "/georeferenciamento/documentos", label: "Documentos" },
+  { href: "/georeferenciamento/memorial-descritivo", label: "Memorial" },
   { href: "/georeferenciamento/validacoes", label: "Validações" },
   { href: "/georeferenciamento/registro", label: "Cartório" },
   { href: "/georeferenciamento/referencias", label: "Referências" },

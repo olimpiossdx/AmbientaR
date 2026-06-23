@@ -100,6 +100,7 @@ import {
   BookOpen,
   Smartphone,
   AlertTriangle,
+  Bug,
 } from "lucide-react";
 
 /** Rótulo do grupo de menu (licenças, CAR, outorgas, fauna, monitoramento, etc.). */
@@ -267,6 +268,12 @@ export const allNavItems: NavItem[] = [
         label: "Conciliação Bancária",
         icon: Landmark,
         roles: ["admin", "financial"],
+      },
+      {
+        href: "/financial/billing-debug",
+        label: "Debug PIX Assinatura",
+        icon: Bug,
+        roles: ["admin", "financial", "supervisor"],
       },
       {
         href: "/financial/abc-servicos",
@@ -802,6 +809,19 @@ export const allNavItems: NavItem[] = [
         label: "Mapas",
         icon: Map,
         roles: ["admin", "technical", "gestor", "supervisor", "advogado"],
+      },
+      {
+        href: "/studies/memorial-descritivo",
+        label: "Memorial Descritivo",
+        icon: FileText,
+        roles: [
+          "admin",
+          "technical",
+          "gestor",
+          "supervisor",
+          "diretor_fauna",
+          "advogado",
+        ],
       },
       {
         label: "Outorgas (processos)",
