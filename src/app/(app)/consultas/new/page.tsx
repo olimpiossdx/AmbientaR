@@ -188,8 +188,8 @@ export default function NewConsultaPage() {
               <div className="grid gap-2">
                 <Label>Empreendimento</Label>
                 <Select
-                  value={empreendimentoId}
-                  onValueChange={setEmpreendimentoId}
+                  value={empreendimentoId || '__none__'}
+                  onValueChange={(v) => setEmpreendimentoId(v === '__none__' ? '' : v)}
                   disabled={!empreendedorId || projectsByEmpreendedor.length === 0}
                 >
                   <SelectTrigger>
@@ -202,7 +202,7 @@ export default function NewConsultaPage() {
                     } />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Nenhum</SelectItem>
+                    <SelectItem value="__none__">Nenhum</SelectItem>
                     {projectsByEmpreendedor.map((p) => (
                       <SelectItem key={p.id} value={p.id}>
                         {p.propertyName}
@@ -273,12 +273,15 @@ export default function NewConsultaPage() {
 
               <div className="grid gap-2">
                 <Label>Responsável técnico</Label>
-                <Select value={responsavelTecnicoUserId} onValueChange={setResponsavelTecnicoUserId}>
+                <Select
+                  value={responsavelTecnicoUserId || '__none__'}
+                  onValueChange={(v) => setResponsavelTecnicoUserId(v === '__none__' ? '' : v)}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione (opcional)" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Nenhum</SelectItem>
+                    <SelectItem value="__none__">Nenhum</SelectItem>
                     {technicalUsers.map((u) => (
                       <SelectItem key={u.uid} value={u.uid}>
                         {u.name || u.email}
@@ -299,12 +302,17 @@ export default function NewConsultaPage() {
                 </div>
                 <div className="grid gap-2">
                   <Label>Origem do lead</Label>
-                  <Select value={origemLead ?? ''} onValueChange={(v) => setOrigemLead(v === '' ? '' : (v as Consulta['origemLead']))}>
+                  <Select
+                    value={origemLead || '__none__'}
+                    onValueChange={(v) =>
+                      setOrigemLead(v === '__none__' ? '' : (v as Consulta['origemLead']))
+                    }
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Opcional" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">—</SelectItem>
+                      <SelectItem value="__none__">—</SelectItem>
                       {ORIGEM_LEAD_OPTIONS.map((o) => (
                         <SelectItem key={o.value} value={o.value}>
                           {o.label}

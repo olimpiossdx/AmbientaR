@@ -1442,6 +1442,68 @@ service cloud.firestore {
     }
 
     /**
+     * Consultas técnicas — demanda ambiental (menu: admin, técnico, gestor, supervisor, financeiro).
+     * @path /databases/{database}/documents/consultas/{consultaId}
+     */
+    function canReadConsulta() {
+      return isAdmin() || (isSignedIn() && getRole() in [
+        'technical', 'gestor', 'supervisor', 'financial'
+      ]);
+    }
+
+    function canWriteConsulta() {
+      return isAdmin() || (isSignedIn() && getRole() in [
+        'technical', 'gestor', 'supervisor'
+      ]);
+    }
+
+    match /consultas/{consultaId} {
+      allow read: if canReadConsulta();
+      allow create, update, delete: if canWriteConsulta();
+    }
+
+    /**
+     * Laudos técnicos vinculados a consultas (menu: admin, técnico, gestor, supervisor).
+     * @path /databases/{database}/documents/laudos/{laudoId}
+     */
+    function canReadLaudo() {
+      return isAdmin() || (isSignedIn() && getRole() in [
+        'technical', 'gestor', 'supervisor'
+      ]);
+    }
+
+    function canWriteLaudo() {
+      return canReadLaudo();
+    }
+
+    match /laudos/{laudoId} {
+      allow read: if canReadLaudo();
+      allow create, update, delete: if canWriteLaudo();
+    }
+
+    /**
+     * Coleta de campo / inventários florestais (menu: técnico, gestor, supervisor, diretor fauna).
+     * @path /databases/{database}/documents/inventarios/{inventarioId}
+     */
+    function canAccessColetaCampo() {
+      return isAdmin() || (isSignedIn() && getRole() in [
+        'technical', 'gestor', 'supervisor', 'diretor_fauna'
+      ]);
+    }
+
+    match /inventarios/{inventarioId} {
+      allow read, write: if canAccessColetaCampo();
+    }
+
+    match /inventario_parcelas/{parcelaId} {
+      allow read, write: if canAccessColetaCampo();
+    }
+
+    match /inventario_individuos/{individuoId} {
+      allow read, write: if canAccessColetaCampo();
+    }
+
+    /**
      * @description Admin com acesso total em qualquer coleção/documento.
      * Mantido no final para garantir visão global administrativa.
      */

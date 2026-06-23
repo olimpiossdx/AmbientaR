@@ -195,12 +195,15 @@ export default function NewLaudoPage() {
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="grid gap-2">
                 <Label>Consulta (opcional)</Label>
-                <Select value={consultaId} onValueChange={setConsultaId}>
+                <Select
+                  value={consultaId || '__none__'}
+                  onValueChange={(v) => setConsultaId(v === '__none__' ? '' : v)}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Nenhuma — preencher manualmente" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Nenhuma</SelectItem>
+                    <SelectItem value="__none__">Nenhuma</SelectItem>
                     {consultasList?.map((c) => (
                       <SelectItem key={c.id} value={c.id}>
                         {c.id.slice(0, 8)} — {c.tipoServico} ({c.status})
@@ -237,8 +240,8 @@ export default function NewLaudoPage() {
               <div className="grid gap-2">
                 <Label>Empreendimento</Label>
                 <Select
-                  value={empreendimentoId}
-                  onValueChange={setEmpreendimentoId}
+                  value={empreendimentoId || '__none__'}
+                  onValueChange={(v) => setEmpreendimentoId(v === '__none__' ? '' : v)}
                   disabled={!empreendedorId}
                 >
                   <SelectTrigger>
@@ -251,7 +254,7 @@ export default function NewLaudoPage() {
                     } />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Nenhum</SelectItem>
+                    <SelectItem value="__none__">Nenhum</SelectItem>
                     {projectsForSelect.map((p) => (
                       <SelectItem key={p.id} value={p.id}>
                         {p.propertyName}
