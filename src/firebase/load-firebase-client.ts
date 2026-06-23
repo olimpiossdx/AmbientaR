@@ -25,13 +25,13 @@ import {
   initializeFirestore,
   memoryLocalCache,
   persistentLocalCache,
-  persistentMultipleTabManager,
+  persistentSingleTabManager,
   type Firestore,
 } from "firebase/firestore";
 import {
   notifyIndexedDbQuotaExceeded,
   shouldSkipAuthIndexedDbPersistence,
-  shouldSkipPersistentFirestoreCache,
+  shouldUseFirestoreMemoryOnly,
 } from "@/lib/browser-storage-recovery";
 
 export type FirebaseConfig = Record<string, string>;
@@ -86,18 +86,10 @@ function createFirestore(app: FirebaseApp): Firestore {
     return getFirestore(app);
   }
 
-  const useMemoryOnly =
-    shouldSkipPersistentFirestoreCache() ||
-    (() => {
-      try {
-        return sessionStorage.getItem("ambientar-firestore-memory-only") === "1";
-      } catch {
-        return false;
-      }
-    })();
+  const useMemoryOnly = shouldUseFirestoreMemoryOnly();
 
-  // Em dev (HMR/Fast Refresh), cache persistente + multi-aba corrompe o estado interno
-  // do SDK ao remontar dezenas de onSnapshot → INTERNAL ASSERTION FAILED (b815).
+  // Em dev (HMR/Fast Refresh) ou após recuperação b815, cache em memória evita
+  // INTERNAL ASSERTION FAILED (b815) ao remontar dezenas de onSnapshot.
   if (process.env.NODE_ENV === "development" || useMemoryOnly) {
     try {
       return initializeFirestore(app, {
@@ -123,8 +115,9 @@ function createFirestore(app: FirebaseApp): Firestore {
 
   try {
     return initializeFirestore(app, {
+      // Single-tab: mais estável que multi-aba (menos b815 em produção).
       localCache: persistentLocalCache({
-        tabManager: persistentMultipleTabManager(),
+        tabManager: persistentSingleTabManager({}),
       }),
       experimentalAutoDetectLongPolling: true,
     });

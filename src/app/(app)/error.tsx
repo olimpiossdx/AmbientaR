@@ -5,6 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Leaf } from "lucide-react";
 import Link from "next/link";
 import { getUserFacingErrorMessage } from "@/firebase/errors";
+import {
+  clearBrowserStorageForRecovery,
+  clearFirestoreMemoryOnly,
+  clearSkipAuthIndexedDbPersistence,
+  clearSkipPersistentFirestoreCache,
+} from "@/lib/browser-storage-recovery";
+import { clearFirebaseClientInstancesCache } from "@/firebase/load-firebase-client";
 
 /**
  * Limite de erro do segmento autenticado — evita falhas de HMR/recovery
@@ -27,6 +34,18 @@ export default function AppSegmentError({
   }, [error]);
 
   const displayMessage = getUserFacingErrorMessage(error);
+  const isFirestoreCacheError =
+    /cache local do Firestore|INTERNAL ASSERTION/i.test(displayMessage) ||
+    /INTERNAL ASSERTION FAILED/i.test(error.message ?? "");
+
+  const handleClearStorage = async () => {
+    await clearBrowserStorageForRecovery();
+    clearFirebaseClientInstancesCache();
+    clearSkipPersistentFirestoreCache();
+    clearSkipAuthIndexedDbPersistence();
+    clearFirestoreMemoryOnly();
+    window.location.reload();
+  };
 
   return (
     <div className="flex min-h-[50vh] flex-col items-center justify-center gap-4 p-6">
@@ -47,6 +66,15 @@ export default function AppSegmentError({
         <Button type="button" onClick={() => reset()} variant="default">
           Tentar novamente
         </Button>
+        {isFirestoreCacheError && (
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => void handleClearStorage()}
+          >
+            Limpar dados locais
+          </Button>
+        )}
         <Button type="button" asChild variant="outline">
           <Link href="/">Ir ao início</Link>
         </Button>

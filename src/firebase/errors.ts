@@ -128,6 +128,16 @@ export function getUserFacingErrorMessage(error: unknown): string {
     return error.message;
   }
   if (error instanceof Error && error.message) {
+    if (
+      /INTERNAL ASSERTION FAILED/i.test(error.message) ||
+      /\bID:\s*b815\b/i.test(error.message) ||
+      /\bID:\s*ca9\b/i.test(error.message)
+    ) {
+      return (
+        'O cache local do Firestore entrou em estado inválido. ' +
+        'Recarregue a página; se persistir, limpe os dados locais deste site.'
+      );
+    }
     if (error.message.includes('Missing or insufficient permissions')) {
       return USER_FRIENDLY_PERMISSION_MESSAGE;
     }

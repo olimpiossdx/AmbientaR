@@ -12,6 +12,7 @@ import {
 import { firebaseConfig } from "@/firebase/config";
 import {
   markSkipAuthIndexedDbPersistence,
+  markFirestoreMemoryOnly,
   markSkipPersistentFirestoreCache,
   probeIndexedDbWritable,
   registerIndexedDbQuotaWatcher,
@@ -71,6 +72,7 @@ export function FirebaseClientProvider({
           if (!idbOk) {
             markSkipAuthIndexedDbPersistence();
             markSkipPersistentFirestoreCache();
+            markFirestoreMemoryOnly();
             clearFirebaseClientInstancesCache();
           }
         }

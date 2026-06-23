@@ -1938,7 +1938,9 @@ function RegisterPageContent() {
                 charge={postRegisterPix}
                 getAuthHeaders={async () => {
                   const token = await auth?.currentUser?.getIdToken();
-                  return token ? { Authorization: `Bearer ${token}` } : {};
+                  const headers: Record<string, string> = {};
+                  if (token) headers.Authorization = `Bearer ${token}`;
+                  return headers;
                 }}
                 onPaid={() => router.push("/")}
                 onCancel={() => router.push("/")}

@@ -8,7 +8,15 @@ export const SKIP_PERSISTENT_FIRESTORE_CACHE_KEY =
 
 export const SKIP_AUTH_INDEXEDDB_KEY = "ambientar-auth-skip-indexeddb";
 
+/** Firestore só em memória nesta sessão (evita INTERNAL ASSERTION b815). */
+export const FIRESTORE_MEMORY_ONLY_KEY = "ambientar-firestore-memory-only";
+
+/** Evita loop de reload automático após recuperação b815. */
+export const FIRESTORE_B815_RECOVERY_KEY = "ambientar-firestore-b815-recovered";
+
 export const IDB_QUOTA_EVENT = "ambientar-idb-quota-exceeded";
+
+export const FIRESTORE_SDK_ERROR_EVENT = "ambientar-firestore-sdk-error";
 
 export function shouldSkipPersistentFirestoreCache(): boolean {
   if (typeof window === "undefined") return false;
@@ -61,6 +69,76 @@ export function clearSkipPersistentFirestoreCache(): void {
     sessionStorage.removeItem(SKIP_PERSISTENT_FIRESTORE_CACHE_KEY);
   } catch {
     /* ignore */
+  }
+}
+
+export function shouldUseFirestoreMemoryOnly(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    return (
+      sessionStorage.getItem(FIRESTORE_MEMORY_ONLY_KEY) === "1" ||
+      sessionStorage.getItem(SKIP_PERSISTENT_FIRESTORE_CACHE_KEY) === "1"
+    );
+  } catch {
+    return false;
+  }
+}
+
+export function markFirestoreMemoryOnly(): void {
+  if (typeof window === "undefined") return;
+  try {
+    sessionStorage.setItem(FIRESTORE_MEMORY_ONLY_KEY, "1");
+    sessionStorage.setItem(SKIP_PERSISTENT_FIRESTORE_CACHE_KEY, "1");
+  } catch {
+    /* ignore */
+  }
+}
+
+export function clearFirestoreMemoryOnly(): void {
+  if (typeof window === "undefined") return;
+  try {
+    sessionStorage.removeItem(FIRESTORE_MEMORY_ONLY_KEY);
+    sessionStorage.removeItem(FIRESTORE_B815_RECOVERY_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
+export function isFirestoreInternalAssertionError(error: unknown): boolean {
+  const message = String((error as { message?: string })?.message ?? error ?? "");
+  return (
+    /INTERNAL ASSERTION FAILED/i.test(message) ||
+    /\bID:\s*b815\b/i.test(message) ||
+    /\bID:\s*ca9\b/i.test(message) ||
+    /Cannot read properties of null \(reading 'Te'\)/i.test(message)
+  );
+}
+
+/**
+ * Recuperação automática: primeira ocorrência b815 → cache em memória + reload.
+ * Segunda ocorrência na mesma sessão → só banner (evita loop).
+ */
+export function tryRecoverFromFirestoreInternalError(error: unknown): boolean {
+  if (!isFirestoreInternalAssertionError(error)) return false;
+  if (typeof window === "undefined") return false;
+
+  window.dispatchEvent(
+    new CustomEvent(FIRESTORE_SDK_ERROR_EVENT, { detail: { error } }),
+  );
+
+  try {
+    if (sessionStorage.getItem(FIRESTORE_B815_RECOVERY_KEY) === "1") {
+      notifyIndexedDbQuotaExceeded();
+      return true;
+    }
+    sessionStorage.setItem(FIRESTORE_B815_RECOVERY_KEY, "1");
+    markFirestoreMemoryOnly();
+    markSkipAuthIndexedDbPersistence();
+    window.location.reload();
+    return true;
+  } catch {
+    notifyIndexedDbQuotaExceeded();
+    return true;
   }
 }
 
@@ -208,13 +286,22 @@ export function registerIndexedDbQuotaWatcher(): () => void {
   if (typeof window === "undefined") return () => {};
 
   const onRejection = (event: PromiseRejectionEvent) => {
+    if (tryRecoverFromFirestoreInternalError(event.reason)) {
+      event.preventDefault();
+      return;
+    }
     if (isQuotaOrIndexedDbError(event.reason)) {
       notifyIndexedDbQuotaExceeded();
     }
   };
 
   const onError = (event: ErrorEvent) => {
-    if (isQuotaOrIndexedDbError(event.error ?? event.message)) {
+    const payload = event.error ?? event.message;
+    if (tryRecoverFromFirestoreInternalError(payload)) {
+      event.preventDefault();
+      return;
+    }
+    if (isQuotaOrIndexedDbError(payload)) {
       notifyIndexedDbQuotaExceeded();
     }
   };

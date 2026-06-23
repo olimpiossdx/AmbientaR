@@ -3,6 +3,8 @@
 import { useEffect } from 'react';
 import {
   clearBrowserStorageForRecovery,
+  clearFirestoreMemoryOnly,
+  clearSkipAuthIndexedDbPersistence,
   clearSkipPersistentFirestoreCache,
 } from '@/lib/browser-storage-recovery';
 import { clearFirebaseClientInstancesCache } from '@/firebase/load-firebase-client';
@@ -28,11 +30,16 @@ export default function GlobalError({
     /sem permissão|permission-denied|insufficient permissions/i.test(
       displayMessage,
     );
+  const isFirestoreCacheError =
+    /cache local do Firestore|INTERNAL ASSERTION/i.test(displayMessage) ||
+    /INTERNAL ASSERTION FAILED/i.test(error.message ?? '');
 
   const handleClearStorage = async () => {
     await clearBrowserStorageForRecovery();
     clearFirebaseClientInstancesCache();
     clearSkipPersistentFirestoreCache();
+    clearSkipAuthIndexedDbPersistence();
+    clearFirestoreMemoryOnly();
     window.location.reload();
   };
 
@@ -77,11 +84,11 @@ export default function GlobalError({
       </head>
       <body>
         <h1>Erro ao carregar a aplicação</h1>
-        {isPermissionError ? (
+        {isPermissionError || isFirestoreCacheError ? (
           <p className="hint">
             A sessão ou o armazenamento local do navegador pode estar corrompido
-            (IndexedDB cheio). Tente limpar os dados locais deste site e voltar a
-            entrar. Em alternativa: DevTools → Application → Clear site data.
+            (IndexedDB / cache Firestore). Tente limpar os dados locais deste site e
+            voltar a entrar. Em alternativa: DevTools → Application → Clear site data.
           </p>
         ) : (
           <p className="hint">
@@ -101,7 +108,7 @@ export default function GlobalError({
           >
             Tentar novamente
           </button>
-          {isPermissionError && (
+          {(isPermissionError || isFirestoreCacheError) && (
             <button
               type="button"
               className="secondary"

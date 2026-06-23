@@ -5,8 +5,10 @@ import { AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   clearBrowserStorageForRecovery,
+  clearFirestoreMemoryOnly,
   clearSkipAuthIndexedDbPersistence,
   clearSkipPersistentFirestoreCache,
+  FIRESTORE_SDK_ERROR_EVENT,
   IDB_QUOTA_EVENT,
   isQuotaOrIndexedDbError,
 } from '@/lib/browser-storage-recovery';
@@ -23,7 +25,11 @@ export function IndexedDbRecoveryBanner() {
   useEffect(() => {
     const show = () => setVisible(true);
     window.addEventListener(IDB_QUOTA_EVENT, show);
-    return () => window.removeEventListener(IDB_QUOTA_EVENT, show);
+    window.addEventListener(FIRESTORE_SDK_ERROR_EVENT, show);
+    return () => {
+      window.removeEventListener(IDB_QUOTA_EVENT, show);
+      window.removeEventListener(FIRESTORE_SDK_ERROR_EVENT, show);
+    };
   }, []);
 
   const handleClearAndReload = useCallback(async () => {
@@ -33,6 +39,7 @@ export function IndexedDbRecoveryBanner() {
       clearFirebaseClientInstancesCache();
       clearSkipPersistentFirestoreCache();
       clearSkipAuthIndexedDbPersistence();
+      clearFirestoreMemoryOnly();
       window.location.reload();
     } catch (error) {
       console.error('Falha ao limpar armazenamento local:', error);
@@ -55,8 +62,8 @@ export function IndexedDbRecoveryBanner() {
         <div className="space-y-2 text-sm">
           <p className="font-medium">Armazenamento local cheio ou indisponível</p>
           <p>
-            O navegador não conseguiu gravar dados da aplicação (IndexedDB). Isso impede
-            login e leitura do Firestore. Limpe os dados locais deste site e recarregue.
+            O navegador não conseguiu usar o cache local (IndexedDB / Firestore). Isso
+            impede login e leitura de dados. Limpe os dados locais deste site e recarregue.
           </p>
           <div className="flex flex-wrap gap-2 pt-1">
             <Button
