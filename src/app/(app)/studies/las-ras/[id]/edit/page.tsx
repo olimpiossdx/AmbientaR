@@ -1,21 +1,25 @@
 'use client';
 
 import { Suspense } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import { PageHeader } from '@/components/page-header';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
+import { useParams } from 'next/navigation';
 import { useDoc, useFirebase, useMemoFirebase } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import type { LasRas } from '@/lib/types';
 import { LasRasForm } from '../../las-ras-form';
 import { StudyDynamicEditPage } from '@/components/studies/study-dynamic-edit-page';
 import { isLasRasStaticRecord } from '@/lib/studies/study-document-record';
+import {
+  StudyFormShell,
+  useStudyFormShellSuccess,
+} from '@/components/studies/study-form-shell';
+
+const LIST_PATH = '/studies/las-ras';
+const PAGE_WIDTH = 'max-w-4xl mx-auto';
 
 function EditLasRasPageContent() {
-  const router = useRouter();
   const params = useParams();
   const id = (params?.id as string | undefined) ?? '';
+  const onSuccess = useStudyFormShellSuccess('page', LIST_PATH);
   const { firestore } = useFirebase();
 
   const docRef = useMemoFirebase(() => {
@@ -25,59 +29,33 @@ function EditLasRasPageContent() {
 
   const { data: item, isLoading } = useDoc<LasRas>(docRef);
 
-  const handleSuccess = () => router.push('/studies/las-ras');
-
-  if (isLoading) {
-    return (
-      <div className="flex flex-col h-full">
-        <PageHeader title="Carregando LAS/RAS…" />
-        <main className="p-6">
-          <Skeleton className="h-[400px] w-full" />
-        </main>
-      </div>
-    );
-  }
-
-  if (!item) {
-    return (
-      <div className="flex flex-col h-full">
-        <PageHeader title="LAS/RAS não encontrado" />
-        <main className="p-6">
-          <p className="text-sm text-muted-foreground">O registro solicitado não existe.</p>
-        </main>
-      </div>
-    );
-  }
-
-  if (item.formSource === 'dynamic' || !isLasRasStaticRecord(item)) {
+  if (!isLoading && item && (item.formSource === 'dynamic' || !isLasRasStaticRecord(item))) {
     return (
       <StudyDynamicEditPage
         studySlug="las-ras"
         collectionName="lasRas"
         documentId={id}
         pageTitlePrefix="Editando LAS/RAS"
-        listHref="/studies/las-ras"
+        listHref={LIST_PATH}
         listagemVariant="project"
-        onSuccess={handleSuccess}
+        onSuccess={onSuccess}
       />
     );
   }
 
   return (
-    <div className="flex flex-col h-full">
-      <PageHeader title="Editar LAS/RAS" />
-      <main className="flex-1 overflow-auto p-4 md:p-6">
-        <Card className="mx-auto max-w-4xl">
-          <CardHeader>
-            <CardTitle>Relatório Ambiental Simplificado</CardTitle>
-            <CardDescription>Atualize os campos do RAS.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <LasRasForm currentItem={item} onSuccess={handleSuccess} />
-          </CardContent>
-        </Card>
-      </main>
-    </div>
+    <StudyFormShell
+      variant="page"
+      title="Relatório Ambiental Simplificado"
+      description="Atualize os campos do RAS."
+      notFoundTitle="LAS/RAS não encontrado"
+      pageHeaderTitle="Editar LAS/RAS"
+      pageWidthClassName={PAGE_WIDTH}
+      isLoading={isLoading}
+      notFoundMessage={!item && !isLoading ? 'O registro solicitado não existe.' : undefined}
+    >
+      {item ? <LasRasForm currentItem={item} onSuccess={onSuccess} /> : null}
+    </StudyFormShell>
   );
 }
 

@@ -16,7 +16,7 @@ const AdminDashboard = dynamic(() => import("./dashboards/admin-dashboard"), {
 });
 const FinancialDashboard = dynamic(
   () => import("./dashboards/financial-dashboard"),
-  { loading: DashboardLoading },
+  { loading: DashboardLoading, ssr: false },
 );
 const EnvironmentalDashboard = dynamic(
   () => import("./dashboards/environmental-dashboard"),

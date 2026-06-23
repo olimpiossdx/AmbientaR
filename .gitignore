@@ -53,9 +53,9 @@ next-env.d.ts
 
 # Conta de serviço Firebase (nunca versionar)
 config/firebase-service-account.json
-config/firebase-service-account.json.json
 chave firebase/
 chaves gerais.txt
+config/chaves-gerais.txt
 
 # URL HTTPS da app empacotada no Capacitor (não versionar)
 /capacitor/deployment-url
@@ -87,6 +87,7 @@ venv/
 /.codex/logs/
 apphosting-check.log
 package-lock-SERVIDOR.json
+build-size.log
 **/__pycache__/
 
 # Cache Firebase CLI (evita ruído em git status)

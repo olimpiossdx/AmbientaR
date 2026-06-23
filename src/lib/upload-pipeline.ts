@@ -1,7 +1,5 @@
 "use client";
 
-import imageCompression from "browser-image-compression";
-import PizZip from "pizzip";
 import { effectiveMimeType, isPdfLikeFile } from "@/lib/file-mime";
 import { formatBytesHuman } from "@/lib/upload-limits";
 
@@ -72,6 +70,7 @@ async function compressImageFile(
   maxBytes: number,
   onProgress?: PrepareFileProgress,
 ): Promise<File> {
+  const imageCompression = (await import("browser-image-compression")).default;
   report(onProgress, 10, "Otimizando imagem…");
   const maxSizeMB = Math.max(0.1, maxBytes / (1024 * 1024) - 0.05);
   let quality = 0.88;
@@ -121,6 +120,7 @@ async function recompressZipBlob(
   maxBytes: number,
   onProgress?: PrepareFileProgress,
 ): Promise<File> {
+  const PizZip = (await import("pizzip")).default;
   report(onProgress, 20, "Recompactando arquivo…");
   const zip = new PizZip(await file.arrayBuffer());
   const paths = Object.keys(zip.files);

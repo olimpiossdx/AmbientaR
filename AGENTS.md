@@ -16,6 +16,7 @@ AmbientaR (EcoGestão MG) é uma aplicação Next.js (PWA) de gestão ambiental 
 - **Deploy Firebase App Hosting:** antes de push/rollout, correr `npm run apphosting:check` (lint + typecheck no build, como na nuvem). O adaptador App Hosting corre ESLint mesmo quando o build local ignora.
 - **Lint:** `npm run lint`
 - **Typecheck:** `npm run typecheck`
+- **Performance / organização (check rápido):** `npm run perf:check` — `typecheck` + `audit:routes` + auditoria de imports pesados (`@turf/turf`, `run-wave-a-analysis`) em ficheiros `"use client"`. Roadmap e registo: [`docs/PERF-ROADMAP-DETALHADO.md`](docs/PERF-ROADMAP-DETALHADO.md), [`docs/PERF-AUDIT.md`](docs/PERF-AUDIT.md). Medição de bundle: `npm run build` (heap 8 GB se OOM: `NODE_OPTIONS=--max-old-space-size=8192`), `npm run analyze`, `npm run apphosting:check`. **PRs de performance:** uma fase do roadmap (F04–F18) por PR — não misturar Bloco 2 (peso browser) com Bloco 3 (FormShell) na mesma PR.
 - **Coordenadas (formulários):** entrada uniforme SIRGAS 2000 / UTM 23S / GMS — lib `src/lib/coordinates/`, componentes `src/components/coordinates/`. Ver `docs/COORDENADAS-SIRGAS2000.md`. Verificação: `npm run coordinates:check` (verify + audit; `prebuild` de `npm run build`).
 - **Genkit (IA):** `npm run genkit:dev` (opcional; requer `GOOGLE_GENAI_API_KEY`)
 - **Publicar regras Firestore:** `npm run deploy:rules` — faz deploy apenas das regras (`firebase.json` → `src/firebase/rules/firestore.rules`)

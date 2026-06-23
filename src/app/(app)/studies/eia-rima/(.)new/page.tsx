@@ -1,47 +1,36 @@
-
 'use client';
+
 import { Suspense } from 'react';
-import { useRouter } from 'next/navigation';
 import { EiaRimaForm } from '../eia-rima-form';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { Skeleton } from '@/components/ui/skeleton';
+import {
+  StudyFormModalSuspenseFallback,
+  StudyFormShell,
+  useStudyFormShellSuccess,
+} from '@/components/studies/study-form-shell';
+
+const LIST_PATH = '/studies/eia-rima';
+const DIALOG_CLASS = 'sm:max-w-4xl h-full max-h-[90dvh] flex flex-col';
 
 function NewEiaRimaModalContent() {
-    const router = useRouter();
+  const onSuccess = useStudyFormShellSuccess('modal', LIST_PATH);
 
-    const handleSuccess = () => {
-      router.back();
-    };
-  
-    return (
-        <Dialog open={true} onOpenChange={(isOpen) => !isOpen && router.back()}>
-            <DialogContent className="sm:max-w-4xl h-full max-h-[90dvh] flex flex-col">
-                <DialogHeader>
-                    <DialogTitle>Adicionar Novo EIA/RIMA</DialogTitle>
-                    <DialogDescription>
-                        Preencha os detalhes para criar um novo Estudo de Impacto Ambiental.
-                    </DialogDescription>
-                </DialogHeader>
-                <EiaRimaForm
-                    currentItem={null}
-                    onSuccess={handleSuccess}
-                />
-            </DialogContent>
-        </Dialog>
-    );
+  return (
+    <StudyFormShell
+      variant="modal"
+      title="Adicionar Novo EIA/RIMA"
+      description="Preencha os detalhes para criar um novo Estudo de Impacto Ambiental."
+      notFoundTitle="EIA/RIMA não encontrado"
+      dialogContentClassName={DIALOG_CLASS}
+    >
+      <EiaRimaForm currentItem={null} onSuccess={onSuccess} />
+    </StudyFormShell>
+  );
 }
 
-
 export default function NewEiaRimaModal() {
-    return (
-        <Suspense fallback={
-             <Dialog open={true}>
-                <DialogContent>
-                    <Skeleton className="h-[500px] w-full" />
-                </DialogContent>
-             </Dialog>
-        }>
-            <NewEiaRimaModalContent />
-        </Suspense>
-    )
+  return (
+    <Suspense fallback={<StudyFormModalSuspenseFallback />}>
+      <NewEiaRimaModalContent />
+    </Suspense>
+  );
 }

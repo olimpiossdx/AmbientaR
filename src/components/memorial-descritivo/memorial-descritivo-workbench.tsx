@@ -3,7 +3,6 @@
 import * as React from 'react';
 import dynamic from 'next/dynamic';
 import type { Feature, MultiPolygon, Polygon } from 'geojson';
-import area from '@turf/area';
 import { FileDown, FileText, Loader2, Upload } from 'lucide-react';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
@@ -53,6 +52,7 @@ import {
 } from '@/lib/memorial-descritivo';
 import { decimalBr } from '@/lib/memorial-descritivo/format-br';
 import type { Fuso } from '@/lib/types';
+import { useMcaTurfArea } from '@/features/mca/hooks/useMcaTurfArea';
 
 const StudyAreaMap = dynamic(
   () =>
@@ -121,6 +121,7 @@ export function MemorialDescritivoWorkbench({
   const [importing, setImporting] = React.useState(false);
   const [busy, setBusy] = React.useState<'docx' | 'pdf' | null>(null);
   const [hydrated, setHydrated] = React.useState(false);
+  const { turfAreaReady, computeAreaHa } = useMcaTurfArea();
 
   const copy = PAGE_COPY[context];
 
@@ -156,9 +157,9 @@ export function MemorialDescritivoWorkbench({
   }, [hydrated, context, metadata, polygon, confrontantes, memorialText, sourceLabel]);
 
   const geodesicAreaHa = React.useMemo(() => {
-    if (!polygon) return null;
-    return area(polygon) / 10_000;
-  }, [polygon]);
+    if (!polygon || !turfAreaReady) return null;
+    return computeAreaHa(polygon);
+  }, [polygon, turfAreaReady, computeAreaHa]);
 
   const updateMetadata = (patch: Partial<MemorialMetadata>) => {
     setMetadata((prev) => ({ ...prev, ...patch }));

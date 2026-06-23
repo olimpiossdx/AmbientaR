@@ -1,15 +1,16 @@
 'use client';
 
 import { Suspense } from 'react';
-import { useRouter, useParams } from 'next/navigation';
-import { PageHeader } from '@/components/page-header';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
-import { useFirebase, useMemoFirebase, useDoc } from '@/firebase';
+import { useParams, useRouter } from 'next/navigation';
+import { useDoc, useFirebase, useMemoFirebase } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import type { EstudoCavidade } from '@/lib/types';
 import { CavidadesForm } from '../../cavidades-form';
 import { CavidadesExportIconButtons } from '@/components/cavidades/cavidades-export-icon-buttons';
+import { StudyFormShell } from '@/components/studies/study-form-shell';
+
+const LIST_PATH = '/studies/cavidades';
+const CARD_CONTENT_CLASS = 'min-h-[480px]';
 
 function EditCavidadesPageContent() {
   const router = useRouter();
@@ -23,54 +24,31 @@ function EditCavidadesPageContent() {
   );
   const { data: estudo, isLoading } = useDoc<EstudoCavidade>(docRef);
 
-  if (isLoading) {
-    return (
-      <div className="p-6">
-        <Skeleton className="mb-4 h-12 w-64" />
-        <Skeleton className="h-96 w-full" />
-      </div>
-    );
-  }
-
-  if (!estudo) {
-    return (
-      <div className="p-6 text-muted-foreground">
-        Estudo não encontrado.{' '}
-        <button
-          type="button"
-          className="underline"
-          onClick={() => router.push('/studies/cavidades')}
-        >
-          Voltar à lista
-        </button>
-      </div>
-    );
-  }
-
   return (
-    <div className="flex h-full flex-col">
-      <PageHeader title={`Editar — ${estudo.empreendimento.nome}`}>
-        <CavidadesExportIconButtons estudo={estudo} />
-      </PageHeader>
-      <main className="flex-1 overflow-auto p-4 md:p-6">
-        <div className="mx-auto max-w-7xl">
-          <Card>
-            <CardHeader>
-              <CardTitle>Estudo de cavidades</CardTitle>
-              <CardDescription>
-                Status: {estudo.status ?? 'Rascunho'} · Nível: {estudo.nivelEstudo ?? 'triagem'}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="min-h-[480px]">
-              <CavidadesForm
-                currentItem={estudo}
-                onCancel={() => router.push('/studies/cavidades')}
-              />
-            </CardContent>
-          </Card>
-        </div>
-      </main>
-    </div>
+    <StudyFormShell
+      variant="page"
+      title="Estudo de cavidades"
+      description={
+        estudo
+          ? `Status: ${estudo.status ?? 'Rascunho'} · Nível: ${estudo.nivelEstudo ?? 'triagem'}`
+          : 'Atualize o estudo de cavidades.'
+      }
+      notFoundTitle="Estudo não encontrado"
+      pageHeaderTitle={`Editar — ${estudo?.empreendimento?.nome || '...'}`}
+      pageHeaderActions={
+        estudo ? <CavidadesExportIconButtons estudo={estudo} /> : undefined
+      }
+      cardContentClassName={CARD_CONTENT_CLASS}
+      isLoading={isLoading}
+      notFoundMessage={!estudo && !isLoading ? 'Estudo não encontrado.' : undefined}
+    >
+      {estudo ? (
+        <CavidadesForm
+          currentItem={estudo}
+          onCancel={() => router.push(LIST_PATH)}
+        />
+      ) : null}
+    </StudyFormShell>
   );
 }
 

@@ -1,66 +1,58 @@
+"use client";
 
-'use client';
-import { Suspense } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import { LicenseForm } from '../../license-form';
-import { useDoc, useFirebase, useMemoFirebase } from '@/firebase';
-import { doc } from 'firebase/firestore';
-import type { License } from '@/lib/types';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Suspense } from "react";
+import { useParams } from "next/navigation";
+import { LicenseForm } from "../../license-form";
+import { useDoc, useFirebase, useMemoFirebase } from "@/firebase";
+import { doc } from "firebase/firestore";
+import type { License } from "@/lib/types";
+import {
+  LicenseFormModalSuspenseFallback,
+  LicenseFormShell,
+  useLicenseFormShellSuccess,
+} from "../../license-form-shell";
+
+const TITLE = "Editar Licença";
+const DESCRIPTION = "Atualize as informações da licença abaixo.";
+const NOT_FOUND = "Licença não encontrada.";
 
 function EditLicenseModalContent() {
-    const router = useRouter();
-    const params = useParams();
-    const itemId = (params?.id as string | undefined) ?? '';
-    
-    const { firestore } = useFirebase();
+  const params = useParams();
+  const itemId = (params?.id as string | undefined) ?? "";
+  const onSuccess = useLicenseFormShellSuccess("modal");
 
-    const itemDocRef = useMemoFirebase(() => {
-        if (!firestore || !itemId) return null;
-        return doc(firestore, 'licenses', itemId);
-    }, [firestore, itemId]);
+  const { firestore } = useFirebase();
 
-    const { data: item, isLoading } = useDoc<License>(itemDocRef);
+  const itemDocRef = useMemoFirebase(() => {
+    if (!firestore || !itemId) return null;
+    return doc(firestore, "licenses", itemId);
+  }, [firestore, itemId]);
 
-    const handleSuccess = () => {
-      router.back();
-    };
+  const { data: item, isLoading } = useDoc<License>(itemDocRef);
 
-    return (
-       <Dialog open={true} onOpenChange={(isOpen) => !isOpen && router.back()}>
-            <DialogContent className="sm:max-w-2xl h-full max-h-[90dvh] flex flex-col">
-                <DialogHeader>
-                    <DialogTitle>Editar Licença</DialogTitle>
-                    <DialogDescription>Atualize as informações da licença abaixo.</DialogDescription>
-                </DialogHeader>
-                {isLoading && <div className="p-6"><Skeleton className="h-[400px] w-full" /></div>}
-                {(!item && !isLoading) && <div className="p-6"><p>Licença não encontrada.</p></div>}
-                {item && (
-                    <LicenseForm
-                        currentLicense={item}
-                        onSuccess={handleSuccess}
-                        hideHeader
-                    />
-                )}
-            </DialogContent>
-       </Dialog>
-    );
+  return (
+    <LicenseFormShell
+      variant="modal"
+      title={TITLE}
+      description={DESCRIPTION}
+      isLoading={isLoading}
+      notFoundMessage={!item && !isLoading ? NOT_FOUND : undefined}
+    >
+      {item ? (
+        <LicenseForm
+          currentLicense={item}
+          onSuccess={onSuccess}
+          hideHeader
+        />
+      ) : null}
+    </LicenseFormShell>
+  );
 }
 
 export default function EditLicenseModal() {
-    return (
-        <Suspense fallback={
-             <Dialog open={true}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Carregando...</DialogTitle>
-                    </DialogHeader>
-                    <Skeleton className="h-[500px] w-full" />
-                </DialogContent>
-             </Dialog>
-        }>
-            <EditLicenseModalContent />
-        </Suspense>
-    )
+  return (
+    <Suspense fallback={<LicenseFormModalSuspenseFallback />}>
+      <EditLicenseModalContent />
+    </Suspense>
+  );
 }

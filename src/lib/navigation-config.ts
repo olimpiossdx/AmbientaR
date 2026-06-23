@@ -29,6 +29,11 @@ import {
 import { buildIaNavSubItems, IA_MENU_LABEL } from "@/lib/ia-menu";
 import { buildCrmNavSubItems, CRM_MENU_LABEL, CRM_NAV_ROLES } from "@/lib/crm-menu";
 import {
+  DOCUMENTOS_AMBIENTAIS_MENU_LABEL,
+  ESTUDOS_TECNICOS_MENU_LABEL,
+  VISTORIA_TECNICA_MENU_LABEL,
+} from "@/lib/navigation-labels";
+import {
   LayoutDashboard,
   Users,
   Calendar,
@@ -55,7 +60,7 @@ import {
   Contact,
   ClipboardCheck,
   SearchCheck,
-  Link as LinkIcon,
+  LinkIcon,
   BookText,
   ShieldCheck,
   Building2,
@@ -101,18 +106,16 @@ import {
   Smartphone,
   AlertTriangle,
   Bug,
-} from "lucide-react";
+} from "@/lib/navigation-icons";
 
-/** Rótulo do grupo de menu (licenças, CAR, outorgas, fauna, monitoramento, etc.). */
-export const DOCUMENTOS_AMBIENTAIS_MENU_LABEL = "Documentos Ambientais";
+/** Rótulos re-exportados para compatibilidade — preferir `@/lib/navigation-labels` no shell. */
+export {
+  DOCUMENTOS_AMBIENTAIS_MENU_LABEL,
+  ESTUDOS_TECNICOS_MENU_LABEL,
+  VISTORIA_TECNICA_MENU_LABEL,
+} from "@/lib/navigation-labels";
 
 export { IA_MENU_LABEL };
-
-/** Rótulo do menu de vistorias em campo. */
-export const VISTORIA_TECNICA_MENU_LABEL = "Vistoria Técnica";
-
-/** Rótulo do menu de estudos técnicos (EIA, fauna, inventário, planos, mapas, etc.). */
-export const ESTUDOS_TECNICOS_MENU_LABEL = "Estudos Técnicos";
 
 export const allNavItems: NavItem[] = [
   {

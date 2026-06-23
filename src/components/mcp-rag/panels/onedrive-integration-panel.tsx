@@ -15,10 +15,21 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { useFirebase } from "@/firebase";
 import { getAdminApiRequestHeaders } from "@/lib/admin-api-client";
+import { parseApiJsonResponse } from "@/lib/parse-api-json";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { Cloud, FolderSync, Link2, RefreshCw } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 import { OnedriveDownloadButton } from "@/components/onedrive/onedrive-download-button";
+
+const OAUTH_RETURN_PATH = "/settings/onedrive-integration";
+
+function formatGraphError(message: string): string {
+  if (message.includes("SPO license")) {
+    return `${message} — O tenant Azure não tem SharePoint/OneDrive empresarial. Use Microsoft 365 Business com SPO ou defina ONEDRIVE_GRAPH_AUTH_MODE=delegated e ligue a conta pessoal abaixo.`;
+  }
+  return message;
+}
 
 const PILOT_FOLDER_DEFAULT =
   "Pimenta Ltda/CLIENTES/Luciano Rodrigues Branquinho";
@@ -27,6 +38,8 @@ type StatusPayload = {
   success?: boolean;
   enabled?: boolean;
   configured?: boolean;
+  graphAuthMode?: "app" | "delegated";
+  delegatedConnected?: boolean;
   graphOk?: boolean;
   graphError?: string;
   syncSource?: {
@@ -51,16 +64,24 @@ type CatalogEntry = {
 export function OnedriveIntegrationPanel({ className }: { className?: string }) {
   const { user, auth } = useFirebase();
   const { toast } = useToast();
+  const searchParams = useSearchParams();
   const [status, setStatus] = React.useState<StatusPayload | null>(null);
   const [clientId, setClientId] = React.useState("");
   const [folderPath, setFolderPath] = React.useState(PILOT_FOLDER_DEFAULT);
   const [entries, setEntries] = React.useState<CatalogEntry[]>([]);
   const [busy, setBusy] = React.useState<string | null>(null);
+  const [oauthBusy, setOauthBusy] = React.useState(false);
 
   const loadStatus = React.useCallback(async () => {
     const headers = await getAdminApiRequestHeaders(auth);
     const res = await fetch("/api/onedrive/status", { headers });
-    const data = (await res.json()) as StatusPayload;
+    const data = await parseApiJsonResponse<StatusPayload>(res);
+    if (!res.ok) {
+      throw new Error(
+        (data as StatusPayload & { error?: string }).error ||
+          "Falha ao carregar estado OneDrive.",
+      );
+    }
     setStatus(data);
     return data;
   }, [auth]);
@@ -70,6 +91,53 @@ export function OnedriveIntegrationPanel({ className }: { className?: string }) 
       void loadStatus().catch(console.error);
     }
   }, [user?.role, loadStatus]);
+
+  React.useEffect(() => {
+    if (!searchParams) return;
+    const authResult = searchParams.get("onedriveAuth");
+    if (!authResult) return;
+    const message = searchParams.get("onedriveAuthMessage");
+    toast({
+      variant: authResult === "success" ? "default" : "destructive",
+      title:
+        authResult === "success"
+          ? "OneDrive ligado"
+          : "Falha ao ligar OneDrive",
+      description: message || undefined,
+    });
+    if (typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      url.searchParams.delete("onedriveAuth");
+      url.searchParams.delete("onedriveAuthMessage");
+      window.history.replaceState({}, "", url.pathname + url.search);
+    }
+    void loadStatus().catch(console.error);
+  }, [searchParams, toast, loadStatus]);
+
+  const connectMicrosoft = async () => {
+    setOauthBusy(true);
+    try {
+      const headers = await getAdminApiRequestHeaders(auth);
+      const res = await fetch(
+        `/api/onedrive-consumer/auth/start?returnPath=${encodeURIComponent(OAUTH_RETURN_PATH)}`,
+        { headers },
+      );
+      const data = await parseApiJsonResponse<{ authUrl?: string; error?: string }>(
+        res,
+      );
+      if (!res.ok || !data.authUrl) {
+        throw new Error(data.error || "Não foi possível iniciar o login Microsoft.");
+      }
+      window.location.href = data.authUrl;
+    } catch (e) {
+      toast({
+        variant: "destructive",
+        title: "Login Microsoft",
+        description: e instanceof Error ? e.message : String(e),
+      });
+      setOauthBusy(false);
+    }
+  };
 
   if (user && user.role !== "admin") {
     return (
@@ -92,15 +160,18 @@ export function OnedriveIntegrationPanel({ className }: { className?: string }) 
         method: "POST",
         headers,
       });
-      const data = await res.json();
+      const data = await parseApiJsonResponse<
+        StatusPayload & { error?: string; created?: boolean }
+      >(res);
       if (!res.ok) throw new Error(data.error || "Falha ao inicializar drive");
       toast({ title: "Drive conectado", description: data.syncSource?.driveName });
       await loadStatus();
     } catch (e) {
+      const raw = e instanceof Error ? e.message : String(e);
       toast({
         variant: "destructive",
         title: "Erro",
-        description: e instanceof Error ? e.message : String(e),
+        description: formatGraphError(raw),
       });
     } finally {
       setBusy(null);
@@ -126,7 +197,9 @@ export function OnedriveIntegrationPanel({ className }: { className?: string }) 
           folderPath: folderPath.trim(),
         }),
       });
-      const data = await res.json();
+      const data = await parseApiJsonResponse<{ error?: string; folderPath?: string }>(
+        res,
+      );
       if (!res.ok) throw new Error(data.error || "Falha ao vincular pasta");
       toast({
         title: "Pasta vinculada",
@@ -156,7 +229,11 @@ export function OnedriveIntegrationPanel({ className }: { className?: string }) 
         headers,
         body: JSON.stringify({ clientId: clientId.trim() }),
       });
-      const data = await res.json();
+      const data = await parseApiJsonResponse<{
+        error?: string;
+        itemsProcessed?: number;
+        pages?: number;
+      }>(res);
       if (!res.ok) throw new Error(data.error || "Falha no sync");
       toast({
         title: "Sync concluído",
@@ -184,7 +261,10 @@ export function OnedriveIntegrationPanel({ className }: { className?: string }) 
         `/api/onedrive/catalog?clientId=${encodeURIComponent(clientId.trim())}`,
         { headers },
       );
-      const data = await res.json();
+      const data = await parseApiJsonResponse<{
+        error?: string;
+        entries?: CatalogEntry[];
+      }>(res);
       if (!res.ok) throw new Error(data.error || "Falha ao listar catálogo");
       setEntries(data.entries || []);
     } catch (e) {
@@ -218,6 +298,16 @@ export function OnedriveIntegrationPanel({ className }: { className?: string }) 
               <Badge variant={status?.graphOk ? "default" : "destructive"}>
                 Token: {status?.graphOk ? "ok" : "falhou"}
               </Badge>
+              {status?.graphAuthMode && (
+                <Badge variant="outline">
+                  Modo Graph: {status.graphAuthMode}
+                </Badge>
+              )}
+              {status?.graphAuthMode === "delegated" && (
+                <Badge variant={status.delegatedConnected ? "default" : "secondary"}>
+                  Conta ligada: {status.delegatedConnected ? "sim" : "não"}
+                </Badge>
+              )}
             </div>
             {status?.syncSource?.driveName && (
               <p className="text-sm text-muted-foreground">
@@ -225,22 +315,65 @@ export function OnedriveIntegrationPanel({ className }: { className?: string }) 
               </p>
             )}
             {status?.graphError && (
-              <p className="text-sm text-destructive">{status.graphError}</p>
+              <p className="text-sm text-destructive">
+                {formatGraphError(status.graphError)}
+              </p>
+            )}
+            {status?.graphAuthMode === "app" && status?.graphOk && (
+              <p className="text-sm text-muted-foreground">
+                Modo <strong>app</strong> (client credentials) exige tenant Microsoft
+                365 com licença SharePoint/OneDrive empresarial. Contas pessoais
+                (@outlook) precisam de{" "}
+                <code className="text-xs">ONEDRIVE_GRAPH_AUTH_MODE=delegated</code>.
+              </p>
+            )}
+            {!status?.enabled && status?.configured && (
+              <p className="text-sm text-muted-foreground">
+                Defina <code className="text-xs">ONEDRIVE_SYNC_ENABLED=true</code> no{" "}
+                <code className="text-xs">.env.local</code> (dev) ou no App Hosting
+                (produção) e reinicie / faça rollout para bootstrap, sync e vínculo
+                de pastas (separado de{" "}
+                <code className="text-xs">ONEDRIVE_RAG_ENABLED</code> da Biblioteca IA).
+              </p>
+            )}
+            {!status?.configured && (
+              <p className="text-sm text-muted-foreground">
+                Configure <code className="text-xs">MICROSOFT_GRAPH_TENANT_ID</code>,{" "}
+                <code className="text-xs">MICROSOFT_GRAPH_CLIENT_ID</code> e{" "}
+                <code className="text-xs">MICROSOFT_GRAPH_CLIENT_SECRET</code> no{" "}
+                <code className="text-xs">.env.local</code> ou nos secrets do App
+                Hosting. Ver{" "}
+                <Link href="/ai-lab/cloud-library" className="underline">
+                  Biblioteca IA (OneDrive)
+                </Link>{" "}
+                e <code className="text-xs">docs/CLOUD-RAG-ONEDRIVE.md</code>.
+              </p>
             )}
             {status?.syncSource?.lastSyncError && (
               <p className="text-sm text-destructive">
                 Último erro: {status.syncSource.lastSyncError}
               </p>
             )}
-            <Button
-              type="button"
-              variant="outline"
-              disabled={busy === "bootstrap"}
-              onClick={() => void runBootstrap()}
-            >
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Detectar drive (bootstrap)
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              {status?.graphAuthMode === "delegated" && !status.delegatedConnected && (
+                <Button
+                  type="button"
+                  disabled={oauthBusy}
+                  onClick={() => void connectMicrosoft()}
+                >
+                  Ligar conta Microsoft
+                </Button>
+              )}
+              <Button
+                type="button"
+                variant="outline"
+                disabled={busy === "bootstrap"}
+                onClick={() => void runBootstrap()}
+              >
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Detectar drive (bootstrap)
+              </Button>
+            </div>
           </CardContent>
         </Card>
 

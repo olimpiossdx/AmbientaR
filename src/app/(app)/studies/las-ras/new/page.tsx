@@ -1,18 +1,21 @@
 'use client';
 
 import { Suspense } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { PageHeader } from '@/components/page-header';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useSearchParams } from 'next/navigation';
 import { StudyDynamicCreationPage } from '@/components/studies/study-dynamic-creation-page';
 import { LasRasForm } from '../las-ras-form';
+import {
+  StudyFormShell,
+  useStudyFormShellSuccess,
+} from '@/components/studies/study-form-shell';
+
+const LIST_PATH = '/studies/las-ras';
+const PAGE_WIDTH = 'max-w-4xl mx-auto';
 
 function NewLasRasPageContent() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const isDynamic = searchParams?.get('form') === 'dynamic';
-
-  const handleSuccess = () => router.push('/studies/las-ras');
+  const onSuccess = useStudyFormShellSuccess('page', LIST_PATH);
 
   if (isDynamic) {
     return (
@@ -23,26 +26,22 @@ function NewLasRasPageContent() {
         cardTitle="Relatório Ambiental Simplificado"
         listagemVariant="project"
         staticFormHref="/studies/las-ras/new"
-        onSuccess={handleSuccess}
+        onSuccess={onSuccess}
       />
     );
   }
 
   return (
-    <div className="flex flex-col h-full">
-      <PageHeader title="Novo LAS/RAS" />
-      <main className="flex-1 overflow-auto p-4 md:p-6">
-        <Card className="mx-auto max-w-4xl">
-          <CardHeader>
-            <CardTitle>Relatório Ambiental Simplificado (RAS)</CardTitle>
-            <CardDescription>Formulário resumido com os campos principais do RAS.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <LasRasForm onSuccess={handleSuccess} />
-          </CardContent>
-        </Card>
-      </main>
-    </div>
+    <StudyFormShell
+      variant="page"
+      title="Relatório Ambiental Simplificado (RAS)"
+      description="Formulário resumido com os campos principais do RAS."
+      notFoundTitle="LAS/RAS não encontrado"
+      pageHeaderTitle="Novo LAS/RAS"
+      pageWidthClassName={PAGE_WIDTH}
+    >
+      <LasRasForm onSuccess={onSuccess} />
+    </StudyFormShell>
   );
 }
 

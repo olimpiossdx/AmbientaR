@@ -1,10 +1,10 @@
-# Inicia o AmbientaR na porta 9002.
-# Uso: clique duplo ou no PowerShell: .\iniciar-dev-9002.ps1
+# Liberta a porta 9002 e inicia npm run dev.
+# Uso: .\scripts\launchers\iniciar-dev-9002.ps1
 
 $port = 9002
-$projectPath = $PSScriptRoot
+$root = Resolve-Path (Join-Path $PSScriptRoot "..\..")
+Set-Location $root
 
-# Encerra qualquer processo usando a porta 9002
 $connections = Get-NetTCPConnection -LocalPort $port -ErrorAction SilentlyContinue
 if ($connections) {
     $connections | ForEach-Object { $_.OwningProcess } | Sort-Object -Unique | ForEach-Object {
@@ -18,5 +18,4 @@ Write-Host "Iniciando Next.js na porta $port..." -ForegroundColor Cyan
 Write-Host "Aguarde 'Ready' e abra: http://localhost:$port" -ForegroundColor Green
 Write-Host ""
 
-Set-Location $projectPath
 npm run dev

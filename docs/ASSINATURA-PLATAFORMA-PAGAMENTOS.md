@@ -2,6 +2,8 @@
 
 Integração para gerar **QR PIX por cobrança** (valor fixo + `txid` único), confirmar pagamento via webhook e liberar/revogar acesso.
 
+**Guia completo para retomar o trabalho:** [PIX-SICOOB-RETOMAR.md](PIX-SICOOB-RETOMAR.md) (checklist Sicoob, testes, mapa de arquivos, troubleshooting).
+
 ## Fases implementadas
 
 | Fase | Módulo / rota | Debugger |

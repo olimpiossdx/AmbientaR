@@ -95,7 +95,309 @@ Abre relatório HTML do webpack no browser após o build.
 | 4 Rotas `(.)` | Adiada (modal ≠ página cheia) |
 | 5 Lucide/recharts | Via `optimizePackageImports` |
 | 6 Raiz repo | MDs → `docs/setup/`, `.gitignore` |
+| **F04 Credenciais** | ✅ `config/firebase-service-account.json` |
+| **F05 Legado SERVIDOR** | ✅ 8 ficheiros removidos |
+| **F06 Launchers** | ✅ `scripts/launchers/` + wrapper `start-dev.bat` |
+| **F07 Recharts CRM** | ✅ lazy em `crm/*` |
+| **F08 Recharts financeiro** | ✅ lazy em `financial/*`, `cash-flow`, dashboards |
+| **F09 Recharts monitoramento** | ✅ lazy em `monitoring/manual` |
+| **F10 Turf no cliente** | ✅ imports leves + `import()` dinâmico |
+| **F11 Upload pipeline** | ✅ `browser-image-compression` + `pizzip` lazy |
+| **F12 Shell layout** | ✅ providers lazy + `navigation-labels` |
+| **F13 Piloto licenses FormShell** | ✅ `license-form-shell.tsx` |
+| **F14 Portal docs lote 1** | ✅ `invoices` + `outorgas` FormShell |
+| **F15 Cadastro técnico** | ✅ `technical-responsible` + `responsible-company` |
+| **F16 Estudos lote 1** | ✅ `rca` + `pca` via `study-form-shell.tsx` (parcial) |
+| **F16 Estudos lote 2** | ✅ `ptrf`, `prada`, `pia`, `eia-rima` (`intervencao-ambiental` = redirect PIA) |
+| **F16 Estudos lote 3** | ✅ `barragem`, `cavidades`, `las-ras`, `procuracao`, `outorgas` edit (`reanalise` = só dynamic) |
+| **F17 Medição final** | ✅ build + `apphosting:check` OK (2026-06-23) |
+| **F18 Automação leve** | ✅ `npm run perf:check` + doc `AGENTS.md` |
 
-**Build:** `npm run build` falha por erros de sintaxe **pré-existentes** em ficheiros não tocados (`requests/new/page.tsx`, `licenses/page.tsx`, etc.). Ficheiros alterados neste plano passam lint sem erros.
+---
 
-**Próximo passo sugerido:** corrigir sintaxe nos ficheiros quebrados (fora do escopo deste plano) e depois correr `npm run analyze` para quantificar ganho de bundle.
+## Bloco 1 — Concluído (2026-06-23)
+
+### F04 — Credenciais ✅
+
+- JSON copiado com `node scripts/copy-firebase-service-account.mjs` → `config/firebase-service-account.json`
+- Removidos: `chave firebase/*.json`, `config/firebase-service-account.json.json`
+- `chaves gerais.txt` → `config/chaves-gerais.txt` (gitignored)
+- Pasta `chave firebase/` removida
+- [`config/README.md`](../config/README.md) atualizado
+
+### F05 — Legado `*-SERVIDOR*` ✅
+
+Removidos: `licenses/page-SERVIDOR.tsx`, `license-form-SERVIDOR.tsx`, `compliance/*-SERVIDOR.tsx`, `environmental-dashboard-SERVIDOR.tsx`, `firestore-SERVIDOR.rules` (×2), `package-lock-SERVIDOR.json`
+
+### F06 — Launchers ✅
+
+- Atalhos em [`scripts/launchers/`](../scripts/launchers/) + README
+- Raiz: só `start-dev.bat` (wrapper)
+- Removidos da raiz: `.ps1` e `.bat` duplicados, `iniciar-agora-F-Projects-nodejs.bat` (caminho F: legado)
+- [`README.md`](../README.md) aponta para `docs/setup/COMO-RODAR.md`
+
+**Verificação:** `npm run typecheck` OK · `npm run verify:env` OK (Admin via `config/firebase-service-account.json` sem env var)
+
+### F07 — Recharts CRM lazy ✅ (2026-06-23)
+
+| Ficheiro | Mudança |
+|----------|---------|
+| `crm/page.tsx` | `CrmDashboard` via `dynamic()` |
+| `crm/reports/page.tsx` | gráficos → `crm-reports-charts.tsx` lazy |
+| `crm/team/page.tsx` | gráfico → `crm-team-revenue-chart.tsx` lazy |
+| `crm/crm-reports-charts.tsx` | novo — recharts isolado |
+| `crm/crm-team-revenue-chart.tsx` | novo — recharts isolado |
+
+**Verificação:** `npm run typecheck` OK
+
+### F08 — Recharts financeiro lazy ✅ (2026-06-23)
+
+| Ficheiro | Mudança |
+|----------|---------|
+| `dashboards/admin-dashboard.tsx` | `FinancialDashboard` + `CrmDashboard` via `dynamic()` |
+| `(app)/page.tsx` | `FinancialDashboard` lazy (`ssr: false`) |
+| `cash-flow/cash-flow-view.tsx` | `CashFlowChart` lazy |
+| `financial/fluxo-projetado/page.tsx` | gráfico → `fluxo-projetado-chart.tsx` lazy |
+| `financial/abc-curve/page.tsx` | gráficos → `abc-curve-charts.tsx` lazy |
+| `financial/abc-fornecedores/page.tsx` | `AbcAnalysisView` lazy |
+| `financial/abc-servicos/page.tsx` | `AbcAnalysisView` lazy |
+| `financial/fluxo-projetado/fluxo-projetado-chart.tsx` | novo — recharts isolado |
+| `financial/abc-curve/abc-curve-charts.tsx` | novo — recharts isolado |
+| `components/financial/abc-analysis-view.tsx` | export `AbcAnalysisViewProps` |
+
+**Verificação:** `npm run typecheck` OK · `npm run build` OK
+
+| Rota | Página | First Load JS |
+|------|--------|---------------|
+| `/cash-flow` | 15,7 kB | 379 kB |
+| `/financial/fluxo-projetado` | 4,34 kB | **294 kB** |
+| `/financial/abc-curve` | 7,48 kB | 341 kB |
+| `/financial/abc-fornecedores` | 2,42 kB | **303 kB** |
+| `/financial/abc-servicos` | 1,37 kB | **302 kB** |
+| **Shared** | — | **91,5 kB** |
+
+### F09 — Recharts monitoramento lazy ✅ (2026-06-23)
+
+| Ficheiro | Mudança |
+|----------|---------|
+| `monitoring/manual/page.tsx` | gráficos → `ManualMonitoringCharts` via `dynamic()` |
+| `monitoring/manual/manual-monitoring-charts.tsx` | novo — BarChart + LineChart isolados |
+
+**Verificação:** `npm run typecheck` OK · `npm run build` OK
+
+| Rota | Página | First Load JS |
+|------|--------|---------------|
+| `/monitoring/manual` | 11,6 kB | 424 kB |
+| **Shared** | — | **91,5 kB** |
+
+### F10 — Turf no cliente ✅ (2026-06-23)
+
+| Ficheiro | Mudança |
+|----------|---------|
+| `geo-analysis-summary.ts` | `WAVE_ALL_LAYER_COUNT` → `geo-constants` (não puxa `run-wave-a-analysis` no cliente) |
+| `export-wave-a-pdf.ts`, `geo-complement-prompt.ts`, `geo-analysis-complement-flow.ts` | idem |
+| `localizacao-imovel-client.ts` | novo — `localizacaoToPerimeterInput` sem Turf |
+| `influence-areas-config.ts` | novo — `DEFAULT_INFLUENCE_CONFIG` sem Turf |
+| `geo-influence-areas-panel.tsx` | `resolveInfluenceAreas` via `import()` dinâmico |
+| `project-perimetro-referencia.ts` | `@turf/area` + `@turf/bbox` e `perimeter` via `import()` sob demanda |
+| `memorial-descritivo-workbench.tsx` | `@turf/area` → `useMcaTurfArea()` |
+| `influence-areas.ts` | tipos de `geo-wave-a`; config em ficheiro leve |
+
+**Verificação:** `npm run typecheck` OK · `npm run build` OK · `@turf/turf` só em módulos servidor (`fiscal-ambiental/*`)
+
+| Rota | Página | First Load JS | Antes (baseline) |
+|------|--------|---------------|------------------|
+| `/analise-ambiental` | 21,3 kB | **457 kB** | 464 kB |
+| **Shared** | — | **91,6 kB** | 91,3 kB |
+
+### F11 — Upload pipeline lazy ✅ (2026-06-23)
+
+| Ficheiro | Mudança |
+|----------|---------|
+| `upload-pipeline.ts` | `browser-image-compression` e `pizzip` via `import()` dentro de `compressImageFile` / `recompressZipBlob` |
+| `upload-pipeline-pdf.ts` | já era lazy (`import()` em `prepareFileForUpload`) |
+
+**Verificação:** `npm run typecheck` OK · `npm run build` OK
+
+Consumidores (`use-prepared-upload`, inspeções, pedidos, multas) carregam compressão só ao preparar ficheiro > limite.
+
+| Rota (exemplo upload) | First Load JS |
+|-----------------------|---------------|
+| `/inspections/new` | 469 kB |
+| `/requests/new` | 359 kB |
+| `/licenses/new` | 378 kB |
+| **Shared** | **91,7 kB** |
+
+### F12 — Shell layout autenticado ✅ (2026-06-23)
+
+| Ficheiro | Mudança |
+|----------|---------|
+| `(app)/layout.tsx` | `NotificationPushProvider`, `OfflineQueueBadge` via `dynamic()` |
+| `(app)/layout.tsx` | `FinancialMenuDebugPanel` / `CadastroMenuDebugPanel` lazy só em `development` |
+| `(app)/layout.tsx` | `PortalAdvertisingLayerLazy` — anúncios portal após paint |
+| `navigation-labels.ts` | novo — rótulos sem Lucide (layout não puxa `navigation-config`) |
+| `navigation-icons.ts` | novo — ícones isolados de `navigation-config` |
+| `portal-advertising-layer-lazy.tsx` | novo — wrapper com `import()` |
+
+**Verificação:** `npm run typecheck` OK · `npm run build` OK
+
+| Métrica | Antes (baseline) | Após F12 |
+|---------|------------------|----------|
+| Shared First Load | 91,3 kB | **91,8 kB** |
+| `/login` | 288 kB | **286 kB** |
+| `/analise-ambiental` | 464 kB | **445 kB** |
+
+Meta aspiracional shared &lt; 88 kB não atingida — `NavContent` + `navigation-config` continuam no chunk da sidebar. Bloco 2 (F07–F12) **concluído**.
+
+**Próximo passo sugerido:** **F16** (estudos técnicos lote 3) — [`PERF-ROADMAP-DETALHADO.md`](PERF-ROADMAP-DETALHADO.md).
+
+### F13 — Piloto licenses `FormShell` ✅ (2026-06-23)
+
+| Ficheiro | Mudança |
+|----------|---------|
+| `licenses/license-form-shell.tsx` | novo — `variant: modal \| page`, loading, not-found, navegação |
+| `licenses/new/page.tsx` | shell `page` |
+| `licenses/(.)new/page.tsx` | shell `modal` (~25 linhas) |
+| `licenses/[id]/edit/page.tsx` | shell `page` + fetch |
+| `licenses/(.)[id]/edit/page.tsx` | shell `modal` + fetch |
+
+**Verificação:** `npm run typecheck` OK · `npm run audit:routes` OK (mesmas rotas `/licenses/new`, `/licenses/[id]/edit`)
+
+**Smoke manual:** lista → novo/editar modal; URLs directas → página cheia.
+
+**Próximo passo sugerido:** **F16** (estudos técnicos lote 3) — [`PERF-ROADMAP-DETALHADO.md`](PERF-ROADMAP-DETALHADO.md).
+
+### F14 — Portal documentos lote 1 ✅ (2026-06-23)
+
+**Invoices**
+
+| Ficheiro | Mudança |
+|----------|---------|
+| `invoices/invoice-form-shell.tsx` | novo — shell modal/página + `onCancel` via `useInvoiceFormShellDismiss` |
+| `invoices/new`, `(.)new`, `[id]/edit`, `(.)[id]/edit` | refatorados |
+
+**Outorgas**
+
+| Ficheiro | Mudança |
+|----------|---------|
+| `outorgas/outorga-form-shell.tsx` | novo |
+| `outorgas/new`, `(.)new`, `[id]/edit`, `(.)[id]/edit` | refatorados |
+
+**Verificação:** `npm run typecheck` OK · `npm run audit:routes` OK
+
+**Próximo passo sugerido:** **F16** (estudos técnicos lote 3) — [`PERF-ROADMAP-DETALHADO.md`](PERF-ROADMAP-DETALHADO.md).
+
+### F15 — Cadastro técnico ✅ (2026-06-23)
+
+| Entidade | Shell | Rotas |
+|----------|-------|-------|
+| `technical-responsible` | `responsible-form-shell.tsx` | `new`, `(.)new`, `[id]/edit`, `(.)[id]/edit` |
+| `responsible-company` | `company-form-shell.tsx` (`max-w-3xl`, modal `95vh`) | idem + `useCadastroGestaoWriteGuard` nas páginas |
+
+**Verificação:** `npm run typecheck` OK
+
+**Próximo passo sugerido:** **F16** (estudos: `ptrf`, `prada`, `pia`, …) — [`PERF-ROADMAP-DETALHADO.md`](PERF-ROADMAP-DETALHADO.md).
+
+### F16 — Estudos técnicos lote 1 (parcial) ✅ (2026-06-23)
+
+Shell partilhado `src/components/studies/study-form-shell.tsx` — layout largo (`max-w-7xl`, modal `sm:max-w-7xl`), `pageHeaderActions`, ramo `?form=dynamic` preservado nas páginas `new`.
+
+| Entidade | Rotas refatoradas | Notas |
+|----------|-------------------|-------|
+| `rca` | `new`, `(.)new`, `[id]/edit`, `(.)[id]/edit` | `StudyDynamicCreationPage` + botão TR em `new` |
+| `pca` | idem | idem |
+
+**Verificação:** `npm run typecheck` OK · `npm run audit:routes` OK
+
+**Próximo passo sugerido:** **F16** (restantes estudos sem shell: `barragem`, `las-ras`, `reanalise`, …) — [`PERF-ROADMAP-DETALHADO.md`](PERF-ROADMAP-DETALHADO.md).
+
+### F16 — Estudos técnicos lote 2 ✅ (2026-06-23)
+
+| Entidade | Rotas | Notas |
+|----------|-------|-------|
+| `ptrf` | `new`, `(.)new`, `[id]/edit`, `(.)[id]/edit` | modal `sm:max-w-4xl` preservado |
+| `prada` | idem | layout `max-w-7xl` |
+| `pia` | idem | `?type`, `linkContext` em `new`; `PiaExportButtons` em edit página |
+| `eia-rima` | idem | `?form=dynamic`; página/modal `max-w-4xl` |
+| `intervencao-ambiental` | — | sem alteração (redirect legado → PIA) |
+
+Shell: `cardHeaderExtra` adicionado em `study-form-shell.tsx` (export PIA).
+
+**Verificação:** `npm run typecheck` OK · `npm run audit:routes` OK
+
+**Próximo passo sugerido:** **F17** (medição final) ou estudos restantes sem `(.)` intercept — [`PERF-ROADMAP-DETALHADO.md`](PERF-ROADMAP-DETALHADO.md).
+
+### F16 — Estudos técnicos lote 3 ✅ (2026-06-23)
+
+| Entidade | Rotas | Notas |
+|----------|-------|-------|
+| `barragem` | `new`, `[id]/edit` | `onCreated`/`onCancel`; export no `PageHeader` |
+| `cavidades` | idem | idem |
+| `las-ras` | `new`, `[id]/edit` | `?form=dynamic`; edit dinâmico → `StudyDynamicEditPage` |
+| `procuracao` | `new`, `[id]/edit` | `max-w-4xl` |
+| `outorgas` (estudos) | `[id]/edit` | `max-w-2xl`; `new` = picker modo de uso (sem shell) |
+| `reanalise` | — | já só formulário dinâmico (sem alteração) |
+
+Shell: `cardContentClassName` para `min-h-[480px]` (barragem/cavidades).
+
+**Verificação:** `npm run typecheck` OK
+
+**Plano F00–F18 concluído** — ver secção F18 abaixo.
+
+### F17 — Medição final e comparativo ✅ (2026-06-23)
+
+Comandos: `NODE_OPTIONS=--max-old-space-size=8192 npm run build` · `npm run apphosting:check` (status **0**).  
+`npm run analyze` não reexecutado (build duplicado ~3 min); notas dos chunks partilhados abaixo.
+
+**Tabela comparativa (First Load JS):**
+
+| Métrica | Baseline | Após F12 | Após F16 (F17) | Δ vs baseline |
+|---------|----------|----------|----------------|---------------|
+| Shared (app router) | 91,3 kB | 91,8 kB | **91,8 kB** | +0,5 kB |
+| `/login` | 288 kB | 286 kB | **286 kB** | −2 kB |
+| `/` (dashboard) | — | — | **316 kB** | — |
+| `/analise-ambiental` | 464 kB | 445 kB | **444 kB** | −20 kB |
+| `/licenses` (lista) | — | — | **387 kB** | — |
+| `/licenses/new` | — | — | **378 kB** | — |
+
+**Rotas `(.)` intercept (24 ficheiros):** ~921 linhas totais (estimativa pré-F13 ~1200 — redução por `FormShell` / `StudyFormShell`).
+
+**Maiores chunks partilhados (build):**
+
+| Chunk | Tamanho |
+|-------|---------|
+| `chunks/fd9d1056-*.js` | 53,6 kB |
+| `chunks/framework-*.js` (pages) | 56,4 kB |
+| `chunks/main-*.js` (pages) | 44,9 kB |
+| `chunks/86997-*.js` | 34,1 kB |
+
+**Rotas mais pesadas (candidatas futuras, não alteradas neste plano):** `/coleta-campo/[id]` 583 kB · `/gestao-processos/fluxo` 577 kB · `/georeferenciamento/memorial-descritivo` 536 kB · `/projects/new` 534 kB.
+
+**Conclusão F17:** ganhos de runtime concentrados no Bloco 2 (`/analise-ambiental` −4,3 %). Shared permanece ~92 kB (meta &lt; 88 kB não atingida). Bloco 3 (F13–F16) melhorou manutenção e linhas das rotas `(.)` sem impacto mensurável no shared chunk.
+
+**Plano de performance (F00–F18):** concluído. Manutenção: `npm run perf:check` antes de PRs que toquem rotas, geo ou shell.
+
+### F18 — Automação leve ✅ (2026-06-23)
+
+| Ação | Detalhe |
+|------|---------|
+| `scripts/perf-check.mjs` | `typecheck` → `audit:routes` → zero `@turf/turf` / `run-wave-a-analysis` em `"use client"` |
+| `package.json` | script `perf:check` |
+| `AGENTS.md` | links `PERF-ROADMAP-DETALHADO.md` / `PERF-AUDIT.md`; regra **uma fase = um PR** |
+
+**Não incluído (de propósito):** gate de bundle size no CI.
+
+**Verificação:** `npm run perf:check` OK
+
+### Métricas baseline inicial (`npm run build`, antes do Bloco 2)
+
+| Rota / chunk | Tamanho página | First Load JS |
+|--------------|----------------|---------------|
+| **Shared (todas as rotas app)** | — | **91,3 kB** |
+| `/login` | 6,5 kB | 288 kB |
+| `/analise-ambiental` | 18,4 kB | 464 kB |
+| Framework (pages router legado) | — | 105 kB |
+
+**Analyzer:** `npm run analyze` (heap 8 GB via `scripts/analyze-build.mjs`).
+
+**Próximo passo sugerido:** **F16** (estudos técnicos lote 3) — [`PERF-ROADMAP-DETALHADO.md`](PERF-ROADMAP-DETALHADO.md).

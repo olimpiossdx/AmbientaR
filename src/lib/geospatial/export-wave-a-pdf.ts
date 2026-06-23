@@ -1,7 +1,7 @@
 import type { MmBrandedPdfSession } from "@/lib/pdf-branding-layout";
 import { writeBrandedPdfParagraph, writeBrandedPdfTitle } from "@/lib/ia-menu-branded-pdf";
 import { CARTOGRAPHIC_PAGE_SIZE } from "@/lib/geospatial/cartographic-layout";
-import { WAVE_ALL_LAYER_COUNT } from "@/lib/geospatial/run-wave-a-analysis";
+import { WAVE_ALL_LAYER_COUNT } from "@/lib/geospatial/geo-constants";
 import type { WaveAAnalysisResult } from "@/lib/types/geo-wave-a";
 import type {
   CartographicPngMap,

@@ -1,14 +1,23 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import { PageHeader } from '@/components/page-header';
-import FinancialDashboard from './financial-dashboard';
+import { Skeleton } from '@/components/ui/skeleton';
 import EnvironmentalDashboard from './environmental-dashboard';
-import CrmDashboard from '../crm/crm-dashboard';
 import AgendaWidget from './agenda-widget';
 import OfficeTasksWidget from './office-tasks-widget';
 import BirthdayWidget from './birthday-widget';
 import { DocumentosAmbientaisHubCard } from '@/components/documentos-ambientais-hub-card';
 import { useAuth } from '@/firebase';
+
+const FinancialDashboard = dynamic(() => import('./financial-dashboard'), {
+  ssr: false,
+  loading: () => <Skeleton className="h-[360px] w-full rounded-lg" />,
+});
+const CrmDashboard = dynamic(() => import('../crm/crm-dashboard'), {
+  ssr: false,
+  loading: () => <Skeleton className="h-[360px] w-full rounded-lg" />,
+});
 
 export default function AdminDashboard() {
   const { user } = useAuth();

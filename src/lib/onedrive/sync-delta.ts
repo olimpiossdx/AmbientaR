@@ -1,7 +1,8 @@
 import {
-  fetchDeltaPage,
-  getDriveItemByPath,
-  resolveDefaultDriveId,
+  fetchDeltaPageForMode,
+  getDriveItemByPathForMode,
+  getGraphAuthMode,
+  resolveDefaultDriveIdForMode,
 } from "@/lib/onedrive/graph";
 import {
   DEFAULT_PROJECTS_SYNC_SOURCE_ID,
@@ -79,8 +80,11 @@ async function runDeltaLoop(
   let itemsProcessed = 0;
   let nextUrl: string | undefined;
 
+  const authMode = getGraphAuthMode();
+
   do {
-    const page = await fetchDeltaPage(
+    const page = await fetchDeltaPageForMode(
+      authMode,
       driveId,
       folderItemId,
       nextUrl || deltaLink,
@@ -117,7 +121,8 @@ export async function ensureProjectsSyncSource(): Promise<{
     return { source, created: false };
   }
 
-  const { driveId, driveName } = await resolveDefaultDriveId();
+  const authMode = getGraphAuthMode();
+  const { driveId, driveName } = await resolveDefaultDriveIdForMode(authMode);
   source = await upsertSyncSource({
     id,
     kind: "projects",
@@ -144,8 +149,13 @@ export async function linkClientFolder(params: {
     throw new Error("Fonte de sync sem driveId.");
   }
 
+  const authMode = getGraphAuthMode();
   const folderPath = normalizeOnedriveFolderPath(params.folderPath);
-  const folderItem = await getDriveItemByPath(source.driveId, folderPath);
+  const folderItem = await getDriveItemByPathForMode(
+    authMode,
+    source.driveId,
+    folderPath,
+  );
   if (!folderItem.id || !isFolder(folderItem)) {
     throw new Error(
       `Caminho não é uma pasta no OneDrive: ${folderPath}`,

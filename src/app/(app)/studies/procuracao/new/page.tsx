@@ -1,31 +1,36 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
-import { PageHeader } from '@/components/page-header';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Suspense } from 'react';
 import { ProcuracaoForm } from '../procuracao-form';
+import {
+  StudyFormShell,
+  useStudyFormShellSuccess,
+} from '@/components/studies/study-form-shell';
 
-export default function NewProcuracaoPage() {
-  const router = useRouter();
-  const handleSuccess = () => router.push('/studies/procuracao');
+const LIST_PATH = '/studies/procuracao';
+const PAGE_WIDTH = 'max-w-4xl mx-auto';
+
+function NewProcuracaoPageContent() {
+  const onSuccess = useStudyFormShellSuccess('page', LIST_PATH);
 
   return (
-    <div className="flex flex-col h-full">
-      <PageHeader title="Nova procuração" />
-      <main className="flex-1 overflow-auto p-4 md:p-6">
-        <Card className="mx-auto max-w-4xl">
-          <CardHeader>
-            <CardTitle>Procuração de representação</CardTitle>
-            <CardDescription>
-              Mandato do empreendedor (outorgante) à consultoria (outorgada) para atos
-              perante órgãos ambientais, vinculado ao(s) empreendimento(s) selecionado(s).
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ProcuracaoForm onSuccess={handleSuccess} />
-          </CardContent>
-        </Card>
-      </main>
-    </div>
+    <StudyFormShell
+      variant="page"
+      title="Procuração de representação"
+      description="Mandato do empreendedor (outorgante) à consultoria (outorgada) para atos perante órgãos ambientais, vinculado ao(s) empreendimento(s) selecionado(s)."
+      notFoundTitle="Procuração não encontrada"
+      pageHeaderTitle="Nova procuração"
+      pageWidthClassName={PAGE_WIDTH}
+    >
+      <ProcuracaoForm onSuccess={onSuccess} />
+    </StudyFormShell>
+  );
+}
+
+export default function NewProcuracaoPage() {
+  return (
+    <Suspense fallback={<div>Carregando...</div>}>
+      <NewProcuracaoPageContent />
+    </Suspense>
   );
 }

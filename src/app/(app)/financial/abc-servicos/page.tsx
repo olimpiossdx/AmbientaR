@@ -1,13 +1,23 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import dynamic from 'next/dynamic';
 import { PageHeader } from '@/components/page-header';
 import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
 import { collection } from 'firebase/firestore';
 import type { CommercialProposal, Contract, Invoice } from '@/lib/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { AbcAnalysisView } from '@/components/financial/abc-analysis-view';
+import { Skeleton } from '@/components/ui/skeleton';
+import type { AbcAnalysisViewProps } from '@/components/financial/abc-analysis-view';
 import { computeAbcRanking } from '@/lib/abc-analysis';
+
+const AbcAnalysisView = dynamic<AbcAnalysisViewProps>(
+  () => import('@/components/financial/abc-analysis-view').then((m) => ({ default: m.AbcAnalysisView })),
+  {
+    ssr: false,
+    loading: () => <Skeleton className="h-[640px] w-full rounded-lg" />,
+  },
+);
 
 const currentYear = new Date().getFullYear();
 

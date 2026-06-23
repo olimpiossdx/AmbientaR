@@ -1,50 +1,36 @@
+"use client";
 
-'use client';
-import { Suspense } from 'react';
-import { useRouter } from 'next/navigation';
-import { ResponsibleForm } from '../responsible-form';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { Skeleton } from '@/components/ui/skeleton';
+import { Suspense } from "react";
+import { ResponsibleForm } from "../responsible-form";
+import {
+  ResponsibleFormModalSuspenseFallback,
+  ResponsibleFormShell,
+  useResponsibleFormShellDismiss,
+  useResponsibleFormShellSuccess,
+} from "../responsible-form-shell";
+
+const TITLE = "Adicionar Novo Responsável";
+const DESCRIPTION = "Preencha os detalhes do novo profissional.";
 
 function NewResponsibleModalContent() {
-    const router = useRouter();
+  const onSuccess = useResponsibleFormShellSuccess("modal");
+  const onCancel = useResponsibleFormShellDismiss();
 
-    const handleSuccess = () => {
-      router.back();
-    };
-  
-    return (
-        <Dialog open={true} onOpenChange={(isOpen) => !isOpen && router.back()}>
-            <DialogContent className="sm:max-w-2xl max-h-[90dvh] flex flex-col">
-                <DialogHeader>
-                    <DialogTitle>Adicionar Novo Responsável</DialogTitle>
-                    <DialogDescription>
-                        Preencha os detalhes do novo profissional.
-                    </DialogDescription>
-                </DialogHeader>
-                <ResponsibleForm
-                    currentItem={null}
-                    onSuccess={handleSuccess}
-                    onCancel={() => router.back()}
-                />
-            </DialogContent>
-        </Dialog>
-    );
+  return (
+    <ResponsibleFormShell variant="modal" title={TITLE} description={DESCRIPTION}>
+      <ResponsibleForm
+        currentItem={null}
+        onSuccess={onSuccess}
+        onCancel={onCancel}
+      />
+    </ResponsibleFormShell>
+  );
 }
 
 export default function NewResponsibleModal() {
-    return (
-        <Suspense fallback={
-            <Dialog open={true}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Carregando...</DialogTitle>
-                    </DialogHeader>
-                    <Skeleton className="h-[500px] w-full" />
-                </DialogContent>
-            </Dialog>
-        }>
-            <NewResponsibleModalContent />
-        </Suspense>
-    )
+  return (
+    <Suspense fallback={<ResponsibleFormModalSuspenseFallback />}>
+      <NewResponsibleModalContent />
+    </Suspense>
+  );
 }

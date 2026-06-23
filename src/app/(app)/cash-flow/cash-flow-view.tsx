@@ -13,7 +13,8 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { RevenueTable } from './revenue-table';
 import { ExpenseTable } from './expense-table';
-import { CashFlowChart } from './cash-flow-chart';
+import dynamic from 'next/dynamic';
+import { Skeleton } from '@/components/ui/skeleton';
 import { CashFlowSummary } from './cash-flow-summary';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -30,6 +31,14 @@ import { FileDown, Plus, Printer, Search } from 'lucide-react';
 import type { Revenue, Expense } from '@/lib/types';
 import { useUser } from '@/firebase';
 import { isAdminOrFinancialRole } from '@/lib/role-guards';
+
+const CashFlowChart = dynamic(
+  () => import('./cash-flow-chart').then((m) => ({ default: m.CashFlowChart })),
+  {
+    ssr: false,
+    loading: () => <Skeleton className="h-[320px] w-full rounded-lg" />,
+  },
+);
 
 type PeriodType = 'day' | 'month' | 'year';
 

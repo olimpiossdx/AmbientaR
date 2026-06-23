@@ -31,7 +31,7 @@ import {
 const CHART_TOP = 12;
 const BAR_TOP = 8;
 
-type AbcAnalysisViewProps = {
+export type AbcAnalysisViewProps = {
   title: string;
   description: string;
   rows: AbcRow[];

@@ -1,46 +1,34 @@
 'use client';
-import { PageHeader } from '@/components/page-header';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { PradaForm } from '../prada-form';
-import { useRouter } from 'next/navigation';
+
 import { Suspense } from 'react';
+import { PradaForm } from '../prada-form';
+import {
+  StudyFormShell,
+  useStudyFormShellSuccess,
+} from '@/components/studies/study-form-shell';
+
+const LIST_PATH = '/studies/prada';
 
 function NewPradaPageContent() {
-    const router = useRouter();
+  const onSuccess = useStudyFormShellSuccess('page', LIST_PATH);
 
-    const handleSuccess = () => {
-      router.push('/studies/prada');
-    };
-  
-    return (
-      <div className="flex flex-col h-full">
-        <PageHeader title="Novo Plano de Recuperação de Áreas Degradadas (PRADA)" />
-        <main className="flex-1 overflow-auto p-4 md:p-6">
-          <div className="max-w-7xl mx-auto">
-               <Card>
-                  <CardHeader>
-                      <CardTitle>Adicionar Novo PRADA</CardTitle>
-                      <CardDescription>
-                          Preencha os detalhes para criar um novo PRADA.
-                      </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                      <PradaForm
-                          currentItem={null}
-                          onSuccess={handleSuccess}
-                      />
-                  </CardContent>
-              </Card>
-          </div>
-        </main>
-      </div>
-    );
+  return (
+    <StudyFormShell
+      variant="page"
+      title="Adicionar Novo PRADA"
+      description="Preencha os detalhes para criar um novo PRADA."
+      notFoundTitle="PRADA não encontrado"
+      pageHeaderTitle="Novo Plano de Recuperação de Áreas Degradadas (PRADA)"
+    >
+      <PradaForm currentItem={null} onSuccess={onSuccess} />
+    </StudyFormShell>
+  );
 }
 
 export default function NewPradaPage() {
-    return (
-        <Suspense fallback={<div>Carregando...</div>}>
-            <NewPradaPageContent />
-        </Suspense>
-    )
+  return (
+    <Suspense fallback={<div>Carregando...</div>}>
+      <NewPradaPageContent />
+    </Suspense>
+  );
 }

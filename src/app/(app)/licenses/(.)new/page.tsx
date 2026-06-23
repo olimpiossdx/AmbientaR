@@ -1,50 +1,30 @@
+"use client";
 
-'use client';
-import { Suspense } from 'react';
-import { useRouter } from 'next/navigation';
-import { LicenseForm } from '../license-form';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { Skeleton } from '@/components/ui/skeleton';
+import { Suspense } from "react";
+import { LicenseForm } from "../license-form";
+import {
+  LicenseFormModalSuspenseFallback,
+  LicenseFormShell,
+  useLicenseFormShellSuccess,
+} from "../license-form-shell";
+
+const TITLE = "Adicionar Nova Licença";
+const DESCRIPTION = "Preencha os detalhes para criar uma nova licença.";
 
 function NewLicenseModalContent() {
-    const router = useRouter();
+  const onSuccess = useLicenseFormShellSuccess("modal");
 
-    const handleSuccess = () => {
-      router.back();
-    };
-  
-    return (
-        <Dialog open={true} onOpenChange={(isOpen) => !isOpen && router.back()}>
-            <DialogContent className="sm:max-w-2xl h-full max-h-[90dvh] flex flex-col">
-                <DialogHeader>
-                    <DialogTitle>Adicionar Nova Licença</DialogTitle>
-                    <DialogDescription>
-                        Preencha os detalhes para criar uma nova licença.
-                    </DialogDescription>
-                </DialogHeader>
-                <LicenseForm
-                    currentLicense={null}
-                    onSuccess={handleSuccess}
-                />
-            </DialogContent>
-        </Dialog>
-    );
+  return (
+    <LicenseFormShell variant="modal" title={TITLE} description={DESCRIPTION}>
+      <LicenseForm currentLicense={null} onSuccess={onSuccess} />
+    </LicenseFormShell>
+  );
 }
 
-
 export default function NewLicenseModal() {
-    return (
-        <Suspense fallback={
-             <Dialog open={true}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Carregando...</DialogTitle>
-                    </DialogHeader>
-                    <Skeleton className="h-[500px] w-full" />
-                </DialogContent>
-             </Dialog>
-        }>
-            <NewLicenseModalContent />
-        </Suspense>
-    )
+  return (
+    <Suspense fallback={<LicenseFormModalSuspenseFallback />}>
+      <NewLicenseModalContent />
+    </Suspense>
+  );
 }

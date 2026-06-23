@@ -17,6 +17,7 @@
     "apphosting:check": "node scripts/apphosting-check.mjs",
     "apphosting:type-report": "node scripts/apphosting-type-report.mjs",
     "audit:routes": "node scripts/menu-route-audit.mjs",
+    "perf:check": "node scripts/perf-check.mjs",
     "docs:routes-map": "node scripts/generate-routes-components-map.mjs",
     "audit:menus-by-role": "node scripts/menu-role-audit.mjs",
     "verify:pea-roles": "node scripts/verify-pea-route-roles.mjs",

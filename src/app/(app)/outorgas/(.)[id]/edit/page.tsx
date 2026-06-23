@@ -1,65 +1,52 @@
+"use client";
 
-'use client';
-import { Suspense } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import { OutorgaForm } from '../../outorga-form';
-import { useDoc, useFirebase, useMemoFirebase } from '@/firebase';
-import { doc } from 'firebase/firestore';
-import type { WaterPermit } from '@/lib/types';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Suspense } from "react";
+import { useParams } from "next/navigation";
+import { OutorgaForm } from "../../outorga-form";
+import { useDoc, useFirebase, useMemoFirebase } from "@/firebase";
+import { doc } from "firebase/firestore";
+import type { WaterPermit } from "@/lib/types";
+import {
+  OutorgaFormModalSuspenseFallback,
+  OutorgaFormShell,
+  useOutorgaFormShellSuccess,
+} from "../../outorga-form-shell";
+
+const TITLE = "Editar Outorga";
+const DESCRIPTION = "Atualize os detalhes da outorga abaixo.";
+const NOT_FOUND = "Outorga não encontrada.";
 
 function EditOutorgaModalContent() {
-    const router = useRouter();
-    const params = useParams();
-    const itemId = (params?.id as string | undefined) ?? '';
-    
-    const { firestore } = useFirebase();
+  const params = useParams();
+  const itemId = (params?.id as string | undefined) ?? "";
+  const onSuccess = useOutorgaFormShellSuccess("modal");
 
-    const itemDocRef = useMemoFirebase(() => {
-        if (!firestore || !itemId) return null;
-        return doc(firestore, 'outorgas', itemId);
-    }, [firestore, itemId]);
+  const { firestore } = useFirebase();
 
-    const { data: item, isLoading } = useDoc<WaterPermit>(itemDocRef);
+  const itemDocRef = useMemoFirebase(() => {
+    if (!firestore || !itemId) return null;
+    return doc(firestore, "outorgas", itemId);
+  }, [firestore, itemId]);
 
-    const handleSuccess = () => {
-      router.back();
-    };
+  const { data: item, isLoading } = useDoc<WaterPermit>(itemDocRef);
 
-    return (
-       <Dialog open={true} onOpenChange={(isOpen) => !isOpen && router.back()}>
-            <DialogContent className="sm:max-w-2xl h-full max-h-[90dvh] flex flex-col">
-                <DialogHeader>
-                    <DialogTitle>Editar Outorga</DialogTitle>
-                    <DialogDescription>Atualize os detalhes da outorga abaixo.</DialogDescription>
-                </DialogHeader>
-                {isLoading && <div className="p-6"><Skeleton className="h-[400px] w-full" /></div>}
-                {(!item && !isLoading) && <div className="p-6"><p>Outorga não encontrada.</p></div>}
-                {item && (
-                    <OutorgaForm
-                        currentItem={item}
-                        onSuccess={handleSuccess}
-                    />
-                )}
-            </DialogContent>
-       </Dialog>
-    );
+  return (
+    <OutorgaFormShell
+      variant="modal"
+      title={TITLE}
+      description={DESCRIPTION}
+      isLoading={isLoading}
+      notFoundMessage={!item && !isLoading ? NOT_FOUND : undefined}
+    >
+      {item ? <OutorgaForm currentItem={item} onSuccess={onSuccess} /> : null}
+    </OutorgaFormShell>
+  );
 }
 
 export default function EditOutorgaModal() {
-    return (
-        <Suspense fallback={
-             <Dialog open={true}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Carregando...</DialogTitle>
-                    </DialogHeader>
-                    <Skeleton className="h-[500px] w-full" />
-                </DialogContent>
-             </Dialog>
-        }>
-            <EditOutorgaModalContent />
-        </Suspense>
-    )
+  return (
+    <Suspense fallback={<OutorgaFormModalSuspenseFallback />}>
+      <EditOutorgaModalContent />
+    </Suspense>
+  );
 }

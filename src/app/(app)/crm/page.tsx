@@ -23,9 +23,15 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { handleFirestoreFormError } from '@/lib/firestore-form-errors';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import CrmDashboard from './crm-dashboard';
+import dynamic from 'next/dynamic';
+import { Skeleton } from '@/components/ui/skeleton';
 import { CrmPipelineKanban } from './crm-pipeline-kanban';
 import { canWriteCrm } from '@/lib/role-guards';
+
+const CrmDashboard = dynamic(() => import('./crm-dashboard'), {
+  ssr: false,
+  loading: () => <Skeleton className="h-[420px] w-full rounded-lg" />,
+});
 
 const canPerformWriteActions = (user: AppUser | null): boolean => {
     if (!user) return false;

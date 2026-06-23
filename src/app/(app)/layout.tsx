@@ -78,21 +78,56 @@ const OfflineProvider = dynamic(
     })),
   { ssr: false },
 );
+const NotificationPushProvider = dynamic(
+  () =>
+    import("@/components/notification-push-provider").then((mod) => ({
+      default: mod.NotificationPushProvider,
+    })),
+  { ssr: false },
+);
+const OfflineQueueBadge = dynamic(
+  () =>
+    import("@/components/offline-queue-badge").then((mod) => ({
+      default: mod.OfflineQueueBadge,
+    })),
+  { ssr: false, loading: () => null },
+);
+const FinancialMenuDebugPanel =
+  process.env.NODE_ENV === "development"
+    ? dynamic(
+        () =>
+          import("@/lib/financial-menu-debug").then((mod) => ({
+            default: mod.FinancialMenuDebugPanel,
+          })),
+        { ssr: false },
+      )
+    : function FinancialMenuDebugPanelStub() {
+        return null;
+      };
+const CadastroMenuDebugPanel =
+  process.env.NODE_ENV === "development"
+    ? dynamic(
+        () =>
+          import("@/lib/cadastro-menu-debug").then((mod) => ({
+            default: mod.CadastroMenuDebugPanel,
+          })),
+        { ssr: false },
+      )
+    : function CadastroMenuDebugPanelStub() {
+        return null;
+      };
 import { UpgradeButton } from "@/components/upgrade-dialog";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { getStorage, ref, getDownloadURL } from "firebase/storage";
 import NavContent from "@/components/nav-content";
 import { SidebarDebugger } from "@/components/sidebar-debugger";
-import { FinancialMenuDebugPanel } from "@/lib/financial-menu-debug";
-import { CadastroMenuDebugPanel } from "@/lib/cadastro-menu-debug";
 import {
   getFirstDocumentosAmbientaisHrefForRole,
   isDocumentosAmbientaisNavPath,
   isRoleAllowedForPath,
 } from "@/lib/route-access";
-import { DOCUMENTOS_AMBIENTAIS_MENU_LABEL } from "@/lib/navigation-config";
-import { OfflineQueueBadge } from "@/components/offline-queue-badge";
-import { NotificationPushProvider } from "@/components/notification-push-provider";
+import { DOCUMENTOS_AMBIENTAIS_MENU_LABEL } from "@/lib/navigation-labels";
+import { PortalAdvertisingLayerLazy } from "@/components/portal-advertising-layer-lazy";
 import {
   isUserProfileAlignedWithSession,
   useAuthUserId,
@@ -105,7 +140,6 @@ import {
   buildTitularAccessMatchDocumentSet,
   buildTitularOwnedEntitiesForAccessMatch,
 } from "@/lib/titular-document-set";
-import { PortalAdvertisingLayer } from "@/components/portal-advertising-layer";
 
 const LogoIcon = () => (
   <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-emerald-400 text-primary-foreground">
@@ -678,7 +712,7 @@ const AppLayoutClientInner = ({ children }: { children: React.ReactNode }) => {
           )}
         >
           {isClientePortalRole(user.role) ? (
-            <PortalAdvertisingLayer user={user}>
+            <PortalAdvertisingLayerLazy user={user}>
               <div
                 key={pathname}
                 className={cn(
@@ -689,7 +723,7 @@ const AppLayoutClientInner = ({ children }: { children: React.ReactNode }) => {
               >
                 {children}
               </div>
-            </PortalAdvertisingLayer>
+            </PortalAdvertisingLayerLazy>
           ) : (
             <div
               key={pathname}

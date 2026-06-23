@@ -1,68 +1,60 @@
+"use client";
 
-'use client';
-import { Suspense } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import { ResponsibleForm } from '../../responsible-form';
-import { useDoc, useFirebase, useMemoFirebase } from '@/firebase';
-import { doc } from 'firebase/firestore';
-import type { TechnicalResponsible } from '@/lib/types';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Suspense } from "react";
+import { useParams } from "next/navigation";
+import { ResponsibleForm } from "../../responsible-form";
+import { useDoc, useFirebase, useMemoFirebase } from "@/firebase";
+import { doc } from "firebase/firestore";
+import type { TechnicalResponsible } from "@/lib/types";
+import {
+  ResponsibleFormModalSuspenseFallback,
+  ResponsibleFormShell,
+  useResponsibleFormShellDismiss,
+  useResponsibleFormShellSuccess,
+} from "../../responsible-form-shell";
+
+const TITLE = "Editar Responsável";
+const DESCRIPTION = "Atualize os detalhes do profissional.";
+const NOT_FOUND = "Responsável não encontrado.";
 
 function EditResponsibleModalContent() {
-    const router = useRouter();
-    const params = useParams();
-    const itemId = (params?.id as string | undefined) ?? '';
-    
-    const { firestore } = useFirebase();
+  const params = useParams();
+  const itemId = (params?.id as string | undefined) ?? "";
+  const onSuccess = useResponsibleFormShellSuccess("modal");
+  const onCancel = useResponsibleFormShellDismiss();
 
-    const itemDocRef = useMemoFirebase(() => {
-        if (!firestore || !itemId) return null;
-        return doc(firestore, 'technicalResponsibles', itemId);
-    }, [firestore, itemId]);
+  const { firestore } = useFirebase();
 
-    const { data: item, isLoading } = useDoc<TechnicalResponsible>(itemDocRef);
+  const itemDocRef = useMemoFirebase(() => {
+    if (!firestore || !itemId) return null;
+    return doc(firestore, "technicalResponsibles", itemId);
+  }, [firestore, itemId]);
 
-    const handleSuccess = () => {
-      router.back();
-    };
+  const { data: item, isLoading } = useDoc<TechnicalResponsible>(itemDocRef);
 
-    return (
-       <Dialog open={true} onOpenChange={(isOpen) => !isOpen && router.back()}>
-            <DialogContent className="sm:max-w-2xl max-h-[90dvh] flex flex-col">
-                <DialogHeader>
-                    <DialogTitle>Editar Responsável</DialogTitle>
-                    <DialogDescription>
-                        Atualize os detalhes do profissional.
-                    </DialogDescription>
-                </DialogHeader>
-                {isLoading && <div className="p-6"><Skeleton className="h-full w-full" /></div>}
-                {(!item && !isLoading) && <p>Responsável não encontrado.</p>}
-                {item && (
-                    <ResponsibleForm
-                        currentItem={item}
-                        onSuccess={handleSuccess}
-                        onCancel={() => router.back()}
-                    />
-                )}
-            </DialogContent>
-       </Dialog>
-    );
+  return (
+    <ResponsibleFormShell
+      variant="modal"
+      title={TITLE}
+      description={DESCRIPTION}
+      isLoading={isLoading}
+      notFoundMessage={!item && !isLoading ? NOT_FOUND : undefined}
+    >
+      {item ? (
+        <ResponsibleForm
+          currentItem={item}
+          onSuccess={onSuccess}
+          onCancel={onCancel}
+        />
+      ) : null}
+    </ResponsibleFormShell>
+  );
 }
 
 export default function EditResponsibleModal() {
-    return (
-        <Suspense fallback={
-             <Dialog open={true}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Carregando...</DialogTitle>
-                    </DialogHeader>
-                    <Skeleton className="h-[500px] w-full" />
-                </DialogContent>
-             </Dialog>
-        }>
-            <EditResponsibleModalContent />
-        </Suspense>
-    )
+  return (
+    <Suspense fallback={<ResponsibleFormModalSuspenseFallback />}>
+      <EditResponsibleModalContent />
+    </Suspense>
+  );
 }

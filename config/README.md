@@ -10,40 +10,39 @@ O servidor Next.js usa a **conta de serviço** do Firebase para ações de admin
 
 ## 2. Colocar o ficheiro nesta pasta
 
-Copie o JSON para:
+Caminho canónico:
 
 ```text
-E:\A\config\firebase-service-account.json
+config/firebase-service-account.json
 ```
 
-Se já tiver o JSON noutro sítio (ex. `E:\AmbientaR\config\...`), copie com o Explorador de Ficheiros ou no PowerShell:
+Atalho com script do projeto (a partir da raiz):
 
 ```powershell
-Copy-Item "C:\caminho\para\o-seu.json" "E:\A\config\firebase-service-account.json"
+node scripts/copy-firebase-service-account.mjs "C:\caminho\para\chave-baixada.json"
 ```
 
-Pode usar `config\firebase-service-account.json.example` só como referência da estrutura (não é uma chave válida).
+Pode usar `config/firebase-service-account.json.example` só como referência da estrutura (não é uma chave válida).
 
-## 3. Apontar no `.env.local`
+Notas locais opcionais (gitignored): `config/chaves-gerais.txt`
 
-Na raiz do projeto (`E:\A`), edite `.env.local` e adicione **uma** linha (caminho absoluto no Windows):
+## 3. Apontar no `.env.local` (opcional)
+
+Se o ficheiro estiver em `config/firebase-service-account.json`, o servidor **já o encontra** sem variável. Para caminho explícito:
 
 ```env
-GOOGLE_APPLICATION_CREDENTIALS=E:\A\config\firebase-service-account.json
+GOOGLE_APPLICATION_CREDENTIALS=D:\AmbientaR\config\firebase-service-account.json
 ```
 
-Alternativa: variável `FIREBASE_SERVICE_ACCOUNT_KEY` com o JSON completo numa linha (útil em hosting). Ver `.env.example` na raiz.
+Alternativa: variável `FIREBASE_SERVICE_ACCOUNT_KEY` com o JSON completo numa linha. Ver `.env.example` na raiz.
 
 ## 4. Reiniciar o dev server
 
-Pare o `npm run dev` com **Ctrl+C** e volte a executar:
-
 ```powershell
-cd E:\A
 npm run dev
 ```
 
-Abra de novo `http://localhost:9002` → Usuários. O aviso de credenciais em falta deve desaparecer.
+Abra `http://localhost:9002` → Usuários. O aviso de credenciais em falta deve desaparecer.
 
 ## Atalho sem configurar o PC
 

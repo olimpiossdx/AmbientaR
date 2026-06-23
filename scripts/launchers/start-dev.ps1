@@ -1,6 +1,7 @@
-# Inicia/reseta o servidor AmbientaR - use: .\start-dev.ps1
+# Inicia o servidor AmbientaR — uso: .\scripts\launchers\start-dev.ps1
 $ErrorActionPreference = "Stop"
-Set-Location $PSScriptRoot
+$root = Resolve-Path (Join-Path $PSScriptRoot "..\..")
+Set-Location $root
 
 $userPath = [Environment]::GetEnvironmentVariable("Path", "User")
 $machinePath = [Environment]::GetEnvironmentVariable("Path", "Machine")

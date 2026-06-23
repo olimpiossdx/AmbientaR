@@ -1,58 +1,49 @@
-
 'use client';
-import { PageHeader } from '@/components/page-header';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { PiaForm } from '../pia-form';
-import { useRouter, useSearchParams } from 'next/navigation';
+
 import { Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { PiaForm } from '../pia-form';
+import {
+  StudyFormShell,
+  useStudyFormShellSuccess,
+} from '@/components/studies/study-form-shell';
 import type { PiaType } from '@/lib/types';
 
-function NewPiaPageContent() {
-    const router = useRouter();
-    const searchParams = useSearchParams();
-    const piaType = searchParams?.get('type') as PiaType | null;
-    const linkContext = {
-      requestId: searchParams?.get('requestId') ?? undefined,
-      projectId: searchParams?.get('projectId') ?? undefined,
-      inventoryId: searchParams?.get('inventoryId') ?? undefined,
-      empreendedorId: searchParams?.get('empreendedorId') ?? undefined,
-    };
+const LIST_PATH = '/studies/pia';
 
-    const handleSuccess = () => {
-      router.push('/studies/pia');
-    };
-  
-    return (
-      <div className="flex flex-col h-full">
-        <PageHeader title="Novo Plano de Intervenção Ambiental" />
-        <main className="flex-1 overflow-auto p-4 md:p-6">
-          <div className="max-w-7xl mx-auto">
-               <Card>
-                  <CardHeader>
-                      <CardTitle>Adicionar Novo PIA ({piaType || 'Tipo não selecionado'})</CardTitle>
-                      <CardDescription>
-                          Preencha os detalhes para criar um novo Plano de Intervenção Ambiental.
-                      </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                      <PiaForm
-                          currentItem={null}
-                          piaType={piaType}
-                          linkContext={linkContext}
-                          onSuccess={handleSuccess}
-                      />
-                  </CardContent>
-              </Card>
-          </div>
-        </main>
-      </div>
-    );
+function NewPiaPageContent() {
+  const searchParams = useSearchParams();
+  const piaType = searchParams?.get('type') as PiaType | null;
+  const linkContext = {
+    requestId: searchParams?.get('requestId') ?? undefined,
+    projectId: searchParams?.get('projectId') ?? undefined,
+    inventoryId: searchParams?.get('inventoryId') ?? undefined,
+    empreendedorId: searchParams?.get('empreendedorId') ?? undefined,
+  };
+  const onSuccess = useStudyFormShellSuccess('page', LIST_PATH);
+
+  return (
+    <StudyFormShell
+      variant="page"
+      title={`Adicionar Novo PIA (${piaType || 'Tipo não selecionado'})`}
+      description="Preencha os detalhes para criar um novo Plano de Intervenção Ambiental."
+      notFoundTitle="PIA não encontrado"
+      pageHeaderTitle="Novo Plano de Intervenção Ambiental"
+    >
+      <PiaForm
+        currentItem={null}
+        piaType={piaType}
+        linkContext={linkContext}
+        onSuccess={onSuccess}
+      />
+    </StudyFormShell>
+  );
 }
 
 export default function NewPiaPage() {
-    return (
-        <Suspense fallback={<div>Carregando...</div>}>
-            <NewPiaPageContent />
-        </Suspense>
-    )
+  return (
+    <Suspense fallback={<div>Carregando...</div>}>
+      <NewPiaPageContent />
+    </Suspense>
+  );
 }

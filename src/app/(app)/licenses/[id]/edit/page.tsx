@@ -1,102 +1,59 @@
+"use client";
 
-'use client';
-import { Suspense } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import { PageHeader } from '@/components/page-header';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { LicenseForm } from '../../license-form';
-import { useDoc, useFirebase, useMemoFirebase } from '@/firebase';
-import { doc } from 'firebase/firestore';
-import type { License } from '@/lib/types';
-import { Skeleton } from '@/components/ui/skeleton';
+import { Suspense } from "react";
+import { useParams } from "next/navigation";
+import { LicenseForm } from "../../license-form";
+import { useDoc, useFirebase, useMemoFirebase } from "@/firebase";
+import { doc } from "firebase/firestore";
+import type { License } from "@/lib/types";
+import {
+  LicenseFormShell,
+  useLicenseFormShellSuccess,
+} from "../../license-form-shell";
+
+const TITLE = "Editar Licença";
+const DESCRIPTION = "Atualize os detalhes da licença abaixo.";
+const NOT_FOUND =
+  "O registro que você está tentando editar não foi encontrado.";
 
 function EditLicensePageContent() {
-    const router = useRouter();
-    const params = useParams();
-    const itemId = (params?.id as string | undefined) ?? '';
-    
-    const { firestore } = useFirebase();
+  const params = useParams();
+  const itemId = (params?.id as string | undefined) ?? "";
+  const onSuccess = useLicenseFormShellSuccess("page");
 
-    const itemDocRef = useMemoFirebase(() => {
-        if (!firestore || !itemId) return null;
-        return doc(firestore, 'licenses', itemId);
-    }, [firestore, itemId]);
+  const { firestore } = useFirebase();
 
-    const { data: item, isLoading } = useDoc<License>(itemDocRef);
+  const itemDocRef = useMemoFirebase(() => {
+    if (!firestore || !itemId) return null;
+    return doc(firestore, "licenses", itemId);
+  }, [firestore, itemId]);
 
-    const handleSuccess = () => {
-      router.push('/licenses');
-    };
+  const { data: item, isLoading } = useDoc<License>(itemDocRef);
 
-    if (isLoading) {
-        return (
-             <div className="flex flex-col h-full">
-                <PageHeader title="Carregando Licença..." />
-                <main className="flex-1 overflow-auto p-4 md:p-6">
-                    <div className="max-w-2xl mx-auto">
-                        <Card>
-                            <CardHeader>
-                                <Skeleton className="h-8 w-1/2" />
-                                <Skeleton className="h-4 w-3/4" />
-                            </CardHeader>
-                            <CardContent>
-                                <Skeleton className="h-[400px] w-full" />
-                            </CardContent>
-                        </Card>
-                    </div>
-                </main>
-            </div>
-        );
-    }
-    
-    if (!item && !isLoading) {
-         return (
-             <div className="flex flex-col h-full">
-                <PageHeader title="Erro" />
-                <main className="flex-1 overflow-auto p-4 md:p-6">
-                     <Card>
-                        <CardHeader>
-                            <CardTitle>Licença não encontrada</CardTitle>
-                            <CardDescription>
-                                O registro que você está tentando editar não foi encontrado.
-                            </CardDescription>
-                        </CardHeader>
-                    </Card>
-                </main>
-            </div>
-         )
-    }
-  
-    return (
-      <div className="flex flex-col h-full">
-        <PageHeader title={`Editando Licença: ${item?.permitNumber || '...'}`} />
-        <main className="flex-1 overflow-auto p-4 md:p-6">
-          <div className="max-w-2xl mx-auto">
-               <Card>
-                  <CardHeader>
-                      <CardTitle>Editar Licença</CardTitle>
-                      <CardDescription>
-                          Atualize os detalhes da licença abaixo.
-                      </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                      <LicenseForm
-                          currentLicense={item}
-                          onSuccess={handleSuccess}
-                          hideHeader
-                      />
-                  </CardContent>
-              </Card>
-          </div>
-        </main>
-      </div>
-    );
+  return (
+    <LicenseFormShell
+      variant="page"
+      title={TITLE}
+      description={DESCRIPTION}
+      pageHeaderTitle={`Editando Licença: ${item?.permitNumber || "..."}`}
+      isLoading={isLoading}
+      notFoundMessage={!item && !isLoading ? NOT_FOUND : undefined}
+    >
+      {item ? (
+        <LicenseForm
+          currentLicense={item}
+          onSuccess={onSuccess}
+          hideHeader
+        />
+      ) : null}
+    </LicenseFormShell>
+  );
 }
 
 export default function EditLicensePage() {
-    return (
-        <Suspense fallback={<div>Carregando...</div>}>
-            <EditLicensePageContent />
-        </Suspense>
-    )
+  return (
+    <Suspense fallback={<div>Carregando...</div>}>
+      <EditLicensePageContent />
+    </Suspense>
+  );
 }

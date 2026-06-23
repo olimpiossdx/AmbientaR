@@ -13,10 +13,7 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  DEFAULT_INFLUENCE_CONFIG,
-  resolveInfluenceAreas,
-} from "@/lib/geospatial/influence-areas";
+import { DEFAULT_INFLUENCE_CONFIG } from "@/lib/geospatial/influence-areas-config";
 import type { PerimeterParseInput } from "@/lib/geospatial/perimeter";
 import type { GeoInfluenceAreaConfig, GeoInfluenceAreas } from "@/lib/types/geo-wave-a";
 
@@ -53,6 +50,7 @@ export function GeoInfluenceAreasPanel({
     let cancelled = false;
     void (async () => {
       try {
+        const { resolveInfluenceAreas } = await import("@/lib/geospatial/influence-areas");
         const areas = await resolveInfluenceAreas(perimeterInput, config);
         if (!cancelled) {
           setPreview(areas);
@@ -240,4 +238,4 @@ export function GeoInfluenceAreasPanel({
   );
 }
 
-export { DEFAULT_INFLUENCE_CONFIG };
+export { DEFAULT_INFLUENCE_CONFIG } from "@/lib/geospatial/influence-areas-config";

@@ -1,101 +1,56 @@
 'use client';
 
 import { Suspense } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import { PageHeader } from '@/components/page-header';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { useParams } from 'next/navigation';
 import { RcaForm } from '../../rca-form';
 import { useDoc, useFirebase, useMemoFirebase } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import type { RCA } from '@/lib/types';
-import { Skeleton } from '@/components/ui/skeleton';
+import {
+  StudyFormShell,
+  useStudyFormShellSuccess,
+} from '@/components/studies/study-form-shell';
+
+const LIST_PATH = '/studies/rca';
+
+const TITLE = 'Editar Relatório de Controle Ambiental';
+const DESCRIPTION = 'Atualize os detalhes do RCA abaixo.';
+const NOT_FOUND =
+  'O relatório que você está tentando editar não foi encontrado.';
 
 function EditRcaPageContent() {
-    const router = useRouter();
-    const params = useParams();
-    const rcaId = (params?.id as string | undefined) ?? '';
-    
-    const { firestore } = useFirebase();
+  const params = useParams();
+  const rcaId = (params?.id as string | undefined) ?? '';
+  const onSuccess = useStudyFormShellSuccess('page', LIST_PATH);
 
-    const rcaDocRef = useMemoFirebase(() => {
-        if (!firestore || !rcaId) return null;
-        return doc(firestore, 'rcas', rcaId);
-    }, [firestore, rcaId]);
+  const { firestore } = useFirebase();
 
-    const { data: rca, isLoading } = useDoc<RCA>(rcaDocRef);
+  const rcaDocRef = useMemoFirebase(() => {
+    if (!firestore || !rcaId) return null;
+    return doc(firestore, 'rcas', rcaId);
+  }, [firestore, rcaId]);
 
-    const handleSuccess = () => {
-      router.push('/studies/rca');
-    };
+  const { data: rca, isLoading } = useDoc<RCA>(rcaDocRef);
 
-    if (isLoading) {
-        return (
-             <div className="flex flex-col h-full">
-                <PageHeader title="Carregando RCA..." />
-                <main className="flex-1 overflow-auto p-4 md:p-6">
-                    <div className="max-w-7xl mx-auto">
-                        <Card>
-                            <CardHeader>
-                                <Skeleton className="h-8 w-1/2" />
-                                <Skeleton className="h-4 w-3/4" />
-                            </CardHeader>
-                            <CardContent>
-                                <Skeleton className="h-[500px] w-full" />
-                            </CardContent>
-                        </Card>
-                    </div>
-                </main>
-            </div>
-        );
-    }
-    
-    if (!rca && !isLoading) {
-         return (
-             <div className="flex flex-col h-full">
-                <PageHeader title="Erro" />
-                <main className="flex-1 overflow-auto p-4 md:p-6">
-                     <Card>
-                        <CardHeader>
-                            <CardTitle>RCA não encontrado</CardTitle>
-                            <CardDescription>
-                                O relatório que você está tentando editar não foi encontrado.
-                            </CardDescription>
-                        </CardHeader>
-                    </Card>
-                </main>
-            </div>
-         )
-    }
-  
-    return (
-      <div className="flex flex-col h-full">
-        <PageHeader title={`Editando RCA: ${rca?.empreendimento?.nome || '...'}`} />
-        <main className="flex-1 overflow-auto p-4 md:p-6">
-          <div className="max-w-7xl mx-auto">
-               <Card>
-                  <CardHeader>
-                      <CardTitle>Editar Relatório de Controle Ambiental</CardTitle>
-                      <CardDescription>
-                          Atualize os detalhes do RCA abaixo.
-                      </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                      <RcaForm
-                          currentItem={rca}
-                          onSuccess={handleSuccess}
-                      />
-                  </CardContent>
-              </Card>
-          </div>
-        </main>
-      </div>
-    );
+  return (
+    <StudyFormShell
+      variant="page"
+      title={TITLE}
+      description={DESCRIPTION}
+      notFoundTitle="RCA não encontrado"
+      pageHeaderTitle={`Editando RCA: ${rca?.empreendimento?.nome || '...'}`}
+      isLoading={isLoading}
+      notFoundMessage={!rca && !isLoading ? NOT_FOUND : undefined}
+    >
+      {rca ? <RcaForm currentItem={rca} onSuccess={onSuccess} /> : null}
+    </StudyFormShell>
+  );
 }
 
 export default function EditRcaPage() {
-    return (
-        <Suspense fallback={<div>Carregando...</div>}>
-            <EditRcaPageContent />
-        </Suspense>
-    )
+  return (
+    <Suspense fallback={<div>Carregando...</div>}>
+      <EditRcaPageContent />
+    </Suspense>
+  );
 }

@@ -1,103 +1,59 @@
-
 'use client';
+
 import { Suspense } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import { PageHeader } from '@/components/page-header';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { useParams } from 'next/navigation';
 import { EiaRimaForm } from '../../eia-rima-form';
 import { useDoc, useFirebase, useMemoFirebase } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import type { EiaRima } from '@/lib/types';
-import { Skeleton } from '@/components/ui/skeleton';
+import {
+  StudyFormShell,
+  useStudyFormShellSuccess,
+} from '@/components/studies/study-form-shell';
+
+const LIST_PATH = '/studies/eia-rima';
+const PAGE_WIDTH = 'max-w-4xl mx-auto';
+
+const TITLE = 'Editar Estudo de Impacto Ambiental';
+const DESCRIPTION = 'Atualize os detalhes do EIA/RIMA abaixo.';
+const NOT_FOUND = 'O estudo que você está tentando editar não foi encontrado.';
 
 function EditEiaRimaPageContent() {
-    const router = useRouter();
-    const params = useParams();
-    const eiaRimaId = (params?.id as string | undefined) ?? '';
-    
-    const { firestore } = useFirebase();
+  const params = useParams();
+  const eiaRimaId = (params?.id as string | undefined) ?? '';
+  const onSuccess = useStudyFormShellSuccess('page', LIST_PATH);
 
-    const eiaRimaDocRef = useMemoFirebase(() => {
-        if (!firestore || !eiaRimaId) return null;
-        return doc(firestore, 'eiaRimas', eiaRimaId);
-    }, [firestore, eiaRimaId]);
+  const { firestore } = useFirebase();
 
-    const { data: eiaRima, isLoading } = useDoc<EiaRima>(eiaRimaDocRef);
+  const eiaRimaDocRef = useMemoFirebase(() => {
+    if (!firestore || !eiaRimaId) return null;
+    return doc(firestore, 'eiaRimas', eiaRimaId);
+  }, [firestore, eiaRimaId]);
 
-    const handleSuccess = () => {
-      router.push('/studies/eia-rima');
-    };
+  const { data: eiaRima, isLoading } = useDoc<EiaRima>(eiaRimaDocRef);
 
-    if (isLoading) {
-        return (
-             <div className="flex flex-col h-full">
-                <PageHeader title="Carregando EIA/RIMA..." />
-                <main className="flex-1 overflow-auto p-4 md:p-6">
-                    <div className="max-w-4xl mx-auto">
-                        <Card>
-                            <CardHeader>
-                                <Skeleton className="h-8 w-1/2" />
-                                <Skeleton className="h-4 w-3/4" />
-                            </CardHeader>
-                            <CardContent>
-                                <Skeleton className="h-[500px] w-full" />
-                            </CardContent>
-                        </Card>
-                    </div>
-                </main>
-            </div>
-        );
-    }
-    
-    if (!eiaRima && !isLoading) {
-         return (
-             <div className="flex flex-col h-full">
-                <PageHeader title="Erro" />
-                <main className="flex-1 overflow-auto p-4 md:p-6">
-                     <Card>
-                        <CardHeader>
-                            <CardTitle>EIA/RIMA não encontrado</CardTitle>
-                            <CardDescription>
-                                O estudo que você está tentando editar não foi encontrado.
-                            </CardDescription>
-                        </CardHeader>
-                    </Card>
-                </main>
-            </div>
-         )
-    }
-  
-    return (
-      <div className="flex flex-col h-full">
-        <PageHeader title={`Editando EIA/RIMA: ${eiaRima?.empreendimento?.nome || '...'}`} />
-        <main className="flex-1 overflow-auto p-4 md:p-6">
-          <div className="max-w-4xl mx-auto">
-               <Card>
-                  <CardHeader>
-                      <CardTitle>Editar Estudo de Impacto Ambiental</CardTitle>
-                      <CardDescription>
-                          Atualize os detalhes do EIA/RIMA abaixo.
-                      </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                      <EiaRimaForm
-                          currentItem={eiaRima}
-                          onSuccess={handleSuccess}
-                      />
-                  </CardContent>
-              </Card>
-          </div>
-        </main>
-      </div>
-    );
+  return (
+    <StudyFormShell
+      variant="page"
+      title={TITLE}
+      description={DESCRIPTION}
+      notFoundTitle="EIA/RIMA não encontrado"
+      pageHeaderTitle={`Editando EIA/RIMA: ${eiaRima?.empreendimento?.nome || '...'}`}
+      pageWidthClassName={PAGE_WIDTH}
+      isLoading={isLoading}
+      notFoundMessage={!eiaRima && !isLoading ? NOT_FOUND : undefined}
+    >
+      {eiaRima ? (
+        <EiaRimaForm currentItem={eiaRima} onSuccess={onSuccess} />
+      ) : null}
+    </StudyFormShell>
+  );
 }
 
 export default function EditEiaRimaPage() {
-    return (
-        <Suspense fallback={<div>Carregando...</div>}>
-            <EditEiaRimaPageContent />
-        </Suspense>
-    )
+  return (
+    <Suspense fallback={<div>Carregando...</div>}>
+      <EditEiaRimaPageContent />
+    </Suspense>
+  );
 }
-
-    

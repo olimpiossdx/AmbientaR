@@ -5,6 +5,7 @@
 import { execSync } from "node:child_process";
 import fs from "fs";
 import path from "path";
+import { setTimeout as sleep } from "node:timers/promises";
 import { fileURLToPath } from "url";
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
@@ -40,12 +41,31 @@ function killDevPort(port = DEV_PORT) {
 
 killDevPort();
 
-if (fs.existsSync(nextDir)) {
-  fs.rmSync(nextDir, { recursive: true, force: true });
-  console.log("[clean-next-dev] Pasta .next removida.");
-} else {
-  console.log("[clean-next-dev] .next inexistente.");
+/** Windows: handles ainda abertos após taskkill — rmSync falha com ENOTEMPTY. */
+async function removeNextDir() {
+  if (!fs.existsSync(nextDir)) {
+    console.log("[clean-next-dev] .next inexistente.");
+    return;
+  }
+  if (process.platform === "win32") {
+    await sleep(2500);
+  }
+  for (let attempt = 1; attempt <= 5; attempt++) {
+    try {
+      fs.rmSync(nextDir, { recursive: true, force: true, maxRetries: 3, retryDelay: 500 });
+      console.log("[clean-next-dev] Pasta .next removida.");
+      return;
+    } catch (err) {
+      const code = err && typeof err === "object" && "code" in err ? err.code : "";
+      if (code !== "ENOTEMPTY" && code !== "EBUSY" && code !== "EPERM") throw err;
+      if (attempt === 5) throw err;
+      console.warn(`[clean-next-dev] .next ocupada (tentativa ${attempt}/5), aguardando…`);
+      await sleep(1500);
+    }
+  }
 }
+
+await removeNextDir();
 
 if (fs.existsSync(publicDir)) {
   const stalePwa = fs

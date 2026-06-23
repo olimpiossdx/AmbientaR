@@ -46,10 +46,16 @@ Sem `true`, a UI que chama `/api/ai-lab/import-reference-files` verá **503** �
 |----------|---------|--------|
 | `ONEDRIVE_RAG_ENABLED` | `false` | `/api/cloud-rag/*` desativado (503). |
 | `ONEDRIVE_RAG_SEARCH_ENABLED` | `true` | Pesquisa desligada. |
+| `NEXT_PUBLIC_ONEDRIVE_RAG_SEARCH_ENABLED` | — | Cliente usa fallback local se `false`. |
 | `ONEDRIVE_LIBRARY_ROOT_PATH` | hint drive | Raiz da árvore a sincronizar. |
-| `MICROSOFT_GRAPH_*` | — | Obrigatório (token Graph). |
+| `ONEDRIVE_DRIVE_NAME_HINT` | `Pimenta` | Drive SharePoint/OneDrive no tenant. |
+| `MICROSOFT_GRAPH_TENANT_ID` | — | Secret em produção ([`apphosting.yaml`](../apphosting.yaml)). |
+| `MICROSOFT_GRAPH_CLIENT_ID` | — | Idem. |
+| `MICROSOFT_GRAPH_CLIENT_SECRET` | — | **Secret Manager** — nunca commitar. |
 
-Documentação: [`docs/CLOUD-RAG-ONEDRIVE.md`](./CLOUD-RAG-ONEDRIVE.md).
+Em produção, flags e caminhos estão em [`apphosting.yaml`](../apphosting.yaml); credenciais Graph via `firebase apphosting:secrets:set` ou consola App Hosting.
+
+Checklist completo: [`docs/CLOUD-RAG-ONEDRIVE.md`](./CLOUD-RAG-ONEDRIVE.md) (secção **Produção**).
 
 ## Push FCM (PWA / celular)
 

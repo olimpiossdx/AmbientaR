@@ -1,19 +1,23 @@
 'use client';
 
 import { Suspense } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import { PageHeader } from '@/components/page-header';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
+import { useParams } from 'next/navigation';
 import { useDoc, useFirebase, useMemoFirebase } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import type { Procuracao } from '@/lib/types';
 import { ProcuracaoForm } from '../../procuracao-form';
+import {
+  StudyFormShell,
+  useStudyFormShellSuccess,
+} from '@/components/studies/study-form-shell';
+
+const LIST_PATH = '/studies/procuracao';
+const PAGE_WIDTH = 'max-w-4xl mx-auto';
 
 function EditProcuracaoPageContent() {
-  const router = useRouter();
   const params = useParams();
   const id = (params?.id as string | undefined) ?? '';
+  const onSuccess = useStudyFormShellSuccess('page', LIST_PATH);
   const { firestore } = useFirebase();
 
   const docRef = useMemoFirebase(() => {
@@ -22,47 +26,20 @@ function EditProcuracaoPageContent() {
   }, [firestore, id]);
 
   const { data: item, isLoading } = useDoc<Procuracao>(docRef);
-  const handleSuccess = () => router.push('/studies/procuracao');
-
-  if (isLoading) {
-    return (
-      <div className="flex flex-col h-full">
-        <PageHeader title="Carregando procuração…" />
-        <main className="p-6">
-          <Skeleton className="h-[400px] w-full" />
-        </main>
-      </div>
-    );
-  }
-
-  if (!item) {
-    return (
-      <div className="flex flex-col h-full">
-        <PageHeader title="Procuração não encontrada" />
-        <main className="p-6">
-          <p className="text-sm text-muted-foreground">O registro solicitado não existe.</p>
-        </main>
-      </div>
-    );
-  }
 
   return (
-    <div className="flex flex-col h-full">
-      <PageHeader title="Editar procuração" />
-      <main className="flex-1 overflow-auto p-4 md:p-6">
-        <Card className="mx-auto max-w-4xl">
-          <CardHeader>
-            <CardTitle>{item.outorgante?.nome}</CardTitle>
-            <CardDescription>
-              Atualize outorgante, outorgados, poderes e empreendimentos representados.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ProcuracaoForm currentItem={item} onSuccess={handleSuccess} />
-          </CardContent>
-        </Card>
-      </main>
-    </div>
+    <StudyFormShell
+      variant="page"
+      title={item?.outorgante?.nome ?? 'Editar procuração'}
+      description="Atualize outorgante, outorgados, poderes e empreendimentos representados."
+      notFoundTitle="Procuração não encontrada"
+      pageHeaderTitle="Editar procuração"
+      pageWidthClassName={PAGE_WIDTH}
+      isLoading={isLoading}
+      notFoundMessage={!item && !isLoading ? 'O registro solicitado não existe.' : undefined}
+    >
+      {item ? <ProcuracaoForm currentItem={item} onSuccess={onSuccess} /> : null}
+    </StudyFormShell>
   );
 }
 

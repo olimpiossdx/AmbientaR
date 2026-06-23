@@ -1,49 +1,40 @@
+"use client";
 
-'use client';
-import { PageHeader } from '@/components/page-header';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { ResponsibleForm } from '../responsible-form';
-import { useRouter } from 'next/navigation';
-import { Suspense } from 'react';
+import { Suspense } from "react";
+import { ResponsibleForm } from "../responsible-form";
+import {
+  ResponsibleFormShell,
+  useResponsibleFormShellDismiss,
+  useResponsibleFormShellSuccess,
+} from "../responsible-form-shell";
+
+const TITLE = "Adicionar Novo Responsável";
+const DESCRIPTION = "Preencha os detalhes para cadastrar um novo profissional.";
 
 function NewResponsiblePageContent() {
-    const router = useRouter();
+  const onSuccess = useResponsibleFormShellSuccess("page");
+  const onCancel = useResponsibleFormShellDismiss();
 
-    const handleSuccess = () => {
-      router.push('/technical-responsible');
-    };
-  
-    return (
-      <div className="flex flex-col h-full">
-        <PageHeader title="Novo Responsável Técnico" />
-        <main className="flex-1 overflow-auto p-4 md:p-6">
-          <div className="max-w-2xl mx-auto">
-               <Card>
-                  <CardHeader>
-                      <CardTitle>Adicionar Novo Responsável</CardTitle>
-                      <CardDescription>
-                          Preencha os detalhes para cadastrar um novo profissional.
-                      </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                      <ResponsibleForm
-                          currentItem={null}
-                          onSuccess={handleSuccess}
-                          onCancel={() => router.back()}
-                      />
-                  </CardContent>
-              </Card>
-          </div>
-        </main>
-      </div>
-    );
+  return (
+    <ResponsibleFormShell
+      variant="page"
+      title={TITLE}
+      description={DESCRIPTION}
+      pageHeaderTitle="Novo Responsável Técnico"
+    >
+      <ResponsibleForm
+        currentItem={null}
+        onSuccess={onSuccess}
+        onCancel={onCancel}
+      />
+    </ResponsibleFormShell>
+  );
 }
 
-
 export default function NewResponsiblePage() {
-    return (
-        <Suspense fallback={<div>Carregando...</div>}>
-            <NewResponsiblePageContent />
-        </Suspense>
-    )
+  return (
+    <Suspense fallback={<div>Carregando...</div>}>
+      <NewResponsiblePageContent />
+    </Suspense>
+  );
 }

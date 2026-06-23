@@ -11,6 +11,8 @@ npm run dev
 
 Servidor de desenvolvimento: **http://localhost:9002** (ver `AGENTS.md` para mais comandos).
 
+Atalho Windows: duplo-clique em [`start-dev.bat`](start-dev.bat) ou guias em [`docs/setup/COMO-RODAR.md`](docs/setup/COMO-RODAR.md).
+
 ## Onde está o código e como alinhar com o GitHub
 
 - **Cópia local recomendada no Windows:** `E:\AmbientaR` — ver [`docs/REPOSITORIO-LOCAL-E-GITHUB.md`](docs/REPOSITORIO-LOCAL-E-GITHUB.md) (fluxo `git pull` / `git push`, `safe.directory`, regras Firestore).

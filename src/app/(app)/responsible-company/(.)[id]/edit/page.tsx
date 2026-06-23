@@ -1,62 +1,60 @@
+"use client";
 
-'use client';
-import { Suspense } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import { CompanyForm } from '../../company-form';
-import { useDoc, useFirebase, useMemoFirebase } from '@/firebase';
-import { doc } from 'firebase/firestore';
-import type { EnvironmentalCompany } from '@/lib/types';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Suspense } from "react";
+import { useParams } from "next/navigation";
+import { CompanyForm } from "../../company-form";
+import { useDoc, useFirebase, useMemoFirebase } from "@/firebase";
+import { doc } from "firebase/firestore";
+import type { EnvironmentalCompany } from "@/lib/types";
+import {
+  CompanyFormModalSuspenseFallback,
+  CompanyFormShell,
+  useCompanyFormShellDismiss,
+  useCompanyFormShellSuccess,
+} from "../../company-form-shell";
+
+const TITLE = "Editar Empresa";
+const DESCRIPTION = "Atualize os detalhes da empresa abaixo.";
+const NOT_FOUND = "Empresa não encontrada.";
 
 function EditCompanyModalContent() {
-    const router = useRouter();
-    const params = useParams();
-    const itemId = (params?.id as string | undefined) ?? '';
-    
-    const { firestore } = useFirebase();
+  const params = useParams();
+  const itemId = (params?.id as string | undefined) ?? "";
+  const onSuccess = useCompanyFormShellSuccess("modal");
+  const onCancel = useCompanyFormShellDismiss();
 
-    const itemDocRef = useMemoFirebase(() => {
-        if (!firestore || !itemId) return null;
-        return doc(firestore, 'environmentalCompanies', itemId);
-    }, [firestore, itemId]);
+  const { firestore } = useFirebase();
 
-    const { data: item, isLoading } = useDoc<EnvironmentalCompany>(itemDocRef);
+  const itemDocRef = useMemoFirebase(() => {
+    if (!firestore || !itemId) return null;
+    return doc(firestore, "environmentalCompanies", itemId);
+  }, [firestore, itemId]);
 
-    const handleSuccess = () => {
-      router.back();
-    };
+  const { data: item, isLoading } = useDoc<EnvironmentalCompany>(itemDocRef);
 
-    return (
-       <Dialog open={true} onOpenChange={(isOpen) => !isOpen && router.back()}>
-            <DialogContent className="sm:max-w-3xl h-full max-h-[95vh] flex flex-col">
-                {isLoading && <Skeleton className="h-full w-full" />}
-                {(!item && !isLoading) && <p>Empresa não encontrada.</p>}
-                {item && (
-                    <CompanyForm
-                        currentItem={item}
-                        onSuccess={handleSuccess}
-                        onCancel={() => router.back()}
-                    />
-                )}
-            </DialogContent>
-       </Dialog>
-    );
+  return (
+    <CompanyFormShell
+      variant="modal"
+      title={TITLE}
+      description={DESCRIPTION}
+      isLoading={isLoading}
+      notFoundMessage={!item && !isLoading ? NOT_FOUND : undefined}
+    >
+      {item ? (
+        <CompanyForm
+          currentItem={item}
+          onSuccess={onSuccess}
+          onCancel={onCancel}
+        />
+      ) : null}
+    </CompanyFormShell>
+  );
 }
 
 export default function EditCompanyModal() {
-    return (
-        <Suspense fallback={
-             <Dialog open={true}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Carregando...</DialogTitle>
-                    </DialogHeader>
-                    <Skeleton className="h-[500px] w-full" />
-                </DialogContent>
-             </Dialog>
-        }>
-            <EditCompanyModalContent />
-        </Suspense>
-    )
+  return (
+    <Suspense fallback={<CompanyFormModalSuspenseFallback />}>
+      <EditCompanyModalContent />
+    </Suspense>
+  );
 }

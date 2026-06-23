@@ -547,11 +547,4 @@ export async function parseAnalysisPerimeter(
   };
 }
 
-export function localizacaoToPerimeterInput(
-  resolved: LocalizacaoResolvida,
-): PerimeterParseInput {
-  return {
-    dataType: "polygon",
-    data: JSON.stringify(resolved.perimetroFinal),
-  };
-}
+export { localizacaoToPerimeterInput } from "@/lib/geospatial/localizacao-imovel-client";

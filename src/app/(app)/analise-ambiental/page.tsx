@@ -28,7 +28,7 @@ import type {
 } from "@/lib/types/analise-ambiental";
 import { useToast } from "@/hooks/use-toast";
 import { useLocalBranding } from "@/hooks/use-local-branding";
-import { ESTUDOS_TECNICOS_MENU_LABEL } from "@/lib/navigation-config";
+import { ESTUDOS_TECNICOS_MENU_LABEL } from "@/lib/navigation-labels";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -79,7 +79,7 @@ import { AiProviderBadge } from "@/components/ai/ai-provider-badge";
 import type { AiProviderId } from "@/lib/ai-provider-labels";
 import type { PerimeterParseInput } from "@/lib/geospatial/perimeter";
 import type { LocalizacaoResolvida } from "@/lib/types/localizacao-imovel";
-import { localizacaoToPerimeterInput } from "@/lib/geospatial/resolve-localizacao-imovel";
+import { localizacaoToPerimeterInput } from "@/lib/geospatial/localizacao-imovel-client";
 import { ImovelLocalizadorPanel } from "@/components/geospatial/imovel-localizador-panel";
 import type { ImovelLocalizadorInputMode } from "@/hooks/use-imovel-localizador";
 import {

@@ -1,5 +1,6 @@
 "use client";
 import { useState, useMemo, useEffect } from "react";
+import dynamic from "next/dynamic";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import {
@@ -78,19 +79,17 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import {
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-  CartesianGrid,
-  XAxis,
-  YAxis,
-  LineChart,
-  Line,
-  Legend,
-} from "recharts";
+import type { ManualMonitoringChartsProps } from "@/app/(app)/monitoring/manual/manual-monitoring-charts";
 import { fetchEmpreendedorIdsForPortalScope, isEmpreendedorScopedPortalRole } from "@/lib/portal-empreendedor-scope";
 import { isClientePortalRole, isRepresentativeLikePortalRole, canPerformManualMonitoringWrite } from "@/lib/role-guards";
+
+const ManualMonitoringCharts = dynamic<ManualMonitoringChartsProps>(
+  () => import("@/app/(app)/monitoring/manual/manual-monitoring-charts"),
+  {
+    ssr: false,
+    loading: () => <Skeleton className="h-64 w-full rounded-lg" />,
+  },
+);
 
 const canPerformWriteActions = (user: AppUser | null): boolean => {
   if (!user) return false;
@@ -593,41 +592,7 @@ export default function ManualMonitoringPage() {
                     </Card>
                   </div>
 
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <Card>
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-base">Volume por mês (m³)</CardTitle>
-                      </CardHeader>
-                      <CardContent className="h-64">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <BarChart data={monthlyDashboardData}>
-                            <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis dataKey="month" />
-                            <YAxis />
-                            <Legend />
-                            <Bar dataKey="volume" name="Volume (m³)" fill="hsl(var(--primary))" />
-                          </BarChart>
-                        </ResponsiveContainer>
-                      </CardContent>
-                    </Card>
-                    <Card>
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-base">Horas e dias por mês</CardTitle>
-                      </CardHeader>
-                      <CardContent className="h-64">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <LineChart data={monthlyDashboardData}>
-                            <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis dataKey="month" />
-                            <YAxis />
-                            <Legend />
-                            <Line type="monotone" dataKey="hours" name="Horas" stroke="#2563eb" strokeWidth={2} />
-                            <Line type="monotone" dataKey="days" name="Dias" stroke="#16a34a" strokeWidth={2} />
-                          </LineChart>
-                        </ResponsiveContainer>
-                      </CardContent>
-                    </Card>
-                  </div>
+                  <ManualMonitoringCharts monthlyDashboardData={monthlyDashboardData} />
 
                   {compliance && compliance.alerts.length > 0 && (
                     <Card>

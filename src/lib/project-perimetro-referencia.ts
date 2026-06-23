@@ -1,7 +1,5 @@
 'use client';
 
-import area from '@turf/area';
-import bbox from '@turf/bbox';
 import type { Feature, Polygon } from 'geojson';
 import type {
   Project,
@@ -9,8 +7,6 @@ import type {
   ProjectPerimetroReferenciaFileType,
 } from '@/lib/types';
 import { parseKmlTextToFeaturePolygon } from '@/lib/geospatial/parse-kml-text';
-import { parseGeoJsonObject, parsePerimeterPolygon } from '@/lib/geospatial/perimeter';
-import { fetchStorageImageProxyBlob, isFirebaseStorageHttpsUrl } from '@/lib/storage-image-proxy-client';
 import type { ResolvedProjectPolygon } from '@/lib/pea/load-project-geometry';
 
 const MAX_KML_KMZ_BYTES = 4 * 1024 * 1024;
@@ -58,12 +54,18 @@ async function fetchBlobFromUrl(url: string): Promise<Blob> {
   return res.blob();
 }
 
-function polygonFromFeature(feature: Feature<Polygon>): ResolvedProjectPolygon {
-  const areaHa = area(feature) / 10_000;
+import { fetchStorageImageProxyBlob, isFirebaseStorageHttpsUrl } from '@/lib/storage-image-proxy-client';
+
+async function polygonFromFeature(feature: Feature<Polygon>): Promise<ResolvedProjectPolygon> {
+  const [{ default: turfArea }, { default: turfBbox }] = await Promise.all([
+    import('@turf/area'),
+    import('@turf/bbox'),
+  ]);
+  const areaHa = turfArea(feature) / 10_000;
   return {
     polygon: feature,
     areaHa,
-    bbox: bbox(feature) as [number, number, number, number],
+    bbox: turfBbox(feature) as [number, number, number, number],
     sourceLabel: 'Perímetro de referência',
     source: 'perimetro_referencia',
   };
@@ -85,7 +87,7 @@ export async function parsePerimetroReferenciaFile(
     const feature = parseKmlTextToFeaturePolygon(kmlText);
     if (!feature) throw new Error('Não foi possível ler polígono do KMZ.');
     return {
-      ...polygonFromFeature(feature),
+      ...(await polygonFromFeature(feature)),
       sourceLabel: `KMZ: ${file.name}`,
     };
   }
@@ -98,7 +100,7 @@ export async function parsePerimetroReferenciaFile(
     const feature = parseKmlTextToFeaturePolygon(text);
     if (!feature) throw new Error('Não foi possível ler polígono do KML.');
     return {
-      ...polygonFromFeature(feature),
+      ...(await polygonFromFeature(feature)),
       sourceLabel: `KML: ${file.name}`,
     };
   }
@@ -107,6 +109,7 @@ export async function parsePerimetroReferenciaFile(
     throw new Error('ZIP/SHP grande demais (máx. 8 MB).');
   }
   const b64 = await blobToBase64(file);
+  const { parsePerimeterPolygon } = await import('@/lib/geospatial/perimeter');
   const parsed = await parsePerimeterPolygon({ dataType: 'shp', data: b64 });
   if (!parsed) {
     throw new Error('Não foi possível ler polígono do shapefile (ZIP com .shp, .shx e .dbf).');
@@ -143,13 +146,14 @@ export async function resolvePerimetroReferenciaFromProject(
   if (!perimetro) return null;
 
   if (perimetro.geojson) {
+    const { parseGeoJsonObject } = await import('@/lib/geospatial/perimeter');
     const feature = parseGeoJsonObject(perimetro.geojson);
     if (!feature) return null;
     const label = perimetro.fileName
       ? `Cadastro empreendimento: ${perimetro.fileName}`
       : 'Perímetro de referência (cadastro do empreendimento)';
     return {
-      ...polygonFromFeature(feature),
+      ...(await polygonFromFeature(feature)),
       sourceLabel: label,
     };
   }

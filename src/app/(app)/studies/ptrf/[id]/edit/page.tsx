@@ -1,101 +1,56 @@
-
 'use client';
+
 import { Suspense } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import { PageHeader } from '@/components/page-header';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { useParams } from 'next/navigation';
 import { PtrfForm } from '../../ptrf-form';
 import { useDoc, useFirebase, useMemoFirebase } from '@/firebase';
 import { doc } from 'firebase/firestore';
-import type { Prada as PTRF } from '@/lib/types';
-import { Skeleton } from '@/components/ui/skeleton';
+import type { PTRF } from '@/lib/types';
+import {
+  StudyFormShell,
+  useStudyFormShellSuccess,
+} from '@/components/studies/study-form-shell';
+
+const LIST_PATH = '/studies/ptrf';
+
+const TITLE = 'Editar Projeto Técnico de Recomposição de Flora';
+const DESCRIPTION = 'Atualize os detalhes do PTRF abaixo.';
+const NOT_FOUND =
+  'O formulário que você está tentando editar não foi encontrado.';
 
 function EditPtrfPageContent() {
-    const router = useRouter();
-    const params = useParams();
-    const ptrfId = (params?.id as string | undefined) ?? '';
-    
-    const { firestore } = useFirebase();
+  const params = useParams();
+  const ptrfId = (params?.id as string | undefined) ?? '';
+  const onSuccess = useStudyFormShellSuccess('page', LIST_PATH);
 
-    const ptrfDocRef = useMemoFirebase(() => {
-        if (!firestore || !ptrfId) return null;
-        return doc(firestore, 'ptrfs', ptrfId);
-    }, [firestore, ptrfId]);
+  const { firestore } = useFirebase();
 
-    const { data: ptrf, isLoading } = useDoc<PTRF>(ptrfDocRef);
+  const ptrfDocRef = useMemoFirebase(() => {
+    if (!firestore || !ptrfId) return null;
+    return doc(firestore, 'ptrfs', ptrfId);
+  }, [firestore, ptrfId]);
 
-    const handleSuccess = () => {
-      router.push('/studies/ptrf');
-    };
+  const { data: ptrf, isLoading } = useDoc<PTRF>(ptrfDocRef);
 
-    if (isLoading) {
-        return (
-             <div className="flex flex-col h-full">
-                <PageHeader title="Carregando PTRF..." />
-                <main className="flex-1 overflow-auto p-4 md:p-6">
-                    <div className="max-w-7xl mx-auto">
-                        <Card>
-                            <CardHeader>
-                                <Skeleton className="h-8 w-1/2" />
-                                <Skeleton className="h-4 w-3/4" />
-                            </CardHeader>
-                            <CardContent>
-                                <Skeleton className="h-[500px] w-full" />
-                            </CardContent>
-                        </Card>
-                    </div>
-                </main>
-            </div>
-        );
-    }
-    
-    if (!ptrf && !isLoading) {
-         return (
-             <div className="flex flex-col h-full">
-                <PageHeader title="Erro" />
-                <main className="flex-1 overflow-auto p-4 md:p-6">
-                     <Card>
-                        <CardHeader>
-                            <CardTitle>PTRF não encontrado</CardTitle>
-                            <CardDescription>
-                                O formulário que você está tentando editar não foi encontrado.
-                            </CardDescription>
-                        </CardHeader>
-                    </Card>
-                </main>
-            </div>
-         )
-    }
-  
-    return (
-      <div className="flex flex-col h-full">
-        <PageHeader title={`Editando PTRF: ${ptrf?.empreendimento?.nome || '...'}`} />
-        <main className="flex-1 overflow-auto p-4 md:p-6">
-          <div className="max-w-7xl mx-auto">
-               <Card>
-                  <CardHeader>
-                      <CardTitle>Editar Projeto Técnico de Recomposição de Flora</CardTitle>
-                      <CardDescription>
-                          Atualize os detalhes do PTRF abaixo.
-                      </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                      <PtrfForm
-                          currentItem={ptrf}
-                          onSuccess={handleSuccess}
-                      />
-                  </CardContent>
-              </Card>
-          </div>
-        </main>
-      </div>
-    );
+  return (
+    <StudyFormShell
+      variant="page"
+      title={TITLE}
+      description={DESCRIPTION}
+      notFoundTitle="PTRF não encontrado"
+      pageHeaderTitle={`Editando PTRF: ${ptrf?.empreendimento?.nome || '...'}`}
+      isLoading={isLoading}
+      notFoundMessage={!ptrf && !isLoading ? NOT_FOUND : undefined}
+    >
+      {ptrf ? <PtrfForm currentItem={ptrf} onSuccess={onSuccess} /> : null}
+    </StudyFormShell>
+  );
 }
 
 export default function EditPtrfPage() {
-    return (
-        <Suspense fallback={<div>Carregando...</div>}>
-            <EditPtrfPageContent />
-        </Suspense>
-    )
+  return (
+    <Suspense fallback={<div>Carregando...</div>}>
+      <EditPtrfPageContent />
+    </Suspense>
+  );
 }

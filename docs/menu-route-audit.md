@@ -1,12 +1,12 @@
 # Auditoria de Rotas e Menu
 
-Gerado em: 2026-06-23T12:13:09.007Z
+Gerado em: 2026-06-23T21:49:23.266Z
 
 Classificação inicial para limpeza cirúrgica. Rotas órfãs não devem ser removidas automaticamente; precisam de validação funcional antes.
 
 ## Código ativo ou coberto por menu
 
-Total: 271
+Total: 274
 
 | Rota | Arquivo |
 |------|---------|
@@ -73,6 +73,7 @@ Total: 271
 | `/financial/bens-patrimonio` | `src/app/(app)/financial/bens-patrimonio/page.tsx` |
 | `/financial/bens-patrimonio/[id]/edit` | `src/app/(app)/financial/bens-patrimonio/[id]/edit/page.tsx` |
 | `/financial/bens-patrimonio/new` | `src/app/(app)/financial/bens-patrimonio/new/page.tsx` |
+| `/financial/billing-debug` | `src/app/(app)/financial/billing-debug/page.tsx` |
 | `/financial/conciliacao` | `src/app/(app)/financial/conciliacao/page.tsx` |
 | `/financial/dre-contabil` | `src/app/(app)/financial/dre-contabil/page.tsx` |
 | `/financial/export-contabil` | `src/app/(app)/financial/export-contabil/page.tsx` |
@@ -87,6 +88,7 @@ Total: 271
 | `/georeferenciamento/campo` | `src/app/(app)/georeferenciamento/campo/page.tsx` |
 | `/georeferenciamento/documentos` | `src/app/(app)/georeferenciamento/documentos/page.tsx` |
 | `/georeferenciamento/historico-car` | `src/app/(app)/georeferenciamento/historico-car/page.tsx` |
+| `/georeferenciamento/memorial-descritivo` | `src/app/(app)/georeferenciamento/memorial-descritivo/page.tsx` |
 | `/georeferenciamento/processos` | `src/app/(app)/georeferenciamento/processos/page.tsx` |
 | `/georeferenciamento/processos/[id]` | `src/app/(app)/georeferenciamento/processos/[id]/page.tsx` |
 | `/georeferenciamento/referencias` | `src/app/(app)/georeferenciamento/referencias/page.tsx` |
@@ -227,6 +229,7 @@ Total: 271
 | `/studies/las-ras/[id]/edit` | `src/app/(app)/studies/las-ras/[id]/edit/page.tsx` |
 | `/studies/las-ras/new` | `src/app/(app)/studies/las-ras/new/page.tsx` |
 | `/studies/mapas` | `src/app/(app)/studies/mapas/page.tsx` |
+| `/studies/memorial-descritivo` | `src/app/(app)/studies/memorial-descritivo/page.tsx` |
 | `/studies/mtr` | `src/app/(app)/studies/mtr/page.tsx` |
 | `/studies/outorgas` | `src/app/(app)/studies/outorgas/page.tsx` |
 | `/studies/outorgas/[id]/edit` | `src/app/(app)/studies/outorgas/[id]/edit/page.tsx` |

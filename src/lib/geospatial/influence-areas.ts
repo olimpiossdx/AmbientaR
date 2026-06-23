@@ -13,44 +13,16 @@ import {
   perimeterToGeoJson,
   type PerimeterParseInput,
 } from "@/lib/geospatial/perimeter";
+import { DEFAULT_INFLUENCE_CONFIG } from "@/lib/geospatial/influence-areas-config";
+import type {
+  GeoInfluenceAreaConfig,
+  GeoInfluenceAreaPolygon,
+  GeoInfluenceAreas,
+} from "@/lib/types/geo-wave-a";
 
-export type InfluenceAreaMode = "buffer" | "manual" | "none";
-
-export type GeoInfluenceAreaConfig = {
-  aidMode: InfluenceAreaMode;
-  aiiMode: InfluenceAreaMode;
-  /** Buffer outward from ADA (km). */
-  aidBufferKm: number;
-  /** Buffer outward from AID (km); ignored if AID ausente. */
-  aiiBufferKm: number;
-  aidManualGeojson?: Record<string, unknown> | null;
-  aiiManualGeojson?: Record<string, unknown> | null;
-};
-
-export type GeoInfluenceAreaPolygon = {
-  key: "ada" | "aid" | "aii";
-  title: string;
-  geojson: Record<string, unknown>;
-  areaHa: number;
-  bbox: [number, number, number, number];
-  source: "perimeter" | "buffer" | "manual";
-};
-
-export type GeoInfluenceAreas = {
-  ada: GeoInfluenceAreaPolygon;
-  aid: GeoInfluenceAreaPolygon | null;
-  aii: GeoInfluenceAreaPolygon | null;
-  config: GeoInfluenceAreaConfig;
-};
-
-export const DEFAULT_INFLUENCE_CONFIG: GeoInfluenceAreaConfig = {
-  aidMode: "buffer",
-  aiiMode: "buffer",
-  aidBufferKm: 1,
-  aiiBufferKm: 5,
-  aidManualGeojson: null,
-  aiiManualGeojson: null,
-};
+export type { GeoInfluenceAreaConfig, GeoInfluenceAreaPolygon, GeoInfluenceAreas };
+export { DEFAULT_INFLUENCE_CONFIG };
+export type InfluenceAreaMode = GeoInfluenceAreaConfig["aidMode"];
 
 function featureToInfluencePolygon(
   feature: Feature<Polygon>,

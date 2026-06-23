@@ -1,67 +1,59 @@
-
 'use client';
+
 import { Suspense } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { EiaRimaForm } from '../../eia-rima-form';
 import { useDoc, useFirebase, useMemoFirebase } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import type { EiaRima } from '@/lib/types';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import {
+  StudyFormModalSuspenseFallback,
+  StudyFormShell,
+  useStudyFormShellSuccess,
+} from '@/components/studies/study-form-shell';
+
+const LIST_PATH = '/studies/eia-rima';
+const DIALOG_CLASS = 'sm:max-w-4xl h-full max-h-[90dvh] flex flex-col';
+
+const TITLE = 'Editar Estudo de Impacto Ambiental';
+const DESCRIPTION = 'Atualize os detalhes do EIA/RIMA abaixo.';
+const NOT_FOUND = 'EIA/RIMA não encontrado.';
 
 function EditEiaRimaModalContent() {
-    const router = useRouter();
-    const params = useParams();
-    const eiaRimaId = (params?.id as string | undefined) ?? '';
-    
-    const { firestore } = useFirebase();
+  const params = useParams();
+  const eiaRimaId = (params?.id as string | undefined) ?? '';
+  const onSuccess = useStudyFormShellSuccess('modal', LIST_PATH);
 
-    const eiaRimaDocRef = useMemoFirebase(() => {
-        if (!firestore || !eiaRimaId) return null;
-        return doc(firestore, 'eiaRimas', eiaRimaId);
-    }, [firestore, eiaRimaId]);
+  const { firestore } = useFirebase();
 
-    const { data: eiaRima, isLoading } = useDoc<EiaRima>(eiaRimaDocRef);
+  const eiaRimaDocRef = useMemoFirebase(() => {
+    if (!firestore || !eiaRimaId) return null;
+    return doc(firestore, 'eiaRimas', eiaRimaId);
+  }, [firestore, eiaRimaId]);
 
-    const handleSuccess = () => {
-      router.back();
-    };
+  const { data: eiaRima, isLoading } = useDoc<EiaRima>(eiaRimaDocRef);
 
-    return (
-       <Dialog open={true} onOpenChange={(isOpen) => !isOpen && router.back()}>
-            <DialogContent className="sm:max-w-4xl h-full max-h-[90dvh] flex flex-col">
-                 <DialogHeader>
-                    <DialogTitle>Editar Estudo de Impacto Ambiental</DialogTitle>
-                    <DialogDescription>
-                        Atualize os detalhes do EIA/RIMA abaixo.
-                    </DialogDescription>
-                </DialogHeader>
-                {isLoading && <div className="p-6"><Skeleton className="h-[400px] w-full" /></div>}
-                {(!eiaRima && !isLoading) && <div className="p-6"><p>EIA/RIMA não encontrado.</p></div>}
-                {eiaRima && (
-                    <EiaRimaForm
-                        currentItem={eiaRima}
-                        onSuccess={handleSuccess}
-                    />
-                )}
-            </DialogContent>
-       </Dialog>
-    );
+  return (
+    <StudyFormShell
+      variant="modal"
+      title={TITLE}
+      description={DESCRIPTION}
+      notFoundTitle="EIA/RIMA não encontrado"
+      dialogContentClassName={DIALOG_CLASS}
+      isLoading={isLoading}
+      notFoundMessage={!eiaRima && !isLoading ? NOT_FOUND : undefined}
+    >
+      {eiaRima ? (
+        <EiaRimaForm currentItem={eiaRima} onSuccess={onSuccess} />
+      ) : null}
+    </StudyFormShell>
+  );
 }
 
 export default function EditEiaRimaModal() {
-    return (
-        <Suspense fallback={
-             <Dialog open={true}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Carregando...</DialogTitle>
-                    </DialogHeader>
-                    <Skeleton className="h-[500px] w-full" />
-                </DialogContent>
-             </Dialog>
-        }>
-            <EditEiaRimaModalContent />
-        </Suspense>
-    )
+  return (
+    <Suspense fallback={<StudyFormModalSuspenseFallback />}>
+      <EditEiaRimaModalContent />
+    </Suspense>
+  );
 }

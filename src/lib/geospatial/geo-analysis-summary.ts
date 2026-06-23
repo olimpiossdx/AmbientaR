@@ -1,5 +1,5 @@
 import type { GeoLayerResult } from "@/lib/types/geo-wave-a";
-import { WAVE_ALL_LAYER_COUNT } from "@/lib/geospatial/run-wave-a-analysis";
+import { WAVE_ALL_LAYER_COUNT } from "@/lib/geospatial/geo-constants";
 
 /** Metadados leves para listagens (evita transferir `layers` completo). */
 export type GeoAnalysisListSummary = {

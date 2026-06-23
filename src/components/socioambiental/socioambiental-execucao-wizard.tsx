@@ -50,7 +50,7 @@ import {
   Trash2,
 } from "lucide-react";
 import type { PerimeterParseInput } from "@/lib/geospatial/perimeter";
-import { DEFAULT_INFLUENCE_CONFIG } from "@/lib/geospatial/influence-areas";
+import { DEFAULT_INFLUENCE_CONFIG } from "@/lib/geospatial/influence-areas-config";
 import { runWaveAAnalysisStreamClient } from "@/lib/geospatial/run-wave-a-stream-client";
 import type {
   GeoAnalysisComplementOutput,
@@ -65,7 +65,7 @@ import { SocioambientalReportPicker } from "@/components/socioambiental/socioamb
 import { ImovelLocalizadorPanel } from "@/components/geospatial/imovel-localizador-panel";
 import {
   localizacaoToPerimeterInput,
-} from "@/lib/geospatial/resolve-localizacao-imovel";
+} from "@/lib/geospatial/localizacao-imovel-client";
 import { saveCarSnapshot, fetchCarSnapshotHistory } from "@/lib/geospatial/car-snapshot-store";
 import {
   compareCarSnapshotHistory,

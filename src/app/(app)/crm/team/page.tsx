@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import dynamic from 'next/dynamic';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -18,16 +19,16 @@ import { cn } from '@/lib/utils';
 import type { AppUser, Opportunity } from '@/lib/types';
 import { useAuth, useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection } from 'firebase/firestore';
-import { BarChart3, Trophy } from 'lucide-react';
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-} from 'recharts';
+import { BarChart3 } from 'lucide-react';
+import type { CrmTeamRevenueChartProps } from '@/app/(app)/crm/crm-team-revenue-chart';
+
+const CrmTeamRevenueChart = dynamic<CrmTeamRevenueChartProps>(
+  () => import('@/app/(app)/crm/crm-team-revenue-chart'),
+  {
+    ssr: false,
+    loading: () => <Skeleton className="h-[360px] w-full rounded-lg" />,
+  },
+);
 
 const PERIOD_PRESETS = [
   { id: '30d', label: '30 dias' },
@@ -156,34 +157,11 @@ export default function CrmTeamPage() {
       </PageHeader>
       <main className="flex-1 overflow-auto p-4 md:p-6 space-y-6">
         <div className="grid gap-4 md:grid-cols-2">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Trophy className="h-5 w-5" />
-                Ranking de receita (Fechado Ganho)
-              </CardTitle>
-              <CardDescription>Top 10 por valor fechado no período.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {isLoading ? (
-                <Skeleton className="h-[280px] w-full" />
-              ) : chartData.length === 0 ? (
-                <div className="flex h-[280px] items-center justify-center text-sm text-muted-foreground">
-                  Sem dados de vendas fechadas no período.
-                </div>
-              ) : (
-                <ResponsiveContainer width="100%" height={280}>
-                  <BarChart data={chartData} margin={{ left: 8, right: 8 }}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="vendedor" fontSize={11} tick={{ fontSize: 11 }} />
-                    <YAxis tickFormatter={(v) => formatCurrency(v)} fontSize={12} />
-                    <Tooltip formatter={(value: number) => formatCurrency(value)} />
-                    <Bar dataKey="Receita" fill="hsl(var(--chart-2))" radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              )}
-            </CardContent>
-          </Card>
+          <CrmTeamRevenueChart
+            isLoading={isLoading}
+            chartData={chartData}
+            formatCurrency={formatCurrency}
+          />
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">

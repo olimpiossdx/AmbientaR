@@ -43,3 +43,76 @@ Ver também `.env.example` e `docs/APP-HOSTING-VARIAVEIS.md`.
 - `ENABLE_AI_LOCAL_IMPORT` permanece `false` por omissão.
 - `import-reference-files` marcado `@deprecated`; mensagem 503 orienta cloud-rag.
 - Migrar consumidores para `src/lib/reference-search`.
+
+## Produção (Firebase App Hosting)
+
+URL de produção: **`https://www.ambientar.ia.br`** (também `https://ambientar.ia.br`).
+
+O [`apphosting.yaml`](../apphosting.yaml) declara `ONEDRIVE_SYNC_ENABLED`, `ONEDRIVE_RAG_ENABLED` e caminhos da biblioteca. Os três `MICROSOFT_GRAPH_*` vêm do **Secret Manager** (não commitar o client secret).
+
+### 1. Criar secrets no Firebase (uma vez)
+
+Na raiz do projeto, com `firebase login` e projeto `studio-316805764-e4d13`:
+
+```powershell
+npx firebase apphosting:secrets:set MICROSOFT_GRAPH_TENANT_ID
+npx firebase apphosting:secrets:set MICROSOFT_GRAPH_CLIENT_ID
+npx firebase apphosting:secrets:set MICROSOFT_GRAPH_CLIENT_SECRET
+```
+
+Cole os mesmos valores do `.env.local` (Tenant ID, Client ID e **Value** do secret Azure — não o ID do segredo).
+
+Se o CLI pedir, conceda acesso ao backend App Hosting (ou manualmente):
+
+```powershell
+npx firebase apphosting:secrets:grantaccess MICROSOFT_GRAPH_TENANT_ID --backend SEU_BACKEND_ID
+npx firebase apphosting:secrets:grantaccess MICROSOFT_GRAPH_CLIENT_ID --backend SEU_BACKEND_ID
+npx firebase apphosting:secrets:grantaccess MICROSOFT_GRAPH_CLIENT_SECRET --backend SEU_BACKEND_ID
+```
+
+O **Backend ID** está em Firebase Console → **App Hosting** → o teu backend.
+
+**Alternativa:** Firebase Console → App Hosting → backend → **Environment variables** → adicionar as mesmas variáveis (secret para o client secret). Exige **novo rollout** após guardar.
+
+### 2. Azure (já feito em dev)
+
+- App **Sincronização do AmbientaR com o OneDrive**
+- Permissão **`Files.Read.All` (Aplicativo)** com consentimento de administrador
+- Modo **`app`** (client credentials) — não precisa de redirect URI extra
+
+Se no futuro usares OAuth delegado em produção, adiciona no Azure → **Autenticação** → redirect:
+
+`https://www.ambientar.ia.br/api/onedrive-consumer/auth/callback`
+
+e no App Hosting:
+
+```env
+ONEDRIVE_GRAPH_AUTH_MODE=delegated
+ONEDRIVE_GRAPH_REDIRECT_URI=https://www.ambientar.ia.br/api/onedrive-consumer/auth/callback
+NEXT_PUBLIC_SITE_URL=https://www.ambientar.ia.br
+```
+
+### 3. Deploy
+
+```powershell
+git add apphosting.yaml
+git commit -m "..."
+git push
+```
+
+O App Hosting faz rollout automático. Ou: Console → App Hosting → **Create rollout**.
+
+Antes do push:
+
+```powershell
+npm run apphosting:check
+```
+
+### 4. Validar em produção
+
+1. Login **admin** em `https://www.ambientar.ia.br`
+2. **AI Lab → Biblioteca IA (OneDrive)** → **Atualizar**
+3. Esperado: `ONEDRIVE_RAG_ENABLED: sim`, `Graph: ok`
+4. **Sincronizar biblioteca** → **Indexar pendentes**
+
+Os dados indexados ficam no Firestore (`cloud_rag_*`) — partilhados entre dev e produção se usarem o mesmo projeto Firebase.

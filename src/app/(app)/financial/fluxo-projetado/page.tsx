@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
+import dynamic from 'next/dynamic';
 import { PageHeader } from '@/components/page-header';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
@@ -15,16 +16,15 @@ import {
   revenueAmountForCompanyCaixa,
 } from '@/lib/financial-transaction-scope';
 import { Skeleton } from '@/components/ui/skeleton';
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-} from 'recharts';
+import type { FluxoProjetadoChartProps } from '@/app/(app)/financial/fluxo-projetado/fluxo-projetado-chart';
+
+const FluxoProjetadoChart = dynamic<FluxoProjetadoChartProps>(
+  () => import('@/app/(app)/financial/fluxo-projetado/fluxo-projetado-chart'),
+  {
+    ssr: false,
+    loading: () => <Skeleton className="h-[280px] w-full rounded-lg" />,
+  },
+);
 
 function addDays(iso: string, days: number): string {
   const d = new Date(iso);
@@ -142,17 +142,7 @@ export default function FluxoProjetadoPage() {
                     <p className="text-lg font-bold">{formatCurrencyBRL(totals.saldo)}</p>
                   </div>
                 </div>
-                <ResponsiveContainer width="100%" height={280}>
-                  <BarChart data={projection}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="periodo" />
-                    <YAxis />
-                    <Tooltip formatter={(v: number) => formatCurrencyBRL(v)} />
-                    <Legend />
-                    <Bar dataKey="Entradas" fill="#16a34a" />
-                    <Bar dataKey="Saídas" fill="#dc2626" />
-                  </BarChart>
-                </ResponsiveContainer>
+                <FluxoProjetadoChart projection={projection} />
               </>
             )}
           </CardContent>
