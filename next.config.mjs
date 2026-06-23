@@ -71,6 +71,12 @@ const nextConfig = {
       /** Polígonos grandes / SHP em base64 na Análise Geoespacial. */
       bodySizeLimit: "10mb",
     },
+    optimizePackageImports: [
+      "lucide-react",
+      "recharts",
+      "date-fns",
+      "@turf/turf",
+    ],
     /** Evita empacotar pdf-parse no bundle do servidor. */
     serverComponentsExternalPackages: [
       "pdf-parse",
@@ -155,25 +161,33 @@ const nextConfig = {
 
 /** PWA/workbox só em produção — em dev no Windows quebra o App Router (D:\A vs d:\A). */
 async function loadConfig() {
+  let config = nextConfig;
   if (process.env.NODE_ENV === "development") {
-    return nextConfig;
+    // skip PWA in dev
+  } else {
+    const { default: withPWAInit } = await import("@ducanh2912/next-pwa");
+    const withPWA = withPWAInit({
+      dest: "public",
+      disable: false,
+      register: true,
+      skipWaiting: true,
+      fallbacks: {
+        document: "/offline",
+      },
+      workboxOptions: {
+        navigateFallback: "/offline",
+        navigateFallbackDenylist: [/^\/api/, /^\/_next\/data\//, /^\/_next\/image/],
+        disableDevLogs: true,
+      },
+    });
+    config = withPWA(nextConfig);
   }
-  const { default: withPWAInit } = await import("@ducanh2912/next-pwa");
-  const withPWA = withPWAInit({
-    dest: "public",
-    disable: false,
-    register: true,
-    skipWaiting: true,
-    fallbacks: {
-      document: "/offline",
-    },
-    workboxOptions: {
-      navigateFallback: "/offline",
-      navigateFallbackDenylist: [/^\/api/, /^\/_next\/data\//, /^\/_next\/image/],
-      disableDevLogs: true,
-    },
-  });
-  return withPWA(nextConfig);
+  if (process.env.ANALYZE === "true") {
+    const { default: bundleAnalyzer } = await import("@next/bundle-analyzer");
+    const withBundleAnalyzer = bundleAnalyzer({ enabled: true });
+    config = withBundleAnalyzer(config);
+  }
+  return config;
 }
 
 export default loadConfig();

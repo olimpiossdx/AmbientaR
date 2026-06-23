@@ -1,5 +1,6 @@
 ﻿"use client";
 
+import { handleFirestoreFormError } from '@/lib/firestore-form-errors';
 import * as React from "react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
@@ -12,16 +13,14 @@ import {
   FormField,
   FormItem,
   FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
+  FormMessage} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  SelectValue} from "@/components/ui/select";
 import { Loader2, Upload } from "lucide-react";
 import { BrDateFormControl } from "@/components/form/br-date-input";
 import { useToast } from "@/hooks/use-toast";
@@ -30,19 +29,16 @@ import type { Invoice, Client, Contract, ProjectRoiCase } from "@/lib/types";
 import { ProjectRoiCaseSelectField } from "@/components/financial/project-roi-case-select-field";
 import {
   useFirebase,
-  errorEmitter,
   useCollection,
-  useMemoFirebase,
-} from "@/firebase";
-import { FirestorePermissionError } from "@/firebase/errors";
+  useMemoFirebase} from "@/firebase";
+
 import {
   collection,
   doc,
   addDoc,
   updateDoc,
   query,
-  where,
-} from "firebase/firestore";
+  where} from "firebase/firestore";
 import { DialogFooter } from "@/components/ui/dialog";
 import { AttachmentPreviewSection } from "@/components/shared/attachment-preview-section";
 import { UploadPreparationDialog } from "@/components/shared/upload-preparation-dialog";
@@ -58,8 +54,7 @@ import {
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+  AlertDialogTitle} from "@/components/ui/alert-dialog";
 import { createRevenueFromPaidInvoice } from "@/lib/financial-invoice-revenue";
 
 const formSchema = z
@@ -81,12 +76,10 @@ const formSchema = z
           files.length === 0 ||
           files?.[0]?.size <= UPLOAD_RAW_FILE_SAFETY_MAX,
         "Arquivo excede o limite de processamento no navegador.",
-      ),
-  })
+      )})
   .refine((data) => data.dueDate >= data.invoiceDate, {
     message: "A data de vencimento não pode ser anterior à data de emissão.",
-    path: ["dueDate"],
-  });
+    path: ["dueDate"]});
 
 type FormValues = z.infer<typeof formSchema>;
 
@@ -106,8 +99,7 @@ const formatCurrencyBRL = (value: number) => {
   if (isNaN(value)) value = 0;
   return new Intl.NumberFormat("pt-BR", {
     style: "currency",
-    currency: "BRL",
-  }).format(value);
+    currency: "BRL"}).format(value);
 };
 
 const CurrencyInput = React.forwardRef<
@@ -153,8 +145,7 @@ CurrencyInput.displayName = "CurrencyInput";
 export function InvoiceForm({
   currentItem,
   onSuccess,
-  onCancel,
-}: InvoiceFormProps) {
+  onCancel}: InvoiceFormProps) {
   const [loading, setLoading] = React.useState(false);
   const [revenuePrompt, setRevenuePrompt] = React.useState<{
     invoiceId: string;
@@ -169,8 +160,7 @@ export function InvoiceForm({
   const { toast } = useToast();
   const { firestore, user } = useFirebase();
   const { uploadFile, dialogProps, limitLabel } = useStorageFileUpload({
-    storageFolder: "invoices",
-  });
+    storageFolder: "invoices"});
 
   const clientsQuery = useMemoFirebase(
     () => (firestore ? collection(firestore, "clients") : null),
@@ -213,9 +203,7 @@ export function InvoiceForm({
         ? new Date(currentItem.dueDate)
         : new Date(),
       contractId: currentItem?.contractId || "",
-      projectRoiCaseId: currentItem?.projectRoiCaseId || "",
-    },
-  });
+      projectRoiCaseId: currentItem?.projectRoiCaseId || ""}});
 
   const handleFileChange = async (
     event: React.ChangeEvent<HTMLInputElement>,
@@ -237,15 +225,13 @@ export function InvoiceForm({
       setUploadedFileUrl(downloadUrl);
       toast({
         title: "Anexo carregado",
-        description: "O arquivo está pronto para ser salvo com a fatura.",
-      });
+        description: "O arquivo está pronto para ser salvo com a fatura."});
     } catch (error) {
       console.error("File upload error:", error);
       toast({
         variant: "destructive",
         title: "Erro no Upload",
-        description: "Não foi possível enviar o arquivo.",
-      });
+        description: "Não foi possível enviar o arquivo."});
     } finally {
       setIsUploading(false);
     }
@@ -269,8 +255,7 @@ export function InvoiceForm({
       dueDate: values.dueDate.toISOString(),
       fileUrl: uploadedFileUrl || currentItem?.fileUrl || "",
       contractId: values.contractId || "",
-      projectRoiCaseId: values.projectRoiCaseId || "",
-    };
+      projectRoiCaseId: values.projectRoiCaseId || ""};
 
     const wasPaid = currentItem?.status === "Paid";
     const nowPaid = values.status === "Paid";
@@ -281,24 +266,23 @@ export function InvoiceForm({
         .then(() => {
           toast({
             title: "Fatura atualizada!",
-            description: "As informações foram salvas com sucesso.",
-          });
+            description: "As informações foram salvas com sucesso."});
           if (nowPaid && !wasPaid) {
             setRevenuePrompt({
               invoiceId: currentItem.id,
-              invoice: { id: currentItem.id, ...dataToSave },
-            });
+              invoice: { id: currentItem.id, ...dataToSave }});
           } else {
             onSuccess?.();
           }
         })
-        .catch(async (serverError) => {
-          const permissionError = new FirestorePermissionError({
+        .catch((error) => {
+          handleFirestoreFormError(error, {
+            toast,
+            title: 'Erro ao salvar fatura',
+            context: {
             path: docRef.path,
             operation: "update",
-            requestResourceData: dataToSave,
-          });
-          errorEmitter.emit("permission-error", permissionError);
+            requestResourceData: dataToSave}});
         })
         .finally(() => setLoading(false));
     } else {
@@ -315,8 +299,7 @@ export function InvoiceForm({
                 link: NOTIFICATION_LINKS.invoices,
                 sourceType: NOTIFICATION_SOURCE.fatura,
                 sourceId: docRef.id,
-                actorRole: user?.role,
-              },
+                actorRole: user?.role},
               { excludeUserId: user?.uid },
             );
           } catch (e) {
@@ -324,25 +307,24 @@ export function InvoiceForm({
           }
           toast({
             title: "Fatura criada!",
-            description: `A fatura ${values.invoiceNumber} foi criada.`,
-          });
+            description: `A fatura ${values.invoiceNumber} foi criada.`});
           if (nowPaid) {
             setRevenuePrompt({
               invoiceId: docRef.id,
-              invoice: { ...dataToSave, id: docRef.id } as Invoice,
-            });
+              invoice: { ...dataToSave, id: docRef.id } as Invoice});
           } else {
             form.reset();
             onSuccess?.();
           }
         })
-        .catch(async (serverError) => {
-          const permissionError = new FirestorePermissionError({
+        .catch((error) => {
+          handleFirestoreFormError(error, {
+            toast,
+            title: 'Erro ao salvar fatura',
+            context: {
             path: collectionRef.path,
             operation: "create",
-            requestResourceData: dataToSave,
-          });
-          errorEmitter.emit("permission-error", permissionError);
+            requestResourceData: dataToSave}});
         })
         .finally(() => setLoading(false));
     }
@@ -649,14 +631,12 @@ export function InvoiceForm({
                   );
                   toast({
                     title: "Receita registrada",
-                    description: "Lançamento criado em Lançamentos de Caixa.",
-                  });
+                    description: "Lançamento criado em Lançamentos de Caixa."});
                 } catch {
                   toast({
                     variant: "destructive",
                     title: "Erro",
-                    description: "Não foi possível criar a receita.",
-                  });
+                    description: "Não foi possível criar a receita."});
                 } finally {
                   setCreatingRevenue(false);
                   setRevenuePrompt(null);

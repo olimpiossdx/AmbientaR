@@ -34,6 +34,7 @@ type ExportPostBody = {
 };
 
 export async function POST(req: NextRequest) {
+  let jobId: string | undefined;
   try {
     const user = await verifyBearerUid(req.headers.get("authorization"));
     const body = (await req.json()) as ExportPostBody;
@@ -44,7 +45,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const jobId = crypto.randomUUID();
+    const jobIdValue = crypto.randomUUID();
+    jobId = jobIdValue;
     const projectTitle =
       typeof body.projectTitle === "string" && body.projectTitle.trim()
         ? body.projectTitle.trim().slice(0, 200)
@@ -56,7 +58,7 @@ export async function POST(req: NextRequest) {
         : "EPSG:31983";
 
     const bucketName = firebaseConfig.storageBucket!;
-    const inputPath = `study_maps_exports/${user.uid}/${jobId}/input.geojson`;
+    const inputPath = `study_maps_exports/${user.uid}/${jobIdValue}/input.geojson`;
     const outputPrefix = `study_maps_exports/${user.uid}`;
 
     const bucket = studyMapsAdminStorage().bucket(bucketName);
@@ -67,7 +69,7 @@ export async function POST(req: NextRequest) {
     });
 
     const db = studyMapsAdminDb();
-    const jobRef = db.collection(COL).doc(jobId);
+    const jobRef = db.collection(COL).doc(jobIdValue);
 
     let stacPreview: Awaited<ReturnType<typeof searchSentinel2Preview>> = [];
     const geom = extractIntersectGeometry(body.geojson);
@@ -120,7 +122,7 @@ export async function POST(req: NextRequest) {
         "X-Worker-Secret": workerSecret,
       },
       body: JSON.stringify({
-        job_id: jobId,
+        job_id: jobIdValue,
         input_gcs_uri: inputGcsUri,
         output_gcs_prefix: outputGcsPrefix,
         fetch_osm: fetchOsm,
@@ -184,6 +186,13 @@ export async function POST(req: NextRequest) {
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Erro desconhecido.";
     const status = msg.includes("Token") ? 401 : 500;
-    return NextResponse.json({ success: false, error: msg }, { status });
+    return NextResponse.json(
+      {
+        success: false,
+        error: msg,
+        ...(jobId ? { jobId, partial: true } : {}),
+      },
+      { status },
+    );
   }
 }

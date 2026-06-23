@@ -8,8 +8,9 @@ import { Form } from '@/components/ui/form';
 import { Loader2, ArrowLeft } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { RCA, Empreendedor, Project } from '@/lib/types';
-import { useFirebase, errorEmitter, useCollection, useMemoFirebase } from '@/firebase';
-import { FirestorePermissionError } from '@/firebase/errors';
+import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
+import { handleFirestoreFormError } from '@/lib/firestore-form-errors';
+
 import { collection, doc, addDoc, updateDoc } from 'firebase/firestore';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -20,13 +21,11 @@ import {
   inferirFormularioRcaListagemA,
   normalizarFormularioTipoRcaListagemA,
   subatividadeParaFormularioRcaListagemA,
-  type RcaListagemAFormTipo,
-} from './rca-listagem-a-registry';
+  type RcaListagemAFormTipo} from './rca-listagem-a-registry';
 import {
   getRcaListagemADefaultValues,
   rcaListagemAFormSchema,
-  type RcaListagemAFormValues,
-} from './rca-listagem-a-schema';
+  type RcaListagemAFormValues} from './rca-listagem-a-schema';
 import { RcaListagemAFormularioTipoCard } from './rca-form-listagem-a-tipo-card';
 import { RcaFormLavraSubterranea } from './rca-form-lavra-subterranea';
 import { RcaFormRochasOrnamentais } from './rca-form-rochas-ornamentais';
@@ -35,8 +34,7 @@ import { RcaFormBarragemRejeitos } from './rca-form-barragem-rejeitos';
 import {
   prefillRcaListagemAFromProject,
   serializeRcaListagemAForFirestore,
-  shouldPrefillFromProject,
-} from './rca-project-prefill';
+  shouldPrefillFromProject} from './rca-project-prefill';
 import { getRcaListagemAInitialValues } from '../lib/rca-form-initial-values';
 import { RcaGeographicLocationSection } from '../lib/rca-geographic-location-section';
 
@@ -66,11 +64,9 @@ function mapCurrentItemToFormValues(currentItem: RCA): RcaListagemAFormValues {
           versao: currentItem.termoReferencia.versao ?? '',
           dataEmissao: new Date(
             currentItem.termoReferencia.dataEmissao as string | number | Date,
-          ),
-        }
+          )}
       : undefined,
-    listagemA: extended.listagemA ?? {},
-  });
+    listagemA: extended.listagemA ?? {}});
 }
 
 export function RcaFormListagemA({ currentItem, onSuccess }: RcaFormListagemAProps) {
@@ -100,8 +96,7 @@ export function RcaFormListagemA({ currentItem, onSuccess }: RcaFormListagemAPro
     resolver: zodResolver(rcaListagemAFormSchema),
     defaultValues: currentItem
       ? mapCurrentItemToFormValues(currentItem)
-      : getRcaListagemADefaultValues({ activity: RCA_LISTAGEM_A_ACTIVITY }),
-  });
+      : getRcaListagemADefaultValues({ activity: RCA_LISTAGEM_A_ACTIVITY })});
 
   const formularioTipo =
     form.watch('formularioTipo') ?? RCA_LISTAGEM_A_FORM_TIPO_PADRAO;
@@ -112,8 +107,7 @@ export function RcaFormListagemA({ currentItem, onSuccess }: RcaFormListagemAPro
     (tipo: RcaListagemAFormTipo) => {
       form.setValue('formularioTipo', tipo, { shouldDirty: true });
       form.setValue('subActivity', subatividadeParaFormularioRcaListagemA(tipo), {
-        shouldDirty: true,
-      });
+        shouldDirty: true});
     },
     [form],
   );
@@ -142,8 +136,7 @@ export function RcaFormListagemA({ currentItem, onSuccess }: RcaFormListagemAPro
     if (patch.empreendimento) {
       form.setValue('empreendimento', {
         ...form.getValues('empreendimento'),
-        ...patch.empreendimento,
-      });
+        ...patch.empreendimento});
     }
     if (patch.listagemA) {
       form.setValue('listagemA', { ...form.getValues('listagemA'), ...patch.listagemA });
@@ -174,8 +167,7 @@ export function RcaFormListagemA({ currentItem, onSuccess }: RcaFormListagemAPro
       toast({
         variant: 'destructive',
         title: 'Formulário inválido',
-        description: 'Corrija os erros antes de aprovar.',
-      });
+        description: 'Corrija os erros antes de aprovar.'});
       setLoading(false);
       return;
     }
@@ -195,26 +187,23 @@ export function RcaFormListagemA({ currentItem, onSuccess }: RcaFormListagemAPro
         await updateDoc(docRef, dataToSave);
         toast({
           title: 'RCA atualizado',
-          description: `Documento salvo como ${status.toLowerCase()}.`,
-        });
+          description: `Documento salvo como ${status.toLowerCase()}.`});
       } else {
         await addDoc(collection(firestore, 'rcas'), dataToSave);
         toast({
           title: 'RCA criado',
-          description: `RCA Listagem A para ${(values.empreendimento as { nome?: string })?.nome ?? 'empreendimento'} criado.`,
-        });
+          description: `RCA Listagem A para ${(values.empreendimento as { nome?: string })?.nome ?? 'empreendimento'} criado.`});
       }
       if (status === 'Aprovado') onSuccess?.();
-    } catch {
+    } catch (error) {
       const path = currentItem?.id ? `rcas/${currentItem.id}` : 'rcas';
-      errorEmitter.emit(
-        'permission-error',
-        new FirestorePermissionError({
+      handleFirestoreFormError(error, {
+        toast,
+        title: 'Erro ao salvar RCA',
+        context: {
           path,
           operation: currentItem?.id ? 'update' : 'create',
-          requestResourceData: dataToSave,
-        }),
-      );
+          requestResourceData: dataToSave}});
     } finally {
       setLoading(false);
     }
@@ -225,8 +214,7 @@ export function RcaFormListagemA({ currentItem, onSuccess }: RcaFormListagemAPro
     clients: clients ?? [],
     isLoadingClients,
     projects: projects ?? [],
-    isLoadingProjects,
-  };
+    isLoadingProjects};
 
   return (
     <Form {...form}>

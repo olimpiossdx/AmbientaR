@@ -1,5 +1,6 @@
 ﻿"use client";
 
+import { handleFirestoreFormError } from '@/lib/firestore-form-errors';
 import * as React from "react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
@@ -12,15 +13,13 @@ import {
   FormField,
   FormItem,
   FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
+  FormMessage} from "@/components/ui/form";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  SelectValue} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2 } from "lucide-react";
 import { BrDateFormControl } from "@/components/form/br-date-input";
@@ -31,36 +30,30 @@ import type {
   Project,
   WaterPermit,
   EnvironmentalIntervention,
-  License,
-} from "@/lib/types";
+  License} from "@/lib/types";
 import {
   useFirebase,
-  errorEmitter,
   useCollection,
-  useMemoFirebase,
-} from "@/firebase";
-import { FirestorePermissionError } from "@/firebase/errors";
+  useMemoFirebase} from "@/firebase";
+
 import { AttachmentPreviewSection } from "@/components/shared/attachment-preview-section";
 import { collection, doc, addDoc, updateDoc } from "firebase/firestore";
 import {
   getRecipientUserIdsFromCondicionanteReference,
-  notifyPortalUsers,
-} from "@/lib/notifications";
+  notifyPortalUsers} from "@/lib/notifications";
 import { guardPortalPackageAction } from "@/lib/package-portal-guard";
 import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
+  DialogDescription} from "@/components/ui/dialog";
 import { UploadPreparationDialog } from "@/components/shared/upload-preparation-dialog";
 import { useStorageFileUpload } from "@/hooks/use-storage-file-upload";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+  TooltipTrigger} from "@/components/ui/tooltip";
 import { Input } from "@/components/ui/input";
 
 const formSchema = z.object({
@@ -73,9 +66,7 @@ const formSchema = z.object({
     { required_error: "Selecione o status." },
   ),
   recurrence: z.enum(["Única", "Mensal", "Trimestral", "Semestral", "Anual"], {
-    required_error: "Selecione a recorrência.",
-  }),
-});
+    required_error: "Selecione a recorrência."})});
 type FormValues = z.infer<typeof formSchema>;
 
 interface ComplianceFormProps {
@@ -103,8 +94,7 @@ const recurrences: { value: Condicionante["recurrence"]; label: string }[] = [
 export function ComplianceForm({
   currentItem,
   referenceType,
-  onSuccess,
-}: ComplianceFormProps) {
+  onSuccess}: ComplianceFormProps) {
   const [loading, setLoading] = React.useState(false);
   const [isUploading, setIsUploading] = React.useState(false);
   const [uploadedFileUrl, setUploadedFileUrl] = React.useState<string | null>(
@@ -113,8 +103,7 @@ export function ComplianceForm({
   const { toast } = useToast();
   const { firestore, user: currentUser, auth } = useFirebase();
   const { uploadFile, dialogProps, limitLabel } = useStorageFileUpload({
-    storageFolder: "condicionantes",
-  });
+    storageFolder: "condicionantes"});
 
   const projectsQuery = useMemoFirebase(
     () =>
@@ -164,9 +153,7 @@ export function ComplianceForm({
       description: currentItem?.description || "",
       dueDate: currentItem?.dueDate ? new Date(currentItem.dueDate) : undefined,
       status: currentItem?.status || undefined,
-      recurrence: currentItem?.recurrence || undefined,
-    },
-  });
+      recurrence: currentItem?.recurrence || undefined}});
 
   // Update referenceType when it changes from props
   React.useEffect(() => {
@@ -183,8 +170,7 @@ export function ComplianceForm({
           ? new Date(currentItem.dueDate)
           : undefined,
         status: currentItem.status,
-        recurrence: currentItem.recurrence,
-      });
+        recurrence: currentItem.recurrence});
       setUploadedFileUrl(currentItem.fileUrl || null);
     }
   }, [currentItem, referenceType, form]);
@@ -207,14 +193,12 @@ export function ComplianceForm({
       setUploadedFileUrl(downloadUrl);
       toast({
         title: "Anexo carregado",
-        description: "O arquivo está pronto para ser salvo.",
-      });
+        description: "O arquivo está pronto para ser salvo."});
     } catch (error) {
       toast({
         variant: "destructive",
         title: "Erro no Upload",
-        description: "Não foi possível enviar o arquivo.",
-      });
+        description: "Não foi possível enviar o arquivo."});
     } finally {
       setIsUploading(false);
     }
@@ -236,8 +220,7 @@ export function ComplianceForm({
               .join(" — ") ||
             l.processNumber ||
             l.id ||
-            "Licença",
-        })) ?? []
+            "Licença"})) ?? []
       );
     }
     if (referenceType === "outorga") {
@@ -248,8 +231,7 @@ export function ComplianceForm({
             [o.permitNumber, o.description].filter(Boolean).join(" - ") ||
             o.permitNumber ||
             o.id ||
-            "Outorga",
-        })) ?? []
+            "Outorga"})) ?? []
       );
     }
     if (referenceType === "intervencao") {
@@ -260,8 +242,7 @@ export function ComplianceForm({
             [i.processNumber, i.description].filter(Boolean).join(" - ") ||
             i.description ||
             i.id ||
-            "Intervenção",
-        })) ?? []
+            "Intervenção"})) ?? []
       );
     }
     return [];
@@ -301,8 +282,7 @@ export function ComplianceForm({
       referenceId: values.referenceId,
       dueDate: values.dueDate.toISOString(),
       fileUrl: uploadedFileUrl || currentItem?.fileUrl || "",
-      ...(currentItem ? {} : { createdAt: new Date().toISOString() }),
-    };
+      ...(currentItem ? {} : { createdAt: new Date().toISOString() })};
 
     if (currentItem) {
       const docRef = doc(firestore, "condicionantes", currentItem.id);
@@ -311,8 +291,7 @@ export function ComplianceForm({
           toast({
             title: "Condicionante atualizada!",
             description:
-              "As informações da condicionante foram salvas com sucesso.",
-          });
+              "As informações da condicionante foram salvas com sucesso."});
           const refType = (values.referenceType || referenceType) as
             | "licenca"
             | "outorga"
@@ -331,19 +310,19 @@ export function ComplianceForm({
               link: "/compliance",
               sourceType: "condicionante",
               sourceId: currentItem.id,
-              actorRole: currentUser?.role,
-            },
+              actorRole: currentUser?.role},
             { excludeUserId: currentUser?.uid },
           );
           onSuccess?.();
         })
-        .catch(async (serverError) => {
-          const permissionError = new FirestorePermissionError({
+        .catch((error) => {
+          handleFirestoreFormError(error, {
+            toast,
+            title: 'Erro ao salvar conformidade',
+            context: {
             path: docRef.path,
             operation: "update",
-            requestResourceData: dataToSave,
-          });
-          errorEmitter.emit("permission-error", permissionError);
+            requestResourceData: dataToSave}});
         })
         .finally(() => {
           setLoading(false);
@@ -358,8 +337,7 @@ export function ComplianceForm({
           toast({
             variant: "destructive",
             title: "Limite do plano",
-            description: gate.message,
-          });
+            description: gate.message});
           setLoading(false);
           return;
         }
@@ -369,8 +347,7 @@ export function ComplianceForm({
         .then(async (ref) => {
           toast({
             title: "Condicionante criada!",
-            description: `A condicionante foi adicionada com sucesso.`,
-          });
+            description: `A condicionante foi adicionada com sucesso.`});
           const refType = (values.referenceType || referenceType) as
             | "licenca"
             | "outorga"
@@ -389,20 +366,20 @@ export function ComplianceForm({
               link: "/compliance",
               sourceType: "condicionante",
               sourceId: ref.id,
-              actorRole: currentUser?.role,
-            },
+              actorRole: currentUser?.role},
             { excludeUserId: currentUser?.uid },
           );
           form.reset();
           onSuccess?.();
         })
-        .catch(async (serverError) => {
-          const permissionError = new FirestorePermissionError({
+        .catch((error) => {
+          handleFirestoreFormError(error, {
+            toast,
+            title: 'Erro ao salvar conformidade',
+            context: {
             path: collectionRef.path,
             operation: "create",
-            requestResourceData: dataToSave,
-          });
-          errorEmitter.emit("permission-error", permissionError);
+            requestResourceData: dataToSave}});
         })
         .finally(() => {
           setLoading(false);

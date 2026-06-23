@@ -13,22 +13,21 @@ import {
   FormField,
   FormItem,
   FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
+  FormMessage} from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+  SelectValue} from '@/components/ui/select';
 import { Loader2, PlusCircle, Trash2, List } from 'lucide-react';
 import { BrDateFormControl } from '@/components/form/br-date-input';
 import { useToast } from '@/hooks/use-toast';
 import type { CommercialProposal, Client, CommercialProposalItem, Service } from '@/lib/types';
-import { useFirebase, errorEmitter, useCollection, useMemoFirebase } from '@/firebase';
-import { FirestorePermissionError } from '@/firebase/errors';
+import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
+import { handleFirestoreFormError } from '@/lib/firestore-form-errors';
+
 import { collection, doc, addDoc, updateDoc } from 'firebase/firestore';
 import { Textarea } from '@/components/ui/textarea';
 import { logUserAction } from '@/lib/audit-log';
@@ -43,8 +42,7 @@ import {
   TableCell,
   TableHead,
   TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+  TableRow} from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AttachmentPreviewSection } from '@/components/shared/attachment-preview-section';
 import { useOfflineOptional } from '@/lib/offline';
@@ -58,17 +56,14 @@ const formSchema = z.object({
   proposalNumber: z.string().min(1, 'O número da proposta é obrigatório.'),
   items: z.array(z.object({
     description: z.string().min(1, 'A descrição do serviço é obrigatória.'),
-    value: z.coerce.number().min(0, 'O valor não pode ser negativo.'),
-  })).min(1, 'Adicione pelo menos um item de serviço.'),
+    value: z.coerce.number().min(0, 'O valor não pode ser negativo.')})).min(1, 'Adicione pelo menos um item de serviço.'),
   paymentTerms: z.string().optional(),
   amount: z.number(),
   status: z.enum(['Draft', 'Sent', 'Accepted', 'Rejected']),
   proposalDate: z.date({ required_error: 'A data de emissão é obrigatória.' }),
-  validUntilDate: z.date({ required_error: 'A data de validade é obrigatória.' }),
-}).refine(data => data.validUntilDate >= data.proposalDate, {
+  validUntilDate: z.date({ required_error: 'A data de validade é obrigatória.' })}).refine(data => data.validUntilDate >= data.proposalDate, {
     message: 'A data de validade não pode ser anterior à data de emissão.',
-    path: ['validUntilDate'],
-});
+    path: ['validUntilDate']});
 
 
 type FormValues = z.infer<typeof formSchema>;
@@ -90,8 +85,7 @@ const formatCurrencyBRL = (value: number) => {
     if (isNaN(value)) value = 0;
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
-      currency: 'BRL',
-    }).format(value);
+      currency: 'BRL'}).format(value);
 };
 
 const CurrencyInput = React.forwardRef<HTMLInputElement, Omit<React.InputHTMLAttributes<HTMLInputElement>, 'onChange'> & { onChange: (value: number) => void; value: number }>(
@@ -136,8 +130,7 @@ export function ProposalForm({ currentItem, onSuccess, onCancel }: ProposalFormP
       const uid = auth?.currentUser?.uid;
       if (!uid) throw new Error('Sessão inválida. Faça login novamente.');
       return `commercial-proposals/${uid}/${Date.now()}-${safe}`;
-    },
-  });
+    }});
 
   const clientsQuery = useMemoFirebase(() => firestore ? collection(firestore, 'clients') : null, [firestore]);
   const { data: clients, isLoading: isLoadingClients } = useCollection<Client>(clientsQuery);
@@ -151,8 +144,7 @@ export function ProposalForm({ currentItem, onSuccess, onCancel }: ProposalFormP
       ...currentItem,
       proposalDate: new Date(currentItem.proposalDate),
       validUntilDate: new Date(currentItem.validUntilDate),
-      items: currentItem.items?.length ? currentItem.items : [],
-    } : {
+      items: currentItem.items?.length ? currentItem.items : []} : {
       clientId: '',
       empreendimento: '',
       proposalNumber: '',
@@ -161,9 +153,7 @@ export function ProposalForm({ currentItem, onSuccess, onCancel }: ProposalFormP
       amount: 0,
       status: 'Draft',
       proposalDate: new Date(),
-      validUntilDate: new Date(new Date().setDate(new Date().getDate() + 30)),
-    },
-  });
+      validUntilDate: new Date(new Date().setDate(new Date().getDate() + 30))}});
 
   React.useEffect(() => {
     if (currentItem) {
@@ -171,8 +161,7 @@ export function ProposalForm({ currentItem, onSuccess, onCancel }: ProposalFormP
         ...currentItem,
         proposalDate: new Date(currentItem.proposalDate),
         validUntilDate: new Date(currentItem.validUntilDate),
-        items: currentItem.items?.length ? currentItem.items : [],
-      });
+        items: currentItem.items?.length ? currentItem.items : []});
       setFileUrl(currentItem.fileUrl || null);
     }
   }, [currentItem, form]);
@@ -188,8 +177,7 @@ export function ProposalForm({ currentItem, onSuccess, onCancel }: ProposalFormP
       toast({
         variant: 'destructive',
         title: 'Tipo de arquivo inválido',
-        description: 'Envie apenas PDF, JPG ou PNG.',
-      });
+        description: 'Envie apenas PDF, JPG ou PNG.'});
       inputEl.value = '';
       return;
     }
@@ -203,8 +191,7 @@ export function ProposalForm({ currentItem, onSuccess, onCancel }: ProposalFormP
       setFileUrl(downloadUrl);
       toast({
         title: 'Anexo carregado',
-        description: 'O arquivo está pronto para ser salvo com a proposta.',
-      });
+        description: 'O arquivo está pronto para ser salvo com a proposta.'});
     } catch (error) {
       console.error('File upload error:', error);
       toast({
@@ -213,8 +200,7 @@ export function ProposalForm({ currentItem, onSuccess, onCancel }: ProposalFormP
         description:
           error instanceof Error
             ? error.message
-            : 'Não foi possível enviar o arquivo.',
-      });
+            : 'Não foi possível enviar o arquivo.'});
     } finally {
       setIsUploadingFile(false);
     }
@@ -260,16 +246,14 @@ export function ProposalForm({ currentItem, onSuccess, onCancel }: ProposalFormP
       toast({
         title: 'Sem rede',
         description:
-          'A gravação usa o Firestore offline: os dados serão sincronizados quando a ligação voltar.',
-      });
+          'A gravação usa o Firestore offline: os dados serão sincronizados quando a ligação voltar.'});
     }
 
     const dataToSave = {
       ...values,
       proposalDate: values.proposalDate.toISOString(),
       validUntilDate: values.validUntilDate.toISOString(),
-      fileUrl: fileUrl || '',
-    };
+      fileUrl: fileUrl || ''};
 
     if (currentItem) {
       const docRef = doc(firestore, 'commercialProposals', currentItem.id);
@@ -279,9 +263,11 @@ export function ProposalForm({ currentItem, onSuccess, onCancel }: ProposalFormP
           logUserAction(firestore, auth, 'update_proposal', { proposalId: currentItem.id, proposalNumber: values.proposalNumber });
           onSuccess?.();
         })
-        .catch(async (serverError) => {
-          const permissionError = new FirestorePermissionError({ path: docRef.path, operation: 'update', requestResourceData: dataToSave });
-          errorEmitter.emit('permission-error', permissionError);
+        .catch((error) => {
+          handleFirestoreFormError(error, {
+            toast,
+            title: 'Erro ao salvar proposta',
+            context: { path: docRef.path, operation: 'update', requestResourceData: dataToSave }});
         })
         .finally(() => setLoading(false));
     } else {
@@ -298,8 +284,7 @@ export function ProposalForm({ currentItem, onSuccess, onCancel }: ProposalFormP
                 link: NOTIFICATION_LINKS.commercialProposals,
                 sourceType: NOTIFICATION_SOURCE.proposta_comercial,
                 sourceId: docRef.id,
-                actorRole: user?.role,
-              },
+                actorRole: user?.role},
               { excludeUserId: user?.uid },
             );
           } catch (e) {
@@ -310,9 +295,11 @@ export function ProposalForm({ currentItem, onSuccess, onCancel }: ProposalFormP
           form.reset();
           onSuccess?.();
         })
-        .catch(async (serverError) => {
-          const permissionError = new FirestorePermissionError({ path: collectionRef.path, operation: 'create', requestResourceData: dataToSave });
-          errorEmitter.emit('permission-error', permissionError);
+        .catch((error) => {
+          handleFirestoreFormError(error, {
+            toast,
+            title: 'Erro ao salvar proposta',
+            context: { path: collectionRef.path, operation: 'create', requestResourceData: dataToSave }});
         })
         .finally(() => setLoading(false));
     }

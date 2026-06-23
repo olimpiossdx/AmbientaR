@@ -58,7 +58,7 @@ import {
   SESSION_GEO_ANALYSIS_ID,
   isSessionGeoAnalysisId,
 } from "@/lib/geospatial/geo-analysis-session";
-import { WAVE_ALL_LAYER_COUNT } from "@/lib/geospatial/run-wave-a-analysis";
+import { WAVE_ALL_LAYER_COUNT } from "@/lib/geospatial/geo-constants";
 
 type GeoAnalysisListEntry = {
   id: string;

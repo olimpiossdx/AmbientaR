@@ -71,6 +71,13 @@ const ChatWidget = dynamic(() => import("@/components/chat-widget"), {
   ssr: false,
   loading: () => null,
 });
+const OfflineProvider = dynamic(
+  () =>
+    import("@/lib/offline/offline-context").then((mod) => ({
+      default: mod.OfflineProvider,
+    })),
+  { ssr: false },
+);
 import { UpgradeButton } from "@/components/upgrade-dialog";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { getStorage, ref, getDownloadURL } from "firebase/storage";
@@ -84,7 +91,6 @@ import {
   isRoleAllowedForPath,
 } from "@/lib/route-access";
 import { DOCUMENTOS_AMBIENTAIS_MENU_LABEL } from "@/lib/navigation-config";
-import { OfflineProvider } from "@/lib/offline";
 import { OfflineQueueBadge } from "@/components/offline-queue-badge";
 import { NotificationPushProvider } from "@/components/notification-push-provider";
 import {

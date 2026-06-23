@@ -25,7 +25,7 @@ import { ColetaCampanhaImportDialog } from './coleta-campanha-import-dialog';
 import { ProjectPhotosDialog } from './project-photos-dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
-import { FirestorePermissionError } from '@/firebase/errors';
+import { handleFirestoreFormError } from '@/lib/firestore-form-errors';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -148,13 +148,15 @@ export default function InventarioProjectPage() {
         });
         setIsDuplicateAlertOpen(false);
     } catch (error) {
-        console.error("Error duplicating project:", error);
-         const permissionError = new FirestorePermissionError({
+        handleFirestoreFormError(error, {
+          toast,
+          title: 'Erro ao excluir registro',
+          context: {
           path: 'inventories',
           operation: 'create',
           requestResourceData: newProjectData,
-        });
-        errorEmitter.emit('permission-error', permissionError);
+        },
+        })
     } finally {
         setIsDuplicating(false);
     }
@@ -174,13 +176,15 @@ export default function InventarioProjectPage() {
         toast({ title: "Projeto Atualizado", description: "As alterações foram salvas com sucesso." });
         setIsEditing(false);
     } catch (error) {
-         console.error("Error updating project:", error);
-         const permissionError = new FirestorePermissionError({
-            path: projectDocRef.path,
-            operation: 'update',
-            requestResourceData: dataToUpdate,
-        });
-        errorEmitter.emit('permission-error', permissionError);
+         handleFirestoreFormError(error, {
+          toast,
+          title: 'Erro ao excluir registro',
+          context: {
+          path: projectDocRef.path,
+          operation: 'update',
+          requestResourceData: dataToUpdate,
+        },
+        })
     } finally {
         // Here we keep editing mode, but disable loading state. You might want to set isEditing to false.
         // For now, let's just stop the loading indicator on the button. Let's assume you want to keep editing.

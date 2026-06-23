@@ -1,5 +1,6 @@
 ﻿"use client";
 
+import { handleFirestoreFormError } from '@/lib/firestore-form-errors';
 import * as React from "react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
@@ -12,16 +13,14 @@ import {
   FormField,
   FormItem,
   FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
+  FormMessage} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  SelectValue} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2 } from "lucide-react";
 import { BrDateFormControl } from "@/components/form/br-date-input";
@@ -31,19 +30,16 @@ import type {
   PermitType,
   PermitStatus,
   Empreendedor,
-  Project,
-} from "@/lib/types";
+  Project} from "@/lib/types";
 import {
   useFirebase,
-  errorEmitter,
   useCollection,
   useMemoFirebase,
-  useDoc,
-} from "@/firebase";
+  useDoc} from "@/firebase";
 import type { AppUser } from "@/lib/types";
 import { guardPortalPackageAction } from "@/lib/package-portal-guard";
 import { assertFileAllowedForPackage } from "@/lib/storage-upload";
-import { FirestorePermissionError } from "@/firebase/errors";
+
 import { AttachmentPreviewSection } from "@/components/shared/attachment-preview-section";
 import { UploadPreparationDialog } from "@/components/shared/upload-preparation-dialog";
 import { useStorageFileUpload } from "@/hooks/use-storage-file-upload";
@@ -53,37 +49,32 @@ import { notifyProjectPortalUsers } from "@/lib/notifications";
 import {
   buildEmpreendedorSelectOptions,
   buildProjectSelectOptions,
-  normalizeEntityId,
-} from "@/lib/empreendedor-project-select";
+  normalizeEntityId} from "@/lib/empreendedor-project-select";
 import { collection, doc, addDoc, updateDoc, limit, query } from "firebase/firestore";
 import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
-  DialogFooter,
-} from "@/components/ui/dialog";
+  DialogFooter} from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+  TooltipTrigger} from "@/components/ui/tooltip";
 
 const formSchema = z
   .object({
     empreendedorId: z.string().min(1, "Selecione um empreendedor."),
     projectId: z.string().min(1, "Selecione um empreendimento."),
     permitType: z.enum(["LP", "LI", "LO", "LAS", "AAF", "Outra"], {
-      required_error: "Selecione o tipo de licença.",
-    }),
+      required_error: "Selecione o tipo de licença."}),
     processNumber: z.string().min(1, "O número do processo é obrigatório."),
     permitNumber: z.string().min(1, "O número da licença é obrigatório."),
     issuingBody: z.string().min(1, "O órgão emissor é obrigatório."),
     issueDate: z.date({ required_error: "A data de emissão é obrigatória." }),
     expirationDate: z.date({
-      required_error: "A data de vencimento é obrigatória.",
-    }),
+      required_error: "A data de vencimento é obrigatória."}),
     status: z.enum(
       [
         "Válida",
@@ -103,12 +94,10 @@ const formSchema = z
         (files) =>
           !files || files.length === 0 || files?.[0]?.size <= UPLOAD_RAW_FILE_SAFETY_MAX,
         "Arquivo excede o limite de processamento no navegador.",
-      ),
-  })
+      )})
   .refine((data) => data.expirationDate > data.issueDate, {
     message: "A data de vencimento deve ser posterior à data de emissão.",
-    path: ["expirationDate"],
-  });
+    path: ["expirationDate"]});
 
 type LicenseFormValues = z.infer<typeof formSchema>;
 
@@ -140,8 +129,7 @@ const permitStatuses: { value: PermitStatus; label: string }[] = [
 export function LicenseForm({
   currentLicense,
   onSuccess,
-  hideHeader,
-}: LicenseFormProps) {
+  hideHeader}: LicenseFormProps) {
   const [loading, setLoading] = React.useState(false);
   const [isUploading, setIsUploading] = React.useState(false);
   const [uploadedFileUrl, setUploadedFileUrl] = React.useState<string | null>(
@@ -150,8 +138,7 @@ export function LicenseForm({
 
   const { toast } = useToast();
   const { uploadFile, dialogProps, limitLabel } = useStorageFileUpload({
-    storageFolder: "licenses",
-  });
+    storageFolder: "licenses"});
   const { firestore, user, auth } = useFirebase();
 
   const empreendedoresQuery = useMemoFirebase(
@@ -170,8 +157,7 @@ export function LicenseForm({
 
   const form = useForm<LicenseFormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: {},
-  });
+    defaultValues: {}});
 
   const isHydratingFormRef = React.useRef(false);
 
@@ -192,8 +178,7 @@ export function LicenseForm({
         ? new Date(currentLicense.expirationDate)
         : undefined,
       status: currentLicense.status,
-      description: currentLicense.description || "",
-    };
+      description: currentLicense.description || ""};
     form.reset(defaultValues);
     setUploadedFileUrl(currentLicense.fileUrl || null);
     queueMicrotask(() => {
@@ -231,8 +216,7 @@ export function LicenseForm({
       buildEmpreendedorSelectOptions({
         list: empreendedores,
         selectedId: selectedEmpreendedorId,
-        linkedDoc: linkedEmpreendedor,
-      }),
+        linkedDoc: linkedEmpreendedor}),
     [empreendedores, selectedEmpreendedorId, linkedEmpreendedor],
   );
 
@@ -242,8 +226,7 @@ export function LicenseForm({
         allProjects,
         empreendedorId: selectedEmpreendedorId,
         selectedProjectId,
-        linkedDoc: linkedProject,
-      }),
+        linkedDoc: linkedProject}),
     [allProjects, selectedEmpreendedorId, selectedProjectId, linkedProject],
   );
 
@@ -275,8 +258,7 @@ export function LicenseForm({
           description:
             err instanceof Error
               ? err.message
-              : "Upload não permitido neste plano.",
-        });
+              : "Upload não permitido neste plano."});
         return;
       }
     }
@@ -289,15 +271,13 @@ export function LicenseForm({
       setUploadedFileUrl(downloadUrl);
       toast({
         title: "Anexo carregado",
-        description: "O arquivo está pronto para ser salvo.",
-      });
+        description: "O arquivo está pronto para ser salvo."});
     } catch (error) {
       console.error("File upload error:", error);
       toast({
         variant: "destructive",
         title: "Erro no Upload",
-        description: "Não foi possível enviar o arquivo.",
-      });
+        description: "Não foi possível enviar o arquivo."});
     } finally {
       setIsUploading(false);
     }
@@ -318,8 +298,7 @@ export function LicenseForm({
       ...persistableValues,
       issueDate: values.issueDate.toISOString(),
       expirationDate: values.expirationDate.toISOString(),
-      fileUrl: uploadedFileUrl || currentLicense?.fileUrl || "",
-    };
+      fileUrl: uploadedFileUrl || currentLicense?.fileUrl || ""};
 
     if (currentLicense) {
       const licenseRef = doc(firestore, "licenses", currentLicense.id);
@@ -327,17 +306,17 @@ export function LicenseForm({
         .then(() => {
           toast({
             title: "Licença atualizada!",
-            description: "As informações da licença foram salvas com sucesso.",
-          });
+            description: "As informações da licença foram salvas com sucesso."});
           onSuccess?.();
         })
-        .catch(async (serverError) => {
-          const permissionError = new FirestorePermissionError({
+        .catch((error) => {
+          handleFirestoreFormError(error, {
+            toast,
+            title: 'Erro ao salvar licença',
+            context: {
             path: licenseRef.path,
             operation: "update",
-            requestResourceData: dataToSave,
-          });
-          errorEmitter.emit("permission-error", permissionError);
+            requestResourceData: dataToSave}});
         })
         .finally(() => {
           setLoading(false);
@@ -352,8 +331,7 @@ export function LicenseForm({
           toast({
             variant: "destructive",
             title: "Limite do plano",
-            description: gate.message,
-          });
+            description: gate.message});
           setLoading(false);
           return;
         }
@@ -372,8 +350,7 @@ export function LicenseForm({
                 link: NOTIFICATION_LINKS.licenses,
                 sourceType: NOTIFICATION_SOURCE.licenca,
                 sourceId: ref.id,
-                actorRole: user?.role,
-              },
+                actorRole: user?.role},
               { excludeUserId: user?.uid },
             );
           } catch (e) {
@@ -381,18 +358,18 @@ export function LicenseForm({
           }
           toast({
             title: "Licença criada!",
-            description: `A licença ${values.permitNumber} foi adicionada com sucesso.`,
-          });
+            description: `A licença ${values.permitNumber} foi adicionada com sucesso.`});
           form.reset();
           onSuccess?.();
         })
-        .catch(async (serverError) => {
-          const permissionError = new FirestorePermissionError({
+        .catch((error) => {
+          handleFirestoreFormError(error, {
+            toast,
+            title: 'Erro ao salvar licença',
+            context: {
             path: licensesCollectionRef.path,
             operation: "create",
-            requestResourceData: dataToSave,
-          });
-          errorEmitter.emit("permission-error", permissionError);
+            requestResourceData: dataToSave}});
         })
         .finally(() => {
           setLoading(false);

@@ -7,14 +7,14 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/button';
 import {
-  Form,
-} from '@/components/ui/form';
+  Form} from '@/components/ui/form';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { Project, Empreendedor, ProjectPerimetroReferencia } from '@/lib/types';
-import { useFirebase, errorEmitter, useCollection, useMemoFirebase, useAuth } from '@/firebase';
+import { useFirebase, useCollection, useMemoFirebase, useAuth } from '@/firebase';
 import { assertCanCreateEmpreendimentoAction } from '@/app/(app)/projects/package-actions';
-import { FirestorePermissionError } from '@/firebase/errors';
+import { handleFirestoreFormError } from '@/lib/firestore-form-errors';
+import { stripUndefinedDeep } from '@/lib/firestore-payload';
 import { collection, doc, addDoc, updateDoc } from 'firebase/firestore';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { FormDefault } from './form-default';
@@ -30,10 +30,9 @@ import { onListagemTabSelect } from './listagem-form-registry-index';
 import { cleanEmptyValues } from '@/lib/utils';
 import {
   createDefaultTrechoCoordinateBlock,
-  enrichProjectFormCoordinates,
-} from '@/lib/coordinates';
+  enrichProjectFormCoordinates} from '@/lib/coordinates';
 import { DEFAULT_DATUM } from '@/lib/coordinates/constants';
-import _ from 'lodash';
+import merge from "lodash/merge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
@@ -43,8 +42,7 @@ import { usePortalEmpreendedorIds } from '@/hooks/use-portal-empreendedor-ids';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   ProjectPerimetroReferenciaSection,
-  finalizePendingPerimetroReferencia,
-} from '@/components/projects/project-perimetro-referencia-section';
+  finalizePendingPerimetroReferencia} from '@/components/projects/project-perimetro-referencia-section';
 
 
 const formSchema = z.object({
@@ -69,19 +67,14 @@ const formSchema = z.object({
     format: z.enum(['Lat/Long', 'UTM'], { required_error: 'O formato da coordenada é obrigatório.'}),
     latLong: z.object({
       lat: z.object({ grau: z.string().optional(), min: z.string().optional(), seg: z.string().optional() }),
-      long: z.object({ grau: z.string().optional(), min: z.string().optional(), seg: z.string().optional() }),
-    }).optional(),
+      long: z.object({ grau: z.string().optional(), min: z.string().optional(), seg: z.string().optional() })}).optional(),
     utm: z.object({
       x: z.string().optional(),
       y: z.string().optional(),
-      fuso: z.enum(['22', '23', '24'], { required_error: 'O fuso é obrigatório.'}),
-    }).optional(),
+      fuso: z.enum(['22', '23', '24'], { required_error: 'O fuso é obrigatório.'})}).optional(),
     decimal: z.object({
       lat: z.number(),
-      lng: z.number(),
-    }).optional(),
-  }).optional(),
-}).passthrough();
+      lng: z.number()}).optional()}).optional()}).passthrough();
 
 type FormValues = z.infer<typeof formSchema>;
 
@@ -119,16 +112,13 @@ const getInitialValues = (currentItem?: Project | null): FormValues => {
             hydrographicBasin: '',
             hydrographicSubBasin: '',
             upgrh: '',
-            nearestWaterCourse: '',
-        },
+            nearestWaterCourse: ''},
         locationalRestrictions: {
             inKarstArea: false,
-            inFluvialLacustrineArea: false,
-        },
+            inFluvialLacustrineArea: false},
         criteriosDN130: {
             compromissos: [],
-            praticasDesenvolvidas: [],
-        },
+            praticasDesenvolvidas: []},
         jobCreation: {},
         projectArea: {},
         atividadesAgricolas: {},
@@ -136,14 +126,11 @@ const getInitialValues = (currentItem?: Project | null): FormValues => {
         listagemE: {
             geoTrecho: {
                 inicio: createDefaultTrechoCoordinateBlock(),
-                fim: createDefaultTrechoCoordinateBlock(),
-            },
-        },
-    };
+                fim: createDefaultTrechoCoordinateBlock()}}};
 
     if (currentItem) {
         // Use lodash merge for deep merging, which is generally safe, but ensure defaults are solid
-        return _.merge({}, defaults, currentItem);
+        return merge({}, defaults, currentItem);
     }
 
     return defaults as FormValues;
@@ -181,8 +168,7 @@ export function ProjectForm({ currentItem, onSuccess, onCancel }: ProjectFormPro
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: getInitialValues(currentItem),
-  });
+    defaultValues: getInitialValues(currentItem)});
 
   React.useEffect(() => {
     setPerimetroReferencia(currentItem?.perimetroReferencia);
@@ -233,8 +219,7 @@ export function ProjectForm({ currentItem, onSuccess, onCancel }: ProjectFormPro
         variant: 'destructive',
         title: 'Empreendedor não vinculado',
         description:
-          'Cadastre seu empreendedor em Cadastro → Empreendedores antes de salvar o empreendimento.',
-      });
+          'Cadastre seu empreendedor em Cadastro → Empreendedores antes de salvar o empreendimento.'});
       return;
     }
 
@@ -246,11 +231,12 @@ export function ProjectForm({ currentItem, onSuccess, onCancel }: ProjectFormPro
       return;
     }
     
-    const dataToSave = cleanEmptyValues(
-      enrichProjectFormCoordinates({
-        ...values,
-        perimetroReferencia: perimetroReferencia ?? undefined,
-      }),
+    const dataToSave = stripUndefinedDeep(
+      cleanEmptyValues(
+        enrichProjectFormCoordinates({
+          ...values,
+          perimetroReferencia: perimetroReferencia ?? undefined}),
+      ),
     );
 
 
@@ -260,17 +246,17 @@ export function ProjectForm({ currentItem, onSuccess, onCancel }: ProjectFormPro
         .then(() => {
           toast({
             title: 'Projeto atualizado!',
-            description: 'As informações foram salvas com sucesso.',
-          });
+            description: 'As informações foram salvas com sucesso.'});
           onSuccess?.();
         })
-        .catch(async (serverError) => {
-          const permissionError = new FirestorePermissionError({
-            path: docRef.path,
-            operation: 'update',
-            requestResourceData: dataToSave,
-          });
-          errorEmitter.emit('permission-error', permissionError);
+        .catch((error) => {
+          handleFirestoreFormError(error, {
+            toast,
+            title: 'Erro ao salvar projeto',
+            context: {
+              path: docRef.path,
+              operation: 'update',
+              requestResourceData: dataToSave}});
         })
         .finally(() => {
           setLoading(false);
@@ -284,8 +270,7 @@ export function ProjectForm({ currentItem, onSuccess, onCancel }: ProjectFormPro
             toast({
               variant: 'destructive',
               title: 'Limite do plano',
-              description: gate.message,
-            });
+              description: gate.message});
             setLoading(false);
             return;
           }
@@ -294,8 +279,7 @@ export function ProjectForm({ currentItem, onSuccess, onCancel }: ProjectFormPro
             variant: 'destructive',
             title: 'Não foi possível validar o plano',
             description:
-              e instanceof Error ? e.message : 'Tente novamente em instantes.',
-          });
+              e instanceof Error ? e.message : 'Tente novamente em instantes.'});
           setLoading(false);
           return;
         }
@@ -314,8 +298,7 @@ export function ProjectForm({ currentItem, onSuccess, onCancel }: ProjectFormPro
               );
               if (finalPerimetro) {
                 await updateDoc(doc(firestore, 'projects', ref.id), {
-                  perimetroReferencia: finalPerimetro,
-                });
+                  perimetroReferencia: finalPerimetro});
               }
             } catch (e) {
               console.error('Falha ao enviar perímetro de referência:', e);
@@ -323,25 +306,24 @@ export function ProjectForm({ currentItem, onSuccess, onCancel }: ProjectFormPro
                 variant: 'destructive',
                 title: 'Empreendimento criado, mas perímetro não foi enviado',
                 description:
-                  e instanceof Error ? e.message : 'Edite o empreendimento e tente novamente.',
-              });
+                  e instanceof Error ? e.message : 'Edite o empreendimento e tente novamente.'});
             }
           }
           toast({
             title: 'Projeto criado!',
-            description: `O projeto ${values.propertyName} foi adicionado com sucesso.`,
-          });
+            description: `O projeto ${values.propertyName} foi adicionado com sucesso.`});
           form.reset();
           pendingPerimetroFileRef.current = null;
           onSuccess?.();
         })
-        .catch(async (serverError) => {
-          const permissionError = new FirestorePermissionError({
-            path: collectionRef.path,
-            operation: 'create',
-            requestResourceData: dataToSave,
-          });
-          errorEmitter.emit('permission-error', permissionError);
+        .catch((error) => {
+          handleFirestoreFormError(error, {
+            toast,
+            title: 'Erro ao salvar projeto',
+            context: {
+              path: collectionRef.path,
+              operation: 'create',
+              requestResourceData: dataToSave}});
         })
         .finally(() => {
           setLoading(false);
@@ -363,8 +345,7 @@ export function ProjectForm({ currentItem, onSuccess, onCancel }: ProjectFormPro
     form,
     clients: clients || [],
     isLoadingClients,
-    hideEmpreendedorSelect: usesCentralEmpreendedorResponsavel,
-  };
+    hideEmpreendedorSelect: usesCentralEmpreendedorResponsavel};
 
   return (
     <>

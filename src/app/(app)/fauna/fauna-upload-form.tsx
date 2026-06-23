@@ -1,5 +1,6 @@
 ﻿"use client";
 
+import { handleFirestoreFormError } from '@/lib/firestore-form-errors';
 import * as React from "react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
@@ -12,26 +13,22 @@ import {
   FormField,
   FormItem,
   FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
+  FormMessage} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  SelectValue} from "@/components/ui/select";
 import { Loader2, Upload } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { Empreendedor } from "@/lib/types";
 import {
   useFirebase,
-  errorEmitter,
   useCollection,
-  useMemoFirebase,
-} from "@/firebase";
-import { FirestorePermissionError } from "@/firebase/errors";
+  useMemoFirebase} from "@/firebase";
+
 import { AttachmentPreviewSection } from "@/components/shared/attachment-preview-section";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { UploadPreparationDialog } from "@/components/shared/upload-preparation-dialog";
@@ -44,14 +41,12 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
+  DialogDescription} from "@/components/ui/dialog";
 
 const formSchema = z.object({
   empreendedorId: z.string().min(1, "Selecione um empreendedor."),
   documentName: z.string().min(5, "O nome do documento é obrigatório."),
-  fileUrl: z.string().min(1, "Por favor, faça o upload de um arquivo."),
-});
+  fileUrl: z.string().min(1, "Por favor, faça o upload de um arquivo.")});
 
 type FormValues = z.infer<typeof formSchema>;
 
@@ -65,8 +60,7 @@ export function FaunaUploadForm({ onSuccess }: FaunaUploadFormProps) {
 
   const { toast } = useToast();
   const { uploadFile, dialogProps, limitLabel } = useStorageFileUpload({
-    storageFolder: "fauna",
-  });
+    storageFolder: "fauna"});
   const { firestore, user } = useFirebase();
 
   const empreendedoresQuery = useMemoFirebase(
@@ -81,9 +75,7 @@ export function FaunaUploadForm({ onSuccess }: FaunaUploadFormProps) {
     defaultValues: {
       empreendedorId: "",
       documentName: "",
-      fileUrl: "",
-    },
-  });
+      fileUrl: ""}});
 
   const fileUrlValue = form.watch("fileUrl");
 
@@ -102,8 +94,7 @@ export function FaunaUploadForm({ onSuccess }: FaunaUploadFormProps) {
       toast({
         variant: "destructive",
         title: "Tipo de arquivo inválido",
-        description: "Apenas arquivos PDF são permitidos.",
-      });
+        description: "Apenas arquivos PDF são permitidos."});
       return;
     }
 
@@ -112,8 +103,7 @@ export function FaunaUploadForm({ onSuccess }: FaunaUploadFormProps) {
         variant: "destructive",
         title: "Sem ligação",
         description:
-          "O envio do PDF para o Storage precisa de internet. Tente novamente quando estiver online.",
-      });
+          "O envio do PDF para o Storage precisa de internet. Tente novamente quando estiver online."});
       return;
     }
 
@@ -126,15 +116,13 @@ export function FaunaUploadForm({ onSuccess }: FaunaUploadFormProps) {
       form.setValue("fileUrl", downloadUrl, { shouldValidate: true });
       toast({
         title: "Anexo carregado",
-        description: "O arquivo está pronto para ser salvo.",
-      });
+        description: "O arquivo está pronto para ser salvo."});
     } catch (error) {
       console.error("File upload error:", error);
       toast({
         variant: "destructive",
         title: "Erro no Upload",
-        description: "Não foi possível enviar o arquivo.",
-      });
+        description: "Não foi possível enviar o arquivo."});
     } finally {
       setIsUploading(false);
     }
@@ -153,8 +141,7 @@ export function FaunaUploadForm({ onSuccess }: FaunaUploadFormProps) {
       studyType: "externo" as const,
       status: "completed" as const,
       createdAt: serverTimestamp(),
-      ownerId: user.uid,
-    };
+      ownerId: user.uid};
 
     const collectionRef = collection(firestore, "faunaStudies");
 
@@ -170,8 +157,7 @@ export function FaunaUploadForm({ onSuccess }: FaunaUploadFormProps) {
               link: NOTIFICATION_LINKS.fauna,
               sourceType: NOTIFICATION_SOURCE.fauna,
               sourceId: ref.id,
-              actorRole: user.role,
-            },
+              actorRole: user.role},
             { excludeUserId: user.uid },
           );
         } catch (e) {
@@ -179,19 +165,18 @@ export function FaunaUploadForm({ onSuccess }: FaunaUploadFormProps) {
         }
         toast({
           title: "Documento Salvo!",
-          description: "O documento de fauna foi adicionado com sucesso.",
-        });
+          description: "O documento de fauna foi adicionado com sucesso."});
         form.reset();
         onSuccess?.();
       })
-      .catch((error: any) => {
-        console.error("Error saving fauna document:", error);
-        const permissionError = new FirestorePermissionError({
+      .catch((error: unknown) => {
+        handleFirestoreFormError(error, {
+          toast,
+          title: 'Erro ao enviar arquivo',
+          context: {
           path: "faunaStudies",
           operation: "create",
-          requestResourceData: dataToSave,
-        });
-        errorEmitter.emit("permission-error", permissionError);
+          requestResourceData: dataToSave}});
       })
       .finally(() => {
         setLoading(false);

@@ -44,7 +44,7 @@ import type { DocxTemplateSlug } from '@/lib/docx-template-slugs';
 import type { Empreendedor } from '@/lib/types';
 import { isAdminOrSupervisorRole } from '@/lib/role-guards';
 import { useToast } from '@/hooks/use-toast';
-import { FirestorePermissionError } from '@/firebase/errors';
+import { handleFirestoreFormError } from '@/lib/firestore-form-errors';
 import { cn } from '@/lib/utils';
 import { TermosReferenciaCard } from '@/components/termos-referencia-card';
 import { isStudyLinkedToTr } from '@/lib/termos-referencia-study-folders';
@@ -175,13 +175,16 @@ export function StudyDocumentsListPage({
           description: 'O registro foi excluído com sucesso.',
         });
       })
-      .catch(() => {
-        const permissionError = new FirestorePermissionError({
+      .catch((error) =>
+        handleFirestoreFormError(error, {
+          toast,
+          title: 'Erro ao excluir documento',
+          context: {
           path: docRef.path,
           operation: 'delete',
-        });
-        errorEmitter.emit('permission-error', permissionError);
-      })
+        },
+        }),
+      )
       .finally(() => {
         setIsAlertOpen(false);
         setItemToDelete(null);

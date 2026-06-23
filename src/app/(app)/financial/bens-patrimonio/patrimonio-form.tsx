@@ -12,8 +12,7 @@ import {
   FormField,
   FormItem,
   FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
+  FormMessage} from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { MaskedInput } from '@/components/ui/masked-input';
 import { Textarea } from '@/components/ui/textarea';
@@ -22,8 +21,7 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+  SelectValue} from '@/components/ui/select';
 import { Loader2 } from 'lucide-react';
 import { BrDateFormControl } from '@/components/form/br-date-input';
 import { useToast } from '@/hooks/use-toast';
@@ -32,10 +30,10 @@ import type {
   BemPatrimonioCategoria,
   BemPatrimonioSubtipo,
   BemPatrimonioStatus,
-  BemPatrimonioMetodoDepreciacao,
-} from '@/lib/types';
-import { useFirebase, errorEmitter } from '@/firebase';
-import { FirestorePermissionError } from '@/firebase/errors';
+  BemPatrimonioMetodoDepreciacao} from '@/lib/types';
+import { useFirebase} from '@/firebase';
+import { handleFirestoreFormError } from '@/lib/firestore-form-errors';
+
 import { collection, doc, addDoc, updateDoc } from 'firebase/firestore';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { AttachmentPreviewSection } from '@/components/shared/attachment-preview-section';
@@ -116,8 +114,7 @@ const formSchema = z.object({
       (files) =>
         !files || files.length === 0 || files?.[0]?.size <= UPLOAD_RAW_FILE_SAFETY_MAX,
       'Arquivo excede o limite de processamento no navegador.',
-    ),
-});
+    )});
 
 type FormValues = z.infer<typeof formSchema>;
 
@@ -148,8 +145,7 @@ export function PatrimonioForm({ currentItem, onSuccess, onCancel }: PatrimonioF
   const { uploadFile, dialogProps } = useStorageFileUpload({
     storageFolder: 'bens_patrimonio',
     buildStoragePath: (file, safe) =>
-      `bens_patrimonio/${currentItem?.id ?? 'novo'}/${Date.now()}-${safe}`,
-  });
+      `bens_patrimonio/${currentItem?.id ?? 'novo'}/${Date.now()}-${safe}`});
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -187,9 +183,7 @@ export function PatrimonioForm({ currentItem, onSuccess, onCancel }: PatrimonioF
       inscricaoMunicipal: currentItem?.inscricaoMunicipal ?? '',
       areaM2: currentItem?.areaM2 ?? undefined,
       observacoes: currentItem?.observacoes ?? '',
-      lalurObservacoes: currentItem?.lalurObservacoes ?? '',
-    },
-  });
+      lalurObservacoes: currentItem?.lalurObservacoes ?? ''}});
 
   const categoria = form.watch('categoria');
   const metodoDepreciacao = form.watch('metodoDepreciacao');
@@ -215,12 +209,11 @@ export function PatrimonioForm({ currentItem, onSuccess, onCancel }: PatrimonioF
       if (!downloadUrl) return;
       setUploadedFileUrl(downloadUrl);
       toast({ title: 'Documento carregado', description: 'PDF/nota fiscal pronto para salvar.' });
-    } catch {
+    } catch (error) {
       toast({
         variant: 'destructive',
         title: 'Erro no upload',
-        description: 'Não foi possível enviar o arquivo.',
-      });
+        description: 'Não foi possível enviar o arquivo.'});
     } finally {
       setIsUploading(false);
     }
@@ -272,8 +265,7 @@ export function PatrimonioForm({ currentItem, onSuccess, onCancel }: PatrimonioF
       lalurObservacoes: values.lalurObservacoes?.trim() || undefined,
       fileUrl: uploadedFileUrl || currentItem?.fileUrl || undefined,
       updatedAt: now,
-      createdAt: currentItem?.createdAt ?? now,
-    };
+      createdAt: currentItem?.createdAt ?? now};
 
     const persist = currentItem
       ? updateDoc(doc(firestore, 'bens_patrimonio', currentItem.id), dataToSave)
@@ -283,22 +275,19 @@ export function PatrimonioForm({ currentItem, onSuccess, onCancel }: PatrimonioF
       .then(() => {
         toast({
           title: currentItem ? 'Bem atualizado' : 'Bem cadastrado',
-          description: 'Registro de patrimônio salvo com sucesso.',
-        });
+          description: 'Registro de patrimônio salvo com sucesso.'});
         onSuccess?.();
       })
-      .catch(() => {
+      .catch((error) => {
         const path = currentItem
           ? `bens_patrimonio/${currentItem.id}`
           : 'bens_patrimonio';
-        errorEmitter.emit(
-          'permission-error',
-          new FirestorePermissionError({
+        handleFirestoreFormError(error, {
+          toast,
+          title: 'Erro ao salvar bem patrimonial',
+          context: {
             path,
-            operation: currentItem ? 'update' : 'create',
-          }),
-        );
-      })
+            operation: currentItem ? 'update' : 'create'}});})
       .finally(() => setLoading(false));
   }
 

@@ -10,8 +10,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-  FormDescription,
-} from '@/components/ui/form';
+  FormDescription} from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { BrDateFormControl } from '@/components/form/br-date-input';
 import { Textarea } from '@/components/ui/textarea';
@@ -21,8 +20,7 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+  SelectValue} from '@/components/ui/select';
 import { Loader2, PlusCircle, Trash2 } from 'lucide-react';
 import type { StudyFormSchema, Section, Field } from '@/lib/study-form-schema';
 import { useCollection, useMemoFirebase, useFirebase } from '@/firebase';
@@ -32,13 +30,14 @@ import {
   Accordion,
   AccordionContent,
   AccordionItem,
-  AccordionTrigger,
-} from '@/components/ui/accordion';
+  AccordionTrigger} from '@/components/ui/accordion';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { filterProjectsByEmpreendedorId } from '@/lib/processos-form-order';
 import { LISTAGEM_SHORT_BY_CODE } from '@/lib/listagem-activities';
+import { useToast } from '@/hooks/use-toast';
+import { handleFirestoreFormError } from '@/lib/firestore-form-errors';
 
 export type DynamicFormValues = Record<string, unknown>;
 
@@ -166,8 +165,7 @@ const FIRESTORE_COLLECTION_BY_SLUG: Record<string, string | null> = {
   pca: 'pcas',
   'eia-rima': 'eiaRimas',
   'las-ras': 'lasRas',
-  reanalise: 'reanalises',
-};
+  reanalise: 'reanalises'};
 
 export function DynamicStudyForm({
   schema,
@@ -177,10 +175,10 @@ export function DynamicStudyForm({
   submitLabel = 'Salvar',
   persist = false,
   currentId = null,
-  onProjectActivityChange,
-}: DynamicStudyFormProps) {
+  onProjectActivityChange}: DynamicStudyFormProps) {
   const [loading, setLoading] = React.useState(false);
   const { firestore } = useFirebase();
+  const { toast } = useToast();
   const clientsQuery = useMemoFirebase(
     () => (firestore ? collection(firestore, 'empreendedores') : null),
     [firestore]
@@ -198,8 +196,7 @@ export function DynamicStudyForm({
   );
 
   const form = useForm<DynamicFormValues>({
-    defaultValues: merged,
-  });
+    defaultValues: merged});
 
   const clientId = form.watch('requerente.clientId');
   const projectId = form.watch('empreendimento.projectId');
@@ -265,8 +262,7 @@ export function DynamicStudyForm({
           matricula: p.matricula ?? '',
           comarca: p.comarca ?? '',
           distrito: p.district ?? '',
-          zona: p.zoneType ?? '',
-        };
+          zona: p.zoneType ?? ''};
 
         for (const pathName of schemaFieldPaths) {
           const fieldId = normalizeKey(pathName.split('.').pop() || '');
@@ -294,18 +290,29 @@ export function DynamicStudyForm({
           ...values,
           status: 'Rascunho',
           formSource: 'dynamic',
-          updatedAt: new Date().toISOString(),
-        };
+          updatedAt: new Date().toISOString()};
         if (currentId) {
           await updateDoc(doc(firestore, collectionName, currentId), payload);
         } else {
           await addDoc(collection(firestore, collectionName), {
             ...payload,
-            createdAt: new Date().toISOString(),
-          });
+            createdAt: new Date().toISOString()});
         }
       }
       await onSuccess?.(values);
+    } catch (error) {
+      const op = currentId ? 'update' : 'create';
+      const path =
+        currentId && collectionName
+          ? `${collectionName}/${currentId}`
+          : (collectionName ?? studySlug);
+      handleFirestoreFormError(error, {
+        toast,
+        title: 'Erro ao salvar estudo',
+        context: {
+          path,
+          operation: op,
+          requestResourceData: values}});
     } finally {
       setLoading(false);
     }
@@ -368,8 +375,7 @@ function SectionBlock({
   form,
   clients,
   projects,
-  allProjects,
-}: {
+  allProjects}: {
   section: Section;
   form: ReturnType<typeof useForm<DynamicFormValues>>;
   clients: Client[];
@@ -440,8 +446,7 @@ function FieldRender({
   namePrefix,
   form,
   clients,
-  projects,
-}: {
+  projects}: {
   field: Field;
   namePrefix: string;
   form: ReturnType<typeof useForm<DynamicFormValues>>;
@@ -638,8 +643,7 @@ function FieldRender({
 function ArraySection({
   name,
   itemFields,
-  form,
-}: {
+  form}: {
   name: string;
   itemFields: Field[];
   form: ReturnType<typeof useForm<DynamicFormValues>>;
@@ -647,8 +651,7 @@ function ArraySection({
   const { control } = form;
   const { fields, append, remove } = useFieldArray<any>({
     control,
-    name: name as any,
-  });
+    name: name as any});
 
   const defaultItem = React.useMemo(() => {
     const o: Record<string, unknown> = {};

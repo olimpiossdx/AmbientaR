@@ -12,14 +12,14 @@ import {
   FormField,
   FormItem,
   FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
+  FormMessage} from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { PTRF, Empreendedor as Client, Project } from '@/lib/types';
-import { useFirebase, errorEmitter, useCollection, useMemoFirebase } from '@/firebase';
-import { FirestorePermissionError } from '@/firebase/errors';
+import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
+import { handleFirestoreFormError } from '@/lib/firestore-form-errors';
+
 import { collection, doc, addDoc, updateDoc } from 'firebase/firestore';
 import { DialogFooter } from '@/components/ui/dialog';
 import {
@@ -27,8 +27,7 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+  SelectValue} from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 
 
@@ -37,22 +36,18 @@ const formSchema = z.object({
   requerente: z.object({
     clientId: z.string().optional(),
     nome: z.string().min(1, "O nome do requerente é obrigatório."),
-    cpfCnpj: z.string().min(1, "O CPF/CNPJ do requerente é obrigatório."),
-  }),
+    cpfCnpj: z.string().min(1, "O CPF/CNPJ do requerente é obrigatório.")}),
   empreendimento: z.object({
     projectId: z.string().optional(),
     nome: z.string().min(1, "O nome do empreendimento é obrigatório."),
-    car: z.string().min(1, "O N.º do Recibo do CAR é obrigatório."),
-  }),
+    car: z.string().min(1, "O N.º do Recibo do CAR é obrigatório.")}),
   responsavelTecnico: z.object({
     nome: z.string().min(1, "O nome do responsável é obrigatório."),
     cpf: z.string().min(1, "O CPF do responsável é obrigatório."),
     formacao: z.string().min(1, "A formação é obrigatória."),
-    registroConselho: z.string().min(1, "O registro no conselho é obrigatório."),
-  }),
+    registroConselho: z.string().min(1, "O registro no conselho é obrigatório.")}),
   objetivoDescricao: z.string().min(1, "O objetivo é obrigatório."),
-  referenciasBibliograficas: z.string().optional(),
-});
+  referenciasBibliograficas: z.string().optional()});
 
 
 type PtrfFormValues = z.infer<typeof formSchema>;
@@ -82,9 +77,7 @@ export function PtrfForm({ currentItem, onSuccess }: PtrfFormProps) {
       empreendimento: { projectId: '', nome: '', car: '' },
       responsavelTecnico: { nome: '', cpf: '', formacao: '', registroConselho: '' },
       objetivoDescricao: '',
-      referenciasBibliograficas: '',
-    },
-  });
+      referenciasBibliograficas: ''}});
 
   const selectedRequerenteId = form.watch('requerente.clientId');
   const selectedProjectId = form.watch('empreendimento.projectId');
@@ -119,8 +112,7 @@ export function PtrfForm({ currentItem, onSuccess }: PtrfFormProps) {
         toast({
             variant: 'destructive',
             title: 'Formulário Inválido',
-            description: 'Por favor, corrija os erros antes de concluir.',
-        });
+            description: 'Por favor, corrija os erros antes de concluir.'});
         setLoading(false);
         return;
     }
@@ -135,8 +127,7 @@ export function PtrfForm({ currentItem, onSuccess }: PtrfFormProps) {
     
     const dataToSave = {
         ...values,
-        status: status,
-    };
+        status: status};
 
     if (currentItem) {
       const docRef = doc(firestore, 'ptrfs', currentItem.id);
@@ -144,17 +135,17 @@ export function PtrfForm({ currentItem, onSuccess }: PtrfFormProps) {
         .then(() => {
           toast({
             title: 'PTRF atualizado!',
-            description: 'O formulário foi salvo com sucesso.',
-          });
+            description: 'O formulário foi salvo com sucesso.'});
           if (status === 'Aprovado') onSuccess?.();
         })
-        .catch(async (serverError) => {
-          const permissionError = new FirestorePermissionError({
+        .catch((error) => {
+          handleFirestoreFormError(error, {
+            toast,
+            title: 'Erro ao salvar PTRF',
+            context: {
             path: docRef.path,
             operation: 'update',
-            requestResourceData: dataToSave,
-          });
-          errorEmitter.emit('permission-error', permissionError);
+            requestResourceData: dataToSave}});
         })
         .finally(() => setLoading(false));
     } else {
@@ -163,18 +154,18 @@ export function PtrfForm({ currentItem, onSuccess }: PtrfFormProps) {
         .then(() => {
           toast({
             title: 'PTRF criado!',
-            description: `O formulário para ${values.empreendimento.nome} foi criado com sucesso.`,
-          });
+            description: `O formulário para ${values.empreendimento.nome} foi criado com sucesso.`});
           form.reset();
           if (status === 'Aprovado') onSuccess?.();
         })
-        .catch(async (serverError) => {
-          const permissionError = new FirestorePermissionError({
+        .catch((error) => {
+          handleFirestoreFormError(error, {
+            toast,
+            title: 'Erro ao salvar PTRF',
+            context: {
             path: collectionRef.path,
             operation: 'create',
-            requestResourceData: dataToSave,
-          });
-          errorEmitter.emit('permission-error', permissionError);
+            requestResourceData: dataToSave}});
         })
         .finally(() => setLoading(false));
     }

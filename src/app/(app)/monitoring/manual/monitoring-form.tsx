@@ -12,8 +12,7 @@ import {
   FormField,
   FormItem,
   FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
+  FormMessage} from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -23,8 +22,9 @@ import { BrDateFormControl } from '@/components/form/br-date-input';
 import { useToast } from '@/hooks/use-toast';
 import type { ManualMonitoringLog } from '@/lib/types';
 import type { WaterPermit, TelemetryReading } from '@/lib/types';
-import { useFirebase, errorEmitter } from '@/firebase';
-import { FirestorePermissionError } from '@/firebase/errors';
+import { useFirebase} from '@/firebase';
+import { handleFirestoreFormError } from '@/lib/firestore-form-errors';
+
 import { collection, doc, addDoc, updateDoc } from 'firebase/firestore';
 import { DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertTriangle, CheckCircle2 } from "lucide-react";
@@ -37,11 +37,9 @@ const formSchema = z.object({
   flowRateLps: z.coerce.number().positive('A vazão deve ser um número positivo.'),
   flowRateM3h: z.coerce.number().positive('A vazão deve ser um número positivo.'),
   horimeterStart: z.coerce.number().nonnegative('O horímetro deve ser um número não negativo.'),
-  horimeterEnd: z.coerce.number().nonnegative('O horímetro deve ser um número não negativo.'),
-}).refine(data => data.horimeterEnd >= data.horimeterStart, {
+  horimeterEnd: z.coerce.number().nonnegative('O horímetro deve ser um número não negativo.')}).refine(data => data.horimeterEnd >= data.horimeterStart, {
     message: 'O horímetro final deve ser maior ou igual ao inicial.',
-    path: ['horimeterEnd'],
-});
+    path: ['horimeterEnd']});
 
 type FormValues = z.infer<typeof formSchema>;
 
@@ -60,8 +58,7 @@ export function MonitoringForm({
   pontoId,
   permit,
   existingReadings = [],
-  onSuccess,
-}: MonitoringFormProps) {
+  onSuccess}: MonitoringFormProps) {
   const [loading, setLoading] = React.useState(false);
   const { toast } = useToast();
   const { firestore, user } = useFirebase();
@@ -75,9 +72,7 @@ export function MonitoringForm({
       flowRateLps: currentItem?.flowRateLps || 0,
       flowRateM3h: currentItem?.flowRateM3h || 0,
       horimeterStart: currentItem?.horimeterStart || 0,
-      horimeterEnd: currentItem?.horimeterEnd || 0,
-    },
-  });
+      horimeterEnd: currentItem?.horimeterEnd || 0}});
   const watchedValues = form.watch();
 
   const compliancePreview = React.useMemo(() => {
@@ -94,8 +89,7 @@ export function MonitoringForm({
       horimeterStart: Number(watchedValues.horimeterStart || 0),
       horimeterEnd: Number(watchedValues.horimeterEnd || 0),
       userId: user?.uid || "",
-      createdAt: null as any,
-    };
+      createdAt: null as any};
     return calculateWaterCompliance(
       [...existingReadings, mapManualLogToTelemetryReading(simulated)],
       permit,
@@ -117,8 +111,7 @@ export function MonitoringForm({
         logDate: values.logDate.toISOString(),
         outorgaId,
         pontoId,
-        userId: user.uid,
-    };
+        userId: user.uid};
 
     if (currentItem) {
       const docRef = doc(firestore, 'manualMonitoringLogs', currentItem.id);
@@ -127,9 +120,11 @@ export function MonitoringForm({
           toast({ title: 'Lançamento atualizado!', description: 'O registro foi salvo com sucesso.' });
           onSuccess?.();
         })
-        .catch(async (serverError) => {
-          const permissionError = new FirestorePermissionError({ path: docRef.path, operation: 'update', requestResourceData: dataToSave });
-          errorEmitter.emit('permission-error', permissionError);
+        .catch((error) => {
+          handleFirestoreFormError(error, {
+            toast,
+            title: 'Erro ao salvar lançamento',
+            context: { path: docRef.path, operation: 'update', requestResourceData: dataToSave }});
         })
         .finally(() => setLoading(false));
     } else {
@@ -140,9 +135,11 @@ export function MonitoringForm({
           form.reset();
           onSuccess?.();
         })
-        .catch(async (serverError) => {
-          const permissionError = new FirestorePermissionError({ path: collectionRef.path, operation: 'create', requestResourceData: dataToSave });
-          errorEmitter.emit('permission-error', permissionError);
+        .catch((error) => {
+          handleFirestoreFormError(error, {
+            toast,
+            title: 'Erro ao salvar lançamento',
+            context: { path: collectionRef.path, operation: 'create', requestResourceData: dataToSave }});
         })
         .finally(() => setLoading(false));
     }

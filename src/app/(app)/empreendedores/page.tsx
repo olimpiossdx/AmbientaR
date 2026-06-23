@@ -48,7 +48,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { FirestorePermissionError } from "@/firebase/errors";
+import { handleFirestoreFormError } from "@/lib/firestore-form-errors";
 import { useAuth } from "@/firebase";
 import { ClientImportDialog } from "./client-import-dialog";
 import { EmpreendedorDuplicatesDialog } from "@/components/empreendedores/empreendedor-duplicates-dialog";
@@ -277,13 +277,16 @@ export default function EmpreendedoresPage() {
           description: "O empreendedor foi removido com sucesso.",
         });
       })
-      .catch(async (serverError) => {
-        const permissionError = new FirestorePermissionError({
+      .catch((serverError) =>
+        handleFirestoreFormError(serverError, {
+          toast,
+          title: 'Erro ao excluir empreendedor',
+          context: {
           path: docRef.path,
-          operation: "delete",
-        });
-        errorEmitter.emit("permission-error", permissionError);
-      })
+          operation: 'delete',
+        },
+        }),
+      )
       .finally(() => {
         setIsAlertOpen(false);
         setItemToDelete(null);

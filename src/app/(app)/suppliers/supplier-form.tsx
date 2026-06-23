@@ -11,15 +11,15 @@ import {
   FormField,
   FormItem,
   FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
+  FormMessage} from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { MaskedInput } from '@/components/ui/masked-input';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { Fornecedor } from '@/lib/types';
-import { useFirebase, errorEmitter } from '@/firebase';
-import { FirestorePermissionError } from '@/firebase/errors';
+import { useFirebase } from '@/firebase';
+import { handleFirestoreFormError } from '@/lib/firestore-form-errors';
+import { stripUndefinedDeep } from '@/lib/firestore-payload';
 import { collection, doc, addDoc, updateDoc } from 'firebase/firestore';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
@@ -30,8 +30,7 @@ const formSchema = z.object({
   name: z.string().min(2, 'O nome é obrigatório.'),
   cpfCnpj: z.string().min(11, 'O CPF/CNPJ é obrigatório.'),
   entityType: z.enum(['Pessoa Física', 'Pessoa Jurídica'], {
-    required_error: 'Selecione o tipo de pessoa.',
-  }),
+    required_error: 'Selecione o tipo de pessoa.'}),
   phone: z.string().optional(),
   email: z.string().email('Por favor, insira um e-mail válido.').optional().or(z.literal('')),
   serviceType: z.string().optional(),
@@ -45,9 +44,7 @@ const formSchema = z.object({
     bankName: z.string().optional(),
     agency: z.string().optional(),
     account: z.string().optional(),
-    pixKey: z.string().optional(),
-  }).optional(),
-});
+    pixKey: z.string().optional()}).optional()});
 
 type FormValues = z.infer<typeof formSchema>;
 
@@ -82,10 +79,8 @@ export function SupplierForm({ currentItem, onSuccess, onCancel }: SupplierFormP
         bankName: '',
         agency: '',
         account: '',
-        pixKey: '',
-      }
-    },
-  });
+        pixKey: ''}
+    }});
 
   const cepValue = form.watch('cep');
 
@@ -125,43 +120,45 @@ export function SupplierForm({ currentItem, onSuccess, onCancel }: SupplierFormP
       return;
     }
 
+    const dataToSave = stripUndefinedDeep(values);
+
     if (currentItem) {
       const docRef = doc(firestore, 'fornecedores', currentItem.id);
-      updateDoc(docRef, values)
+      updateDoc(docRef, dataToSave)
         .then(() => {
           toast({
             title: 'Fornecedor atualizado!',
-            description: 'Os dados foram salvos com sucesso.',
-          });
+            description: 'Os dados foram salvos com sucesso.'});
           onSuccess?.();
         })
-        .catch(async (serverError) => {
-          const permissionError = new FirestorePermissionError({
-            path: docRef.path,
-            operation: 'update',
-            requestResourceData: values,
-          });
-          errorEmitter.emit('permission-error', permissionError);
+        .catch((error) => {
+          handleFirestoreFormError(error, {
+            toast,
+            title: 'Erro ao salvar fornecedor',
+            context: {
+              path: docRef.path,
+              operation: 'update',
+              requestResourceData: dataToSave}});
         })
         .finally(() => setLoading(false));
     } else {
       const collectionRef = collection(firestore, 'fornecedores');
-      addDoc(collectionRef, values)
+      addDoc(collectionRef, dataToSave)
         .then(() => {
           toast({
             title: 'Fornecedor criado!',
-            description: `O fornecedor ${values.name} foi adicionado com sucesso.`,
-          });
+            description: `O fornecedor ${values.name} foi adicionado com sucesso.`});
           form.reset();
           onSuccess?.();
         })
-        .catch(async (serverError) => {
-          const permissionError = new FirestorePermissionError({
-            path: collectionRef.path,
-            operation: 'create',
-            requestResourceData: values,
-          });
-          errorEmitter.emit('permission-error', permissionError);
+        .catch((error) => {
+          handleFirestoreFormError(error, {
+            toast,
+            title: 'Erro ao salvar fornecedor',
+            context: {
+              path: collectionRef.path,
+              operation: 'create',
+              requestResourceData: dataToSave}});
         })
         .finally(() => setLoading(false));
     }

@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/card";
 import { useFirebase, useAuth } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
+import { parseUnifiedApiResponse } from "@/lib/api-response";
 import type { StudyAreaGeoJSON } from "@/components/maps/study-area-map";
 import type { StacPreviewItem } from "@/lib/study-maps/types";
 import { Loader2, Satellite, FileArchive } from "lucide-react";
@@ -140,9 +141,23 @@ export function MapasWorkbench() {
           targetCrs,
         }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Exportação falhou.");
-      toast({ title: "Exportação concluída", description: `Job ${data.jobId}` });
+      const parsed = await parseUnifiedApiResponse<{
+        jobId?: string;
+        artifactUrls?: Record<string, string>;
+      }>(res);
+      if (!parsed.ok) {
+        const jobHint =
+          parsed.raw &&
+          typeof parsed.raw === "object" &&
+          "jobId" in (parsed.raw as object)
+            ? ` (job ${String((parsed.raw as { jobId?: string }).jobId)})`
+            : "";
+        throw new Error(`${parsed.message}${jobHint}`);
+      }
+      toast({
+        title: "Exportação concluída",
+        description: `Job ${parsed.data.jobId ?? "—"}`,
+      });
       await loadJobs();
     } catch (e) {
       toast({

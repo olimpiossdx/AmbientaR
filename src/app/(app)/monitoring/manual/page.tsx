@@ -55,7 +55,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { FirestorePermissionError } from "@/firebase/errors";
+import { handleFirestoreFormError } from "@/lib/firestore-form-errors";
 import { MonitoringForm } from "./monitoring-form";
 import {
   Select,
@@ -352,13 +352,16 @@ export default function ManualMonitoringPage() {
           description: "O registro foi removido com sucesso.",
         });
       })
-      .catch(async (serverError) => {
-        const permissionError = new FirestorePermissionError({
+      .catch((serverError) =>
+        handleFirestoreFormError(serverError, {
+          toast,
+          title: 'Erro ao excluir monitoramento',
+          context: {
           path: docRef.path,
-          operation: "delete",
-        });
-        errorEmitter.emit("permission-error", permissionError);
-      })
+          operation: 'delete',
+        },
+        }),
+      )
       .finally(() => {
         setIsAlertOpen(false);
         setItemToDelete(null);

@@ -19,8 +19,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { Oficio, AppUser } from '@/lib/types';
-import { useFirebase, errorEmitter, useCollection, useMemoFirebase } from '@/firebase';
-import { FirestorePermissionError } from '@/firebase/errors';
+import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
+import { handleFirestoreFormError } from '@/lib/firestore-form-errors';
 import { collection, doc, addDoc, updateDoc, serverTimestamp, limit, query } from 'firebase/firestore';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { format } from 'date-fns';
@@ -275,13 +275,15 @@ export function OficioForm({ currentItem, onSuccess, onCancel }: OficioFormProps
       }
       onSuccess?.();
     } catch (error) {
-      console.error('Error saving draft: ', error);
-      const permissionError = new FirestorePermissionError({
-        path: 'oficios',
-        operation: currentItem ? 'update' : 'create',
-        requestResourceData: dataToSave,
+      handleFirestoreFormError(error, {
+        toast,
+        title: 'Erro ao salvar ofício',
+        context: {
+          path: 'oficios',
+          operation: currentItem ? 'update' : 'create',
+          requestResourceData: dataToSave,
+        },
       });
-      errorEmitter.emit('permission-error', permissionError);
     } finally {
       setLoading(false);
     }

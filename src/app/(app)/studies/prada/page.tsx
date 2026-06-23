@@ -41,7 +41,7 @@ import type { Prada } from '@/lib/types';
 import { isAdminOrSupervisorRole } from '@/lib/role-guards';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
-import { FirestorePermissionError } from '@/firebase/errors';
+import { handleFirestoreFormError } from '@/lib/firestore-form-errors';
 import { Badge } from '@/components/ui/badge';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { Separator } from '@/components/ui/separator';
@@ -217,13 +217,16 @@ export default function PradaPage() {
           description: 'O formulário PRADA foi removido com sucesso.',
         });
       })
-      .catch(async () => {
-        const permissionError = new FirestorePermissionError({
+      .catch((error) =>
+        handleFirestoreFormError(error, {
+          toast,
+          title: 'Erro ao excluir PRADA',
+          context: {
           path: docRef.path,
           operation: 'delete',
-        });
-        errorEmitter.emit('permission-error', permissionError);
-      })
+        },
+        }),
+      )
       .finally(() => {
         setIsAlertOpen(false);
         setItemToDelete(null);

@@ -24,7 +24,6 @@ import {
   useFirestore,
   useUser,
   useMemoFirebase,
-  errorEmitter,
 } from "@/firebase";
 import { collection, doc, query, where, limit, getDocs } from "firebase/firestore";
 import type {
@@ -56,7 +55,7 @@ import {
 import { IntervencaoForm } from "./intervencao-form";
 import { AttachmentPreviewSection } from "@/components/shared/attachment-preview-section";
 import { useToast } from "@/hooks/use-toast";
-import { FirestorePermissionError } from "@/firebase/errors";
+import { handleFirestoreFormError } from "@/lib/firestore-form-errors";
 import {
   Tooltip,
   TooltipContent,
@@ -248,13 +247,13 @@ export default function IntervencoesPage() {
             "A DAIA e suas condicionantes relacionadas foram removidas com backup de segurança.",
         });
       })
-      .catch(async (serverError) => {
-        const permissionError = new FirestorePermissionError({
-          path: docRef.path,
-          operation: "delete",
-        });
-        errorEmitter.emit("permission-error", permissionError);
-      })
+      .catch((serverError) =>
+        handleFirestoreFormError(serverError, {
+          toast,
+          title: "Erro ao excluir DAIA",
+          context: { path: docRef.path, operation: "delete" },
+        }),
+      )
       .finally(() => {
         setIsAlertOpen(false);
         setItemToDelete(null);

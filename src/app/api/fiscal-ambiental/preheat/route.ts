@@ -54,14 +54,20 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ ok: true, data: { mosaic, preheatedDate: bestDate } });
   } catch (err) {
+    const reason = err instanceof Error ? err.message : 'preheat_failed';
     return NextResponse.json(
       {
-        ok: true,
+        ok: false,
+        error: {
+          code: 'PREHEAT_FAILED',
+          message: reason,
+        },
         data: {
           skipped: true,
-          reason: err instanceof Error ? err.message : "preheat_failed",
+          reason,
         },
       },
+      { status: 502 },
     );
   }
 }

@@ -8,8 +8,9 @@ import { Form } from '@/components/ui/form';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { PCA, Empreendedor, Project } from '@/lib/types';
-import { useFirebase, errorEmitter, useCollection, useMemoFirebase } from '@/firebase';
-import { FirestorePermissionError } from '@/firebase/errors';
+import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
+import { handleFirestoreFormError } from '@/lib/firestore-form-errors';
+
 import { collection, doc, addDoc, updateDoc } from 'firebase/firestore';
 import { DialogFooter } from '@/components/ui/dialog';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -17,13 +18,11 @@ import { Badge } from '@/components/ui/badge';
 import { PCA_LISTAGEM_E_ACTIVITY } from '@/lib/pca/pca-listagem-e-catalog';
 import {
   PCA_LISTAGEM_E_FORM_TIPO_PADRAO,
-  type PcaListagemEFormTipo,
-} from './pca-listagem-e-registry';
+  type PcaListagemEFormTipo} from './pca-listagem-e-registry';
 import {
   getPcaListagemEDefaultValues,
   pcaListagemEFormSchema,
-  type PcaListagemEFormValues,
-} from './pca-listagem-e-schema';
+  type PcaListagemEFormValues} from './pca-listagem-e-schema';
 import { PcaFormListagemEShell } from './pca-form-listagem-e-shell';
 import { PcaListagemEFormularioTipoCard } from './pca-form-listagem-e-tipo-card';
 import { PcaFormListagemEGeral } from './pca-form-listagem-e-geral';
@@ -32,8 +31,7 @@ import { PcaGeographicLocationSection } from '../lib/pca-geographic-location-sec
 import {
   prefillPcaListagemEFromProject,
   serializePcaListagemEForFirestore,
-  shouldPrefillFromProject,
-} from './pca-project-prefill';
+  shouldPrefillFromProject} from './pca-project-prefill';
 
 interface PcaFormListagemEProps {
   currentItem?: PCA | null;
@@ -50,10 +48,8 @@ function mapCurrentItemToFormValues(currentItem: PCA): PcaListagemEFormValues {
     formularioTipo: (extended.formularioTipo as PcaListagemEFormTipo) ?? PCA_LISTAGEM_E_FORM_TIPO_PADRAO,
     termoReferencia: {
       ...currentItem.termoReferencia,
-      dataEmissao: new Date(currentItem.termoReferencia.dataEmissao),
-    },
-    listagemE: extended.listagemE ?? {},
-  });
+      dataEmissao: new Date(currentItem.termoReferencia.dataEmissao)},
+    listagemE: extended.listagemE ?? {}});
 }
 
 export function PcaFormListagemE({ currentItem, onSuccess }: PcaFormListagemEProps) {
@@ -79,8 +75,7 @@ export function PcaFormListagemE({ currentItem, onSuccess }: PcaFormListagemEPro
     resolver: zodResolver(pcaListagemEFormSchema),
     defaultValues: currentItem
       ? mapCurrentItemToFormValues(currentItem)
-      : getPcaListagemEDefaultValues({ activity: PCA_LISTAGEM_E_ACTIVITY }),
-  });
+      : getPcaListagemEDefaultValues({ activity: PCA_LISTAGEM_E_ACTIVITY })});
 
   const formularioTipo = form.watch('formularioTipo') ?? PCA_LISTAGEM_E_FORM_TIPO_PADRAO;
   const selectedClientId = form.watch('empreendedor.clientId');
@@ -116,8 +111,7 @@ export function PcaFormListagemE({ currentItem, onSuccess }: PcaFormListagemEPro
     if (patch.empreendimento) {
       form.setValue('empreendimento', {
         ...form.getValues('empreendimento'),
-        ...patch.empreendimento,
-      });
+        ...patch.empreendimento});
     }
     if (patch.listagemE) {
       form.setValue('listagemE', { ...form.getValues('listagemE'), ...patch.listagemE });
@@ -134,8 +128,7 @@ export function PcaFormListagemE({ currentItem, onSuccess }: PcaFormListagemEPro
       toast({
         variant: 'destructive',
         title: 'Formulário inválido',
-        description: 'Corrija os erros antes de aprovar.',
-      });
+        description: 'Corrija os erros antes de aprovar.'});
       setLoading(false);
       return;
     }
@@ -155,27 +148,24 @@ export function PcaFormListagemE({ currentItem, onSuccess }: PcaFormListagemEPro
         await updateDoc(docRef, dataToSave);
         toast({
           title: 'PCA atualizado',
-          description: `Documento salvo como ${status.toLowerCase()}.`,
-        });
+          description: `Documento salvo como ${status.toLowerCase()}.`});
       } else {
         await addDoc(collection(firestore, 'pcas'), dataToSave);
         toast({
           title: 'PCA criado',
-          description: `PCA Listagem E para ${values.empreendimento.nome} criado.`,
-        });
+          description: `PCA Listagem E para ${values.empreendimento.nome} criado.`});
         form.reset(getPcaListagemEDefaultValues({ activity: PCA_LISTAGEM_E_ACTIVITY }));
       }
       if (status === 'Aprovado') onSuccess?.();
-    } catch {
+    } catch (error) {
       const path = currentItem?.id ? `pcas/${currentItem.id}` : 'pcas';
-      errorEmitter.emit(
-        'permission-error',
-        new FirestorePermissionError({
+      handleFirestoreFormError(error, {
+        toast,
+        title: 'Erro ao salvar PCA',
+        context: {
           path,
           operation: currentItem?.id ? 'update' : 'create',
-          requestResourceData: dataToSave,
-        }),
-      );
+          requestResourceData: dataToSave}});
     } finally {
       setLoading(false);
     }

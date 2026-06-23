@@ -51,7 +51,6 @@ import {
   useCollection,
   useFirebase,
   useMemoFirebase,
-  errorEmitter,
   useAuth,
 } from "@/firebase";
 import { collection, doc, deleteDoc, updateDoc } from "firebase/firestore";
@@ -66,7 +65,7 @@ import {
   TooltipContent,
 } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
-import { FirestorePermissionError } from "@/firebase/errors";
+import { handleFirestoreFormError } from "@/lib/firestore-form-errors";
 import { isAdminOrSupervisorRole } from "@/lib/role-guards";
 import { FaunaExportIconButtons } from "@/components/fauna/fauna-export-icon-buttons";
 import {
@@ -355,15 +354,13 @@ export default function StudiesFaunaPage() {
           description: "O documento foi removido com sucesso.",
         });
       })
-      .catch(() => {
-        errorEmitter.emit(
-          "permission-error",
-          new FirestorePermissionError({
-            path: docRef.path,
-            operation: "delete",
-          }),
-        );
-      })
+      .catch((serverError) =>
+        handleFirestoreFormError(serverError, {
+          toast,
+          title: "Erro ao excluir estudo",
+          context: { path: docRef.path, operation: "delete" },
+        }),
+      )
       .finally(() => {
         setIsAlertOpen(false);
         setItemToDelete(null);
@@ -381,19 +378,14 @@ export default function StudiesFaunaPage() {
         description:
           "O documento ficará disponível em Documentos Ambientais → Fauna para o cliente.",
       });
-    } catch (error) {
-      console.error(error);
-      errorEmitter.emit(
-        "permission-error",
-        new FirestorePermissionError({
+    } catch (serverError) {
+      handleFirestoreFormError(serverError, {
+        toast,
+        title: "Erro ao concluir estudo",
+        context: {
           path: `faunaStudies/${study.id}`,
           operation: "update",
-        }),
-      );
-      toast({
-        variant: "destructive",
-        title: "Erro",
-        description: "Não foi possível concluir o estudo.",
+        },
       });
     }
   };

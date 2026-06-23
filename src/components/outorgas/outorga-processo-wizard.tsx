@@ -23,13 +23,13 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Loader2, ExternalLink } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { handleFirestoreFormError } from "@/lib/firestore-form-errors";
 import {
   useFirebase,
   useCollection,
   useMemoFirebase,
   errorEmitter,
 } from "@/firebase";
-import { FirestorePermissionError } from "@/firebase/errors";
 import {
   collection,
   doc,
@@ -217,13 +217,16 @@ export function OutorgaProcessoWizard({ processo, onUpdated }: Props) {
       if (!opts?.silent) {
         toast({ title: "Processo salvo" });
       }
-    } catch {
-      const permissionError = new FirestorePermissionError({
-        path: docRef.path,
-        operation: "update",
-        requestResourceData: data,
-      });
-      errorEmitter.emit("permission-error", permissionError);
+    } catch (error) {
+      handleFirestoreFormError(error, {
+          toast,
+          title: 'Erro ao salvar processo',
+          context: {
+          path: docRef.path,
+          operation: 'update',
+          requestResourceData: data,
+        },
+        })
     } finally {
       setLoading(false);
     }

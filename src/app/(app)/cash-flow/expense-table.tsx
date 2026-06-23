@@ -33,7 +33,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
-import { FirestorePermissionError } from '@/firebase/errors';
+import { handleFirestoreFormError } from '@/lib/firestore-form-errors';
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { useMemo } from 'react';
 import { TransactionViewDialog } from './transaction-view-dialog';
@@ -97,13 +97,16 @@ export function ExpenseTable({ expenses: expensesProp, isLoadingExpenses: isLoad
           description: 'O lançamento foi removido com sucesso.',
         });
       })
-      .catch(async (serverError) => {
-        const permissionError = new FirestorePermissionError({
+      .catch((serverError) =>
+        handleFirestoreFormError(serverError, {
+          toast,
+          title: 'Erro ao excluir lançamento',
+          context: {
           path: itemDocRef.path,
           operation: 'delete',
-        });
-        errorEmitter.emit('permission-error', permissionError);
-      })
+        },
+        }),
+      )
       .finally(() => {
         setIsAlertOpen(false);
         setItemToDelete(null);

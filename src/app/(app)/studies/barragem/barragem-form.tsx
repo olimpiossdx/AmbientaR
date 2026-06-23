@@ -12,47 +12,42 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-  FormDescription,
-} from '@/components/ui/form';
+  FormDescription} from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Loader2, PlusCircle, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { ProjetoTecnicoBarragem, Empreendedor as Client, Project } from '@/lib/types';
-import { useFirebase, errorEmitter, useCollection, useMemoFirebase } from '@/firebase';
-import { FirestorePermissionError } from '@/firebase/errors';
+import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
+import { handleFirestoreFormError } from '@/lib/firestore-form-errors';
+
 import { collection, doc, addDoc, updateDoc } from 'firebase/firestore';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+  SelectValue} from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+  CardTitle} from '@/components/ui/card';
 import {
   BARRAGEM_APRESENTACAO_MODELO,
   BARRAGEM_CONSERVACAO_MODELO,
-  BARRAGEM_INFO_TOPOGRAFICAS_MODELO,
-} from './barragem-defaults';
+  BARRAGEM_INFO_TOPOGRAFICAS_MODELO} from './barragem-defaults';
 import {
   BarragemMemorialSection,
-  BARRAGEM_MEMORIAL_TEXTAREA_CLASS,
-} from './barragem-memorial-section';
+  BARRAGEM_MEMORIAL_TEXTAREA_CLASS} from './barragem-memorial-section';
 import { CoordinateInput } from '@/components/coordinates';
 import type { Datum } from '@/lib/types';
 import {
   barragemCoordenadasToLatLngStrings,
   barragemLatLngStringsToCoordenadas,
-  geographicLocationToBarragemCoordenadas,
-} from '@/lib/barragem/barragem-coordenadas';
+  geographicLocationToBarragemCoordenadas} from '@/lib/barragem/barragem-coordenadas';
 import { createDefaultMonitoringPontoCoordenadas } from '@/lib/monitoring-pontos-form';
 
 const nivelSchema = z.object({
@@ -60,8 +55,7 @@ const nivelSchema = z.object({
   areaM2: z.string().optional(),
   alturaM: z.string().optional(),
   volumeM3: z.string().optional(),
-  volumeAcumuladoM3: z.string().optional(),
-});
+  volumeAcumuladoM3: z.string().optional()});
 
 const formSchema = z.object({
   status: z.enum(['Rascunho', 'Aprovado']).optional(),
@@ -70,8 +64,7 @@ const formSchema = z.object({
   requerente: z.object({
     clientId: z.string().optional(),
     nome: z.string().min(1, 'O nome do proprietário é obrigatório.'),
-    cpfCnpj: z.string().min(1, 'O CPF/CNPJ é obrigatório.'),
-  }),
+    cpfCnpj: z.string().min(1, 'O CPF/CNPJ é obrigatório.')}),
   empreendimento: z.object({
     projectId: z.string().optional(),
     nome: z.string().min(1, 'O nome do empreendimento é obrigatório.'),
@@ -79,8 +72,7 @@ const formSchema = z.object({
     municipio: z.string().optional(),
     uf: z.string().optional(),
     car: z.string().optional(),
-    matricula: z.string().optional(),
-  }),
+    matricula: z.string().optional()}),
   responsavelTecnico: z.object({
     nome: z.string().min(1, 'O nome do responsável é obrigatório.'),
     cpf: z.string().optional(),
@@ -88,8 +80,7 @@ const formSchema = z.object({
     telefone: z.string().optional(),
     formacao: z.string().min(1, 'A formação é obrigatória.'),
     registroConselho: z.string().min(1, 'O registro no conselho é obrigatório.'),
-    art: z.string().optional(),
-  }),
+    art: z.string().optional()}),
   usoPretendido: z.string().optional(),
   espelhoDaguaM2: z.string().optional(),
   capacidadeArmazenamentoM3: z.string().optional(),
@@ -101,8 +92,7 @@ const formSchema = z.object({
       coordenadas: z.any().optional(),
       latitude: z.string().optional(),
       longitude: z.string().optional(),
-      altitude: z.string().optional(),
-    })
+      altitude: z.string().optional()})
     .optional(),
   definicaoBarragem: z.string().optional(),
   capacidadeReservatorio: z
@@ -112,8 +102,7 @@ const formSchema = z.object({
       cotaTerrenoNatural: z.string().optional(),
       areaEspelhoM2: z.string().optional(),
       volumeArmazenadoM3: z.string().optional(),
-      tabelaNiveis: z.array(nivelSchema).optional(),
-    })
+      tabelaNiveis: z.array(nivelSchema).optional()})
     .optional(),
   aterro: z.string().optional(),
   taludesAterro: z.string().optional(),
@@ -126,16 +115,14 @@ const formSchema = z.object({
       tempoConcentracao: z.string().optional(),
       intensidadeChuva: z.string().optional(),
       coeficienteEscoamento: z.string().optional(),
-      vazaoCheia: z.string().optional(),
-    })
+      vazaoCheia: z.string().optional()})
     .optional(),
   dimensionamentoCapacidadeCheia: z.string().optional(),
   extravasor: z.string().optional(),
   implantacaoProjeto: z.string().optional(),
   conservacaoManutencao: z.string().optional(),
   literaturaConsultada: z.string().optional(),
-  anexosDescricao: z.string().optional(),
-});
+  anexosDescricao: z.string().optional()});
 
 type BarragemFormValues = z.infer<typeof formSchema>;
 
@@ -159,8 +146,7 @@ function emptyDefaults(): BarragemFormValues {
       municipio: '',
       uf: 'MG',
       car: '',
-      matricula: '',
-    },
+      matricula: ''},
     responsavelTecnico: {
       nome: '',
       cpf: '',
@@ -168,8 +154,7 @@ function emptyDefaults(): BarragemFormValues {
       telefone: '',
       formacao: '',
       registroConselho: '',
-      art: '',
-    },
+      art: ''},
     usoPretendido: '',
     espelhoDaguaM2: '',
     capacidadeArmazenamentoM3: '',
@@ -180,8 +165,7 @@ function emptyDefaults(): BarragemFormValues {
       coordenadas: createDefaultMonitoringPontoCoordenadas(),
       latitude: '',
       longitude: '',
-      altitude: '',
-    },
+      altitude: ''},
     definicaoBarragem: '',
     capacidadeReservatorio: {
       descricao: '',
@@ -189,8 +173,7 @@ function emptyDefaults(): BarragemFormValues {
       cotaTerrenoNatural: '',
       areaEspelhoM2: '',
       volumeArmazenadoM3: '',
-      tabelaNiveis: [],
-    },
+      tabelaNiveis: []},
     aterro: '',
     taludesAterro: '',
     fundacao: '',
@@ -201,15 +184,13 @@ function emptyDefaults(): BarragemFormValues {
       tempoConcentracao: '',
       intensidadeChuva: '',
       coeficienteEscoamento: '',
-      vazaoCheia: '',
-    },
+      vazaoCheia: ''},
     dimensionamentoCapacidadeCheia: '',
     extravasor: '',
     implantacaoProjeto: '',
     conservacaoManutencao: BARRAGEM_CONSERVACAO_MODELO,
     literaturaConsultada: '',
-    anexosDescricao: '',
-  };
+    anexosDescricao: ''};
 }
 
 export function BarragemForm({ currentItem, onCreated, onCancel }: BarragemFormProps) {
@@ -240,16 +221,12 @@ export function BarragemForm({ currentItem, onCreated, onCancel }: BarragemFormP
             coordenadas: barragemLatLngStringsToCoordenadas(
               currentItem.informacoesBasicas?.latitude,
               currentItem.informacoesBasicas?.longitude,
-            ),
-          },
-        }
-      : emptyDefaults(),
-  });
+            )}}
+      : emptyDefaults()});
 
   const { fields, append, remove } = useFieldArray({
     control: form.control,
-    name: 'capacidadeReservatorio.tabelaNiveis',
-  });
+    name: 'capacidadeReservatorio.tabelaNiveis'});
 
   const selectedRequerenteId = form.watch('requerente.clientId');
   const selectedProjectId = form.watch('empreendimento.projectId');
@@ -300,8 +277,7 @@ export function BarragemForm({ currentItem, onCreated, onCancel }: BarragemFormP
       toast({
         variant: 'destructive',
         title: 'Formulário inválido',
-        description: 'Corrija os campos obrigatórios antes de salvar.',
-      });
+        description: 'Corrija os campos obrigatórios antes de salvar.'});
       setLoading(false);
       return;
     }
@@ -326,10 +302,8 @@ export function BarragemForm({ currentItem, onCreated, onCancel }: BarragemFormP
       informacoesBasicas: {
         ...infoSemCoordenadas,
         latitude,
-        longitude,
-      },
-      status: (currentItem?.status === 'Aprovado' ? 'Aprovado' : 'Rascunho') as 'Rascunho' | 'Aprovado',
-    };
+        longitude},
+      status: (currentItem?.status === 'Aprovado' ? 'Aprovado' : 'Rascunho') as 'Rascunho' | 'Aprovado'};
 
     if (currentItem) {
       const docRef = doc(firestore, 'projetosTecnicosBarragem', currentItem.id);
@@ -337,16 +311,14 @@ export function BarragemForm({ currentItem, onCreated, onCancel }: BarragemFormP
         .then(() => {
           toast({ title: 'Projeto atualizado', description: 'Salvo com sucesso.' });
         })
-        .catch(() => {
-          errorEmitter.emit(
-            'permission-error',
-            new FirestorePermissionError({
+        .catch((error) => {
+          handleFirestoreFormError(error, {
+            toast,
+            title: 'Erro ao salvar projeto de barragem',
+            context: {
               path: docRef.path,
               operation: 'update',
-              requestResourceData: dataToSave,
-            }),
-          );
-        })
+              requestResourceData: dataToSave}});})
         .finally(() => setLoading(false));
     } else {
       const collectionRef = collection(firestore, 'projetosTecnicosBarragem');
@@ -354,20 +326,17 @@ export function BarragemForm({ currentItem, onCreated, onCancel }: BarragemFormP
         .then((docRef) => {
           toast({
             title: 'Projeto criado',
-            description: `Memorial para ${values.empreendimento.nome} registrado.`,
-          });
+            description: `Memorial para ${values.empreendimento.nome} registrado.`});
           onCreated?.(docRef.id);
         })
-        .catch(() => {
-          errorEmitter.emit(
-            'permission-error',
-            new FirestorePermissionError({
+        .catch((error) => {
+          handleFirestoreFormError(error, {
+            toast,
+            title: 'Erro ao salvar projeto de barragem',
+            context: {
               path: collectionRef.path,
               operation: 'create',
-              requestResourceData: dataToSave,
-            }),
-          );
-        })
+              requestResourceData: dataToSave}});})
         .finally(() => setLoading(false));
     }
   }
@@ -836,8 +805,7 @@ export function BarragemForm({ currentItem, onCreated, onCancel }: BarragemFormP
                         areaM2: '',
                         alturaM: '',
                         volumeM3: '',
-                        volumeAcumuladoM3: '',
-                      })
+                        volumeAcumuladoM3: ''})
                     }
                   >
                     <PlusCircle className="mr-1 h-4 w-4" />
@@ -914,28 +882,23 @@ export function BarragemForm({ currentItem, onCreated, onCancel }: BarragemFormP
                     {
                       name: 'calculosHidrologicos.caracteristicasBacia' as const,
                       label: '9.1 Características da bacia',
-                      rows: 4,
-                    },
+                      rows: 4},
                     {
                       name: 'calculosHidrologicos.tempoConcentracao' as const,
                       label: '9.2 Tempo de concentração',
-                      rows: 3,
-                    },
+                      rows: 3},
                     {
                       name: 'calculosHidrologicos.intensidadeChuva' as const,
                       label: '9.3 Intensidade da chuva',
-                      rows: 3,
-                    },
+                      rows: 3},
                     {
                       name: 'calculosHidrologicos.coeficienteEscoamento' as const,
                       label: '9.4 Coeficiente de escoamento',
-                      rows: 3,
-                    },
+                      rows: 3},
                     {
                       name: 'calculosHidrologicos.vazaoCheia' as const,
                       label: '9.5 Vazão de cheia',
-                      rows: 3,
-                    },
+                      rows: 3},
                   ] as const
                 ).map((sec) => (
                   <FormField

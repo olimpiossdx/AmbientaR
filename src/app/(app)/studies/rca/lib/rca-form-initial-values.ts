@@ -1,4 +1,4 @@
-import _ from 'lodash';
+import merge from "lodash/merge";
 import type { RCA } from '@/lib/types';
 import { RCA_LISTAGEM_A_ACTIVITY } from '@/lib/rca/rca-listagem-a-catalog';
 import { RCA_LISTAGEM_B_ACTIVITY } from '@/lib/rca/rca-listagem-b-catalog';
@@ -246,7 +246,7 @@ export function getRcaInitialValues(currentItem?: RCA | null): RcaFormValues {
     return defaults;
   }
 
-  const merged = _.merge({}, defaults, currentItem) as RcaFormValues;
+  const merged = merge({}, defaults, currentItem) as RcaFormValues;
 
   if (currentItem.termoReferencia?.dataEmissao) {
     merged.termoReferencia = {

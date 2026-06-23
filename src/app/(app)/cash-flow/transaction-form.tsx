@@ -1,5 +1,6 @@
 "use client";
 
+import { handleFirestoreFormError } from '@/lib/firestore-form-errors';
 import * as React from "react";
 import { z } from "zod";
 import { useForm, type Control } from "react-hook-form";
@@ -12,8 +13,7 @@ import {
   FormField,
   FormItem,
   FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
+  FormMessage} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Loader2 } from "lucide-react";
 import { numberToWordsBRL } from "@/lib/utils";
@@ -27,19 +27,15 @@ import type {
   ExpenseCategory,
   Contract,
   Project,
-  ProjectRoiCase,
-} from "@/lib/types";
+  ProjectRoiCase} from "@/lib/types";
 import {
   TransactionExtraFields,
-  type TransactionExtraFieldsForm,
-} from "@/components/financial/transaction-extra-fields";
+  type TransactionExtraFieldsForm} from "@/components/financial/transaction-extra-fields";
 import {
   useFirebase,
-  errorEmitter,
   useCollection,
-  useMemoFirebase,
-} from "@/firebase";
-import { FirestorePermissionError } from "@/firebase/errors";
+  useMemoFirebase} from "@/firebase";
+
 import { collection, doc, addDoc, updateDoc } from "firebase/firestore";
 import { isImageOrPdfForTransaction } from "@/lib/file-mime";
 import { logUserAction } from "@/lib/audit-log";
@@ -53,8 +49,7 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  SelectValue} from "@/components/ui/select";
 
 const formSchema = z.object({
   description: z.string().min(2, "A descrição é obrigatória."),
@@ -80,8 +75,7 @@ const formSchema = z.object({
           files.length === 0 ||
           files?.[0]?.size <= UPLOAD_RAW_FILE_SAFETY_MAX,
       "Arquivo excede o limite de processamento no navegador.",
-    ),
-});
+    )});
 
 type TransactionFormValues = z.infer<typeof formSchema>;
 
@@ -101,8 +95,7 @@ const formatCurrencyBRL = (value: number) => {
   if (isNaN(value)) value = 0;
   return new Intl.NumberFormat("pt-BR", {
     style: "currency",
-    currency: "BRL",
-  }).format(value);
+    currency: "BRL"}).format(value);
 };
 
 const CurrencyInput = React.forwardRef<
@@ -153,8 +146,7 @@ export function TransactionForm({
   defaultProjectRoiCaseId,
   defaultContractId,
   defaultClientId,
-  defaultProjectId,
-}: TransactionFormProps) {
+  defaultProjectId}: TransactionFormProps) {
   const [loading, setLoading] = React.useState(false);
   const [isUploading, setIsUploading] = React.useState(false);
   const [uploadedFileUrl, setUploadedFileUrl] = React.useState<string | null>(
@@ -170,8 +162,7 @@ export function TransactionForm({
       const sub =
         transactionType === "revenue" ? "revenues" : "expenses";
       return `transactions/${sub}/${uid}/${Date.now()}-${safe}`;
-    },
-  });
+    }});
 
   const clientsQuery = useMemoFirebase(
     () => (firestore ? collection(firestore, "clients") : null),
@@ -230,9 +221,7 @@ export function TransactionForm({
         "",
       contractId:
         (currentItem as Revenue)?.contractId || defaultContractId || "",
-      impostoValor: (currentItem as Expense)?.impostoValor,
-    },
-  });
+      impostoValor: (currentItem as Expense)?.impostoValor}});
 
   const amountValue = form.watch("amount");
 
@@ -253,8 +242,7 @@ export function TransactionForm({
       toast({
         variant: "destructive",
         title: "Tipo de arquivo inválido",
-        description: "Envie apenas PDF, JPG ou PNG.",
-      });
+        description: "Envie apenas PDF, JPG ou PNG."});
       inputEl.value = "";
       return;
     }
@@ -270,8 +258,7 @@ export function TransactionForm({
       setUploadedFileUrl(downloadUrl);
       toast({
         title: "Anexo carregado",
-        description: "O arquivo está pronto para ser salvo.",
-      });
+        description: "O arquivo está pronto para ser salvo."});
     } catch (error) {
       console.error("File upload error:", error);
       toast({
@@ -280,8 +267,7 @@ export function TransactionForm({
         description:
           error instanceof Error
             ? error.message
-            : "Não foi possível enviar o arquivo.",
-      });
+            : "Não foi possível enviar o arquivo."});
     } finally {
       setIsUploading(false);
     }
@@ -302,8 +288,7 @@ export function TransactionForm({
       description: values.description,
       amount: values.amount,
       date: values.date.toISOString(),
-      fileUrl: uploadedFileUrl || currentItem?.fileUrl || "",
-    };
+      fileUrl: uploadedFileUrl || currentItem?.fileUrl || ""};
     if (values.requestId) dataToSave.requestId = values.requestId;
     if (values.projectId) dataToSave.projectId = values.projectId;
     if (values.centroCusto) dataToSave.centroCusto = values.centroCusto;
@@ -339,21 +324,20 @@ export function TransactionForm({
         .then(() => {
           toast({
             title: `Lançamento atualizado!`,
-            description: "As informações foram salvas com sucesso.",
-          });
+            description: "As informações foram salvas com sucesso."});
           logUserAction(firestore, auth, `update_${transactionType}`, {
             id: currentItem.id,
-            description: values.description,
-          });
+            description: values.description});
           onSuccess?.();
         })
-        .catch(async (serverError) => {
-          const permissionError = new FirestorePermissionError({
+        .catch((error) => {
+          handleFirestoreFormError(error, {
+            toast,
+            title: 'Erro ao salvar transação',
+            context: {
             path: itemRef.path,
             operation: "update",
-            requestResourceData: dataToSave,
-          });
-          errorEmitter.emit("permission-error", permissionError);
+            requestResourceData: dataToSave}});
         })
         .finally(() => setLoading(false));
     } else {
@@ -362,22 +346,21 @@ export function TransactionForm({
         .then((docRef) => {
           toast({
             title: `Lançamento criado!`,
-            description: `O lançamento foi adicionado com sucesso.`,
-          });
+            description: `O lançamento foi adicionado com sucesso.`});
           logUserAction(firestore, auth, `create_${transactionType}`, {
             id: docRef.id,
-            description: values.description,
-          });
+            description: values.description});
           form.reset();
           onSuccess?.();
         })
-        .catch(async (serverError) => {
-          const permissionError = new FirestorePermissionError({
+        .catch((error) => {
+          handleFirestoreFormError(error, {
+            toast,
+            title: 'Erro ao salvar transação',
+            context: {
             path: itemsCollectionRef.path,
             operation: "create",
-            requestResourceData: dataToSave,
-          });
-          errorEmitter.emit("permission-error", permissionError);
+            requestResourceData: dataToSave}});
         })
         .finally(() => setLoading(false));
     }

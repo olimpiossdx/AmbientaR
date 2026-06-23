@@ -22,8 +22,8 @@ import { DialogFooter } from '@/components/ui/dialog';
 import { Loader2, HelpCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { useFirebase, errorEmitter } from '@/firebase';
-import { FirestorePermissionError } from '@/firebase/errors';
+import { useFirebase } from '@/firebase';
+import { handleFirestoreFormError } from '@/lib/firestore-form-errors';
 import { collection, doc, addDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import type { InventoryProject } from '@/lib/types';
 
@@ -183,16 +183,18 @@ export function InventarioForm({ currentItem, onSuccess }: InventarioFormProps) 
         }
         form.reset();
         onSuccess?.();
-    } catch (e: any) {
-        console.error("Error saving inventory project:", e);
+    } catch (error) {
         const collectionName = 'inventories';
-        const docRef = currentItem ? doc(firestore, collectionName, currentItem.id) : collection(firestore, collectionName);
-        const permissionError = new FirestorePermissionError({
-            path: currentItem ? docRef.path : collectionName,
-            operation: currentItem ? 'update' : 'create',
-            requestResourceData: dataToSave,
-          });
-        errorEmitter.emit('permission-error', permissionError);
+        const path = currentItem ? `${collectionName}/${currentItem.id}` : collectionName;
+        handleFirestoreFormError(error, {
+            toast,
+            title: 'Erro ao salvar inventário',
+            context: {
+                path,
+                operation: currentItem ? 'update' : 'create',
+                requestResourceData: dataToSave,
+            },
+        });
     } finally {
         setLoading(false);
     }

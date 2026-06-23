@@ -1,5 +1,5 @@
 
-import { z } from 'genkit';
+import { z } from 'zod';
 
 // Definição do Esquema de Entrada
 export const AnaliseAmbientalInputSchema = z.object({

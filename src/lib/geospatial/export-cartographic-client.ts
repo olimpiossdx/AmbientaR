@@ -1,6 +1,5 @@
 "use client";
 
-import { jsPDF } from "jspdf";
 import { CARTOGRAPHIC_PAGE_SIZE } from "@/lib/geospatial/cartographic-layout";
 import {
   resolveWaveCartographicSheets,
@@ -82,6 +81,7 @@ export async function exportCartographicFromWaveA(
     return { fileName, sheetCount: 1 };
   }
 
+  const { jsPDF } = await import("jspdf");
   const doc = new jsPDF({
     orientation: "landscape",
     unit: "mm",

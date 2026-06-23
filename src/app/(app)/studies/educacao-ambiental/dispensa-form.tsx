@@ -13,8 +13,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-  FormDescription,
-} from '@/components/ui/form';
+  FormDescription} from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { BrDateFormControl } from '@/components/form/br-date-input';
 import { MaskedInput } from '@/components/ui/masked-input';
@@ -22,8 +21,9 @@ import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { Empreendedor, TechnicalResponsible } from '@/lib/types';
 import type { DispensaPeaRecord } from '@/lib/pea/types';
-import { useFirebase, errorEmitter, useCollection, useMemoFirebase } from '@/firebase';
-import { FirestorePermissionError } from '@/firebase/errors';
+import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
+import { handleFirestoreFormError } from '@/lib/firestore-form-errors';
+
 import { collection, doc, addDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { uploadFileToStorage, sanitizeStorageFileName } from '@/lib/storage-upload';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -37,13 +37,11 @@ import { SignaturePad } from '@/components/ui/signature-pad';
 import { PeaGeoLinkPanel } from '@/components/pea/pea-geo-link-panel';
 import {
   sanitizeGeoAnalysisId,
-  sanitizeGeoVinculo,
-} from '@/lib/pea/sanitize-geo-payload';
+  sanitizeGeoVinculo} from '@/lib/pea/sanitize-geo-payload';
 import { CoordinateStringField } from '@/components/coordinates';
 import {
   dispensaLatLngToInputString,
-  inputStringToDispensaLatLng,
-} from '@/lib/pea/dispensa-coordenadas';
+  inputStringToDispensaLatLng} from '@/lib/pea/dispensa-coordenadas';
 
 
 const formSchema = z.object({
@@ -79,8 +77,7 @@ const formSchema = z.object({
   email: z.string().optional(),
   coordenadas: z.object({
       latitude: z.string().optional(),
-      longitude: z.string().optional(),
-  }).optional(),
+      longitude: z.string().optional()}).optional(),
 
   // Licenciamento fields
   processoAdministrativo: z.string().optional(),
@@ -97,8 +94,7 @@ const formSchema = z.object({
     tipoLicenca: z.string().optional(),
     objeto: z.string().optional(),
     dataConcessao: z.string().optional(),
-    validade: z.string().optional(),
-  }).optional(),
+    validade: z.string().optional()}).optional(),
   possuiPea: z.enum(['sim', 'nao']).optional(),
   peaConformeDN: z.enum(['sim', 'nao']).optional(),
 
@@ -119,9 +115,7 @@ const formSchema = z.object({
     formacao: z.string().min(1, 'Formação é obrigatória'),
     cargo: z.string().min(1, 'Cargo/vínculo é obrigatório'),
     localData: z.string().min(1, 'Local e data são obrigatórios'),
-    assinaturaUrl: z.string().optional(),
-  }).optional(),
-});
+    assinaturaUrl: z.string().optional()}).optional()});
 
 type FormValues = z.infer<typeof formSchema>;
 
@@ -173,9 +167,7 @@ export function DispensaForm({ currentItem, onSuccess, onCancel }: DispensaFormP
     defaultValues: {
       empreendedorId: '',
       justificativa: '',
-      responsavel: { nome: '', documento: '', formacao: '', cargo: '', localData: '' },
-    },
-  });
+      responsavel: { nome: '', documento: '', formacao: '', cargo: '', localData: '' }}});
 
   React.useEffect(() => {
     if (!currentItem) return;
@@ -213,8 +205,7 @@ export function DispensaForm({ currentItem, onSuccess, onCancel }: DispensaFormP
       dispensaParcialOutro: currentItem.dispensaParcialOutro,
       caracterizacaoSocioeconomica: currentItem.caracterizacaoSocioeconomica,
       geoAnalysisId: currentItem.geoAnalysisId ?? '',
-      responsavel: currentItem.responsavel ?? { nome: '', documento: '', formacao: '', cargo: '', localData: '' },
-    });
+      responsavel: currentItem.responsavel ?? { nome: '', documento: '', formacao: '', cargo: '', localData: '' }});
     setGeoVinculoDispensa(currentItem.geoVinculo);
   }, [currentItem, form]);
   
@@ -263,8 +254,7 @@ export function DispensaForm({ currentItem, onSuccess, onCancel }: DispensaFormP
       toast({
         variant: 'destructive',
         title: 'Sessão inválida',
-        description: 'Faça login novamente para salvar a solicitação.',
-      });
+        description: 'Faça login novamente para salvar a solicitação.'});
       return;
     }
 
@@ -319,8 +309,7 @@ export function DispensaForm({ currentItem, onSuccess, onCancel }: DispensaFormP
         anexos,
         status: 'Enviado',
         updatedAt: serverTimestamp(),
-        createdBy: currentItem?.createdBy ?? user.uid,
-      };
+        createdBy: currentItem?.createdBy ?? user.uid};
 
       const collectionRef = collection(firestore, 'dispensaPea');
 
@@ -328,31 +317,24 @@ export function DispensaForm({ currentItem, onSuccess, onCancel }: DispensaFormP
         await updateDoc(doc(firestore, 'dispensaPea', currentItem.id), payload);
         toast({
           title: 'Solicitação atualizada',
-          description: 'A dispensa do PEA foi salva com sucesso.',
-        });
+          description: 'A dispensa do PEA foi salva com sucesso.'});
       } else {
         await addDoc(collectionRef, {
           ...payload,
-          createdAt: serverTimestamp(),
-        });
+          createdAt: serverTimestamp()});
         toast({
           title: 'Solicitação de dispensa enviada',
-          description: 'O formulário foi registrado com sucesso.',
-        });
+          description: 'O formulário foi registrado com sucesso.'});
       }
       setAnexoFiles([]);
       onSuccess?.();
-    } catch (e) {
-      const permissionError = new FirestorePermissionError({
+    } catch (error) {
+      handleFirestoreFormError(error, {
+        toast,
+        title: 'Erro ao salvar dispensa',
+        context: {
         path: 'dispensaPea',
-        operation: currentItem?.id ? 'update' : 'create',
-      });
-      errorEmitter.emit('permission-error', permissionError);
-      toast({
-        variant: 'destructive',
-        title: 'Erro ao salvar',
-        description: e instanceof Error ? e.message : 'Não foi possível registrar a solicitação.',
-      });
+        operation: currentItem?.id ? 'update' : 'create'}});
     } finally {
       setLoading(false);
     }
@@ -438,16 +420,13 @@ export function DispensaForm({ currentItem, onSuccess, onCancel }: DispensaFormP
                     <CoordinateStringField
                       value={dispensaLatLngToInputString({
                         latitude: form.watch('coordenadas.latitude'),
-                        longitude: form.watch('coordenadas.longitude'),
-                      })}
+                        longitude: form.watch('coordenadas.longitude')})}
                       onChange={(next) => {
                         const pair = inputStringToDispensaLatLng(next);
                         form.setValue('coordenadas.latitude', pair.latitude ?? '', {
-                          shouldDirty: true,
-                        });
+                          shouldDirty: true});
                         form.setValue('coordenadas.longitude', pair.longitude ?? '', {
-                          shouldDirty: true,
-                        });
+                          shouldDirty: true});
                       }}
                       variant="coords-only"
                     />

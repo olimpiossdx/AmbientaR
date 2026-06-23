@@ -14,13 +14,12 @@ import { collection, doc, updateDoc, limit, query } from 'firebase/firestore';
 import type { Empreendedor, Project, Request } from '@/lib/types';
 import * as React from 'react';
 import { useToast } from '@/hooks/use-toast';
+import { handleFirestoreFormError } from '@/lib/firestore-form-errors';
 import { Loader2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Separator } from '@/components/ui/separator';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Badge } from '@/components/ui/badge';
-import { FirestorePermissionError } from '@/firebase/errors';
-import { errorEmitter } from '@/firebase';
 import {
   DEFAULT_AIA_PROFILE,
   INTERVENTION_SERVICE_LABEL,
@@ -909,12 +908,15 @@ function EditRequestPageContent() {
                         ? String((err as { code?: string }).code)
                         : "";
                 if (code === "permission-denied") {
-                    const permissionError = new FirestorePermissionError({
-                        path: requestRef.path,
-                        operation: "update",
-                        requestResourceData: dataToSave,
+                    handleFirestoreFormError(err, {
+                        toast,
+                        title: "Erro ao atualizar trâmite",
+                        context: {
+                            path: requestRef.path,
+                            operation: "update",
+                            requestResourceData: dataToSave,
+                        },
                     });
-                    errorEmitter.emit("permission-error", permissionError);
                 }
             })
             .finally(() => setLoading(false));

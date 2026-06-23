@@ -4,6 +4,7 @@
  */
 "use client";
 
+import { handleFirestoreFormError } from '@/lib/firestore-form-errors';
 import * as React from "react";
 import { z } from "zod";
 import { useForm, useFieldArray, useWatch } from "react-hook-form";
@@ -16,27 +17,23 @@ import {
   FormField,
   FormItem,
   FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
+  FormMessage} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  SelectValue} from "@/components/ui/select";
 import { Loader2, PlusCircle, Trash2, List } from "lucide-react";
 import { BrDateFormControl } from "@/components/form/br-date-input";
 import { useToast } from "@/hooks/use-toast";
 import type { Proposal, Client, ProposalItem, Service } from "@/lib/types";
 import {
   useFirebase,
-  errorEmitter,
   useCollection,
-  useMemoFirebase,
-} from "@/firebase";
-import { FirestorePermissionError } from "@/firebase/errors";
+  useMemoFirebase} from "@/firebase";
+
 import { AttachmentPreviewSection } from "@/components/shared/attachment-preview-section";
 import { collection, doc, addDoc, updateDoc } from "firebase/firestore";
 import { UploadPreparationDialog } from "@/components/shared/upload-preparation-dialog";
@@ -50,8 +47,7 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-  DialogContent,
-} from "@/components/ui/dialog";
+  DialogContent} from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
 
@@ -66,18 +62,15 @@ const formSchema = z
           description: z
             .string()
             .min(1, "A descrição do serviço é obrigatória."),
-          value: z.coerce.number().min(0, "O valor não pode ser negativo."),
-        }),
+          value: z.coerce.number().min(0, "O valor não pode ser negativo.")}),
       )
       .min(1, "Adicione pelo menos um item de serviço."),
     amount: z.number(),
     status: z.enum(["Draft", "Sent", "Accepted", "Rejected"]),
     proposalDate: z.date({
-      required_error: "A data de emissão é obrigatória.",
-    }),
+      required_error: "A data de emissão é obrigatória."}),
     validUntilDate: z.date({
-      required_error: "A data de validade é obrigatória.",
-    }),
+      required_error: "A data de validade é obrigatória."}),
     file: z
       .any()
       .optional()
@@ -85,12 +78,10 @@ const formSchema = z
         (files) =>
           !files || files.length === 0 || files?.[0]?.size <= UPLOAD_RAW_FILE_SAFETY_MAX,
         "Arquivo excede o limite de processamento no navegador.",
-      ),
-  })
+      )})
   .refine((data) => data.validUntilDate >= data.proposalDate, {
     message: "A data de validade não pode ser anterior à data de emissão.",
-    path: ["validUntilDate"],
-  });
+    path: ["validUntilDate"]});
 
 type FormValues = z.infer<typeof formSchema>;
 
@@ -111,8 +102,7 @@ const formatCurrencyBRL = (value: number) => {
   if (isNaN(value)) value = 0;
   return new Intl.NumberFormat("pt-BR", {
     style: "currency",
-    currency: "BRL",
-  }).format(value);
+    currency: "BRL"}).format(value);
 };
 
 const CurrencyInput = React.forwardRef<
@@ -158,8 +148,7 @@ CurrencyInput.displayName = "CurrencyInput";
 export function ProposalForm({
   currentItem,
   onSuccess,
-  onCancel,
-}: ProposalFormProps) {
+  onCancel}: ProposalFormProps) {
   const [loading, setLoading] = React.useState(false);
   const [isUploading, setIsUploading] = React.useState(false);
   const [uploadedFileUrl, setUploadedFileUrl] = React.useState<string | null>(
@@ -169,8 +158,7 @@ export function ProposalForm({
 
   const { toast } = useToast();
   const { uploadFile, dialogProps, limitLabel } = useStorageFileUpload({
-    storageFolder: "proposals",
-  });
+    storageFolder: "proposals"});
   const { firestore, auth } = useFirebase();
 
   const clientsQuery = useMemoFirebase(
@@ -194,8 +182,7 @@ export function ProposalForm({
           ...currentItem,
           proposalDate: new Date(currentItem.proposalDate),
           validUntilDate: new Date(currentItem.validUntilDate),
-          items: currentItem.items || [{ description: "", value: 0 }],
-        }
+          items: currentItem.items || [{ description: "", value: 0 }]}
       : {
           clientId: "",
           empreendimento: "",
@@ -206,9 +193,7 @@ export function ProposalForm({
           proposalDate: new Date(),
           validUntilDate: new Date(
             new Date().setDate(new Date().getDate() + 30),
-          ),
-        },
-  });
+          )}});
 
   React.useEffect(() => {
     if (currentItem) {
@@ -216,21 +201,18 @@ export function ProposalForm({
         ...currentItem,
         proposalDate: new Date(currentItem.proposalDate),
         validUntilDate: new Date(currentItem.validUntilDate),
-        items: currentItem.items || [{ description: "", value: 0 }],
-      });
+        items: currentItem.items || [{ description: "", value: 0 }]});
       setUploadedFileUrl(currentItem.fileUrl || null);
     }
   }, [currentItem, form]);
 
   const { fields, append, remove } = useFieldArray({
     control: form.control,
-    name: "items",
-  });
+    name: "items"});
 
   const watchedItems = useWatch({
     control: form.control,
-    name: "items",
-  });
+    name: "items"});
 
   const totalAmount = React.useMemo(() => {
     return (
@@ -247,13 +229,11 @@ export function ProposalForm({
     append({
       description:
         service.name + (service.description ? `\n${service.description}` : ""),
-      value: service.price,
-    });
+      value: service.price});
     setIsServiceModalOpen(false);
     toast({
       title: "Serviço Adicionado!",
-      description: `"${service.name}" foi adicionado ao orçamento.`,
-    });
+      description: `"${service.name}" foi adicionado ao orçamento.`});
   };
 
   const handleFileChange = async (
@@ -276,15 +256,13 @@ export function ProposalForm({
       setUploadedFileUrl(downloadUrl);
       toast({
         title: "Anexo carregado",
-        description: "O arquivo está pronto para ser salvo.",
-      });
+        description: "O arquivo está pronto para ser salvo."});
     } catch (error) {
       console.error("File upload error:", error);
       toast({
         variant: "destructive",
         title: "Erro no Upload",
-        description: "Não foi possível enviar o arquivo.",
-      });
+        description: "Não foi possível enviar o arquivo."});
     } finally {
       setIsUploading(false);
     }
@@ -303,8 +281,7 @@ export function ProposalForm({
       ...values,
       proposalDate: values.proposalDate.toISOString(),
       validUntilDate: values.validUntilDate.toISOString(),
-      fileUrl: uploadedFileUrl || currentItem?.fileUrl || "",
-    };
+      fileUrl: uploadedFileUrl || currentItem?.fileUrl || ""};
 
     if (currentItem) {
       const docRef = doc(firestore, "proposals", currentItem.id);
@@ -312,21 +289,20 @@ export function ProposalForm({
         .then(() => {
           toast({
             title: "Orçamento atualizado!",
-            description: "As informações foram salvas com sucesso.",
-          });
+            description: "As informações foram salvas com sucesso."});
           logUserAction(firestore, auth, "update_proposal", {
             proposalId: currentItem.id,
-            proposalNumber: values.proposalNumber,
-          });
+            proposalNumber: values.proposalNumber});
           onSuccess?.();
         })
-        .catch(async (serverError) => {
-          const permissionError = new FirestorePermissionError({
+        .catch((error) => {
+          handleFirestoreFormError(error, {
+            toast,
+            title: 'Erro ao salvar proposta',
+            context: {
             path: docRef.path,
             operation: "update",
-            requestResourceData: dataToSave,
-          });
-          errorEmitter.emit("permission-error", permissionError);
+            requestResourceData: dataToSave}});
         })
         .finally(() => setLoading(false));
     } else {
@@ -335,22 +311,21 @@ export function ProposalForm({
         .then((docRef) => {
           toast({
             title: "Orçamento criado!",
-            description: `O orçamento ${values.proposalNumber} foi criado.`,
-          });
+            description: `O orçamento ${values.proposalNumber} foi criado.`});
           logUserAction(firestore, auth, "create_proposal", {
             proposalId: docRef.id,
-            proposalNumber: values.proposalNumber,
-          });
+            proposalNumber: values.proposalNumber});
           form.reset();
           onSuccess?.();
         })
-        .catch(async (serverError) => {
-          const permissionError = new FirestorePermissionError({
+        .catch((error) => {
+          handleFirestoreFormError(error, {
+            toast,
+            title: 'Erro ao salvar proposta',
+            context: {
             path: collectionRef.path,
             operation: "create",
-            requestResourceData: dataToSave,
-          });
-          errorEmitter.emit("permission-error", permissionError);
+            requestResourceData: dataToSave}});
         })
         .finally(() => setLoading(false));
     }

@@ -12,15 +12,15 @@ import {
   FormField,
   FormItem,
   FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
+  FormMessage} from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { Service } from '@/lib/types';
-import { useFirebase, errorEmitter } from '@/firebase';
-import { FirestorePermissionError } from '@/firebase/errors';
+import { useFirebase} from '@/firebase';
+import { handleFirestoreFormError } from '@/lib/firestore-form-errors';
+
 import { collection, doc, addDoc, updateDoc } from 'firebase/firestore';
 import { logUserAction } from '@/lib/audit-log';
 
@@ -28,8 +28,7 @@ const formSchema = z.object({
   name: z.string().min(3, 'O nome do serviço é obrigatório.'),
   description: z.string().optional(),
   cost: z.coerce.number().min(0, 'O custo deve ser um valor positivo.').optional(),
-  price: z.coerce.number().positive('O preço deve ser um valor positivo.'),
-});
+  price: z.coerce.number().positive('O preço deve ser um valor positivo.')});
 
 type FormValues = z.infer<typeof formSchema>;
 
@@ -43,8 +42,7 @@ const formatCurrencyBRL = (value: number) => {
     if (isNaN(value)) value = 0;
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
-      currency: 'BRL',
-    }).format(value);
+      currency: 'BRL'}).format(value);
 };
 
 const CurrencyInput = React.forwardRef<HTMLInputElement, Omit<React.InputHTMLAttributes<HTMLInputElement>, 'onChange'> & { onChange: (value: number) => void; value: number }>(
@@ -85,9 +83,7 @@ export function ServiceForm({ currentItem, onSuccess, onCancel }: ServiceFormPro
       name: currentItem?.name || '',
       description: currentItem?.description || '',
       cost: currentItem?.cost || 0,
-      price: currentItem?.price || 0,
-    },
-  });
+      price: currentItem?.price || 0}});
 
   async function onSubmit(values: FormValues) {
     setLoading(true);
@@ -108,9 +104,11 @@ export function ServiceForm({ currentItem, onSuccess, onCancel }: ServiceFormPro
           logUserAction(firestore, auth, 'update_service', { serviceId: currentItem.id, serviceName: values.name });
           onSuccess?.();
         })
-        .catch(async (serverError) => {
-          const permissionError = new FirestorePermissionError({ path: itemRef.path, operation: 'update', requestResourceData: dataToSave });
-          errorEmitter.emit('permission-error', permissionError);
+        .catch((error) => {
+          handleFirestoreFormError(error, {
+            toast,
+            title: 'Erro ao salvar serviço',
+            context: { path: itemRef.path, operation: 'update', requestResourceData: dataToSave }});
         })
         .finally(() => setLoading(false));
     } else {
@@ -122,9 +120,11 @@ export function ServiceForm({ currentItem, onSuccess, onCancel }: ServiceFormPro
           form.reset();
           onSuccess?.();
         })
-        .catch(async (serverError) => {
-          const permissionError = new FirestorePermissionError({ path: itemsCollectionRef.path, operation: 'create', requestResourceData: dataToSave });
-          errorEmitter.emit('permission-error', permissionError);
+        .catch((error) => {
+          handleFirestoreFormError(error, {
+            toast,
+            title: 'Erro ao salvar serviço',
+            context: { path: itemsCollectionRef.path, operation: 'create', requestResourceData: dataToSave }});
         })
         .finally(() => setLoading(false));
     }

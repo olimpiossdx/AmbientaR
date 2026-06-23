@@ -13,34 +13,31 @@ import {
   FormItem,
   FormLabel,
   FormControl,
-  FormMessage,
-} from '@/components/ui/form';
+  FormMessage} from '@/components/ui/form';
 import { Loader2, ArrowLeft } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { RCA, Empreendedor as Client, Project } from '@/lib/types';
-import { useFirebase, errorEmitter, useCollection, useMemoFirebase } from '@/firebase';
-import { FirestorePermissionError } from '@/firebase/errors';
+import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
+import { handleFirestoreFormError } from '@/lib/firestore-form-errors';
+
 import { collection, doc, addDoc, updateDoc } from 'firebase/firestore';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useRouter } from 'next/navigation';
 import { cleanEmptyValues } from '@/lib/utils';
 import {
   RCA_LISTAGEM_ACTIVITIES,
-  RCA_SUBACTIVITIES,
-} from '@/lib/rca-listagem-catalog';
+  RCA_SUBACTIVITIES} from '@/lib/rca-listagem-catalog';
 import { LISTAGEM_ACTIVITY_BY_CODE } from '@/lib/listagem-activities';
 import {
   getRcaInitialValues,
-  type RcaFormValues,
-} from './lib/rca-form-initial-values';
+  type RcaFormValues} from './lib/rca-form-initial-values';
 
 
 const formSchema = z.object({
   activity: z.string().min(1, "A seleção da listagem é obrigatória."),
   subActivity: z.string().optional(),
   empreendedor: z.object({}).passthrough(),
-  empreendimento: z.object({}).passthrough(),
-}).passthrough();
+  empreendimento: z.object({}).passthrough()}).passthrough();
 
 interface RcaFormLegacyProps {
   currentItem?: RCA | null;
@@ -66,8 +63,7 @@ const subActivities = RCA_SUBACTIVITIES;
 export function RcaFormLegacy({
   currentItem,
   onSuccess,
-  initialListagemCode,
-}: RcaFormLegacyProps) {
+  initialListagemCode}: RcaFormLegacyProps) {
   const [loading, setLoading] = React.useState(false);
   const { toast } = useToast();
   const { firestore } = useFirebase();
@@ -88,9 +84,7 @@ export function RcaFormLegacy({
     resolver: zodResolver(formSchema),
     defaultValues: {
       ...getRcaInitialValues(currentItem),
-      ...(initialActivity ? { activity: initialActivity } : {}),
-    },
-  });
+      ...(initialActivity ? { activity: initialActivity } : {})}});
 
   const selectedActivity = form.watch('activity');
   const selectedSubActivity = form.watch('subActivity');
@@ -103,8 +97,7 @@ export function RcaFormLegacy({
         toast({
             variant: 'destructive',
             title: 'Formulário Inválido',
-            description: 'Por favor, corrija os erros antes de concluir.',
-        });
+            description: 'Por favor, corrija os erros antes de concluir.'});
         setLoading(false);
         return;
     }
@@ -123,8 +116,7 @@ export function RcaFormLegacy({
       status: status,
       termoReferencia: {
         ...(termoReferencia || {}),
-        dataEmissao: termoReferencia?.dataEmissao ? new Date(termoReferencia.dataEmissao).toISOString() : null,
-      }
+        dataEmissao: termoReferencia?.dataEmissao ? new Date(termoReferencia.dataEmissao).toISOString() : null}
     });
 
     try {
@@ -138,14 +130,14 @@ export function RcaFormLegacy({
           toast({ title: 'RCA criado!', description: `O relatório foi criado com sucesso.` });
         }
         onSuccess();
-    } catch (e: any) {
-        console.error("Error saving RCA: ", e);
-        const permissionError = new FirestorePermissionError({
+    } catch (error) {
+      handleFirestoreFormError(error, {
+        toast,
+        title: 'Erro ao salvar RCA',
+        context: {
             path: currentItem ? `rcas/${currentItem.id}` : 'rcas',
             operation: currentItem ? 'update' : 'create',
-            requestResourceData: dataToSave,
-          });
-        errorEmitter.emit('permission-error', permissionError);
+            requestResourceData: dataToSave}});
     } finally {
         setLoading(false);
     }

@@ -6,6 +6,7 @@ import {
   clearSkipPersistentFirestoreCache,
 } from '@/lib/browser-storage-recovery';
 import { clearFirebaseClientInstancesCache } from '@/firebase/load-firebase-client';
+import { getUserFacingErrorMessage } from '@/firebase/errors';
 
 /**
  * Captura erros na raiz do app (layout, providers).
@@ -22,9 +23,10 @@ export default function GlobalError({
     console.error('Erro global:', error.message, error.digest, error.stack);
   }, [error]);
 
+  const displayMessage = getUserFacingErrorMessage(error);
   const isPermissionError =
-    /permission-denied|insufficient permissions|auth": null/i.test(
-      error.message ?? '',
+    /sem permissão|permission-denied|insufficient permissions/i.test(
+      displayMessage,
     );
 
   const handleClearStorage = async () => {
@@ -87,11 +89,11 @@ export default function GlobalError({
             terminal onde <code>npm run dev</code> está a correr.
           </p>
         )}
-        {error.message && (
+        {displayMessage ? (
           <pre>
-            {error.message}
+            {displayMessage}
           </pre>
-        )}
+        ) : null}
         <div>
           <button
             type="button"

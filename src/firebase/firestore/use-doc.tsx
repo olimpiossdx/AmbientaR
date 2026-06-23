@@ -8,10 +8,9 @@ import {
   FirestoreError,
   DocumentSnapshot,
 } from 'firebase/firestore';
-import { errorEmitter } from '@/firebase/error-emitter';
-import { FirestorePermissionError } from '@/firebase/errors';
 import type { WithId } from './use-collection';
 import { useFirestoreAuthReady } from '@/firebase/use-firestore-auth-ready';
+import { getFirestoreErrorMessage } from '@/lib/firestore-payload';
 
 /**
  * Interface for the return value of the useDoc hook.
@@ -79,12 +78,9 @@ export function useDoc<T = any>(
         setIsLoading(false)
 
         if (error.code === 'permission-denied') {
-          const contextualError = new FirestorePermissionError({
-            operation: 'get',
-            path: memoizedDocRef.path,
-          })
-          setError(contextualError)
-          errorEmitter.emit('permission-error', contextualError);
+          const friendly = new Error(getFirestoreErrorMessage(error));
+          friendly.name = 'FirestorePermissionError';
+          setError(friendly);
         }
       }
     );

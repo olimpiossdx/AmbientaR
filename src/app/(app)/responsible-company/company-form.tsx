@@ -13,15 +13,15 @@ import {
   FormField,
   FormItem,
   FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
+  FormMessage} from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { MaskedInput } from '@/components/ui/masked-input';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { EnvironmentalCompany } from '@/lib/types';
-import { useFirebase, errorEmitter, useAuth } from '@/firebase';
-import { FirestorePermissionError } from '@/firebase/errors';
+import { useFirebase, useAuth } from '@/firebase';
+import { handleFirestoreFormError } from '@/lib/firestore-form-errors';
+
 import { collection, doc, addDoc, updateDoc, getDoc } from 'firebase/firestore';
 import { DialogFooter, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -32,8 +32,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { isAdminRole } from '@/lib/role-guards';
 import {
   getActivePlatformCompanyId,
-  syncActivePlatformCompanyDocs,
-} from '@/lib/platform-company';
+  syncActivePlatformCompanyDocs} from '@/lib/platform-company';
 
 const formSchema = z.object({
   name: z.string().min(2, 'A razão social é obrigatória.'),
@@ -56,8 +55,7 @@ const formSchema = z.object({
   bankAccountType: z.enum(['corrente', 'poupanca']).optional(),
   pixKey: z.string().optional(),
   pixCopyPaste: z.string().optional(),
-  setAsPlatformCompany: z.boolean().optional(),
-});
+  setAsPlatformCompany: z.boolean().optional()});
 
 type FormValues = z.infer<typeof formSchema>;
 
@@ -97,9 +95,7 @@ export function CompanyForm({ currentItem, onSuccess, onCancel }: CompanyFormPro
       bankAccountType: currentItem?.bankAccountType,
       pixKey: currentItem?.pixKey || '',
       pixCopyPaste: currentItem?.pixCopyPaste || '',
-      setAsPlatformCompany: false,
-    },
-  });
+      setAsPlatformCompany: false}});
 
   React.useEffect(() => {
     if (!firestore || !currentItem?.id || !isAdmin) return;
@@ -141,8 +137,7 @@ export function CompanyForm({ currentItem, onSuccess, onCancel }: CompanyFormPro
     const { setAsPlatformCompany, ...companyFields } = values;
     const payload = {
       ...companyFields,
-      bankAccountType: companyFields.bankAccountType || undefined,
-    };
+      bankAccountType: companyFields.bankAccountType || undefined};
 
     const maybeSyncPlatform = async (companyId: string) => {
       const company: EnvironmentalCompany = { id: companyId, ...payload };
@@ -163,17 +158,17 @@ export function CompanyForm({ currentItem, onSuccess, onCancel }: CompanyFormPro
             title: synced ? 'Empresa da plataforma atualizada' : 'Empresa atualizada!',
             description: synced
               ? 'Contrato de cadastro e pagamento usam esta empresa.'
-              : 'Os dados da empresa foram salvos com sucesso.',
-          });
+              : 'Os dados da empresa foram salvos com sucesso.'});
           onSuccess?.();
         })
-        .catch(async () => {
-          const permissionError = new FirestorePermissionError({
+        .catch((error) => {
+          handleFirestoreFormError(error, {
+            toast,
+            title: 'Erro ao salvar empresa',
+            context: {
             path: docRef.path,
             operation: 'update',
-            requestResourceData: payload,
-          });
-          errorEmitter.emit('permission-error', permissionError);
+            requestResourceData: payload}});
         })
         .finally(() => setLoading(false));
     } else {
@@ -186,21 +181,21 @@ export function CompanyForm({ currentItem, onSuccess, onCancel }: CompanyFormPro
             await syncActivePlatformCompanyDocs(firestore, company);
             toast({
               title: 'Empresa criada e definida para a plataforma',
-              description: `${values.name} será usada no contrato de cadastro e no pagamento.`,
-            });
+              description: `${values.name} será usada no contrato de cadastro e no pagamento.`});
           } else {
             toast({ title: 'Empresa criada!', description: `A empresa ${values.name} foi adicionada com sucesso.` });
           }
           form.reset();
           onSuccess?.();
         })
-        .catch(async () => {
-          const permissionError = new FirestorePermissionError({
+        .catch((error) => {
+          handleFirestoreFormError(error, {
+            toast,
+            title: 'Erro ao salvar empresa',
+            context: {
             path: collectionRef.path,
             operation: 'create',
-            requestResourceData: payload,
-          });
-          errorEmitter.emit('permission-error', permissionError);
+            requestResourceData: payload}});
         })
         .finally(() => setLoading(false));
     }

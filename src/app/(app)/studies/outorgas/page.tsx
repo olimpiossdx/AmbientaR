@@ -48,6 +48,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
+import { handleFirestoreFormError } from "@/lib/firestore-form-errors";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { useAuth } from "@/firebase";
 import { useRouter } from "next/navigation";
@@ -164,13 +165,13 @@ export default function OutorgasEstudosPage() {
           description: "O processo de outorga foi removido.",
         });
       })
-      .catch(async (serverError) => {
-        const permissionError = new FirestorePermissionError({
-          path: docRef.path,
-          operation: "delete",
-        });
-        errorEmitter.emit("permission-error", permissionError);
-      })
+      .catch((serverError) =>
+        handleFirestoreFormError(serverError, {
+          toast,
+          title: "Erro ao excluir estudo",
+          context: { path: docRef.path, operation: "delete" },
+        }),
+      )
       .finally(() => {
         setIsAlertOpen(false);
         setItemToDelete(null);

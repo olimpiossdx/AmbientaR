@@ -13,14 +13,14 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-  FormDescription,
-} from '@/components/ui/form';
+  FormDescription} from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Loader2, PlusCircle, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { Prada, Empreendedor as Client, Project, AvaliacaoResultadoItem } from '@/lib/types';
-import { useFirebase, errorEmitter, useCollection, useMemoFirebase } from '@/firebase';
-import { FirestorePermissionError } from '@/firebase/errors';
+import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
+import { handleFirestoreFormError } from '@/lib/firestore-form-errors';
+
 import { collection, doc, addDoc, updateDoc } from 'firebase/firestore';
 import { DialogFooter } from '@/components/ui/dialog';
 import {
@@ -28,8 +28,7 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+  SelectValue} from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
@@ -43,15 +42,13 @@ const formSchema = z.object({
     requerente: z.object({
         clientId: z.string().optional(),
         nome: z.string().min(1, "O nome do requerente é obrigatório."),
-        cpfCnpj: z.string().min(1, "O CPF/CNPJ do requerente é obrigatório."),
-    }),
+        cpfCnpj: z.string().min(1, "O CPF/CNPJ do requerente é obrigatório.")}),
     empreendimento: z.object({
         projectId: z.string().optional(),
         nome: z.string().min(1, "O nome do empreendimento é obrigatório."),
         denominacao: z.string().min(1, "A denominação do imóvel é obrigatória."),
         car: z.string().min(1, "O N.º do Recibo do CAR é obrigatório."),
-        matricula: z.string().min(1, "A matrícula é obrigatória."),
-    }),
+        matricula: z.string().min(1, "A matrícula é obrigatória.")}),
     responsavelTecnico: z.object({
         nome: z.string().min(1, "O nome do responsável é obrigatório."),
         cpf: z.string().min(1, "O CPF do responsável é obrigatório."),
@@ -60,25 +57,21 @@ const formSchema = z.object({
         formacao: z.string().min(1, "A formação é obrigatória."),
         registroConselho: z.string().min(1, "O registro no conselho é obrigatório."),
         art: z.string().min(1, "A ART é obrigatória."),
-        ctfAida: z.string().optional(),
-    }),
+        ctfAida: z.string().optional()}),
     objetivosPrada: z.array(z.string()).optional(),
     objetivoDescricao: z.string().optional(),
     areasRecuperacao: z.array(z.object({
         identificacao: z.string().min(1, "A identificação é obrigatória."),
         descricao: z.string().min(1, "A descrição é obrigatória."),
         extensao: z.coerce.number().positive("A extensão deve ser um número positivo."),
-        justificativa: z.string().min(1, "A justificativa é obrigatória."),
-    })).optional(),
+        justificativa: z.string().min(1, "A justificativa é obrigatória.")})).optional(),
     cronograma: z.array(z.object({
         etapa: z.string().min(1, "O nome da etapa é obrigatório."),
         dataInicio: z.date({ required_error: 'A data inicial é obrigatória.' }),
-        dataFim: z.date({ required_error: 'A data final é obrigatória.' }),
-    })).optional(),
+        dataFim: z.date({ required_error: 'A data final é obrigatória.' })})).optional(),
     metodologiaAtracaoFauna: z.array(z.object({
         titulo: z.string().min(1, "O título é obrigatório."),
-        descricao: z.string().min(1, "A descrição é obrigatória."),
-    })).optional(),
+        descricao: z.string().min(1, "A descrição é obrigatória.")})).optional(),
     opcaoPrada: z.enum(['WebAmbiente', 'Projeto-Técnico']).optional(),
     formasDeReconstituicao: z.array(z.string()).optional(),
     reconstituicaoDescricao: z.string().optional(),
@@ -91,8 +84,7 @@ const formSchema = z.object({
         climax: z.array(z.string()).optional(),
         frutiferas: z.array(z.string()).optional(),
         exoticas: z.array(z.string()).optional(),
-        justificativaExoticas: z.string().optional(),
-    }).optional(),
+        justificativaExoticas: z.string().optional()}).optional(),
     projetoImplantacao: z.object({
         combateFormigas: z.string().optional(),
         preparoSolo: z.string().optional(),
@@ -103,15 +95,12 @@ const formSchema = z.object({
         tratosCulturais: z.string().optional(),
         replantio: z.string().optional(),
         preservacaoRecursos: z.string().optional(),
-        atracaoFauna: z.string().optional(),
-    }).optional(),
+        atracaoFauna: z.string().optional()}).optional(),
     avaliacaoResultados: z.array(z.object({
         metrica: z.string(),
         indicador: z.string(),
-        graduacao: z.coerce.number().min(0).max(10).optional(),
-    })).optional(),
-    referenciasBibliograficas: z.string().optional(),
-});
+        graduacao: z.coerce.number().min(0).max(10).optional()})).optional(),
+    referenciasBibliograficas: z.string().optional()});
 
 type PradaFormValues = z.infer<typeof formSchema>;
 
@@ -238,8 +227,7 @@ export function PradaForm({ currentItem, onSuccess }: PradaFormProps) {
         // @ts-ignore - Assuming cronograma exists and might have string dates from Firestore
         cronograma: currentItem.cronograma?.map(c => ({...c, dataInicio: new Date(c.dataInicio), dataFim: new Date(c.dataFim)})) || [],
         metodologiaAtracaoFauna: currentItem.metodologiaAtracaoFauna || [],
-        avaliacaoResultados: currentItem.avaliacaoResultados || avaliacaoDefault,
-    } : {
+        avaliacaoResultados: currentItem.avaliacaoResultados || avaliacaoDefault} : {
       status: 'Rascunho',
       requerente: { clientId: '', nome: '', cpfCnpj: '' },
       empreendimento: { projectId: '', nome: '', denominacao: '', car: '', matricula: '' },
@@ -256,8 +244,7 @@ export function PradaForm({ currentItem, onSuccess }: PradaFormProps) {
           climax: [],
           frutiferas: [],
           exoticas: [],
-          justificativaExoticas: '',
-      },
+          justificativaExoticas: ''},
       projetoImplantacao: {
         combateFormigas: "O combate às formigas é necessário para garantir o sucesso do plantio e o desenvolvimento saudável das mudas. Formigas cortadeiras, como as saúvas e quenquéns, podem causar danos significativos às mudas recém-plantadas, cortando as folhas e prejudicando o crescimento das plantas. Nessa atividade, serão utilizadas técnicas adequadas para controlar a população de formigas, como a aplicação de iscas formicidas ou a adoção de métodos naturais de controle, visando minimizar os danos causados por esses insetos.",
         preparoSolo: "O preparo do solo é uma etapa fundamental antes do plantio das mudas. Nessa atividade, serão realizadas a remoção de vegetação indesejada, a aração e a gradagem do solo, a fim de melhorar suas condições físicas, como aeração e drenagem, além de promover a descompactação e a remoção de materiais que possam impedir o enraizamento das mudas. O objetivo é criar um ambiente propício para o desenvolvimento das plantas e facilitar a penetração das raízes no solo.",
@@ -268,27 +255,21 @@ export function PradaForm({ currentItem, onSuccess }: PradaFormProps) {
         tratosCulturais: "Os tratos culturais são práticas realizadas após o plantio para promover o bom desenvolvimento das mudas. Essas práticas incluem a remoção de plantas invasoras que possam competir por recursos, a poda de ramos secos ou danificados, a proteção contra pragas e doenças, e a manutenção de um ambiente favorável ao crescimento das plantas. Também podem envolver a aplicação de adubação complementar, quando necessário, para suprir deficiências nutricionais.",
         replantio: "Em algumas situações, pode ser necessário realizar o replantio de mudas que não se desenvolveram adequadamente ou foram danificadas. Essa atividade envolve a remoção das mudas problemáticas e o plantio de novas mudas no local, seguindo os mesmos procedimentos de preparo do solo, espaçamento e plantio adotados anteriormente. O replantio visa garantir o estabelecimento de uma vegetação saudável e diversificada na área degradada.",
         preservacaoRecursos: "A reconstrução de áreas de preservação permanente (APP’s) é uma importante medida para a conservação dos recursos hídricos e edáficos. A adoção de práticas conservacionistas, como a reflorestação com espécies nativas, a construção de barreiras de contenção e o controle da erosão, são essenciais para garantir a recuperação dessas áreas.",
-        atracaoFauna: "A fauna desempenha um papel importante na dispersão de sementes e na regeneração natural da vegetação. Para atrair a fauna dispersora de sementes, serão adotadas práticas conservacionistas, como a implantação de cercas vivas ou corredores vegetados que fornecem abrigo e alimento para os animais. Também podem ser instalados ninhos artificiais, bebedouros ou comedouros para atrair aves e pequenos mamíferos, incentivando sua presença na área e contribuindo para a dispersão de sementes.",
-      },
+        atracaoFauna: "A fauna desempenha um papel importante na dispersão de sementes e na regeneração natural da vegetação. Para atrair a fauna dispersora de sementes, serão adotadas práticas conservacionistas, como a implantação de cercas vivas ou corredores vegetados que fornecem abrigo e alimento para os animais. Também podem ser instalados ninhos artificiais, bebedouros ou comedouros para atrair aves e pequenos mamíferos, incentivando sua presença na área e contribuindo para a dispersão de sementes."},
       avaliacaoResultados: avaliacaoDefault,
-      referenciasBibliograficas: '',
-    },
-  });
+      referenciasBibliograficas: ''}});
   
   const { fields: areaFields, append: appendArea, remove: removeArea } = useFieldArray({
     control: form.control,
-    name: "areasRecuperacao",
-  });
+    name: "areasRecuperacao"});
 
   const { fields: cronogramaFields, append: appendCronograma, remove: removeCronograma } = useFieldArray({
     control: form.control,
-    name: "cronograma",
-  });
+    name: "cronograma"});
   
   const { fields: faunaFields, append: appendFauna, remove: removeFauna } = useFieldArray({
     control: form.control,
-    name: "metodologiaAtracaoFauna",
-  });
+    name: "metodologiaAtracaoFauna"});
 
   const { fields: avaliacaoFields } = useFieldArray({
     control: form.control,
@@ -329,8 +310,7 @@ export function PradaForm({ currentItem, onSuccess }: PradaFormProps) {
         toast({
             variant: 'destructive',
             title: 'Formulário Inválido',
-            description: 'Por favor, corrija os erros antes de concluir.',
-        });
+            description: 'Por favor, corrija os erros antes de concluir.'});
         setLoading(false);
         return;
     }
@@ -351,8 +331,7 @@ export function PradaForm({ currentItem, onSuccess }: PradaFormProps) {
             // @ts-ignore
             dataInicio: c.dataInicio instanceof Date ? c.dataInicio.toISOString() : c.dataInicio,
             // @ts-ignore
-            dataFim: c.dataFim instanceof Date ? c.dataFim.toISOString() : c.dataFim,
-        }))
+            dataFim: c.dataFim instanceof Date ? c.dataFim.toISOString() : c.dataFim}))
     }
 
     if (currentItem) {
@@ -361,17 +340,17 @@ export function PradaForm({ currentItem, onSuccess }: PradaFormProps) {
         .then(() => {
           toast({
             title: 'PRADA atualizado!',
-            description: 'O formulário foi salvo com sucesso.',
-          });
+            description: 'O formulário foi salvo com sucesso.'});
           if (status === 'Aprovado') onSuccess?.();
         })
-        .catch(async (serverError) => {
-          const permissionError = new FirestorePermissionError({
+        .catch((error) => {
+          handleFirestoreFormError(error, {
+            toast,
+            title: 'Erro ao salvar PRADA',
+            context: {
             path: docRef.path,
             operation: 'update',
-            requestResourceData: dataToSave,
-          });
-          errorEmitter.emit('permission-error', permissionError);
+            requestResourceData: dataToSave}});
         })
         .finally(() => setLoading(false));
     } else {
@@ -380,18 +359,18 @@ export function PradaForm({ currentItem, onSuccess }: PradaFormProps) {
         .then(() => {
           toast({
             title: 'PRADA criado!',
-            description: `O formulário para ${values.empreendimento.nome} foi criado com sucesso.`,
-          });
+            description: `O formulário para ${values.empreendimento.nome} foi criado com sucesso.`});
           form.reset();
           if (status === 'Aprovado') onSuccess?.();
         })
-        .catch(async (serverError) => {
-          const permissionError = new FirestorePermissionError({
+        .catch((error) => {
+          handleFirestoreFormError(error, {
+            toast,
+            title: 'Erro ao salvar PRADA',
+            context: {
             path: collectionRef.path,
             operation: 'create',
-            requestResourceData: dataToSave,
-          });
-          errorEmitter.emit('permission-error', permissionError);
+            requestResourceData: dataToSave}});
         })
         .finally(() => setLoading(false));
     }
@@ -405,8 +384,7 @@ export function PradaForm({ currentItem, onSuccess }: PradaFormProps) {
 
       const legendItems = cronogramaData.map((item, index) => ({
         number: index + 1,
-        label: item.etapa,
-      }));
+        label: item.etapa}));
 
       const data: { [year: number]: (string | number)[][] } = {};
       const yearSet = new Set<number>();

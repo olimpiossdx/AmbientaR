@@ -38,7 +38,7 @@ import {
 import type { Request, Empreendedor, Project, AppUser } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
-import { FirestorePermissionError } from '@/firebase/errors';
+import { handleFirestoreFormError } from '@/lib/firestore-form-errors';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Separator } from '@/components/ui/separator';
@@ -589,14 +589,17 @@ export default function RequestsPage() {
             description: `Trâmite avançou para ${getStatusLabel(nextStatus)}.`,
           });
         })
-        .catch(async () => {
-          const permissionError = new FirestorePermissionError({
-            path: requestRef.path,
-            operation: 'update',
-            requestResourceData: { status: nextStatus },
-          });
-          errorEmitter.emit('permission-error', permissionError);
-        });
+        .catch((error) =>
+        handleFirestoreFormError(error, {
+          toast,
+          title: 'Erro ao excluir trâmite',
+          context: {
+          path: requestRef.path,
+          operation: 'update',
+          requestResourceData: { status: nextStatus },
+        },
+        }),
+      );
   }
   
   const openDeleteConfirm = (itemId: string) => {
@@ -611,10 +614,16 @@ export default function RequestsPage() {
       .then(() => {
         toast({ title: 'Trâmite excluído', description: 'O registro foi removido com sucesso.' });
       })
-      .catch(async (serverError) => {
-        const permissionError = new FirestorePermissionError({ path: docRef.path, operation: 'delete' });
-        errorEmitter.emit('permission-error', permissionError);
-      })
+      .catch((serverError) =>
+        handleFirestoreFormError(serverError, {
+          toast,
+          title: 'Erro ao excluir trâmite',
+          context: {
+          path: docRef.path,
+          operation: 'delete',
+        },
+        }),
+      )
       .finally(() => {
         setIsAlertOpen(false);
         setItemToDelete(null);

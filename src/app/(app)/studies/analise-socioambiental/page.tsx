@@ -55,6 +55,7 @@ import type { AnaliseSocioambiental } from '@/lib/types/analise-socioambiental';
 import type { Client } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
+import { handleFirestoreFormError } from '@/lib/firestore-form-errors';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -118,9 +119,16 @@ export default function AnaliseSocioambientalPage() {
       .then(() => {
         toast({ title: 'Análise removida', description: 'O extrato foi excluído.' });
       })
-      .catch(() => {
-        errorEmitter.emit('permission-error', new FirestorePermissionError({ path: docRef.path, operation: 'delete' }));
-      })
+      .catch((error) =>
+        handleFirestoreFormError(error, {
+          toast,
+          title: 'Erro ao excluir análise',
+          context: {
+          path: docRef.path,
+          operation: 'delete',
+        },
+        }),
+      )
       .finally(() => {
         setIsAlertOpen(false);
         setItemToDelete(null);

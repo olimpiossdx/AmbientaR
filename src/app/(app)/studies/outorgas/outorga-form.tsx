@@ -13,24 +13,23 @@ import {
   FormField,
   FormItem,
   FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
+  FormMessage} from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+  SelectValue} from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Loader2 } from 'lucide-react';
 import { BrDateFormControl } from '@/components/form/br-date-input';
 
 import { useToast } from '@/hooks/use-toast';
 import type { WaterPermit, PermitStatus, Empreendedor } from '@/lib/types';
-import { useFirebase, errorEmitter, useCollection, useMemoFirebase } from '@/firebase';
-import { FirestorePermissionError } from '@/firebase/errors';
+import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
+import { handleFirestoreFormError } from '@/lib/firestore-form-errors';
+
 import { collection, doc, addDoc, updateDoc } from 'firebase/firestore';
 import { DialogFooter } from '@/components/ui/dialog';
 
@@ -41,11 +40,9 @@ const formSchema = z.object({
   issueDate: z.date({ required_error: 'A data de emissão é obrigatória.' }),
   expirationDate: z.date({ required_error: 'A data de vencimento é obrigatória.' }),
   status: z.enum(['Válida', 'Vencida', 'Em Renovação', 'Suspensa', 'Cancelada', 'Em Andamento'], { required_error: 'Selecione o status.'}),
-  description: z.string().min(1, 'A finalidade é obrigatória.'),
-}).refine(data => data.expirationDate > data.issueDate, {
+  description: z.string().min(1, 'A finalidade é obrigatória.')}).refine(data => data.expirationDate > data.issueDate, {
   message: 'A data de vencimento deve ser posterior à data de emissão.',
-  path: ['expirationDate'],
-});
+  path: ['expirationDate']});
 
 
 type FormValues = z.infer<typeof formSchema>;
@@ -81,9 +78,7 @@ export function OutorgaForm({ currentItem, onSuccess }: OutorgaFormProps) {
       issueDate: currentItem ? new Date(currentItem.issueDate) : undefined,
       expirationDate: currentItem ? new Date(currentItem.expirationDate) : undefined,
       status: currentItem?.status || undefined,
-      description: currentItem?.description || '',
-    },
-  });
+      description: currentItem?.description || ''}});
 
   async function onSubmit(values: FormValues) {
     setLoading(true);
@@ -97,8 +92,7 @@ export function OutorgaForm({ currentItem, onSuccess }: OutorgaFormProps) {
     const dataToSave = {
         ...values,
         issueDate: values.issueDate.toISOString(),
-        expirationDate: values.expirationDate.toISOString(),
-    };
+        expirationDate: values.expirationDate.toISOString()};
 
 
     if (currentItem) {
@@ -107,17 +101,17 @@ export function OutorgaForm({ currentItem, onSuccess }: OutorgaFormProps) {
         .then(() => {
           toast({
             title: 'Outorga atualizada!',
-            description: 'As informações da outorga foram salvas com sucesso.',
-          });
+            description: 'As informações da outorga foram salvas com sucesso.'});
           onSuccess?.();
         })
-        .catch(async (serverError) => {
-          const permissionError = new FirestorePermissionError({
+        .catch((error) => {
+          handleFirestoreFormError(error, {
+            toast,
+            title: 'Erro ao salvar outorga',
+            context: {
             path: docRef.path,
             operation: 'update',
-            requestResourceData: dataToSave,
-          });
-          errorEmitter.emit('permission-error', permissionError);
+            requestResourceData: dataToSave}});
         })
         .finally(() => {
           setLoading(false);
@@ -128,18 +122,18 @@ export function OutorgaForm({ currentItem, onSuccess }: OutorgaFormProps) {
         .then(() => {
           toast({
             title: 'Outorga criada!',
-            description: `A outorga ${values.permitNumber} foi adicionada com sucesso.`,
-          });
+            description: `A outorga ${values.permitNumber} foi adicionada com sucesso.`});
           form.reset();
           onSuccess?.();
         })
-        .catch(async (serverError) => {
-          const permissionError = new FirestorePermissionError({
+        .catch((error) => {
+          handleFirestoreFormError(error, {
+            toast,
+            title: 'Erro ao salvar outorga',
+            context: {
             path: collectionRef.path,
             operation: 'create',
-            requestResourceData: dataToSave,
-          });
-          errorEmitter.emit('permission-error', permissionError);
+            requestResourceData: dataToSave}});
         })
         .finally(() => {
           setLoading(false);

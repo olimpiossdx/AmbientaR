@@ -12,15 +12,15 @@ import {
   FormField,
   FormItem,
   FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
+  FormMessage} from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { MaskedInput } from '@/components/ui/masked-input';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useFirebase, errorEmitter } from '@/firebase';
+import { useFirebase} from '@/firebase';
+import { handleFirestoreFormError } from '@/lib/firestore-form-errors';
 import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
-import { FirestorePermissionError } from '@/firebase/errors';
+
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { PlusCircle, Trash2 } from 'lucide-react';
 import { BrDateFormControl } from '@/components/form/br-date-input';
@@ -38,41 +38,34 @@ const formSchema = z.object({
     endereco: z.string().min(1, "O endereço é obrigatório."),
     municipio: z.string().min(1, "O município é obrigatório."),
     cep: z.string().min(1, "O CEP é obrigatório."),
-    telefone: z.string().min(1, "O telefone é obrigatório."),
-  }),
+    telefone: z.string().min(1, "O telefone é obrigatório.")}),
   empreendimento: z.object({
     denominacao: z.string().min(1, "A denominação do empreendimento é obrigatória."),
     areaTotal: z.coerce.number().positive("A área total deve ser positiva."),
     endereco: z.string().min(1, "O endereço é obrigatório."),
     paCopam: z.string().min(1, "O PA/COPAM é obrigatório."),
     municipioDistrito: z.string().min(1, "O município/distrito é obrigatório."),
-    cep: z.string().min(1, "O CEP é obrigatório."),
-  }),
+    cep: z.string().min(1, "O CEP é obrigatório.")}),
   dadosMadeira: z.object({
     dataColheita: z.date({ required_error: "A data da colheita é obrigatória." }),
     periodo: z.enum(['chuvoso', 'seca'], { required_error: "Selecione o período." }),
     residuos: z.boolean().default(false),
     umidadeEstimada: z.coerce.number().min(0, "A umidade deve ser um valor positivo."),
-    tempoMedioSecagem: z.coerce.number().min(0, "O tempo deve ser um valor positivo."),
-  }),
+    tempoMedioSecagem: z.coerce.number().min(0, "O tempo deve ser um valor positivo.")}),
   carbonizacao: z.object({
     bateladasMes: z.coerce.number().int().positive("Deve ser um número inteiro positivo."),
     volumeMadeiraEnfornada: z.coerce.number().positive("O volume deve ser positivo."),
-    volumeCarvaoProduzido: z.coerce.number().positive("O volume deve ser positivo."),
-  }),
+    volumeCarvaoProduzido: z.coerce.number().positive("O volume deve ser positivo.")}),
   temperaturaMedia: z.object({
     fornosAmostrados: z.coerce.number().int().optional(),
     medicoesTotais: z.coerce.number().int().optional(),
     temperatura: z.coerce.number().optional(),
     realizadaPor: z.array(z.string()).optional(),
-    outro: z.string().optional(),
-  }).optional(),
+    outro: z.string().optional()}).optional(),
   integridadeFornos: z.object({
     manutencaoEstrutura: z.array(z.object({ data: z.date(), duracao: z.string(), operacao: z.string() })).optional(),
     limpezaPiso: z.array(z.object({ data: z.date(), duracao: z.string() })).optional(),
-    limpezaConexoes: z.array(z.object({ data: z.date(), duracao: z.string(), operacao: z.string() })).optional(),
-  }).optional(),
-});
+    limpezaConexoes: z.array(z.object({ data: z.date(), duracao: z.string(), operacao: z.string() })).optional()}).optional()});
 
 type FormValues = z.infer<typeof formSchema>;
 
@@ -103,9 +96,7 @@ export function CharcoalProductionForm({ onSuccess, onCancel }: CharcoalFormProp
       dadosMadeira: { dataColheita: new Date(), periodo: undefined, residuos: false, umidadeEstimada: 0, tempoMedioSecagem: 0 },
       carbonizacao: { bateladasMes: 0, volumeMadeiraEnfornada: 0, volumeCarvaoProduzido: 0 },
       temperaturaMedia: { fornosAmostrados: 0, medicoesTotais: 0, temperatura: 0, realizadaPor: [], outro: '' },
-      integridadeFornos: { manutencaoEstrutura: [], limpezaPiso: [], limpezaConexoes: [] },
-    },
-  });
+      integridadeFornos: { manutencaoEstrutura: [], limpezaPiso: [], limpezaConexoes: [] }}});
 
   const { fields: manutencaoFields, append: appendManutencao, remove: removeManutencao } = useFieldArray({ control: form.control, name: 'integridadeFornos.manutencaoEstrutura' });
   const { fields: limpezaPisoFields, append: appendLimpezaPiso, remove: removeLimpezaPiso } = useFieldArray({ control: form.control, name: 'integridadeFornos.limpezaPiso' });
@@ -134,28 +125,25 @@ export function CharcoalProductionForm({ onSuccess, onCancel }: CharcoalFormProp
         data: values.data.toISOString(),
         dadosMadeira: {
             ...values.dadosMadeira,
-            dataColheita: values.dadosMadeira.dataColheita.toISOString(),
-        },
+            dataColheita: values.dadosMadeira.dataColheita.toISOString()},
         carbonizacao: {
             ...values.carbonizacao,
             rendimentoVolumetrico,
-            rendimentoGravimetrico,
-        },
-        createdAt: serverTimestamp(),
-    };
+            rendimentoGravimetrico},
+        createdAt: serverTimestamp()};
     
     try {
         await addDoc(collection(firestore, 'charcoalReports'), dataToSave);
         toast({ title: 'Relatório Salvo!', description: 'O relatório de performance foi salvo com sucesso.' });
         onSuccess();
-    } catch(error) {
-        console.error("Error saving report: ", error);
-        const permissionError = new FirestorePermissionError({
+    } catch (error) {
+      handleFirestoreFormError(error, {
+        toast,
+        title: 'Erro ao salvar relatório',
+        context: {
             path: 'charcoalReports',
             operation: 'create',
-            requestResourceData: dataToSave,
-        });
-        errorEmitter.emit('permission-error', permissionError);
+            requestResourceData: dataToSave}});
     } finally {
         setLoading(false);
     }

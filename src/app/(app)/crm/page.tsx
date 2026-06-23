@@ -21,7 +21,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
-import { FirestorePermissionError } from '@/firebase/errors';
+import { handleFirestoreFormError } from '@/lib/firestore-form-errors';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import CrmDashboard from './crm-dashboard';
 import { CrmPipelineKanban } from './crm-pipeline-kanban';
@@ -74,10 +74,17 @@ export default function CrmPage() {
   const handleMoveStage = (opportunityId: string, newStage: OpportunityStage) => {
     if (!firestore) return;
     const oppRef = doc(firestore, 'opportunities', opportunityId);
-    updateDoc(oppRef, { stage: newStage }).catch(async (serverError) => {
-        const permissionError = new FirestorePermissionError({ path: oppRef.path, operation: 'update', requestResourceData: { stage: newStage }});
-        errorEmitter.emit('permission-error', permissionError);
-    });
+    updateDoc(oppRef, { stage: newStage }).catch((serverError) =>
+        handleFirestoreFormError(serverError, {
+          toast,
+          title: 'Erro ao atualizar CRM',
+          context: {
+          path: oppRef.path,
+          operation: 'update',
+          requestResourceData: { stage: newStage },
+        },
+        }),
+      );
   };
 
   const openDeleteConfirm = (itemId: string) => {
@@ -92,10 +99,16 @@ export default function CrmPage() {
       .then(() => {
         toast({ title: 'Oportunidade deletada', description: 'A oportunidade foi removida com sucesso.' });
       })
-      .catch(async (serverError) => {
-        const permissionError = new FirestorePermissionError({ path: docRef.path, operation: 'delete' });
-        errorEmitter.emit('permission-error', permissionError);
-      })
+      .catch((serverError) =>
+        handleFirestoreFormError(serverError, {
+          toast,
+          title: 'Erro ao atualizar CRM',
+          context: {
+          path: docRef.path,
+          operation: 'delete',
+        },
+        }),
+      )
       .finally(() => {
         setIsAlertOpen(false);
         setItemToDelete(null);

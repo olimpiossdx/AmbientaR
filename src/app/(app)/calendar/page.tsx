@@ -12,12 +12,12 @@ import { FileText, ClipboardCheck, Briefcase, PlusCircle, Pencil, Trash2, Calend
 import { useCollection, useFirebase, useMemoFirebase, errorEmitter } from '@/firebase';
 import { collection, deleteDoc, doc, query, where, limit, getDocs } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
+import { handleFirestoreFormError } from '@/lib/firestore-form-errors';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { AppointmentForm } from './appointment-form';
-import { FirestorePermissionError } from '@/firebase/errors';
 import { format, addDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale/pt-BR';
 
@@ -182,13 +182,16 @@ export default function CalendarPage() {
         });
         setEvents(prev => prev.filter(e => e.id !== itemToDelete));
       })
-      .catch(async (serverError) => {
-        const permissionError = new FirestorePermissionError({
+      .catch((serverError) =>
+        handleFirestoreFormError(serverError, {
+          toast,
+          title: 'Erro ao excluir evento',
+          context: {
           path: docRef.path,
           operation: 'delete',
-        });
-        errorEmitter.emit('permission-error', permissionError);
-      })
+        },
+        }),
+      )
       .finally(() => {
         setIsAlertOpen(false);
         setItemToDelete(null);

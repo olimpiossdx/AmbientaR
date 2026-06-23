@@ -8,8 +8,9 @@ import { Form } from '@/components/ui/form';
 import { Loader2, ArrowLeft } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { RCA, Empreendedor, Project } from '@/lib/types';
-import { useFirebase, errorEmitter, useCollection, useMemoFirebase } from '@/firebase';
-import { FirestorePermissionError } from '@/firebase/errors';
+import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
+import { handleFirestoreFormError } from '@/lib/firestore-form-errors';
+
 import { collection, doc, addDoc, updateDoc } from 'firebase/firestore';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -20,13 +21,11 @@ import {
   inferirFormularioRcaListagemG,
   normalizarFormularioTipoRcaListagemG,
   subatividadeParaFormularioRcaListagemG,
-  type RcaListagemGFormTipo,
-} from './rca-listagem-g-registry';
+  type RcaListagemGFormTipo} from './rca-listagem-g-registry';
 import {
   getRcaListagemGDefaultValues,
   rcaListagemGFormSchema,
-  type RcaListagemGFormValues,
-} from './rca-listagem-g-schema';
+  type RcaListagemGFormValues} from './rca-listagem-g-schema';
 import { RcaListagemGFormularioTipoCard } from './rca-form-listagem-g-tipo-card';
 import {
   RcaFormCulturasListagemG,
@@ -35,12 +34,10 @@ import {
   RcaFormSilvicultura,
   RcaFormGraos,
   RcaFormSuinocultura,
-  RcaFormAvicultura,
-} from './rca-form-listagem-g-activity';
+  RcaFormAvicultura} from './rca-form-listagem-g-activity';
 import {
   prefillRcaListagemGFromProject,
-  serializeRcaListagemGForFirestore,
-} from './rca-project-prefill';
+  serializeRcaListagemGForFirestore} from './rca-project-prefill';
 import { shouldPrefillFromProject } from '../listagem-a/rca-project-prefill';
 import { getRcaListagemGInitialValues } from '../lib/rca-form-initial-values';
 import { RcaGeographicLocationSection } from '../lib/rca-geographic-location-section';
@@ -71,11 +68,9 @@ function mapCurrentItemToFormValues(currentItem: RCA): RcaListagemGFormValues {
           versao: currentItem.termoReferencia.versao ?? '',
           dataEmissao: new Date(
             currentItem.termoReferencia.dataEmissao as string | number | Date,
-          ),
-        }
+          )}
       : undefined,
-    listagemG: extended.listagemG ?? {},
-  });
+    listagemG: extended.listagemG ?? {}});
 }
 
 export function RcaFormListagemG({ currentItem, onSuccess }: RcaFormListagemGProps) {
@@ -105,8 +100,7 @@ export function RcaFormListagemG({ currentItem, onSuccess }: RcaFormListagemGPro
     resolver: zodResolver(rcaListagemGFormSchema),
     defaultValues: currentItem
       ? mapCurrentItemToFormValues(currentItem)
-      : getRcaListagemGDefaultValues({ activity: RCA_LISTAGEM_G_ACTIVITY }),
-  });
+      : getRcaListagemGDefaultValues({ activity: RCA_LISTAGEM_G_ACTIVITY })});
 
   const formularioTipo =
     form.watch('formularioTipo') ?? RCA_LISTAGEM_G_FORM_TIPO_PADRAO;
@@ -117,8 +111,7 @@ export function RcaFormListagemG({ currentItem, onSuccess }: RcaFormListagemGPro
     (tipo: RcaListagemGFormTipo) => {
       form.setValue('formularioTipo', tipo, { shouldDirty: true });
       form.setValue('subActivity', subatividadeParaFormularioRcaListagemG(tipo), {
-        shouldDirty: true,
-      });
+        shouldDirty: true});
     },
     [form],
   );
@@ -149,8 +142,7 @@ export function RcaFormListagemG({ currentItem, onSuccess }: RcaFormListagemGPro
     if (patch.empreendimento) {
       form.setValue('empreendimento', {
         ...form.getValues('empreendimento'),
-        ...patch.empreendimento,
-      });
+        ...patch.empreendimento});
     }
     if (patch.listagemG) {
       form.setValue('listagemG', { ...form.getValues('listagemG'), ...patch.listagemG });
@@ -182,8 +174,7 @@ export function RcaFormListagemG({ currentItem, onSuccess }: RcaFormListagemGPro
       toast({
         variant: 'destructive',
         title: 'Formulário inválido',
-        description: 'Corrija os erros antes de aprovar.',
-      });
+        description: 'Corrija os erros antes de aprovar.'});
       setLoading(false);
       return;
     }
@@ -203,26 +194,23 @@ export function RcaFormListagemG({ currentItem, onSuccess }: RcaFormListagemGPro
         await updateDoc(docRef, dataToSave);
         toast({
           title: 'RCA atualizado',
-          description: `Documento salvo como ${status.toLowerCase()}.`,
-        });
+          description: `Documento salvo como ${status.toLowerCase()}.`});
       } else {
         await addDoc(collection(firestore, 'rcas'), dataToSave);
         toast({
           title: 'RCA criado',
-          description: `RCA Listagem G para ${(values.empreendimento as { nome?: string })?.nome ?? 'empreendimento'} criado.`,
-        });
+          description: `RCA Listagem G para ${(values.empreendimento as { nome?: string })?.nome ?? 'empreendimento'} criado.`});
       }
       if (status === 'Aprovado') onSuccess?.();
-    } catch {
+    } catch (error) {
       const path = currentItem?.id ? `rcas/${currentItem.id}` : 'rcas';
-      errorEmitter.emit(
-        'permission-error',
-        new FirestorePermissionError({
+      handleFirestoreFormError(error, {
+        toast,
+        title: 'Erro ao salvar RCA',
+        context: {
           path,
           operation: currentItem?.id ? 'update' : 'create',
-          requestResourceData: dataToSave,
-        }),
-      );
+          requestResourceData: dataToSave}});
     } finally {
       setLoading(false);
     }
@@ -233,8 +221,7 @@ export function RcaFormListagemG({ currentItem, onSuccess }: RcaFormListagemGPro
     clients: clients ?? [],
     isLoadingClients,
     projects: projects ?? [],
-    isLoadingProjects,
-  };
+    isLoadingProjects};
 
   return (
     <Form {...form}>

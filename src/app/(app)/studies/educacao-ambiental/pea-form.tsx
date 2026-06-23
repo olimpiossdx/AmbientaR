@@ -12,24 +12,23 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-  FormDescription,
-} from '@/components/ui/form';
+  FormDescription} from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Loader2, PlusCircle, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { Empreendedor, Project } from '@/lib/types';
 import type { PeaProgram, PeaProgramStatus } from '@/lib/pea/types';
-import { useFirebase, errorEmitter, useCollection, useMemoFirebase } from '@/firebase';
-import { FirestorePermissionError } from '@/firebase/errors';
+import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
+import { handleFirestoreFormError } from '@/lib/firestore-form-errors';
+
 import { collection, doc, addDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+  SelectValue} from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -38,15 +37,13 @@ import {
   newDspTecnicaId,
   newPeaMonitoramentoId,
   newPeaProjetoId,
-  newCampoExtraId,
-} from '@/lib/pea/pea-constants';
+  newCampoExtraId} from '@/lib/pea/pea-constants';
 import { PeaReferencePanel } from '@/components/pea/pea-reference-panel';
 import { PeaGeoLinkPanel } from '@/components/pea/pea-geo-link-panel';
 import type { PeaGeoVinculo } from '@/lib/pea/types';
 import {
   sanitizeGeoAnalysisId,
-  sanitizeGeoVinculo,
-} from '@/lib/pea/sanitize-geo-payload';
+  sanitizeGeoVinculo} from '@/lib/pea/sanitize-geo-payload';
 
 const projetoSchema = z.object({
   id: z.string(),
@@ -58,8 +55,7 @@ const projetoSchema = z.object({
   cronograma: z.string().optional(),
   metas: z.string().optional(),
   indicadores: z.string().optional(),
-  orcamentoResumo: z.string().optional(),
-});
+  orcamentoResumo: z.string().optional()});
 
 const monitoramentoSchema = z.object({
   id: z.string(),
@@ -74,8 +70,7 @@ const monitoramentoSchema = z.object({
   avaliacao: z.string().optional(),
   consideracoes: z.string().optional(),
   anexosNotas: z.string().optional(),
-  status: z.enum(['Rascunho', 'Enviado']).optional(),
-});
+  status: z.enum(['Rascunho', 'Enviado']).optional()});
 
 const formSchema = z.object({
   status: z.enum(['Rascunho', 'Em elaboração', 'Aprovado', 'Em execução', 'Arquivado']),
@@ -83,16 +78,14 @@ const formSchema = z.object({
   requerente: z.object({
     clientId: z.string().optional(),
     nome: z.string().min(1, 'Nome do requerente obrigatório'),
-    cpfCnpj: z.string().min(1, 'CPF/CNPJ obrigatório'),
-  }),
+    cpfCnpj: z.string().min(1, 'CPF/CNPJ obrigatório')}),
   empreendimento: z.object({
     projectId: z.string().optional(),
     nome: z.string().min(1, 'Nome do empreendimento obrigatório'),
     denominacao: z.string().optional(),
     car: z.string().optional(),
     municipio: z.string().optional(),
-    uf: z.string().optional(),
-  }),
+    uf: z.string().optional()}),
   processoAdministrativo: z.string().optional(),
   solicitacaoLicenciamento: z.string().optional(),
   faseProcesso: z.string().optional(),
@@ -112,8 +105,7 @@ const formSchema = z.object({
       z.object({
         id: z.string(),
         titulo: z.string().min(1, 'Título da seção'),
-        conteudo: z.string().optional(),
-      }),
+        conteudo: z.string().optional()}),
     )
     .optional(),
   propostaEducacional: z.string().optional(),
@@ -131,10 +123,8 @@ const formSchema = z.object({
         nome: z.string().min(1, 'Nome da técnica'),
         data: z.string().optional(),
         participantes: z.string().optional(),
-        resultados: z.string().optional(),
-      }),
-    ).optional(),
-  }).optional(),
+        resultados: z.string().optional()}),
+    ).optional()}).optional(),
   projetos: z.array(projetoSchema).min(2, 'O PEA exige no mínimo 2 projetos (DN 214)'),
   monitoramentos: z.array(monitoramentoSchema).optional(),
   responsavelTecnico: z.object({
@@ -145,9 +135,7 @@ const formSchema = z.object({
     registroConselho: z.string().optional(),
     art: z.string().optional(),
     email: z.string().optional(),
-    telefone: z.string().optional(),
-  }),
-});
+    telefone: z.string().optional()})});
 
 type FormValues = z.infer<typeof formSchema>;
 
@@ -171,8 +159,7 @@ function peaToDefaultValues(pea?: PeaProgram | null): FormValues {
       dsp: { tecnicas: [] },
       camposExtras: [],
       trOrientacoes: '',
-      geoAnalysisId: '',
-    };
+      geoAnalysisId: ''};
   }
   return {
     status: pea.status ?? 'Rascunho',
@@ -203,15 +190,13 @@ function peaToDefaultValues(pea?: PeaProgram | null): FormValues {
       devolutivas: pea.dsp?.devolutivas,
       notasParticipacao: pea.dsp?.notasParticipacao,
       justificativaDispensaDsp: pea.dsp?.justificativaDispensaDsp,
-      tecnicas: pea.dsp?.tecnicas ?? [],
-    },
+      tecnicas: pea.dsp?.tecnicas ?? []},
     projetos:
       pea.projetos && pea.projetos.length >= 2
         ? pea.projetos
         : [...(pea.projetos ?? []), ...defaultProjetos()].slice(0, Math.max(2, (pea.projetos?.length ?? 0))),
     monitoramentos: pea.monitoramentos ?? [],
-    responsavelTecnico: pea.responsavelTecnico ?? { nome: '' },
-  };
+    responsavelTecnico: pea.responsavelTecnico ?? { nome: '' }};
 }
 
 export function PeaForm({
@@ -219,8 +204,7 @@ export function PeaForm({
   onSuccess,
   onCancel,
   initialProjectId,
-  initialGeoAnalysisId,
-}: {
+  initialGeoAnalysisId}: {
   currentItem?: PeaProgram | null;
   onSuccess?: (id?: string) => void;
   onCancel?: () => void;
@@ -250,8 +234,7 @@ export function PeaForm({
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: peaToDefaultValues(currentItem),
-  });
+    defaultValues: peaToDefaultValues(currentItem)});
 
   React.useEffect(() => {
     form.reset(peaToDefaultValues(currentItem));
@@ -309,8 +292,7 @@ export function PeaForm({
         toast({
           variant: 'destructive',
           title: 'Formulário incompleto',
-          description: 'Corrija os campos indicados antes de concluir.',
-        });
+          description: 'Corrija os campos indicados antes de concluir.'});
         return;
       }
     }
@@ -323,8 +305,7 @@ export function PeaForm({
       geoAnalysisId: sanitizeGeoAnalysisId(values.geoAnalysisId) ?? null,
       geoVinculo: sanitizeGeoVinculo(geoVinculo) ?? null,
       updatedAt: serverTimestamp(),
-      createdBy: currentItem?.createdBy ?? user.uid,
-    };
+      createdBy: currentItem?.createdBy ?? user.uid};
 
     try {
       if (currentItem?.id) {
@@ -334,20 +315,17 @@ export function PeaForm({
       } else {
         const ref = await addDoc(collection(firestore, 'pea_programs'), {
           ...payload,
-          createdAt: serverTimestamp(),
-        });
+          createdAt: serverTimestamp()});
         toast({ title: 'PEA criado', description: values.empreendimento.nome });
         onSuccess?.(ref.id);
       }
-    } catch {
-      errorEmitter.emit(
-        'permission-error',
-        new FirestorePermissionError({
+    } catch (error) {
+      handleFirestoreFormError(error, {
+        toast,
+        title: 'Erro ao salvar PEA',
+        context: {
           path: 'pea_programs',
-          operation: currentItem?.id ? 'update' : 'create',
-        }),
-      );
-      toast({ variant: 'destructive', title: 'Erro ao salvar no Firestore.' });
+          operation: currentItem?.id ? 'update' : 'create'}});
     } finally {
       setLoading(false);
     }
@@ -674,8 +652,7 @@ export function PeaForm({
                     onClick={() =>
                       tecnicasField.append({
                         id: newDspTecnicaId(),
-                        nome: '',
-                      })
+                        nome: ''})
                     }
                   >
                     <PlusCircle className="h-4 w-4 mr-1" />
@@ -737,8 +714,7 @@ export function PeaForm({
                   projetosField.append({
                     id: newPeaProjetoId(),
                     titulo: '',
-                    publicoAlvo: '',
-                  })
+                    publicoAlvo: ''})
                 }
               >
                 <PlusCircle className="h-4 w-4 mr-1" />
@@ -852,8 +828,7 @@ export function PeaForm({
                       extrasField.append({
                         id: newCampoExtraId(),
                         titulo: 'Nova seção',
-                        conteudo: '',
-                      })
+                        conteudo: ''})
                     }
                   >
                     <PlusCircle className="h-4 w-4 mr-1" />
@@ -974,8 +949,7 @@ export function PeaForm({
                     tipo: 'formulario',
                     ano: new Date().getFullYear(),
                     semestre: 1,
-                    status: 'Rascunho',
-                  })
+                    status: 'Rascunho'})
                 }
               >
                 <PlusCircle className="h-4 w-4 mr-1" />

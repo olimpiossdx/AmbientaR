@@ -38,7 +38,6 @@ import {
   useCollection,
   useFirebase,
   useMemoFirebase,
-  errorEmitter,
   useAuth,
 } from "@/firebase";
 import {
@@ -71,7 +70,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { ComplianceForm } from "./compliance-form";
 import { useToast } from "@/hooks/use-toast";
-import { FirestorePermissionError } from "@/firebase/errors";
+import { handleFirestoreFormError } from "@/lib/firestore-form-errors";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { isClientePortalRole } from "@/lib/role-guards";
@@ -282,13 +281,13 @@ export default function CompliancePage() {
           description: "A condicionante foi removida com sucesso.",
         });
       })
-      .catch(async (serverError) => {
-        const permissionError = new FirestorePermissionError({
-          path: docRef.path,
-          operation: "delete",
-        });
-        errorEmitter.emit("permission-error", permissionError);
-      })
+      .catch((serverError) =>
+        handleFirestoreFormError(serverError, {
+          toast,
+          title: "Erro ao excluir condicionante",
+          context: { path: docRef.path, operation: "delete" },
+        }),
+      )
       .finally(() => {
         setIsAlertOpen(false);
         setItemToDelete(null);

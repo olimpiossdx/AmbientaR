@@ -21,12 +21,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { handleFirestoreFormError } from "@/lib/firestore-form-errors";
 import {
   useCollection,
   useFirebase,
   useMemoFirebase,
   useAuth,
-  errorEmitter,
 } from "@/firebase";
 import {
   collection,
@@ -50,7 +50,6 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { FirestorePermissionError } from "@/firebase/errors";
 import { resolvePortalAuthUid } from "@/lib/auth-user-id";
 import {
   canManageCarUploadsOnProject,
@@ -483,18 +482,14 @@ export default function CarPage() {
       setPdfUrl("");
       setShpUrl("");
     } catch (error: any) {
-      console.error("Erro ao salvar CAR no projeto:", error);
-      const permissionError = new FirestorePermissionError({
-        path: projectRef.path,
-        operation: "update",
-        requestResourceData: { car: carData },
-      });
-      errorEmitter.emit("permission-error", permissionError);
-      toast({
-        variant: "destructive",
-        title: "Erro ao salvar",
-        description:
-          "Verifique suas permissões de escrita para empreendimentos.",
+      handleFirestoreFormError(error, {
+        toast,
+        title: "Erro ao salvar CAR",
+        context: {
+          path: projectRef.path,
+          operation: "update",
+          requestResourceData: { car: carData },
+        },
       });
     } finally {
       setSaving(false);

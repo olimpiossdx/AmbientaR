@@ -31,7 +31,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useCollection, useFirebase, useMemoFirebase, errorEmitter } from '@/firebase';
+import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
 import { collection, doc, deleteDoc, limit, query } from 'firebase/firestore';
 import type { PeaProgram } from '@/lib/pea/types';
 import type { DispensaPeaRecord } from '@/lib/pea/types';
@@ -39,7 +39,7 @@ import { PEA_STATUS_LABEL, DISPENSA_STATUS_LABEL } from '@/lib/pea/pea-constants
 import { TermosReferenciaCard } from '@/components/termos-referencia-card';
 import { PeaExportButtons } from '@/components/pea/pea-export-buttons';
 import { DispensaExportButton } from '@/components/pea/dispensa-export-button';
-import { FirestorePermissionError } from '@/firebase/errors';
+import { handleFirestoreFormError } from '@/lib/firestore-form-errors';
 import { useToast } from '@/hooks/use-toast';
 import {
   AlertDialog,
@@ -101,14 +101,16 @@ export default function EducacaoAmbientalPage() {
 
   const confirmDeletePea = async () => {
     if (!firestore || !deletePeaId) return;
+    const docRef = doc(firestore, 'pea_programs', deletePeaId);
     try {
-      await deleteDoc(doc(firestore, 'pea_programs', deletePeaId));
+      await deleteDoc(docRef);
       toast({ title: 'PEA removido' });
-    } catch {
-      errorEmitter.emit(
-        'permission-error',
-        new FirestorePermissionError({ path: 'pea_programs', operation: 'delete' }),
-      );
+    } catch (serverError) {
+      handleFirestoreFormError(serverError, {
+        toast,
+        title: 'Erro ao excluir PEA',
+        context: { path: docRef.path, operation: 'delete' },
+      });
     } finally {
       setDeletePeaId(null);
     }
@@ -116,14 +118,16 @@ export default function EducacaoAmbientalPage() {
 
   const confirmDeleteDispensa = async () => {
     if (!firestore || !deleteDispensaId) return;
+    const docRef = doc(firestore, 'dispensaPea', deleteDispensaId);
     try {
-      await deleteDoc(doc(firestore, 'dispensaPea', deleteDispensaId));
+      await deleteDoc(docRef);
       toast({ title: 'Dispensa removida' });
-    } catch {
-      errorEmitter.emit(
-        'permission-error',
-        new FirestorePermissionError({ path: 'dispensaPea', operation: 'delete' }),
-      );
+    } catch (serverError) {
+      handleFirestoreFormError(serverError, {
+        toast,
+        title: 'Erro ao excluir dispensa',
+        context: { path: docRef.path, operation: 'delete' },
+      });
     } finally {
       setDeleteDispensaId(null);
     }

@@ -34,7 +34,6 @@ import {
 import { fetchArcGisFeaturesInBbox } from "@/lib/geospatial/arcgis-feature-client";
 import { WAVE_A_FONTES, type WaveACatalogEntry } from "@/lib/geospatial/wave-a-catalog";
 import {
-  GEO_ALL_LAYER_COUNT,
   resolveAllLayersForBbox,
 } from "@/lib/geospatial/geo-all-layers";
 import { ICMBIO_FONTES } from "@/lib/geospatial/wave-icmbio-catalog";
@@ -333,7 +332,7 @@ async function analyzeCatalogLayer(params: {
   };
 }
 
-export const WAVE_ALL_LAYER_COUNT = GEO_ALL_LAYER_COUNT;
+export { WAVE_ALL_LAYER_COUNT } from "@/lib/geospatial/geo-constants";
 
 export type WaveAAnalysisOptions = {
   /** Se definido, consulta apenas estas camadas (por layerId). */

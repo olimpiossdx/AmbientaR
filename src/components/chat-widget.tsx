@@ -14,8 +14,8 @@ import type { AppUser, ChatMessage, Chat } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
+import { handleFirestoreFormError } from '@/lib/firestore-form-errors';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { FirestorePermissionError } from '@/firebase/errors';
 import { Badge } from '@/components/ui/badge';
 import { isUserConsideredOnline } from '@/lib/user-presence';
 import { usePresenceClock } from '@/hooks/use-user-presence';
@@ -173,25 +173,31 @@ export default function ChatWidget() {
         setMessage(''); // Clear input immediately for better UX
 
         setDoc(chatDocRef, chatData, { merge: true })
-            .catch(async (serverError) => {
-                const permissionError = new FirestorePermissionError({
-                    path: chatDocRef.path,
-                    operation: 'write',
-                    requestResourceData: chatData,
-                });
-                errorEmitter.emit('permission-error', permissionError);
-            });
+            .catch((serverError) =>
+        handleFirestoreFormError(serverError, {
+          toast,
+          title: 'Erro ao enviar mensagem',
+          context: {
+          path: chatDocRef.path,
+          operation: 'write',
+          requestResourceData: chatData,
+        },
+        }),
+      );
         
         const messagesColRef = collection(chatDocRef, 'messages');
         addDoc(messagesColRef, messageData)
-            .catch(async (serverError) => {
-                 const permissionError = new FirestorePermissionError({
-                    path: messagesColRef.path,
-                    operation: 'create',
-                    requestResourceData: messageData,
-                });
-                errorEmitter.emit('permission-error', permissionError);
-            });
+            .catch((serverError) =>
+        handleFirestoreFormError(serverError, {
+          toast,
+          title: 'Erro ao enviar mensagem',
+          context: {
+          path: messagesColRef.path,
+          operation: 'create',
+          requestResourceData: messageData,
+        },
+        }),
+      );
     };
     
     const openDeleteConfirm = (msg: ChatMessage) => {
@@ -207,14 +213,17 @@ export default function ChatWidget() {
             .then(() => {
                 toast({ title: "Mensagem apagada" });
             })
-            .catch(async (serverError) => {
-                 const permissionError = new FirestorePermissionError({
-                    path: msgRef.path,
-                    operation: 'update',
-                    requestResourceData: { deletedFor: [user.uid] },
-                });
-                errorEmitter.emit('permission-error', permissionError);
-            })
+            .catch((serverError) =>
+        handleFirestoreFormError(serverError, {
+          toast,
+          title: 'Erro ao enviar mensagem',
+          context: {
+          path: msgRef.path,
+          operation: 'update',
+          requestResourceData: { deletedFor: [user.uid] },
+        },
+        }),
+      )
             .finally(() => {
                 setIsAlertOpen(false);
                 setMessageToDelete(null);

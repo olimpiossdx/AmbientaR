@@ -15,10 +15,10 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
+import { handleFirestoreFormError } from '@/lib/firestore-form-errors';
 import type { AnaliseSocioambiental } from '@/lib/types/analise-socioambiental';
 import type { Client } from '@/lib/types';
-import { useFirebase, errorEmitter } from '@/firebase';
-import { FirestorePermissionError } from '@/firebase/errors';
+import { useFirebase } from '@/firebase';
 import { doc, updateDoc } from 'firebase/firestore';
 import { Loader2, UserPlus } from 'lucide-react';
 
@@ -62,8 +62,11 @@ export function PreencherClienteDialog({ analise, open, onClose, clients }: Pree
       onClose();
       router.push(`/clients/${selectedClientId}/edit`);
     } catch (e) {
-      toast({ variant: 'destructive', title: 'Erro ao atualizar', description: e instanceof Error ? e.message : 'Erro desconhecido.' });
-      errorEmitter.emit('permission-error', new FirestorePermissionError({ path: clientRef.path, operation: 'update' }));
+      handleFirestoreFormError(e, {
+        toast,
+        title: 'Erro ao atualizar cliente',
+        context: { path: clientRef.path, operation: 'update' },
+      });
     } finally {
       setLoading(false);
     }

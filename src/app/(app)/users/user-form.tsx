@@ -13,8 +13,7 @@ import {
   FormField,
   FormItem,
   FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
+  FormMessage} from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { BrDateFormControl } from '@/components/form/br-date-input';
 import { MaskedInput } from '@/components/ui/masked-input';
@@ -23,14 +22,14 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+  SelectValue} from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Loader2, Eye, EyeOff, PlusCircle, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { AppUser, UserRole, AccessRequest } from '@/lib/types';
-import { useFirebase, errorEmitter } from '@/firebase';
-import { FirestorePermissionError } from '@/firebase/errors';
+import { useFirebase } from '@/firebase';
+import { handleFirestoreFormError } from '@/lib/firestore-form-errors';
+import { stripUndefinedDeep } from '@/lib/firestore-payload';
 import {
   createUserWithEmailAndPassword
 } from 'firebase/auth';
@@ -41,12 +40,10 @@ import {
   collection,
   query,
   where,
-  getDocs,
-} from 'firebase/firestore';
+  getDocs} from 'firebase/firestore';
 import {
   collectExistingDelegateRequestDigits,
-  createAccessRequestsForDelegate,
-} from '@/lib/delegate-access-requests';
+  createAccessRequestsForDelegate} from '@/lib/delegate-access-requests';
 import { Label } from '@/components/ui/label';
 import { DialogFooter } from '@/components/ui/dialog';
 import { logUserAction } from '@/lib/audit-log';
@@ -59,8 +56,7 @@ import {
   isTitularPortalRole,
   isValidTitularLinkDocument,
   resolveTitularDocumentFromProfile,
-  splitAccessDocuments,
-} from '@/lib/titular-profile-document';
+  splitAccessDocuments} from '@/lib/titular-profile-document';
 
 const baseSchema = z.object({
   name: z.string().min(2, 'O nome é obrigatório.'),
@@ -71,20 +67,17 @@ const baseSchema = z.object({
   titularDocument: z.string().optional(),
   accessDocuments: z.array(z.object({ value: z.string() })).optional(),
   dataNascimento: z.date().optional(),
-  photoURL: z.string().optional(),
-});
+  photoURL: z.string().optional()});
 
 const createFormSchema = baseSchema
   .extend({
     password: z.string().min(6, 'A senha deve ter pelo menos 6 caracteres.'),
     confirmPassword: z
       .string()
-      .min(6, 'A confirmação de senha deve ter pelo menos 6 caracteres.'),
-  })
+      .min(6, 'A confirmação de senha deve ter pelo menos 6 caracteres.')})
   .refine((data) => data.password === data.confirmPassword, {
     message: 'As senhas não coincidem.',
-    path: ['confirmPassword'],
-  })
+    path: ['confirmPassword']})
   .refine(
     (data) => {
       if (data.role !== 'representative' && data.role !== 'consultor_representante') return true;
@@ -97,8 +90,7 @@ const createFormSchema = baseSchema
     {
       message:
         'Informe ao menos um CPF ou CNPJ do titular ao qual solicita acesso.',
-      path: ['accessDocuments'],
-    },
+      path: ['accessDocuments']},
   )
   .refine(
     (data) => {
@@ -107,8 +99,7 @@ const createFormSchema = baseSchema
     },
     {
       message: 'Informe um CPF ou CNPJ válido do empreendedor/titular.',
-      path: ['titularDocument'],
-    },
+      path: ['titularDocument']},
   );
 
 const editFormSchema = baseSchema
@@ -118,10 +109,8 @@ const editFormSchema = baseSchema
       .optional()
       .refine((val) => val === '' || !val || val.length >= 6, {
         message: 'A senha deve ter pelo menos 6 caracteres se for alterada.',
-        path: ['password'],
-      }),
-    confirmPassword: z.string().optional(),
-  })
+        path: ['password']}),
+    confirmPassword: z.string().optional()})
   .refine(
     (data) => {
       if (!data.password && !data.confirmPassword) return true;
@@ -129,8 +118,7 @@ const editFormSchema = baseSchema
     },
     {
       message: 'As senhas não coincidem.',
-      path: ['confirmPassword'],
-    },
+      path: ['confirmPassword']},
   )
   .refine(
     (data) => {
@@ -144,8 +132,7 @@ const editFormSchema = baseSchema
     {
       message:
         'Informe ao menos um CPF ou CNPJ do titular ao qual solicita acesso.',
-      path: ['accessDocuments'],
-    },
+      path: ['accessDocuments']},
   )
   .refine(
     (data) => {
@@ -154,8 +141,7 @@ const editFormSchema = baseSchema
     },
     {
       message: 'Informe um CPF ou CNPJ válido do empreendedor/titular.',
-      path: ['titularDocument'],
-    },
+      path: ['titularDocument']},
   );
 
 
@@ -254,18 +240,14 @@ export function UserForm({ currentUser, onSuccess, representativeRequestedCpf, r
       titularDocument: resolveTitularDocumentFromProfile(currentUser),
       accessDocuments: buildDefaultAccessDocuments(currentUser, representativeRequestedCpfsCnpjs),
       dataNascimento: currentUser?.dataNascimento ? new Date(currentUser.dataNascimento) : undefined,
-      photoURL: currentUser?.photoURL || '',
-    },
-  });
+      photoURL: currentUser?.photoURL || ''}});
 
   const {
     fields: accessDocumentFields,
     append: accessDocumentAppend,
-    remove: accessDocumentRemove,
-  } = useFieldArray({
+    remove: accessDocumentRemove} = useFieldArray({
     control: form.control,
-    name: 'accessDocuments',
-  });
+    name: 'accessDocuments'});
   
   const selectedRole = form.watch('role');
 
@@ -296,8 +278,7 @@ export function UserForm({ currentUser, onSuccess, representativeRequestedCpf, r
         description:
           selectedRole === 'client'
             ? 'Cliente/Empreendedor já cadastrado pela consultoria. Ao salvar, a conta será vinculada pelo documento informado.'
-            : 'Os dados foram preenchidos a partir do cadastro existente. Ao salvar, a conta será vinculada automaticamente.',
-      });
+            : 'Os dados foram preenchidos a partir do cadastro existente. Ao salvar, a conta será vinculada automaticamente.'});
     } catch (e) {
       console.warn('Busca por documento no perfil:', e);
     }
@@ -331,7 +312,7 @@ export function UserForm({ currentUser, onSuccess, representativeRequestedCpf, r
     if (currentUser) {
       // --- Update existing user logic ---
       const userRef = doc(firestore, 'users', currentUser.id);
-      const updateData: Partial<AppUser> = {
+      const updateData = stripUndefinedDeep({
         name: values.name,
         email: values.email,
         userCpf: personalCpf,
@@ -340,15 +321,13 @@ export function UserForm({ currentUser, onSuccess, representativeRequestedCpf, r
         ...(titularProfileFields
           ? {
               titularDocument: titularProfileFields.titularDocument,
-              titularType: titularProfileFields.titularType ?? undefined,
-            }
+              titularType: titularProfileFields.titularType ?? undefined}
           : {}),
         photoURL: values.photoURL || '',
         dataNascimento: values.dataNascimento?.toISOString() || '',
         ...(isEditingSelf ? { cadastroIncompleto: false } : {}),
         ...(linkedClientId ? { linkedClientId } : {}),
-        ...(linkedEmpreendedorId ? { linkedEmpreendedorId } : {}),
-      };
+        ...(linkedEmpreendedorId ? { linkedEmpreendedorId } : {})}) as Partial<AppUser>;
 
       if (isPrivilegedEditor) {
         updateData.role = values.role;
@@ -379,15 +358,13 @@ export function UserForm({ currentUser, onSuccess, representativeRequestedCpf, r
               email: values.email,
               cpfCnpj: portalDocument,
               entityType,
-              userId: currentUser.id,
-            };
+              userId: currentUser.id};
             const linkedEmpreendedorData = {
               name: values.name,
               email: values.email,
               cpfCnpj: portalDocument,
               entityType: [entityType],
-              userId: currentUser.id,
-            };
+              userId: currentUser.id};
             await setDoc(doc(firestore, 'clients', clientDocId), linkedData, { merge: true });
             await setDoc(doc(firestore, 'empreendedores', empreendedorDocId), linkedEmpreendedorData, { merge: true });
             const existingClients = await getDocs(query(collection(firestore, 'clients'), where('userId', '==', currentUser.id)));
@@ -410,8 +387,7 @@ export function UserForm({ currentUser, onSuccess, representativeRequestedCpf, r
               requesterUserId,
               {
                 extraDigits: representativeRequestedCpfsCnpjs,
-                profile: currentUser,
-              },
+                profile: currentUser},
             );
             await createAccessRequestsForDelegate(firestore, {
               requesterUserId,
@@ -419,23 +395,22 @@ export function UserForm({ currentUser, onSuccess, representativeRequestedCpf, r
               name: values.name,
               role: values.role,
               documents: [...cpfsArray, ...cnpjsArray],
-              existingDigits: existingSet,
-            });
+              existingDigits: existingSet});
           }
           toast({
             title: 'Usuário atualizado!',
-            description: 'As informações do usuário foram salvas com sucesso.',
-          });
+            description: 'As informações do usuário foram salvas com sucesso.'});
           logUserAction(firestore, auth, 'update_user', { userId: currentUser.id, userName: values.name });
           onSuccess?.();
         })
-        .catch(async (serverError) => {
-          const permissionError = new FirestorePermissionError({
-            path: userRef.path,
-            operation: 'update',
-            requestResourceData: updateData,
-          });
-          errorEmitter.emit('permission-error', permissionError);
+        .catch((error) => {
+          handleFirestoreFormError(error, {
+            toast,
+            title: 'Erro ao salvar usuário',
+            context: {
+              path: userRef.path,
+              operation: 'update',
+              requestResourceData: updateData}});
         })
         .finally(() => {
           setLoading(false);
@@ -459,8 +434,7 @@ export function UserForm({ currentUser, onSuccess, representativeRequestedCpf, r
                 toast({
                     variant: 'destructive',
                     title: 'E-mail já em uso',
-                    description: 'Este e-mail já está cadastrado. Por favor, utilize um e-mail diferente.',
-                });
+                    description: 'Este e-mail já está cadastrado. Por favor, utilize um e-mail diferente.'});
                 setLoading(false);
                 return;
             }
@@ -470,7 +444,7 @@ export function UserForm({ currentUser, onSuccess, representativeRequestedCpf, r
             
             const newUserId = newFirebaseUser.uid;
             
-            const userDocData: Omit<AppUser, 'id'> = {
+            const userDocData = stripUndefinedDeep({
                 uid: newUserId,
                 name: values.name,
                 email: values.email,
@@ -482,13 +456,11 @@ export function UserForm({ currentUser, onSuccess, representativeRequestedCpf, r
                 ...(titularProfileFields
                   ? {
                       titularDocument: titularProfileFields.titularDocument,
-                      titularType: titularProfileFields.titularType ?? undefined,
-                    }
+                      titularType: titularProfileFields.titularType ?? undefined}
                   : {}),
                 photoURL: values.photoURL || '',
                 dataNascimento: values.dataNascimento?.toISOString() || '',
-                isOnline: false,
-            };
+                isOnline: false}) as Omit<AppUser, 'id'>;
 
             await setDoc(doc(firestore, 'users', newUserId), userDocData);
             logUserAction(firestore, auth, 'create_user', { newUserId: newUserId, newUserName: values.name });
@@ -508,8 +480,7 @@ export function UserForm({ currentUser, onSuccess, representativeRequestedCpf, r
                     ...(linked.linkedClientId ? { linkedClientId: linked.linkedClientId } : {}),
                     ...(linked.linkedEmpreendedorId
                       ? { linkedEmpreendedorId: linked.linkedEmpreendedorId }
-                      : {}),
-                  });
+                      : {})});
                 }
               } catch (e) {
                 console.error('Erro ao vincular Cliente Gestão a cadastros existentes:', e);
@@ -529,8 +500,7 @@ export function UserForm({ currentUser, onSuccess, representativeRequestedCpf, r
                   cpfCnpj: portalDocument,
                   entityType,
                   email: values.email,
-                  userId: newUserId,
-                };
+                  userId: newUserId};
                 const linkedEmpreendedorData = {
                   name: values.name,
                   email: values.email,
@@ -538,8 +508,7 @@ export function UserForm({ currentUser, onSuccess, representativeRequestedCpf, r
                   address: '',
                   cpfCnpj: portalDocument,
                   entityType: [entityType],
-                  userId: newUserId,
-                };
+                  userId: newUserId};
 
                 if (client?.id || empreendedor?.id) {
                   const linked = await linkClientGestaoToExistingRecords(
@@ -554,13 +523,11 @@ export function UserForm({ currentUser, onSuccess, representativeRequestedCpf, r
                     ...(linked.linkedClientId ? { linkedClientId: linked.linkedClientId } : {}),
                     ...(linked.linkedEmpreendedorId
                       ? { linkedEmpreendedorId: linked.linkedEmpreendedorId }
-                      : {}),
-                  });
+                      : {})});
                 } else {
                   await setDoc(doc(firestore, 'clients', newUserId), linkedData, { merge: true });
                   await setDoc(doc(firestore, 'empreendedores', newUserId), linkedEmpreendedorData, {
-                    merge: true,
-                  });
+                    merge: true});
                 }
               } catch (e) {
                 console.error('Erro ao criar cliente/empreendedor automático:', e);
@@ -579,14 +546,12 @@ export function UserForm({ currentUser, onSuccess, representativeRequestedCpf, r
                 name: values.name,
                 role: values.role,
                 documents: [...cpfsArray, ...cnpjsArray],
-                existingDigits: existingSet,
-              });
+                existingDigits: existingSet});
             }
 
             toast({
               title: 'Usuário criado!',
-              description: `As informações de ${values.name} foram salvas com sucesso.`,
-            });
+              description: `As informações de ${values.name} foram salvas com sucesso.`});
             
             form.reset();
             onSuccess?.();
@@ -597,8 +562,7 @@ export function UserForm({ currentUser, onSuccess, representativeRequestedCpf, r
               title: 'Oh, não! Algo deu errado.',
               description: error.code === 'auth/email-already-in-use'
                 ? 'Este e-mail ainda existe no login (Firebase Auth), mesmo que o perfil tenha sido apagado. Um administrador pode usar "Liberar e-mail bloqueado" em Usuários ou apagar a conta em Firebase Console → Authentication.'
-                : (error.message || 'Não foi possível criar o usuário na autenticação.'),
-            });
+                : (error.message || 'Não foi possível criar o usuário na autenticação.')});
         } finally {
             setLoading(false);
         }

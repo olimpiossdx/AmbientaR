@@ -19,9 +19,9 @@ import { BrDateFormControl } from '@/components/form/br-date-input';
 import { MaskedInput } from '@/components/ui/masked-input';
 import { Loader2, PlusCircle, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useFirebase, errorEmitter, useCollection, useMemoFirebase } from '@/firebase';
+import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
+import { handleFirestoreFormError } from '@/lib/firestore-form-errors';
 import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
-import { FirestorePermissionError } from '@/firebase/errors';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { Empreendedor, EnvironmentalCompany, Project, TechnicalResponsible, TransporteResiduosPerigosos } from '@/lib/types';
@@ -285,14 +285,16 @@ export function TransporteResiduosForm({ onSuccess, onCancel }: TransporteResidu
         await addDoc(collection(firestore, 'transporteResiduosReports'), dataToSave);
         toast({ title: 'Relatório Salvo!', description: 'O relatório de transporte foi salvo com sucesso.' });
         onSuccess();
-    } catch(error) {
-        console.error("Error saving report: ", error);
-        const permissionError = new FirestorePermissionError({
-            path: 'transporteResiduosReports',
-            operation: 'create',
-            requestResourceData: dataToSave,
+    } catch (error) {
+        handleFirestoreFormError(error, {
+            toast,
+            title: 'Erro ao salvar',
+            context: {
+                path: 'transporteResiduosReports',
+                operation: 'create',
+                requestResourceData: dataToSave,
+            },
         });
-        errorEmitter.emit('permission-error', permissionError);
     } finally {
         setLoading(false);
     }

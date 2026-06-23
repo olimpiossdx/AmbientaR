@@ -54,7 +54,7 @@ import {
   DialogClose,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { FirestorePermissionError } from "@/firebase/errors";
+import { handleFirestoreFormError } from "@/lib/firestore-form-errors";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import {
@@ -361,13 +361,16 @@ export default function OficiosPage() {
           description: "O ofício foi removido com sucesso.",
         });
       })
-      .catch(async () => {
-        const permissionError = new FirestorePermissionError({
+      .catch((error) =>
+        handleFirestoreFormError(error, {
+          toast,
+          title: 'Erro ao excluir ofício',
+          context: {
           path: docRef.path,
-          operation: "delete",
-        });
-        errorEmitter.emit("permission-error", permissionError);
-      })
+          operation: 'delete',
+        },
+        }),
+      )
       .finally(() => {
         setIsAlertOpen(false);
         setItemToDelete(null);

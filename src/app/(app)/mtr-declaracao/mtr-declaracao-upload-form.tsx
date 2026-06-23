@@ -1,5 +1,6 @@
 "use client";
 
+import { handleFirestoreFormError } from '@/lib/firestore-form-errors';
 import * as React from "react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
@@ -12,26 +13,22 @@ import {
   FormField,
   FormItem,
   FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
+  FormMessage} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  SelectValue} from "@/components/ui/select";
 import { Loader2, Upload } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { Empreendedor } from "@/lib/types";
 import {
   useFirebase,
-  errorEmitter,
   useCollection,
-  useMemoFirebase,
-} from "@/firebase";
-import { FirestorePermissionError } from "@/firebase/errors";
+  useMemoFirebase} from "@/firebase";
+
 import { AttachmentPreviewSection } from "@/components/shared/attachment-preview-section";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { UploadPreparationDialog } from "@/components/shared/upload-preparation-dialog";
@@ -41,15 +38,13 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
+  DialogDescription} from "@/components/ui/dialog";
 
 const formSchema = z.object({
   empreendedorId: z.string().min(1, "Selecione o empreendedor."),
   titulo: z.string().min(3, "Informe o título ou período da declaração."),
   tipo: z.enum(["declaracao", "cdf", "manifesto", "outro"]),
-  fileUrl: z.string().min(1, "Envie o relatório em PDF."),
-});
+  fileUrl: z.string().min(1, "Envie o relatório em PDF.")});
 
 type FormValues = z.infer<typeof formSchema>;
 
@@ -62,14 +57,12 @@ type MtrDeclaracaoUploadFormProps = {
 export function MtrDeclaracaoUploadForm({
   empreendedores: empreendedoresProp,
   defaultEmpreendedorId,
-  onSuccess,
-}: MtrDeclaracaoUploadFormProps) {
+  onSuccess}: MtrDeclaracaoUploadFormProps) {
   const [loading, setLoading] = React.useState(false);
   const [isUploading, setIsUploading] = React.useState(false);
   const { toast } = useToast();
   const { uploadFile, dialogProps } = useStorageFileUpload({
-    storageFolder: "mtr-declaracao",
-  });
+    storageFolder: "mtr-declaracao"});
   const { firestore, user } = useFirebase();
 
   const empreendedoresQuery = useMemoFirebase(
@@ -86,9 +79,7 @@ export function MtrDeclaracaoUploadForm({
       empreendedorId: defaultEmpreendedorId ?? "",
       titulo: "",
       tipo: "declaracao",
-      fileUrl: "",
-    },
-  });
+      fileUrl: ""}});
 
   React.useEffect(() => {
     if (defaultEmpreendedorId) {
@@ -110,8 +101,7 @@ export function MtrDeclaracaoUploadForm({
       toast({
         variant: "destructive",
         title: "Tipo inválido",
-        description: "Envie apenas PDF.",
-      });
+        description: "Envie apenas PDF."});
       return;
     }
 
@@ -122,12 +112,11 @@ export function MtrDeclaracaoUploadForm({
       if (!downloadUrl) return;
       form.setValue("fileUrl", downloadUrl, { shouldValidate: true });
       toast({ title: "PDF carregado" });
-    } catch {
+    } catch (error) {
       toast({
         variant: "destructive",
         title: "Erro no upload",
-        description: "Não foi possível enviar o arquivo.",
-      });
+        description: "Não foi possível enviar o arquivo."});
     } finally {
       setIsUploading(false);
     }
@@ -143,34 +132,28 @@ export function MtrDeclaracaoUploadForm({
       ...values,
       source: "upload" as const,
       createdAt: serverTimestamp(),
-      ownerId: user.uid,
-    };
+      ownerId: user.uid};
 
     addDoc(collection(firestore, "mtrDeclaracoes"), dataToSave)
       .then(() => {
         toast({
           title: "Documento salvo",
-          description: "A declaração MTR foi registrada.",
-        });
+          description: "A declaração MTR foi registrada."});
         form.reset({
           empreendedorId: defaultEmpreendedorId ?? "",
           titulo: "",
           tipo: "declaracao",
-          fileUrl: "",
-        });
+          fileUrl: ""});
         onSuccess?.();
       })
-      .catch((error: unknown) => {
-        console.error("mtrDeclaracoes create:", error);
-        errorEmitter.emit(
-          "permission-error",
-          new FirestorePermissionError({
+      .catch((error) => {
+        handleFirestoreFormError(error, {
+          toast,
+          title: 'Erro ao salvar documento MTR',
+          context: {
             path: "mtrDeclaracoes",
             operation: "create",
-            requestResourceData: dataToSave,
-          }),
-        );
-      })
+            requestResourceData: dataToSave}});})
       .finally(() => setLoading(false));
   }
 

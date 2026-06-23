@@ -12,6 +12,7 @@ import type { Empreendedor, Project } from '@/lib/types';
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
+import { handleFirestoreFormError } from '@/lib/firestore-form-errors';
 import { Loader2 } from 'lucide-react';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { Separator } from '@/components/ui/separator';
@@ -774,12 +775,15 @@ function NewRequestPageContent() {
                     ? String((serverError as { code?: string }).code)
                     : '';
             if (code === 'permission-denied') {
-                const permissionError = new FirestorePermissionError({
-                    path: 'requests',
-                    operation: 'create',
-                    requestResourceData: newRequestData,
+                handleFirestoreFormError(serverError, {
+                    toast,
+                    title: 'Erro ao salvar trâmite',
+                    context: {
+                        path: 'requests',
+                        operation: 'create',
+                        requestResourceData: newRequestData,
+                    },
                 });
-                errorEmitter.emit('permission-error', permissionError);
             }
         } finally {
             setLoading(false);

@@ -13,8 +13,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-  FormDescription,
-} from '@/components/ui/form';
+  FormDescription} from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -24,41 +23,36 @@ import type {
   EstudoCavidade,
   Empreendedor as Client,
   Project,
-  TechnicalResponsible,
-} from '@/lib/types';
-import { useFirebase, errorEmitter, useCollection, useMemoFirebase } from '@/firebase';
-import { FirestorePermissionError } from '@/firebase/errors';
+  TechnicalResponsible} from '@/lib/types';
+import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
+import { handleFirestoreFormError } from '@/lib/firestore-form-errors';
+
 import { collection, doc, addDoc, updateDoc } from 'firebase/firestore';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+  SelectValue} from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { CHECKLIST_IS08_LABELS } from '@/lib/cavidades/checklist-is08';
 import {
   clearTriagemSession,
-  loadTriagemFromSession,
-} from '@/lib/cavidades/cavidades-triagem-bridge';
+  loadTriagemFromSession} from '@/lib/cavidades/cavidades-triagem-bridge';
 import {
   CAVIDADES_APRESENTACAO_MODELO,
   CAVIDADES_CRITERIO_LOCACIONAL_MODELO,
   CAVIDADES_IMPACTO_MODELO,
   CAVIDADES_MAPA_POTENCIAL_MODELO,
-  CAVIDADES_PROSPECCAO_MODELO,
-} from './cavidades-defaults';
+  CAVIDADES_PROSPECCAO_MODELO} from './cavidades-defaults';
 import { CoordinateInput } from '@/components/coordinates';
 import {
   barragemCoordenadasToLatLngStrings,
-  barragemLatLngStringsToCoordenadas,
-} from '@/lib/barragem/barragem-coordenadas';
+  barragemLatLngStringsToCoordenadas} from '@/lib/barragem/barragem-coordenadas';
 import {
   createDefaultMonitoringPontoCoordenadas,
-  type MonitoringPontoCoordenadasForm,
-} from '@/lib/monitoring-pontos-form';
+  type MonitoringPontoCoordenadasForm} from '@/lib/monitoring-pontos-form';
 import type { EstudoCavidadeCavidadeRegistro } from '@/lib/types';
 
 const cavidadeRegistroSchema = z.object({
@@ -74,8 +68,7 @@ const cavidadeRegistroSchema = z.object({
     .enum(['maximo', 'alto', 'medio', 'baixo', 'nao_classificado'])
     .optional(),
   naAda: z.boolean().optional(),
-  observacoes: z.string().optional(),
-});
+  observacoes: z.string().optional()});
 
 const formSchema = z.object({
   nivelEstudo: z
@@ -91,30 +84,26 @@ const formSchema = z.object({
   requerente: z.object({
     clientId: z.string().optional(),
     nome: z.string().min(1, 'Nome do requerente obrigatório.'),
-    cpfCnpj: z.string().min(1, 'CPF/CNPJ obrigatório.'),
-  }),
+    cpfCnpj: z.string().min(1, 'CPF/CNPJ obrigatório.')}),
   empreendimento: z.object({
     projectId: z.string().optional(),
     nome: z.string().min(1, 'Nome do empreendimento obrigatório.'),
     municipio: z.string().optional(),
     uf: z.string().optional(),
-    car: z.string().optional(),
-  }),
+    car: z.string().optional()}),
   responsavelTecnico: z.object({
     technicalResponsibleId: z.string().optional(),
     nome: z.string().min(1, 'Responsável técnico obrigatório.'),
     formacao: z.string().min(1, 'Formação obrigatória.'),
     registroConselho: z.string().min(1, 'Registro no conselho obrigatório.'),
-    art: z.string().optional(),
-  }),
+    art: z.string().optional()}),
   processo: z
     .object({
       sla: z.string().optional(),
       sei: z.string().optional(),
       supram: z.string().optional(),
       modalidadeSugerida: z.string().optional(),
-      classeAtividade: z.string().optional(),
-    })
+      classeAtividade: z.string().optional()})
     .optional(),
   triagem: z
     .object({
@@ -125,8 +114,7 @@ const formSchema = z.object({
       adaUrbanizada: z.boolean().optional(),
       observacoesIde: z.string().optional(),
       pedidoNaoIncidenciaCriterio: z.boolean().optional(),
-      justificativaNaoIncidencia: z.string().optional(),
-    })
+      justificativaNaoIncidencia: z.string().optional()})
     .optional(),
   prospecao: z
     .object({
@@ -134,28 +122,24 @@ const formSchema = z.object({
       areaAdaHa: z.string().optional(),
       conclusaoSemCavidades: z.boolean().optional(),
       mapaPotencialNotas: z.string().optional(),
-      memorialProspecao: z.string().optional(),
-    })
+      memorialProspecao: z.string().optional()})
     .optional(),
   impactos: z
     .object({
       haImpactoIrreversivel: z.boolean().optional(),
       medidasMitigadoras: z.string().optional(),
       areaInfluenciaNotas: z.string().optional(),
-      compensacaoNotas: z.string().optional(),
-    })
+      compensacaoNotas: z.string().optional()})
     .optional(),
   cavidadesRegistradas: z.array(cavidadeRegistroSchema).optional(),
   checklistIs08: z.record(z.string(), z.boolean()).optional(),
   linksUteis: z
     .object({
       ecosistemasUrl: z.string().optional(),
-      ideSisemaNotas: z.string().optional(),
-    })
+      ideSisemaNotas: z.string().optional()})
     .optional(),
   memorialApresentacao: z.string().optional(),
-  memorialCriterioLocacional: z.string().optional(),
-});
+  memorialCriterioLocacional: z.string().optional()});
 
 type CavidadesFormValues = z.infer<typeof formSchema>;
 
@@ -179,8 +163,7 @@ function emptyDefaults(): CavidadesFormValues {
       nome: '',
       formacao: '',
       registroConselho: '',
-      art: '',
-    },
+      art: ''},
     processo: { sla: '', sei: '', supram: '', modalidadeSugerida: '', classeAtividade: '' },
     triagem: {
       potencialCecav: 'nao_aplicavel',
@@ -188,27 +171,23 @@ function emptyDefaults(): CavidadesFormValues {
       adaUrbanizada: false,
       observacoesIde: '',
       pedidoNaoIncidenciaCriterio: false,
-      justificativaNaoIncidencia: '',
-    },
+      justificativaNaoIncidencia: ''},
     prospecao: {
       kmCaminhamento: '',
       areaAdaHa: '',
       conclusaoSemCavidades: false,
       mapaPotencialNotas: CAVIDADES_MAPA_POTENCIAL_MODELO,
-      memorialProspecao: CAVIDADES_PROSPECCAO_MODELO,
-    },
+      memorialProspecao: CAVIDADES_PROSPECCAO_MODELO},
     impactos: {
       haImpactoIrreversivel: false,
       medidasMitigadoras: '',
       areaInfluenciaNotas: '',
-      compensacaoNotas: CAVIDADES_IMPACTO_MODELO,
-    },
+      compensacaoNotas: CAVIDADES_IMPACTO_MODELO},
     cavidadesRegistradas: [],
     checklistIs08: checklist,
     linksUteis: { ecosistemasUrl: '', ideSisemaNotas: '' },
     memorialApresentacao: CAVIDADES_APRESENTACAO_MODELO,
-    memorialCriterioLocacional: CAVIDADES_CRITERIO_LOCACIONAL_MODELO,
-  };
+    memorialCriterioLocacional: CAVIDADES_CRITERIO_LOCACIONAL_MODELO};
 }
 
 function mapCavidadeRegistroToForm(
@@ -216,8 +195,7 @@ function mapCavidadeRegistroToForm(
 ): NonNullable<CavidadesFormValues['cavidadesRegistradas']>[number] {
   return {
     ...reg,
-    coordenadas: barragemLatLngStringsToCoordenadas(reg.latitude, reg.longitude),
-  };
+    coordenadas: barragemLatLngStringsToCoordenadas(reg.latitude, reg.longitude)};
 }
 
 function mapCavidadeRegistroToFirestore(
@@ -247,8 +225,7 @@ function mapItemToForm(item: EstudoCavidade): CavidadesFormValues {
     linksUteis: { ...base.linksUteis, ...item.linksUteis },
     memorialApresentacao: item.apresentacao ?? base.memorialApresentacao,
     memorialCriterioLocacional:
-      item.memorialCriterioLocacional ?? base.memorialCriterioLocacional,
-  };
+      item.memorialCriterioLocacional ?? base.memorialCriterioLocacional};
 }
 
 function mapFormToFirestore(values: CavidadesFormValues, status: 'Rascunho' | 'Aprovado') {
@@ -274,8 +251,7 @@ function mapFormToFirestore(values: CavidadesFormValues, status: 'Rascunho' | 'A
     memorialCriterioLocacional: values.memorialCriterioLocacional,
     checklistIs08: values.checklistIs08,
     linksUteis: values.linksUteis,
-    updatedAt: now,
-  };
+    updatedAt: now};
 }
 
 const NIVEL_LABELS: Record<string, string> = {
@@ -284,8 +260,7 @@ const NIVEL_LABELS: Record<string, string> = {
   laudo_prospecao: 'Laudo + prospecção ADA+250 m',
   avaliacao_impacto: 'Avaliação de impactos',
   relevancia_compensacao: 'Relevância e compensação',
-  criterio_locacional: 'Estudo critério locacional',
-};
+  criterio_locacional: 'Estudo critério locacional'};
 
 export function CavidadesForm({ currentItem, onCreated, onCancel }: CavidadesFormProps) {
   const [loading, setLoading] = React.useState(false);
@@ -312,13 +287,11 @@ export function CavidadesForm({ currentItem, onCreated, onCancel }: CavidadesFor
 
   const form = useForm<CavidadesFormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: currentItem ? mapItemToForm(currentItem) : emptyDefaults(),
-  });
+    defaultValues: currentItem ? mapItemToForm(currentItem) : emptyDefaults()});
 
   const { fields, append, remove } = useFieldArray({
     control: form.control,
-    name: 'cavidadesRegistradas',
-  });
+    name: 'cavidadesRegistradas'});
 
   const selectedRequerenteId = form.watch('requerente.clientId');
   const selectedProjectId = form.watch('empreendimento.projectId');
@@ -361,8 +334,7 @@ export function CavidadesForm({ currentItem, onCreated, onCancel }: CavidadesFor
     clearTriagemSession();
     toast({
       title: 'Triagem importada',
-      description: 'Dados da análise geoespacial (CECAV) aplicados à aba Triagem.',
-    });
+      description: 'Dados da análise geoespacial (CECAV) aplicados à aba Triagem.'});
   }, [currentItem, form, toast]);
 
   React.useEffect(() => {
@@ -394,8 +366,7 @@ export function CavidadesForm({ currentItem, onCreated, onCancel }: CavidadesFor
       toast({
         variant: 'destructive',
         title: 'Formulário inválido',
-        description: 'Corrija os campos obrigatórios antes de salvar.',
-      });
+        description: 'Corrija os campos obrigatórios antes de salvar.'});
       setLoading(false);
       return;
     }
@@ -411,23 +382,20 @@ export function CavidadesForm({ currentItem, onCreated, onCancel }: CavidadesFor
       currentItem?.status === 'Aprovado' ? ('Aprovado' as const) : ('Rascunho' as const);
     const dataToSave = {
       ...mapFormToFirestore(values, status),
-      ...(currentItem ? {} : { createdAt: new Date().toISOString() }),
-    };
+      ...(currentItem ? {} : { createdAt: new Date().toISOString() })};
 
     if (currentItem) {
       const docRef = doc(firestore, 'estudosCavidades', currentItem.id);
       updateDoc(docRef, dataToSave)
         .then(() => toast({ title: 'Estudo atualizado' }))
-        .catch(() => {
-          errorEmitter.emit(
-            'permission-error',
-            new FirestorePermissionError({
+        .catch((error) => {
+          handleFirestoreFormError(error, {
+            toast,
+            title: 'Erro ao salvar estudo de cavidades',
+            context: {
               path: docRef.path,
               operation: 'update',
-              requestResourceData: dataToSave,
-            }),
-          );
-        })
+              requestResourceData: dataToSave}});})
         .finally(() => setLoading(false));
     } else {
       const collectionRef = collection(firestore, 'estudosCavidades');
@@ -436,16 +404,14 @@ export function CavidadesForm({ currentItem, onCreated, onCancel }: CavidadesFor
           toast({ title: 'Estudo criado', description: values.empreendimento.nome });
           onCreated?.(docRef.id);
         })
-        .catch(() => {
-          errorEmitter.emit(
-            'permission-error',
-            new FirestorePermissionError({
+        .catch((error) => {
+          handleFirestoreFormError(error, {
+            toast,
+            title: 'Erro ao salvar estudo de cavidades',
+            context: {
               path: collectionRef.path,
               operation: 'create',
-              requestResourceData: dataToSave,
-            }),
-          );
-        })
+              requestResourceData: dataToSave}});})
         .finally(() => setLoading(false));
     }
   }
@@ -1036,8 +1002,7 @@ export function CavidadesForm({ currentItem, onCreated, onCancel }: CavidadesFor
                     litologia: '',
                     grauRelevancia: 'nao_classificado',
                     naAda: true,
-                    observacoes: '',
-                  })
+                    observacoes: ''})
                 }
               >
                 <PlusCircle className="mr-1 h-4 w-4" />

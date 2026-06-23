@@ -81,7 +81,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { FirestorePermissionError } from "@/firebase/errors";
+import { handleFirestoreFormError } from "@/lib/firestore-form-errors";
 import {
   contractPdfBlob,
   downloadContractPdfBlob,
@@ -336,13 +336,15 @@ export default function ContractsPage() {
         description: "O contrato foi movido para a lista de finalizados.",
       });
     } catch (error) {
-      console.error("Error approving contract:", error);
-      const permissionError = new FirestorePermissionError({
-        path: docRef.path,
-        operation: "update",
-        requestResourceData: { status: "Aprovado" },
-      });
-      errorEmitter.emit("permission-error", permissionError);
+      handleFirestoreFormError(error, {
+          toast,
+          title: 'Erro ao atualizar contrato',
+          context: {
+          path: docRef.path,
+          operation: 'update',
+          requestResourceData: { status: "Aprovado" },
+        },
+        })
     }
   };
 
@@ -356,13 +358,16 @@ export default function ContractsPage() {
           description: "O contrato foi removido com sucesso.",
         });
       })
-      .catch(async (serverError) => {
-        const permissionError = new FirestorePermissionError({
+      .catch((serverError) =>
+        handleFirestoreFormError(serverError, {
+          toast,
+          title: 'Erro ao atualizar contrato',
+          context: {
           path: docRef.path,
-          operation: "delete",
-        });
-        errorEmitter.emit("permission-error", permissionError);
-      })
+          operation: 'delete',
+        },
+        }),
+      )
       .finally(() => {
         setIsAlertOpen(false);
         setItemToDelete(null);

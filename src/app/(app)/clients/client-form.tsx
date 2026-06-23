@@ -11,16 +11,16 @@ import {
   FormField,
   FormItem,
   FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
+  FormMessage} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { BrDateFormControl } from "@/components/form/br-date-input";
 import { MaskedInput } from "@/components/ui/masked-input";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { Client, Empreendedor } from "@/lib/types";
-import { useFirebase, useAuth, errorEmitter } from "@/firebase";
-import { FirestorePermissionError } from "@/firebase/errors";
+import { useFirebase, useAuth } from "@/firebase";
+import { handleFirestoreFormError } from "@/lib/firestore-form-errors";
+import { stripUndefinedDeep } from "@/lib/firestore-payload";
 import {
   collection,
   doc,
@@ -29,8 +29,7 @@ import {
   getDocs,
   query,
   where,
-  serverTimestamp,
-} from "firebase/firestore";
+  serverTimestamp} from "firebase/firestore";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { isClientePortalRole } from "@/lib/role-guards";
 import {
@@ -38,8 +37,7 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  SelectValue} from "@/components/ui/select";
 import { logUserAction } from "@/lib/audit-log";
 import { ibgeData } from "@/lib/ibge-data";
 import { cn } from "@/lib/utils";
@@ -50,15 +48,13 @@ import { searchReferences } from "@/lib/reference-search/client";
 import { fetchOnedriveAutofillContext } from "@/lib/autofill/fetch-onedrive-context";
 import {
   buildCpfCnpjVariants,
-  normalizeDocumentDigits,
-} from "@/lib/document-lookup";
+  normalizeDocumentDigits} from "@/lib/document-lookup";
 
 const formSchema = z.object({
   name: z.string().min(2, "O nome é obrigatório."),
   cpfCnpj: z.string().min(11, "O CPF/CNPJ é obrigatório."),
   entityType: z.enum(["Pessoa Física", "Pessoa Jurídica", "Produtor Rural"], {
-    required_error: "Selecione o tipo de pessoa.",
-  }),
+    required_error: "Selecione o tipo de pessoa."}),
   phone: z.string().min(8, "O telefone é obrigatório."),
   email: z.string().email("Por favor, insira um e-mail válido."),
 
@@ -74,8 +70,7 @@ const formSchema = z.object({
   bairro: z.string().optional(),
   municipio: z.string().optional(),
   uf: z.string().optional(),
-  cep: z.string().optional(),
-});
+  cep: z.string().optional()});
 
 type ClientFormValues = z.infer<typeof formSchema>;
 
@@ -139,8 +134,7 @@ const FIELD_CONFIDENCE_THRESHOLD: Record<AutofillField, number> = {
   uf: 0.9,
   cep: 0.9,
   dataNascimento: 0.95,
-  ctfIbama: 0.9,
-};
+  ctfIbama: 0.9};
 
 const CRITICAL_FIELDS = new Set<AutofillField>([
   "name",
@@ -162,8 +156,7 @@ export function ClientForm({
   currentClient,
   defaultDraft,
   onSuccess,
-  onCancel,
-}: ClientFormProps) {
+  onCancel}: ClientFormProps) {
   const editingClientId = currentClient?.id?.trim() || null;
   const seedValues = currentClient ?? defaultDraft;
   const [loading, setLoading] = React.useState(false);
@@ -197,9 +190,7 @@ export function ClientForm({
       bairro: seedValues?.bairro || "",
       municipio: seedValues?.municipio || "",
       uf: seedValues?.uf || "",
-      cep: seedValues?.cep || "",
-    },
-  });
+      cep: seedValues?.cep || ""}});
 
   const selectedUf = form.watch("uf");
 
@@ -230,8 +221,7 @@ export function ClientForm({
         clientId: currentClient?.id || null,
         userId: user?.id || null,
         userRole: user?.role || null,
-        createdAt: serverTimestamp(),
-      });
+        createdAt: serverTimestamp()});
     } catch (error) {
       console.warn("Falha ao registrar log de autofill (clientes):", error);
     }
@@ -253,8 +243,7 @@ export function ClientForm({
       toast({
         variant: "destructive",
         title: "Bloqueado por confiança baixa",
-        description: `Campo crítico "${s.field}" exige >= ${(threshold * 100).toFixed(0)}% de confiança.`,
-      });
+        description: `Campo crítico "${s.field}" exige >= ${(threshold * 100).toFixed(0)}% de confiança.`});
       return;
     }
 
@@ -263,8 +252,7 @@ export function ClientForm({
       if (!Number.isNaN(parsed.getTime())) {
         form.setValue("dataNascimento", parsed, {
           shouldDirty: true,
-          shouldValidate: true,
-        });
+          shouldValidate: true});
       }
     } else {
       form.setValue(
@@ -272,8 +260,7 @@ export function ClientForm({
         s.suggestedValue as never,
         {
           shouldDirty: true,
-          shouldValidate: true,
-        },
+          shouldValidate: true},
       );
     }
     void logAutofillDecision(s, "applied");
@@ -318,8 +305,7 @@ export function ClientForm({
     });
     toast({
       title: "Aplicação concluída",
-      description: `${appliedCount} sugestão(ões) aplicada(s). ${blockedCount} bloqueada(s) por confiança baixa.`,
-    });
+      description: `${appliedCount} sugestão(ões) aplicada(s). ${blockedCount} bloqueada(s) por confiança baixa.`});
   };
 
   const handleAutofillByCpf = async () => {
@@ -329,8 +315,7 @@ export function ClientForm({
       toast({
         variant: "destructive",
         title: "CPF/CNPJ inválido",
-        description: "Informe um CPF/CNPJ válido para buscar contexto.",
-      });
+        description: "Informe um CPF/CNPJ válido para buscar contexto."});
       return;
     }
     if (!firestore) {
@@ -358,12 +343,10 @@ export function ClientForm({
       ]);
       const clients: Array<Partial<Client> & { id: string }> = clientsSnap.docs.map((d) => ({
         id: d.id,
-        ...(d.data() as Partial<Client>),
-      }));
+        ...(d.data() as Partial<Client>)}));
       const empreendedores: Array<Partial<Empreendedor> & { id: string }> = empreendedoresSnap.docs.map((d) => ({
         id: d.id,
-        ...(d.data() as Partial<Empreendedor>),
-      }));
+        ...(d.data() as Partial<Empreendedor>)}));
       const normalizedTarget = normalizeDocument(cpfCnpj);
       const byDocMatch = (item: Record<string, unknown>) =>
         normalizeDocument(String(item.cpfCnpj || "")) === normalizedTarget;
@@ -384,8 +367,7 @@ export function ClientForm({
           suggestedValue: text,
           confidence: 0.98,
           reason: "Campo estruturado encontrado na base interna.",
-          sourceCitations: [source],
-        });
+          sourceCitations: [source]});
       };
 
       if (matchedClient) {
@@ -457,8 +439,7 @@ export function ClientForm({
               ? configuredExtensions
               : DEFAULT_AI_LOCAL_SOURCE_EXTENSIONS,
           modifiedAfter: configuredModifiedAfter || undefined,
-          maxResults: 8,
-        });
+          maxResults: 8});
         localMatchedByCpfCount =
           searchResult.matchedByCpfCount ?? searchResult.hits.length;
         localEvidenceCitations = searchResult.citations;
@@ -496,16 +477,14 @@ export function ClientForm({
           title: "Sem contexto encontrado",
           description:
             onedriveHints[0] ||
-            "Nenhum cadastro vinculado a este CPF/CNPJ na base interna, pasta OneDrive ou biblioteca local.",
-        });
+            "Nenhum cadastro vinculado a este CPF/CNPJ na base interna, pasta OneDrive ou biblioteca local."});
         return;
       }
 
       const hardContextJson = JSON.stringify(
         {
           matchedClient: matchedClient || null,
-          matchedEmpreendedor: matchedEmp || null,
-        },
+          matchedEmpreendedor: matchedEmp || null},
         null,
         2,
       );
@@ -519,8 +498,7 @@ export function ClientForm({
       const llmRes = await fetch("/api/ai-lab/autofill-empreendedor", {
         method: "POST",
         headers: await getAdminApiRequestHeaders(auth),
-        body: JSON.stringify({ cpf: digits, hardContextJson, evidenceText }),
-      });
+        body: JSON.stringify({ cpf: digits, hardContextJson, evidenceText })});
       const llmData = await llmRes.json();
       const softSuggestions: AutofillSuggestion[] =
         llmRes.ok && llmData?.success && Array.isArray(llmData.suggestions)
@@ -533,8 +511,7 @@ export function ClientForm({
               )
               .map((s: AutofillSuggestion) => ({
                 ...s,
-                confidence: Number(s.confidence || 0.7),
-              }))
+                confidence: Number(s.confidence || 0.7)}))
           : [];
 
       const merged = [...hardSuggestions];
@@ -561,8 +538,7 @@ export function ClientForm({
         title: "Sugestões prontas",
         description: `${merged.length} sugestão(ões) para revisão. Locais: ${localMatchedByCpfCount}.${onedrivePart}${
           onedriveHints[0] ? ` ${onedriveHints[0]}` : ""
-        }`,
-      });
+        }`});
     } catch (error) {
       console.error("Autofill clientes falhou:", error);
       toast({
@@ -571,8 +547,7 @@ export function ClientForm({
         description:
           error instanceof Error
             ? error.message
-            : "Não foi possível gerar sugestões.",
-      });
+            : "Não foi possível gerar sugestões."});
     } finally {
       setIsAutofilling(false);
     }
@@ -594,13 +569,12 @@ export function ClientForm({
       if (editingClientId && !form.formState.isDirty) {
         toast({
           title: "Cliente atualizado!",
-          description: "Nenhuma alteração foi feita nos dados do cliente.",
-        });
+          description: "Nenhuma alteração foi feita nos dados do cliente."});
         onSuccess?.();
         return;
       }
 
-      const dataToSave = toClientFirestorePayload(values);
+      const dataToSave = stripUndefinedDeep(toClientFirestorePayload(values));
 
       if (editingClientId) {
         const clientRef = doc(firestore, "clients", editingClientId);
@@ -612,54 +586,47 @@ export function ClientForm({
         if (isOwnClient && user?.id) {
           try {
             await updateDoc(doc(firestore, "users", user.id), {
-              cadastroIncompleto: false,
-            });
+              cadastroIncompleto: false});
           } catch (_) {}
         }
 
         toast({
           title: "Cliente atualizado!",
-          description: "As informações do cliente foram salvas com sucesso.",
-        });
+          description: "As informações do cliente foram salvas com sucesso."});
         void logUserAction(firestore, auth, "update_client", {
           clientId: editingClientId,
-          clientName: values.name,
-        });
+          clientName: values.name});
         onSuccess?.();
       } else {
         const clientsCollectionRef = collection(firestore, "clients");
         const docRef = await addDoc(clientsCollectionRef, dataToSave);
         toast({
           title: "Cliente criado!",
-          description: `O cliente ${values.name} foi adicionado com sucesso.`,
-        });
+          description: `O cliente ${values.name} foi adicionado com sucesso.`});
         void logUserAction(firestore, auth, "create_client", {
           clientId: docRef.id,
-          clientName: values.name,
-        });
+          clientName: values.name});
         form.reset();
         onSuccess?.();
       }
-    } catch {
+    } catch (error) {
       if (editingClientId) {
         const clientRef = doc(firestore!, "clients", editingClientId);
-        errorEmitter.emit(
-          "permission-error",
-          new FirestorePermissionError({
+        handleFirestoreFormError(error, {
+          toast,
+          title: "Erro ao salvar cliente",
+          context: {
             path: clientRef.path,
             operation: "update",
-            requestResourceData: toClientFirestorePayload(values),
-          }),
-        );
+            requestResourceData: stripUndefinedDeep(toClientFirestorePayload(values))}});
       } else {
-        errorEmitter.emit(
-          "permission-error",
-          new FirestorePermissionError({
+        handleFirestoreFormError(error, {
+          toast,
+          title: "Erro ao salvar cliente",
+          context: {
             path: collection(firestore!, "clients").path,
             operation: "create",
-            requestResourceData: toClientFirestorePayload(values),
-          }),
-        );
+            requestResourceData: stripUndefinedDeep(toClientFirestorePayload(values))}});
       }
     } finally {
       setLoading(false);

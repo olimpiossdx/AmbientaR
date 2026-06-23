@@ -71,6 +71,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
+import { handleFirestoreFormError } from "@/lib/firestore-form-errors";
 import {
   getAppUserProfileUid,
   isClientePortalRole,
@@ -80,7 +81,6 @@ import {
 import { fetchClientIdsForPortalPartner, isEmpreendedorScopedPortalRole } from "@/lib/portal-empreendedor-scope";
 import { resolvePortalAuthUid } from "@/lib/auth-user-id";
 import { buildUserProfileDocumentVariants } from "@/lib/document-lookup";
-import { FirestorePermissionError } from "@/firebase/errors";
 import { logUserAction } from "@/lib/audit-log";
 import { InvoiceForm } from "./invoice-form";
 import {
@@ -515,13 +515,16 @@ export default function InvoicesPage() {
           });
         }
       })
-      .catch(async (serverError) => {
-        const permissionError = new FirestorePermissionError({
+      .catch((serverError) =>
+        handleFirestoreFormError(serverError, {
+          toast,
+          title: 'Erro ao excluir fatura',
+          context: {
           path: docRef.path,
-          operation: "delete",
-        });
-        errorEmitter.emit("permission-error", permissionError);
-      })
+          operation: 'delete',
+        },
+        }),
+      )
       .finally(() => {
         setIsAlertOpen(false);
         setItemToDelete(null);

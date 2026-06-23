@@ -7,19 +7,18 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/button';
 import {
-  Form,
-} from '@/components/ui/form';
+  Form} from '@/components/ui/form';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { PIA, Empreendedor as Client, Project, PiaType } from '@/lib/types';
-import { useFirebase, errorEmitter, useCollection, useMemoFirebase } from '@/firebase';
-import { FirestorePermissionError } from '@/firebase/errors';
+import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
+import { handleFirestoreFormError } from '@/lib/firestore-form-errors';
+
 import { collection, doc, addDoc, updateDoc, getDoc } from 'firebase/firestore';
 import {
   getFirestoreErrorCode,
   getFirestoreErrorMessage,
-  stripUndefinedDeep,
-} from '@/lib/firestore-payload';
+  stripUndefinedDeep} from '@/lib/firestore-payload';
 import { DialogFooter } from '@/components/ui/dialog';
 import { PiaFormInventario } from './pia-form-inventario';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -33,13 +32,10 @@ const formSchema = z.object({
     requerente: z.object({
         clientId: z.string().optional(),
         nome: z.string().min(1, "O nome do requerente é obrigatório."),
-        cpfCnpj: z.string().min(1, "O CPF/CNPJ do requerente é obrigatório."),
-    }),
+        cpfCnpj: z.string().min(1, "O CPF/CNPJ do requerente é obrigatório.")}),
     empreendimento: z.object({
         projectId: z.string().optional(),
-        nome: z.string().min(1, "O nome do empreendimento é obrigatório."),
-    }),
-}).passthrough(); // Permite campos extras que serão validados pelo schema específico
+        nome: z.string().min(1, "O nome do empreendimento é obrigatório.")})}).passthrough(); // Permite campos extras que serão validados pelo schema específico
 
 type PiaFormValues = z.infer<typeof formSchema>;
 
@@ -70,17 +66,13 @@ export function PiaForm({ currentItem, piaType, onSuccess, linkContext }: PiaFor
     resolver: zodResolver(formSchema),
     defaultValues: currentItem ? {
       ...currentItem,
-      type: currentItem.type || piaType,
-    } : {
+      type: currentItem.type || piaType} : {
       type: piaType || 'Simplificado',
       status: 'Rascunho',
       requerente: { clientId: linkContext?.empreendedorId ?? '', nome: '', cpfCnpj: '' },
       empreendimento: {
         projectId: linkContext?.projectId ?? '',
-        nome: '',
-      },
-    },
-  });
+        nome: ''}}});
 
   React.useEffect(() => {
     if (!linkContext?.projectId || !projects?.length) return;
@@ -99,8 +91,7 @@ export function PiaForm({ currentItem, piaType, onSuccess, linkContext }: PiaFor
         toast({
             variant: 'destructive',
             title: 'Formulário Inválido',
-            description: 'Por favor, corrija os erros antes de aprovar.',
-        });
+            description: 'Por favor, corrija os erros antes de aprovar.'});
         setLoading(false);
         return;
     }
@@ -117,8 +108,7 @@ export function PiaForm({ currentItem, piaType, onSuccess, linkContext }: PiaFor
         ...values,
         status,
         ...(linkContext?.requestId ? { requestId: linkContext.requestId } : {}),
-        ...(currentItem?.requestId ? { requestId: currentItem.requestId } : {}),
-    });
+        ...(currentItem?.requestId ? { requestId: currentItem.requestId } : {})});
 
     try {
         if (currentItem) {
@@ -153,22 +143,15 @@ export function PiaForm({ currentItem, piaType, onSuccess, linkContext }: PiaFor
         }
         onSuccess?.();
     } catch (error) {
-        console.error("Error saving PIA:", error);
-        const code = getFirestoreErrorCode(error);
-        const message = getFirestoreErrorMessage(error);
-        toast({
-          variant: 'destructive',
+        handleFirestoreFormError(error, {
+          toast,
           title: 'Erro ao salvar PIA',
-          description: message,
-        });
-        if (code === 'permission-denied') {
-          const permissionError = new FirestorePermissionError({
+          context: {
             path: currentItem ? `pias/${currentItem.id}` : 'pias',
             operation: currentItem ? 'update' : 'create',
             requestResourceData: dataToSave,
-          });
-          errorEmitter.emit('permission-error', permissionError);
-        }
+          },
+        });
     } finally {
         setLoading(false);
     }

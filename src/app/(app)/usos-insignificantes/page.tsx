@@ -70,6 +70,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { UsoInsignificanteForm } from "./uso-insignificante-form";
 import { useToast } from "@/hooks/use-toast";
+import { handleFirestoreFormError } from "@/lib/firestore-form-errors";
 import { AttachmentPreviewSection } from "@/components/shared/attachment-preview-section";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { Label } from "@/components/ui/label";
@@ -270,13 +271,13 @@ export default function UsosInsignificantesPage() {
           description: "O uso insignificante foi excluído.",
         });
       })
-      .catch(() => {
-        const permissionError = new FirestorePermissionError({
-          path: docRef.path,
-          operation: "delete",
-        });
-        errorEmitter.emit("permission-error", permissionError);
-      })
+      .catch((error) =>
+        handleFirestoreFormError(error, {
+          toast,
+          title: "Erro ao excluir uso insignificante",
+          context: { path: docRef.path, operation: "delete" },
+        }),
+      )
       .finally(() => {
         setIsAlertOpen(false);
         setItemToDelete(null);

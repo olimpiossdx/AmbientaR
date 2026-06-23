@@ -11,15 +11,15 @@ import {
   FormField,
   FormItem,
   FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
+  FormMessage} from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { MaskedInput } from '@/components/ui/masked-input';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { TechnicalResponsible } from '@/lib/types';
-import { useFirebase, errorEmitter } from '@/firebase';
-import { FirestorePermissionError } from '@/firebase/errors';
+import { useFirebase} from '@/firebase';
+import { handleFirestoreFormError } from '@/lib/firestore-form-errors';
+
 import { collection, doc, addDoc, updateDoc } from 'firebase/firestore';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
@@ -38,8 +38,7 @@ const formSchema = z.object({
   bairro: z.string().optional(),
   municipio: z.string().optional(),
   uf: z.string().optional(),
-  cep: z.string().optional(),
-});
+  cep: z.string().optional()});
 
 type FormValues = z.infer<typeof formSchema>;
 
@@ -71,9 +70,7 @@ export function ResponsibleForm({ currentItem, onSuccess, onCancel }: Responsibl
       bairro: currentItem?.bairro || '',
       municipio: currentItem?.municipio || '',
       uf: currentItem?.uf || '',
-      cep: currentItem?.cep || '',
-    },
-  });
+      cep: currentItem?.cep || ''}});
 
   async function onSubmit(values: FormValues) {
     setLoading(true);
@@ -91,13 +88,14 @@ export function ResponsibleForm({ currentItem, onSuccess, onCancel }: Responsibl
           toast({ title: 'Responsável atualizado!', description: 'Os dados foram salvos com sucesso.' });
           onSuccess?.();
         })
-        .catch(async (serverError) => {
-          const permissionError = new FirestorePermissionError({
+        .catch((error) => {
+          handleFirestoreFormError(error, {
+            toast,
+            title: 'Erro ao salvar responsável técnico',
+            context: {
             path: docRef.path,
             operation: 'update',
-            requestResourceData: values,
-          });
-          errorEmitter.emit('permission-error', permissionError);
+            requestResourceData: values}});
         })
         .finally(() => setLoading(false));
     } else {
@@ -108,13 +106,14 @@ export function ResponsibleForm({ currentItem, onSuccess, onCancel }: Responsibl
           form.reset();
           onSuccess?.();
         })
-        .catch(async (serverError) => {
-          const permissionError = new FirestorePermissionError({
+        .catch((error) => {
+          handleFirestoreFormError(error, {
+            toast,
+            title: 'Erro ao salvar responsável técnico',
+            context: {
             path: collectionRef.path,
             operation: 'create',
-            requestResourceData: values,
-          });
-          errorEmitter.emit('permission-error', permissionError);
+            requestResourceData: values}});
         })
         .finally(() => setLoading(false));
     }

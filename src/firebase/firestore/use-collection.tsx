@@ -10,10 +10,9 @@ import {
   QuerySnapshot,
   CollectionReference,
 } from 'firebase/firestore';
-import { errorEmitter } from '@/firebase/error-emitter';
-import { FirestorePermissionError } from '@/firebase/errors';
 import { sortFirestoreDocsForSelect } from '@/lib/sort-pt-br';
 import { useFirestoreAuthReady } from '@/firebase/use-firestore-auth-ready';
+import { getFirestoreErrorMessage } from '@/lib/firestore-payload';
 
 /** Utility type to add an 'id' field to a given type T. */
 export type WithId<T> = T & { id: string };
@@ -121,13 +120,9 @@ export function useCollection<T = any>(
             path = 'query';
           }
 
-          const contextualError = new FirestorePermissionError({
-            operation: 'list',
-            path,
-          })
-
-          setError(contextualError)
-          errorEmitter.emit('permission-error', contextualError);
+          const friendly = new Error(getFirestoreErrorMessage(error));
+          friendly.name = 'FirestorePermissionError';
+          setError(friendly);
         }
       }
     );

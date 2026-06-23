@@ -26,7 +26,6 @@ import {
   useMemoFirebase,
   errorEmitter,
 } from "@/firebase";
-import { FirestorePermissionError } from "@/firebase/errors";
 import {
   collection,
   doc,
@@ -59,6 +58,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { LicenseForm } from "./license-form";
 import { useToast } from "@/hooks/use-toast";
+import { handleFirestoreFormError } from "@/lib/firestore-form-errors";
 import { AttachmentPreviewSection } from "@/components/shared/attachment-preview-section";
 import { useAuth } from "@/firebase";
 import { useRouter } from "next/navigation";
@@ -271,13 +271,16 @@ export default function LicensesPage() {
         setIsAlertOpen(false);
         setItemToDelete(null);
       })
-      .catch(async (serverError) => {
-        const permissionError = new FirestorePermissionError({
+      .catch((serverError) =>
+        handleFirestoreFormError(serverError, {
+          toast,
+          title: 'Erro ao excluir licença',
+          context: {
           path: licenseDocRef.path,
-          operation: "delete",
-        });
-        errorEmitter.emit("permission-error", permissionError);
-      })
+          operation: 'delete',
+        },
+        }),
+      )
       .finally(() => {
         setIsAlertOpen(false);
         setItemToDelete(null);

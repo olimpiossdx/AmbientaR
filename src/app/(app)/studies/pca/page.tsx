@@ -41,7 +41,7 @@ import type { PCA, AppUser } from '@/lib/types';
 import { isAdminOrSupervisorRole } from '@/lib/role-guards';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
-import { FirestorePermissionError } from '@/firebase/errors';
+import { handleFirestoreFormError } from '@/lib/firestore-form-errors';
 import { useAuth } from '@/firebase';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -123,13 +123,16 @@ export default function PcaPage() {
           description: 'O relatório foi removido com sucesso.',
         });
       })
-      .catch(async (serverError) => {
-        const permissionError = new FirestorePermissionError({
+      .catch((serverError) =>
+        handleFirestoreFormError(serverError, {
+          toast,
+          title: 'Erro ao excluir PCA',
+          context: {
           path: docRef.path,
           operation: 'delete',
-        });
-        errorEmitter.emit('permission-error', permissionError);
-      })
+        },
+        }),
+      )
       .finally(() => {
         setIsAlertOpen(false);
         setItemToDelete(null);

@@ -39,16 +39,15 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CardSearchInput } from "@/components/card-search-input";
 import { useToast } from "@/hooks/use-toast";
+import { handleFirestoreFormError } from "@/lib/firestore-form-errors";
 import {
   useAuth,
   useCollection,
   useFirebase,
   useMemoFirebase,
-  errorEmitter,
 } from "@/firebase";
 import { collection, deleteDoc, doc, updateDoc } from "firebase/firestore";
 import type { SupplierContract, AppUser } from "@/lib/types";
-import { FirestorePermissionError } from "@/firebase/errors";
 import { CheckCircle, Download, Eye, Loader2, Pencil, PlusCircle, Trash2, Upload } from "lucide-react";
 import { SupplierContractForm } from "./supplier-contract-form";
 import { AttachmentPreviewSection } from "@/components/shared/attachment-preview-section";
@@ -172,11 +171,11 @@ export default function ContractsSuppliersPage() {
       await deleteDoc(ref);
       toast({ title: "Contrato removido com sucesso." });
     } catch (error) {
-      const permissionError = new FirestorePermissionError({
-        path: ref.path,
-        operation: "delete",
+      handleFirestoreFormError(error, {
+        toast,
+        title: "Erro ao excluir contrato",
+        context: { path: ref.path, operation: "delete" },
       });
-      errorEmitter.emit("permission-error", permissionError);
     } finally {
       setIsDeleteOpen(false);
       setItemToDelete(null);
@@ -192,12 +191,15 @@ export default function ContractsSuppliersPage() {
         description: "O contrato foi movido para a lista de finalizados.",
       });
     } catch (error) {
-      const permissionError = new FirestorePermissionError({
-        path: ref.path,
-        operation: "update",
-        requestResourceData: { status: "Aprovado" },
+      handleFirestoreFormError(error, {
+        toast,
+        title: "Erro ao aprovar contrato",
+        context: {
+          path: ref.path,
+          operation: "update",
+          requestResourceData: { status: "Aprovado" },
+        },
       });
-      errorEmitter.emit("permission-error", permissionError);
     }
   };
 

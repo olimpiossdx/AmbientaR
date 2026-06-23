@@ -52,7 +52,6 @@ import {
   useCollection,
   useFirebase,
   useMemoFirebase,
-  errorEmitter,
 } from "@/firebase";
 import {
   collection,
@@ -84,7 +83,7 @@ import { useToast } from "@/hooks/use-toast";
 import { MtrDeclaracaoUploadForm } from "./mtr-declaracao-upload-form";
 import { MtrSyncDialog } from "./mtr-sync-dialog";
 import { cn } from "@/lib/utils";
-import { FirestorePermissionError } from "@/firebase/errors";
+import { handleFirestoreFormError } from "@/lib/firestore-form-errors";
 import { canPerformOperationalWrite } from "@/lib/role-guards";
 
 type MtrStatusResponse = { configured: boolean };
@@ -368,14 +367,12 @@ export default function MtrDeclaracaoPage() {
       }
       await deleteDoc(docRef);
       toast({ title: "Registro removido" });
-    } catch {
-      errorEmitter.emit(
-        "permission-error",
-        new FirestorePermissionError({
-          path: docRef.path,
-          operation: "delete",
-        }),
-      );
+    } catch (serverError) {
+      handleFirestoreFormError(serverError, {
+        toast,
+        title: "Erro ao excluir registro",
+        context: { path: docRef.path, operation: "delete" },
+      });
     } finally {
       setItemToDelete(null);
     }

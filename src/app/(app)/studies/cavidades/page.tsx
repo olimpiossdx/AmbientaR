@@ -34,13 +34,13 @@ import {
 } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PlusCircle } from 'lucide-react';
-import { useCollection, useFirebase, useMemoFirebase, errorEmitter } from '@/firebase';
+import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
 import { collection, doc, deleteDoc, updateDoc, limit, query } from 'firebase/firestore';
 import type { EstudoCavidade } from '@/lib/types';
 import { isAdminOrSupervisorRole } from '@/lib/role-guards';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
-import { FirestorePermissionError } from '@/firebase/errors';
+import { handleFirestoreFormError } from '@/lib/firestore-form-errors';
 import { Badge } from '@/components/ui/badge';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { Label } from '@/components/ui/label';
@@ -196,12 +196,13 @@ export default function CavidadesPage() {
     const docRef = doc(firestore, 'estudosCavidades', itemToDelete);
     deleteDoc(docRef)
       .then(() => toast({ title: 'Estudo excluído' }))
-      .catch(() => {
-        errorEmitter.emit(
-          'permission-error',
-          new FirestorePermissionError({ path: docRef.path, operation: 'delete' }),
-        );
-      })
+      .catch((serverError) =>
+        handleFirestoreFormError(serverError, {
+          toast,
+          title: 'Erro ao excluir estudo',
+          context: { path: docRef.path, operation: 'delete' },
+        }),
+      )
       .finally(() => {
         setIsAlertOpen(false);
         setItemToDelete(null);

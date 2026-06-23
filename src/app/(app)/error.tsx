@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Leaf } from "lucide-react";
 import Link from "next/link";
+import { getUserFacingErrorMessage } from "@/firebase/errors";
 
 /**
  * Limite de erro do segmento autenticado — evita falhas de HMR/recovery
@@ -25,6 +26,8 @@ export default function AppSegmentError({
     );
   }, [error]);
 
+  const displayMessage = getUserFacingErrorMessage(error);
+
   return (
     <div className="flex min-h-[50vh] flex-col items-center justify-center gap-4 p-6">
       <Leaf className="h-12 w-12 text-destructive" />
@@ -35,9 +38,9 @@ export default function AppSegmentError({
         apague a pasta <code className="rounded bg-muted px-1">.next</code> e execute{" "}
         <code className="rounded bg-muted px-1">npm run dev</code> de novo (uma só instância na porta).
       </p>
-      {error.message ? (
+      {displayMessage ? (
         <p className="max-w-md rounded-lg bg-destructive/10 p-3 text-left text-xs text-destructive">
-          {error.message}
+          {displayMessage}
         </p>
       ) : null}
       <div className="flex flex-wrap items-center justify-center gap-2">

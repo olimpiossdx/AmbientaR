@@ -1,12 +1,12 @@
 # Auditoria de Rotas e Menu
 
-Gerado em: 2026-06-12T13:22:48.170Z
+Gerado em: 2026-06-23T12:13:09.007Z
 
 Classificação inicial para limpeza cirúrgica. Rotas órfãs não devem ser removidas automaticamente; precisam de validação funcional antes.
 
 ## Código ativo ou coberto por menu
 
-Total: 275
+Total: 271
 
 | Rota | Arquivo |
 |------|---------|
@@ -156,10 +156,6 @@ Total: 275
 | `/proposals/[id]/edit` | `src/app/(app)/proposals/[id]/edit/page.tsx` |
 | `/proposals/new` | `src/app/(app)/proposals/new/page.tsx` |
 | `/reporting` | `src/app/(app)/reporting/page.tsx` |
-| `/requests` | `src/app/(app)/requests/page.tsx` |
-| `/requests/[id]/aia` | `src/app/(app)/requests/[id]/aia/page.tsx` |
-| `/requests/[id]/edit` | `src/app/(app)/requests/[id]/edit/page.tsx` |
-| `/requests/new` | `src/app/(app)/requests/new/page.tsx` |
 | `/responsible-company` | `src/app/(app)/responsible-company/page.tsx` |
 | `/responsible-company/[id]/edit` | `src/app/(app)/responsible-company/(.)[id]/edit/page.tsx` |
 | `/responsible-company/[id]/edit` | `src/app/(app)/responsible-company/[id]/edit/page.tsx` |
@@ -288,14 +284,24 @@ Total: 275
 
 ## Rotas dinâmicas sem entrada direta no menu
 
-Total: 0
+Total: 3
 
 | Rota | Arquivo |
 |------|---------|
+| `/gestao-processos/projetos/[id]` | `src/app/(app)/gestao-processos/projetos/[id]/page.tsx` |
+| `/requests/[id]/aia` | `src/app/(app)/requests/[id]/aia/page.tsx` |
+| `/requests/[id]/edit` | `src/app/(app)/requests/[id]/edit/page.tsx` |
 
 ## Rotas estáticas sem entrada direta no menu
 
-Total: 0
+Total: 7
 
 | Rota | Arquivo |
 |------|---------|
+| `/gestao-processos` | `src/app/(app)/gestao-processos/page.tsx` |
+| `/gestao-processos/fluxo` | `src/app/(app)/gestao-processos/fluxo/page.tsx` |
+| `/gestao-processos/planilha` | `src/app/(app)/gestao-processos/planilha/page.tsx` |
+| `/gestao-processos/projetos` | `src/app/(app)/gestao-processos/projetos/page.tsx` |
+| `/gestao-processos/tarefas` | `src/app/(app)/gestao-processos/tarefas/page.tsx` |
+| `/requests` | `src/app/(app)/requests/page.tsx` |
+| `/requests/new` | `src/app/(app)/requests/new/page.tsx` |

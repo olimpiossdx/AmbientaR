@@ -21,7 +21,7 @@ import { useCollection, useFirebase, useMemoFirebase, errorEmitter } from '@/fir
 import { collection, doc, deleteDoc, limit, query } from 'firebase/firestore';
 import type { InventoryProject } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
-import { FirestorePermissionError } from '@/firebase/errors';
+import { handleFirestoreFormError } from '@/lib/firestore-form-errors';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 import { useRouter } from 'next/navigation';
 
@@ -68,13 +68,16 @@ export default function InventarioFlorestalPage() {
           description: 'O projeto foi removido com sucesso.',
         });
       })
-      .catch(async (serverError) => {
-        const permissionError = new FirestorePermissionError({
+      .catch((serverError) =>
+        handleFirestoreFormError(serverError, {
+          toast,
+          title: 'Erro ao excluir inventário',
+          context: {
           path: docRef.path,
           operation: 'delete',
-        });
-        errorEmitter.emit('permission-error', permissionError);
-      })
+        },
+        }),
+      )
       .finally(() => {
         setIsAlertOpen(false);
         setItemToDelete(null);

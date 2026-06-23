@@ -96,28 +96,45 @@ function buildRequestObject(context: SecurityRuleContext): SecurityRuleRequest {
   };
 }
 
-/**
- * Builds the final, formatted error message for the LLM.
- * @param requestObject The simulated request object.
- * @returns A string containing the error message and the JSON payload.
- */
-function buildErrorMessage(requestObject: SecurityRuleRequest): string {
-  return `Missing or insufficient permissions: The following request was denied by Firestore Security Rules:
-${JSON.stringify(requestObject, null, 2)}`;
+function buildDebugPayload(requestObject: SecurityRuleRequest): string {
+  return JSON.stringify(requestObject, null, 2);
 }
 
+const USER_FRIENDLY_PERMISSION_MESSAGE =
+  'Sem permissão para acessar ou gravar estes dados. Verifique seu perfil ou contacte o administrador.';
+
 /**
- * A custom error class designed to be consumed by an LLM for debugging.
- * It structures the error information to mimic the request object
- * available in Firestore Security Rules.
+ * Erro estruturado para falhas de regras Firestore.
+ * A mensagem exposta ao utilizador é curta; o payload completo fica em `debugPayload`.
  */
 export class FirestorePermissionError extends Error {
   public readonly request: SecurityRuleRequest;
+  public readonly debugPayload: string;
+  public readonly operation: SecurityRuleContext['operation'];
 
   constructor(context: SecurityRuleContext) {
     const requestObject = buildRequestObject(context);
-    super(buildErrorMessage(requestObject));
-    this.name = 'FirebaseError';
+    super(USER_FRIENDLY_PERMISSION_MESSAGE);
+    this.name = 'FirestorePermissionError';
     this.request = requestObject;
+    this.debugPayload = buildDebugPayload(requestObject);
+    this.operation = context.operation;
   }
+}
+
+/** Mensagem segura para boundaries e toasts (nunca JSON de debug). */
+export function getUserFacingErrorMessage(error: unknown): string {
+  if (error instanceof FirestorePermissionError) {
+    return error.message;
+  }
+  if (error instanceof Error && error.message) {
+    if (error.message.includes('Missing or insufficient permissions')) {
+      return USER_FRIENDLY_PERMISSION_MESSAGE;
+    }
+    if (error.message.trim().startsWith('{') || error.message.includes('"auth"')) {
+      return 'Ocorreu um erro de permissão ou comunicação. Tente novamente ou contacte o suporte.';
+    }
+    return error.message;
+  }
+  return 'Ocorreu um erro inesperado. Tente novamente.';
 }

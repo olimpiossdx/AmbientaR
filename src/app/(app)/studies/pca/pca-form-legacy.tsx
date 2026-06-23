@@ -19,8 +19,9 @@ import { Input } from '@/components/ui/input';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { PCA, Empreendedor as Client, Project } from '@/lib/types';
-import { useFirebase, errorEmitter, useCollection, useMemoFirebase } from '@/firebase';
-import { FirestorePermissionError } from '@/firebase/errors';
+import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
+import { handleFirestoreFormError } from '@/lib/firestore-form-errors';
+
 import { collection, doc, addDoc, updateDoc } from 'firebase/firestore';
 import { DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -37,15 +38,13 @@ const formSchema = z.object({
     titulo: z.string().min(1, "O título é obrigatório."),
     processo: z.string().min(1, "O processo é obrigatório."),
     dataEmissao: z.date({ required_error: 'A data de emissão é obrigatória.' }),
-    versao: z.string().optional(),
-  }),
+    versao: z.string().optional()}),
   empreendedor: z.object({
     clientId: z.string().optional(),
     nome: z.string().min(1, "O nome do empreendedor é obrigatório."),
     cpfCnpj: z.string().min(1, "O CPF/CNPJ é obrigatório."),
     endereco: z.string().min(1, "O endereço é obrigatório."),
-    contato: z.string().min(1, "O contato é obrigatório."),
-  }),
+    contato: z.string().min(1, "O contato é obrigatório.")}),
   empreendimento: z.object({
     projectId: z.string().optional(),
     nome: z.string().min(1, "O nome do empreendimento é obrigatório."),
@@ -54,12 +53,10 @@ const formSchema = z.object({
     coordenadas: z.string().min(1, "As coordenadas são obrigatórias."),
     atividade: z.string().min(1, "A atividade é obrigatória."),
     tipologia: z.string().min(1, "A tipologia/porte/classe é obrigatória."),
-    faseLicenciamento: z.enum(['LP', 'LI', 'LO', 'AAF', 'Outra'], { required_error: 'Selecione a fase.' }),
-  }),
+    faseLicenciamento: z.enum(['LP', 'LI', 'LO', 'AAF', 'Outra'], { required_error: 'Selecione a fase.' })}),
   objetoEstudo: z.object({
     objeto: z.string().min(1, "O objeto do estudo é obrigatório."),
-    fundamentacaoLegal: z.string().min(1, "A fundamentação legal é obrigatória."),
-  }),
+    fundamentacaoLegal: z.string().min(1, "A fundamentação legal é obrigatória.")}),
   conteudoEstudo: z.object({
     introducao: z.string().optional(),
     caracterizacaoEmpreendimento: z.string().optional(),
@@ -71,13 +68,10 @@ const formSchema = z.object({
     programasAmbientais: z.string().optional(),
     conclusao: z.string().optional(),
     referencias: z.string().optional(),
-    anexos: z.string().optional(),
-  }),
+    anexos: z.string().optional()}),
   equipeTecnica: z.object({
     qualificacoes: z.string().optional(),
-    arts: z.string().optional(),
-  }),
-});
+    arts: z.string().optional()})});
 
 type PcaFormValues = z.infer<typeof formSchema>;
 
@@ -114,8 +108,7 @@ export function PcaFormLegacy({ currentItem, onSuccess }: PcaFormProps) {
         activity: currentItem.empreendimento.atividade || '',
         termoReferencia: {
             ...currentItem.termoReferencia,
-            dataEmissao: new Date(currentItem.termoReferencia.dataEmissao),
-        }
+            dataEmissao: new Date(currentItem.termoReferencia.dataEmissao)}
     } : {
       activity: '',
       status: 'Rascunho',
@@ -124,9 +117,7 @@ export function PcaFormLegacy({ currentItem, onSuccess }: PcaFormProps) {
       empreendimento: { nome: '', municipio: '', endereco: '', coordenadas: '', atividade: '', tipologia: ''},
       objetoEstudo: { objeto: '', fundamentacaoLegal: '' },
       conteudoEstudo: { introducao: '', caracterizacaoEmpreendimento: '', diagnosticoMeioFisico: '', diagnosticoMeioBiotico: '', diagnosticoMeioSocioeconomico: '', analiseImpactos: '', medidasMitigadoras: '', programasAmbientais: '', conclusao: '', referencias: '', anexos: '' },
-      equipeTecnica: { qualificacoes: '', arts: '' },
-    },
-  });
+      equipeTecnica: { qualificacoes: '', arts: '' }}});
 
   const selectedClientId = form.watch('empreendedor.clientId');
   const selectedProjectId = form.watch('empreendimento.projectId');
@@ -165,8 +156,7 @@ export function PcaFormLegacy({ currentItem, onSuccess }: PcaFormProps) {
         toast({
             variant: 'destructive',
             title: 'Formulário Inválido',
-            description: 'Por favor, corrija os erros antes de concluir.',
-        });
+            description: 'Por favor, corrija os erros antes de concluir.'});
         setLoading(false);
         return;
     }
@@ -184,8 +174,7 @@ export function PcaFormLegacy({ currentItem, onSuccess }: PcaFormProps) {
       status: status,
       termoReferencia: {
         ...values.termoReferencia,
-        dataEmissao: values.termoReferencia.dataEmissao.toISOString(),
-      }
+        dataEmissao: values.termoReferencia.dataEmissao.toISOString()}
     };
 
     if (currentItem) {
@@ -195,9 +184,11 @@ export function PcaFormLegacy({ currentItem, onSuccess }: PcaFormProps) {
           toast({ title: 'PCA atualizado!', description: `O relatório foi salvo como ${status.toLowerCase()}.` });
           if(status === 'Aprovado') onSuccess?.();
         })
-        .catch(async (serverError) => {
-          const permissionError = new FirestorePermissionError({ path: docRef.path, operation: 'update', requestResourceData: dataToSave });
-          errorEmitter.emit('permission-error', permissionError);
+        .catch((error) => {
+          handleFirestoreFormError(error, {
+            toast,
+            title: 'Erro ao salvar PCA',
+            context: { path: docRef.path, operation: 'update', requestResourceData: dataToSave }});
         })
         .finally(() => setLoading(false));
     } else {
@@ -208,9 +199,11 @@ export function PcaFormLegacy({ currentItem, onSuccess }: PcaFormProps) {
           form.reset();
           if(status === 'Aprovado') onSuccess?.();
         })
-        .catch(async (serverError) => {
-          const permissionError = new FirestorePermissionError({ path: collectionRef.path, operation: 'create', requestResourceData: dataToSave });
-          errorEmitter.emit('permission-error', permissionError);
+        .catch((error) => {
+          handleFirestoreFormError(error, {
+            toast,
+            title: 'Erro ao salvar PCA',
+            context: { path: collectionRef.path, operation: 'create', requestResourceData: dataToSave }});
         })
         .finally(() => setLoading(false));
     }

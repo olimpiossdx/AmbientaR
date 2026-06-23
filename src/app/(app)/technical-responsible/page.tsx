@@ -9,7 +9,6 @@ import { PlusCircle, Pencil, Trash2, Eye } from 'lucide-react';
 import { useCollection, useFirestore, useMemoFirebase, errorEmitter } from '@/firebase';
 import { collection, doc, deleteDoc } from 'firebase/firestore';
 import type { TechnicalResponsible } from '@/lib/types';
-import { FirestorePermissionError } from '@/firebase/errors';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   Dialog,
@@ -32,6 +31,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { useAuth } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
+import { handleFirestoreFormError } from '@/lib/firestore-form-errors';
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { Separator } from '@/components/ui/separator';
 import { Label } from '@/components/ui/label';
@@ -91,13 +91,16 @@ export default function TechnicalResponsiblePage() {
           description: 'O responsável técnico foi removido com sucesso.',
         });
       })
-      .catch(async (serverError) => {
-        const permissionError = new FirestorePermissionError({
+      .catch((serverError) =>
+        handleFirestoreFormError(serverError, {
+          toast,
+          title: 'Erro ao excluir responsável técnico',
+          context: {
           path: docRef.path,
           operation: 'delete',
-        });
-        errorEmitter.emit('permission-error', permissionError);
-      })
+        },
+        }),
+      )
       .finally(() => {
         setIsAlertOpen(false);
         setItemToDelete(null);

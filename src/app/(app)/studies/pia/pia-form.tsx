@@ -10,8 +10,9 @@ import { Form } from '@/components/ui/form';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { PIA, Empreendedor as Client, Project, PiaType } from '@/lib/types';
-import { useFirebase, errorEmitter, useCollection, useMemoFirebase } from '@/firebase';
-import { FirestorePermissionError } from '@/firebase/errors';
+import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
+import { handleFirestoreFormError } from '@/lib/firestore-form-errors';
+
 import { collection, doc, addDoc, updateDoc } from 'firebase/firestore';
 import { DialogFooter } from '@/components/ui/dialog';
 import { PiaFormInventario } from './pia-form-inventario';
@@ -20,10 +21,7 @@ import { validatePiaForApproval } from '@/lib/pia/pia-export-validation';
 import type { PiaRecord } from '@/lib/pia/pia-record';
 import { syncPiaLinksToRequest } from '@/lib/pia/pia-request-sync';
 import {
-  getFirestoreErrorCode,
-  getFirestoreErrorMessage,
-  stripUndefinedDeep,
-} from '@/lib/firestore-payload';
+  stripUndefinedDeep} from '@/lib/firestore-payload';
 
 const formSchema = z.object({
   type: z.enum(['Simplificado', 'Corretivo', 'Inventário Florestal', 'Censo Florestal']),
@@ -34,13 +32,10 @@ const formSchema = z.object({
   requerente: z.object({
     clientId: z.string().optional(),
     nome: z.string().min(1, 'O nome do requerente é obrigatório.'),
-    cpfCnpj: z.string().min(1, 'O CPF/CNPJ do requerente é obrigatório.'),
-  }),
+    cpfCnpj: z.string().min(1, 'O CPF/CNPJ do requerente é obrigatório.')}),
   empreendimento: z.object({
     projectId: z.string().optional(),
-    nome: z.string().min(1, 'O nome do empreendimento é obrigatório.'),
-  }),
-}).passthrough();
+    nome: z.string().min(1, 'O nome do empreendimento é obrigatório.')})}).passthrough();
 
 type PiaFormValues = z.infer<typeof formSchema>;
 
@@ -79,8 +74,7 @@ export function PiaForm({ currentItem, piaType, onSuccess, linkContext }: PiaFor
     defaultValues: currentItem
       ? {
           ...currentItem,
-          type: currentItem.type || piaType,
-        }
+          type: currentItem.type || piaType}
       : {
           type: piaType || 'Simplificado',
           status: 'Rascunho',
@@ -90,14 +84,10 @@ export function PiaForm({ currentItem, piaType, onSuccess, linkContext }: PiaFor
           requerente: {
             clientId: linkContext?.empreendedorId ?? '',
             nome: '',
-            cpfCnpj: '',
-          },
+            cpfCnpj: ''},
           empreendimento: {
             projectId: linkContext?.projectId ?? '',
-            nome: '',
-          },
-        },
-  });
+            nome: ''}}});
 
   React.useEffect(() => {
     if (!linkContext?.projectId || !projects?.length) return;
@@ -112,8 +102,7 @@ export function PiaForm({ currentItem, piaType, onSuccess, linkContext }: PiaFor
     if (!firestore || !requestId?.trim()) return;
     await syncPiaLinksToRequest(firestore, requestId, {
       piaId,
-      ...(inventoryId?.trim() ? { inventoryId: inventoryId.trim() } : {}),
-    });
+      ...(inventoryId?.trim() ? { inventoryId: inventoryId.trim() } : {})});
   }
 
   async function handleSave(status: 'Rascunho' | 'Aprovado') {
@@ -124,8 +113,7 @@ export function PiaForm({ currentItem, piaType, onSuccess, linkContext }: PiaFor
       toast({
         variant: 'destructive',
         title: 'Formulário Inválido',
-        description: 'Por favor, corrija os erros antes de concluir.',
-      });
+        description: 'Por favor, corrija os erros antes de concluir.'});
       setLoading(false);
       return;
     }
@@ -138,17 +126,14 @@ export function PiaForm({ currentItem, piaType, onSuccess, linkContext }: PiaFor
           id: '',
           type: piaType ?? 'Simplificado',
           requerente: values.requerente,
-          empreendimento: values.empreendimento,
-        }),
+          empreendimento: values.empreendimento}),
         ...values,
-        status: 'Aprovado',
-      } as PiaRecord);
+        status: 'Aprovado'} as PiaRecord);
       if (approvalIssues.length > 0) {
         toast({
           variant: 'destructive',
           title: 'PIA incompleto',
-          description: approvalIssues.map((i) => i.message).join(' '),
-        });
+          description: approvalIssues.map((i) => i.message).join(' ')});
         setLoading(false);
         return;
       }
@@ -169,8 +154,7 @@ export function PiaForm({ currentItem, piaType, onSuccess, linkContext }: PiaFor
     const dataToSave = stripUndefinedDeep({
       ...values,
       status,
-      ...(resolvedRequestId ? { requestId: resolvedRequestId } : {}),
-    });
+      ...(resolvedRequestId ? { requestId: resolvedRequestId } : {})});
 
     try {
       if (currentItem) {
@@ -209,22 +193,15 @@ export function PiaForm({ currentItem, piaType, onSuccess, linkContext }: PiaFor
       }
       onSuccess?.();
     } catch (error) {
-      console.error('Error saving PIA:', error);
-      const code = getFirestoreErrorCode(error);
-      const message = getFirestoreErrorMessage(error);
-      toast({
-        variant: 'destructive',
+      handleFirestoreFormError(error, {
+        toast,
         title: 'Erro ao salvar PIA',
-        description: message,
-      });
-      if (code === 'permission-denied') {
-        const permissionError = new FirestorePermissionError({
+        context: {
           path: currentItem ? `pias/${currentItem.id}` : 'pias',
           operation: currentItem ? 'update' : 'create',
           requestResourceData: dataToSave,
-        });
-        errorEmitter.emit('permission-error', permissionError);
-      }
+        },
+      });
     } finally {
       setLoading(false);
     }

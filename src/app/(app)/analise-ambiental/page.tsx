@@ -68,7 +68,7 @@ import {
   DEFAULT_INFLUENCE_CONFIG,
   type InfluenceDrawTarget,
 } from "@/components/geospatial/geo-influence-areas-panel";
-import { WAVE_ALL_LAYER_COUNT } from "@/lib/geospatial/run-wave-a-analysis";
+import { WAVE_ALL_LAYER_COUNT } from "@/lib/geospatial/geo-constants";
 import { buildGeoAnalysisListSummary } from "@/lib/geospatial/geo-analysis-summary";
 import { runWaveAAnalysisStreamClient } from "@/lib/geospatial/run-wave-a-stream-client";
 import type { GeoLayerResult } from "@/lib/types/geo-wave-a";

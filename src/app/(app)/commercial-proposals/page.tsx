@@ -87,7 +87,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { FirestorePermissionError } from "@/firebase/errors";
+import { handleFirestoreFormError } from "@/lib/firestore-form-errors";
 import { logUserAction } from "@/lib/audit-log";
 import { ProposalForm } from "./proposal-form";
 import {
@@ -401,13 +401,15 @@ export default function CommercialProposalsPage() {
         description: "O status da proposta foi atualizado.",
       });
     } catch (error) {
-      console.error(`Error updating proposal status:`, error);
-      const permissionError = new FirestorePermissionError({
-        path: docRef.path,
-        operation: "update",
-        requestResourceData: { status },
-      });
-      errorEmitter.emit("permission-error", permissionError);
+      handleFirestoreFormError(error, {
+          toast,
+          title: 'Erro ao atualizar proposta',
+          context: {
+          path: docRef.path,
+          operation: 'update',
+          requestResourceData: { status },
+        },
+        })
     }
   };
 
@@ -430,13 +432,16 @@ export default function CommercialProposalsPage() {
           });
         }
       })
-      .catch(async (serverError) => {
-        const permissionError = new FirestorePermissionError({
+      .catch((serverError) =>
+        handleFirestoreFormError(serverError, {
+          toast,
+          title: 'Erro ao atualizar proposta',
+          context: {
           path: docRef.path,
-          operation: "delete",
-        });
-        errorEmitter.emit("permission-error", permissionError);
-      })
+          operation: 'delete',
+        },
+        }),
+      )
       .finally(() => {
         setIsAlertOpen(false);
         setItemToDelete(null);

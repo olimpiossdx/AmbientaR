@@ -23,7 +23,6 @@ import {
   useCollection,
   useFirestore,
   useMemoFirebase,
-  errorEmitter,
 } from "@/firebase";
 import { collection, doc, query, where, limit, getDocs } from "firebase/firestore";
 import type { WaterPermit, Empreendedor, AppUser, Project } from "@/lib/types";
@@ -50,8 +49,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { OutorgaForm } from "./outorga-form";
 import { useToast } from "@/hooks/use-toast";
+import { handleFirestoreFormError } from "@/lib/firestore-form-errors";
 import { AttachmentPreviewSection } from "@/components/shared/attachment-preview-section";
-import { FirestorePermissionError } from "@/firebase/errors";
 import { useAuth } from "@/firebase";
 import { useRouter } from "next/navigation";
 import { Separator } from "@/components/ui/separator";
@@ -283,13 +282,13 @@ export default function OutorgasPage() {
             "A outorga e suas condicionantes relacionadas foram removidas com backup de segurança.",
         });
       })
-      .catch(async (serverError) => {
-        const permissionError = new FirestorePermissionError({
-          path: docRef.path,
-          operation: "delete",
-        });
-        errorEmitter.emit("permission-error", permissionError);
-      })
+      .catch((serverError) =>
+        handleFirestoreFormError(serverError, {
+          toast,
+          title: "Erro ao excluir outorga",
+          context: { path: docRef.path, operation: "delete" },
+        }),
+      )
       .finally(() => {
         setIsAlertOpen(false);
         setItemToDelete(null);

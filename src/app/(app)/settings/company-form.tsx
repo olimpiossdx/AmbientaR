@@ -12,15 +12,15 @@ import {
   FormField,
   FormItem,
   FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
+  FormMessage} from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { MaskedInput } from '@/components/ui/masked-input';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { EnvironmentalCompany } from '@/lib/types';
-import { useFirebase, errorEmitter } from '@/firebase';
-import { FirestorePermissionError } from '@/firebase/errors';
+import { useFirebase } from '@/firebase';
+import { handleFirestoreFormError } from '@/lib/firestore-form-errors';
+import { stripUndefinedDeep } from '@/lib/firestore-payload';
 import { doc, setDoc } from 'firebase/firestore';
 import { DialogFooter, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -40,8 +40,7 @@ const formSchema = z.object({
   ddd: z.string().optional(),
   phone: z.string().optional(),
   fax: z.string().optional(),
-  email: z.string().email('Por favor, insira um e-mail válido.').optional().or(z.literal('')),
-});
+  email: z.string().email('Por favor, insira um e-mail válido.').optional().or(z.literal(''))});
 
 type FormValues = z.infer<typeof formSchema>;
 
@@ -71,9 +70,7 @@ export function CompanyForm({ currentItem, onSuccess }: CompanyFormProps) {
       ddd: currentItem?.ddd || '',
       phone: currentItem?.phone || '',
       fax: currentItem?.fax || '',
-      email: currentItem?.email || '',
-    },
-  });
+      email: currentItem?.email || ''}});
   
   const selectedUf = form.watch('uf');
   const citiesForSelectedUf = React.useMemo(() => {
@@ -98,20 +95,22 @@ export function CompanyForm({ currentItem, onSuccess }: CompanyFormProps) {
       return;
     }
     
+    const dataToSave = stripUndefinedDeep(values);
     const docRef = doc(firestore, 'companySettings', 'companyProfile');
     // Using setDoc with merge:true will create or update the document.
-    setDoc(docRef, values, { merge: true })
+    setDoc(docRef, dataToSave, { merge: true })
         .then(() => {
           toast({ title: 'Empresa atualizada!', description: 'Os dados da empresa foram salvos com sucesso.' });
           onSuccess?.();
         })
-        .catch(async (serverError) => {
-          const permissionError = new FirestorePermissionError({
-            path: docRef.path,
-            operation: 'write', // 'set' can be create or update
-            requestResourceData: values,
-          });
-          errorEmitter.emit('permission-error', permissionError);
+        .catch((error) => {
+          handleFirestoreFormError(error, {
+            toast,
+            title: 'Erro ao salvar empresa',
+            context: {
+              path: docRef.path,
+              operation: 'write',
+              requestResourceData: dataToSave}});
         })
         .finally(() => setLoading(false));
   }

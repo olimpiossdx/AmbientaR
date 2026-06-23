@@ -43,6 +43,7 @@ import type { PIA, PiaType, AppUser } from '@/lib/types';
 import { isAdminOrSupervisorRole } from '@/lib/role-guards';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
+import { handleFirestoreFormError } from '@/lib/firestore-form-errors';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { useAuth } from '@/firebase';
 import { Badge } from '@/components/ui/badge';
@@ -137,17 +138,16 @@ export default function PiaPage() {
         });
       })
       .catch((serverError) => {
-        console.error('Error deleting PIA:', serverError);
         const code =
           serverError && typeof serverError === 'object' && 'code' in serverError
             ? String((serverError as { code?: string }).code)
             : '';
         if (code === 'permission-denied') {
-          const permissionError = new FirestorePermissionError({
-            path: docRef.path,
-            operation: 'delete',
+          handleFirestoreFormError(serverError, {
+            toast,
+            title: 'Erro ao excluir estudo',
+            context: { path: docRef.path, operation: 'delete' },
           });
-          errorEmitter.emit('permission-error', permissionError);
         } else {
           toast({
             variant: 'destructive',

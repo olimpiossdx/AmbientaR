@@ -19,8 +19,8 @@ import { Loader2, Upload } from "lucide-react";
 import { BrDateFormControl } from "@/components/form/br-date-input";
 import { useToast } from "@/hooks/use-toast";
 import type { Empreendedor } from "@/lib/types";
-import { useFirebase, errorEmitter } from "@/firebase";
-import { FirestorePermissionError } from "@/firebase/errors";
+import { useFirebase } from "@/firebase";
+import { handleFirestoreFormError } from "@/lib/firestore-form-errors";
 import { doc, updateDoc } from "firebase/firestore";
 import {
   DialogFooter,
@@ -214,17 +214,14 @@ export function CtfIbamaForm({
       });
       onSuccess();
     } catch (error) {
-      console.error("Erro ao salvar CTF/IBAMA:", error);
-      const permissionError = new FirestorePermissionError({
-        path: empreendedorRef.path,
-        operation: "update",
-        requestResourceData: payload,
-      });
-      errorEmitter.emit("permission-error", permissionError);
-      toast({
-        variant: "destructive",
+      handleFirestoreFormError(error, {
+        toast,
         title: "Erro ao salvar",
-        description: "Verifique suas permissões de escrita.",
+        context: {
+          path: empreendedorRef.path,
+          operation: "update",
+          requestResourceData: payload,
+        },
       });
     } finally {
       setSaving(false);

@@ -12,15 +12,13 @@ import {
   FormField,
   FormItem,
   FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
+  FormMessage} from '@/components/ui/form';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+  SelectValue} from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Loader2 } from 'lucide-react';
@@ -28,8 +26,9 @@ import { format } from 'date-fns';
 import { BrDateFormControl } from '@/components/form/br-date-input';
 import { useToast } from '@/hooks/use-toast';
 import type { Appointment, Client, UserRole } from '@/lib/types';
-import { useFirebase, errorEmitter, useCollection, useMemoFirebase } from '@/firebase';
-import { FirestorePermissionError } from '@/firebase/errors';
+import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
+import { handleFirestoreFormError } from '@/lib/firestore-form-errors';
+
 import { collection, doc, addDoc, updateDoc, serverTimestamp, limit, query } from 'firebase/firestore';
 import { DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 
@@ -40,15 +39,13 @@ const formSchema = z.object({
   date: z.date({ required_error: 'A data do compromisso é obrigatória.' }),
   startTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Formato de hora inválido (HH:mm)."),
   endTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Formato de hora inválido (HH:mm)."),
-  location: z.string().optional(),
-}).refine(data => {
+  location: z.string().optional()}).refine(data => {
     const [startHour, startMinute] = data.startTime.split(':').map(Number);
     const [endHour, endMinute] = data.endTime.split(':').map(Number);
     return endHour > startHour || (endHour === startHour && endMinute > startMinute);
 }, {
     message: "A hora final deve ser posterior à hora inicial.",
-    path: ['endTime'],
-});
+    path: ['endTime']});
 
 
 type FormValues = z.infer<typeof formSchema>;
@@ -84,17 +81,14 @@ export function AppointmentForm({ currentItem, onSuccess }: AppointmentFormProps
         date: new Date(currentItem.startTime),
         startTime: format(new Date(currentItem.startTime), 'HH:mm'),
         endTime: format(new Date(currentItem.endTime), 'HH:mm'),
-        location: currentItem.location || '',
-    } : {
+        location: currentItem.location || ''} : {
         description: '',
         clientId: '',
         type: 'appointment',
         date: new Date(),
         startTime: '09:00',
         endTime: '10:00',
-        location: '',
-    },
-  });
+        location: ''}});
 
   const combineDateAndTime = (date: Date, time: string): Date => {
       const [hours, minutes] = time.split(':').map(Number);
@@ -120,8 +114,7 @@ export function AppointmentForm({ currentItem, onSuccess }: AppointmentFormProps
       endTime: combineDateAndTime(values.date, values.endTime).toISOString(),
       location: values.location,
       ownerId: user.uid,
-      ownerRole: user.role,
-    };
+      ownerRole: user.role};
 
     if (currentItem) {
       const docRef = doc(firestore, 'appointments', currentItem.id);
@@ -130,9 +123,11 @@ export function AppointmentForm({ currentItem, onSuccess }: AppointmentFormProps
           toast({ title: 'Compromisso atualizado!' });
           onSuccess?.();
         })
-        .catch(async (serverError) => {
-          const permissionError = new FirestorePermissionError({ path: docRef.path, operation: 'update', requestResourceData: dataToSave });
-          errorEmitter.emit('permission-error', permissionError);
+        .catch((error) => {
+          handleFirestoreFormError(error, {
+            toast,
+            title: 'Erro ao salvar compromisso',
+            context: { path: docRef.path, operation: 'update', requestResourceData: dataToSave }});
         })
         .finally(() => setLoading(false));
     } else {
@@ -143,9 +138,11 @@ export function AppointmentForm({ currentItem, onSuccess }: AppointmentFormProps
           form.reset();
           onSuccess?.();
         })
-        .catch(async (serverError) => {
-          const permissionError = new FirestorePermissionError({ path: collectionRef.path, operation: 'create', requestResourceData: dataToSave });
-          errorEmitter.emit('permission-error', permissionError);
+        .catch((error) => {
+          handleFirestoreFormError(error, {
+            toast,
+            title: 'Erro ao salvar compromisso',
+            context: { path: collectionRef.path, operation: 'create', requestResourceData: dataToSave }});
         })
         .finally(() => setLoading(false));
     }

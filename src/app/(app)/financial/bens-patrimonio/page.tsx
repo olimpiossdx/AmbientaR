@@ -16,12 +16,12 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { PlusCircle, Pencil, Trash2, Search, FileText } from 'lucide-react';
-import { useCollection, useFirebase, useMemoFirebase, errorEmitter } from '@/firebase';
+import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
 import { collection, doc, deleteDoc } from 'firebase/firestore';
 import type { BemPatrimonio, BemPatrimonioCategoria } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
-import { FirestorePermissionError } from '@/firebase/errors';
+import { handleFirestoreFormError } from '@/lib/firestore-form-errors';
 import { Input } from '@/components/ui/input';
 import {
   Select,
@@ -119,12 +119,13 @@ export default function BensPatrimonioPage() {
       .then(() => {
         toast({ title: 'Bem removido', description: 'Registro excluído com sucesso.' });
       })
-      .catch(() => {
-        errorEmitter.emit(
-          'permission-error',
-          new FirestorePermissionError({ path: docRef.path, operation: 'delete' }),
-        );
-      })
+      .catch((serverError) =>
+        handleFirestoreFormError(serverError, {
+          toast,
+          title: 'Erro ao excluir bem',
+          context: { path: docRef.path, operation: 'delete' },
+        }),
+      )
       .finally(() => {
         setIsAlertOpen(false);
         setItemToDelete(null);

@@ -98,6 +98,7 @@ import {
   filterAccessRequestsForDelegate,
 } from "@/lib/delegate-access-requests";
 import { useToast } from "@/hooks/use-toast";
+import { handleFirestoreFormError } from "@/lib/firestore-form-errors";
 import { useAuth } from "@/firebase";
 import { deleteUser } from "firebase/auth";
 import { logUserAction } from "@/lib/audit-log";
@@ -524,11 +525,11 @@ export default function UsersPage() {
           description: message,
         });
       } else {
-        const permissionError = new FirestorePermissionError({
-          path: userDocRef.path,
-          operation: "delete",
+        handleFirestoreFormError(serverError, {
+          toast,
+          title: "Erro ao excluir utilizador",
+          context: { path: userDocRef.path, operation: "delete" },
         });
-        errorEmitter.emit("permission-error", permissionError);
       }
     } finally {
       setIsAlertOpen(false);

@@ -1,5 +1,6 @@
 ﻿"use client";
 
+import { handleFirestoreFormError } from '@/lib/firestore-form-errors';
 import * as React from "react";
 import { z } from "zod";
 import { useForm, useFieldArray } from "react-hook-form";
@@ -12,16 +13,14 @@ import {
   FormField,
   FormItem,
   FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
+  FormMessage} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  SelectValue} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2, Plus, Trash2 } from "lucide-react";
 import { BrDateFormControl } from "@/components/form/br-date-input";
@@ -31,23 +30,19 @@ import type {
   WaterPermit,
   PermitStatus,
   Empreendedor,
-  Project,
-} from "@/lib/types";
+  Project} from "@/lib/types";
 import {
   pontoMonitoramentoFormSchema,
   mapPontosFromFirestore,
   formPontosToFirestore,
   emptyMonitoringPontoFormRow,
-  parseOptionalNumber,
-} from "@/lib/monitoring-pontos-form";
+  parseOptionalNumber} from "@/lib/monitoring-pontos-form";
 import {
   useFirebase,
-  errorEmitter,
   useCollection,
   useMemoFirebase,
-  useDoc,
-} from "@/firebase";
-import { FirestorePermissionError } from "@/firebase/errors";
+  useDoc} from "@/firebase";
+
 import { AttachmentPreviewSection } from "@/components/shared/attachment-preview-section";
 import { UploadPreparationDialog } from "@/components/shared/upload-preparation-dialog";
 import { useStorageFileUpload } from "@/hooks/use-storage-file-upload";
@@ -58,26 +53,22 @@ import { guardPortalPackageAction } from "@/lib/package-portal-guard";
 import {
   buildEmpreendedorSelectOptions,
   buildProjectSelectOptions,
-  normalizeEntityId,
-} from "@/lib/empreendedor-project-select";
+  normalizeEntityId} from "@/lib/empreendedor-project-select";
 import {
   collection,
   doc,
   addDoc,
   updateDoc,
   deleteField,
-  type DocumentData,
-} from "firebase/firestore";
+  type DocumentData} from "firebase/firestore";
 import {
-  DialogFooter,
-} from "@/components/ui/dialog";
+  DialogFooter} from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+  TooltipTrigger} from "@/components/ui/tooltip";
 import { Separator } from "@/components/ui/separator";
 import { CoordinateInput } from "@/components/coordinates";
 
@@ -89,8 +80,7 @@ const formSchema = z
     processNumber: z.string().min(1, "O número do processo é obrigatório."),
     issueDate: z.date({ required_error: "A data de emissão é obrigatória." }),
     expirationDate: z.date({
-      required_error: "A data de vencimento é obrigatória.",
-    }),
+      required_error: "A data de vencimento é obrigatória."}),
     status: z.enum(
       ["Válida", "Vencida", "Em Renovação", "Suspensa", "Cancelada", "Em Andamento"],
       { required_error: "Selecione o status." },
@@ -102,12 +92,10 @@ const formSchema = z
     pontosDeMonitoramento: z
       .array(pontoMonitoramentoFormSchema)
       .default([]),
-    file: z.any().optional(),
-  })
+    file: z.any().optional()})
   .refine((data) => data.expirationDate > data.issueDate, {
     message: "A data de vencimento deve ser posterior à data de emissão.",
-    path: ["expirationDate"],
-  });
+    path: ["expirationDate"]});
 
 type FormValues = z.infer<typeof formSchema>;
 
@@ -134,8 +122,7 @@ export function OutorgaForm({ currentItem, onSuccess }: OutorgaFormProps) {
 
   const { toast } = useToast();
     const { uploadFile, dialogProps, limitLabel } = useStorageFileUpload({
-    storageFolder: "outorgas",
-  });
+    storageFolder: "outorgas"});
   const { firestore, user, auth } = useFirebase();
 
   const empreendedoresQuery = useMemoFirebase(
@@ -155,14 +142,11 @@ export function OutorgaForm({ currentItem, onSuccess }: OutorgaFormProps) {
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      pontosDeMonitoramento: [],
-    },
-  });
+      pontosDeMonitoramento: []}});
 
   const { fields, append, remove } = useFieldArray({
     control: form.control,
-    name: "pontosDeMonitoramento",
-  });
+    name: "pontosDeMonitoramento"});
 
   const monitoringTypeWatch = form.watch("monitoringType");
   const isHydratingFormRef = React.useRef(false);
@@ -192,8 +176,7 @@ export function OutorgaForm({ currentItem, onSuccess }: OutorgaFormProps) {
       pontosDeMonitoramento: mapPontosFromFirestore(
         currentItem?.pontosDeMonitoramento,
       ),
-      file: undefined,
-    };
+      file: undefined};
     form.reset(defaultValues);
     setUploadedFileUrl(currentItem?.fileUrl || null);
     previousEmpreendedorIdRef.current = defaultValues.empreendedorId || "";
@@ -232,8 +215,7 @@ export function OutorgaForm({ currentItem, onSuccess }: OutorgaFormProps) {
       buildEmpreendedorSelectOptions({
         list: empreendedores,
         selectedId: selectedEmpreendedorId,
-        linkedDoc: linkedEmpreendedor,
-      }),
+        linkedDoc: linkedEmpreendedor}),
     [empreendedores, selectedEmpreendedorId, linkedEmpreendedor],
   );
 
@@ -243,8 +225,7 @@ export function OutorgaForm({ currentItem, onSuccess }: OutorgaFormProps) {
         allProjects,
         empreendedorId: selectedEmpreendedorId,
         selectedProjectId,
-        linkedDoc: linkedProject,
-      }),
+        linkedDoc: linkedProject}),
     [allProjects, selectedEmpreendedorId, selectedProjectId, linkedProject],
   );
 
@@ -275,15 +256,13 @@ export function OutorgaForm({ currentItem, onSuccess }: OutorgaFormProps) {
       setUploadedFileUrl(downloadUrl);
       toast({
         title: "Anexo carregado",
-        description: "O arquivo está pronto para ser salvo.",
-      });
+        description: "O arquivo está pronto para ser salvo."});
     } catch (error) {
       console.error("File upload error:", error);
       toast({
         variant: "destructive",
         title: "Erro no Upload",
-        description: "Não foi possível enviar o arquivo.",
-      });
+        description: "Não foi possível enviar o arquivo."});
     } finally {
       setIsUploading(false);
     }
@@ -313,8 +292,7 @@ export function OutorgaForm({ currentItem, onSuccess }: OutorgaFormProps) {
       description: restBase.description,
       fileUrl: uploadedFileUrl || currentItem?.fileUrl || "",
       monitoringType: values.monitoringType ?? "manual",
-      pontosDeMonitoramento: formPontosToFirestore(pontosDeMonitoramento),
-    };
+      pontosDeMonitoramento: formPontosToFirestore(pontosDeMonitoramento)};
 
     if (limite !== undefined) {
       dataToSave.condicionanteFlowLimitM3s = limite;
@@ -334,17 +312,17 @@ export function OutorgaForm({ currentItem, onSuccess }: OutorgaFormProps) {
         .then(() => {
           toast({
             title: "Outorga atualizada!",
-            description: "As informações da outorga foram salvas com sucesso.",
-          });
+            description: "As informações da outorga foram salvas com sucesso."});
           onSuccess?.();
         })
-        .catch(async (serverError) => {
-          const permissionError = new FirestorePermissionError({
+        .catch((error) => {
+          handleFirestoreFormError(error, {
+            toast,
+            title: 'Erro ao salvar outorga',
+            context: {
             path: docRef.path,
             operation: "update",
-            requestResourceData: dataToSave,
-          });
-          errorEmitter.emit("permission-error", permissionError);
+            requestResourceData: dataToSave}});
         })
         .finally(() => setLoading(false));
     } else {
@@ -357,8 +335,7 @@ export function OutorgaForm({ currentItem, onSuccess }: OutorgaFormProps) {
           toast({
             variant: "destructive",
             title: "Limite do plano",
-            description: gate.message,
-          });
+            description: gate.message});
           setLoading(false);
           return;
         }
@@ -376,8 +353,7 @@ export function OutorgaForm({ currentItem, onSuccess }: OutorgaFormProps) {
                 link: NOTIFICATION_LINKS.outorgas,
                 sourceType: NOTIFICATION_SOURCE.outorga,
                 sourceId: ref.id,
-                actorRole: user?.role,
-              },
+                actorRole: user?.role},
               { excludeUserId: user?.uid },
             );
           } catch (e) {
@@ -385,18 +361,18 @@ export function OutorgaForm({ currentItem, onSuccess }: OutorgaFormProps) {
           }
           toast({
             title: "Outorga criada!",
-            description: `A outorga ${values.permitNumber} foi adicionada com sucesso.`,
-          });
+            description: `A outorga ${values.permitNumber} foi adicionada com sucesso.`});
           form.reset();
           onSuccess?.();
         })
-        .catch(async (serverError) => {
-          const permissionError = new FirestorePermissionError({
+        .catch((error) => {
+          handleFirestoreFormError(error, {
+            toast,
+            title: 'Erro ao salvar outorga',
+            context: {
             path: collectionRef.path,
             operation: "create",
-            requestResourceData: dataToSave,
-          });
-          errorEmitter.emit("permission-error", permissionError);
+            requestResourceData: dataToSave}});
         })
         .finally(() => setLoading(false));
     }

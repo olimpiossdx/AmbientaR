@@ -1,55 +1,50 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
+import { toast } from '@/hooks/use-toast';
+
+const SKIP_THROW_PATHS = [
+  'access_requests',
+  '/documents/users',
+  '/documents/companySettings/',
+  'delegate_invites',
+];
+
+function shouldSkipGlobalToast(path: string): boolean {
+  return SKIP_THROW_PATHS.some((fragment) => path.includes(fragment));
+}
 
 /**
- * An invisible component that listens for globally emitted 'permission-error' events.
- * It throws any received error to be caught by Next.js's global-error.tsx.
+ * Escuta erros de permissão Firestore e mostra toast — não derruba a aplicação.
  */
 export function FirebaseErrorListener() {
-  // Use the specific error type for the state for type safety.
-  const [error, setError] = useState<FirestorePermissionError | null>(null);
-
   useEffect(() => {
-    // The callback now expects a strongly-typed error, matching the event payload.
     const handleError = (error: FirestorePermissionError) => {
-      // Não quebrar a tela para erro em access_requests (perfil cliente): regras podem ainda não estar em deploy.
       const path = error.request?.path ?? '';
-      if (path.includes('access_requests')) {
+      if (shouldSkipGlobalToast(path)) {
         return;
       }
-      // Lista de usuários no chat (admin): não derrubar a app por falha pontual de regras/índice.
-      if (path.includes('/documents/users')) {
-        return;
-      }
-      // Branding / feature flags: leitura pode ocorrer antes do Auth restaurar a sessão.
-      if (path.includes('/documents/companySettings/')) {
-        return;
-      }
-      // Convites titular ↔ representante/consultor: não derrubar a app se regras ainda não estiverem em deploy.
-      if (path.includes('delegate_invites')) {
-        return;
-      }
-      setError(error);
+
+      console.error(
+        '[Firestore permission-error]',
+        error.message,
+        error.debugPayload,
+      );
+
+      toast({
+        variant: 'destructive',
+        title: 'Sem permissão',
+        description: error.message,
+      });
     };
 
-    // The typed emitter will enforce that the callback for 'permission-error'
-    // matches the expected payload type (FirestorePermissionError).
     errorEmitter.on('permission-error', handleError);
-
-    // Unsubscribe on unmount to prevent memory leaks.
     return () => {
       errorEmitter.off('permission-error', handleError);
     };
   }, []);
 
-  // On re-render, if an error exists in state, throw it.
-  if (error) {
-    throw error;
-  }
-
-  // This component renders nothing.
   return null;
 }

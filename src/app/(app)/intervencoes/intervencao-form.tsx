@@ -1,5 +1,6 @@
 ﻿"use client";
 
+import { handleFirestoreFormError } from '@/lib/firestore-form-errors';
 import * as React from "react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
@@ -12,16 +13,14 @@ import {
   FormField,
   FormItem,
   FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
+  FormMessage} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  SelectValue} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2 } from "lucide-react";
 import { BrDateFormControl } from "@/components/form/br-date-input";
@@ -29,18 +28,15 @@ import { useToast } from "@/hooks/use-toast";
 import type {
   EnvironmentalIntervention,
   PermitStatus,
-  Empreendedor,
-} from "@/lib/types";
+  Empreendedor} from "@/lib/types";
 import { NOTIFICATION_LINKS, NOTIFICATION_SOURCE } from "@/lib/notification-events";
 import { notifyEmpreendedorPortalUsers } from "@/lib/notifications";
 import { guardPortalPackageAction } from "@/lib/package-portal-guard";
 import {
   useFirebase,
-  errorEmitter,
   useCollection,
-  useMemoFirebase,
-} from "@/firebase";
-import { FirestorePermissionError } from "@/firebase/errors";
+  useMemoFirebase} from "@/firebase";
+
 import { AttachmentPreviewSection } from "@/components/shared/attachment-preview-section";
 import { UploadPreparationDialog } from "@/components/shared/upload-preparation-dialog";
 import { useStorageFileUpload } from "@/hooks/use-storage-file-upload";
@@ -50,14 +46,12 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
+  DialogDescription} from "@/components/ui/dialog";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+  TooltipTrigger} from "@/components/ui/tooltip";
 
 const formSchema = z
   .object({
@@ -66,8 +60,7 @@ const formSchema = z
     issuingBody: z.string().min(1, "O órgão emissor é obrigatório."),
     issueDate: z.date({ required_error: "A data de emissão é obrigatória." }),
     expirationDate: z.date({
-      required_error: "A data de vencimento é obrigatória.",
-    }),
+      required_error: "A data de vencimento é obrigatória."}),
     status: z.enum(
       ["Válida", "Vencida", "Em Renovação", "Suspensa", "Cancelada", "Em Andamento"],
       { required_error: "Selecione o status." },
@@ -80,12 +73,10 @@ const formSchema = z
         (files) =>
           !files || files.length === 0 || files?.[0]?.size <= UPLOAD_RAW_FILE_SAFETY_MAX,
         "Arquivo excede o limite de processamento no navegador.",
-      ),
-  })
+      )})
   .refine((data) => data.expirationDate > data.issueDate, {
     message: "A data de vencimento deve ser posterior à data de emissão.",
-    path: ["expirationDate"],
-  });
+    path: ["expirationDate"]});
 
 type FormValues = z.infer<typeof formSchema>;
 
@@ -105,8 +96,7 @@ const permitStatuses: { value: PermitStatus; label: string }[] = [
 
 export function IntervencaoForm({
   currentItem,
-  onSuccess,
-}: IntervencaoFormProps) {
+  onSuccess}: IntervencaoFormProps) {
   const [loading, setLoading] = React.useState(false);
   const [isUploading, setIsUploading] = React.useState(false);
   const [uploadedFileUrl, setUploadedFileUrl] = React.useState<string | null>(
@@ -115,8 +105,7 @@ export function IntervencaoForm({
 
   const { toast } = useToast();
     const { uploadFile, dialogProps, limitLabel } = useStorageFileUpload({
-    storageFolder: "intervencoes",
-  });
+    storageFolder: "intervencoes"});
   const { firestore, user, auth } = useFirebase();
 
   const empreendedoresQuery = useMemoFirebase(
@@ -137,9 +126,7 @@ export function IntervencaoForm({
         ? new Date(currentItem.expirationDate)
         : undefined,
       status: currentItem?.status || undefined,
-      description: currentItem?.description || "",
-    },
-  });
+      description: currentItem?.description || ""}});
 
   const handleFileChange = async (
     event: React.ChangeEvent<HTMLInputElement>,
@@ -160,15 +147,13 @@ export function IntervencaoForm({
       setUploadedFileUrl(downloadUrl);
       toast({
         title: "Anexo carregado",
-        description: "O arquivo está pronto para ser salvo.",
-      });
+        description: "O arquivo está pronto para ser salvo."});
     } catch (error) {
       console.error("File upload error:", error);
       toast({
         variant: "destructive",
         title: "Erro no Upload",
-        description: "Não foi possível enviar o arquivo.",
-      });
+        description: "Não foi possível enviar o arquivo."});
     } finally {
       setIsUploading(false);
     }
@@ -187,8 +172,7 @@ export function IntervencaoForm({
       ...values,
       issueDate: values.issueDate.toISOString(),
       expirationDate: values.expirationDate.toISOString(),
-      fileUrl: uploadedFileUrl || currentItem?.fileUrl || "",
-    };
+      fileUrl: uploadedFileUrl || currentItem?.fileUrl || ""};
 
     if (currentItem) {
       const docRef = doc(firestore, "intervencoes", currentItem.id);
@@ -197,17 +181,17 @@ export function IntervencaoForm({
           toast({
             title: "Intervenção atualizada!",
             description:
-              "As informações da intervenção foram salvas com sucesso.",
-          });
+              "As informações da intervenção foram salvas com sucesso."});
           onSuccess?.();
         })
-        .catch(async (serverError) => {
-          const permissionError = new FirestorePermissionError({
+        .catch((error) => {
+          handleFirestoreFormError(error, {
+            toast,
+            title: 'Erro ao salvar intervenção',
+            context: {
             path: docRef.path,
             operation: "update",
-            requestResourceData: dataToSave,
-          });
-          errorEmitter.emit("permission-error", permissionError);
+            requestResourceData: dataToSave}});
         })
         .finally(() => {
           setLoading(false);
@@ -222,8 +206,7 @@ export function IntervencaoForm({
           toast({
             variant: "destructive",
             title: "Limite do plano",
-            description: gate.message,
-          });
+            description: gate.message});
           setLoading(false);
           return;
         }
@@ -241,8 +224,7 @@ export function IntervencaoForm({
                 link: NOTIFICATION_LINKS.intervencoes,
                 sourceType: NOTIFICATION_SOURCE.intervencao,
                 sourceId: ref.id,
-                actorRole: user?.role,
-              },
+                actorRole: user?.role},
               { excludeUserId: user?.uid },
             );
           } catch (e) {
@@ -250,18 +232,18 @@ export function IntervencaoForm({
           }
           toast({
             title: "Intervenção criada!",
-            description: `A intervenção no processo ${values.processNumber} foi adicionada com sucesso.`,
-          });
+            description: `A intervenção no processo ${values.processNumber} foi adicionada com sucesso.`});
           form.reset();
           onSuccess?.();
         })
-        .catch(async (serverError) => {
-          const permissionError = new FirestorePermissionError({
+        .catch((error) => {
+          handleFirestoreFormError(error, {
+            toast,
+            title: 'Erro ao salvar intervenção',
+            context: {
             path: collectionRef.path,
             operation: "create",
-            requestResourceData: dataToSave,
-          });
-          errorEmitter.emit("permission-error", permissionError);
+            requestResourceData: dataToSave}});
         })
         .finally(() => {
           setLoading(false);

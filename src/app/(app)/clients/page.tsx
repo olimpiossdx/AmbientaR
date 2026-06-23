@@ -22,7 +22,6 @@ import {
   useCollection,
   useFirebase,
   useMemoFirebase,
-  errorEmitter,
 } from "@/firebase";
 import {
   collection,
@@ -70,7 +69,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { FirestorePermissionError } from "@/firebase/errors";
+import { handleFirestoreFormError } from "@/lib/firestore-form-errors";
 import { useAuth } from "@/firebase";
 import { logUserAction } from "@/lib/audit-log";
 import {
@@ -459,13 +458,16 @@ export default function ClientsPage() {
           clientName: deletedClient?.name || "N/A",
         });
       })
-      .catch(async (serverError) => {
-        const permissionError = new FirestorePermissionError({
+      .catch((serverError) =>
+        handleFirestoreFormError(serverError, {
+          toast,
+          title: 'Erro ao excluir cliente',
+          context: {
           path: clientDocRef.path,
-          operation: "delete",
-        });
-        errorEmitter.emit("permission-error", permissionError);
-      })
+          operation: 'delete',
+        },
+        }),
+      )
       .finally(() => {
         setIsAlertOpen(false);
         setClientToDelete(null);

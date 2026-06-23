@@ -26,7 +26,7 @@ import {
 import { collection, doc, updateDoc, writeBatch } from "firebase/firestore";
 import { Bell, CheckCheck, ExternalLink } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { FirestorePermissionError } from "@/firebase/errors";
+import { handleFirestoreFormError } from "@/lib/firestore-form-errors";
 import {
   isUserProfileAlignedWithSession,
   useAuthUserId,
@@ -75,13 +75,16 @@ export default function CrmAlertsPage() {
     const ref = doc(firestore, `users/${sessionUid}/notifications`, n.id);
     try {
       await updateDoc(ref, { isRead: true });
-    } catch {
-      const permissionError = new FirestorePermissionError({
-        path: ref.path,
-        operation: "update",
-        requestResourceData: { isRead: true },
-      });
-      errorEmitter.emit("permission-error", permissionError);
+    } catch (error) {
+      handleFirestoreFormError(error, {
+          toast,
+          title: 'Erro ao atualizar alerta',
+          context: {
+          path: ref.path,
+          operation: 'update',
+          requestResourceData: { isRead: true },
+        },
+        })
     }
   };
 

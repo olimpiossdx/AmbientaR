@@ -12,14 +12,14 @@ import {
   FormField,
   FormItem,
   FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
+  FormMessage} from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { EiaRima, Empreendedor as Client, Project } from '@/lib/types';
-import { useFirebase, errorEmitter, useCollection, useMemoFirebase } from '@/firebase';
-import { FirestorePermissionError } from '@/firebase/errors';
+import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
+import { handleFirestoreFormError } from '@/lib/firestore-form-errors';
+
 import { collection, doc, addDoc, updateDoc } from 'firebase/firestore';
 import { DialogFooter } from '@/components/ui/dialog';
 import {
@@ -27,19 +27,16 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+  SelectValue} from '@/components/ui/select';
 
 const formSchema = z.object({
   status: z.enum(['Rascunho', 'Aprovado']).optional(),
   requerente: z.object({
     clientId: z.string().optional(),
-    nome: z.string().min(1, "O nome do requerente é obrigatório."),
-  }),
+    nome: z.string().min(1, "O nome do requerente é obrigatório.")}),
   empreendimento: z.object({
     projectId: z.string().optional(),
-    nome: z.string().min(1, "O nome do empreendimento é obrigatório."),
-  }),
+    nome: z.string().min(1, "O nome do empreendimento é obrigatório.")}),
   processo: z.string().min(1, "O número do processo é obrigatório.")
 });
 
@@ -66,9 +63,7 @@ export function EiaRimaForm({ currentItem, onSuccess }: EiaRimaFormProps) {
       status: 'Rascunho',
       requerente: { clientId: '', nome: '' },
       empreendimento: { projectId: '', nome: '' },
-      processo: '',
-    },
-  });
+      processo: ''}});
   
   const selectedClientId = form.watch('requerente.clientId');
   const selectedProjectId = form.watch('empreendimento.projectId');
@@ -100,8 +95,7 @@ export function EiaRimaForm({ currentItem, onSuccess }: EiaRimaFormProps) {
         toast({
             variant: 'destructive',
             title: 'Formulário Inválido',
-            description: 'Por favor, corrija os erros antes de concluir.',
-        });
+            description: 'Por favor, corrija os erros antes de concluir.'});
         setLoading(false);
         return;
     }
@@ -116,8 +110,7 @@ export function EiaRimaForm({ currentItem, onSuccess }: EiaRimaFormProps) {
     
     const dataToSave = {
         ...values,
-        status,
-    };
+        status};
 
     if (currentItem) {
       const docRef = doc(firestore, 'eiaRimas', currentItem.id);
@@ -125,17 +118,17 @@ export function EiaRimaForm({ currentItem, onSuccess }: EiaRimaFormProps) {
         .then(() => {
           toast({
             title: 'EIA/RIMA atualizado!',
-            description: 'O estudo foi salvo com sucesso.',
-          });
+            description: 'O estudo foi salvo com sucesso.'});
           if (status === 'Aprovado') onSuccess?.();
         })
-        .catch(async (serverError) => {
-          const permissionError = new FirestorePermissionError({
+        .catch((error) => {
+          handleFirestoreFormError(error, {
+            toast,
+            title: 'Erro ao salvar EIA/RIMA',
+            context: {
             path: docRef.path,
             operation: 'update',
-            requestResourceData: dataToSave,
-          });
-          errorEmitter.emit('permission-error', permissionError);
+            requestResourceData: dataToSave}});
         })
         .finally(() => setLoading(false));
     } else {
@@ -144,18 +137,18 @@ export function EiaRimaForm({ currentItem, onSuccess }: EiaRimaFormProps) {
         .then(() => {
           toast({
             title: 'EIA/RIMA criado!',
-            description: `O estudo para ${values.empreendimento.nome} foi criado.`,
-          });
+            description: `O estudo para ${values.empreendimento.nome} foi criado.`});
           form.reset();
           if (status === 'Aprovado') onSuccess?.();
         })
-        .catch(async (serverError) => {
-          const permissionError = new FirestorePermissionError({
+        .catch((error) => {
+          handleFirestoreFormError(error, {
+            toast,
+            title: 'Erro ao salvar EIA/RIMA',
+            context: {
             path: collectionRef.path,
             operation: 'create',
-            requestResourceData: dataToSave,
-          });
-          errorEmitter.emit('permission-error', permissionError);
+            requestResourceData: dataToSave}});
         })
         .finally(() => setLoading(false));
     }

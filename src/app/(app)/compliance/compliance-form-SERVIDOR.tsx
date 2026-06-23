@@ -13,22 +13,21 @@ import {
   FormField,
   FormItem,
   FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
+  FormMessage} from '@/components/ui/form';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+  SelectValue} from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Loader2 } from 'lucide-react';
 import { BrDateFormControl } from '@/components/form/br-date-input';
 import { useToast } from '@/hooks/use-toast';
 import type { Condicionante, PermitStatus, Project, WaterPermit, EnvironmentalIntervention } from '@/lib/types';
-import { useFirebase, errorEmitter, useCollection, useMemoFirebase } from '@/firebase';
-import { FirestorePermissionError } from '@/firebase/errors';
+import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
+import { handleFirestoreFormError } from '@/lib/firestore-form-errors';
+
 import { collection, doc, addDoc, updateDoc } from 'firebase/firestore';
 import { DialogFooter, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 
@@ -38,8 +37,7 @@ const formSchema = z.object({
   description: z.string().min(1, 'A descrição da condicionante é obrigatória.'),
   dueDate: z.date({ required_error: 'A data de vencimento é obrigatória.' }),
   status: z.enum(['Pendente', 'Cumprida', 'Atrasada', 'Não Aplicável'], { required_error: 'Selecione o status.'}),
-  recurrence: z.enum(['Única', 'Mensal', 'Trimestral', 'Semestral', 'Anual'], { required_error: 'Selecione a recorrência.'}),
-});
+  recurrence: z.enum(['Única', 'Mensal', 'Trimestral', 'Semestral', 'Anual'], { required_error: 'Selecione a recorrência.'})});
 
 type FormValues = z.infer<typeof formSchema>;
 
@@ -87,9 +85,7 @@ export function ComplianceForm({ currentItem, referenceType, onSuccess }: Compli
       description: currentItem?.description || '',
       dueDate: currentItem?.dueDate ? new Date(currentItem.dueDate) : undefined,
       status: currentItem?.status || undefined,
-      recurrence: currentItem?.recurrence || undefined,
-    },
-  });
+      recurrence: currentItem?.recurrence || undefined}});
   
   // Update referenceType when it changes from props
   React.useEffect(() => {
@@ -101,20 +97,17 @@ export function ComplianceForm({ currentItem, referenceType, onSuccess }: Compli
     if (referenceType === 'licenca') {
       return projects?.map(p => ({
         id: p.id,
-        name: [p.processNumber, p.propertyName].filter(Boolean).join(' - ') || p.propertyName || p.id || 'Sem nome',
-      })) || [];
+        name: [p.processNumber, p.propertyName].filter(Boolean).join(' - ') || p.propertyName || p.id || 'Sem nome'})) || [];
     }
     if (referenceType === 'outorga') {
       return outorgas?.map(o => ({
         id: o.id,
-        name: [o.permitNumber, o.description].filter(Boolean).join(' - ') || o.description || o.id || 'Sem nome',
-      })) || [];
+        name: [o.permitNumber, o.description].filter(Boolean).join(' - ') || o.description || o.id || 'Sem nome'})) || [];
     }
     if (referenceType === 'intervencao') {
       return intervencoes?.map(i => ({
         id: i.id,
-        name: [i.processNumber, i.description].filter(Boolean).join(' - ') || i.description || i.id || 'Sem nome',
-      })) || [];
+        name: [i.processNumber, i.description].filter(Boolean).join(' - ') || i.description || i.id || 'Sem nome'})) || [];
     }
     return [];
   }, [referenceType, projects, outorgas, intervencoes]);
@@ -146,8 +139,7 @@ export function ComplianceForm({ currentItem, referenceType, onSuccess }: Compli
         description: values.description,
         dueDate: values.dueDate.toISOString(),
         status: values.status,
-        recurrence: values.recurrence,
-    };
+        recurrence: values.recurrence};
 
 
     if (currentItem) {
@@ -156,17 +148,17 @@ export function ComplianceForm({ currentItem, referenceType, onSuccess }: Compli
         .then(() => {
           toast({
             title: 'Condicionante atualizada!',
-            description: 'As informações da condicionante foram salvas com sucesso.',
-          });
+            description: 'As informações da condicionante foram salvas com sucesso.'});
           onSuccess?.();
         })
-        .catch(async (serverError) => {
-          const permissionError = new FirestorePermissionError({
+        .catch((error) => {
+          handleFirestoreFormError(error, {
+            toast,
+            title: 'Erro ao salvar conformidade',
+            context: {
             path: docRef.path,
             operation: 'update',
-            requestResourceData: dataToSave,
-          });
-          errorEmitter.emit('permission-error', permissionError);
+            requestResourceData: dataToSave}});
         })
         .finally(() => {
           setLoading(false);
@@ -177,19 +169,19 @@ export function ComplianceForm({ currentItem, referenceType, onSuccess }: Compli
         .then(() => {
           toast({
             title: 'Condicionante criada!',
-            description: `A condicionante foi adicionada com sucesso.`,
-          });
+            description: `A condicionante foi adicionada com sucesso.`});
           form.reset();
           // Pequeno atraso para o listener do Firestore atualizar a lista antes de fechar o diálogo
           setTimeout(() => onSuccess?.(), 400);
         })
-        .catch(async (serverError) => {
-          const permissionError = new FirestorePermissionError({
+        .catch((error) => {
+          handleFirestoreFormError(error, {
+            toast,
+            title: 'Erro ao salvar conformidade',
+            context: {
             path: collectionRef.path,
             operation: 'create',
-            requestResourceData: dataToSave,
-          });
-          errorEmitter.emit('permission-error', permissionError);
+            requestResourceData: dataToSave}});
         })
         .finally(() => {
           setLoading(false);

@@ -13,8 +13,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import type { AnaliseSocioambiental, InformacoesPropriedade, AgenteTerritorio } from '@/lib/types/analise-socioambiental';
 import type { Client } from '@/lib/types';
-import { useFirebase, errorEmitter } from '@/firebase';
-import { FirestorePermissionError } from '@/firebase/errors';
+import { useFirebase} from '@/firebase';
+import { handleFirestoreFormError } from '@/lib/firestore-form-errors';
+
 import { collection, doc, addDoc, updateDoc } from 'firebase/firestore';
 import { Loader2 } from 'lucide-react';
 
@@ -37,8 +38,7 @@ const formSchema = z.object({
   // Agente principal
   agenteNome: z.string().optional(),
   agenteDocumento: z.string().optional(),
-  agenteTipo: z.string().optional(),
-});
+  agenteTipo: z.string().optional()});
 
 type FormValues = z.infer<typeof formSchema>;
 
@@ -53,8 +53,7 @@ function toInformacoesPropriedade(v: FormValues): InformacoesPropriedade {
     baciaHidrografica: v.baciaHidrografica,
     appInformadaCarHa: v.appInformadaCarHa != null && !Number.isNaN(v.appInformadaCarHa) ? v.appInformadaCarHa : undefined,
     rlInformadaCarHa: v.rlInformadaCarHa != null && !Number.isNaN(v.rlInformadaCarHa) ? v.rlInformadaCarHa : undefined,
-    cardoc: v.cardoc,
-  };
+    cardoc: v.cardoc};
 }
 
 function toAgentes(v: FormValues): AgenteTerritorio[] {
@@ -96,9 +95,7 @@ export function AnaliseSocioambientalForm({ currentItem, clients, onSuccess, onC
       nomePropriedade: ip?.nome ?? '',
       agenteNome: agente0?.nome ?? '',
       agenteDocumento: agente0?.documento ?? '',
-      agenteTipo: agente0?.tipoAgente ?? '',
-    },
-  });
+      agenteTipo: agente0?.tipoAgente ?? ''}});
 
   const onSubmit = async (values: FormValues) => {
     if (!firestore || !auth) {
@@ -118,8 +115,7 @@ export function AnaliseSocioambientalForm({ currentItem, clients, onSuccess, onC
       criteriosResultados: currentItem?.criteriosResultados ?? [],
       detalhesAnalise: currentItem?.detalhesAnalise ?? [],
       updatedAt: new Date().toISOString(),
-      ...(currentItem ? {} : { createdAt: new Date().toISOString(), createdBy: auth.currentUser?.uid }),
-    };
+      ...(currentItem ? {} : { createdAt: new Date().toISOString(), createdBy: auth.currentUser?.uid })};
 
     try {
       if (currentItem?.id) {
@@ -131,11 +127,11 @@ export function AnaliseSocioambientalForm({ currentItem, clients, onSuccess, onC
         toast({ title: 'Análise cadastrada', description: 'Extrato incluído com sucesso.' });
       }
       onSuccess?.();
-    } catch (e) {
-      toast({ variant: 'destructive', title: 'Erro ao salvar', description: e instanceof Error ? e.message : 'Erro desconhecido.' });
-      if (firestore) {
-        errorEmitter.emit('permission-error', new FirestorePermissionError({ path: 'analisesSocioambientais', operation: currentItem ? 'update' : 'create' }));
-      }
+    } catch (error) {
+      handleFirestoreFormError(error, {
+        toast,
+        title: 'Erro ao salvar análise socioambiental',
+        context: { path: 'analisesSocioambientais', operation: currentItem ? 'update' : 'create' }});
     } finally {
       setLoading(false);
     }

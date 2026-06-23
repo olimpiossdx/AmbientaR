@@ -12,16 +12,14 @@ import {
   FormField,
   FormItem,
   FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
+  FormMessage} from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+  SelectValue} from '@/components/ui/select';
 import { Loader2 } from 'lucide-react';
 import { BrDateFormControl } from '@/components/form/br-date-input';
 import { useToast } from '@/hooks/use-toast';
@@ -29,8 +27,9 @@ import type { Opportunity, OpportunityStage, Client } from '@/lib/types';
 import type { RequestLocalizacaoImovel } from '@/lib/types/localizacao-imovel';
 import { ImovelLocalizadorPanel } from '@/components/geospatial/imovel-localizador-panel';
 import { localizacaoToRequestSnapshot } from '@/lib/geospatial/localizacao-request-snapshot';
-import { useFirebase, errorEmitter, useCollection, useMemoFirebase } from '@/firebase';
-import { FirestorePermissionError } from '@/firebase/errors';
+import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
+import { handleFirestoreFormError } from '@/lib/firestore-form-errors';
+
 import { collection, doc, addDoc, updateDoc } from 'firebase/firestore';
 
 const formSchema = z.object({
@@ -38,8 +37,7 @@ const formSchema = z.object({
   clientId: z.string().min(1, 'Selecione um cliente.'),
   value: z.coerce.number().positive('O valor deve ser um número positivo.'),
   stage: z.enum(['Qualificação', 'Proposta', 'Negociação', 'Fechado Ganho', 'Fechado Perdido']),
-  closeDate: z.date({ required_error: 'A data de fechamento é obrigatória.' }),
-});
+  closeDate: z.date({ required_error: 'A data de fechamento é obrigatória.' })});
 
 type FormValues = z.infer<typeof formSchema>;
 
@@ -60,8 +58,7 @@ const formatCurrencyBRL = (value: number) => {
     if (isNaN(value)) value = 0;
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
-      currency: 'BRL',
-    }).format(value);
+      currency: 'BRL'}).format(value);
 };
 
 const CurrencyInput = React.forwardRef<HTMLInputElement, Omit<React.InputHTMLAttributes<HTMLInputElement>, 'onChange'> & { onChange: (value: number) => void; value: number }>(
@@ -109,9 +106,7 @@ export function OpportunityForm({ currentItem, onSuccess }: OpportunityFormProps
       clientId: currentItem?.clientId || '',
       value: currentItem?.value || 0,
       stage: currentItem?.stage || 'Qualificação',
-      closeDate: currentItem?.closeDate ? new Date(currentItem.closeDate) : new Date(),
-    },
-  });
+      closeDate: currentItem?.closeDate ? new Date(currentItem.closeDate) : new Date()}});
 
   async function onSubmit(values: FormValues) {
     setLoading(true);
@@ -125,8 +120,7 @@ export function OpportunityForm({ currentItem, onSuccess }: OpportunityFormProps
     const dataToSave = {
         ...values,
         closeDate: values.closeDate.toISOString(),
-        ...(localizacaoImovel ? { localizacaoImovel } : {}),
-    };
+        ...(localizacaoImovel ? { localizacaoImovel } : {})};
 
     if (currentItem) {
       const docRef = doc(firestore, 'opportunities', currentItem.id);
@@ -135,9 +129,11 @@ export function OpportunityForm({ currentItem, onSuccess }: OpportunityFormProps
           toast({ title: 'Oportunidade atualizada!', description: 'As informações foram salvas com sucesso.' });
           onSuccess?.();
         })
-        .catch(async (serverError) => {
-          const permissionError = new FirestorePermissionError({ path: docRef.path, operation: 'update', requestResourceData: dataToSave });
-          errorEmitter.emit('permission-error', permissionError);
+        .catch((error) => {
+          handleFirestoreFormError(error, {
+            toast,
+            title: 'Erro ao salvar oportunidade',
+            context: { path: docRef.path, operation: 'update', requestResourceData: dataToSave }});
         })
         .finally(() => setLoading(false));
     } else {
@@ -148,9 +144,11 @@ export function OpportunityForm({ currentItem, onSuccess }: OpportunityFormProps
           form.reset();
           onSuccess?.();
         })
-        .catch(async (serverError) => {
-          const permissionError = new FirestorePermissionError({ path: collectionRef.path, operation: 'create', requestResourceData: dataToSave });
-          errorEmitter.emit('permission-error', permissionError);
+        .catch((error) => {
+          handleFirestoreFormError(error, {
+            toast,
+            title: 'Erro ao salvar oportunidade',
+            context: { path: collectionRef.path, operation: 'create', requestResourceData: dataToSave }});
         })
         .finally(() => setLoading(false));
     }

@@ -11,8 +11,7 @@ import {
   FormField,
   FormItem,
   FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
+  FormMessage} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { BrDateFormControl } from "@/components/form/br-date-input";
 import { MaskedInput } from "@/components/ui/masked-input";
@@ -23,10 +22,10 @@ import {
   buildRepresentativeRequestedDocumentsMap,
   formatRepresentativeRequestedDocumentsLabel,
   getRepresentativeRequestedDocumentDigits,
-  representativeRequestedDocumentsMatches,
-} from "@/lib/representative-requested-documents";
-import { useFirebase, useAuth, errorEmitter } from "@/firebase";
-import { FirestorePermissionError } from "@/firebase/errors";
+  representativeRequestedDocumentsMatches} from "@/lib/representative-requested-documents";
+import { useFirebase, useAuth } from "@/firebase";
+import { handleFirestoreFormError } from "@/lib/firestore-form-errors";
+import { stripUndefinedDeep } from "@/lib/firestore-payload";
 import {
   collection,
   doc,
@@ -36,8 +35,7 @@ import {
   where,
   setDoc,
   getDocs,
-  serverTimestamp,
-} from "firebase/firestore";
+  serverTimestamp} from "firebase/firestore";
 import { useCollection, useMemoFirebase } from "@/firebase";
 import type { AppUser } from "@/lib/types";
 import { isClientePortalRole } from "@/lib/role-guards";
@@ -46,8 +44,7 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  SelectValue} from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { ibgeData } from "@/lib/ibge-data";
@@ -57,8 +54,7 @@ import { searchReferences } from "@/lib/reference-search/client";
 import { fetchOnedriveAutofillContext } from "@/lib/autofill/fetch-onedrive-context";
 import {
   buildCpfCnpjVariants,
-  normalizeDocumentDigits,
-} from "@/lib/document-lookup";
+  normalizeDocumentDigits} from "@/lib/document-lookup";
 import { MtrIntegracaoFields, type MtrIntegracaoFormValues } from "@/components/empreendedores/mtr-integracao-fields";
 
 const entityTypes = [
@@ -87,8 +83,7 @@ const formSchema = z.object({
   entityType: z
     .array(z.string())
     .refine((value) => value.some((item) => item), {
-      message: "Você deve selecionar ao menos um tipo.",
-    }),
+      message: "Você deve selecionar ao menos um tipo."}),
   phone: z.string().min(8, "O telefone é obrigatório."),
   email: z.string().email("Por favor, insira um e-mail válido."),
 
@@ -116,8 +111,7 @@ const formSchema = z.object({
   mtrSenha: z.string().optional(),
   mtrAutoSyncEnabled: z.boolean().optional(),
   mtrAutoBaixarPdf: z.boolean().optional(),
-  mtrAutoSyncIntervalHours: z.string().optional(),
-});
+  mtrAutoSyncIntervalHours: z.string().optional()});
 
 type EmpreendedorFormValues = z.infer<typeof formSchema>;
 type AutofillField =
@@ -165,8 +159,7 @@ const FIELD_CONFIDENCE_THRESHOLD: Record<AutofillField, number> = {
   uf: 0.9,
   cep: 0.9,
   dataNascimento: 0.95,
-  ctfIbama: 0.9,
-};
+  ctfIbama: 0.9};
 
 const CRITICAL_FIELDS = new Set<AutofillField>([
   "name",
@@ -184,8 +177,7 @@ interface EmpreendedorFormProps {
 export function EmpreendedorForm({
   currentItem,
   onSuccess,
-  onCancel,
-}: EmpreendedorFormProps) {
+  onCancel}: EmpreendedorFormProps) {
   const [loading, setLoading] = React.useState(false);
   const [isAutofilling, setIsAutofilling] = React.useState(false);
   const [autofillSuggestions, setAutofillSuggestions] = React.useState<
@@ -240,8 +232,7 @@ export function EmpreendedorForm({
           uf: empreendedorValues.uf || "",
           cep: empreendedorValues.cep || "",
           userId: empreendedorValues.userId || user?.id || "",
-          approvedUserIds,
-        },
+          approvedUserIds},
         { merge: true },
       );
     },
@@ -282,9 +273,7 @@ export function EmpreendedorForm({
       mtrAutoSyncIntervalHours:
         currentItem?.mtrIntegracao?.autoSyncIntervalHours != null
           ? String(currentItem.mtrIntegracao.autoSyncIntervalHours)
-          : "24",
-    },
-  });
+          : "24"}});
 
   const representativeUsersQuery = useMemoFirebase(() => {
     if (!firestore) return null;
@@ -353,8 +342,7 @@ export function EmpreendedorForm({
       toast({
         variant: "destructive",
         title: "Bloqueado por confiança baixa",
-        description: `Campo crítico "${s.field}" exige >= ${(threshold * 100).toFixed(0)}% de confiança.`,
-      });
+        description: `Campo crítico "${s.field}" exige >= ${(threshold * 100).toFixed(0)}% de confiança.`});
       return;
     }
     form.setValue(
@@ -362,8 +350,7 @@ export function EmpreendedorForm({
       s.suggestedValue as never,
       {
         shouldDirty: true,
-        shouldValidate: true,
-      },
+        shouldValidate: true},
     );
     void logAutofillDecision(s, "applied");
     setAutofillSuggestions((prev) =>
@@ -394,8 +381,7 @@ export function EmpreendedorForm({
         s.suggestedValue as never,
         {
           shouldDirty: true,
-          shouldValidate: true,
-        },
+          shouldValidate: true},
       );
       void logAutofillDecision(s, "applied");
     });
@@ -407,8 +393,7 @@ export function EmpreendedorForm({
     );
     toast({
       title: "Aplicação concluída",
-      description: `${appliedCount} sugestão(ões) aplicada(s). ${blockedCount} bloqueada(s) por confiança baixa em campo crítico.`,
-    });
+      description: `${appliedCount} sugestão(ões) aplicada(s). ${blockedCount} bloqueada(s) por confiança baixa em campo crítico.`});
   };
 
   const ignoreSuggestion = (s: AutofillSuggestion) => {
@@ -443,8 +428,7 @@ export function EmpreendedorForm({
         empreendedorId: currentItem?.id || null,
         userId: user?.id || null,
         userRole: user?.role || null,
-        createdAt: serverTimestamp(),
-      });
+        createdAt: serverTimestamp()});
     } catch (error) {
       console.warn("Falha ao registrar log de autofill:", error);
     }
@@ -471,8 +455,7 @@ export function EmpreendedorForm({
       toast({
         variant: "destructive",
         title: "CPF/CNPJ inválido",
-        description: "Informe um CPF/CNPJ válido para buscar contexto.",
-      });
+        description: "Informe um CPF/CNPJ válido para buscar contexto."});
       return;
     }
     if (!firestore) {
@@ -501,12 +484,10 @@ export function EmpreendedorForm({
 
       const empreendedores: Array<Partial<Empreendedor> & { id: string }> = empreendedoresSnap.docs.map((d) => ({
         id: d.id,
-        ...(d.data() as Partial<Empreendedor>),
-      }));
+        ...(d.data() as Partial<Empreendedor>)}));
       const clients: Array<Partial<Client> & { id: string }> = clientsSnap.docs.map((d) => ({
         id: d.id,
-        ...(d.data() as Partial<Client>),
-      }));
+        ...(d.data() as Partial<Client>)}));
       const normalizedTarget = normalizeDocument(cpfCnpj);
       const byDocMatch = (item: Record<string, unknown>) =>
         normalizeDocument(String(item.cpfCnpj || "")) === normalizedTarget;
@@ -527,8 +508,7 @@ export function EmpreendedorForm({
           suggestedValue: text,
           confidence: 0.98,
           reason: "Campo estruturado encontrado na base interna.",
-          sourceCitations: [source],
-        });
+          sourceCitations: [source]});
       };
 
       if (matchedEmp) {
@@ -598,8 +578,7 @@ export function EmpreendedorForm({
               ? configuredExtensions
               : DEFAULT_AI_LOCAL_SOURCE_EXTENSIONS,
           modifiedAfter: configuredModifiedAfter || undefined,
-          maxResults: 8,
-        });
+          maxResults: 8});
         localMatchedByCpfCount =
           searchResult.matchedByCpfCount ?? searchResult.hits.length;
         localEvidenceCitations = searchResult.citations;
@@ -640,16 +619,14 @@ export function EmpreendedorForm({
           title: "Sem contexto encontrado",
           description:
             onedriveHints[0] ||
-            "Nenhum cadastro vinculado a este CPF/CNPJ na base interna, pasta OneDrive ou biblioteca local.",
-        });
+            "Nenhum cadastro vinculado a este CPF/CNPJ na base interna, pasta OneDrive ou biblioteca local."});
         return;
       }
 
       const hardContextJson = JSON.stringify(
         {
           matchedEmpreendedor: matchedEmp || null,
-          matchedClient: matchedClient || null,
-        },
+          matchedClient: matchedClient || null},
         null,
         2,
       );
@@ -662,8 +639,7 @@ export function EmpreendedorForm({
       const llmRes = await fetch("/api/ai-lab/autofill-empreendedor", {
         method: "POST",
         headers: await getAdminApiRequestHeaders(auth),
-        body: JSON.stringify({ cpf: digits, hardContextJson, evidenceText }),
-      });
+        body: JSON.stringify({ cpf: digits, hardContextJson, evidenceText })});
       const llmData = await llmRes.json();
       const softSuggestions: AutofillSuggestion[] =
         llmRes.ok && llmData?.success && Array.isArray(llmData.suggestions)
@@ -676,8 +652,7 @@ export function EmpreendedorForm({
               )
               .map((s: AutofillSuggestion) => ({
                 ...s,
-                confidence: Number(s.confidence || 0.7),
-              }))
+                confidence: Number(s.confidence || 0.7)}))
           : [];
 
       const merged = [...hardSuggestions];
@@ -704,8 +679,7 @@ export function EmpreendedorForm({
         title: "Sugestões prontas",
         description: `${merged.length} sugestão(ões) para revisão. Locais: ${localMatchedByCpfCount}.${onedrivePart}${
           onedriveHints[0] ? ` ${onedriveHints[0]}` : ""
-        }`,
-      });
+        }`});
     } catch (error) {
       console.error("Autofill por CPF falhou:", error);
       toast({
@@ -714,8 +688,7 @@ export function EmpreendedorForm({
         description:
           error instanceof Error
             ? error.message
-            : "Não foi possível gerar sugestões.",
-      });
+            : "Não foi possível gerar sugestões."});
     } finally {
       setIsAutofilling(false);
     }
@@ -745,8 +718,7 @@ export function EmpreendedorForm({
       : [];
 
     const mtrIntegracao: Record<string, unknown> = {
-      ...(currentItem?.mtrIntegracao ?? {}),
-    };
+      ...(currentItem?.mtrIntegracao ?? {})};
     const pessoaCodigo = mtrPessoaCodigo?.trim()
       ? Number(mtrPessoaCodigo.trim())
       : undefined;
@@ -775,7 +747,7 @@ export function EmpreendedorForm({
       mtrIntegracao.usuarioCpf ||
       mtrIntegracao.senha;
 
-    const dataToSave = {
+    const dataToSave = stripUndefinedDeep({
       ...baseValues,
       dataNascimento: values.dataNascimento
         ? new Date(`${values.dataNascimento}T00:00:00`).toISOString()
@@ -787,8 +759,7 @@ export function EmpreendedorForm({
       approvedUserIds: safeRepresentativeUserIds,
       ...(hasMtrFields || currentItem?.mtrIntegracao
         ? { mtrIntegracao }
-        : {}),
-    };
+        : {})});
 
     try {
       if (currentItem) {
@@ -800,11 +771,18 @@ export function EmpreendedorForm({
         await updateDoc(empreendedorRef, dataToSave);
 
         // Regra de negócio: todo empreendedor deve existir também em Financeiro > Clientes.
-        await upsertClientFromEmpreendedor(
-          currentItem.id,
-          { ...values, userId: dataToSave.userId || "" },
-          dataToSave.approvedUserIds,
-        );
+        try {
+          await upsertClientFromEmpreendedor(
+            currentItem.id,
+            { ...values, userId: dataToSave.userId || "" },
+            dataToSave.approvedUserIds,
+          );
+        } catch (secondaryError) {
+          console.warn(
+            "Falha ao espelhar empreendedor em Clientes (atualização):",
+            secondaryError,
+          );
+        }
 
         const isOwnEmpreendedor =
           isClientePortalRole(user?.role) &&
@@ -812,16 +790,14 @@ export function EmpreendedorForm({
         if (isOwnEmpreendedor && user?.id) {
           try {
             await updateDoc(doc(firestore, "users", user.id), {
-              cadastroIncompleto: false,
-            });
+              cadastroIncompleto: false});
           } catch (_) {}
         }
 
         toast({
           title: "Empreendedor atualizado!",
           description:
-            "As informações do empreendedor foram salvas com sucesso.",
-        });
+            "As informações do empreendedor foram salvas com sucesso."});
         onSuccess?.();
       } else {
         const empreendedoresCollectionRef = collection(
@@ -834,30 +810,37 @@ export function EmpreendedorForm({
         );
 
         // Regra de negócio: ao criar empreendedor, cria automaticamente o cliente espelho.
-        await upsertClientFromEmpreendedor(
-          createdRef.id,
-          { ...values, userId: dataToSave.userId || "" },
-          dataToSave.approvedUserIds,
-        );
+        try {
+          await upsertClientFromEmpreendedor(
+            createdRef.id,
+            { ...values, userId: dataToSave.userId || "" },
+            dataToSave.approvedUserIds,
+          );
+        } catch (secondaryError) {
+          console.warn(
+            "Falha ao espelhar empreendedor em Clientes (criação):",
+            secondaryError,
+          );
+        }
 
         toast({
           title: "Empreendedor criado!",
-          description: `O empreendedor ${values.name} foi adicionado com sucesso.`,
-        });
+          description: `O empreendedor ${values.name} foi adicionado com sucesso.`});
         form.reset();
         onSuccess?.();
       }
-    } catch (serverError) {
+    } catch (error) {
       const path = currentItem
         ? doc(firestore, "empreendedores", currentItem.id).path
         : collection(firestore, "empreendedores").path;
       const operation = currentItem ? "update" : "create";
-      const permissionError = new FirestorePermissionError({
-        path,
-        operation,
-        requestResourceData: dataToSave,
-      });
-      errorEmitter.emit("permission-error", permissionError);
+      handleFirestoreFormError(error, {
+        toast,
+        title: "Erro ao salvar empreendedor",
+        context: {
+          path,
+          operation,
+          requestResourceData: dataToSave}});
     } finally {
       setLoading(false);
     }
@@ -1140,8 +1123,7 @@ export function EmpreendedorForm({
                 ? {
                     lastSyncAt: currentItem.mtrIntegracao.lastSyncAt,
                     lastSyncSummary: currentItem.mtrIntegracao.lastSyncSummary,
-                    lastSyncError: currentItem.mtrIntegracao.lastSyncError,
-                  }
+                    lastSyncError: currentItem.mtrIntegracao.lastSyncError}
                 : undefined
             }
           />

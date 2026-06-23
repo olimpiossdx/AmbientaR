@@ -33,7 +33,7 @@ import { sortOpportunitiesByCloseDate } from '@/lib/firestore-list-helpers';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
-import { FirestorePermissionError } from '@/firebase/errors';
+import { handleFirestoreFormError } from '@/lib/firestore-form-errors';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CrmPipelineKanban, pipelineStages } from '../crm-pipeline-kanban';
 import {
@@ -87,14 +87,17 @@ export default function CrmOpportunitiesPage() {
   const handleMoveStage = (opportunityId: string, newStage: OpportunityStage) => {
     if (!firestore) return;
     const oppRef = doc(firestore, 'opportunities', opportunityId);
-    updateDoc(oppRef, { stage: newStage }).catch(() => {
-      const permissionError = new FirestorePermissionError({
-        path: oppRef.path,
-        operation: 'update',
-        requestResourceData: { stage: newStage },
-      });
-      errorEmitter.emit('permission-error', permissionError);
-    });
+    updateDoc(oppRef, { stage: newStage }).catch((error) =>
+        handleFirestoreFormError(error, {
+          toast,
+          title: 'Erro ao excluir oportunidade',
+          context: {
+          path: oppRef.path,
+          operation: 'update',
+          requestResourceData: { stage: newStage },
+        },
+        }),
+      );
   };
 
   const openDeleteConfirm = (id: string) => {
@@ -107,10 +110,16 @@ export default function CrmOpportunitiesPage() {
     const docRef = doc(firestore, 'opportunities', itemToDelete);
     deleteDoc(docRef)
       .then(() => toast({ title: 'Oportunidade deletada', description: 'A oportunidade foi removida com sucesso.' }))
-      .catch(() => {
-        const permissionError = new FirestorePermissionError({ path: docRef.path, operation: 'delete' });
-        errorEmitter.emit('permission-error', permissionError);
-      })
+      .catch((error) =>
+        handleFirestoreFormError(error, {
+          toast,
+          title: 'Erro ao excluir oportunidade',
+          context: {
+          path: docRef.path,
+          operation: 'delete',
+        },
+        }),
+      )
       .finally(() => {
         setIsAlertOpen(false);
         setItemToDelete(null);

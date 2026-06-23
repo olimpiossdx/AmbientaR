@@ -79,92 +79,105 @@ export async function createPortalAccessForClientGestao(
   });
   const uid = authUser.uid;
 
-  const userCpfDigits = normalizeDocumentDigits(input.userCpf || "");
-  const clientCpfDigits = normalizeDocumentDigits(client.cpfCnpj || "");
-  const portalDocument =
-    clientCpfDigits.length >= 11 ? clientCpfDigits : userCpfDigits;
+  try {
+    const userCpfDigits = normalizeDocumentDigits(input.userCpf || "");
+    const clientCpfDigits = normalizeDocumentDigits(client.cpfCnpj || "");
+    const portalDocument =
+      clientCpfDigits.length >= 11 ? clientCpfDigits : userCpfDigits;
 
-  let linkedEmpreendedorId: string | null = null;
-  const empSnap = await db
-    .collection("empreendedores")
-    .where("sourceClientId", "==", clientId)
-    .limit(1)
-    .get();
-  if (!empSnap.empty) {
-    linkedEmpreendedorId = empSnap.docs[0].id;
-  } else if (portalDocument.length >= 11) {
-    const byDoc = await db
+    let linkedEmpreendedorId: string | null = null;
+    const empSnap = await db
       .collection("empreendedores")
-      .where("cpfCnpj", "==", portalDocument)
+      .where("sourceClientId", "==", clientId)
       .limit(1)
       .get();
-    if (!byDoc.empty) linkedEmpreendedorId = byDoc.docs[0].id;
-  }
+    if (!empSnap.empty) {
+      linkedEmpreendedorId = empSnap.docs[0].id;
+    } else if (portalDocument.length >= 11) {
+      const byDoc = await db
+        .collection("empreendedores")
+        .where("cpfCnpj", "==", portalDocument)
+        .limit(1)
+        .get();
+      if (!byDoc.empty) linkedEmpreendedorId = byDoc.docs[0].id;
+    }
 
-  const portalUserIds: string[] = Array.isArray(
-    (client as Client & { portalUserIds?: string[] }).portalUserIds,
-  )
-    ? (client as Client & { portalUserIds?: string[] }).portalUserIds!
-    : [];
-  const isAdditionalPortalUser = portalUserIds.length > 0 || Boolean(client.userId);
+    const portalUserIds: string[] = Array.isArray(
+      (client as Client & { portalUserIds?: string[] }).portalUserIds,
+    )
+      ? (client as Client & { portalUserIds?: string[] }).portalUserIds!
+      : [];
+    const isAdditionalPortalUser =
+      portalUserIds.length > 0 || Boolean(client.userId);
 
-  const selectedPackage: ClientPackage = input.package ?? "basico";
+    const selectedPackage: ClientPackage = input.package ?? "basico";
 
-  const userDoc = {
-    uid,
-    name,
-    email,
-    role: "client" as const,
-    status: "pending_invite" as const,
-    userCpf: userCpfDigits.length === 11 ? userCpfDigits : "",
-    cpf: portalDocument.length >= 11 ? portalDocument : "",
-    cnpjs: portalDocument.length === 14 ? [portalDocument] : [],
-    package: selectedPackage,
-    platformPaymentStatus: "paid" as const,
-    contractAcceptedAt: FieldValue.serverTimestamp(),
-    cadastroIncompleto: false,
-    linkedClientId: clientId,
-    ...(linkedEmpreendedorId ? { linkedEmpreendedorId } : {}),
-    portalInvitedAt: FieldValue.serverTimestamp(),
-    portalInvitedBy: input.invitedByUid,
-    createdAt: FieldValue.serverTimestamp(),
-    lastLogin: null,
-    isOnline: false,
-  };
+    const userDoc = {
+      uid,
+      name,
+      email,
+      role: "client" as const,
+      status: "pending_invite" as const,
+      userCpf: userCpfDigits.length === 11 ? userCpfDigits : "",
+      cpf: portalDocument.length >= 11 ? portalDocument : "",
+      cnpjs: portalDocument.length === 14 ? [portalDocument] : [],
+      package: selectedPackage,
+      platformPaymentStatus: "paid" as const,
+      contractAcceptedAt: FieldValue.serverTimestamp(),
+      cadastroIncompleto: false,
+      linkedClientId: clientId,
+      ...(linkedEmpreendedorId ? { linkedEmpreendedorId } : {}),
+      portalInvitedAt: FieldValue.serverTimestamp(),
+      portalInvitedBy: input.invitedByUid,
+      createdAt: FieldValue.serverTimestamp(),
+      lastLogin: null,
+      isOnline: false,
+    };
 
-  await db.collection("users").doc(uid).set(userDoc);
+    await db.collection("users").doc(uid).set(userDoc);
 
-  const clientUpdate: Record<string, unknown> = {
-    portalUserIds: FieldValue.arrayUnion(uid),
-  };
-  if (!client.userId) {
-    clientUpdate.userId = uid;
-  }
-  if (!client.email?.trim() && email) {
-    clientUpdate.email = email;
-  }
-  await db.collection("clients").doc(clientId).update(clientUpdate);
+    const clientUpdate: Record<string, unknown> = {
+      portalUserIds: FieldValue.arrayUnion(uid),
+    };
+    if (!client.userId) {
+      clientUpdate.userId = uid;
+    }
+    if (!client.email?.trim() && email) {
+      clientUpdate.email = email;
+    }
+    await db.collection("clients").doc(clientId).update(clientUpdate);
 
-  if (linkedEmpreendedorId && !isAdditionalPortalUser) {
-    await db
-      .collection("empreendedores")
-      .doc(linkedEmpreendedorId)
-      .set(
-        {
-          userId: uid,
-          email: email || client.email,
-          name: client.name || name,
-        },
-        { merge: true },
+    if (linkedEmpreendedorId && !isAdditionalPortalUser) {
+      await db
+        .collection("empreendedores")
+        .doc(linkedEmpreendedorId)
+        .set(
+          {
+            userId: uid,
+            email: email || client.email,
+            name: client.name || name,
+          },
+          { merge: true },
+        );
+    }
+
+    return {
+      userId: uid,
+      email,
+      status: "pending_invite",
+      linkedClientId: clientId,
+      linkedEmpreendedorId,
+      isAdditionalPortalUser,
+    };
+  } catch (firestoreErr) {
+    try {
+      await auth.deleteUser(uid);
+    } catch (rollbackErr) {
+      console.error(
+        "createPortalAccess: falha ao reverter usuário Auth após erro Firestore",
+        rollbackErr,
       );
+    }
+    throw firestoreErr;
   }
-
-  return {
-    userId: uid,
-    email,
-    status: "pending_invite",
-    linkedClientId: clientId,
-    linkedEmpreendedorId,
-    isAdditionalPortalUser,
-  };
 }
