@@ -74,23 +74,17 @@ O **Backend ID** está em Firebase Console → **App Hosting** → o teu backend
 
 **Alternativa:** Firebase Console → App Hosting → backend → **Environment variables** → adicionar as mesmas variáveis (secret para o client secret). Exige **novo rollout** após guardar.
 
-### 2. Azure (já feito em dev)
+### 2. Azure
 
 - App **Sincronização do AmbientaR com o OneDrive**
-- Permissão **`Files.Read.All` (Aplicativo)** com consentimento de administrador
-- Modo **`app`** (client credentials) — não precisa de redirect URI extra
-
-Se no futuro usares OAuth delegado em produção, adiciona no Azure → **Autenticação** → redirect:
+- Permissões **Delegado**: `User.Read`, `Files.Read`, `offline_access` (e **Aplicativo** `Files.Read.All` se usar modo `app`)
+- **Autenticação** → redirect URI obrigatório em produção:
 
 `https://www.ambientar.ia.br/api/onedrive-consumer/auth/callback`
 
-e no App Hosting:
+Produção usa **modo delegado** (`ONEDRIVE_GRAPH_AUTH_MODE=delegated` em [`apphosting.yaml`](../apphosting.yaml)) para OneDrive pessoal (@outlook) — tenant sem licença SharePoint empresarial (erro `SPO license`). Após rollout, na UI: **Ligar conta Microsoft** antes de bootstrap/sync.
 
-```env
-ONEDRIVE_GRAPH_AUTH_MODE=delegated
-ONEDRIVE_GRAPH_REDIRECT_URI=https://www.ambientar.ia.br/api/onedrive-consumer/auth/callback
-NEXT_PUBLIC_SITE_URL=https://www.ambientar.ia.br
-```
+Modo **`app`** (client credentials) só com Microsoft 365 Business + SPO no tenant.
 
 ### 3. Deploy
 

@@ -52,6 +52,10 @@ Sem `true`, a UI que chama `/api/ai-lab/import-reference-files` verá **503** �
 | `MICROSOFT_GRAPH_TENANT_ID` | — | Secret em produção ([`apphosting.yaml`](../apphosting.yaml)). |
 | `MICROSOFT_GRAPH_CLIENT_ID` | — | Idem. |
 | `MICROSOFT_GRAPH_CLIENT_SECRET` | — | **Secret Manager** — nunca commitar. |
+| `ONEDRIVE_SYNC_ENABLED` | `false` | Integração OneDrive (`/api/onedrive/*`) desativada (503). |
+| `ONEDRIVE_GRAPH_AUTH_MODE` | `app` | `delegated` em produção ([`apphosting.yaml`](../apphosting.yaml)) para OneDrive pessoal. |
+| `ONEDRIVE_GRAPH_REDIRECT_URI` | localhost dev | Callback OAuth; produção: `https://www.ambientar.ia.br/api/onedrive-consumer/auth/callback` |
+| `NEXT_PUBLIC_SITE_URL` | — | URL base da app (OAuth return). |
 
 Em produção, flags e caminhos estão em [`apphosting.yaml`](../apphosting.yaml); credenciais Graph via `firebase apphosting:secrets:set` ou consola App Hosting.
 

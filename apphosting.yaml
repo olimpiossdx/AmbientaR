@@ -77,3 +77,25 @@ env:
     secret: MICROSOFT_GRAPH_CLIENT_SECRET
     availability:
       - RUNTIME
+  # OneDrive pessoal (@outlook): OAuth delegado (tenant sem licença SPO)
+  - variable: ONEDRIVE_GRAPH_AUTH_MODE
+    value: delegated
+    availability:
+      - RUNTIME
+  - variable: ONEDRIVE_GRAPH_AUTHORITY
+    value: consumers
+    availability:
+      - RUNTIME
+  - variable: ONEDRIVE_GRAPH_REDIRECT_URI
+    value: https://www.ambientar.ia.br/api/onedrive-consumer/auth/callback
+    availability:
+      - RUNTIME
+  - variable: ONEDRIVE_GRAPH_SCOPES
+    value: openid profile offline_access User.Read Files.Read
+    availability:
+      - RUNTIME
+  - variable: NEXT_PUBLIC_SITE_URL
+    value: https://www.ambientar.ia.br
+    availability:
+      - BUILD
+      - RUNTIME
