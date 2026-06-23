@@ -30,6 +30,7 @@ import {
 } from "firebase/firestore";
 import {
   notifyIndexedDbQuotaExceeded,
+  shouldSkipAuthIndexedDbPersistence,
   shouldSkipPersistentFirestoreCache,
 } from "@/lib/browser-storage-recovery";
 
@@ -53,14 +54,20 @@ function createAuth(app: FirebaseApp): Auth {
     return getAuth(app);
   }
 
-  try {
-    return initializeAuth(app, {
-      persistence: [
+  const skipIndexedDb =
+    process.env.NODE_ENV === "development" ||
+    shouldSkipAuthIndexedDbPersistence();
+
+  const persistence = skipIndexedDb
+    ? [browserLocalPersistence, browserSessionPersistence]
+    : [
         indexedDBLocalPersistence,
         browserLocalPersistence,
         browserSessionPersistence,
-      ],
-    });
+      ];
+
+  try {
+    return initializeAuth(app, { persistence });
   } catch (e) {
     const code = (e as { code?: string })?.code;
     if (code === "auth/already-initialized" || String(e).includes("already")) {

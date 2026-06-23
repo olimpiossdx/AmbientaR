@@ -26,6 +26,10 @@ import { logUserAction } from '@/lib/audit-log';
 import { PRESENCE_HEARTBEAT_MS } from '@/lib/user-presence';
 import { buildFallbackAppUser } from '@/lib/auth-user-id';
 import {
+  isQuotaOrIndexedDbError,
+  notifyIndexedDbQuotaExceeded,
+} from '@/lib/browser-storage-recovery';
+import {
   ADMIN_BOOTSTRAP_EMAIL,
   isBootstrapAdminEmail,
   resolveRoleForEmail,
@@ -475,6 +479,19 @@ export const FirebaseProvider: React.FC<{ children: ReactNode; firebaseApp: Fire
       }
 
       console.error('Login failed:', error);
+
+      if (isQuotaOrIndexedDbError(error)) {
+        notifyIndexedDbQuotaExceeded();
+        toast({
+          variant: 'destructive',
+          title: 'Armazenamento local indisponível',
+          description:
+            'O navegador bloqueou o IndexedDB (comum com extensões de privacidade ou dados corrompidos). ' +
+            'Use o botão “Limpar dados locais e recarregar” na parte inferior da tela e tente entrar novamente.',
+        });
+        return false;
+      }
+
       let description = 'Ocorreu um erro inesperado. Tente novamente.';
       if (error.code === 'auth/user-not-found') {
         description = 'Nenhum usuário encontrado com este e-mail.';

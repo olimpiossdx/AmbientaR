@@ -10,7 +10,13 @@ import {
   getInstances,
 } from "@/firebase/load-firebase-client";
 import { firebaseConfig } from "@/firebase/config";
-import { registerIndexedDbQuotaWatcher } from "@/lib/browser-storage-recovery";
+import {
+  markSkipAuthIndexedDbPersistence,
+  markSkipPersistentFirestoreCache,
+  probeIndexedDbWritable,
+  registerIndexedDbQuotaWatcher,
+  shouldSkipAuthIndexedDbPersistence,
+} from "@/lib/browser-storage-recovery";
 import { IndexedDbRecoveryBanner } from "@/components/indexeddb-recovery-banner";
 
 interface FirebaseClientProviderProps {
@@ -39,9 +45,7 @@ function readInstances(): FirebaseInstances | null {
 export function FirebaseClientProvider({
   children,
 }: FirebaseClientProviderProps) {
-  const [instances, setInstances] = useState<FirebaseInstances | null>(
-    () => readInstances(),
-  );
+  const [instances, setInstances] = useState<FirebaseInstances | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -49,14 +53,10 @@ export function FirebaseClientProvider({
   }, []);
 
   useEffect(() => {
-    if (instances) return;
-
     let isDisposed = false;
-    let didInitialize = false;
-    setError(null);
 
     const timeout = window.setTimeout(() => {
-      if (!isDisposed && !didInitialize) {
+      if (!isDisposed && !instances) {
         setError(
           (prev) =>
             prev ?? "Tempo limite ao inicializar Firebase. Tente novamente.",
@@ -64,25 +64,41 @@ export function FirebaseClientProvider({
       }
     }, 10000);
 
-    try {
-      const loaded = readInstances();
-      if (!isDisposed && loaded) {
-        didInitialize = true;
-        window.clearTimeout(timeout);
+    void (async () => {
+      try {
+        if (!shouldSkipAuthIndexedDbPersistence()) {
+          const idbOk = await probeIndexedDbWritable();
+          if (!idbOk) {
+            markSkipAuthIndexedDbPersistence();
+            markSkipPersistentFirestoreCache();
+            clearFirebaseClientInstancesCache();
+          }
+        }
+
+        if (isDisposed) return;
+
+        const loaded = readInstances();
+        if (!loaded) {
+          setError("Falha ao carregar Firebase.");
+          return;
+        }
         setInstances(loaded);
-      }
-    } catch (err) {
-      console.error("Firebase load error:", err);
-      if (!isDisposed) {
+        setError(null);
+      } catch (err) {
+        console.error("Firebase load error:", err);
+        if (!isDisposed) {
+          setError((err as Error)?.message ?? "Falha ao carregar Firebase");
+        }
+      } finally {
         window.clearTimeout(timeout);
-        setError((err as Error)?.message ?? "Falha ao carregar Firebase");
       }
-    }
+    })();
+
     return () => {
       isDisposed = true;
       window.clearTimeout(timeout);
     };
-  }, [instances]);
+  }, []);
 
   if (error) {
     return (

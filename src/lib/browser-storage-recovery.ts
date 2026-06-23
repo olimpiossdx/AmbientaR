@@ -6,6 +6,8 @@
 export const SKIP_PERSISTENT_FIRESTORE_CACHE_KEY =
   "ambientar-skip-persistent-firestore-cache";
 
+export const SKIP_AUTH_INDEXEDDB_KEY = "ambientar-auth-skip-indexeddb";
+
 export const IDB_QUOTA_EVENT = "ambientar-idb-quota-exceeded";
 
 export function shouldSkipPersistentFirestoreCache(): boolean {
@@ -14,6 +16,33 @@ export function shouldSkipPersistentFirestoreCache(): boolean {
     return sessionStorage.getItem(SKIP_PERSISTENT_FIRESTORE_CACHE_KEY) === "1";
   } catch {
     return false;
+  }
+}
+
+export function shouldSkipAuthIndexedDbPersistence(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    return sessionStorage.getItem(SKIP_AUTH_INDEXEDDB_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+export function markSkipAuthIndexedDbPersistence(): void {
+  if (typeof window === "undefined") return;
+  try {
+    sessionStorage.setItem(SKIP_AUTH_INDEXEDDB_KEY, "1");
+  } catch {
+    /* ignore */
+  }
+}
+
+export function clearSkipAuthIndexedDbPersistence(): void {
+  if (typeof window === "undefined") return;
+  try {
+    sessionStorage.removeItem(SKIP_AUTH_INDEXEDDB_KEY);
+  } catch {
+    /* ignore */
   }
 }
 
@@ -111,7 +140,65 @@ export async function clearBrowserStorageForRecovery(
 export function notifyIndexedDbQuotaExceeded(): void {
   if (typeof window === "undefined") return;
   markSkipPersistentFirestoreCache();
+  markSkipAuthIndexedDbPersistence();
   window.dispatchEvent(new CustomEvent(IDB_QUOTA_EVENT));
+}
+
+const IDB_PROBE_DB = "__ambientar_idb_probe__";
+
+/** Testa se o browser consegue abrir e gravar no IndexedDB (Auth/Firestore dependem disto). */
+export function probeIndexedDbWritable(): Promise<boolean> {
+  if (typeof window === "undefined") return Promise.resolve(true);
+
+  return new Promise((resolve) => {
+    let settled = false;
+    const finish = (ok: boolean) => {
+      if (settled) return;
+      settled = true;
+      resolve(ok);
+    };
+
+    const timer = window.setTimeout(() => finish(false), 4000);
+
+    try {
+      const req = indexedDB.open(IDB_PROBE_DB, 1);
+      req.onupgradeneeded = () => {
+        req.result.createObjectStore("probe");
+      };
+      req.onsuccess = () => {
+        const db = req.result;
+        try {
+          const tx = db.transaction("probe", "readwrite");
+          tx.objectStore("probe").put(Date.now(), "ping");
+          tx.oncomplete = () => {
+            window.clearTimeout(timer);
+            db.close();
+            void deleteIndexedDb(IDB_PROBE_DB).then(() => finish(true));
+          };
+          tx.onerror = () => {
+            window.clearTimeout(timer);
+            db.close();
+            finish(false);
+          };
+        } catch {
+          window.clearTimeout(timer);
+          db.close();
+          finish(false);
+        }
+      };
+      req.onerror = () => {
+        window.clearTimeout(timer);
+        finish(false);
+      };
+      req.onblocked = () => {
+        window.clearTimeout(timer);
+        finish(false);
+      };
+    } catch {
+      window.clearTimeout(timer);
+      finish(false);
+    }
+  });
 }
 
 export function registerIndexedDbQuotaWatcher(): () => void {
