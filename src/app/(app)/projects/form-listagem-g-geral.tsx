@@ -18,6 +18,8 @@ export function FormListagemGGeral({ form }: { form: any }) {
       inferirFormulario={inferirFormularioListagemG}
       activityByTipo={LISTAGEM_G_ACTIVITY_BY_TIPO}
       defaultTipo={LISTAGEM_G_FORM_TIPO_PADRAO}
+      hideIdentificacao
+      hideAtividades
     />
   );
 }

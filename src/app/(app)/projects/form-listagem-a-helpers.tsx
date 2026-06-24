@@ -162,6 +162,35 @@ export function TextField({
   );
 }
 
+export function TextAreaField({
+  form,
+  name,
+  label,
+  className,
+  rows = 4,
+}: {
+  form: any;
+  name: string;
+  label: string;
+  className?: string;
+  rows?: number;
+}) {
+  return (
+    <FormField
+      control={form.control}
+      name={name}
+      render={({ field }) => (
+        <FormItem className={className}>
+          <FormLabel>{label}</FormLabel>
+          <FormControl>
+            <Textarea rows={rows} {...field} value={field.value ?? ''} />
+          </FormControl>
+        </FormItem>
+      )}
+    />
+  );
+}
+
 const tiposArmazenamentoResiduo = [
   { id: 'silos_metalicos', label: 'Silos metálicos (m³)' },
   { id: 'baias_concreto', label: 'Baias de concreto (m³)' },

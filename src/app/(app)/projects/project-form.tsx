@@ -25,6 +25,10 @@ import { FormListagemD } from './form-listagem-d';
 import { FormListagemE } from './form-listagem-e';
 import { FormListagemF } from './form-listagem-f';
 import { FormListagemG } from './form-listagem-g';
+import {
+  subatividadeParaFormularioListagemG,
+  type ListagemGFormTipo,
+} from './listagem-g-form-registry';
 import { FormListagemH } from './form-listagem-h';
 import { onListagemTabSelect } from './listagem-form-registry-index';
 import { cleanEmptyValues } from '@/lib/utils';
@@ -126,7 +130,25 @@ const getInitialValues = (currentItem?: Project | null): FormValues => {
         listagemE: {
             geoTrecho: {
                 inicio: createDefaultTrechoCoordinateBlock(),
-                fim: createDefaultTrechoCoordinateBlock()}}};
+                fim: createDefaultTrechoCoordinateBlock()}},
+        listagemG: {
+            formularioTipo: 'culturas',
+            empreendedor: {},
+            empreendimento: {},
+            atividadesPrincipal: [],
+            outrasAtividades: [],
+            agro: {},
+            culturas: { olericultura: [], culturasAnuais: [], culturasPerenes: [], licenciamento: {} },
+            bovinocultura: {},
+            irrigados: {},
+            silvicultura: {},
+            graos: {},
+            suinocultura: {},
+            avicultura: {},
+            insumos: [],
+            residuosSolidos: [],
+            anexos: [],
+            geral: { atividades: [], licenciamento: {} }}};
 
     if (currentItem) {
         // Use lodash merge for deep merging, which is generally safe, but ensure defaults are solid
@@ -239,6 +261,13 @@ export function ProjectForm({ currentItem, onSuccess, onCancel }: ProjectFormPro
       ),
     );
 
+    const listagemGTipo = (values as Record<string, unknown>).listagemG as
+      | { formularioTipo?: ListagemGFormTipo }
+      | undefined;
+    if (listagemGTipo?.formularioTipo) {
+      dataToSave.subActivity = subatividadeParaFormularioListagemG(listagemGTipo.formularioTipo);
+    }
+
 
     if (currentItem) {
       const docRef = doc(firestore, 'projects', currentItem.id);
@@ -332,9 +361,10 @@ export function ProjectForm({ currentItem, onSuccess, onCancel }: ProjectFormPro
   }
   
   const selectedEmpreendedorId = form.watch('empreendedorId');
-  const autonomoEmpreendedor = selectedEmpreendedorId
+  const linkedEmpreendedor = selectedEmpreendedorId
     ? empreendedoresMap.get(selectedEmpreendedorId)
     : undefined;
+  const autonomoEmpreendedor = linkedEmpreendedor;
   const autonomoMissingEmpreendedor =
     isAutonomo &&
     portalEmpreendedorIds !== undefined &&
@@ -479,7 +509,7 @@ export function ProjectForm({ currentItem, onSuccess, onCancel }: ProjectFormPro
                       <FormListagemF form={form} />
                    </TabsContent>
                    <TabsContent value="listagem-g" className="mt-0">
-                      <FormListagemG form={form} />
+                      <FormListagemG form={form} empreendedor={linkedEmpreendedor} />
                    </TabsContent>
                    <TabsContent value="listagem-h" className="mt-0">
                       <FormListagemH form={form} />

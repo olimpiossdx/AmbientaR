@@ -27,6 +27,8 @@ interface FormListagemGeralBaseProps {
   inferirFormulario?: (codigoDn?: string | null) => string;
   activityByTipo?: Record<string, string>;
   defaultTipo?: string;
+  hideIdentificacao?: boolean;
+  hideAtividades?: boolean;
 }
 
 /**
@@ -41,6 +43,8 @@ export function FormListagemGeralBase({
   inferirFormulario,
   activityByTipo,
   defaultTipo,
+  hideIdentificacao,
+  hideAtividades,
 }: FormListagemGeralBaseProps) {
   const onCodigoBlur = (codigo: string) => {
     if (!inferirFormulario || !activityByTipo || !defaultTipo || !codigo.trim()) return;
@@ -66,6 +70,7 @@ export function FormListagemGeralBase({
         </FormDescription>
       </SectionCard>
 
+      {!hideIdentificacao && (
       <SectionCard title="Identificação resumida do empreendimento">
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <TextField form={form} name={`${dataPrefix}.geral.empreendimento.nome`} label="Nome / razão social" />
@@ -80,7 +85,9 @@ export function FormListagemGeralBase({
           />
         </div>
       </SectionCard>
+      )}
 
+      {!hideAtividades && (
       <SectionCard title="Atividades (DN 217/17)">
         {fields.map((item, index) => (
           <div key={item.id} className="mb-3 grid grid-cols-1 gap-3 rounded-md border p-3 md:grid-cols-5">
@@ -111,6 +118,7 @@ export function FormListagemGeralBase({
           Adicionar atividade
         </Button>
       </SectionCard>
+      )}
 
       <SectionCard title="Licenciamento">
         <FormField
