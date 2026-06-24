@@ -38,62 +38,60 @@ env:
     availability:
       - RUNTIME
 
-  # Biblioteca IA OneDrive (cloud-rag) + Integração OneDrive — docs/CLOUD-RAG-ONEDRIVE.md
-  # Secrets: firebase apphosting:secrets:set MICROSOFT_GRAPH_* (ver doc)
+  # Biblioteca IA OneDrive — desativado até recriar secrets MICROSOFT_GRAPH_* (docs/CLOUD-RAG-ONEDRIVE.md)
   - variable: ONEDRIVE_SYNC_ENABLED
-    value: "true"
+    value: "false"
     availability:
       - RUNTIME
   - variable: ONEDRIVE_RAG_ENABLED
-    value: "true"
+    value: "false"
     availability:
       - RUNTIME
   - variable: ONEDRIVE_RAG_SEARCH_ENABLED
-    value: "true"
+    value: "false"
     availability:
       - RUNTIME
   - variable: NEXT_PUBLIC_ONEDRIVE_RAG_SEARCH_ENABLED
-    value: "true"
+    value: "false"
     availability:
       - BUILD
       - RUNTIME
-  - variable: ONEDRIVE_LIBRARY_ROOT_PATH
-    value: Pimenta Ltda
-    availability:
-      - RUNTIME
-  - variable: ONEDRIVE_DRIVE_NAME_HINT
-    value: Pimenta
-    availability:
-      - RUNTIME
-  - variable: MICROSOFT_GRAPH_TENANT_ID
-    secret: MICROSOFT_GRAPH_TENANT_ID
-    availability:
-      - RUNTIME
-  - variable: MICROSOFT_GRAPH_CLIENT_ID
-    secret: MICROSOFT_GRAPH_CLIENT_ID
-    availability:
-      - RUNTIME
-  - variable: MICROSOFT_GRAPH_CLIENT_SECRET
-    secret: MICROSOFT_GRAPH_CLIENT_SECRET
-    availability:
-      - RUNTIME
-  # OneDrive pessoal (@outlook): OAuth delegado (tenant sem licença SPO)
-  - variable: ONEDRIVE_GRAPH_AUTH_MODE
-    value: delegated
-    availability:
-      - RUNTIME
-  - variable: ONEDRIVE_GRAPH_AUTHORITY
-    value: consumers
-    availability:
-      - RUNTIME
-  - variable: ONEDRIVE_GRAPH_REDIRECT_URI
-    value: https://www.ambientar.ia.br/api/onedrive-consumer/auth/callback
-    availability:
-      - RUNTIME
-  - variable: ONEDRIVE_GRAPH_SCOPES
-    value: openid profile offline_access User.Read Files.Read
-    availability:
-      - RUNTIME
+  # - variable: ONEDRIVE_LIBRARY_ROOT_PATH
+  #   value: Pimenta Ltda
+  #   availability:
+  #     - RUNTIME
+  # - variable: ONEDRIVE_DRIVE_NAME_HINT
+  #   value: Pimenta
+  #   availability:
+  #     - RUNTIME
+  # - variable: MICROSOFT_GRAPH_TENANT_ID
+  #   secret: MICROSOFT_GRAPH_TENANT_ID
+  #   availability:
+  #     - RUNTIME
+  # - variable: MICROSOFT_GRAPH_CLIENT_ID
+  #   secret: MICROSOFT_GRAPH_CLIENT_ID
+  #   availability:
+  #     - RUNTIME
+  # - variable: MICROSOFT_GRAPH_CLIENT_SECRET
+  #   secret: MICROSOFT_GRAPH_CLIENT_SECRET
+  #   availability:
+  #     - RUNTIME
+  # - variable: ONEDRIVE_GRAPH_AUTH_MODE
+  #   value: delegated
+  #   availability:
+  #     - RUNTIME
+  # - variable: ONEDRIVE_GRAPH_AUTHORITY
+  #   value: consumers
+  #   availability:
+  #     - RUNTIME
+  # - variable: ONEDRIVE_GRAPH_REDIRECT_URI
+  #   value: https://www.ambientar.ia.br/api/onedrive-consumer/auth/callback
+  #   availability:
+  #     - RUNTIME
+  # - variable: ONEDRIVE_GRAPH_SCOPES
+  #   value: openid profile offline_access User.Read Files.Read
+  #   availability:
+  #     - RUNTIME
   - variable: NEXT_PUBLIC_SITE_URL
     value: https://www.ambientar.ia.br
     availability:
