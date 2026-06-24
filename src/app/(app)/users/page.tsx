@@ -179,6 +179,8 @@ export default function UsersPage() {
   >(null);
   const [orphanEmail, setOrphanEmail] = useState("");
   const [isReleasingOrphanEmail, setIsReleasingOrphanEmail] = useState(false);
+  const [repairPassword, setRepairPassword] = useState("");
+  const [isRepairingUserAuth, setIsRepairingUserAuth] = useState(false);
   const [adminSdkConfigured, setAdminSdkConfigured] = useState<boolean | null>(
     null,
   );
@@ -418,6 +420,72 @@ export default function UsersPage() {
       });
     } finally {
       setIsReleasingOrphanEmail(false);
+    }
+  };
+
+  const handleRepairUserAuth = async () => {
+    if (!auth) return;
+    const email = orphanEmail.trim().toLowerCase();
+    const password = repairPassword;
+    if (!email) {
+      toast({
+        variant: "destructive",
+        title: "E-mail obrigatório",
+        description: "Informe o e-mail do usuário com perfil sem login.",
+      });
+      return;
+    }
+    if (!password || password.length < 6) {
+      toast({
+        variant: "destructive",
+        title: "Senha inválida",
+        description: "Informe uma senha com pelo menos 6 caracteres.",
+      });
+      return;
+    }
+    setIsRepairingUserAuth(true);
+    try {
+      const token = await auth.currentUser?.getIdToken();
+      if (!token) throw new Error("Sessão inválida. Faça login novamente.");
+      const res = await fetch("/api/admin/repair-user-auth", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = (await res.json()) as {
+        success?: boolean;
+        error?: string;
+        code?: string;
+        result?: { userId?: string };
+      };
+      if (!res.ok || !data.success) {
+        if (isAdminCredentialsMissing(res.status, data.code)) {
+          setAdminSdkConfigured(false);
+          setShowOrphanEmailSetupHelp(true);
+        }
+        throw new Error(
+          data.error || "Não foi possível reparar o login no servidor.",
+        );
+      }
+      toast({
+        title: "Login reparado",
+        description: `A conta ${email} pode entrar com a senha informada.`,
+      });
+      setRepairPassword("");
+    } catch (err) {
+      toast({
+        variant: "destructive",
+        title: "Erro ao reparar login",
+        description:
+          err instanceof Error
+            ? err.message
+            : "Verifique credenciais do servidor (Admin SDK).",
+      });
+    } finally {
+      setIsRepairingUserAuth(false);
     }
   };
 
@@ -2284,21 +2352,70 @@ export default function UsersPage() {
             <Card className="border-amber-500/30 bg-amber-500/5">
               <CardHeader className="pb-3">
                 <CardTitle className="text-base">
-                  Liberar e-mail bloqueado
+                  Ferramentas de login (Admin SDK)
                 </CardTitle>
                 <CardDescription>
-                  Use quando o perfil já foi apagado mas o login (Firebase
-                  Auth) ainda impede criar o mesmo e-mail — ex.: após exclusão
-                  antiga só no Firestore.
+                  Repare perfis que aparecem na lista mas não conseguem entrar
+                  (perfil no Firestore sem conta no Firebase Auth), ou libere
+                  e-mails bloqueados só no Auth.
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-6">
                 {(adminSdkConfigured === false || showOrphanEmailSetupHelp) && (
                   <FirebaseAdminSetupHelp
                     variant="banner"
                     emailHint={orphanEmail.trim() || undefined}
                   />
                 )}
+                <div className="space-y-3 rounded-md border border-border/60 bg-background/50 p-4">
+                  <p className="text-sm font-medium">Reparar login ausente</p>
+                  <p className="text-xs text-muted-foreground">
+                    Use para usuários como gestores que constam como Ativos mas
+                    recebem &quot;Nenhum usuário encontrado&quot; ao entrar.
+                  </p>
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+                    <div className="min-w-0 flex-1 space-y-1.5">
+                      <Label htmlFor="repair-email">E-mail</Label>
+                      <Input
+                        id="repair-email"
+                        type="email"
+                        placeholder="fankemillysilva@gmail.com"
+                        value={orphanEmail}
+                        onChange={(e) => setOrphanEmail(e.target.value)}
+                        disabled={isRepairingUserAuth || isReleasingOrphanEmail}
+                      />
+                    </div>
+                    <div className="min-w-0 flex-1 space-y-1.5">
+                      <Label htmlFor="repair-password">Nova senha</Label>
+                      <Input
+                        id="repair-password"
+                        type="password"
+                        autoComplete="new-password"
+                        value={repairPassword}
+                        onChange={(e) => setRepairPassword(e.target.value)}
+                        disabled={isRepairingUserAuth || isReleasingOrphanEmail}
+                      />
+                    </div>
+                    <Button
+                      type="button"
+                      disabled={
+                        isRepairingUserAuth ||
+                        !orphanEmail.trim() ||
+                        repairPassword.length < 6
+                      }
+                      onClick={handleRepairUserAuth}
+                    >
+                      {isRepairingUserAuth ? "Reparando…" : "Reparar login"}
+                    </Button>
+                  </div>
+                </div>
+                <Separator />
+                <div className="space-y-3">
+                  <p className="text-sm font-medium">Liberar e-mail bloqueado</p>
+                  <p className="text-xs text-muted-foreground">
+                    Use quando o perfil já foi apagado mas o login (Firebase
+                    Auth) ainda impede criar o mesmo e-mail.
+                  </p>
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
                   <div className="min-w-0 flex-1 space-y-1.5">
                     <Label htmlFor="orphan-email">E-mail</Label>
@@ -2308,7 +2425,7 @@ export default function UsersPage() {
                       placeholder="financeiro@exemplo.com.br"
                       value={orphanEmail}
                       onChange={(e) => setOrphanEmail(e.target.value)}
-                      disabled={isReleasingOrphanEmail}
+                      disabled={isReleasingOrphanEmail || isRepairingUserAuth}
                     />
                   </div>
                   <Button
@@ -2319,6 +2436,7 @@ export default function UsersPage() {
                   >
                     {isReleasingOrphanEmail ? "Liberando…" : "Liberar e-mail"}
                   </Button>
+                </div>
                 </div>
               </CardContent>
             </Card>

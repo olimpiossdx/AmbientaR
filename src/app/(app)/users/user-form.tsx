@@ -31,9 +31,6 @@ import { useFirebase } from '@/firebase';
 import { handleFirestoreFormError } from '@/lib/firestore-form-errors';
 import { stripUndefinedDeep } from '@/lib/firestore-payload';
 import {
-  createUserWithEmailAndPassword
-} from 'firebase/auth';
-import {
   doc,
   setDoc,
   updateDoc,
@@ -425,45 +422,56 @@ export function UserForm({ currentUser, onSuccess, representativeRequestedCpf, r
         }
 
         try {
-            // Check if email already exists in Firestore
-            const usersRef = collection(firestore, "users");
-            const emailQuery = query(usersRef, where("email", "==", values.email));
-            const querySnapshot = await getDocs(emailQuery);
-
-            if (!querySnapshot.empty) {
-                toast({
-                    variant: 'destructive',
-                    title: 'E-mail já em uso',
-                    description: 'Este e-mail já está cadastrado. Por favor, utilize um e-mail diferente.'});
-                setLoading(false);
-                return;
+            const token = await auth.currentUser?.getIdToken();
+            if (!token) {
+              throw new Error('Sessão inválida. Faça login novamente.');
             }
 
-            const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
-            const newFirebaseUser = userCredential.user;
-            
-            const newUserId = newFirebaseUser.uid;
-            
-            const userDocData = stripUndefinedDeep({
-                uid: newUserId,
+            const normalizedEmail = values.email.trim().toLowerCase();
+
+            const res = await fetch('/api/admin/create-user', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify({
+                email: normalizedEmail,
+                password: values.password,
                 name: values.name,
-                email: values.email,
                 role: values.role,
                 status: values.status,
                 userCpf: personalCpf,
                 cpf: titularProfileFields?.cpf ?? storedCpf,
-                cnpjs: titularProfileFields?.cnpjs ?? (isDelegateRole(values.role) ? cnpjsArray : []),
-                ...(titularProfileFields
-                  ? {
-                      titularDocument: titularProfileFields.titularDocument,
-                      titularType: titularProfileFields.titularType ?? undefined}
-                  : {}),
+                cnpjs:
+                  titularProfileFields?.cnpjs ??
+                  (isDelegateRole(values.role) ? cnpjsArray : []),
+                titularDocument: titularProfileFields?.titularDocument,
+                titularType: titularProfileFields?.titularType,
                 photoURL: values.photoURL || '',
                 dataNascimento: values.dataNascimento?.toISOString() || '',
-                isOnline: false}) as Omit<AppUser, 'id'>;
+              }),
+            });
 
-            await setDoc(doc(firestore, 'users', newUserId), userDocData);
-            logUserAction(firestore, auth, 'create_user', { newUserId: newUserId, newUserName: values.name });
+            const data = (await res.json()) as {
+              success?: boolean;
+              error?: string;
+              result?: { userId: string; repairedAuth?: boolean };
+            };
+
+            if (!res.ok || !data.success || !data.result?.userId) {
+              throw new Error(
+                data.error || 'Não foi possível criar o usuário no servidor.',
+              );
+            }
+
+            const newUserId = data.result.userId;
+            const repairedAuth = Boolean(data.result.repairedAuth);
+
+            logUserAction(firestore, auth, repairedAuth ? 'repair_user_auth' : 'create_user', {
+              newUserId,
+              newUserName: values.name,
+            });
 
             if (values.role === 'client') {
               try {
@@ -471,7 +479,7 @@ export function UserForm({ currentUser, onSuccess, representativeRequestedCpf, r
                   firestore,
                   newUserId,
                   portalDocument,
-                  { name: values.name, email: values.email },
+                  { name: values.name, email: normalizedEmail },
                   null,
                   null,
                 );
@@ -499,11 +507,11 @@ export function UserForm({ currentUser, onSuccess, representativeRequestedCpf, r
                   name: values.name,
                   cpfCnpj: portalDocument,
                   entityType,
-                  email: values.email,
+                  email: normalizedEmail,
                   userId: newUserId};
                 const linkedEmpreendedorData = {
                   name: values.name,
-                  email: values.email,
+                  email: normalizedEmail,
                   phone: '',
                   address: '',
                   cpfCnpj: portalDocument,
@@ -515,7 +523,7 @@ export function UserForm({ currentUser, onSuccess, representativeRequestedCpf, r
                     firestore,
                     newUserId,
                     portalDocument,
-                    { name: values.name, email: values.email },
+                    { name: values.name, email: normalizedEmail },
                     client?.id ?? null,
                     empreendedor?.id ?? null,
                   );
@@ -542,7 +550,7 @@ export function UserForm({ currentUser, onSuccess, representativeRequestedCpf, r
               );
               await createAccessRequestsForDelegate(firestore, {
                 requesterUserId: newUserId,
-                email: values.email,
+                email: normalizedEmail,
                 name: values.name,
                 role: values.role,
                 documents: [...cpfsArray, ...cnpjsArray],
@@ -550,19 +558,22 @@ export function UserForm({ currentUser, onSuccess, representativeRequestedCpf, r
             }
 
             toast({
-              title: 'Usuário criado!',
-              description: `As informações de ${values.name} foram salvas com sucesso.`});
+              title: repairedAuth ? 'Login reparado!' : 'Usuário criado!',
+              description: repairedAuth
+                ? `A conta de ${values.name} já existia no sistema, mas sem login. O acesso foi restaurado com a senha informada.`
+                : `As informações de ${values.name} foram salvas com sucesso.`});
             
             form.reset();
             onSuccess?.();
 
-        } catch (error: any) {
+        } catch (error: unknown) {
              toast({
               variant: 'destructive',
               title: 'Oh, não! Algo deu errado.',
-              description: error.code === 'auth/email-already-in-use'
-                ? 'Este e-mail ainda existe no login (Firebase Auth), mesmo que o perfil tenha sido apagado. Um administrador pode usar "Liberar e-mail bloqueado" em Usuários ou apagar a conta em Firebase Console → Authentication.'
-                : (error.message || 'Não foi possível criar o usuário na autenticação.')});
+              description:
+                error instanceof Error
+                  ? error.message
+                  : 'Não foi possível criar o usuário.'});
         } finally {
             setLoading(false);
         }
