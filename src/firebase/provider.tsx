@@ -34,6 +34,7 @@ import {
   isBootstrapAdminEmail,
   resolveRoleForEmail,
 } from '@/lib/admin-bootstrap';
+import { resolveLoginEmailFromIdentifier, syncPostLogin } from '@/lib/auth/login-client';
 
 interface FirebaseContextState {
   firebaseApp: FirebaseApp | null;
@@ -43,7 +44,7 @@ interface FirebaseContextState {
   isInitialized: boolean;
   /** True enquanto o perfil Firestore está a ser carregado após sessão Auth. */
   isProfileLoading: boolean;
-  login: (email: string, password_hash: string) => Promise<boolean>;
+  login: (identifier: string, password_hash: string) => Promise<boolean>;
   logout: () => void;
 }
 
@@ -80,6 +81,13 @@ function AuthRedirectsInner({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!appUser) return;
+    const needsRegistration = appUser.status === "pending_registration";
+    if (needsRegistration) {
+      if (pathname !== "/register") {
+        router.replace("/register");
+      }
+      return;
+    }
     if (
       pathname === '/login' ||
       pathname === '/register' ||
@@ -219,6 +227,19 @@ export const FirebaseProvider: React.FC<{ children: ReactNode; firebaseApp: Fire
       if (userDoc.exists()) {
         const userData = userDoc.data() as Omit<AppUser, 'id'>;
 
+        if (userData.status === 'pending_registration') {
+          return {
+            id: sessionUid,
+            ...userData,
+            uid: sessionUid,
+            email: userData.email || normalizedEmail,
+            name: userData.name || firebaseUser.displayName || 'Novo usuário',
+            role: userData.role || 'cliente_autonomo',
+            status: 'pending_registration',
+            photoURL: userData.photoURL || firebaseUser.photoURL || undefined,
+          };
+        }
+
         if (userData.uid && userData.uid !== sessionUid) {
           try {
             await updateDoc(userDocRef, { uid: sessionUid });
@@ -279,6 +300,22 @@ export const FirebaseProvider: React.FC<{ children: ReactNode; firebaseApp: Fire
       console.warn(
         `User document not found for uid: ${sessionUid}. Creating profile.`,
       );
+      const isIncompletePlaceholder =
+        normalizedEmail.endsWith('@ambientar.local');
+      if (isIncompletePlaceholder) {
+        return {
+          id: sessionUid,
+          uid: sessionUid,
+          name: firebaseUser.displayName || 'Novo usuário',
+          email: normalizedEmail,
+          role: 'cliente_autonomo',
+          status: 'pending_registration',
+          isOnline: true,
+          photoURL: firebaseUser.photoURL || '',
+          cpf: '',
+          cnpjs: [],
+        };
+      }
       const newUser: Omit<AppUser, 'id'> = {
         uid: sessionUid,
         name:
@@ -402,7 +439,7 @@ export const FirebaseProvider: React.FC<{ children: ReactNode; firebaseApp: Fire
     return () => clearInterval(heartbeat);
   }, [auth, appUser?.uid, touchUserPresence]);
 
-  const login = useCallback(async (email: string, password_hash: string): Promise<boolean> => {
+  const login = useCallback(async (identifier: string, password_hash: string): Promise<boolean> => {
     if (!auth || !firestore) {
       toast({
         variant: 'destructive',
@@ -412,8 +449,21 @@ export const FirebaseProvider: React.FC<{ children: ReactNode; firebaseApp: Fire
       return false;
     }
 
-    const normalizedEmail = email.trim().toLowerCase();
     const normalizedPassword = password_hash.trim();
+    let normalizedEmail: string;
+    try {
+      normalizedEmail = await resolveLoginEmailFromIdentifier(identifier);
+    } catch (resolveError) {
+      toast({
+        variant: 'destructive',
+        title: 'Falha no Login',
+        description:
+          resolveError instanceof Error
+            ? resolveError.message
+            : 'E-mail/documento ou senha incorretos.',
+      });
+      return false;
+    }
 
     const finishLogin = async (firebaseUser: User, auditAction: string) => {
       setIsProfileLoading(true);
@@ -440,6 +490,7 @@ export const FirebaseProvider: React.FC<{ children: ReactNode; firebaseApp: Fire
         commitAppUser(profile);
         await updateLastLogin(firebaseUser.uid);
         await logUserAction(firestore, auth, auditAction);
+        await syncPostLogin(auth);
         return true;
       } finally {
         setIsProfileLoading(false);
@@ -494,7 +545,7 @@ export const FirebaseProvider: React.FC<{ children: ReactNode; firebaseApp: Fire
 
       let description = 'Ocorreu um erro inesperado. Tente novamente.';
       if (error.code === 'auth/user-not-found') {
-        description = 'Nenhum usuário encontrado com este e-mail.';
+        description = 'Nenhum usuário encontrado com estes dados.';
       } else if (error.code === 'auth/invalid-email') {
         description = 'E-mail inválido. Verifique se digitou corretamente.';
       } else if (

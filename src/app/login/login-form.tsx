@@ -26,17 +26,15 @@ import {
 } from '@/components/ui/card';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { validateLoginIdentifier } from '@/lib/auth/login-client';
 
 const formSchema = z.object({
-  email: z
+  identifier: z
     .string()
-    .min(1, 'O e-mail é obrigatório.')
-    .transform((v) => v.trim().toLowerCase())
-    .refine((v) => v.length > 0, {
-      message: 'O e-mail é obrigatório.',
-    })
-    .refine((v) => /\S+@\S+\.\S+/.test(v), {
-      message: 'Informe um e-mail válido.',
+    .min(1, 'Informe e-mail, CPF ou CNPJ.')
+    .transform((v) => v.trim())
+    .refine((v) => validateLoginIdentifier(v), {
+      message: 'Informe um e-mail, CPF ou CNPJ válido.',
     }),
   password: z
     .string()
@@ -54,14 +52,14 @@ export function LoginForm() {
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      email: '',
+      identifier: '',
       password: '',
     },
   });
 
   async function onSubmit(values: FormValues) {
     setLoading(true);
-    const success = await login(values.email, values.password);
+    const success = await login(values.identifier, values.password);
     if (success) {
       toast({
         title: 'Login bem-sucedido!',
@@ -78,7 +76,7 @@ export function LoginForm() {
           Acesse sua Conta
         </CardTitle>
         <CardDescription>
-          Use seu e-mail e senha para acessar a plataforma.
+          Use seu e-mail, CPF ou CNPJ e a mesma senha cadastrada.
         </CardDescription>
       </CardHeader>
       <CardContent className="pt-0">
@@ -86,20 +84,21 @@ export function LoginForm() {
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
               control={form.control}
-              name="email"
+              name="identifier"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>E-mail</FormLabel>
+                  <FormLabel>E-mail, CPF ou CNPJ</FormLabel>
                   <FormControl>
                     <Input
-                      type="email"
-                      autoComplete="email"
-                      placeholder="seu@email.com"
+                      type="text"
+                      autoComplete="username"
+                      placeholder="seu@email.com ou documento"
                       {...field}
                     />
                   </FormControl>
                   <FormDescription>
-                    O acesso é feito somente com e-mail e senha.
+                    A recuperação de senha continua disponível apenas pelo
+                    e-mail cadastrado.
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -112,7 +111,12 @@ export function LoginForm() {
                 <FormItem>
                   <FormLabel>Senha</FormLabel>
                   <FormControl>
-                    <Input type="password" placeholder="••••••••" {...field} />
+                    <Input
+                      type="password"
+                      autoComplete="current-password"
+                      placeholder="••••••••"
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

@@ -69,7 +69,6 @@ import type {
   ClientPackage,
   PlatformPaymentMethod,
 } from "@/lib/types";
-import { createNotificationForUser } from "@/lib/notifications";
 import { detectCpfCnpjKind, isValidCpfCnpj } from "@/lib/cpf-cnpj";
 import { buildTitularProfileDocumentFields } from "@/lib/titular-profile-document";
 import { lookupCnpjPublicData } from "@/lib/cnpj-lookup";
@@ -212,6 +211,16 @@ function parseRegisterProfileFromTipo(tipo: string | null | undefined): Register
   return "cliente_autonomo";
 }
 
+function resolveLoginDocumentForRegister(
+  mode: RegisterProfileMode,
+  values: Pick<FormValues, "cpf" | "cpfCnpjTitular">,
+): string {
+  if (mode === "cliente_autonomo") {
+    return normalizeDocument(values.cpfCnpjTitular || values.cpf);
+  }
+  return normalizeDocument(values.cpf);
+}
+
 function RegisterPageContent() {
   const searchParams = useSearchParams();
   const initialTipo = searchParams?.get("tipo");
@@ -250,7 +259,7 @@ function RegisterPageContent() {
   >("not_applicable");
 
   const form = useForm<FormValues>({
-    resolver: zodResolver(formSchema),
+    resolver: zodResolver(formSchema) as any,
     defaultValues: {
       name: "",
       email: "",
@@ -413,8 +422,12 @@ function RegisterPageContent() {
       (confirmPassword ?? "").length >= 6 &&
       password === confirmPassword;
     const requiresBaseDocument = mode === "cliente_autonomo";
+    const requiresDelegateCpf =
+      mode === "representative" || mode === "consultor_representante";
     const baseDocumentOk =
-      !requiresBaseDocument || isValidCpfCnpj(cpfCnpjTitular);
+      (!requiresBaseDocument && !requiresDelegateCpf) ||
+      (requiresDelegateCpf && digitsCpf.length === 11) ||
+      (requiresBaseDocument && isValidCpfCnpj(cpfCnpjTitular));
     return base && baseDocumentOk;
   }, [watchedStep1, mode]);
 
@@ -490,7 +503,9 @@ function RegisterPageContent() {
     }
 
     if (mode === "cliente_autonomo") {
-      const baseDocument = normalizeDocument(values.cpfCnpjTitular);
+      const baseDocument = normalizeDocument(
+        values.cpfCnpjTitular || values.cpf,
+      );
       if (!isValidCpfCnpj(baseDocument)) {
         toast({
           variant: "destructive",
@@ -502,14 +517,61 @@ function RegisterPageContent() {
       }
     }
 
+    if (isDelegatePortalMode) {
+      const userCpf = normalizeDocument(values.cpf);
+      if (!isValidCpfCnpj(userCpf) || detectCpfCnpjKind(userCpf) !== "cpf") {
+        toast({
+          variant: "destructive",
+          title: "CPF obrigatório",
+          description:
+            "Informe seu CPF para vincular o login à sua conta (documento único).",
+        });
+        return;
+      }
+    }
+
+    const loginDocument = resolveLoginDocumentForRegister(mode, values);
+    if (isValidCpfCnpj(loginDocument)) {
+      try {
+        const availRes = await fetch("/api/auth/check-document-available", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ document: loginDocument }),
+        });
+        const availData = (await availRes.json()) as {
+          available?: boolean;
+          error?: string;
+        };
+        if (!availRes.ok || !availData.available) {
+          toast({
+            variant: "destructive",
+            title: "Documento já cadastrado",
+            description:
+              availData.error ||
+              "Este CPF/CNPJ já está vinculado a outra conta. Use o login ou outro documento.",
+          });
+          return;
+        }
+      } catch {
+        toast({
+          variant: "destructive",
+          title: "Verificação indisponível",
+          description:
+            "Não foi possível validar o documento. Tente novamente em instantes.",
+        });
+        return;
+      }
+    }
+
     setLoading(true);
     try {
+      let uid: string;
       const cred = await createUserWithEmailAndPassword(
         auth,
         values.email,
         values.password,
       );
-      const uid = cred.user.uid;
+      uid = cred.user.uid;
 
       const existingProfileSnap = await getDoc(doc(firestore, "users", uid));
       const existingProfile = existingProfileSnap.exists()
@@ -525,7 +587,9 @@ function RegisterPageContent() {
         return;
       }
       const userCpfNormalized = normalizeDocument(values.cpf);
-      const titularProfileFields = buildTitularProfileDocumentFields(values.cpfCnpjTitular);
+      const titularProfileFields = buildTitularProfileDocumentFields(
+        values.cpfCnpjTitular || values.cpf,
+      );
       const titularDocument = titularProfileFields?.titularDocument ?? "";
       const hasExistingLink = Boolean(linkedClientId || linkedEmpreendedorId);
       const hasTitularDoc = Boolean(titularProfileFields);
@@ -581,6 +645,8 @@ function RegisterPageContent() {
               : [],
         role: registerRole,
         status: "active",
+        registrationSource: "email",
+        authProviders: ["password"],
         package: isDelegatePortalMode ? null : values.selectedPackage,
         contractAcceptedAt:
           isDelegatePortalMode ? null : serverTimestamp(),
@@ -627,9 +693,31 @@ function RegisterPageContent() {
         { merge: true },
       );
 
+      if (isValidCpfCnpj(loginDocument)) {
+        const token = await auth.currentUser?.getIdToken();
+        if (!token) {
+          throw new Error("Sessão indisponível após cadastro.");
+        }
+        const idRes = await fetch("/api/auth/register-identity", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ document: loginDocument }),
+        });
+        const idData = (await idRes.json()) as { error?: string };
+        if (!idRes.ok) {
+          throw new Error(
+            idData.error || "Não foi possível vincular o documento de login.",
+          );
+        }
+      }
+
       if (mode !== "representative" && mode !== "consultor_representante" && isTitularPlanMode && values.selectedPackage) {
         try {
-          const token = await cred.user.getIdToken();
+          const token = await (auth.currentUser?.getIdToken() ??
+            Promise.reject(new Error("Sessão indisponível.")));
           const titularRole =
             mode === "cliente_autonomo" ? "cliente_autonomo" : "client";
           const payConfirmed =
@@ -697,7 +785,8 @@ function RegisterPageContent() {
       ) {
         if (paymentMethod === "pix") {
           try {
-            const token = await cred.user.getIdToken();
+            const token = await (auth.currentUser?.getIdToken() ??
+            Promise.reject(new Error("Sessão indisponível.")));
             const chargeRes = await fetch("/api/billing/create-charge", {
               method: "POST",
               headers: {
@@ -798,16 +887,6 @@ function RegisterPageContent() {
             const clientRef = doc(firestore, "clients", uid);
             await setDoc(empreendedorRef, empreendedorData, { merge: true });
             await setDoc(clientRef, clientData, { merge: true });
-
-            await createNotificationForUser(firestore, uid, {
-              title: "Concluir cadastro",
-              description:
-                "Complete os dados do seu Cliente e Empreendedor no menu Cadastro.",
-              link: `/empreendedores/${uid}/edit`,
-              sourceType: "onboarding",
-              sourceId: uid,
-              actorRole: "admin",
-            });
           }
         } catch (e) {
           console.warn(
@@ -967,7 +1046,10 @@ function RegisterPageContent() {
           render={({ field }) => (
             <FormItem>
               <FormLabel>
-                CPF pessoal {mode === "cliente_autonomo" ? "(opcional)" : ""}
+                CPF pessoal{" "}
+                {mode === "cliente_autonomo"
+                  ? "(opcional)"
+                  : "(obrigatório para login)"}
               </FormLabel>
               <FormControl>
                 <MaskedInput

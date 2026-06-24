@@ -848,6 +848,22 @@ service cloud.firestore {
     }
 
     /**
+     * @description Estudos de Segurança de Barragem (PSB, PAE, inspeções).
+     * @path /databases/{database}/documents/estudosSegurancaBarragem/{docId}
+     */
+    match /estudosSegurancaBarragem/{docId} {
+      allow read, write: if isSignedIn();
+    }
+
+    /**
+     * @description Cadastros de piscinão off-stream.
+     * @path /databases/{database}/documents/piscinoesOffStream/{docId}
+     */
+    match /piscinoesOffStream/{docId} {
+      allow read, write: if isSignedIn();
+    }
+
+    /**
      * @description Estudos espeleológicos (cavidades) — licenciamento MG.
      * @path /databases/{database}/documents/estudosCavidades/{docId}
      */
@@ -1501,6 +1517,13 @@ service cloud.firestore {
 
     match /inventario_individuos/{individuoId} {
       allow read, write: if canAccessColetaCampo();
+    }
+
+    /**
+     * Identificadores de login por CPF/CNPJ — somente Firebase Admin SDK.
+     */
+    match /login_identities/{documentId} {
+      allow read, write: if false;
     }
 
     /**

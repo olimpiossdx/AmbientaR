@@ -43,10 +43,9 @@ import type {
   AppUser,
   Notification,
   CompanySettings,
-  AccessRequest,
-  Client,
-  Empreendedor,
 } from "@/lib/types";
+import { syncAppBadge } from "@/lib/app-badge";
+import { NOTIFICATION_SOURCE } from "@/lib/notification-events";
 import { isClientePortalRole } from "@/lib/role-guards";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
@@ -63,7 +62,6 @@ import {
   orderBy,
   doc,
   updateDoc,
-  where,
 } from "firebase/firestore";
 import dynamic from "next/dynamic";
 
@@ -132,14 +130,6 @@ import {
   isUserProfileAlignedWithSession,
   useAuthUserId,
 } from "@/lib/auth-user-id";
-import {
-  dedupeAccessRequestsByRequesterAndDocument,
-  filterAccessRequestsForTitularPortal,
-} from "@/lib/access-request-titular-match";
-import {
-  buildTitularAccessMatchDocumentSet,
-  buildTitularOwnedEntitiesForAccessMatch,
-} from "@/lib/titular-document-set";
 
 const LogoIcon = () => (
   <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-emerald-400 text-primary-foreground">
@@ -218,101 +208,6 @@ const AppLayoutClientInner = ({ children }: { children: React.ReactNode }) => {
     featureFlagsDocRef,
   );
 
-  // Consultas auxiliares para identificar todos os CPFs/CNPJs vinculados ao titular (mesma lógica da página de Meu Perfil).
-  const portalSessionReady = Boolean(
-    firestore && user && sessionUid && isClientePortalRole(user.role),
-  );
-
-  const accessRequestsQuery = useMemoFirebase(() => {
-    if (!portalSessionReady || !sessionUid) {
-      return null;
-    }
-    return query(
-      collection(firestore!, "access_requests"),
-      where("status", "==", "pending"),
-    );
-  }, [firestore, portalSessionReady, sessionUid]);
-
-  const myClientsQuery = useMemoFirebase(() => {
-    if (!portalSessionReady || !sessionUid) {
-      return null;
-    }
-    return query(
-      collection(firestore!, "clients"),
-      where("userId", "==", sessionUid),
-    );
-  }, [firestore, portalSessionReady, sessionUid]);
-
-  const myEmpreendedoresQuery = useMemoFirebase(() => {
-    if (!portalSessionReady || !sessionUid) {
-      return null;
-    }
-    return query(
-      collection(firestore!, "empreendedores"),
-      where("userId", "==", sessionUid),
-    );
-  }, [firestore, portalSessionReady, sessionUid]);
-
-  const { data: pendingAccessRequests } =
-    useCollection<AccessRequest>(accessRequestsQuery);
-  const { data: myClients } = useCollection<Client>(myClientsQuery);
-  const { data: myEmpreendedores } = useCollection<Empreendedor>(
-    myEmpreendedoresQuery,
-  );
-  const linkedClientRef = useMemoFirebase(() => {
-    if (!portalSessionReady || !user?.linkedClientId) return null;
-    return doc(firestore!, "clients", user.linkedClientId);
-  }, [firestore, portalSessionReady, user?.linkedClientId]);
-
-  const linkedEmpreendedorRef = useMemoFirebase(() => {
-    if (!portalSessionReady || !user?.linkedEmpreendedorId) return null;
-    return doc(firestore!, "empreendedores", user.linkedEmpreendedorId);
-  }, [firestore, portalSessionReady, user?.linkedEmpreendedorId]);
-
-  const { data: linkedClient } = useDoc<Client>(linkedClientRef);
-  const { data: linkedEmpreendedor } = useDoc<Empreendedor>(linkedEmpreendedorRef);
-
-  const ownedEntitiesForMatch = React.useMemo(
-    () =>
-      buildTitularOwnedEntitiesForAccessMatch({
-        myClients,
-        myEmpreendedores,
-        linkedClient: linkedClient ?? undefined,
-        linkedEmpreendedor: linkedEmpreendedor ?? undefined,
-        linkedClientId: user?.linkedClientId ?? null,
-        linkedEmpreendedorId: user?.linkedEmpreendedorId ?? null,
-      }),
-    [
-      myClients,
-      myEmpreendedores,
-      linkedClient,
-      linkedEmpreendedor,
-      user?.linkedClientId,
-      user?.linkedEmpreendedorId,
-    ],
-  );
-
-  const myCpfCnpjSet = React.useMemo(
-    () =>
-      buildTitularAccessMatchDocumentSet({
-        profile: user ?? undefined,
-        ownedEntities: ownedEntitiesForMatch,
-      }),
-    [ownedEntitiesForMatch, user],
-  );
-
-  const pendingAccessRequestsForMe = React.useMemo(
-    () =>
-      dedupeAccessRequestsByRequesterAndDocument(
-        filterAccessRequestsForTitularPortal(
-          pendingAccessRequests,
-          myCpfCnpjSet,
-          ownedEntitiesForMatch,
-        ),
-      ),
-    [pendingAccessRequests, myCpfCnpjSet, ownedEntitiesForMatch],
-  );
-
   React.useEffect(() => {
     async function fetchLogoUrl() {
       setLogoLoading(true);
@@ -349,19 +244,14 @@ const AppLayoutClientInner = ({ children }: { children: React.ReactNode }) => {
 
   const showCustomLogo = !logoLoading && logoUrl;
 
-  const cadastroIncompleto = Boolean(
-    user?.cadastroIncompleto &&
-    (user?.role === "client" ||
-      user?.role === "cliente_autonomo" ||
-      user?.role === "representative" ||
-      user?.role === "consultor_representante"),
+  const unreadCount = React.useMemo(
+    () => notifications?.filter((n) => !n.isRead).length || 0,
+    [notifications],
   );
 
-  const unreadCount = React.useMemo(() => {
-    const notif = notifications?.filter((n) => !n.isRead).length || 0;
-    const extraAccess = pendingAccessRequestsForMe.length || 0;
-    return (cadastroIncompleto ? notif + 1 : notif) + extraAccess;
-  }, [notifications, cadastroIncompleto, pendingAccessRequestsForMe]);
+  React.useEffect(() => {
+    syncAppBadge(unreadCount);
+  }, [unreadCount]);
 
   const handleMarkAsRead = async (notification: Notification) => {
     if (!firestore || !profileAligned || !sessionUid) return;
@@ -382,8 +272,18 @@ const AppLayoutClientInner = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  const handleAccessRequestsClick = () => {
-    router.push("/users#access-requests-card");
+  const getNotificationItemClass = (notification: Notification) => {
+    if (notification.isRead) return "text-muted-foreground";
+    if (
+      notification.sourceType === NOTIFICATION_SOURCE.cadastro_incompleto ||
+      notification.sourceType === NOTIFICATION_SOURCE.onboarding
+    ) {
+      return "bg-amber-500/10 border-b border-amber-500/20";
+    }
+    if (notification.sourceType === NOTIFICATION_SOURCE.access_request_pending) {
+      return "bg-emerald-500/10 border-b border-emerald-500/20";
+    }
+    return "";
   };
 
   const roleLabel: Record<string, string> = {
@@ -408,6 +308,13 @@ const AppLayoutClientInner = ({ children }: { children: React.ReactNode }) => {
       router.push("/login");
     }
   }, [user, isInitialized, isProfileLoading, auth, router]);
+
+  React.useEffect(() => {
+    if (!user) return;
+    if (user.status === "pending_registration") {
+      router.replace("/register");
+    }
+  }, [user, router]);
 
   // Guard simples por role para evitar “furar” o menu digitando URL.
   React.useEffect(() => {
@@ -574,55 +481,13 @@ const AppLayoutClientInner = ({ children }: { children: React.ReactNode }) => {
             <DropdownMenuContent className="w-80" align="end">
               <DropdownMenuLabel>Notificações</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              {cadastroIncompleto && (
-                <DropdownMenuItem
-                  className="flex-col items-start gap-1 cursor-pointer bg-amber-500/10 border-b border-amber-500/20"
-                  onClick={() => {
-                    const authUserId = user?.uid || user?.id;
-                    router.push(
-                      user?.role === "client"
-                        ? authUserId
-                          ? `/empreendedores/${authUserId}/edit`
-                          : "/empreendedores"
-                        : "/empreendedores",
-                    );
-                  }}
-                >
-                  <div className="font-medium text-amber-700 dark:text-amber-400">
-                    Cadastro incompleto
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                    Acesse o menu Cadastro para atualizar seus dados.
-                  </div>
-                </DropdownMenuItem>
-              )}
-              {cadastroIncompleto && <DropdownMenuSeparator />}
-              {pendingAccessRequestsForMe.length > 0 && (
-                <>
-                  <DropdownMenuItem
-                    className="flex-col items-start gap-1 cursor-pointer bg-emerald-500/10 border-b border-emerald-500/20"
-                    onClick={handleAccessRequestsClick}
-                  >
-                    <div className="font-medium text-emerald-800 dark:text-emerald-300">
-                      {pendingAccessRequestsForMe.length === 1
-                        ? "1 pedido de acesso pendente"
-                        : `${pendingAccessRequestsForMe.length} pedidos de acesso pendentes`}
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      Clique para revisar e aprovar representantes em Meu
-                      Perfil.
-                    </div>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                </>
-              )}
               {notifications && notifications.length > 0 ? (
                 notifications.map((notification) => (
                   <DropdownMenuItem
                     key={notification.id}
                     className={cn(
                       "flex-col items-start gap-1 cursor-pointer",
-                      notification.isRead && "text-muted-foreground",
+                      getNotificationItemClass(notification),
                     )}
                     onClick={() => handleNotificationClick(notification)}
                   >
