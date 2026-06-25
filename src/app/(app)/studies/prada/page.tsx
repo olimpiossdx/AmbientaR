@@ -46,6 +46,8 @@ import { Badge } from '@/components/ui/badge';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { Separator } from '@/components/ui/separator';
 import { Label } from '@/components/ui/label';
+import { useStudyListEntityFilter } from '@/hooks/use-study-list-entity-filter';
+import { StudyListEntityFilterCard } from '@/components/studies/study-list-entity-filter-card';
 import { PradaRowActions } from '@/components/prada/prada-row-actions';
 import { PradaExportIconButtons } from '@/components/prada/prada-export-icon-buttons';
 
@@ -164,11 +166,19 @@ export default function PradaPage() {
     [pradasRaw],
   );
 
+  const {
+    filterEmpreendedorId,
+    setFilterEmpreendedorId,
+    filterProjectId,
+    setFilterProjectId,
+    filtered: filteredPradas,
+  } = useStudyListEntityFilter(pradas);
+
   const { draftPradas, approvedPradas } = useMemo(() => {
-    const drafts = pradas.filter((p) => p.status !== 'Aprovado');
-    const approved = pradas.filter((p) => p.status === 'Aprovado');
+    const drafts = filteredPradas.filter((p) => p.status !== 'Aprovado');
+    const approved = filteredPradas.filter((p) => p.status === 'Aprovado');
     return { draftPradas: drafts, approvedPradas: approved };
-  }, [pradas]);
+  }, [filteredPradas]);
 
   const handleAddNew = () => {
     router.push('/studies/prada/new');
@@ -250,6 +260,12 @@ export default function PradaPage() {
           </Button>
         </PageHeader>
         <main className="flex-1 space-y-6 overflow-auto p-4 md:p-6">
+          <StudyListEntityFilterCard
+            empreendedorId={filterEmpreendedorId}
+            projectId={filterProjectId}
+            onEmpreendedorIdChange={setFilterEmpreendedorId}
+            onProjectIdChange={setFilterProjectId}
+          />
           <Card>
             <CardHeader>
               <CardTitle>PRADAs</CardTitle>

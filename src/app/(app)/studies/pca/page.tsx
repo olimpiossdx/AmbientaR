@@ -48,6 +48,8 @@ import { cn } from '@/lib/utils';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { Separator } from '@/components/ui/separator';
 import { Label } from '@/components/ui/label';
+import { useStudyListEntityFilter } from '@/hooks/use-study-list-entity-filter';
+import { StudyListEntityFilterCard } from '@/components/studies/study-list-entity-filter-card';
 
 const DetailItem = ({ label, value }: { label: string, value?: string | null }) => (
     <div className="space-y-1">
@@ -74,12 +76,19 @@ export default function PcaPage() {
 
   const { data: pcas, isLoading } = useCollection<PCA>(pcasQuery);
 
+  const {
+    filterEmpreendedorId,
+    setFilterEmpreendedorId,
+    filterProjectId,
+    setFilterProjectId,
+    filtered: filteredPcas,
+  } = useStudyListEntityFilter(pcas);
+
   const { draftPcas, approvedPcas } = useMemo(() => {
-    if (!pcas) return { draftPcas: [], approvedPcas: [] };
-    const drafts = pcas.filter(p => p.status !== 'Aprovado');
-    const approved = pcas.filter(p => p.status === 'Aprovado');
+    const drafts = filteredPcas.filter(p => p.status !== 'Aprovado');
+    const approved = filteredPcas.filter(p => p.status === 'Aprovado');
     return { draftPcas: drafts, approvedPcas: approved };
-  }, [pcas]);
+  }, [filteredPcas]);
 
 
   const handleAddNew = () => {
@@ -156,6 +165,12 @@ export default function PcaPage() {
           </Button>
         </PageHeader>
         <main className="flex-1 overflow-auto p-4 md:p-6 space-y-8">
+          <StudyListEntityFilterCard
+            empreendedorId={filterEmpreendedorId}
+            projectId={filterProjectId}
+            onEmpreendedorIdChange={setFilterEmpreendedorId}
+            onProjectIdChange={setFilterProjectId}
+          />
           <Card>
             <CardHeader>
               <CardTitle>PCAs em Elaboração</CardTitle>

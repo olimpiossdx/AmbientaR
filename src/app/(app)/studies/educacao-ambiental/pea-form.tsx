@@ -21,6 +21,7 @@ import type { Empreendedor, Project } from '@/lib/types';
 import type { PeaProgram, PeaProgramStatus } from '@/lib/pea/types';
 import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
 import { handleFirestoreFormError } from '@/lib/firestore-form-errors';
+import { StudyEmpreendedorProjectFields } from '@/components/studies/study-empreendedor-project-fields';
 
 import { collection, doc, addDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import {
@@ -354,52 +355,11 @@ export function PeaForm({
                 <CardTitle>Identificação e licenciamento</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="empreendedorId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Empreendedor</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {empreendedores?.map((e) => (
-                            <SelectItem key={e.id} value={e.id}>
-                              {e.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="empreendimento.projectId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Empreendimento cadastrado</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value ?? ''}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Opcional" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {projects?.map((p) => (
-                            <SelectItem key={p.id} value={p.id}>
-                              {p.propertyName || p.fantasyName}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </FormItem>
-                  )}
+                <StudyEmpreendedorProjectFields
+                  form={form}
+                  empreendedorName="empreendedorId"
+                  empreendedorLabel="Empreendedor"
+                  projectLabel="Empreendimento cadastrado"
                 />
                 <FormField
                   control={form.control}

@@ -75,6 +75,8 @@ import {
   getFaunaStudyLabel,
   isFaunaProjetoStudyType,
 } from "@/lib/fauna-study-utils";
+import { useStudyListEntityFilter } from "@/hooks/use-study-list-entity-filter";
+import { StudyListEntityFilterCard } from "@/components/studies/study-list-entity-filter-card";
 
 function getSortDateValue(value: unknown) {
   if (!value) return 0;
@@ -318,15 +320,23 @@ export default function StudiesFaunaPage() {
     [studies],
   );
 
+  const {
+    filterEmpreendedorId,
+    setFilterEmpreendedorId,
+    filterProjectId,
+    setFilterProjectId,
+    filtered: filteredInternalStudies,
+  } = useStudyListEntityFilter(internalStudies);
+
   const { draftStudies, completedStudies } = useMemo(() => {
-    const sorted = [...internalStudies].sort(
+    const sorted = [...filteredInternalStudies].sort(
       (a, b) => getSortDateValue(b.createdAt) - getSortDateValue(a.createdAt),
     );
     return {
       draftStudies: sorted.filter((s) => s.status !== "completed"),
       completedStudies: sorted.filter((s) => s.status === "completed"),
     };
-  }, [internalStudies]);
+  }, [filteredInternalStudies]);
 
   const canDeleteStudy = (study: FaunaStudy) => {
     if (!user) return false;
@@ -419,6 +429,13 @@ export default function StudiesFaunaPage() {
           </DropdownMenu>
         </PageHeader>
         <main className="flex-1 overflow-auto p-4 md:p-6 space-y-8">
+          <StudyListEntityFilterCard
+            empreendedorId={filterEmpreendedorId}
+            projectId={filterProjectId}
+            onEmpreendedorIdChange={setFilterEmpreendedorId}
+            onProjectIdChange={setFilterProjectId}
+            showProject={false}
+          />
           <Card>
             <CardHeader>
               <CardTitle>Em elaboração</CardTitle>

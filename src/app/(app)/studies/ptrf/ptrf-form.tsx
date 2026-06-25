@@ -19,15 +19,10 @@ import { useToast } from '@/hooks/use-toast';
 import type { PTRF, Empreendedor as Client, Project } from '@/lib/types';
 import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
 import { handleFirestoreFormError } from '@/lib/firestore-form-errors';
+import { StudyEmpreendedorProjectFields } from '@/components/studies/study-empreendedor-project-fields';
 
 import { collection, doc, addDoc, updateDoc } from 'firebase/firestore';
 import { DialogFooter } from '@/components/ui/dialog';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue} from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 
 
@@ -63,9 +58,9 @@ export function PtrfForm({ currentItem, onSuccess }: PtrfFormProps) {
   const { firestore } = useFirebase();
 
   const clientsQuery = useMemoFirebase(() => firestore ? collection(firestore, 'clients') : null, [firestore]);
-  const { data: clients, isLoading: isLoadingClients } = useCollection<Client>(clientsQuery);
+  const { data: clients } = useCollection<Client>(clientsQuery);
   const projectsQuery = useMemoFirebase(() => firestore ? collection(firestore, 'projects') : null, [firestore]);
-  const { data: projects, isLoading: isLoadingProjects } = useCollection<Project>(projectsQuery);
+  const { data: projects } = useCollection<Project>(projectsQuery);
 
   const form = useForm<PtrfFormValues>({
     resolver: zodResolver(formSchema),
@@ -177,54 +172,20 @@ export function PtrfForm({ currentItem, onSuccess }: PtrfFormProps) {
         <div className="form-scroll-body space-y-6">
             <div className="p-4 border rounded-md space-y-4">
                 <h3 className="text-lg font-medium">1. Identificação</h3>
-                <FormField
-                    control={form.control}
-                    name="requerente.clientId"
-                    render={({ field }) => (
-                        <FormItem>
-                        <FormLabel>Buscar Requerente Cadastrado</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isLoadingClients}>
-                            <FormControl>
-                            <SelectTrigger>
-                                <SelectValue placeholder={isLoadingClients ? "Carregando..." : "Selecione um cliente para preencher"} />
-                            </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                            {clients?.map(client => (
-                                <SelectItem key={client.id} value={client.id}>{client.name}</SelectItem>
-                            ))}
-                            </SelectContent>
-                        </Select>
-                        <FormMessage />
-                        </FormItem>
-                    )}
+                <StudyEmpreendedorProjectFields
+                  form={form}
+                  showProject={false}
+                  empreendedorLabel="Buscar Requerente Cadastrado"
                 />
                 <FormField control={form.control} name="requerente.nome" render={({ field }) => (<FormItem><FormLabel>Nome do Requerente</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
                 <FormField control={form.control} name="requerente.cpfCnpj" render={({ field }) => (<FormItem><FormLabel>CPF/CNPJ</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
             </div>
              <div className="p-4 border rounded-md space-y-4">
                 <h3 className="text-lg font-medium">2. Dados do Imóvel Rural</h3>
-                 <FormField
-                    control={form.control}
-                    name="empreendimento.projectId"
-                    render={({ field }) => (
-                        <FormItem>
-                        <FormLabel>Buscar Empreendimento Cadastrado</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isLoadingProjects}>
-                            <FormControl>
-                            <SelectTrigger>
-                                <SelectValue placeholder={isLoadingProjects ? "Carregando..." : "Selecione um empreendimento"} />
-                            </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                            {projects?.map(project => (
-                                <SelectItem key={project.id} value={project.id}>{project.propertyName}</SelectItem>
-                            ))}
-                            </SelectContent>
-                        </Select>
-                        <FormMessage />
-                        </FormItem>
-                    )}
+                 <StudyEmpreendedorProjectFields
+                  form={form}
+                  showEmpreendedor={false}
+                  projectLabel="Buscar Empreendimento Cadastrado"
                 />
                  <FormField control={form.control} name="empreendimento.nome" render={({ field }) => (<FormItem><FormLabel>Denominação do Imóvel</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
                  <FormField control={form.control} name="empreendimento.car" render={({ field }) => (<FormItem><FormLabel>N.º Recibo do CAR</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />

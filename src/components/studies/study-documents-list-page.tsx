@@ -59,6 +59,8 @@ import {
   STUDY_EXPORT_TEMPLATE_LABEL,
   type StudyExportRecord,
 } from '@/lib/studies/study-export-record';
+import { filterStudyRecordsByEmpreendedorProject } from '@/lib/studies/filter-study-records';
+import { StudyListEntityFilterCard } from '@/components/studies/study-list-entity-filter-card';
 
 const DetailItem = ({ label, value }: { label: string; value?: string | null }) => (
   <div className="space-y-1">
@@ -81,6 +83,8 @@ export type StudyDocumentsListPageProps = {
   emptyDraft: string;
   emptyApproved: string;
   viewDialogDescription: string;
+  /** Exibe filtro empreendedor → empreendimento para equipe interna (default true). */
+  showEntityFilter?: boolean;
 };
 
 export function StudyDocumentsListPage({
@@ -97,11 +101,14 @@ export function StudyDocumentsListPage({
   emptyDraft,
   emptyApproved,
   viewDialogDescription,
+  showEntityFilter = true,
 }: StudyDocumentsListPageProps) {
   const [isAlertOpen, setIsAlertOpen] = useState(false);
   const [isViewOpen, setIsViewOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
   const [itemToView, setItemToView] = useState<StudyFirestoreDocument | null>(null);
+  const [filterEmpreendedorId, setFilterEmpreendedorId] = useState('');
+  const [filterProjectId, setFilterProjectId] = useState('');
   const router = useRouter();
   const { firestore, user } = useFirebase();
   const { toast } = useToast();
@@ -124,12 +131,20 @@ export function StudyDocumentsListPage({
     [empreendedores],
   );
 
+  const filteredItems = useMemo(() => {
+    if (!items) return [];
+    return filterStudyRecordsByEmpreendedorProject(items, {
+      empreendedorId: filterEmpreendedorId,
+      projectId: filterProjectId,
+    });
+  }, [items, filterEmpreendedorId, filterProjectId]);
+
   const { draftItems, approvedItems } = useMemo(() => {
-    if (!items) return { draftItems: [], approvedItems: [] };
-    const drafts = items.filter((p) => p.status !== 'Aprovado');
-    const approved = items.filter((p) => p.status === 'Aprovado');
+    if (!filteredItems.length && !items) return { draftItems: [], approvedItems: [] };
+    const drafts = filteredItems.filter((p) => p.status !== 'Aprovado');
+    const approved = filteredItems.filter((p) => p.status === 'Aprovado');
     return { draftItems: drafts, approvedItems: approved };
-  }, [items]);
+  }, [filteredItems, items]);
 
   const exportLabel = STUDY_EXPORT_TEMPLATE_LABEL[templateSlug] ?? studyLabel;
 
@@ -262,6 +277,15 @@ export function StudyDocumentsListPage({
         <main className="flex-1 overflow-auto p-4 md:p-6 space-y-6">
           {isStudyLinkedToTr(studySlug) && (
             <TermosReferenciaCard studySlug={studySlug} studyLabel={studyLabel} />
+          )}
+
+          {showEntityFilter && (
+            <StudyListEntityFilterCard
+              empreendedorId={filterEmpreendedorId}
+              projectId={filterProjectId}
+              onEmpreendedorIdChange={setFilterEmpreendedorId}
+              onProjectIdChange={setFilterProjectId}
+            />
           )}
 
           <Card>

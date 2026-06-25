@@ -51,6 +51,8 @@ import { cn } from '@/lib/utils';
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { Separator } from '@/components/ui/separator';
 import { Label } from '@/components/ui/label';
+import { useStudyListEntityFilter } from '@/hooks/use-study-list-entity-filter';
+import { StudyListEntityFilterCard } from '@/components/studies/study-list-entity-filter-card';
 
 
 const piaTypes: { type: PiaType, label: string }[] = [
@@ -90,11 +92,19 @@ export default function PiaPage() {
     [piasRaw],
   );
 
+  const {
+    filterEmpreendedorId,
+    setFilterEmpreendedorId,
+    filterProjectId,
+    setFilterProjectId,
+    filtered: filteredPias,
+  } = useStudyListEntityFilter(pias);
+
   const { draftPias, approvedPias } = useMemo(() => {
-    const drafts = pias.filter((p) => p.status !== 'Aprovado');
-    const approved = pias.filter((p) => p.status === 'Aprovado');
+    const drafts = filteredPias.filter((p) => p.status !== 'Aprovado');
+    const approved = filteredPias.filter((p) => p.status === 'Aprovado');
     return { draftPias: drafts, approvedPias: approved };
-  }, [pias]);
+  }, [filteredPias]);
 
   const handleAddNew = (type: PiaType) => {
     router.push(`/studies/pia/new?type=${type}`);
@@ -193,6 +203,12 @@ export default function PiaPage() {
           </DropdownMenu>
         </PageHeader>
         <main className="flex-1 overflow-auto p-4 md:p-6 space-y-8">
+          <StudyListEntityFilterCard
+            empreendedorId={filterEmpreendedorId}
+            projectId={filterProjectId}
+            onEmpreendedorIdChange={setFilterEmpreendedorId}
+            onProjectIdChange={setFilterProjectId}
+          />
           <Card>
             <CardHeader>
               <CardTitle>PIAs em Elaboração</CardTitle>

@@ -21,6 +21,7 @@ import { useToast } from '@/hooks/use-toast';
 import type { PCA, Empreendedor as Client, Project } from '@/lib/types';
 import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
 import { handleFirestoreFormError } from '@/lib/firestore-form-errors';
+import { StudyEmpreendedorProjectFields } from '@/components/studies/study-empreendedor-project-fields';
 
 import { collection, doc, addDoc, updateDoc } from 'firebase/firestore';
 import { DialogFooter } from '@/components/ui/dialog';
@@ -97,9 +98,9 @@ export function PcaFormLegacy({ currentItem, onSuccess }: PcaFormProps) {
   const { firestore } = useFirebase();
 
   const clientsQuery = useMemoFirebase(() => firestore ? collection(firestore, 'clients') : null, [firestore]);
-  const { data: clients, isLoading: isLoadingClients } = useCollection<Client>(clientsQuery);
+  const { data: clients } = useCollection<Client>(clientsQuery);
   const projectsQuery = useMemoFirebase(() => firestore ? collection(firestore, 'projects') : null, [firestore]);
-  const { data: projects, isLoading: isLoadingProjects } = useCollection<Project>(projectsQuery);
+  const { data: projects } = useCollection<Project>(projectsQuery);
 
   const form = useForm<PcaFormValues>({
     resolver: zodResolver(formSchema),
@@ -234,11 +235,12 @@ export function PcaFormLegacy({ currentItem, onSuccess }: PcaFormProps) {
                         </FormItem>)} />
                     <FormField control={form.control} name="termoReferencia.versao" render={({ field }) => (<FormItem><FormLabel>Versão</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
                 </div>
-                <FormField control={form.control} name="empreendedor.clientId" render={({ field }) => (
-                    <FormItem><FormLabel>Buscar Empreendedor Cadastrado</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value} disabled={isLoadingClients}><FormControl><SelectTrigger>
-                        <SelectValue placeholder={isLoadingClients ? "Carregando..." : "Selecione um cliente para preencher"} />
-                    </SelectTrigger></FormControl><SelectContent>{clients?.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>
-                )} />
+                <StudyEmpreendedorProjectFields
+                  form={form}
+                  empreendedorName="empreendedor.clientId"
+                  showProject={false}
+                  empreendedorLabel="Buscar Empreendedor Cadastrado"
+                />
                 <FormField control={form.control} name="empreendedor.nome" render={({ field }) => (<FormItem><FormLabel>Nome/Razão Social</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
                 <FormField control={form.control} name="empreendedor.cpfCnpj" render={({ field }) => (<FormItem><FormLabel>CPF/CNPJ</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
                 <FormField control={form.control} name="empreendedor.endereco" render={({ field }) => (<FormItem><FormLabel>Endereço</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
@@ -249,11 +251,12 @@ export function PcaFormLegacy({ currentItem, onSuccess }: PcaFormProps) {
             <AccordionItem value="item-2">
                 <AccordionTrigger>3. Dados do Empreendimento</AccordionTrigger>
                 <AccordionContent className="space-y-4">
-                    <FormField control={form.control} name="empreendimento.projectId" render={({ field }) => (
-                    <FormItem><FormLabel>Buscar Empreendimento Cadastrado</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value} disabled={isLoadingProjects}><FormControl><SelectTrigger>
-                        <SelectValue placeholder={isLoadingProjects ? "Carregando..." : "Selecione para preencher"} />
-                    </SelectTrigger></FormControl><SelectContent>{projects?.map(p => <SelectItem key={p.id} value={p.id}>{p.propertyName}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>
-                    )} />
+                    <StudyEmpreendedorProjectFields
+                      form={form}
+                      empreendedorName="empreendedor.clientId"
+                      showEmpreendedor={false}
+                      projectLabel="Buscar Empreendimento Cadastrado"
+                    />
                     <FormField control={form.control} name="empreendimento.nome" render={({ field }) => (<FormItem><FormLabel>Nome do Empreendimento</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
                     <FormField control={form.control} name="empreendimento.municipio" render={({ field }) => (<FormItem><FormLabel>Município</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
                     <FormField control={form.control} name="empreendimento.endereco" render={({ field }) => (<FormItem><FormLabel>Endereço</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />

@@ -26,6 +26,7 @@ import type {
   TechnicalResponsible} from '@/lib/types';
 import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
 import { handleFirestoreFormError } from '@/lib/firestore-form-errors';
+import { StudyEmpreendedorProjectFields } from '@/components/studies/study-empreendedor-project-fields';
 
 import { collection, doc, addDoc, updateDoc } from 'firebase/firestore';
 import {
@@ -271,12 +272,12 @@ export function CavidadesForm({ currentItem, onCreated, onCancel }: CavidadesFor
     () => (firestore ? collection(firestore, 'clients') : null),
     [firestore],
   );
-  const { data: clients, isLoading: isLoadingClients } = useCollection<Client>(clientsQuery);
+  const { data: clients } = useCollection<Client>(clientsQuery);
   const projectsQuery = useMemoFirebase(
     () => (firestore ? collection(firestore, 'projects') : null),
     [firestore],
   );
-  const { data: projects, isLoading: isLoadingProjects } = useCollection<Project>(projectsQuery);
+  const { data: projects } = useCollection<Project>(projectsQuery);
 
   const responsiblesQuery = useMemoFirebase(
     () => (firestore ? collection(firestore, 'technicalResponsibles') : null),
@@ -473,62 +474,12 @@ export function CavidadesForm({ currentItem, onCreated, onCancel }: CavidadesFor
                 </FormItem>
               )}
             />
-            <div className="grid gap-4 md:grid-cols-2">
-              <FormField
-                control={form.control}
-                name="requerente.clientId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Cliente</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      value={field.value}
-                      disabled={isLoadingClients}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Vincular cliente" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {clients?.map((c) => (
-                          <SelectItem key={c.id} value={c.id}>
-                            {c.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="empreendimento.projectId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Projeto / imóvel</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      value={field.value}
-                      disabled={isLoadingProjects}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Vincular projeto" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {projects?.map((p) => (
-                          <SelectItem key={p.id} value={p.id}>
-                            {p.fantasyName || p.propertyName}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </FormItem>
-                )}
-              />
-            </div>
+            <StudyEmpreendedorProjectFields
+              form={form}
+              empreendedorLabel="Cliente"
+              projectLabel="Projeto / imóvel"
+              className="grid gap-4 md:grid-cols-2 md:space-y-0"
+            />
             <div className="grid gap-4 md:grid-cols-2">
               <FormField
                 control={form.control}

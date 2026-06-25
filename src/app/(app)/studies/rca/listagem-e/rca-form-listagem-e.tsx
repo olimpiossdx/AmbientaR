@@ -45,6 +45,7 @@ import {
   serializeRcaListagemEForFirestore} from './rca-project-prefill';
 import { shouldPrefillFromProject } from '../listagem-a/rca-project-prefill';
 import { getRcaListagemEInitialValues } from '../lib/rca-form-initial-values';
+import { RcaFormListagemShell } from '../rca-form-listagem-shell';
 
 interface RcaFormListagemEProps {
   currentItem?: RCA | null;
@@ -252,6 +253,8 @@ export function RcaFormListagemE({ currentItem, onSuccess }: RcaFormListagemEPro
             currentTipo={formularioTipo}
             onTipoChange={setFormularioTipo}
           />
+
+          <RcaFormListagemShell form={form} readOnlyEmpreendimento={isApproved} />
 
           {formularioTipo === 'rodovias' && <RcaFormRodovias {...formProps} />}
           {formularioTipo === 'gasoduto' && <RcaFormGasoduto {...formProps} />}

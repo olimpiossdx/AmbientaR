@@ -75,6 +75,8 @@ import { UploadPreparationDialog } from '@/components/shared/upload-preparation-
 import { useStorageFileUpload } from '@/hooks/use-storage-file-upload';
 import { AttachmentPreviewSection } from '@/components/shared/attachment-preview-section';
 import { formatEmpreendimentosList } from '@/lib/procuracao/format-procuracao';
+import { useStudyListEntityFilter } from '@/hooks/use-study-list-entity-filter';
+import { StudyListEntityFilterCard } from '@/components/studies/study-list-entity-filter-card';
 
 const DetailItem = ({ label, value }: { label: string; value?: string | null }) => (
   <div className="space-y-1">
@@ -130,14 +132,22 @@ export default function ProcuracaoListPage() {
     [itemsRaw],
   );
 
+  const {
+    filterEmpreendedorId,
+    setFilterEmpreendedorId,
+    filterProjectId,
+    setFilterProjectId,
+    filtered: filteredItems,
+  } = useStudyListEntityFilter(items);
+
   const { draftItems, awaitingSignature, signedItems } = useMemo(() => {
-    const drafts = items.filter((p) => p.status !== 'Aprovado' && p.status !== 'Assinada');
-    const awaiting = items.filter(
+    const drafts = filteredItems.filter((p) => p.status !== 'Aprovado' && p.status !== 'Assinada');
+    const awaiting = filteredItems.filter(
       (p) => p.status === 'Aprovado' && !p.fileUrl,
     );
-    const signed = items.filter((p) => p.fileUrl || p.status === 'Assinada');
+    const signed = filteredItems.filter((p) => p.fileUrl || p.status === 'Assinada');
     return { draftItems: drafts, awaitingSignature: awaiting, signedItems: signed };
-  }, [items]);
+  }, [filteredItems]);
 
   const handleAddNew = () => router.push('/studies/procuracao/new');
   const handleEdit = (item: Procuracao) =>
@@ -484,6 +494,12 @@ export default function ProcuracaoListPage() {
           </Button>
         </PageHeader>
         <main className="flex-1 overflow-auto p-4 md:p-6 space-y-6">
+          <StudyListEntityFilterCard
+            empreendedorId={filterEmpreendedorId}
+            projectId={filterProjectId}
+            onEmpreendedorIdChange={setFilterEmpreendedorId}
+            onProjectIdChange={setFilterProjectId}
+          />
           <Card>
             <CardHeader>
               <CardTitle>Em elaboração</CardTitle>

@@ -35,6 +35,8 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PlusCircle } from 'lucide-react';
 import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
+import { useStudyListEntityFilter } from '@/hooks/use-study-list-entity-filter';
+import { StudyListEntityFilterCard } from '@/components/studies/study-list-entity-filter-card';
 import { collection, doc, deleteDoc, updateDoc, limit, query } from 'firebase/firestore';
 import type { ProjetoTecnicoBarragem } from '@/lib/types';
 import { isAdminOrSupervisorRole } from '@/lib/role-guards';
@@ -156,13 +158,20 @@ export default function BarragemPage() {
 
   const { data: projetos, isLoading } = useCollection<ProjetoTecnicoBarragem>(projetosQuery);
 
+  const {
+    filterEmpreendedorId,
+    setFilterEmpreendedorId,
+    filterProjectId,
+    setFilterProjectId,
+    filtered: filteredProjetos,
+  } = useStudyListEntityFilter(projetos);
+
   const { drafts, approved } = useMemo(() => {
-    if (!projetos) return { drafts: [], approved: [] };
     return {
-      drafts: projetos.filter((p) => p.status !== 'Aprovado'),
-      approved: projetos.filter((p) => p.status === 'Aprovado'),
+      drafts: filteredProjetos.filter((p) => p.status !== 'Aprovado'),
+      approved: filteredProjetos.filter((p) => p.status === 'Aprovado'),
     };
-  }, [projetos]);
+  }, [filteredProjetos]);
 
   const handleAddNew = () => router.push('/studies/barragem/new');
   const handleEdit = (item: ProjetoTecnicoBarragem) =>
@@ -223,6 +232,12 @@ export default function BarragemPage() {
           </Button>
         </PageHeader>
         <main className="flex-1 space-y-6 overflow-auto p-4 md:p-6">
+          <StudyListEntityFilterCard
+            empreendedorId={filterEmpreendedorId}
+            projectId={filterProjectId}
+            onEmpreendedorIdChange={setFilterEmpreendedorId}
+            onProjectIdChange={setFilterProjectId}
+          />
           <Card>
             <CardHeader>
               <CardTitle>Projetos técnicos de barragem</CardTitle>

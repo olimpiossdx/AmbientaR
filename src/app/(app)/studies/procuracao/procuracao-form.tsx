@@ -27,7 +27,7 @@ import type {
   Project,
   TechnicalResponsible,
 } from '@/lib/types';
-import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
+import { useFirebase, useCollection, useMemoFirebase, useDoc } from '@/firebase';
 import { addDoc, collection, doc, updateDoc } from 'firebase/firestore';
 import {
   Select,
@@ -38,7 +38,10 @@ import {
 } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useRouter } from 'next/navigation';
-import { filterProjectsByEmpreendedorId } from '@/lib/processos-form-order';
+import {
+  buildProjectSelectOptions,
+  normalizeEntityId,
+} from '@/lib/empreendedor-project-select';
 import { detectCpfCnpjKind } from '@/lib/cpf-cnpj';
 import { DEFAULT_PROCURACAO_PODERES_TEXT } from '@/lib/procuracao/default-text';
 import {
@@ -172,14 +175,37 @@ export function ProcuracaoForm({ currentItem = null, onSuccess }: ProcuracaoForm
   });
 
   const selectedEmpreendedorId = form.watch('empreendedorId');
+  const selectedProjectIds = form.watch('projectIds');
   const selectedCompanyId = form.watch('companyId');
   const outorganteCpfCnpj = form.watch('outorganteCpfCnpj');
   const isPessoaJuridica = detectCpfCnpjKind(outorganteCpfCnpj) === 'cnpj';
 
-  const filteredProjects = React.useMemo(
-    () => filterProjectsByEmpreendedorId(projects, selectedEmpreendedorId),
-    [projects, selectedEmpreendedorId],
+  const linkedProjectId = currentItem?.empreendimentos?.[0]?.projectId;
+  const linkedProjectRef = useMemoFirebase(
+    () =>
+      firestore && linkedProjectId
+        ? doc(firestore, 'projects', normalizeEntityId(linkedProjectId))
+        : null,
+    [firestore, linkedProjectId],
   );
+  const { data: linkedProject } = useDoc<Project>(linkedProjectRef);
+
+  const filteredProjects = React.useMemo(() => {
+    if (!selectedEmpreendedorId) return [];
+    let list = buildProjectSelectOptions({
+      allProjects: projects,
+      empreendedorId: selectedEmpreendedorId,
+      selectedProjectId: selectedProjectIds[0],
+      linkedDoc: linkedProject,
+    });
+    for (const id of selectedProjectIds.slice(1)) {
+      if (id && !list.some((p) => p.id === id)) {
+        const extra = projects?.find((p) => p.id === id);
+        if (extra) list = [...list, extra];
+      }
+    }
+    return list;
+  }, [projects, selectedEmpreendedorId, selectedProjectIds, linkedProject]);
 
   const selectedCompany = React.useMemo(
     () => companies?.find((c) => c.id === selectedCompanyId),
@@ -198,9 +224,10 @@ export function ProcuracaoForm({ currentItem = null, onSuccess }: ProcuracaoForm
       if (!form.getValues('localDocumento') && emp.municipio) {
         form.setValue('localDocumento', emp.municipio);
       }
-      const validProjectIds = filterProjectsByEmpreendedorId(projects, empreendedorId).map(
-        (p) => p.id,
-      );
+      const validProjectIds = buildProjectSelectOptions({
+        allProjects: projects,
+        empreendedorId,
+      }).map((p) => p.id);
       const currentIds = form.getValues('projectIds');
       form.setValue(
         'projectIds',

@@ -23,8 +23,8 @@ import {
   SelectValue} from '@/components/ui/select';
 import { Loader2, PlusCircle, Trash2 } from 'lucide-react';
 import type { StudyFormSchema, Section, Field } from '@/lib/study-form-schema';
-import { useCollection, useMemoFirebase, useFirebase } from '@/firebase';
-import { collection } from 'firebase/firestore';
+import { useCollection, useMemoFirebase, useFirebase, useDoc } from '@/firebase';
+import { collection, doc } from 'firebase/firestore';
 import type { Empreendedor as Client, Project } from '@/lib/types';
 import {
   Accordion,
@@ -34,7 +34,11 @@ import {
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { filterProjectsByEmpreendedorId } from '@/lib/processos-form-order';
+import {
+  buildEmpreendedorSelectOptions,
+  buildProjectSelectOptions,
+  normalizeEntityId,
+} from '@/lib/empreendedor-project-select';
 import { LISTAGEM_SHORT_BY_CODE } from '@/lib/listagem-activities';
 import { useToast } from '@/hooks/use-toast';
 import { handleFirestoreFormError } from '@/lib/firestore-form-errors';
@@ -198,8 +202,8 @@ export function DynamicStudyForm({
   const form = useForm<DynamicFormValues>({
     defaultValues: merged});
 
-  const clientId = form.watch('requerente.clientId');
-  const projectId = form.watch('empreendimento.projectId');
+  const clientId = form.watch('requerente.clientId') as string;
+  const projectId = form.watch('empreendimento.projectId') as string;
   const schemaFieldPaths = React.useMemo(() => collectSchemaFieldPaths(schema), [schema]);
   const formValues = form.watch();
   const fillProgress = React.useMemo(() => {
@@ -209,14 +213,59 @@ export function DynamicStudyForm({
     );
   }, [formValues, schemaFieldPaths]);
 
-  const projectsForSelect = React.useMemo(
-    () => filterProjectsByEmpreendedorId(projects, clientId as string | undefined),
-    [projects, clientId],
+  const linkedClientRef = useMemoFirebase(
+    () =>
+      firestore && clientId
+        ? doc(firestore, 'empreendedores', normalizeEntityId(clientId))
+        : null,
+    [firestore, clientId],
+  );
+  const { data: linkedClient } = useDoc<Client>(linkedClientRef);
+
+  const linkedProjectRef = useMemoFirebase(
+    () =>
+      firestore && projectId
+        ? doc(firestore, 'projects', normalizeEntityId(projectId))
+        : null,
+    [firestore, projectId],
+  );
+  const { data: linkedProject } = useDoc<Project>(linkedProjectRef);
+
+  const clientsForSelect = React.useMemo(
+    () =>
+      buildEmpreendedorSelectOptions({
+        list: clients,
+        selectedId: clientId,
+        linkedDoc: linkedClient,
+      }),
+    [clients, clientId, linkedClient],
   );
 
+  const projectsForSelect = React.useMemo(
+    () =>
+      buildProjectSelectOptions({
+        allProjects: projects,
+        empreendedorId: clientId,
+        selectedProjectId: projectId,
+        linkedDoc: linkedProject,
+      }),
+    [projects, clientId, projectId, linkedProject],
+  );
+
+  const isHydratingFormRef = React.useRef(false);
+
   React.useEffect(() => {
+    if (isHydratingFormRef.current) return;
     const pid = form.getValues('empreendimento.projectId') as string | undefined;
-    if (pid && projectsForSelect.length > 0 && !projectsForSelect.some((p) => p.id === pid)) {
+    if (!clientId) {
+      if (pid) form.setValue('empreendimento.projectId' as never, '' as never);
+      return;
+    }
+    if (
+      pid &&
+      projectsForSelect.length > 0 &&
+      !projectsForSelect.some((p) => p.id === pid)
+    ) {
       form.setValue('empreendimento.projectId' as never, '' as never);
     }
   }, [clientId, projectsForSelect, form]);
@@ -352,7 +401,7 @@ export function DynamicStudyForm({
               key={section.id}
               section={section}
               form={form}
-              clients={clients ?? []}
+              clients={clientsForSelect}
               projects={projectsForSelect}
               allProjects={projects ?? []}
             />

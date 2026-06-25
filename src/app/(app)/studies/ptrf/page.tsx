@@ -47,6 +47,8 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 import { Label } from '@/components/ui/label';
+import { useStudyListEntityFilter } from '@/hooks/use-study-list-entity-filter';
+import { StudyListEntityFilterCard } from '@/components/studies/study-list-entity-filter-card';
 
 const DetailItem = ({ label, value }: { label: string, value?: string | null | string[] }) => (
     <div className="space-y-1">
@@ -73,12 +75,19 @@ export default function PtrfPage() {
 
   const { data: ptrfs, isLoading } = useCollection<PTRF>(ptrfsQuery);
 
+  const {
+    filterEmpreendedorId,
+    setFilterEmpreendedorId,
+    filterProjectId,
+    setFilterProjectId,
+    filtered: filteredPtrfs,
+  } = useStudyListEntityFilter(ptrfs);
+
   const { draftPtrfs, approvedPtrfs } = useMemo(() => {
-    if (!ptrfs) return { draftPtrfs: [], approvedPtrfs: [] };
-    const drafts = ptrfs.filter(p => p.status !== 'Aprovado');
-    const approved = ptrfs.filter(p => p.status === 'Aprovado');
+    const drafts = filteredPtrfs.filter(p => p.status !== 'Aprovado');
+    const approved = filteredPtrfs.filter(p => p.status === 'Aprovado');
     return { draftPtrfs: drafts, approvedPtrfs: approved };
-  }, [ptrfs]);
+  }, [filteredPtrfs]);
 
 
   const handleAddNew = () => {
@@ -155,6 +164,12 @@ export default function PtrfPage() {
           </Button>
         </PageHeader>
         <main className="flex-1 overflow-auto p-4 md:p-6 space-y-8">
+          <StudyListEntityFilterCard
+            empreendedorId={filterEmpreendedorId}
+            projectId={filterProjectId}
+            onEmpreendedorIdChange={setFilterEmpreendedorId}
+            onProjectIdChange={setFilterProjectId}
+          />
           <Card>
             <CardHeader>
               <CardTitle>Gerenciamento de PTRFs</CardTitle>

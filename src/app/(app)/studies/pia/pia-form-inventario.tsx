@@ -1,7 +1,7 @@
 
 'use client';
 import * as React from 'react';
-import { useForm, useFieldArray } from 'react-hook-form';
+import { useFieldArray } from 'react-hook-form';
 import {
   FormControl,
   FormDescription,
@@ -18,28 +18,24 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import type { AnaliseSolo, AtividadeAgropecuaria, Biome, CoordinateFormat, Datum, Fuso, Irrigacao, Jurisdiction, ManagementCategory, OutraAtividade, OwnerCondition, PhysicalStructure, Project } from '@/lib/types';
-import { ibgeData } from '@/lib/ibge-data';
+import type { Empreendedor, Project } from '@/lib/types';
 import { Textarea } from '@/components/ui/textarea';
 import { PlusCircle, Trash2 } from 'lucide-react';
 import { BrDateFormControl } from '@/components/form/br-date-input';
-import type { Empreendedor as Client } from '@/lib/types';
-import { Label } from '@/components/ui/label';
 import { PiaVinculosFields } from '@/components/pia/pia-vinculos-fields';
+import { StudyEmpreendedorProjectFields } from '@/components/studies/study-empreendedor-project-fields';
 
 interface PiaFormInventarioProps {
     form: any;
-    clients: Client[];
-    isLoadingClients: boolean;
+    empreendedores: Empreendedor[];
+    isLoadingEmpreendedores: boolean;
     projects: Project[];
-    isLoadingProjects: boolean;
 }
 
-export function PiaFormInventario({ form, clients, isLoadingClients, projects, isLoadingProjects }: PiaFormInventarioProps) {
+export function PiaFormInventario({ form, empreendedores, isLoadingEmpreendedores, projects }: PiaFormInventarioProps) {
     
     const { fields: cronogramaFields, append: appendCronograma, remove: removeCronograma } = useFieldArray({
         control: form.control,
@@ -53,23 +49,23 @@ export function PiaFormInventario({ form, clients, isLoadingClients, projects, i
 
     React.useEffect(() => {
         if (selectedRequerenteId) {
-            const client = clients?.find(c => c.id === selectedRequerenteId);
-            if (client) {
-                form.setValue('requerente.nome', client.name);
-                form.setValue('requerente.cpfCnpj', client.cpfCnpj || '');
+            const empreendedor = empreendedores?.find((e) => e.id === selectedRequerenteId);
+            if (empreendedor) {
+                form.setValue('requerente.nome', empreendedor.name);
+                form.setValue('requerente.cpfCnpj', empreendedor.cpfCnpj || '');
             }
         }
-    }, [selectedRequerenteId, clients, form]);
+    }, [selectedRequerenteId, empreendedores, form]);
 
     React.useEffect(() => {
         if (selectedProprietarioId) {
-            const client = clients?.find(c => c.id === selectedProprietarioId);
-            if (client) {
-                form.setValue('proprietario.nome', client.name);
-                form.setValue('proprietario.cpfCnpj', client.cpfCnpj || '');
+            const empreendedor = empreendedores?.find((e) => e.id === selectedProprietarioId);
+            if (empreendedor) {
+                form.setValue('proprietario.nome', empreendedor.name);
+                form.setValue('proprietario.cpfCnpj', empreendedor.cpfCnpj || '');
             }
         }
-    }, [selectedProprietarioId, clients, form]);
+    }, [selectedProprietarioId, empreendedores, form]);
 
     React.useEffect(() => {
         if (selectedProjectId) {
@@ -97,31 +93,31 @@ export function PiaFormInventario({ form, clients, isLoadingClients, projects, i
                 <AccordionContent className="space-y-6">
                     <div className="space-y-4 p-4 border rounded-md">
                         <h3 className="font-semibold text-base">Dados do requerente ou empreendedor</h3>
-                         <FormField control={form.control} name="requerente.clientId" render={({ field }) => (
-                            <FormItem><FormLabel>Buscar Requerente Cadastrado</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value} disabled={isLoadingClients}><FormControl><SelectTrigger>
-                                <SelectValue placeholder={isLoadingClients ? "Carregando..." : "Selecione um cliente"} />
-                            </SelectTrigger></FormControl><SelectContent>{clients?.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>
-                        )} />
+                        <StudyEmpreendedorProjectFields
+                          form={form}
+                          showProject={false}
+                          empreendedorLabel="Buscar Requerente Cadastrado"
+                        />
                         <FormField control={form.control} name="requerente.nome" render={({ field }) => (<FormItem><FormLabel>Nome</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
                         <FormField control={form.control} name="requerente.cpfCnpj" render={({ field }) => (<FormItem><FormLabel>CPF/CNPJ</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
                     </div>
                      <div className="space-y-4 p-4 border rounded-md">
                         <h3 className="font-semibold text-base">Dados do proprietário do imóvel</h3>
                          <FormField control={form.control} name="proprietario.clientId" render={({ field }) => (
-                            <FormItem><FormLabel>Buscar Proprietário Cadastrado</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value} disabled={isLoadingClients}><FormControl><SelectTrigger>
-                                <SelectValue placeholder={isLoadingClients ? "Carregando..." : "Selecione um cliente"} />
-                            </SelectTrigger></FormControl><SelectContent>{clients?.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>
+                            <FormItem><FormLabel>Buscar Proprietário Cadastrado</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value} disabled={isLoadingEmpreendedores}><FormControl><SelectTrigger>
+                                <SelectValue placeholder={isLoadingEmpreendedores ? "Carregando..." : "Selecione um empreendedor"} />
+                            </SelectTrigger></FormControl><SelectContent>{empreendedores?.map(e => <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>
                         )} />
                         <FormField control={form.control} name="proprietario.nome" render={({ field }) => (<FormItem><FormLabel>Nome</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
                         <FormField control={form.control} name="proprietario.cpfCnpj" render={({ field }) => (<FormItem><FormLabel>CPF/CNPJ</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
                     </div>
                     <div className="space-y-4 p-4 border rounded-md">
                         <h3 className="font-semibold text-base">Dados do imóvel rural e empreendimento</h3>
-                         <FormField control={form.control} name="empreendimento.projectId" render={({ field }) => (
-                            <FormItem><FormLabel>Buscar Empreendimento Cadastrado</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value} disabled={isLoadingProjects}><FormControl><SelectTrigger>
-                                <SelectValue placeholder={isLoadingProjects ? "Carregando..." : "Selecione um empreendimento"} />
-                            </SelectTrigger></FormControl><SelectContent>{projects?.map(p => <SelectItem key={p.id} value={p.id}>{p.propertyName}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>
-                        )} />
+                        <StudyEmpreendedorProjectFields
+                          form={form}
+                          showEmpreendedor={false}
+                          projectLabel="Buscar Empreendimento Cadastrado"
+                        />
                         <FormField control={form.control} name="empreendimento.nome" render={({ field }) => (<FormItem><FormLabel>Nome do empreendimento (quando couber)</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
                         <FormField control={form.control} name="empreendimento.denominacao" render={({ field }) => (<FormItem><FormLabel>Denominação do imóvel</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
                         <FormField control={form.control} name="empreendimento.car" render={({ field }) => (<FormItem><FormLabel>Nº do recibo do CAR</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />

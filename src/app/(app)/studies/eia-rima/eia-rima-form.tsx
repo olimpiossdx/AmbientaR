@@ -19,15 +19,10 @@ import { useToast } from '@/hooks/use-toast';
 import type { EiaRima, Empreendedor as Client, Project } from '@/lib/types';
 import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
 import { handleFirestoreFormError } from '@/lib/firestore-form-errors';
+import { StudyEmpreendedorProjectFields } from '@/components/studies/study-empreendedor-project-fields';
 
 import { collection, doc, addDoc, updateDoc } from 'firebase/firestore';
 import { DialogFooter } from '@/components/ui/dialog';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue} from '@/components/ui/select';
 
 const formSchema = z.object({
   status: z.enum(['Rascunho', 'Aprovado']).optional(),
@@ -53,9 +48,9 @@ export function EiaRimaForm({ currentItem, onSuccess }: EiaRimaFormProps) {
   const { firestore } = useFirebase();
 
   const clientsQuery = useMemoFirebase(() => firestore ? collection(firestore, 'clients') : null, [firestore]);
-  const { data: clients, isLoading: isLoadingClients } = useCollection<Client>(clientsQuery);
+  const { data: clients } = useCollection<Client>(clientsQuery);
   const projectsQuery = useMemoFirebase(() => firestore ? collection(firestore, 'projects') : null, [firestore]);
-  const { data: projects, isLoading: isLoadingProjects } = useCollection<Project>(projectsQuery);
+  const { data: projects } = useCollection<Project>(projectsQuery);
 
   const form = useForm<EiaRimaFormValues>({
     resolver: zodResolver(formSchema),
@@ -160,37 +155,10 @@ export function EiaRimaForm({ currentItem, onSuccess }: EiaRimaFormProps) {
         <div className="form-scroll-body space-y-6">
             <div className="p-4 border rounded-md space-y-4">
                 <h3 className="text-lg font-medium">Informações Gerais</h3>
-                <FormField
-                    control={form.control}
-                    name="requerente.clientId"
-                    render={({ field }) => (
-                        <FormItem>
-                        <FormLabel>Requerente</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isLoadingClients}>
-                            <FormControl><SelectTrigger>
-                                <SelectValue placeholder={isLoadingClients ? "Carregando..." : "Selecione um cliente para preencher"} />
-                            </SelectTrigger></FormControl>
-                            <SelectContent>{clients?.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
-                        </Select>
-                        <FormMessage />
-                        </FormItem>
-                    )}
-                />
-                <FormField
-                    control={form.control}
-                    name="empreendimento.projectId"
-                    render={({ field }) => (
-                        <FormItem>
-                        <FormLabel>Empreendimento</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isLoadingProjects}>
-                            <FormControl><SelectTrigger>
-                                <SelectValue placeholder={isLoadingProjects ? "Carregando..." : "Selecione um empreendimento para preencher"} />
-                            </SelectTrigger></FormControl>
-                            <SelectContent>{projects?.map(p => <SelectItem key={p.id} value={p.id}>{p.propertyName}</SelectItem>)}</SelectContent>
-                        </Select>
-                        <FormMessage />
-                        </FormItem>
-                    )}
+                <StudyEmpreendedorProjectFields
+                  form={form}
+                  empreendedorLabel="Requerente"
+                  projectLabel="Empreendimento"
                 />
                 <FormField control={form.control} name="processo" render={({ field }) => (<FormItem><FormLabel>Nº do Processo</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
             </div>

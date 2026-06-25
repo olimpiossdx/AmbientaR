@@ -20,6 +20,7 @@ import { useToast } from '@/hooks/use-toast';
 import type { Prada, Empreendedor as Client, Project, AvaliacaoResultadoItem } from '@/lib/types';
 import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
 import { handleFirestoreFormError } from '@/lib/firestore-form-errors';
+import { StudyEmpreendedorProjectFields } from '@/components/studies/study-empreendedor-project-fields';
 
 import { collection, doc, addDoc, updateDoc } from 'firebase/firestore';
 import { DialogFooter } from '@/components/ui/dialog';
@@ -469,27 +470,10 @@ export function PradaForm({ currentItem, onSuccess }: PradaFormProps) {
                         <div className="space-y-6">
                             <div className="space-y-4 p-4 border rounded-md">
                                 <h3 className="text-lg font-medium">1.1 Dados do Requerente ou Empreendedor</h3>
-                                <FormField
-                                control={form.control}
-                                name="requerente.clientId"
-                                render={({ field }) => (
-                                    <FormItem>
-                                    <FormLabel>Buscar Requerente Cadastrado</FormLabel>
-                                    <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isLoadingClients}>
-                                        <FormControl>
-                                        <SelectTrigger>
-                                            <SelectValue placeholder={isLoadingClients ? "Carregando..." : "Selecione um cliente para preencher"} />
-                                        </SelectTrigger>
-                                        </FormControl>
-                                        <SelectContent>
-                                        {clients?.map(client => (
-                                            <SelectItem key={client.id} value={client.id}>{client.name}</SelectItem>
-                                        ))}
-                                        </SelectContent>
-                                    </Select>
-                                    <FormMessage />
-                                    </FormItem>
-                                )}
+                                <StudyEmpreendedorProjectFields
+                                  form={form}
+                                  showProject={false}
+                                  empreendedorLabel="Buscar Requerente Cadastrado"
                                 />
                                 <FormField control={form.control} name="requerente.nome" render={({ field }) => (<FormItem><FormLabel>Nome</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
                                 <FormField control={form.control} name="requerente.cpfCnpj" render={({ field }) => (<FormItem><FormLabel>CPF/CNPJ</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
@@ -497,27 +481,10 @@ export function PradaForm({ currentItem, onSuccess }: PradaFormProps) {
 
                             <div className="space-y-4 p-4 border rounded-md">
                                 <h3 className="text-lg font-medium">1.2 Dados do Empreendimento</h3>
-                                <FormField
-                                control={form.control}
-                                name="empreendimento.projectId"
-                                render={({ field }) => (
-                                    <FormItem>
-                                    <FormLabel>Buscar Empreendimento Cadastrado</FormLabel>
-                                    <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isLoadingProjects}>
-                                        <FormControl>
-                                        <SelectTrigger>
-                                            <SelectValue placeholder={isLoadingProjects ? "Carregando..." : "Selecione um empreendimento para preencher"} />
-                                        </SelectTrigger>
-                                        </FormControl>
-                                        <SelectContent>
-                                        {projects?.map(project => (
-                                            <SelectItem key={project.id} value={project.id}>{project.propertyName}</SelectItem>
-                                        ))}
-                                        </SelectContent>
-                                    </Select>
-                                    <FormMessage />
-                                    </FormItem>
-                                )}
+                                <StudyEmpreendedorProjectFields
+                                  form={form}
+                                  showEmpreendedor={false}
+                                  projectLabel="Buscar Empreendimento Cadastrado"
                                 />
                                 <FormField control={form.control} name="empreendimento.nome" render={({ field }) => (<FormItem><FormLabel>Nome do Empreendimento</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
                                 <FormField control={form.control} name="empreendimento.denominacao" render={({ field }) => (<FormItem><FormLabel>Denominação do imóvel</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />

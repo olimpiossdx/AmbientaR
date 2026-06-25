@@ -30,6 +30,7 @@ import type {
 } from '@/lib/types';
 import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
 import { handleFirestoreFormError } from '@/lib/firestore-form-errors';
+import { StudyEmpreendedorProjectFields } from '@/components/studies/study-empreendedor-project-fields';
 import { collection, doc, addDoc, updateDoc } from 'firebase/firestore';
 import {
   Select,
@@ -231,12 +232,12 @@ export function SegurancaBarragensForm({
     () => (firestore ? collection(firestore, 'clients') : null),
     [firestore],
   );
-  const { data: clients, isLoading: isLoadingClients } = useCollection<Client>(clientsQuery);
+  const { data: clients } = useCollection<Client>(clientsQuery);
   const projectsQuery = useMemoFirebase(
     () => (firestore ? collection(firestore, 'projects') : null),
     [firestore],
   );
-  const { data: projects, isLoading: isLoadingProjects } = useCollection<Project>(projectsQuery);
+  const { data: projects } = useCollection<Project>(projectsQuery);
   const projetosBarragemQuery = useMemoFirebase(
     () => (firestore ? collection(firestore, 'projetosTecnicosBarragem') : null),
     [firestore],
@@ -483,59 +484,10 @@ export function SegurancaBarragensForm({
                     </FormItem>
                   )}
                 />
-                <FormField
-                  control={form.control}
-                  name="requerente.clientId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Proprietário cadastrado</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        value={field.value}
-                        disabled={isLoadingClients}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {clients?.map((c) => (
-                            <SelectItem key={c.id} value={c.id}>
-                              {c.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="empreendimento.projectId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Empreendimento cadastrado</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        value={field.value}
-                        disabled={isLoadingProjects}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {projects?.map((p) => (
-                            <SelectItem key={p.id} value={p.id}>
-                              {p.fantasyName || p.propertyName}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </FormItem>
-                  )}
+                <StudyEmpreendedorProjectFields
+                  form={form}
+                  empreendedorLabel="Proprietário cadastrado"
+                  projectLabel="Empreendimento cadastrado"
                 />
                 <FormField
                   control={form.control}

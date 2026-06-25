@@ -56,6 +56,8 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { Separator } from '@/components/ui/separator';
+import { useStudyListEntityFilter } from '@/hooks/use-study-list-entity-filter';
+import { StudyListEntityFilterCard } from '@/components/studies/study-list-entity-filter-card';
 
 const DetailItem = ({ label, value }: { label: string, value?: string | null }) => (
     <div className="space-y-1">
@@ -87,11 +89,19 @@ export default function RcaPage() {
     [rcasRaw],
   );
 
+  const {
+    filterEmpreendedorId,
+    setFilterEmpreendedorId,
+    filterProjectId,
+    setFilterProjectId,
+    filtered: filteredRcas,
+  } = useStudyListEntityFilter(rcas);
+
   const { draftRcas, approvedRcas } = useMemo(() => {
-    const drafts = rcas.filter((p) => p.status !== 'Aprovado');
-    const approved = rcas.filter((p) => p.status === 'Aprovado');
+    const drafts = filteredRcas.filter((p) => p.status !== 'Aprovado');
+    const approved = filteredRcas.filter((p) => p.status === 'Aprovado');
     return { draftRcas: drafts, approvedRcas: approved };
-  }, [rcas]);
+  }, [filteredRcas]);
 
   const handleAddNew = () => {
     router.push('/studies/rca/new');
@@ -166,6 +176,12 @@ export default function RcaPage() {
           </Button>
         </PageHeader>
         <main className="flex-1 overflow-auto p-4 md:p-6 space-y-8">
+          <StudyListEntityFilterCard
+            empreendedorId={filterEmpreendedorId}
+            projectId={filterProjectId}
+            onEmpreendedorIdChange={setFilterEmpreendedorId}
+            onProjectIdChange={setFilterProjectId}
+          />
           <Card>
             <CardHeader>
               <CardTitle>Gerenciamento de RCAs</CardTitle>

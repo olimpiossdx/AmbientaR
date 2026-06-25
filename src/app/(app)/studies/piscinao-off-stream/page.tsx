@@ -38,6 +38,8 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { PlusCircle, Pencil, Trash2, CheckCircle, ArrowLeft, Eye } from 'lucide-react';
 import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
+import { useStudyListEntityFilter } from '@/hooks/use-study-list-entity-filter';
+import { StudyListEntityFilterCard } from '@/components/studies/study-list-entity-filter-card';
 import { collection, doc, deleteDoc, updateDoc, limit, query } from 'firebase/firestore';
 import type { PiscinaoOffStream } from '@/lib/types';
 import { isAdminOrSupervisorRole } from '@/lib/role-guards';
@@ -74,13 +76,20 @@ export default function PiscinaoOffStreamPage() {
 
   const { data: cadastros, isLoading } = useCollection<PiscinaoOffStream>(cadastrosQuery);
 
+  const {
+    filterEmpreendedorId,
+    setFilterEmpreendedorId,
+    filterProjectId,
+    setFilterProjectId,
+    filtered: filteredCadastros,
+  } = useStudyListEntityFilter(cadastros);
+
   const { drafts, approved } = useMemo(() => {
-    if (!cadastros) return { drafts: [], approved: [] };
     return {
-      drafts: cadastros.filter((e) => e.status !== 'Aprovado'),
-      approved: cadastros.filter((e) => e.status === 'Aprovado'),
+      drafts: filteredCadastros.filter((e) => e.status !== 'Aprovado'),
+      approved: filteredCadastros.filter((e) => e.status === 'Aprovado'),
     };
-  }, [cadastros]);
+  }, [filteredCadastros]);
 
   const handleAddNew = () => router.push('/studies/piscinao-off-stream/new');
   const handleEdit = (item: PiscinaoOffStream) =>
@@ -218,6 +227,12 @@ export default function PiscinaoOffStreamPage() {
           </div>
         </PageHeader>
         <main className="flex-1 space-y-6 overflow-auto p-4 md:p-6">
+          <StudyListEntityFilterCard
+            empreendedorId={filterEmpreendedorId}
+            projectId={filterProjectId}
+            onEmpreendedorIdChange={setFilterEmpreendedorId}
+            onProjectIdChange={setFilterProjectId}
+          />
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Sobre piscinões off-stream</CardTitle>

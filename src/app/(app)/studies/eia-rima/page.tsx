@@ -48,6 +48,8 @@ import { cn } from '@/lib/utils';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { Separator } from '@/components/ui/separator';
 import { Label } from '@/components/ui/label';
+import { useStudyListEntityFilter } from '@/hooks/use-study-list-entity-filter';
+import { StudyListEntityFilterCard } from '@/components/studies/study-list-entity-filter-card';
 
 const DetailItem = ({ label, value }: { label: string, value?: string | null | string[] }) => (
     <div className="space-y-1">
@@ -77,12 +79,19 @@ export default function EiaRimaPage() {
   const { data: empreendedores, isLoading: isLoadingEmpreendedores } = useCollection<Empreendedor>(empreendedoresQuery);
   const empreendedoresMap = useMemo(() => new Map(empreendedores?.map(e => [e.id, e.name])), [empreendedores]);
 
+  const {
+    filterEmpreendedorId,
+    setFilterEmpreendedorId,
+    filterProjectId,
+    setFilterProjectId,
+    filtered: filteredEiaRimas,
+  } = useStudyListEntityFilter(eiaRimas);
+
   const { draftItems, approvedItems } = useMemo(() => {
-    if (!eiaRimas) return { draftItems: [], approvedItems: [] };
-    const drafts = eiaRimas.filter(p => p.status !== 'Aprovado');
-    const approved = eiaRimas.filter(p => p.status === 'Aprovado');
+    const drafts = filteredEiaRimas.filter(p => p.status !== 'Aprovado');
+    const approved = filteredEiaRimas.filter(p => p.status === 'Aprovado');
     return { draftItems: drafts, approvedItems: approved };
-  }, [eiaRimas]);
+  }, [filteredEiaRimas]);
 
   const handleAddNew = () => {
     router.push('/studies/eia-rima/new');
@@ -158,6 +167,12 @@ export default function EiaRimaPage() {
           </Button>
         </PageHeader>
         <main className="flex-1 overflow-auto p-4 md:p-6 space-y-8">
+          <StudyListEntityFilterCard
+            empreendedorId={filterEmpreendedorId}
+            projectId={filterProjectId}
+            onEmpreendedorIdChange={setFilterEmpreendedorId}
+            onProjectIdChange={setFilterProjectId}
+          />
           <Card>
             <CardHeader>
               <CardTitle>EIA/RIMAs em Elaboração</CardTitle>

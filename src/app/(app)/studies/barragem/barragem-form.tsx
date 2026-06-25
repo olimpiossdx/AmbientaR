@@ -20,6 +20,7 @@ import { useToast } from '@/hooks/use-toast';
 import type { ProjetoTecnicoBarragem, Empreendedor as Client, Project, OutorgaProcesso } from '@/lib/types';
 import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
 import { handleFirestoreFormError } from '@/lib/firestore-form-errors';
+import { StudyEmpreendedorProjectFields } from '@/components/studies/study-empreendedor-project-fields';
 
 import { collection, doc, addDoc, updateDoc } from 'firebase/firestore';
 import {
@@ -335,12 +336,12 @@ export function BarragemForm({ currentItem, onCreated, onCancel }: BarragemFormP
     () => (firestore ? collection(firestore, 'clients') : null),
     [firestore],
   );
-  const { data: clients, isLoading: isLoadingClients } = useCollection<Client>(clientsQuery);
+  const { data: clients } = useCollection<Client>(clientsQuery);
   const projectsQuery = useMemoFirebase(
     () => (firestore ? collection(firestore, 'projects') : null),
     [firestore],
   );
-  const { data: projects, isLoading: isLoadingProjects } = useCollection<Project>(projectsQuery);
+  const { data: projects } = useCollection<Project>(projectsQuery);
   const outorgasQuery = useMemoFirebase(
     () => (firestore ? collection(firestore, 'outorga_processos') : null),
     [firestore],
@@ -513,65 +514,15 @@ export function BarragemForm({ currentItem, onCreated, onCancel }: BarragemFormP
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-              <div className="grid gap-4 md:grid-cols-2">
-                <FormField
-                  control={form.control}
-                  name="requerente.clientId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Proprietário cadastrado</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        value={field.value}
-                        disabled={isLoadingClients}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione o cliente" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {clients?.map((c) => (
-                            <SelectItem key={c.id} value={c.id}>
-                              {c.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="empreendimento.projectId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Empreendimento cadastrado</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        value={field.value}
-                        disabled={isLoadingProjects}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Vincule o empreendimento" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {projects?.map((p) => (
-                            <SelectItem key={p.id} value={p.id}>
-                              {p.fantasyName || p.propertyName}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormDescription>
-                        Necessário para exportar Word com placeholders do cadastro.
-                      </FormDescription>
-                    </FormItem>
-                  )}
-                />
-              </div>
+              <StudyEmpreendedorProjectFields
+                form={form}
+                empreendedorLabel="Proprietário cadastrado"
+                projectLabel="Empreendimento cadastrado"
+                className="grid gap-4 md:grid-cols-2 md:space-y-0"
+              />
+              <FormDescription>
+                Necessário para exportar Word com placeholders do cadastro.
+              </FormDescription>
               <div className="grid gap-4 md:grid-cols-2">
                 <FormField
                   control={form.control}

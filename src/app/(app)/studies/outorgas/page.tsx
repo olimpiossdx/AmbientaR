@@ -53,6 +53,8 @@ import { FirestorePermissionError } from "@/firebase/errors";
 import { useAuth } from "@/firebase";
 import { useRouter } from "next/navigation";
 import { isClientePortalRole, canPerformOperationalWrite } from "@/lib/role-guards";
+import { useStudyListEntityFilter } from "@/hooks/use-study-list-entity-filter";
+import { StudyListEntityFilterCard } from "@/components/studies/study-list-entity-filter-card";
 
 const canPerformWriteActions = (user: AppUser | null): boolean => {
   if (!user) return false;
@@ -126,6 +128,14 @@ export default function OutorgasEstudosPage() {
   const { data: processos, isLoading: isLoadingProcessos } =
     useCollection<OutorgaProcesso>(processosQuery);
 
+  const {
+    filterEmpreendedorId,
+    setFilterEmpreendedorId,
+    filterProjectId,
+    setFilterProjectId,
+    filtered: filteredProcessos,
+  } = useStudyListEntityFilter(processos);
+
   const empreendedoresQuery = useMemoFirebase(
     () => (firestore ? query(collection(firestore, "empreendedores"), limit(200)) : null),
     [firestore],
@@ -189,7 +199,13 @@ export default function OutorgasEstudosPage() {
             </Button>
           )}
         </PageHeader>
-        <main className="flex-1 overflow-auto p-4 md:p-6">
+        <main className="flex-1 overflow-auto p-4 md:p-6 space-y-6">
+          <StudyListEntityFilterCard
+            empreendedorId={filterEmpreendedorId}
+            projectId={filterProjectId}
+            onEmpreendedorIdChange={setFilterEmpreendedorId}
+            onProjectIdChange={setFilterProjectId}
+          />
           <Card>
             <CardHeader>
               <CardTitle>Processos em tramitação</CardTitle>
@@ -205,7 +221,7 @@ export default function OutorgasEstudosPage() {
                     <Skeleton key={i} className="h-28 w-full rounded-lg" />
                   ))}
                 {!isLoading &&
-                  (processos || []).map((item) => (
+                  filteredProcessos.map((item) => (
                     <Card
                       key={item.id}
                       className="overflow-hidden border-border/80 shadow-sm transition-shadow hover:shadow-md cursor-pointer"
@@ -260,7 +276,7 @@ export default function OutorgasEstudosPage() {
                       </CardContent>
                     </Card>
                   ))}
-                {!isLoading && (processos?.length ?? 0) === 0 && (
+                {!isLoading && filteredProcessos.length === 0 && (
                   <div className="flex h-24 items-center justify-center rounded-md border-2 border-dashed border-muted-foreground/25 text-center text-sm text-muted-foreground">
                     Nenhum processo. Clique em Nova outorga para escolher o
                     código do serviço.

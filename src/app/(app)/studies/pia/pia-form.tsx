@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Form } from '@/components/ui/form';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import type { PIA, Empreendedor as Client, Project, PiaType } from '@/lib/types';
+import type { PIA, Empreendedor, Project, PiaType } from '@/lib/types';
 import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
 import { handleFirestoreFormError } from '@/lib/firestore-form-errors';
 
@@ -58,16 +58,17 @@ export function PiaForm({ currentItem, piaType, onSuccess, linkContext }: PiaFor
   const { toast } = useToast();
   const { firestore } = useFirebase();
 
-  const clientsQuery = useMemoFirebase(
-    () => (firestore ? collection(firestore, 'clients') : null),
+  const empreendedoresQuery = useMemoFirebase(
+    () => (firestore ? collection(firestore, 'empreendedores') : null),
     [firestore],
   );
-  const { data: clients, isLoading: isLoadingClients } = useCollection<Client>(clientsQuery);
+  const { data: empreendedores, isLoading: isLoadingEmpreendedores } =
+    useCollection<Empreendedor>(empreendedoresQuery);
   const projectsQuery = useMemoFirebase(
     () => (firestore ? collection(firestore, 'projects') : null),
     [firestore],
   );
-  const { data: projects, isLoading: isLoadingProjects } = useCollection<Project>(projectsQuery);
+  const { data: projects } = useCollection<Project>(projectsQuery);
 
   const form = useForm<PiaFormValues>({
     resolver: zodResolver(formSchema),
@@ -212,10 +213,9 @@ export function PiaForm({ currentItem, piaType, onSuccess, linkContext }: PiaFor
       return (
         <PiaFormInventario
           form={form}
-          clients={clients || []}
-          isLoadingClients={isLoadingClients}
+          empreendedores={empreendedores || []}
+          isLoadingEmpreendedores={isLoadingEmpreendedores}
           projects={projects || []}
-          isLoadingProjects={isLoadingProjects}
         />
       );
     }

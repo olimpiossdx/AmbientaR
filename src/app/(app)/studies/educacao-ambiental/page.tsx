@@ -54,6 +54,9 @@ import {
 import { isAdminOrSupervisorRole } from '@/lib/role-guards';
 import { sortByFirestoreUpdatedAt } from '@/lib/firestore-list-helpers';
 import { useUser } from '@/firebase';
+import { useStudyListEntityFilter } from '@/hooks/use-study-list-entity-filter';
+import { filterStudyRecordsByEmpreendedorProject } from '@/lib/studies/filter-study-records';
+import { StudyListEntityFilterCard } from '@/components/studies/study-list-entity-filter-card';
 
 export default function EducacaoAmbientalPage() {
   const router = useRouter();
@@ -90,12 +93,28 @@ export default function EducacaoAmbientalPage() {
     [dispensaListRaw],
   );
 
+  const {
+    filterEmpreendedorId,
+    setFilterEmpreendedorId,
+    filterProjectId,
+    setFilterProjectId,
+    filtered: filteredPeaList,
+  } = useStudyListEntityFilter(peaList);
+
+  const filteredDispensaList = React.useMemo(
+    () =>
+      filterStudyRecordsByEmpreendedorProject(dispensaList, {
+        empreendedorId: filterEmpreendedorId,
+      }),
+    [dispensaList, filterEmpreendedorId],
+  );
+
   const canDelete = isAdminOrSupervisorRole(user?.role);
 
-  const peasDraft = (peaList ?? []).filter(
+  const peasDraft = filteredPeaList.filter(
     (p) => p.status === 'Rascunho' || p.status === 'Em elaboração',
   );
-  const peasDone = (peaList ?? []).filter(
+  const peasDone = filteredPeaList.filter(
     (p) => p.status === 'Aprovado' || p.status === 'Em execução' || p.status === 'Arquivado',
   );
 
@@ -165,6 +184,13 @@ export default function EducacaoAmbientalPage() {
           studyLabel="Programa de Educação Ambiental"
         />
 
+        <StudyListEntityFilterCard
+          empreendedorId={filterEmpreendedorId}
+          projectId={filterProjectId}
+          onEmpreendedorIdChange={setFilterEmpreendedorId}
+          onProjectIdChange={setFilterProjectId}
+        />
+
         <Tabs defaultValue="programas">
           <TabsList>
             <TabsTrigger value="programas">Programas (PEA)</TabsTrigger>
@@ -218,14 +244,14 @@ export default function EducacaoAmbientalPage() {
                         </TableCell>
                       </TableRow>
                     )}
-                    {!loadingDispensa && (!dispensaList || dispensaList.length === 0) && (
+                    {!loadingDispensa && filteredDispensaList.length === 0 && (
                       <TableRow>
                         <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
                           Nenhuma solicitação de dispensa.
                         </TableCell>
                       </TableRow>
                     )}
-                    {dispensaList?.map((d) => (
+                    {filteredDispensaList.map((d) => (
                       <TableRow key={d.id}>
                         <TableCell className="font-medium">
                           {d.razaoSocial || d.nomeFantasia || '—'}

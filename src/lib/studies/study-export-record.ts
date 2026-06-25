@@ -53,7 +53,27 @@ function slugifyFilePart(input: string): string {
 
 export function getStudyProjectId(record: StudyExportRecord): string | null {
   const id = record.empreendimento?.projectId;
-  return typeof id === 'string' && id.trim() ? id.trim() : null;
+  if (typeof id === 'string' && id.trim()) return id.trim();
+  const flat = (record as Record<string, unknown>).projectId;
+  if (typeof flat === 'string' && flat.trim()) return flat.trim();
+  return null;
+}
+
+/** Empreendedor vinculado (RCA/PCA: empreendedor.clientId; PEA/fauna: empreendedorId). */
+export function getStudyEmpreendedorId(record: StudyExportRecord): string | null {
+  const fromNested = record.empreendedor?.clientId;
+  if (typeof fromNested === 'string' && fromNested.trim()) return fromNested.trim();
+
+  const fromRequerente = (record.requerente as { clientId?: string } | null | undefined)
+    ?.clientId;
+  if (typeof fromRequerente === 'string' && fromRequerente.trim()) {
+    return fromRequerente.trim();
+  }
+
+  const flat = (record as Record<string, unknown>).empreendedorId;
+  if (typeof flat === 'string' && flat.trim()) return flat.trim();
+
+  return null;
 }
 
 export function getStudyExportBaseName(

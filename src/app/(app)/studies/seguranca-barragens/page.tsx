@@ -39,6 +39,8 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { PlusCircle, Pencil, Trash2, CheckCircle, ArrowLeft, Eye } from 'lucide-react';
 import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
+import { useStudyListEntityFilter } from '@/hooks/use-study-list-entity-filter';
+import { StudyListEntityFilterCard } from '@/components/studies/study-list-entity-filter-card';
 import { collection, doc, deleteDoc, updateDoc, limit, query } from 'firebase/firestore';
 import type { EstudoSegurancaBarragem } from '@/lib/types';
 import { isAdminOrSupervisorRole } from '@/lib/role-guards';
@@ -74,13 +76,20 @@ export default function SegurancaBarragensPage() {
 
   const { data: estudos, isLoading } = useCollection<EstudoSegurancaBarragem>(estudosQuery);
 
+  const {
+    filterEmpreendedorId,
+    setFilterEmpreendedorId,
+    filterProjectId,
+    setFilterProjectId,
+    filtered: filteredEstudos,
+  } = useStudyListEntityFilter(estudos);
+
   const { drafts, approved } = useMemo(() => {
-    if (!estudos) return { drafts: [], approved: [] };
     return {
-      drafts: estudos.filter((e) => e.status !== 'Aprovado'),
-      approved: estudos.filter((e) => e.status === 'Aprovado'),
+      drafts: filteredEstudos.filter((e) => e.status !== 'Aprovado'),
+      approved: filteredEstudos.filter((e) => e.status === 'Aprovado'),
     };
-  }, [estudos]);
+  }, [filteredEstudos]);
 
   const handleAddNew = () => router.push('/studies/seguranca-barragens/new');
   const handleEdit = (item: EstudoSegurancaBarragem) =>
@@ -218,6 +227,12 @@ export default function SegurancaBarragensPage() {
           </div>
         </PageHeader>
         <main className="flex-1 space-y-6 overflow-auto p-4 md:p-6">
+          <StudyListEntityFilterCard
+            empreendedorId={filterEmpreendedorId}
+            projectId={filterProjectId}
+            onEmpreendedorIdChange={setFilterEmpreendedorId}
+            onProjectIdChange={setFilterProjectId}
+          />
           <Card>
             <CardHeader>
               <CardTitle>Estudos de segurança de barragens</CardTitle>

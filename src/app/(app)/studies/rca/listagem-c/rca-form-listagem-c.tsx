@@ -40,6 +40,7 @@ import {
 import { shouldPrefillFromProject } from '../listagem-a/rca-project-prefill';
 import { getRcaListagemCInitialValues } from '../lib/rca-form-initial-values';
 import { RcaGeographicLocationSection } from '../lib/rca-geographic-location-section';
+import { RcaFormListagemShell } from '../rca-form-listagem-shell';
 
 interface RcaFormListagemCProps {
   currentItem?: RCA | null;
@@ -247,6 +248,8 @@ export function RcaFormListagemC({ currentItem, onSuccess }: RcaFormListagemCPro
             currentTipo={formularioTipo}
             onTipoChange={setFormularioTipo}
           />
+
+          <RcaFormListagemShell form={form} readOnlyEmpreendimento={isApproved} />
 
           <RcaGeographicLocationSection form={form} />
 
