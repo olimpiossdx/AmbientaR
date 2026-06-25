@@ -1,18 +1,24 @@
-"use client";
+'use client';
 
-import { PageHeader } from "@/components/page-header";
-import { OnedriveIntegrationPanel } from "@/components/mcp-rag/panels/onedrive-integration-panel";
+import dynamic from 'next/dynamic';
+import { Skeleton } from '@/components/ui/skeleton';
+import { PageHeader } from '@/components/page-header';
+
+const OnedriveIntegrationView = dynamic(
+  () => import('./onedrive-integration-view').then((m) => ({ default: m.OnedriveIntegrationView })),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex flex-col h-full">
+        <PageHeader title="Integração OneDrive" />
+        <main className="flex-1 p-4 md:p-6">
+          <Skeleton className="h-96 w-full rounded-lg" />
+        </main>
+      </div>
+    ),
+  },
+);
 
 export default function OnedriveIntegrationPage() {
-  return (
-    <div className="flex h-full flex-col">
-      <PageHeader
-        title="Integração OneDrive"
-        description="Beta admin — catálogo leve no Firestore; ficheiros permanecem no OneDrive."
-      />
-      <main className="flex-1 overflow-auto p-4 md:p-6">
-        <OnedriveIntegrationPanel />
-      </main>
-    </div>
-  );
+  return <OnedriveIntegrationView />;
 }

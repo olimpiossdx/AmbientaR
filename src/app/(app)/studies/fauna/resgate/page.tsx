@@ -1,44 +1,24 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { PageHeader } from '@/components/page-header';
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useFaunaStudyPageSave } from '../_shared/use-fauna-study-page-save';
+import { PageHeader } from '@/components/page-header';
 
-const ResgateForm = dynamic(
-  () => import('./resgate-form').then((m) => ({ default: m.ResgateForm })),
+const ResgateFaunaView = dynamic(
+  () => import('./resgate-fauna-view').then((m) => ({ default: m.ResgateFaunaView })),
   {
-    loading: () => <Skeleton className="h-96 w-full" />,
     ssr: false,
+    loading: () => (
+      <div className="flex flex-col h-full">
+        <PageHeader title="Resgate e Destinação de Fauna Silvestre" />
+        <main className="flex-1 p-4 md:p-6">
+          <Skeleton className="h-96 w-full rounded-lg" />
+        </main>
+      </div>
+    ),
   },
 );
 
 export default function ResgateFaunaPage() {
-  const handleSave = useFaunaStudyPageSave('resgate_projeto');
-
-  return (
-    <div className="flex flex-col h-full">
-      <PageHeader title="Projeto de Resgate e Destinação de Fauna" />
-      <main className="flex-1 overflow-auto p-4 md:p-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Formulário de Projeto Técnico</CardTitle>
-            <CardDescription>
-              Preencha os campos para gerar o projeto de resgate e destinação de fauna.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ResgateForm onSave={handleSave} />
-          </CardContent>
-        </Card>
-      </main>
-    </div>
-  );
+  return <ResgateFaunaView />;
 }

@@ -1,23 +1,25 @@
+'use client';
+
+import dynamic from 'next/dynamic';
+import { Skeleton } from '@/components/ui/skeleton';
 import { PageHeader } from '@/components/page-header';
-import ReportingClient from './reporting-client';
-import { useAuth } from '@/firebase';
-import FinancialReportingClient from './financial-reporting-client';
+
+const ReportingView = dynamic(
+  () => import('./reporting-view').then((m) => ({ default: m.ReportingView })),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex flex-col h-full">
+        <PageHeader title="Relatórios Gerados por IA" />
+        <main className="flex-1 p-4 md:p-6 space-y-4">
+          <Skeleton className="h-48 w-full rounded-lg" />
+          <Skeleton className="h-48 w-full rounded-lg" />
+        </main>
+      </div>
+    ),
+  },
+);
 
 export default function ReportingPage() {
-  
-  // Note: This is a simplified way to show different reports.
-  // In a real app, you might use the user's role to decide which report to show,
-  // or have different routes for different report types.
-  
-  return (
-    <div className="flex flex-col h-full">
-      <PageHeader title="Relatórios Gerados por IA" />
-      <main className="flex-1 overflow-auto p-4 md:p-6">
-        <div className="space-y-8">
-           <FinancialReportingClient />
-           <ReportingClient />
-        </div>
-      </main>
-    </div>
-  );
+  return <ReportingView />;
 }

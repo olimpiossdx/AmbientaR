@@ -1,36 +1,16 @@
-"use client";
+'use client';
 
-import { Suspense } from "react";
-import { ResponsibleForm } from "../responsible-form";
-import {
-  ResponsibleFormModalSuspenseFallback,
-  ResponsibleFormShell,
-  useResponsibleFormShellDismiss,
-  useResponsibleFormShellSuccess,
-} from "../responsible-form-shell";
+import dynamic from 'next/dynamic';
+import { ResponsibleFormModalSuspenseFallback } from '../responsible-form-shell';
 
-const TITLE = "Adicionar Novo Responsável";
-const DESCRIPTION = "Preencha os detalhes do novo profissional.";
-
-function NewResponsibleModalContent() {
-  const onSuccess = useResponsibleFormShellSuccess("modal");
-  const onCancel = useResponsibleFormShellDismiss();
-
-  return (
-    <ResponsibleFormShell variant="modal" title={TITLE} description={DESCRIPTION}>
-      <ResponsibleForm
-        currentItem={null}
-        onSuccess={onSuccess}
-        onCancel={onCancel}
-      />
-    </ResponsibleFormShell>
-  );
-}
+const NewResponsibleModalView = dynamic(
+  () =>
+    import('./new-responsible-modal-view').then((m) => ({
+      default: m.NewResponsibleModalView,
+    })),
+  { ssr: false, loading: () => <ResponsibleFormModalSuspenseFallback /> },
+);
 
 export default function NewResponsibleModal() {
-  return (
-    <Suspense fallback={<ResponsibleFormModalSuspenseFallback />}>
-      <NewResponsibleModalContent />
-    </Suspense>
-  );
+  return <NewResponsibleModalView />;
 }

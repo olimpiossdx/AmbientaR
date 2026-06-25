@@ -1,40 +1,24 @@
-"use client";
+'use client';
 
-import { Suspense } from "react";
-import { InvoiceForm } from "../invoice-form";
-import {
-  InvoiceFormShell,
-  useInvoiceFormShellDismiss,
-  useInvoiceFormShellSuccess,
-} from "../invoice-form-shell";
+import dynamic from 'next/dynamic';
+import { Skeleton } from '@/components/ui/skeleton';
+import { PageHeader } from '@/components/page-header';
 
-const TITLE = "Adicionar Nova Fatura";
-const DESCRIPTION = "Preencha os detalhes para criar uma nova fatura.";
-
-function NewInvoicePageContent() {
-  const onSuccess = useInvoiceFormShellSuccess("page");
-  const onCancel = useInvoiceFormShellDismiss();
-
-  return (
-    <InvoiceFormShell
-      variant="page"
-      title={TITLE}
-      description={DESCRIPTION}
-      pageHeaderTitle="Nova Fatura"
-    >
-      <InvoiceForm
-        currentItem={null}
-        onSuccess={onSuccess}
-        onCancel={onCancel}
-      />
-    </InvoiceFormShell>
-  );
-}
+const NewInvoiceView = dynamic(
+  () => import('./new-invoice-view').then((m) => ({ default: m.NewInvoiceView })),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex flex-col h-full">
+        <PageHeader title="Nova Fatura" />
+        <main className="flex-1 p-4 md:p-6">
+          <Skeleton className="h-96 w-full max-w-4xl mx-auto rounded-lg" />
+        </main>
+      </div>
+    ),
+  },
+);
 
 export default function NewInvoicePage() {
-  return (
-    <Suspense fallback={<div>Carregando...</div>}>
-      <NewInvoicePageContent />
-    </Suspense>
-  );
+  return <NewInvoiceView />;
 }

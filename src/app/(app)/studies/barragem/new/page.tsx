@@ -1,38 +1,24 @@
 'use client';
 
-import { Suspense } from 'react';
-import { useRouter } from 'next/navigation';
-import { BarragemForm } from '../barragem-form';
-import { StudyFormShell } from '@/components/studies/study-form-shell';
+import dynamic from 'next/dynamic';
+import { Skeleton } from '@/components/ui/skeleton';
+import { PageHeader } from '@/components/page-header';
 
-const LIST_PATH = '/studies/barragem';
-const CARD_CONTENT_CLASS = 'min-h-[480px]';
-
-function NewBarragemPageContent() {
-  const router = useRouter();
-
-  return (
-    <StudyFormShell
-      variant="page"
-      title="Memorial descritivo"
-      description="Estrutura alinhada ao modelo FPT (apresentação, informações básicas, aterro, hidrologia, extravasor, implantação e anexos). Exporte em PDF ou Word com a identidade visual da consultoria."
-      notFoundTitle="Projeto não encontrado"
-      pageHeaderTitle="Novo Projeto Técnico de Barragem"
-      cardContentClassName={CARD_CONTENT_CLASS}
-    >
-      <BarragemForm
-        currentItem={null}
-        onCreated={(id) => router.push(`/studies/barragem/${id}/edit`)}
-        onCancel={() => router.push(LIST_PATH)}
-      />
-    </StudyFormShell>
-  );
-}
+const NewBarragemView = dynamic(
+  () => import('./new-barragem-view').then((m) => ({ default: m.NewBarragemView })),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex flex-col h-full">
+        <PageHeader title="Novo Projeto Técnico de Barragem" />
+        <main className="flex-1 p-4 md:p-6">
+          <Skeleton className="h-96 w-full max-w-4xl mx-auto rounded-lg" />
+        </main>
+      </div>
+    ),
+  },
+);
 
 export default function NewBarragemPage() {
-  return (
-    <Suspense fallback={<div>Carregando...</div>}>
-      <NewBarragemPageContent />
-    </Suspense>
-  );
+  return <NewBarragemView />;
 }

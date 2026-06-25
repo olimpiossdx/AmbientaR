@@ -1,56 +1,24 @@
 'use client';
-import { Suspense, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+
+import dynamic from 'next/dynamic';
+import { Skeleton } from '@/components/ui/skeleton';
 import { PageHeader } from '@/components/page-header';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { OficioForm } from '../oficio-form';
-import { useFirebase } from '@/firebase';
-import { isOficioReadOnlyRole } from '@/lib/role-guards';
 
-function NewOficioPageContent() {
-    const router = useRouter();
-    const { user } = useFirebase();
-
-    useEffect(() => {
-      if (user && isOficioReadOnlyRole(user.role)) {
-        router.replace('/oficios');
-      }
-    }, [user, router]);
-
-    const handleSuccess = () => {
-      router.push('/oficios');
-    };
-  
-    return (
+const NewOficioView = dynamic(
+  () => import('./new-oficio-view').then((m) => ({ default: m.NewOficioView })),
+  {
+    ssr: false,
+    loading: () => (
       <div className="flex flex-col h-full">
         <PageHeader title="Novo Ofício" />
-        <main className="flex-1 overflow-auto p-4 md:p-6">
-          <div className="max-w-4xl mx-auto">
-               <Card>
-                  <CardHeader>
-                      <CardTitle>Criar Novo Ofício</CardTitle>
-                      <CardDescription>
-                          Preencha destinatário, assunto, referência, texto e assinatura conforme o modelo do ofício. Salve como rascunho e conclua na lista quando estiver pronto.
-                      </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                      <OficioForm
-                          currentItem={null}
-                          onSuccess={handleSuccess}
-                          onCancel={() => router.back()}
-                      />
-                  </CardContent>
-              </Card>
-          </div>
+        <main className="flex-1 p-4 md:p-6">
+          <Skeleton className="h-96 w-full max-w-4xl mx-auto rounded-lg" />
         </main>
       </div>
-    );
-}
+    ),
+  },
+);
 
 export default function NewOficioPage() {
-    return (
-        <Suspense fallback={<div>Carregando...</div>}>
-            <NewOficioPageContent />
-        </Suspense>
-    )
+  return <NewOficioView />;
 }

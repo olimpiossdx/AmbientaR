@@ -1,30 +1,19 @@
-"use client";
+'use client';
 
-import { Suspense } from "react";
-import { LicenseForm } from "../license-form";
-import {
-  LicenseFormModalSuspenseFallback,
-  LicenseFormShell,
-  useLicenseFormShellSuccess,
-} from "../license-form-shell";
+import dynamic from 'next/dynamic';
+import { LicenseFormModalSuspenseFallback } from '../license-form-shell';
 
-const TITLE = "Adicionar Nova Licença";
-const DESCRIPTION = "Preencha os detalhes para criar uma nova licença.";
-
-function NewLicenseModalContent() {
-  const onSuccess = useLicenseFormShellSuccess("modal");
-
-  return (
-    <LicenseFormShell variant="modal" title={TITLE} description={DESCRIPTION}>
-      <LicenseForm currentLicense={null} onSuccess={onSuccess} />
-    </LicenseFormShell>
-  );
-}
+const NewLicenseModalView = dynamic(
+  () =>
+    import('./new-license-modal-view').then((m) => ({
+      default: m.NewLicenseModalView,
+    })),
+  {
+    ssr: false,
+    loading: () => <LicenseFormModalSuspenseFallback />,
+  },
+);
 
 export default function NewLicenseModal() {
-  return (
-    <Suspense fallback={<LicenseFormModalSuspenseFallback />}>
-      <NewLicenseModalContent />
-    </Suspense>
-  );
+  return <NewLicenseModalView />;
 }

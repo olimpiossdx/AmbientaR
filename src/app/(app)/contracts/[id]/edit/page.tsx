@@ -1,104 +1,24 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { Suspense } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import { PageHeader } from '@/components/page-header';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { useDoc, useFirebase, useMemoFirebase } from '@/firebase';
-import { doc } from 'firebase/firestore';
-import type { Contract } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
+import { PageHeader } from '@/components/page-header';
 
-const ContractForm = dynamic(
-  () => import('../../contract-form').then((m) => ({ default: m.ContractForm })),
+const EditContractView = dynamic(
+  () => import('./edit-contract-view').then((m) => ({ default: m.EditContractView })),
   {
-    loading: () => <Skeleton className="h-96 w-full" />,
     ssr: false,
+    loading: () => (
+      <div className="flex flex-col h-full">
+        <PageHeader title="Editar Contrato" />
+        <main className="flex-1 p-4 md:p-6">
+          <Skeleton className="h-96 w-full max-w-2xl mx-auto rounded-lg" />
+        </main>
+      </div>
+    ),
   },
 );
 
-function EditContractPageContent() {
-  const router = useRouter();
-  const params = useParams();
-  const itemId = (params?.id as string | undefined) ?? '';
-
-  const { firestore } = useFirebase();
-
-  const itemDocRef = useMemoFirebase(() => {
-    if (!firestore || !itemId) return null;
-    return doc(firestore, 'contracts', itemId);
-  }, [firestore, itemId]);
-
-  const { data: item, isLoading } = useDoc<Contract>(itemDocRef);
-
-  const handleSuccess = () => {
-    router.push('/contracts');
-  };
-
-  if (isLoading) {
-    return (
-      <div className="flex flex-col h-full">
-        <PageHeader title="Carregando Contrato..." />
-        <main className="flex-1 overflow-auto p-4 md:p-6">
-          <div className="max-w-4xl mx-auto">
-            <Card>
-              <CardHeader>
-                <Skeleton className="h-8 w-1/2" />
-                <Skeleton className="h-4 w-3/4" />
-              </CardHeader>
-              <CardContent>
-                <Skeleton className="h-[500px] w-full" />
-              </CardContent>
-            </Card>
-          </div>
-        </main>
-      </div>
-    );
-  }
-
-  if (!item && !isLoading) {
-    return (
-      <div className="flex flex-col h-full">
-        <PageHeader title="Erro" />
-        <main className="flex-1 overflow-auto p-4 md:p-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Contrato não encontrado</CardTitle>
-              <CardDescription>
-                O registro que você está tentando editar não foi encontrado.
-              </CardDescription>
-            </CardHeader>
-          </Card>
-        </main>
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex flex-col h-full">
-      <PageHeader title={`Editando Contrato: ${item?.contratante?.nome || '...'}`} />
-      <main className="flex-1 overflow-auto p-4 md:p-6">
-        <div className="max-w-4xl mx-auto">
-          <Card>
-            <CardHeader>
-              <CardTitle>Editar Contrato</CardTitle>
-              <CardDescription>Atualize os detalhes do contrato abaixo.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ContractForm currentItem={item} onSuccess={handleSuccess} />
-            </CardContent>
-          </Card>
-        </div>
-      </main>
-    </div>
-  );
-}
-
 export default function EditContractPage() {
-  return (
-    <Suspense fallback={<div>Carregando...</div>}>
-      <EditContractPageContent />
-    </Suspense>
-  );
+  return <EditContractView />;
 }

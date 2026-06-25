@@ -1,43 +1,24 @@
-"use client";
+'use client';
 
-import { PageHeader } from "@/components/page-header";
-import { McpToolsPanel } from "@/components/mcp-rag/panels/mcp-tools-panel";
-import { useAuth } from "@/firebase";
-import {
-  Card,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import dynamic from 'next/dynamic';
+import { Skeleton } from '@/components/ui/skeleton';
+import { PageHeader } from '@/components/page-header';
 
-export default function AiLabMcpPage() {
-  const { user } = useAuth();
-
-  if (user && user.role !== "admin") {
-    return (
-      <div className="flex h-full flex-col">
+const AiLabMcpView = dynamic(
+  () => import('./ai-lab-mcp-view').then((m) => ({ default: m.AiLabMcpView })),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex flex-col h-full">
         <PageHeader title="MCP & Ferramentas" />
-        <main className="flex-1 overflow-auto p-4 md:p-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Acesso restrito</CardTitle>
-              <CardDescription>
-                Este módulo está disponível apenas para administradores nesta
-                fase.
-              </CardDescription>
-            </CardHeader>
-          </Card>
+        <main className="flex-1 p-4 md:p-6">
+          <Skeleton className="h-96 w-full rounded-lg" />
         </main>
       </div>
-    );
-  }
+    ),
+  },
+);
 
-  return (
-    <div className="flex h-full flex-col">
-      <PageHeader title="MCP & Ferramentas" />
-      <main className="flex-1 overflow-auto p-4 md:p-6">
-        <McpToolsPanel />
-      </main>
-    </div>
-  );
+export default function AiLabMcpPage() {
+  return <AiLabMcpView />;
 }

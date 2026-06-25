@@ -1,51 +1,24 @@
-"use client";
+'use client';
 
-import { Suspense } from "react";
-import { CompanyForm } from "../company-form";
-import { useCadastroGestaoWriteGuard } from "@/hooks/use-cadastro-gestao-write-guard";
-import {
-  CompanyFormPageGuardFallback,
-  CompanyFormShell,
-  useCompanyFormShellDismiss,
-  useCompanyFormShellSuccess,
-} from "../company-form-shell";
+import dynamic from 'next/dynamic';
+import { Skeleton } from '@/components/ui/skeleton';
+import { PageHeader } from '@/components/page-header';
 
-const TITLE = "Adicionar Nova Empresa";
-const DESCRIPTION =
-  "Preencha os detalhes para cadastrar uma nova empresa parceira.";
-
-function NewCompanyPageContent() {
-  const { blocked, isInitialized } = useCadastroGestaoWriteGuard(
-    "/responsible-company",
-  );
-  const onSuccess = useCompanyFormShellSuccess("page");
-  const onCancel = useCompanyFormShellDismiss();
-
-  if (!isInitialized) {
-    return <CompanyFormPageGuardFallback pageHeaderTitle="Nova Empresa" />;
-  }
-  if (blocked) return null;
-
-  return (
-    <CompanyFormShell
-      variant="page"
-      title={TITLE}
-      description={DESCRIPTION}
-      pageHeaderTitle="Nova Empresa Responsável"
-    >
-      <CompanyForm
-        currentItem={null}
-        onSuccess={onSuccess}
-        onCancel={onCancel}
-      />
-    </CompanyFormShell>
-  );
-}
+const NewCompanyView = dynamic(
+  () => import('./new-company-view').then((m) => ({ default: m.NewCompanyView })),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex flex-col h-full">
+        <PageHeader title="Nova Empresa Responsável" />
+        <main className="flex-1 p-4 md:p-6">
+          <Skeleton className="h-96 w-full max-w-2xl mx-auto rounded-lg" />
+        </main>
+      </div>
+    ),
+  },
+);
 
 export default function NewCompanyPage() {
-  return (
-    <Suspense fallback={<div>Carregando...</div>}>
-      <NewCompanyPageContent />
-    </Suspense>
-  );
+  return <NewCompanyView />;
 }

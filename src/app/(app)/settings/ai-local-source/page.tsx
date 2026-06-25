@@ -1,42 +1,24 @@
-"use client";
+'use client';
 
-import { PageHeader } from "@/components/page-header";
-import { AiLocalSourcePanel } from "@/components/mcp-rag/panels/ai-local-source-panel";
-import { useAuth } from "@/firebase";
-import {
-  Card,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import dynamic from 'next/dynamic';
+import { Skeleton } from '@/components/ui/skeleton';
+import { PageHeader } from '@/components/page-header';
 
-export default function AiLocalSourceSettingsPage() {
-  const { user } = useAuth();
-
-  if (user && user.role !== "admin") {
-    return (
-      <div className="flex h-full flex-col">
+const AiLocalSourceSettingsView = dynamic(
+  () => import('./ai-local-source-view').then((m) => ({ default: m.AiLocalSourceSettingsView })),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex flex-col h-full">
         <PageHeader title="Pasta Base IA (Local)" />
-        <main className="flex-1 overflow-auto p-4 md:p-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Acesso restrito</CardTitle>
-              <CardDescription>
-                Este módulo está disponível apenas para administradores.
-              </CardDescription>
-            </CardHeader>
-          </Card>
+        <main className="flex-1 p-4 md:p-6">
+          <Skeleton className="h-64 w-full rounded-lg" />
         </main>
       </div>
-    );
-  }
+    ),
+  },
+);
 
-  return (
-    <div className="flex h-full flex-col">
-      <PageHeader title="Pasta Base IA (Local)" />
-      <main className="flex-1 overflow-auto p-4 md:p-6">
-        <AiLocalSourcePanel />
-      </main>
-    </div>
-  );
+export default function AiLocalSourceSettingsPage() {
+  return <AiLocalSourceSettingsView />;
 }

@@ -54,6 +54,7 @@ import {
 } from '@/lib/project-roi-dre-export';
 import { ProjectRoiExportButtons } from '@/components/financial/project-roi-export-buttons';
 import { DeleteRoiTransactionButton } from '@/components/financial/delete-roi-transaction-button';
+import { EditRoiTransactionButton } from '@/components/financial/edit-roi-transaction-button';
 import { ProjectRoiSemaforoBadge } from '@/components/financial/project-roi-semaforo-badge';
 import { TransactionForm } from '@/app/(app)/cash-flow/transaction-form';
 import { useToast } from '@/hooks/use-toast';
@@ -142,7 +143,7 @@ export function ProjetosRoiDetailView() {
     [firestore, user],
   );
   const suppliersQ = useMemoFirebase(
-    () => (firestore && user ? collection(firestore, 'suppliers') : null),
+    () => (firestore && user ? collection(firestore, 'fornecedores') : null),
     [firestore, user],
   );
 
@@ -664,6 +665,11 @@ export function ProjetosRoiDetailView() {
                     revenues={revenues ?? undefined}
                     expenses={expenses ?? undefined}
                     canWrite={canWrite}
+                    caseId={caseId}
+                    encerrado={encerrado}
+                    defaultContractId={roiCase.contractId}
+                    defaultClientId={roiCase.clientId}
+                    defaultProjectId={roiCase.projectId}
                   />
                 </div>
               </CardContent>
@@ -1201,6 +1207,24 @@ function filterExtratoLines(
   );
 }
 
+function resolveExtratoTransactionItem(
+  line: ProjectRoiExtratoLine,
+  revenues?: Revenue[],
+  expenses?: Expense[],
+): { item: Revenue | Expense; kind: 'revenue' | 'expense' } | null {
+  if (line.kind === 'orcamento_credito') return null;
+  if (line.kind !== 'revenue' && line.kind !== 'expense') return null;
+
+  const item =
+    line.kind === 'revenue'
+      ? revenues?.find((r) => r.id === line.id)
+      : expenses?.find((e) => e.id === line.id);
+
+  if (!item || item.deletedAt || item.isEstorno) return null;
+
+  return { item, kind: line.kind };
+}
+
 function ExtratoTable({
   lines,
   filter,
@@ -1208,6 +1232,11 @@ function ExtratoTable({
   revenues,
   expenses,
   canWrite,
+  caseId,
+  encerrado,
+  defaultContractId,
+  defaultClientId,
+  defaultProjectId,
 }: {
   lines: ProjectRoiExtratoLine[];
   filter: 'all' | 'saidas' | 'entradas';
@@ -1215,6 +1244,11 @@ function ExtratoTable({
   revenues?: Revenue[];
   expenses?: Expense[];
   canWrite?: boolean;
+  caseId: string;
+  encerrado: boolean;
+  defaultContractId?: string;
+  defaultClientId?: string;
+  defaultProjectId?: string;
 }) {
   const filtered = filterExtratoLines(lines, filter);
 
@@ -1256,7 +1290,7 @@ function ExtratoTable({
       <TableHead className="whitespace-nowrap text-right">Saldo acum.</TableHead>
       <TableHead className="whitespace-nowrap">Status</TableHead>
       <TableHead className="w-10" />
-      <TableHead className="w-[90px]" />
+      <TableHead className="w-[160px]" />
     </TableRow>
   );
 
@@ -1309,11 +1343,23 @@ function ExtratoTable({
       </TableCell>
       <TableCell>
         {canWrite ? (
-          <ExtratoExcluirButton
-            line={line}
-            revenues={revenues}
-            expenses={expenses}
-          />
+          <div className="flex flex-wrap items-center gap-1">
+            <ExtratoEditarButton
+              line={line}
+              revenues={revenues}
+              expenses={expenses}
+              caseId={caseId}
+              encerrado={encerrado}
+              defaultContractId={defaultContractId}
+              defaultClientId={defaultClientId}
+              defaultProjectId={defaultProjectId}
+            />
+            <ExtratoExcluirButton
+              line={line}
+              revenues={revenues}
+              expenses={expenses}
+            />
+          </div>
         ) : null}
       </TableCell>
     </TableRow>
@@ -1370,6 +1416,42 @@ function ExtratoValorCell({ line }: { line: ProjectRoiExtratoLine }) {
   );
 }
 
+function ExtratoEditarButton({
+  line,
+  revenues,
+  expenses,
+  caseId,
+  encerrado,
+  defaultContractId,
+  defaultClientId,
+  defaultProjectId,
+}: {
+  line: ProjectRoiExtratoLine;
+  revenues?: Revenue[];
+  expenses?: Expense[];
+  caseId: string;
+  encerrado: boolean;
+  defaultContractId?: string;
+  defaultClientId?: string;
+  defaultProjectId?: string;
+}) {
+  if (encerrado) return null;
+
+  const resolved = resolveExtratoTransactionItem(line, revenues, expenses);
+  if (!resolved) return null;
+
+  return (
+    <EditRoiTransactionButton
+      item={resolved.item}
+      kind={resolved.kind}
+      caseId={caseId}
+      defaultContractId={defaultContractId}
+      defaultClientId={defaultClientId}
+      defaultProjectId={defaultProjectId}
+    />
+  );
+}
+
 function ExtratoExcluirButton({
   line,
   revenues,
@@ -1379,20 +1461,13 @@ function ExtratoExcluirButton({
   revenues?: Revenue[];
   expenses?: Expense[];
 }) {
-  if (line.kind === 'orcamento_credito') return null;
-  if (line.kind !== 'revenue' && line.kind !== 'expense') return null;
-
-  const item =
-    line.kind === 'revenue'
-      ? revenues?.find((r) => r.id === line.id)
-      : expenses?.find((e) => e.id === line.id);
-
-  if (!item || item.deletedAt || item.isEstorno) return null;
+  const resolved = resolveExtratoTransactionItem(line, revenues, expenses);
+  if (!resolved) return null;
 
   return (
     <DeleteRoiTransactionButton
-      item={item}
-      kind={line.kind as 'revenue' | 'expense'}
+      item={resolved.item}
+      kind={resolved.kind}
     />
   );
 }

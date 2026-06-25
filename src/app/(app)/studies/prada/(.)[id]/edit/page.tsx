@@ -1,55 +1,13 @@
 'use client';
 
-import { Suspense } from 'react';
-import { useParams } from 'next/navigation';
-import { PradaForm } from '../../prada-form';
-import { useDoc, useFirebase, useMemoFirebase } from '@/firebase';
-import { doc } from 'firebase/firestore';
-import type { Prada } from '@/lib/types';
-import {
-  StudyFormModalSuspenseFallback,
-  StudyFormShell,
-  useStudyFormShellSuccess,
-} from '@/components/studies/study-form-shell';
+import dynamic from 'next/dynamic';
+import { StudyFormModalSuspenseFallback } from '@/components/studies/study-form-shell';
 
-const LIST_PATH = '/studies/prada';
-
-const TITLE = 'Editar Plano de Recuperação de Áreas Degradadas';
-const DESCRIPTION = 'Atualize os detalhes do PRADA abaixo.';
-const NOT_FOUND = 'PRADA não encontrado.';
-
-function EditPradaModalContent() {
-  const params = useParams();
-  const pradaId = (params?.id as string | undefined) ?? '';
-  const onSuccess = useStudyFormShellSuccess('modal', LIST_PATH);
-
-  const { firestore } = useFirebase();
-
-  const pradaDocRef = useMemoFirebase(() => {
-    if (!firestore || !pradaId) return null;
-    return doc(firestore, 'pradas', pradaId);
-  }, [firestore, pradaId]);
-
-  const { data: prada, isLoading } = useDoc<Prada>(pradaDocRef);
-
-  return (
-    <StudyFormShell
-      variant="modal"
-      title={TITLE}
-      description={DESCRIPTION}
-      notFoundTitle="PRADA não encontrado"
-      isLoading={isLoading}
-      notFoundMessage={!prada && !isLoading ? NOT_FOUND : undefined}
-    >
-      {prada ? <PradaForm currentItem={prada} onSuccess={onSuccess} /> : null}
-    </StudyFormShell>
-  );
-}
+const EditPradaModalView = dynamic(
+  () => import('./edit-prada-modal-view').then((m) => ({ default: m.EditPradaModalView })),
+  { ssr: false, loading: () => <StudyFormModalSuspenseFallback /> },
+);
 
 export default function EditPradaModal() {
-  return (
-    <Suspense fallback={<StudyFormModalSuspenseFallback />}>
-      <EditPradaModalContent />
-    </Suspense>
-  );
+  return <EditPradaModalView />;
 }

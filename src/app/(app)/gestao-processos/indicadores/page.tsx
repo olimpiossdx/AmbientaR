@@ -1,22 +1,24 @@
-"use client";
+'use client';
 
-import { Suspense } from "react";
-import { Skeleton } from "@/components/ui/skeleton";
-import { GestaoProcessosIndicadoresView } from "@/components/gestao-processos/gestao-processos-indicadores-view";
+import dynamic from 'next/dynamic';
+import { Skeleton } from '@/components/ui/skeleton';
 
-function IndicadoresLoading() {
-  return (
-    <div className="space-y-4 p-4 md:p-6">
-      <Skeleton className="h-16 w-full" />
-      <Skeleton className="h-48 w-full" />
-    </div>
-  );
-}
+const GestaoProcessosIndicadoresView = dynamic(
+  () =>
+    import('@/components/gestao-processos/gestao-processos-indicadores-view').then(
+      (m) => ({ default: m.GestaoProcessosIndicadoresView }),
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="space-y-4 p-4 md:p-6">
+        <Skeleton className="h-16 w-full" />
+        <Skeleton className="h-48 w-full" />
+      </div>
+    ),
+  },
+);
 
 export default function GestaoProcessosIndicadoresPage() {
-  return (
-    <Suspense fallback={<IndicadoresLoading />}>
-      <GestaoProcessosIndicadoresView />
-    </Suspense>
-  );
+  return <GestaoProcessosIndicadoresView />;
 }

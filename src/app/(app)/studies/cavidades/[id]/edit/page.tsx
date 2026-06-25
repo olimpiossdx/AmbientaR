@@ -1,61 +1,24 @@
 'use client';
 
-import { Suspense } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import { useDoc, useFirebase, useMemoFirebase } from '@/firebase';
-import { doc } from 'firebase/firestore';
-import type { EstudoCavidade } from '@/lib/types';
-import { CavidadesForm } from '../../cavidades-form';
-import { CavidadesExportIconButtons } from '@/components/cavidades/cavidades-export-icon-buttons';
-import { StudyFormShell } from '@/components/studies/study-form-shell';
+import dynamic from 'next/dynamic';
+import { Skeleton } from '@/components/ui/skeleton';
+import { PageHeader } from '@/components/page-header';
 
-const LIST_PATH = '/studies/cavidades';
-const CARD_CONTENT_CLASS = 'min-h-[480px]';
-
-function EditCavidadesPageContent() {
-  const router = useRouter();
-  const params = useParams();
-  const id = (params?.id as string | undefined) ?? '';
-  const { firestore } = useFirebase();
-
-  const docRef = useMemoFirebase(
-    () => (firestore && id ? doc(firestore, 'estudosCavidades', id) : null),
-    [firestore, id],
-  );
-  const { data: estudo, isLoading } = useDoc<EstudoCavidade>(docRef);
-
-  return (
-    <StudyFormShell
-      variant="page"
-      title="Estudo de cavidades"
-      description={
-        estudo
-          ? `Status: ${estudo.status ?? 'Rascunho'} · Nível: ${estudo.nivelEstudo ?? 'triagem'}`
-          : 'Atualize o estudo de cavidades.'
-      }
-      notFoundTitle="Estudo não encontrado"
-      pageHeaderTitle={`Editar — ${estudo?.empreendimento?.nome || '...'}`}
-      pageHeaderActions={
-        estudo ? <CavidadesExportIconButtons estudo={estudo} /> : undefined
-      }
-      cardContentClassName={CARD_CONTENT_CLASS}
-      isLoading={isLoading}
-      notFoundMessage={!estudo && !isLoading ? 'Estudo não encontrado.' : undefined}
-    >
-      {estudo ? (
-        <CavidadesForm
-          currentItem={estudo}
-          onCancel={() => router.push(LIST_PATH)}
-        />
-      ) : null}
-    </StudyFormShell>
-  );
-}
+const EditCavidadesView = dynamic(
+  () => import('./edit-cavidades-view').then((m) => ({ default: m.EditCavidadesView })),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex flex-col h-full">
+        <PageHeader title="Editar Projeto Técnico de Cavidades" />
+        <main className="flex-1 p-4 md:p-6">
+          <Skeleton className="h-96 w-full max-w-4xl mx-auto rounded-lg" />
+        </main>
+      </div>
+    ),
+  },
+);
 
 export default function EditCavidadesPage() {
-  return (
-    <Suspense fallback={<div>Carregando...</div>}>
-      <EditCavidadesPageContent />
-    </Suspense>
-  );
+  return <EditCavidadesView />;
 }

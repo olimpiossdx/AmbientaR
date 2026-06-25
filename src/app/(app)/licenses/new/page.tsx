@@ -1,34 +1,24 @@
-"use client";
+'use client';
 
-import { Suspense } from "react";
-import { LicenseForm } from "../license-form";
-import {
-  LicenseFormShell,
-  useLicenseFormShellSuccess,
-} from "../license-form-shell";
+import dynamic from 'next/dynamic';
+import { Skeleton } from '@/components/ui/skeleton';
+import { PageHeader } from '@/components/page-header';
 
-const TITLE = "Adicionar Nova Licença";
-const DESCRIPTION = "Preencha os detalhes para criar uma nova licença.";
-
-function NewLicensePageContent() {
-  const onSuccess = useLicenseFormShellSuccess("page");
-
-  return (
-    <LicenseFormShell
-      variant="page"
-      title={TITLE}
-      description={DESCRIPTION}
-      pageHeaderTitle="Nova Licença Ambiental"
-    >
-      <LicenseForm currentLicense={null} onSuccess={onSuccess} />
-    </LicenseFormShell>
-  );
-}
+const NewLicenseView = dynamic(
+  () => import('./new-license-view').then((m) => ({ default: m.NewLicenseView })),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex flex-col h-full">
+        <PageHeader title="Nova Licença Ambiental" />
+        <main className="flex-1 p-4 md:p-6">
+          <Skeleton className="h-96 w-full max-w-4xl mx-auto rounded-lg" />
+        </main>
+      </div>
+    ),
+  },
+);
 
 export default function NewLicensePage() {
-  return (
-    <Suspense fallback={<div>Carregando...</div>}>
-      <NewLicensePageContent />
-    </Suspense>
-  );
+  return <NewLicenseView />;
 }

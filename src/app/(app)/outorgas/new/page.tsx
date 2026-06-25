@@ -1,34 +1,24 @@
-"use client";
+'use client';
 
-import { Suspense } from "react";
-import { OutorgaForm } from "../outorga-form";
-import {
-  OutorgaFormShell,
-  useOutorgaFormShellSuccess,
-} from "../outorga-form-shell";
+import dynamic from 'next/dynamic';
+import { Skeleton } from '@/components/ui/skeleton';
+import { PageHeader } from '@/components/page-header';
 
-const TITLE = "Adicionar nova outorga";
-const DESCRIPTION = "Preencha os detalhes para criar uma nova outorga.";
-
-function NewOutorgaPageContent() {
-  const onSuccess = useOutorgaFormShellSuccess("page");
-
-  return (
-    <OutorgaFormShell
-      variant="page"
-      title={TITLE}
-      description={DESCRIPTION}
-      pageHeaderTitle="Nova outorga"
-    >
-      <OutorgaForm currentItem={null} onSuccess={onSuccess} />
-    </OutorgaFormShell>
-  );
-}
+const NewOutorgaView = dynamic(
+  () => import('./new-outorga-view').then((m) => ({ default: m.NewOutorgaView })),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex flex-col h-full">
+        <PageHeader title="Nova outorga" />
+        <main className="flex-1 p-4 md:p-6">
+          <Skeleton className="h-96 w-full max-w-4xl mx-auto rounded-lg" />
+        </main>
+      </div>
+    ),
+  },
+);
 
 export default function NewOutorgaPage() {
-  return (
-    <Suspense fallback={<div>Carregando…</div>}>
-      <NewOutorgaPageContent />
-    </Suspense>
-  );
+  return <NewOutorgaView />;
 }

@@ -877,3 +877,363 @@ Fora do plano F00–F18; **uma rota por PR**, mesmo protocolo de debug.
 | `/financial/projetos-roi` | ~339 kB | **148 kB** |
 
 **Próximo candidato F19w:** rotas ~320–330 kB restantes (`inspections/reports`, `gestao-processos/indicadores`, hubs diversos).
+
+### F19w — relatórios vistorias e indicadores gestão lazy ✅ (2026-06-25)
+
+| Ficheiro | Mudança |
+|----------|---------|
+| `inspections/reports/` + `inspection-reports-view.tsx` | Shell + relatórios de campo |
+| `gestao-processos/indicadores/page.tsx` | `GestaoProcessosIndicadoresView` lazy |
+| `gestao-processos/indicadores/analise/page.tsx` | `GestaoProcessosIndicadoresAnaliseView` lazy |
+
+**Verificação:** `npm run typecheck` · `npm run build`
+
+| Rota | Baseline (F17) | Após F19w |
+|------|----------------|-----------|
+| `/inspections/reports` | ~328 kB | **148 kB** |
+| `/gestao-processos/indicadores` | ~377 kB | **104 kB** |
+| `/gestao-processos/indicadores/analise` | ~366 kB | **104 kB** |
+
+**Próximo candidato F19x:** auditar rotas >250 kB restantes no build.
+
+### F19x — painel financeiro e listagens operacionais lazy ✅ (2026-06-25)
+
+| Ficheiro | Mudança |
+|----------|---------|
+| `financial/painel/` + `financial-painel-view.tsx` | Shell + painel financeiro |
+| `intervencoes/` + `intervencoes-list-view.tsx` | Shell + listagem DAIA |
+| `projects/` + `projects-list-view.tsx` | Shell + empreendimentos |
+| `requests/` + `requests-list-view.tsx` | Shell + licenciamento |
+
+**Verificação:** `npm run typecheck` · `npm run build`
+
+| Rota | Baseline (F17) | Após F19x |
+|------|----------------|-----------|
+| `/financial/painel` | ~327 kB | **148 kB** |
+| `/intervencoes` | ~389 kB | **148 kB** |
+| `/projects` | ~323 kB | **148 kB** |
+| `/requests` | ~328 kB | **148 kB** |
+
+**Próximo candidato F19y:** rotas >400 kB (`studies/analise-socioambiental`, `outorgas`, `monitoring/manual`).
+
+### F19y — rotas >400 kB lazy views ✅ (2026-06-25)
+
+| Ficheiro | Mudança |
+|----------|---------|
+| `studies/analise-socioambiental/` + `analise-socioambiental-view.tsx` | Shell + hub ASA |
+| `outorgas/` + `outorgas-list-view.tsx` | Shell + listagem outorgas |
+| `monitoring/manual/` + `manual-monitoring-view.tsx` | Shell + lançamento manual |
+| `multas-defesas/nova/` + `nova-multa-defesa-view.tsx` | Shell + novo trâmite multas |
+
+**Verificação:** `npm run typecheck` · `npm run build`
+
+| Rota | Baseline (F17) | Após F19y |
+|------|----------------|-----------|
+| `/studies/analise-socioambiental` | ~512 kB | **148 kB** |
+| `/outorgas` | ~443 kB | **148 kB** |
+| `/monitoring/manual` | ~433 kB | **148 kB** |
+| `/multas-defesas/nova` | ~424 kB | **149 kB** |
+
+**Próximo candidato F19z:** formulários interceptados ~380 kB (`licenses`, `invoices`, `outorgas/new`).
+
+### F19z — formulários new/edit interceptados lazy ✅ (2026-06-25)
+
+| Ficheiro | Mudança |
+|----------|---------|
+| `licenses/new/` + `new-license-view.tsx` | Shell + LicenseForm |
+| `invoices/new/` + `new-invoice-view.tsx` | Shell + InvoiceForm |
+| `outorgas/new/` + `new-outorga-view.tsx` | Shell + OutorgaForm |
+| `multas-defesas/[id]/` + `multa-defesa-tramite-view.tsx` | Shell + trâmite multas |
+
+**Verificação:** `npm run typecheck` · `npm run build`
+
+| Rota | Baseline (F17) | Após F19z |
+|------|----------------|-----------|
+| `/licenses/new` | ~383 kB | **148 kB** |
+| `/invoices/new` | ~381 kB | **148 kB** |
+| `/outorgas/new` | ~435 kB | **148 kB** |
+| `/multas-defesas/[id]` | ~437 kB | **148 kB** |
+
+**Próximo candidato F20:** fechar auditoria pós-F19 — rotas intercept `(.)` e listagens ~300 kB CRM/AI Lab.
+
+### F20 — intercept modals, CRM e AI Lab lazy ✅ (2026-06-25)
+
+| Ficheiro | Mudança |
+|----------|---------|
+| `licenses/(.)new`, `(.)[id]/edit` | Shell + modal views |
+| `invoices/(.)new`, `(.)[id]/edit` | Shell + modal views |
+| `outorgas/(.)new`, `(.)[id]/edit` | Shell + modal views |
+| `crm/{clients,proposals,team}/` | Shell + list views |
+| `ai-lab/{rag,cloud-library,mcp}/` | Shell + panel views |
+
+**Verificação:** `npm run typecheck` · `npm run build`
+
+| Rota | Baseline (F17) | Após F20 |
+|------|----------------|----------|
+| `/licenses/(.)new` | ~384 kB | **150 kB** |
+| `/invoices/(.)new` | ~381 kB | **150 kB** |
+| `/outorgas/(.)new` | ~435 kB | **150 kB** |
+| `/licenses/(.)[id]/edit` | ~384 kB | **150 kB** |
+| `/invoices/(.)[id]/edit` | ~382 kB | **150 kB** |
+| `/outorgas/(.)[id]/edit` | ~435 kB | **150 kB** |
+| `/crm/clients` | ~300 kB | **148 kB** |
+| `/crm/proposals` | ~300 kB | **148 kB** |
+| `/crm/team` | ~300 kB | **148 kB** |
+| `/ai-lab/rag` | ~300 kB | **148 kB** |
+| `/ai-lab/cloud-library` | ~300 kB | **148 kB** |
+| `/ai-lab/mcp` | ~298 kB | **148 kB** |
+
+**Próximo candidato F20b:** `crm/alerts`, `crm/settings`, `studies/outorgas/new`, intercept studies `(.)`.
+
+### F20b — CRM restante, outorgas estudos e intercept PCA/RCA lazy ✅ (2026-06-25)
+
+| Ficheiro | Mudança |
+|----------|---------|
+| `crm/alerts/`, `crm/settings/` | Shell + views |
+| `studies/outorgas/new/` | Shell + modo de uso picker |
+| `studies/pca/(.)new`, `(.)[id]/edit` | Shell + modal views |
+| `studies/rca/(.)new`, `(.)[id]/edit` | Shell + modal views |
+
+**Verificação:** `npm run typecheck` · `npm run build`
+
+| Rota | Baseline (F17) | Após F20b |
+|------|----------------|-----------|
+| `/crm/alerts` | ~299 kB | **148 kB** |
+| `/crm/settings` | ~299 kB | **148 kB** |
+| `/studies/outorgas/new` | ~315 kB | **149 kB** |
+| `/studies/pca/(.)new` | ~558 kB | **150 kB** |
+| `/studies/pca/(.)[id]/edit` | ~559 kB | **150 kB** |
+| `/studies/rca/(.)new` | ~482 kB | **150 kB** |
+| `/studies/rca/(.)[id]/edit` | ~482 kB | **150 kB** |
+
+**Próximo candidato F20c:** intercept studies restantes (`pia`, `prada`, `ptrf`, `eia-rima`).
+
+### F20c — intercept PIA, PRADA, PTRF e EIA-RIMA lazy ✅ (2026-06-25)
+
+| Ficheiro | Mudança |
+|----------|---------|
+| `studies/pia/(.)new`, `(.)[id]/edit` | Shell + modal views |
+| `studies/prada/(.)new`, `(.)[id]/edit` | Shell + modal views |
+| `studies/ptrf/(.)new`, `(.)[id]/edit` | Shell + modal views |
+| `studies/eia-rima/(.)new`, `(.)[id]/edit` | Shell + modal views |
+
+**Verificação:** `npm run typecheck` · `npm run build`
+
+| Rota | Baseline (F17) | Após F20c |
+|------|----------------|-----------|
+| `/studies/pia/(.)new` | ~381 kB | **150 kB** |
+| `/studies/pia/(.)[id]/edit` | ~381 kB | **150 kB** |
+| `/studies/prada/(.)new` | ~372 kB | **150 kB** |
+| `/studies/prada/(.)[id]/edit` | ~372 kB | **150 kB** |
+| `/studies/ptrf/(.)new` | ~339 kB | **150 kB** |
+| `/studies/ptrf/(.)[id]/edit` | ~339 kB | **150 kB** |
+| `/studies/eia-rima/(.)new` | ~339 kB | **150 kB** |
+| `/studies/eia-rima/(.)[id]/edit` | ~339 kB | **150 kB** |
+
+**Próximo candidato F20d:** `responsible-company/(.)`, `technical-responsible/(.)`, listagens ~320 kB restantes.
+
+### F20d — empresa responsável, RT e listagens licenças/faturas/laudos lazy ✅ (2026-06-25)
+
+| Ficheiro | Mudança |
+|----------|---------|
+| `responsible-company/(.)new`, `(.)[id]/edit` | Shell + modal views |
+| `technical-responsible/(.)new`, `(.)[id]/edit` | Shell + modal views |
+| `licenses/`, `invoices/`, `laudos/` | Shell + list views |
+
+**Verificação:** `npm run typecheck` · `npm run build`
+
+| Rota | Baseline (F17) | Após F20d |
+|------|----------------|-----------|
+| `/responsible-company/(.)new` | ~352 kB | **150 kB** |
+| `/technical-responsible/(.)new` | ~333 kB | **151 kB** |
+| `/licenses` | ~392 kB | **149 kB** |
+| `/invoices` | ~396 kB | **149 kB** |
+| `/laudos` | ~316 kB | **149 kB** |
+
+**Próximo candidato F20e:** auditoria final — rotas >200 kB remanescentes no build.
+
+### F20e — listagens restantes, telemetria, reporting, edit CRM/licenças/faturas lazy ✅ (2026-06-25)
+
+| Ficheiro | Mudança |
+|----------|---------|
+| `responsible-company/`, `technical-responsible/`, `multas-defesas/` | Shell + list views |
+| `monitoring/telemetric/` | Shell + `telemetric-monitoring-view` |
+| `reporting/` | Shell + `reporting-view` |
+| `licenses/[id]/edit`, `invoices/[id]/edit` | Shell + edit views |
+| `crm/new`, `crm/[id]/edit` | Shell + CRM form views |
+
+**Verificação:** `npm run typecheck` · `npm run build` (`build-f20e.log`)
+
+| Rota | Baseline (F17) | Após F20e |
+|------|----------------|-----------|
+| `/responsible-company` | ~329 kB | **149 kB** |
+| `/technical-responsible` | ~311 kB | **149 kB** |
+| `/multas-defesas` | ~312 kB | **150 kB** |
+| `/monitoring/telemetric` | ~421 kB | **149 kB** |
+| `/reporting` | ~366 kB | **149 kB** |
+| `/licenses/[id]/edit` | ~384 kB | **149 kB** |
+| `/invoices/[id]/edit` | ~382 kB | **149 kB** |
+| `/crm/new` | ~374 kB | **149 kB** |
+| `/crm/[id]/edit` | ~375 kB | **149 kB** |
+
+**Próximo candidato F20f:** rotas >200 kB remanescentes — `settings`, `users`, `outorgas/[id]/edit`, estudos (pca/rca new full page), `laudos/[id]`, financeiro pesado, etc.
+
+### F20f — settings, users, outorgas edit, laudos e forms empresa/RT lazy ✅ (2026-06-25)
+
+| Ficheiro | Mudança |
+|----------|---------|
+| `settings/`, `users/` | Shell + views |
+| `outorgas/[id]/edit` | Shell + `edit-outorga-view` |
+| `laudos/[id]`, `laudos/new` | Shell + detail/new views |
+| `responsible-company/new`, `[id]/edit` | Shell + company form views |
+| `technical-responsible/new`, `[id]/edit` | Shell + responsible form views |
+
+**Verificação:** `npm run typecheck` · `npm run build` (`build-f20f.log`)
+
+| Rota | Baseline (F17) | Após F20f |
+|------|----------------|-----------|
+| `/settings` | ~331 kB | **149 kB** |
+| `/users` | ~422 kB | **149 kB** |
+| `/outorgas/[id]/edit` | ~435 kB | **149 kB** |
+| `/laudos/[id]` | ~321 kB | **149 kB** |
+| `/laudos/new` | ~312 kB | **149 kB** |
+| `/responsible-company/new` | ~353 kB | **149 kB** |
+| `/responsible-company/[id]/edit` | ~354 kB | **149 kB** |
+| `/technical-responsible/new` | ~334 kB | **149 kB** |
+| `/technical-responsible/[id]/edit` | ~334 kB | **149 kB** |
+
+**Próximo candidato F20g:** sub-rotas `settings/*` (~300–347 kB), `oficios`, `mtr-declaracao`, `usos-insignificantes`, estudos full-page (`studies/pca/new`, `studies/rca/new`), financeiro (`financial/dre-contabil`, `bens-patrimonio`), CRUD genéricos ~298 kB (`clients`, `contracts`, etc.).
+
+### F20g — settings sub-rotas, ofícios, MTR, usos insignificantes e financeiro patrimonial lazy ✅ (2026-06-25)
+
+| Ficheiro | Mudança |
+|----------|---------|
+| `settings/company`, `templates`, `onedrive-integration`, `deleted-backups`, `ai-local-source` | Shell + views |
+| `oficios/`, `oficios/new`, `oficios/[id]/edit` | Shell + views |
+| `mtr-declaracao/`, `usos-insignificantes/` | Shell + views |
+| `financial/bens-patrimonio/`, `new`, `[id]/edit`, `financial/dre-contabil` | Shell + views |
+
+**Verificação:** `npm run typecheck` · `npm run build` (`build-f20g.log`; limpar `.next` com `node scripts/clean-next-dev.mjs` se dev turbo corromper cache)
+
+| Rota | Baseline (F17) | Após F20g |
+|------|----------------|-----------|
+| `/settings/company` | ~347 kB | **149 kB** |
+| `/settings/templates` | ~330 kB | **149 kB** |
+| `/settings/onedrive-integration` | ~310 kB | **149 kB** |
+| `/settings/deleted-backups` | ~303 kB | **149 kB** |
+| `/settings/ai-local-source` | ~299 kB | **149 kB** |
+| `/oficios` | ~340 kB | **149 kB** |
+| `/oficios/new` | ~366 kB | **149 kB** |
+| `/oficios/[id]/edit` | ~366 kB | **149 kB** |
+| `/mtr-declaracao` | ~362 kB | **149 kB** |
+| `/usos-insignificantes` | ~446 kB | **150 kB** |
+| `/financial/bens-patrimonio` | ~328 kB | **149 kB** |
+| `/financial/bens-patrimonio/new` | ~381 kB | **149 kB** |
+| `/financial/bens-patrimonio/[id]/edit` | ~381 kB | **149 kB** |
+| `/financial/dre-contabil` | ~343 kB | **149 kB** |
+
+**Próximo candidato F20h:** estudos full-page (`studies/pca/new`, `studies/rca/new`, `studies/inventario/[id]`), CRUD ~298 kB (`clients`, `contracts`, `empreendedores`, `projects`), `requests/*`, `knowledge-sources`, financeiro restante (`conciliacao`, `orcamento`, etc.).
+
+### F20h — CRUD cadastros, requests, knowledge-sources, financeiro e PCA/RCA new lazy ✅ (2026-06-25)
+
+| Ficheiro | Mudança |
+|----------|---------|
+| `clients/new`, `[id]/edit` | Shell + views |
+| `contracts/[id]/edit` | Shell + view |
+| `empreendedores/new`, `[id]/edit` | Shell + views |
+| `projects/new`, `[id]/edit` | Shell + views |
+| `knowledge-sources/`, `new`, `[id]` | Shell + views |
+| `requests/new`, `[id]/edit`, `[id]/aia` | Shell + views |
+| `financial/conciliacao`, `orcamento`, `billing-debug`, `fluxo-projetado`, `export-contabil`, `platform-subscription-contracts` | Shell + views |
+| `studies/pca/new`, `studies/rca/new` | Shell + views |
+
+**Verificação:** `npm run typecheck` · `npm run build` (`build-f20h.log`)
+
+| Rota | Baseline (F17) | Após F20h |
+|------|----------------|-----------|
+| `/clients/new` | ~299 kB | **150 kB** |
+| `/clients/[id]/edit` | ~298 kB | **150 kB** |
+| `/contracts/[id]/edit` | ~298 kB | **150 kB** |
+| `/empreendedores/new` | ~300 kB | **150 kB** |
+| `/empreendedores/[id]/edit` | ~300 kB | **150 kB** |
+| `/projects/new` | ~300 kB | **150 kB** |
+| `/projects/[id]/edit` | ~300 kB | **150 kB** |
+| `/knowledge-sources` | ~309 kB | **150 kB** |
+| `/knowledge-sources/new` | ~332 kB | **150 kB** |
+| `/knowledge-sources/[id]` | ~308 kB | **150 kB** |
+| `/requests/new` | ~363 kB | **150 kB** |
+| `/requests/[id]/edit` | ~427 kB | **150 kB** |
+| `/requests/[id]/aia` | ~346 kB | **150 kB** |
+| `/financial/conciliacao` | ~300 kB | **150 kB** |
+| `/financial/orcamento` | ~299 kB | **150 kB** |
+| `/financial/billing-debug` | ~299 kB | **150 kB** |
+| `/financial/fluxo-projetado` | ~300 kB | **150 kB** |
+| `/financial/export-contabil` | ~308 kB | **150 kB** |
+| `/financial/platform-subscription-contracts` | ~299 kB | **150 kB** |
+| `/studies/pca/new` | ~578 kB | **150 kB** |
+| `/studies/rca/new` | ~500 kB | **150 kB** |
+
+**Próximo candidato F20i:** estudos restantes (`studies/inventario/[id]` ~548 kB, `pca/[id]/edit` ~559 kB, hub pages ~340–400 kB), `consultas/*`, `services`/`suppliers`, `register`, módulo fiscal-ambiental (~260 kB).
+
+### F20i — consultas, services, suppliers, register, inventário PCA/RCA lazy ✅ (2026-06-25)
+
+| Ficheiro | Mudança |
+|----------|---------|
+| `consultas/new`, `[id]`, `[id]/edit` | Shell + views |
+| `services/`, `new`, `[id]/edit` | Shell + views |
+| `suppliers/`, `new`, `[id]/edit` | Shell + views |
+| `register/` | Shell + view |
+| `studies/inventario/`, `[id]` | Shell + views |
+| `studies/pca/`, `[id]/edit` | Shell + views |
+| `studies/rca/`, `[id]/edit` | Shell + views |
+
+**Verificação:** `npm run typecheck` · `npm run build` (`build-f20i.log`)
+
+| Rota | Baseline (F17) | Após F20i |
+|------|----------------|-----------|
+| `/consultas/new` | ~313 kB | **150 kB** |
+| `/consultas/[id]` | ~308 kB | **150 kB** |
+| `/consultas/[id]/edit` | ~314 kB | **150 kB** |
+| `/services` | ~302 kB | **150 kB** |
+| `/services/new` | ~324 kB | **150 kB** |
+| `/services/[id]/edit` | ~324 kB | **150 kB** |
+| `/suppliers` | ~302 kB | **150 kB** |
+| `/suppliers/new` | ~332 kB | **150 kB** |
+| `/suppliers/[id]/edit` | ~332 kB | **150 kB** |
+| `/register` | ~326 kB | **98 kB** |
+| `/studies/inventario` | ~357 kB | **150 kB** |
+| `/studies/inventario/[id]` | ~549 kB | **107 kB** (shell; sub-rotas ainda pesadas) |
+| `/studies/pca` | ~339 kB | **150 kB** |
+| `/studies/pca/[id]/edit` | ~559 kB | **150 kB** |
+| `/studies/rca` | ~339 kB | **150 kB** |
+| `/studies/rca/[id]/edit` | ~482 kB | **150 kB** |
+
+**Próximo candidato F20j:** sub-rotas inventário (`especies` ~477 kB, `parcelas` ~367 kB, `calculadora` ~316 kB, `formulas` ~298 kB), hubs estudos restantes (~340–400 kB), `configuracoes/mcp-rag` (~326 kB), fiscal-ambiental (~260 kB), fauna studies (~298 kB).
+
+### F20j — inventário sub-rotas, mcp-rag e fauna studies lazy ✅ (2026-06-25)
+
+| Ficheiro | Mudança |
+|----------|---------|
+| `studies/inventario/[id]/arvores`, `calculadora`, `especies`, `formulas`, `parcelas`, `resultado/[runId]` | Shell + views |
+| `configuracoes/mcp-rag` | `dynamic()` do `McpRagHub` |
+| `studies/fauna/inventario`, `inventario-relatorio`, `monitoramento`, `monitoramento-relatorio`, `resgate`, `resgate-relatorio` (+ `[id]`) | Shell + views |
+
+**Verificação:** `npm run typecheck` · `npm run build` (`build-f20j.log`)
+
+| Rota | Baseline (F17) | Após F20j |
+|------|----------------|-----------|
+| `/studies/inventario/[id]/arvores` | ~289 kB | **107 kB** |
+| `/studies/inventario/[id]/calculadora` | ~316 kB | **107 kB** |
+| `/studies/inventario/[id]/especies` | ~477 kB | **107 kB** |
+| `/studies/inventario/[id]/formulas` | ~298 kB | **107 kB** |
+| `/studies/inventario/[id]/parcelas` | ~367 kB | **107 kB** |
+| `/studies/inventario/[id]/resultado/[runId]` | ~290 kB | **107 kB** |
+| `/configuracoes/mcp-rag` | ~326 kB | **151 kB** |
+| `/studies/fauna/inventario` | ~299 kB | **150 kB** |
+| `/studies/fauna/inventario/[id]` | ~299 kB | **150 kB** |
+| `/studies/fauna/inventario-relatorio` | ~300 kB | **150 kB** |
+| `/studies/fauna/inventario-relatorio/[id]` | ~299 kB | **150 kB** |
+| `/studies/fauna/monitoramento` (+ `[id]`, relatórios) | ~299–300 kB | **150 kB** |
+| `/studies/fauna/resgate` (+ `[id]`, relatórios) | ~299–300 kB | **150 kB** |
+
+**Próximo candidato F20k:** hubs estudos pesados (`studies/assistant` ~356 kB, `barragem`/`cavidades` ~344–438 kB, `educacao-ambiental` ~362–524 kB, `eia-rima` ~340–387 kB), fiscal-ambiental (`dashboard` ~268 kB, `workspace/[id]` ~261 kB), `gestao-processos/fluxo` (~260 kB), rotas ~299 kB restantes (`carteira/[clientId]`, `cash-flow/[id]/edit`, `commercial-proposals/[id]/edit`, etc.).

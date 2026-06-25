@@ -1,70 +1,24 @@
 'use client';
 
-import { Button } from '@/components/ui/button';
-import Link from 'next/link';
-import { StudyDynamicCreationPage } from '@/components/studies/study-dynamic-creation-page';
-import {
-  StudyFormShell,
-  useStudyFormShellSuccess,
-} from '@/components/studies/study-form-shell';
-import { PcaForm } from '../pca-form';
-import { useSearchParams } from 'next/navigation';
-import { Suspense } from 'react';
+import dynamic from 'next/dynamic';
+import { Skeleton } from '@/components/ui/skeleton';
+import { PageHeader } from '@/components/page-header';
 
-const LIST_PATH = '/studies/pca';
-
-const TITLE = 'Adicionar Novo PCA';
-const DESCRIPTION =
-  'Elaboração do PCA — Listagens A a H disponíveis. Os dados podem ser preenchidos a partir do empreendimento cadastrado. Formulário dinâmico via TR: botão "Formulário do documento (TR)".';
-
-function NewPcaPageContent() {
-  const searchParams = useSearchParams();
-  const isDynamic = searchParams?.get('form') === 'dynamic';
-  const initialListagemCode = searchParams?.get('listagem') ?? undefined;
-  const onSuccess = useStudyFormShellSuccess('page', LIST_PATH);
-
-  if (isDynamic) {
-    return (
-      <StudyDynamicCreationPage
-        studySlug="pca"
-        studyLabel="PCA"
-        pageTitle="Novo PCA (formulário do documento)"
-        cardTitle="Adicionar novo PCA"
-        listagemVariant="pca"
-        staticFormHref="/studies/pca/new"
-        onSuccess={onSuccess}
-      />
-    );
-  }
-
-  return (
-    <StudyFormShell
-      variant="page"
-      title={TITLE}
-      description={DESCRIPTION}
-      notFoundTitle="PCA não encontrado"
-      pageHeaderTitle="Novo Plano de Controle Ambiental (PCA)"
-      pageHeaderActions={
-        <Button variant="outline" size="sm" asChild>
-          <Link href="/studies/pca/new?form=dynamic">
-            Formulário do documento (TR)
-          </Link>
-        </Button>
-      }
-    >
-      <PcaForm
-        currentItem={null}
-        onSuccess={onSuccess}
-        initialListagemCode={initialListagemCode}
-      />
-    </StudyFormShell>
-  );
-}
+const NewPcaView = dynamic(
+  () => import('./new-pca-view').then((m) => ({ default: m.NewPcaView })),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex flex-col h-full">
+        <PageHeader title="Novo Plano de Controle Ambiental (PCA)" />
+        <main className="flex-1 p-4 md:p-6">
+          <Skeleton className="h-96 w-full max-w-4xl mx-auto rounded-lg" />
+        </main>
+      </div>
+    ),
+  },
+);
 
 export default function NewPcaPage() {
-  return (
-    <Suspense fallback={<div>Carregando...</div>}>
-      <NewPcaPageContent />
-    </Suspense>
-  );
+  return <NewPcaView />;
 }

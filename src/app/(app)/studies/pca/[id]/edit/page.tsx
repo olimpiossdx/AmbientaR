@@ -1,56 +1,24 @@
 'use client';
 
-import { Suspense } from 'react';
-import { useParams } from 'next/navigation';
-import { PcaForm } from '../../pca-form';
-import { useDoc, useFirebase, useMemoFirebase } from '@/firebase';
-import { doc } from 'firebase/firestore';
-import type { PCA } from '@/lib/types';
-import {
-  StudyFormShell,
-  useStudyFormShellSuccess,
-} from '@/components/studies/study-form-shell';
+import dynamic from 'next/dynamic';
+import { Skeleton } from '@/components/ui/skeleton';
+import { PageHeader } from '@/components/page-header';
 
-const LIST_PATH = '/studies/pca';
-
-const TITLE = 'Editar Plano de Controle Ambiental';
-const DESCRIPTION = 'Atualize os detalhes do PCA abaixo.';
-const NOT_FOUND =
-  'O relatório que você está tentando editar não foi encontrado.';
-
-function EditPcaPageContent() {
-  const params = useParams();
-  const pcaId = (params?.id as string | undefined) ?? '';
-  const onSuccess = useStudyFormShellSuccess('page', LIST_PATH);
-
-  const { firestore } = useFirebase();
-
-  const pcaDocRef = useMemoFirebase(() => {
-    if (!firestore || !pcaId) return null;
-    return doc(firestore, 'pcas', pcaId);
-  }, [firestore, pcaId]);
-
-  const { data: pca, isLoading } = useDoc<PCA>(pcaDocRef);
-
-  return (
-    <StudyFormShell
-      variant="page"
-      title={TITLE}
-      description={DESCRIPTION}
-      notFoundTitle="PCA não encontrado"
-      pageHeaderTitle={`Editando PCA: ${pca?.empreendimento?.nome || '...'}`}
-      isLoading={isLoading}
-      notFoundMessage={!pca && !isLoading ? NOT_FOUND : undefined}
-    >
-      {pca ? <PcaForm currentItem={pca} onSuccess={onSuccess} /> : null}
-    </StudyFormShell>
-  );
-}
+const EditPcaView = dynamic(
+  () => import('./edit-pca-view').then((m) => ({ default: m.EditPcaView })),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex flex-col h-full">
+        <PageHeader title="Editar Plano de Controle Ambiental" />
+        <main className="flex-1 p-4 md:p-6">
+          <Skeleton className="h-96 w-full max-w-4xl mx-auto rounded-lg" />
+        </main>
+      </div>
+    ),
+  },
+);
 
 export default function EditPcaPage() {
-  return (
-    <Suspense fallback={<div>Carregando...</div>}>
-      <EditPcaPageContent />
-    </Suspense>
-  );
+  return <EditPcaView />;
 }

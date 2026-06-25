@@ -1,38 +1,24 @@
 'use client';
 
-import { Suspense } from 'react';
-import { useRouter } from 'next/navigation';
-import { CavidadesForm } from '../cavidades-form';
-import { StudyFormShell } from '@/components/studies/study-form-shell';
+import dynamic from 'next/dynamic';
+import { Skeleton } from '@/components/ui/skeleton';
+import { PageHeader } from '@/components/page-header';
 
-const LIST_PATH = '/studies/cavidades';
-const CARD_CONTENT_CLASS = 'min-h-[480px]';
-
-function NewCavidadesPageContent() {
-  const router = useRouter();
-
-  return (
-    <StudyFormShell
-      variant="page"
-      title="Licenciamento espeleológico — MG"
-      description="Fluxo alinhado à IS SISEMA 08/2017 e DN COPAM 217/2017. Consulte docs/ESTUDO-CAVIDADES-MG.md para referências oficiais."
-      notFoundTitle="Estudo não encontrado"
-      pageHeaderTitle="Novo estudo de cavidades"
-      cardContentClassName={CARD_CONTENT_CLASS}
-    >
-      <CavidadesForm
-        currentItem={null}
-        onCreated={(id) => router.push(`/studies/cavidades/${id}/edit`)}
-        onCancel={() => router.push(LIST_PATH)}
-      />
-    </StudyFormShell>
-  );
-}
+const NewCavidadesView = dynamic(
+  () => import('./new-cavidades-view').then((m) => ({ default: m.NewCavidadesView })),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex flex-col h-full">
+        <PageHeader title="Novo Projeto Técnico de Cavidades" />
+        <main className="flex-1 p-4 md:p-6">
+          <Skeleton className="h-96 w-full max-w-4xl mx-auto rounded-lg" />
+        </main>
+      </div>
+    ),
+  },
+);
 
 export default function NewCavidadesPage() {
-  return (
-    <Suspense fallback={<div>Carregando...</div>}>
-      <NewCavidadesPageContent />
-    </Suspense>
-  );
+  return <NewCavidadesView />;
 }

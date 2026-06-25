@@ -1,40 +1,24 @@
-"use client";
+'use client';
 
-import { Suspense } from "react";
-import { ResponsibleForm } from "../responsible-form";
-import {
-  ResponsibleFormShell,
-  useResponsibleFormShellDismiss,
-  useResponsibleFormShellSuccess,
-} from "../responsible-form-shell";
+import dynamic from 'next/dynamic';
+import { Skeleton } from '@/components/ui/skeleton';
+import { PageHeader } from '@/components/page-header';
 
-const TITLE = "Adicionar Novo Responsável";
-const DESCRIPTION = "Preencha os detalhes para cadastrar um novo profissional.";
-
-function NewResponsiblePageContent() {
-  const onSuccess = useResponsibleFormShellSuccess("page");
-  const onCancel = useResponsibleFormShellDismiss();
-
-  return (
-    <ResponsibleFormShell
-      variant="page"
-      title={TITLE}
-      description={DESCRIPTION}
-      pageHeaderTitle="Novo Responsável Técnico"
-    >
-      <ResponsibleForm
-        currentItem={null}
-        onSuccess={onSuccess}
-        onCancel={onCancel}
-      />
-    </ResponsibleFormShell>
-  );
-}
+const NewResponsibleView = dynamic(
+  () => import('./new-responsible-view').then((m) => ({ default: m.NewResponsibleView })),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex flex-col h-full">
+        <PageHeader title="Novo Responsável Técnico" />
+        <main className="flex-1 p-4 md:p-6">
+          <Skeleton className="h-96 w-full max-w-2xl mx-auto rounded-lg" />
+        </main>
+      </div>
+    ),
+  },
+);
 
 export default function NewResponsiblePage() {
-  return (
-    <Suspense fallback={<div>Carregando...</div>}>
-      <NewResponsiblePageContent />
-    </Suspense>
-  );
+  return <NewResponsibleView />;
 }
