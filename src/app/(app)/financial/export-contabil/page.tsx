@@ -8,6 +8,10 @@ import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
 import { collection } from 'firebase/firestore';
 import type { BemPatrimonio, Expense, Invoice, Revenue } from '@/lib/types';
 import { calculateDre, datePart } from '@/lib/financial-core';
+import {
+  filterCompanyCaixaExpenses,
+  filterCompanyCaixaRevenues,
+} from '@/lib/financial-transaction-scope';
 import { useToast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useState } from 'react';
@@ -60,14 +64,14 @@ export default function ExportContabilPage() {
     const rows: string[][] = [
       ['Tipo', 'Data', 'Valor', 'Descrição', 'Cliente/Fornecedor', 'Categoria', 'Centro custo'],
     ];
-    revenues
-      ?.filter((r) => datePart(r.date).startsWith(String(y)))
-      .forEach((r) => {
-        rows.push(['Receita', r.date, String(r.amount), r.description, r.clientId || '', '', r.centroCusto || '']);
-      });
-    expenses
-      ?.filter((e) => datePart(e.date).startsWith(String(y)))
-      .forEach((e) => {
+    filterCompanyCaixaRevenues(
+      revenues?.filter((r) => datePart(r.date).startsWith(String(y))) ?? [],
+    ).forEach((r) => {
+      rows.push(['Receita', r.date, String(r.amount), r.description, r.clientId || '', '', r.centroCusto || '']);
+    });
+    filterCompanyCaixaExpenses(
+      expenses?.filter((e) => datePart(e.date).startsWith(String(y))) ?? [],
+    ).forEach((e) => {
         rows.push([
           'Despesa',
           e.date,

@@ -25,20 +25,13 @@ import { cn } from '@/lib/utils';
 import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
 import { collection, limit, query } from 'firebase/firestore';
 import {
-  expenseAmountForCompanyCaixa,
-  filterCompanyCaixaExpenses,
-  filterCompanyCaixaRevenues,
-  isProjectRoiOnlyTransaction,
-  revenueAmountForCompanyCaixa,
-} from '@/lib/financial-transaction-scope';
-import type { Revenue, Expense, Transaction, Invoice } from '@/lib/types';
+  buildCompanyFinancialKpis,
+  filterCompanyCaixaInvoices,
+} from '@/lib/financial-dashboard-stats';
+import type { Revenue, Expense, Invoice } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 
-function safeDateTime(dateStr: string | undefined): number {
-  if (dateStr == null || dateStr === '') return 0;
-  const d = new Date(dateStr);
-  return Number.isNaN(d.getTime()) ? 0 : d.getTime();
-}
+const CURRENT_YEAR = new Date().getFullYear();
 
 export default function FinancialDashboard() {
   const { firestore, user } = useFirebase();
@@ -59,85 +52,35 @@ export default function FinancialDashboard() {
   const { data: expensesData, isLoading: isLoadingExpenses } = useCollection<Expense>(expensesQuery);
   const { data: invoicesData, isLoading: isLoadingInvoices } = useCollection<Invoice>(invoicesQuery);
 
-
   const { dashboardStats, chartData, recentTransactions } = useMemo(() => {
-    const allRev = revenuesData || [];
-    const allExp = expensesData || [];
-    const revenues = filterCompanyCaixaRevenues(allRev);
-    const expenses = filterCompanyCaixaExpenses(allExp);
-    const invoices = (invoicesData || []).filter(
-      (i) => !isProjectRoiOnlyTransaction(i),
+    const kpis = buildCompanyFinancialKpis(
+      invoicesData || [],
+      revenuesData || [],
+      expensesData || [],
+      CURRENT_YEAR,
+      { recentLimit: 5 },
     );
 
-    const allTransactions: Transaction[] = [
-      ...revenues.map((r) => ({ ...r, type: 'revenue' as const })),
-      ...expenses.map((e) => ({ ...e, type: 'expense' as const })),
-    ];
-
-    const totalRevenue = revenues.reduce(
-      (acc, r) => acc + revenueAmountForCompanyCaixa(r, allRev, allExp),
+    const caixaInvoices = filterCompanyCaixaInvoices(invoicesData || []);
+    const paidInvoices = caixaInvoices.filter((inv) => inv.status === 'Paid');
+    const totalPaidAmount = paidInvoices.reduce(
+      (acc, inv) => acc + (Number(inv.amount) || 0),
       0,
     );
-    const totalExpenses = expenses.reduce(
-      (acc, e) => acc + expenseAmountForCompanyCaixa(e, allRev, allExp),
-      0,
-    );
-    const totalProfit = totalRevenue - totalExpenses;
-
-    const paidInvoices = invoices.filter(inv => inv.status === 'Paid');
-    const totalPaidAmount = paidInvoices.reduce((acc, inv) => acc + (Number(inv.amount) || 0), 0);
-    const averageTicket = paidInvoices.length > 0 ? totalPaidAmount / paidInvoices.length : 0;
-
-    const monthlyData: { [key: string]: { revenue: number, expenses: number } } = {};
-    const monthNames = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
-
-    allTransactions.forEach((transaction) => {
-      const ts = safeDateTime(transaction.date);
-      if (ts === 0) return;
-      const date = new Date(ts);
-      const month = monthNames[date.getMonth()];
-      if (!month) return;
-      if (!monthlyData[month]) {
-        monthlyData[month] = { revenue: 0, expenses: 0 };
-      }
-      if (transaction.type === 'revenue') {
-        monthlyData[month].revenue += revenueAmountForCompanyCaixa(
-          transaction,
-          allRev,
-          allExp,
-        );
-      } else {
-        monthlyData[month].expenses += expenseAmountForCompanyCaixa(
-          transaction,
-          allRev,
-          allExp,
-        );
-      }
-    });
-
-    const chartData = monthNames.map(month => ({
-      month,
-      Receita: monthlyData[month]?.revenue ?? 0,
-      Despesa: monthlyData[month]?.expenses ?? 0,
-    })).slice(0, new Date().getMonth() + 1);
-
-    const sortedTransactions = [...allTransactions]
-      .sort((a, b) => safeDateTime(b.date) - safeDateTime(a.date))
-      .slice(0, 5);
-
+    const averageTicket =
+      paidInvoices.length > 0 ? totalPaidAmount / paidInvoices.length : 0;
 
     return {
       dashboardStats: {
-        revenue: totalRevenue,
-        expenses: totalExpenses,
-        profit: totalProfit,
-        averageTicket: averageTicket,
+        revenue: kpis.totalRevenue,
+        expenses: kpis.totalExpenses,
+        profit: kpis.totalProfit,
+        averageTicket,
       },
-      chartData,
-      recentTransactions: sortedTransactions,
+      chartData: kpis.monthlyChart,
+      recentTransactions: kpis.recentTransactions,
     };
   }, [revenuesData, expensesData, invoicesData]);
-
 
   const formatCurrency = (value: number) =>
     new Intl.NumberFormat('pt-BR', {
@@ -152,29 +95,32 @@ export default function FinancialDashboard() {
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Receita Total</CardTitle>
+              <CardTitle className="text-sm font-medium">Receita ({CURRENT_YEAR})</CardTitle>
               <TrendingUp className="h-4 w-4 text-emerald-500" />
             </CardHeader>
             <CardContent>
               {isLoading ? <Skeleton className="h-8 w-3/4" /> : <div className="text-2xl font-bold">{formatCurrency(dashboardStats.revenue)}</div>}
+              <p className="text-xs text-muted-foreground mt-1">Faturas pagas + caixa avulso</p>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Despesas</CardTitle>
+              <CardTitle className="text-sm font-medium">Despesas ({CURRENT_YEAR})</CardTitle>
               <TrendingDown className="h-4 w-4 text-red-500" />
             </CardHeader>
             <CardContent>
               {isLoading ? <Skeleton className="h-8 w-3/4" /> : <div className="text-2xl font-bold">{formatCurrency(dashboardStats.expenses)}</div>}
+              <p className="text-xs text-muted-foreground mt-1">Caixa operacional da empresa</p>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Lucro Líquido</CardTitle>
+              <CardTitle className="text-sm font-medium">Resultado líquido ({CURRENT_YEAR})</CardTitle>
               <DollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               {isLoading ? <Skeleton className="h-8 w-3/4" /> : <div className="text-2xl font-bold">{formatCurrency(dashboardStats.profit)}</div>}
+              <p className="text-xs text-muted-foreground mt-1">Regime: faturas + caixa sem duplicar</p>
             </CardContent>
           </Card>
            <Card>
@@ -191,7 +137,7 @@ export default function FinancialDashboard() {
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
           <Card className="lg:col-span-4">
             <CardHeader>
-              <CardTitle>Visão Geral do Fluxo de Caixa</CardTitle>
+              <CardTitle>Visão Geral do Fluxo de Caixa ({CURRENT_YEAR})</CardTitle>
             </CardHeader>
             <CardContent className="pl-2">
               {isLoading ? <div className="w-full h-[350px] flex items-center justify-center"><Skeleton className="w-full h-full"/></div> :
@@ -211,7 +157,7 @@ export default function FinancialDashboard() {
           </Card>
           <Card className="lg:col-span-3">
             <CardHeader>
-              <CardTitle>Transações Recentes</CardTitle>
+              <CardTitle>Transações Recentes (Caixa)</CardTitle>
             </CardHeader>
             <CardContent>
               <Table>
@@ -231,6 +177,13 @@ export default function FinancialDashboard() {
                         <TableCell className="text-right"><Skeleton className="h-5 w-16 ml-auto" /></TableCell>
                     </TableRow>
                   ))}
+                  {!isLoading && recentTransactions.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={2} className="text-center text-muted-foreground text-sm">
+                        Nenhum lançamento de caixa recente.
+                      </TableCell>
+                    </TableRow>
+                  )}
                   {!isLoading && recentTransactions.map((transaction) => (
                     <TableRow key={transaction.id}>
                       <TableCell>

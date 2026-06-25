@@ -44,6 +44,8 @@ import { useStorageFileUpload } from "@/hooks/use-storage-file-upload";
 import { UPLOAD_RAW_FILE_SAFETY_MAX } from "@/lib/upload-limits";
 import { Label } from "@/components/ui/label";
 import { AttachmentPreviewSection } from "@/components/shared/attachment-preview-section";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import Link from "next/link";
 import {
   Select,
   SelectContent,
@@ -89,6 +91,8 @@ interface TransactionFormProps {
   defaultContractId?: string;
   defaultClientId?: string;
   defaultProjectId?: string;
+  /** Formulário do Caixa operacional — oculta vínculo ROI. */
+  hideProjectRoiCase?: boolean;
 }
 
 const formatCurrencyBRL = (value: number) => {
@@ -146,7 +150,9 @@ export function TransactionForm({
   defaultProjectRoiCaseId,
   defaultContractId,
   defaultClientId,
-  defaultProjectId}: TransactionFormProps) {
+  defaultProjectId,
+  hideProjectRoiCase = false,
+}: TransactionFormProps) {
   const [loading, setLoading] = React.useState(false);
   const [isUploading, setIsUploading] = React.useState(false);
   const [uploadedFileUrl, setUploadedFileUrl] = React.useState<string | null>(
@@ -178,9 +184,19 @@ export function TransactionForm({
   const { data: suppliers, isLoading: isLoadingSuppliers } =
     useCollection<Fornecedor>(suppliersQuery);
 
+  const isRoiGerencialContext = Boolean(defaultProjectRoiCaseId);
+  const isRoiGerencialItem = Boolean(
+    (currentItem as Revenue | Expense | undefined)?.projectRoiCaseId?.trim(),
+  );
+  const showRoiGerencialBanner =
+    hideProjectRoiCase && isRoiGerencialItem && !isRoiGerencialContext;
+
   const roiCasesQuery = useMemoFirebase(
-    () => (firestore ? collection(firestore, "project_roi_cases") : null),
-    [firestore],
+    () =>
+      firestore && !hideProjectRoiCase && !isRoiGerencialContext
+        ? collection(firestore, "project_roi_cases")
+        : null,
+    [firestore, hideProjectRoiCase, isRoiGerencialContext],
   );
   const { data: roiCases, isLoading: isLoadingRoiCases } =
     useCollection<ProjectRoiCase>(roiCasesQuery);
@@ -296,6 +312,8 @@ export function TransactionForm({
       dataToSave.projectRoiCaseId = values.projectRoiCaseId;
     } else if (defaultProjectRoiCaseId) {
       dataToSave.projectRoiCaseId = defaultProjectRoiCaseId;
+    } else if (hideProjectRoiCase) {
+      dataToSave.projectRoiCaseId = '';
     }
     const contractIdVal = values.contractId || defaultContractId;
     if (contractIdVal) dataToSave.contractId = contractIdVal;
@@ -371,6 +389,22 @@ export function TransactionForm({
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+        {showRoiGerencialBanner && (
+          <Alert>
+            <AlertTitle>Lançamento gerencial (Projetos &amp; ROI)</AlertTitle>
+            <AlertDescription>
+              Este registro não entra no Fluxo de Caixa nem na DRE global da empresa.
+              Edite-o em{" "}
+              <Link
+                href={`/financial/projetos-roi/${(currentItem as Revenue | Expense).projectRoiCaseId}`}
+                className="underline font-medium"
+              >
+                Projetos &amp; ROI
+              </Link>
+              .
+            </AlertDescription>
+          </Alert>
+        )}
         <div className="space-y-4">
           {transactionType === "revenue" && (
             <FormField
@@ -488,6 +522,7 @@ export function TransactionForm({
             isLoadingContracts={isLoadingContracts}
             projects={projects ?? undefined}
             isLoadingProjects={isLoadingProjects}
+            hideProjectRoiCase={hideProjectRoiCase && !isRoiGerencialContext}
             onRoiCaseChange={(id, selected) => {
               form.setValue("projectRoiCaseId", id);
               if (selected?.contractId) {
@@ -547,8 +582,9 @@ export function TransactionForm({
             onClick={onCancel}
             disabled={loading}
           >
-            Cancelar
+            {showRoiGerencialBanner ? "Voltar" : "Cancelar"}
           </Button>
+          {!showRoiGerencialBanner && (
           <Button type="submit" disabled={loading || isUploading}>
             {loading ? (
               <>
@@ -562,6 +598,7 @@ export function TransactionForm({
               "Salvar"
             )}
           </Button>
+          )}
         </div>
       </form>
       <UploadPreparationDialog {...dialogProps} />

@@ -132,8 +132,8 @@ flowchart TB
 
 | Situação | Onde entra |
 |----------|------------|
-| Lançamento **sem** vínculo ao caso (`projectRoiCaseId`) | **Somente** DRE geral, custo geral, ROI geral, Painel Financeiro |
-| Lançamento **com** vínculo | Caso no submenu **e** dinâmica normal do Caixa/DRE geral |
+| Lançamento **sem** vínculo ao caso (`projectRoiCaseId`) | **Somente** caixa / DRE global da empresa |
+| Lançamento **com** `projectRoiCaseId` (aba Lançar em Projetos & ROI) | **Somente** extrato gerencial do caso — **não** entra no caixa global |
 | Custos indiretos (aluguel, energia, salário fixo sem vínculo) | **Nunca** rateados automaticamente para o projeto |
 
 **Não haverá** rateio proporcional, percentual de overhead nem “distribuir despesas do mês entre projetos”.
@@ -690,8 +690,8 @@ Na exportação PDF/CSV, exibir **linhas separadas**:
 
 | Tipo de valor | DRE Contábil (empresa) | DRE Projetos & ROI (caso) |
 |---------------|------------------------|---------------------------|
-| Receita/despesa **sem** `projectRoiCaseId` | ✅ Entra | ❌ Não entra |
-| Receita/despesa **com** `projectRoiCaseId` | ✅ Entra (como hoje no Caixa) | ✅ Entra no caso |
+| Receita/despesa **sem** `projectRoiCaseId` | ✅ Entra | ❌ Não entra (até vínculo confirmado — Fase 2) |
+| Receita/despesa **com** `projectRoiCaseId` (gerencial) | ❌ **Não** entra | ✅ Entra no caso |
 | Imposto pago no Caixa **sem** vínculo ao caso | ✅ Entra na DRE geral | ❌ **Não** rateado para projetos |
 | Imposto em despesa **vinculada** ao caso | ✅ Entra na DRE geral | ✅ Linha “impostos pagos do caso” |
 | Provisão % / fixa no **perfil do caso** | ❌ Não existe na DRE geral | ✅ Só estimativa gerencial do caso |
@@ -699,7 +699,7 @@ Na exportação PDF/CSV, exibir **linhas separadas**:
 **Mensagem fixa na UI do submenu:**  
 *“Esta DRE é para decisão administrativa por projeto. A DRE Contábil da empresa continua em Financeiro → DRE Contábil e usa todos os lançamentos, inclusive impostos gerais.”*
 
-Lançamento vinculado ao caso continua existindo no Caixa e na DRE geral (mesmo documento Firestore) — o que **não** acontece é o inverso: impostos gerais **não** aparecem automaticamente no caso.
+Lançamento gerencial vinculado ao caso (`projectRoiCaseId`) **não** entra no caixa/DRE global — universos isolados. Vínculo de lançamentos reais do caixa ao caso (sem duplicar) = **Fase 2**.
 
 ---
 

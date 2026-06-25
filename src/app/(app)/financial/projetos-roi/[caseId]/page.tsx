@@ -923,11 +923,14 @@ export default function ProjetosRoiDetailPage() {
           <TabsContent value="lancar" className="mt-4 space-y-4">
             {encerrado ? (
               <p className="text-sm text-muted-foreground">
-                Caso encerrado. Lançamentos pelo Caixa ainda são possíveis com aviso; reabra o
-                caso em Config.
+                Caso encerrado. Reabra o caso em Config. para novos lançamentos gerenciais.
               </p>
             ) : (
               <>
+                <p className="text-sm text-muted-foreground border rounded-md p-3 bg-muted/40">
+                  Lançamento gerencial deste projeto. Não entra no Fluxo de Caixa nem na DRE
+                  global da empresa — serve apenas para controlo de rentabilidade e prestadores.
+                </p>
                 <div className="flex gap-2">
                   <Button
                     variant={lancarTipo === 'revenue' ? 'default' : 'outline'}
@@ -953,8 +956,8 @@ export default function ProjetosRoiDetailPage() {
                   defaultProjectId={roiCase.projectId}
                   onSuccess={() => {
                     toast({
-                      title: 'Lançamento salvo',
-                      description: 'Vinculado a este caso.',
+                      title: 'Lançamento gerencial salvo',
+                      description: 'Registrado neste caso (não entra no caixa da empresa).',
                     });
                   }}
                 />

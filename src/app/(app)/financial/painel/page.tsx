@@ -15,7 +15,8 @@ import type {
 } from '@/lib/types';
 import type { ProjectRoiCompanySettings } from '@/lib/project-roi-thresholds';
 import { Skeleton } from '@/components/ui/skeleton';
-import { formatCurrencyBRL, datePart, calculateDre } from '@/lib/financial-core';
+import { formatCurrencyBRL, datePart } from '@/lib/financial-core';
+import { buildCompanyFinancialKpis, filterCompanyCaixaInvoices } from '@/lib/financial-dashboard-stats';
 import { AlertTriangle, TrendingUp, FileText, ClipboardPenLine } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useFinancialMenuDebug } from '@/lib/financial-menu-debug';
@@ -58,16 +59,16 @@ export default function FinancialPainelPage() {
 
   const stats = useMemo(() => {
     if (!invoices || !revenues || !expenses) return null;
-    const dre = calculateDre(invoices, revenues, expenses, year, 'combinado_sem_duplicar');
+    const kpis = buildCompanyFinancialKpis(invoices, revenues, expenses, year);
+    const caixaInvoices = filterCompanyCaixaInvoices(invoices);
     const today = new Date().toISOString().slice(0, 10);
-    const overdue = invoices.filter(
+    const overdue = caixaInvoices.filter(
       (i) =>
         (i.status === 'Unpaid' || i.status === 'Overdue') &&
         datePart(i.dueDate) &&
         datePart(i.dueDate) < today,
     );
-    const overdueAmount = overdue.reduce((a, i) => a + (Number(i.amount) || 0), 0);
-    const unpaidSoon = invoices.filter(
+    const unpaidSoon = caixaInvoices.filter(
       (i) =>
         i.status === 'Unpaid' &&
         datePart(i.dueDate) >= today &&
@@ -78,12 +79,11 @@ export default function FinancialPainelPage() {
     const pipelineValue = pipeline.reduce((a, p) => a + (Number(p.amount) || 0), 0);
     const accepted = proposals?.filter((p) => p.status === 'Accepted').length ?? 0;
     const sent = proposals?.filter((p) => p.status === 'Sent').length ?? 0;
-    const paidCount = invoices.filter((i) => i.status === 'Paid').length;
+    const paidInvoices = caixaInvoices.filter((i) => i.status === 'Paid');
+    const paidCount = paidInvoices.length;
     const dso =
       paidCount > 0
-        ? invoices
-            .filter((i) => i.status === 'Paid')
-            .reduce((acc, i) => {
+        ? paidInvoices.reduce((acc, i) => {
               const d = datePart(i.dueDate);
               const p = datePart(i.invoiceDate);
               if (!d || !p) return acc;
@@ -92,9 +92,9 @@ export default function FinancialPainelPage() {
         : 0;
 
     return {
-      dre,
+      dre: kpis.dre,
       overdueCount: overdue.length,
-      overdueAmount,
+      overdueAmount: overdue.reduce((a, i) => a + (Number(i.amount) || 0), 0),
       unpaidSoonCount: unpaidSoon.length,
       pipelineCount: pipeline.length,
       pipelineValue,

@@ -52,6 +52,8 @@ interface TransactionExtraFieldsProps {
   projects?: Project[];
   isLoadingProjects?: boolean;
   onRoiCaseChange?: (caseId: string, selected?: ProjectRoiCase) => void;
+  /** Ocultar vínculo ROI (formulário do Caixa operacional). */
+  hideProjectRoiCase?: boolean;
 }
 
 export function TransactionExtraFields({
@@ -67,6 +69,7 @@ export function TransactionExtraFields({
   projects,
   isLoadingProjects,
   onRoiCaseChange,
+  hideProjectRoiCase,
 }: TransactionExtraFieldsProps) {
   return (
     <div className="grid gap-4 sm:grid-cols-2 border rounded-md p-4 bg-muted/30">
@@ -74,12 +77,14 @@ export function TransactionExtraFields({
         Classificação e centro de custo (opcional)
       </p>
 
-      <ProjectRoiCaseSelectField
-        control={control}
-        name="projectRoiCaseId"
-        cases={roiCases}
-        isLoading={isLoadingRoiCases}
-      />
+      {!hideProjectRoiCase && (
+        <ProjectRoiCaseSelectField
+          control={control}
+          name="projectRoiCaseId"
+          cases={roiCases}
+          isLoading={isLoadingRoiCases}
+        />
+      )}
 
       {transactionType === 'revenue' && (
         <FormField

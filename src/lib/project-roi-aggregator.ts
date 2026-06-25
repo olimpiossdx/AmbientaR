@@ -142,7 +142,7 @@ function shouldSkipAsEstorno(item: Revenue | Expense): boolean {
   return Boolean(item.isEstorno);
 }
 
-/** Vínculo explícito ou legado ao caso. */
+/** Vínculo explícito ao caso (lançamento gerencial Projetos & ROI). */
 export function transactionLinksToCase(
   item: {
     projectRoiCaseId?: string;
@@ -152,7 +152,20 @@ export function transactionLinksToCase(
   },
   roiCase: ProjectRoiCase,
 ): boolean {
-  if (roiCase.id && item.projectRoiCaseId === roiCase.id) return true;
+  return Boolean(roiCase.id && item.projectRoiCaseId === roiCase.id);
+}
+
+/** Fallback legado — só para futura UI de classificação manual (Fase 2). */
+export function transactionLegacyLinksToCase(
+  item: {
+    projectRoiCaseId?: string;
+    contractId?: string;
+    projectId?: string;
+    centroCusto?: string;
+  },
+  roiCase: ProjectRoiCase,
+): boolean {
+  if (transactionLinksToCase(item, roiCase)) return true;
   if (roiCase.contractId && item.contractId === roiCase.contractId) return true;
   if (roiCase.projectId && item.projectId === roiCase.projectId) return true;
   const ref = roiCase.sourceProposalNumber?.trim();
@@ -161,10 +174,7 @@ export function transactionLinksToCase(
 }
 
 function invoiceLinksToCase(invoice: Invoice, roiCase: ProjectRoiCase): boolean {
-  if (invoice.projectRoiCaseId === roiCase.id) return true;
-  if (roiCase.contractId && invoice.contractId === roiCase.contractId) return true;
-  if (roiCase.projectId && invoice.projectId === roiCase.projectId) return true;
-  return false;
+  return invoice.projectRoiCaseId === roiCase.id;
 }
 
 function calcImpostosProvisao(

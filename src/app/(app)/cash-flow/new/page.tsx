@@ -61,6 +61,7 @@ function NewTransactionPageContent() {
                 currentItem={null}
                 onSuccess={handleSuccess}
                 onCancel={handleCancel}
+                hideProjectRoiCase
               />
             </CardContent>
           </Card>

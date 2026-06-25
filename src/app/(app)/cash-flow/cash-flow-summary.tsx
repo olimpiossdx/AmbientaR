@@ -53,7 +53,7 @@ export function CashFlowSummary() {
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Receita Total</CardTitle>
+          <CardTitle className="text-sm font-medium">Receitas de caixa</CardTitle>
           <TrendingUp className="h-4 w-4 text-emerald-500" />
         </CardHeader>
         <CardContent>
@@ -66,7 +66,7 @@ export function CashFlowSummary() {
       </Card>
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Despesas Totais</CardTitle>
+          <CardTitle className="text-sm font-medium">Despesas de caixa</CardTitle>
           <TrendingDown className="h-4 w-4 text-red-500" />
         </CardHeader>
         <CardContent>
@@ -79,7 +79,7 @@ export function CashFlowSummary() {
       </Card>
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Lucro Líquido</CardTitle>
+          <CardTitle className="text-sm font-medium">Saldo de caixa</CardTitle>
           <DollarSign className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>

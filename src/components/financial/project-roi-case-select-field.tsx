@@ -62,7 +62,7 @@ export function ProjectRoiCaseSelectField<T extends FieldValues>({
             </FormControl>
             <SelectContent>
               <SelectItem value={PROJECT_ROI_CASE_NONE}>
-                — Nenhum (só DRE geral) —
+                — Nenhum (controlo geral) —
               </SelectItem>
               {cases
                 ?.filter(

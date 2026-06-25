@@ -9,6 +9,10 @@ import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
 import { collection, doc, updateDoc } from 'firebase/firestore';
 import type { Expense, Revenue } from '@/lib/types';
 import { formatCurrencyBRL, datePart } from '@/lib/financial-core';
+import {
+  filterCompanyCaixaExpenses,
+  filterCompanyCaixaRevenues,
+} from '@/lib/financial-transaction-scope';
 import { useToast } from '@/hooks/use-toast';
 import {
   Table,
@@ -63,7 +67,10 @@ export default function ConciliacaoPage() {
   const matches = useMemo(() => {
     if (!bankLines.length) return [];
     return bankLines.map((bl, idx) => {
-      const pool = bl.type === 'credit' ? revenues || [] : expenses || [];
+      const pool =
+        bl.type === 'credit'
+          ? filterCompanyCaixaRevenues(revenues || [])
+          : filterCompanyCaixaExpenses(expenses || []);
       const match = pool.find((t) => {
         const amt = Math.abs(Number(t.amount) - bl.amount) < 0.02;
         const dt = datePart(t.date) === datePart(bl.date);

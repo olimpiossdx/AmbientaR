@@ -125,6 +125,7 @@ function EditTransactionPageContent() {
                 currentItem={item}
                 onSuccess={handleSuccess}
                 onCancel={() => router.back()}
+                hideProjectRoiCase
               />
             </CardContent>
           </Card>
