@@ -1,12 +1,12 @@
 # Auditoria de Rotas e Menu
 
-Gerado em: 2026-06-23T21:49:23.266Z
+Gerado em: 2026-06-24T14:36:33.283Z
 
 Classificação inicial para limpeza cirúrgica. Rotas órfãs não devem ser removidas automaticamente; precisam de validação funcional antes.
 
 ## Código ativo ou coberto por menu
 
-Total: 274
+Total: 279
 
 | Rota | Arquivo |
 |------|---------|
@@ -183,6 +183,7 @@ Total: 274
 | `/studies/barragem` | `src/app/(app)/studies/barragem/page.tsx` |
 | `/studies/barragem/[id]/edit` | `src/app/(app)/studies/barragem/[id]/edit/page.tsx` |
 | `/studies/barragem/new` | `src/app/(app)/studies/barragem/new/page.tsx` |
+| `/studies/barragens` | `src/app/(app)/studies/barragens/page.tsx` |
 | `/studies/cavidades` | `src/app/(app)/studies/cavidades/page.tsx` |
 | `/studies/cavidades/[id]/edit` | `src/app/(app)/studies/cavidades/[id]/edit/page.tsx` |
 | `/studies/cavidades/new` | `src/app/(app)/studies/cavidades/new/page.tsx` |
@@ -246,6 +247,8 @@ Total: 274
 | `/studies/pia/new` | `src/app/(app)/studies/pia/(.)new/page.tsx` |
 | `/studies/pia/new` | `src/app/(app)/studies/pia/new/page.tsx` |
 | `/studies/piscinao-off-stream` | `src/app/(app)/studies/piscinao-off-stream/page.tsx` |
+| `/studies/piscinao-off-stream/[id]/edit` | `src/app/(app)/studies/piscinao-off-stream/[id]/edit/page.tsx` |
+| `/studies/piscinao-off-stream/new` | `src/app/(app)/studies/piscinao-off-stream/new/page.tsx` |
 | `/studies/prada` | `src/app/(app)/studies/prada/page.tsx` |
 | `/studies/prada/[id]/edit` | `src/app/(app)/studies/prada/(.)[id]/edit/page.tsx` |
 | `/studies/prada/[id]/edit` | `src/app/(app)/studies/prada/[id]/edit/page.tsx` |
@@ -273,6 +276,8 @@ Total: 274
 | `/studies/relatorios-diversos/transporte-residuos` | `src/app/(app)/studies/relatorios-diversos/transporte-residuos/page.tsx` |
 | `/studies/reserva-legal` | `src/app/(app)/studies/reserva-legal/page.tsx` |
 | `/studies/seguranca-barragens` | `src/app/(app)/studies/seguranca-barragens/page.tsx` |
+| `/studies/seguranca-barragens/[id]/edit` | `src/app/(app)/studies/seguranca-barragens/[id]/edit/page.tsx` |
+| `/studies/seguranca-barragens/new` | `src/app/(app)/studies/seguranca-barragens/new/page.tsx` |
 | `/suppliers` | `src/app/(app)/suppliers/page.tsx` |
 | `/suppliers/[id]/edit` | `src/app/(app)/suppliers/[id]/edit/page.tsx` |
 | `/suppliers/new` | `src/app/(app)/suppliers/new/page.tsx` |

@@ -1,4 +1,6 @@
 import type { ProjetoTecnicoBarragem } from '@/lib/types';
+import { extractMemoriaisCalculoAutomaticos } from '@/lib/barragem/barragem-memorial-calculo';
+import { buildRipplExportBody } from '@/lib/barragem/barragem-rippl-export';
 
 function fmt(str: string | undefined | null): string {
   return str != null && String(str).trim() !== '' ? String(str).trim() : '—';
@@ -66,6 +68,39 @@ export function buildBarragemPlaceholderExtras(
     HID_INTENSIDADE_CHUVA: fmt(hid?.intensidadeChuva),
     HID_COEFICIENTE_ESCOAMENTO: fmt(hid?.coeficienteEscoamento),
     HID_VAZAO_CHEIA: fmt(hid?.vazaoCheia),
+    VOLUME_UTIL_RIPPL_M3: fmt(projeto.regularizacaoRippl?.volumeUtilRipplM3),
+    DEMANDA_ANUAL_RIPPL_M3: fmt(projeto.regularizacaoRippl?.demandaAnualM3),
+    RIPPL_MEMORIAL: fmt(
+      buildRipplExportBody(
+        projeto.regularizacaoRippl?.ripplSeries,
+        projeto.regularizacaoRippl?.memorial,
+      ),
+    ),
+    FS_BISHOP: fmt(projeto.estabilidadeTaludes?.fatorSeguranca),
+    FS_MORGENSTERN: fmt(
+      projeto.estabilidadeTaludes?.metodoCalculo === 'morgenstern_price'
+        ? projeto.estabilidadeTaludes?.fatorSeguranca
+        : '',
+    ),
+    LAMBDA_MORGENSTERN: fmt(projeto.estabilidadeTaludes?.lambdaMorgenstern),
+    METODO_GEOTECNICO:
+      projeto.estabilidadeTaludes?.metodoCalculo === 'morgenstern_price'
+        ? 'Morgenstern-Price (meia-seno)'
+        : 'Bishop simplificado',
+    BISHOP_MEMORIAL: fmt(projeto.estabilidadeTaludes?.memorial),
+    FS_DESLIZAMENTO: fmt(projeto.estabilidadeConcretoGravidade?.fsDeslizamento),
+    FS_TOMBAMENTO: fmt(projeto.estabilidadeConcretoGravidade?.fsTombamento),
+    TENSAO_BASE_MEDIA_KPA: fmt(projeto.estabilidadeConcretoGravidade?.tensaoMediaKpa),
+    TENSAO_BASE_MAX_KPA: fmt(projeto.estabilidadeConcretoGravidade?.tensaoMaxKpa),
+    TENSAO_BASE_MIN_KPA: fmt(projeto.estabilidadeConcretoGravidade?.tensaoMinKpa),
+    CONCRETO_GRAVIDADE_MEMORIAL: fmt(projeto.estabilidadeConcretoGravidade?.memorial),
+    MEMORIAL_CALCULO: fmt(
+      extractMemoriaisCalculoAutomaticos(
+        hid?.tempoConcentracao,
+        hid?.vazaoCheia,
+        projeto.extravasor,
+      ),
+    ),
     DIMENSIONAMENTO_CHEIA: fmt(projeto.dimensionamentoCapacidadeCheia),
     EXTRAVASOR: fmt(projeto.extravasor),
     IMPLANTACAO_PROJETO: fmt(projeto.implantacaoProjeto),

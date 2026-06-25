@@ -85,23 +85,227 @@ Estes são preenchidos com texto gerado pela IA (RAG + contexto). Se não houver
 
 - **Desenvolvimento:** `public/templates/{tipo}/template.docx` (ex.: `public/templates/rca/template.docx`).
 - O upload é feito em **Configurações > Templates** (ou via API `POST /api/templates/[type]`).
-- Tipos aceitos: rca, pia, pca, prada, ptrf, eia-rima, las-ras, pea, reserva-legal, fauna, outorgas, barragens.
+- Tipos aceitos: rca, pia, pca, prada, ptrf, eia-rima, las-ras, pea, reserva-legal, fauna, outorgas, barragens, seguranca-barragens, piscinao-off-stream.
 
 ### Projeto Técnico de Barragem (slug `barragens`)
 
-Além dos placeholders de contexto ambiental (`EMPREENDIMENTO_*`, `EMPREENDEDOR_*`, etc.), use:
+Menu: **Estudos Técnicos → Projetos e Segurança de Barragens → Projeto técnico**.
+
+Código: `src/lib/barragem/barragem-placeholders.ts` (`buildBarragemPlaceholderExtras`).
+
+Sem template personalizado em Configurações → Templates, a app gera Word com branding (`buildBrandedDocxSectionSetup`). Com template `.docx`, os placeholders abaixo são substituídos.
+
+#### Identificação e empreendimento
+
+| Placeholder | Origem no formulário |
+|-------------|----------------------|
+| `{{ARQUIVO_CODIGO}}` | Código do arquivo |
+| `{{APRESENTACAO}}` | Apresentação |
+| `{{REQUERENTE_NOME}}` | Requerente — nome |
+| `{{REQUERENTE_CPF_CNPJ}}` | Requerente — CPF/CNPJ |
+| `{{EMPREENDIMENTO_DENOMINACAO}}` | Empreendimento — denominação |
+| `{{EMPREENDIMENTO_MUNICIPIO}}` | Município |
+| `{{EMPREENDIMENTO_UF}}` | UF |
+| `{{EMPREENDIMENTO_CAR}}` | CAR |
+| `{{EMPREENDIMENTO_MATRICULA}}` | Matrícula |
+| `{{USO_PRETENDIDO}}` | Uso pretendido |
+| `{{ESPELHO_DAGUA_M2}}` | Espelho d'água (m²) |
+| `{{CAPACIDADE_ARMAZENAMENTO_M3}}` | Capacidade de armazenamento (m³) |
+| `{{LOCAL_EMISSAO}}` | Local de emissão |
+| `{{DATA_EMISSAO}}` | Data de emissão |
+| `{{BARRAGEM_STATUS}}` | Rascunho / Aprovado |
+
+#### Responsável técnico
+
+| Placeholder | Origem |
+|-------------|--------|
+| `{{RT_NOME}}` | Nome |
+| `{{RT_CPF}}` | CPF |
+| `{{RT_EMAIL}}` | E-mail |
+| `{{RT_TELEFONE}}` | Telefone |
+| `{{RT_FORMACAO}}` | Formação |
+| `{{RT_REGISTRO_CONSELHO}}` | Registro no conselho |
+| `{{RT_ART}}` | ART |
+
+#### Localização e reservatório
+
+| Placeholder | Origem |
+|-------------|--------|
+| `{{INFO_TOPOGRAFICAS}}` | Informações topográficas |
+| `{{LATITUDE}}` | Latitude |
+| `{{LONGITUDE}}` | Longitude |
+| `{{ALTITUDE}}` | Altitude |
+| `{{DEFINICAO_BARRAGEM}}` | Definição da barragem (tipo de estrutura) |
+| `{{CAPACIDADE_DESCRICAO}}` | Descrição da capacidade |
+| `{{COTA_ESPELHO_DAGUA}}` | Cota do espelho d'água |
+| `{{COTA_TERRENO_NATURAL}}` | Cota do terreno natural |
+| `{{AREA_ESPELHO_M2}}` | Área do espelho (m²) |
+| `{{VOLUME_ARMAZENADO_M3}}` | Volume armazenado (m³) |
+| `{{TABELA_NIVEIS_RESERVATORIO}}` | Tabela cota / área / volume (texto) |
+
+#### Estruturas e memorial (seções 4–8)
+
+| Placeholder | Origem |
+|-------------|--------|
+| `{{ATERRO}}` | Aterro |
+| `{{TALUDES_ATERRO}}` | Taludes do aterro |
+| `{{FUNDACAO}}` | Fundação |
+| `{{DRENO_PE}}` | Dreno de pé |
+| `{{DESCARGA_FUNDO}}` | Descarga de fundo |
+
+#### Hidrologia e extravasor
+
+| Placeholder | Origem |
+|-------------|--------|
+| `{{HID_BACIA}}` | Características da bacia |
+| `{{HID_TEMPO_CONCENTRACAO}}` | Tempo de concentração (memorial) |
+| `{{HID_INTENSIDADE_CHUVA}}` | Intensidade da chuva |
+| `{{HID_COEFICIENTE_ESCOAMENTO}}` | Coeficiente de escoamento |
+| `{{HID_VAZAO_CHEIA}}` | Vazão de cheia (memorial) |
+| `{{MEMORIAL_CALCULO}}` | Memorial automático (Tc, Q, vertedouro) |
+| `{{DIMENSIONAMENTO_CHEIA}}` | Dimensionamento à capacidade de cheia |
+| `{{EXTRAVASOR}}` | Extravasor |
+| `{{IMPLANTACAO_PROJETO}}` | Implantação |
+| `{{CONSERVACAO_MANUTENCAO}}` | Conservação e manutenção |
+| `{{LITERATURA_CONSULTADA}}` | Literatura consultada |
+| `{{ANEXOS_DESCRICAO}}` | Descrição dos anexos |
+
+#### Rippl (regularização)
+
+| Placeholder | Origem |
+|-------------|--------|
+| `{{VOLUME_UTIL_RIPPL_M3}}` | Volume útil Rippl (m³) |
+| `{{DEMANDA_ANUAL_RIPPL_M3}}` | Demanda anual (m³) |
+| `{{RIPPL_MEMORIAL}}` | Memorial e série mensal (texto) |
+
+#### Geotecnia (Bishop / Morgenstern-Price)
+
+| Placeholder | Origem |
+|-------------|--------|
+| `{{METODO_GEOTECNICO}}` | `Bishop simplificado` ou `Morgenstern-Price (meia-seno)` |
+| `{{FS_BISHOP}}` | FS calculado (qualquer método) |
+| `{{FS_MORGENSTERN}}` | FS quando método = Morgenstern-Price; vazio se Bishop |
+| `{{LAMBDA_MORGENSTERN}}` | λ interfatias (só Morgenstern-Price) |
+| `{{BISHOP_MEMORIAL}}` | Memorial geotécnico (Bishop ou MP) |
+
+#### Concreto gravidade (tipo de estrutura)
+
+| Placeholder | Origem |
+|-------------|--------|
+| `{{FS_DESLIZAMENTO}}` | FS deslizamento |
+| `{{FS_TOMBAMENTO}}` | FS tombamento |
+| `{{TENSAO_BASE_MEDIA_KPA}}` | σ média na base (kPa) |
+| `{{TENSAO_BASE_MAX_KPA}}` | σ máxima na base (kPa) |
+| `{{TENSAO_BASE_MIN_KPA}}` | σ mínima na base (kPa) |
+| `{{CONCRETO_GRAVIDADE_MEMORIAL}}` | Memorial estrutural |
+
+Campos vazios são exportados como `—`.
+
+---
+
+### Segurança de Barragens (slug `seguranca-barragens`)
+
+Menu: **Estudos Técnicos → Projetos e Segurança de Barragens → Segurança e emergência**.
+
+Código: `src/lib/seguranca-barragens/export-placeholders.ts` (`buildSegurancaPlaceholderExtras`).
+
+#### Identificação e classificação
+
+| Placeholder | Origem |
+|-------------|--------|
+| `{{SEGURANCA_STATUS}}` | Rascunho / Aprovado |
+| `{{REQUERENTE_NOME}}` | Requerente — nome |
+| `{{REQUERENTE_CPF_CNPJ}}` | Requerente — CPF/CNPJ |
+| `{{EMPREENDIMENTO_NOME}}` | Nome do empreendimento |
+| `{{EMPREENDIMENTO_MUNICIPIO}}` | Município |
+| `{{EMPREENDIMENTO_UF}}` | UF |
+| `{{RT_NOME}}` | Responsável técnico — nome |
+| `{{RT_FORMACAO}}` | Formação |
+| `{{RT_REGISTRO_CONSELHO}}` | Registro no conselho |
+| `{{RT_ART}}` | ART |
+| `{{CLASSIFICACAO_CRI}}` | Categoria de risco (CRI) |
+| `{{CLASSIFICACAO_DPA}}` | Dano potencial associado (DPA) |
+| `{{VOLUME_RESERVATORIO_M3}}` | Volume do reservatório (m³) |
+| `{{ALTURA_BARRAGEM_M}}` | Altura da barragem (m) |
+| `{{DATA_EMISSAO}}` | Data de emissão |
+| `{{LOCAL_EMISSAO}}` | Local de emissão |
+
+#### Secções completas (texto agregado)
 
 | Placeholder | Conteúdo |
 |-------------|----------|
-| `{{APRESENTACAO}}` | Texto de apresentação |
-| `{{USO_PRETENDIDO}}` | Uso da barragem |
-| `{{DEFINICAO_BARRAGEM}}` | Seção 2 |
-| `{{ATERRO}}` … `{{EXTRAVASOR}}` | Seções 4–11 |
-| `{{HID_BACIA}}` … `{{HID_VAZAO_CHEIA}}` | Subitens hidrológicos |
-| `{{TABELA_NIVEIS_RESERVATORIO}}` | Tabela cota/área/volume |
-| `{{RT_NOME}}`, `{{RT_ART}}` | Responsável técnico |
+| `{{SECAO_IDENTIFICACAO}}` | Aba Identificação |
+| `{{SECAO_CLASSIFICACAO}}` | Classificação preliminar |
+| `{{SECAO_PSB}}` | Plano de Segurança da Barragem |
+| `{{SECAO_INSPECAO}}` | Inspeção de segurança regular |
+| `{{SECAO_PAE}}` | Plano de Ação de Emergência |
+| `{{SECAO_DAM_BREAK}}` | Dam Break — triagem |
+| `{{SECAO_HEC_RAS}}` | Resultados HEC-RAS importados |
 
-Lista completa em `src/lib/barragem/barragem-placeholders.ts`. Sem template personalizado, a app gera Word com cabeçalho, rodapé e marca d'água via `buildBrandedDocxSectionSetup` (igual PIA).
+#### Dam Break / HEC-RAS (campos resumidos)
+
+| Placeholder | Origem |
+|-------------|--------|
+| `{{HEC_RAS_AREA_INUNDADA_M2}}` | Área inundada (importação) |
+| `{{HEC_RAS_PROFUNDIDADE_MAX_M}}` | Profundidade máxima (m) |
+| `{{HEC_RAS_VELOCIDADE_MAX_MS}}` | Velocidade máxima (m/s) |
+| `{{HEC_RAS_TEMPO_CHEGADA_MIN}}` | Tempo de chegada mínimo (min) |
+| `{{HEC_RAS_MEMORIAL}}` | Memorial da importação HEC-RAS |
+
+#### Vínculos (IDs Firestore)
+
+| Placeholder | Origem |
+|-------------|--------|
+| `{{VINCULO_PROJETO_BARRAGEM_ID}}` | Projeto técnico de barragem |
+| `{{VINCULO_OUTORGA_ID}}` | Processo de outorga |
+| `{{VINCULO_RCA_ID}}` | RCA |
+| `{{VINCULO_PCA_ID}}` | PCA |
+
+---
+
+### Piscinão off-stream (slug `piscinao-off-stream`)
+
+Menu: **Estudos Técnicos → Projetos e Segurança de Barragens → Piscinão (off-stream)**.
+
+Código: `src/lib/piscinao-off-stream/export-placeholders.ts` (`buildPiscinaoPlaceholderExtras`).
+
+| Placeholder | Origem |
+|-------------|--------|
+| `{{PISCINAO_STATUS}}` | Rascunho / Aprovado |
+| `{{REQUERENTE_NOME}}` | Requerente — nome |
+| `{{REQUERENTE_CPF_CNPJ}}` | Requerente — CPF/CNPJ |
+| `{{EMPREENDIMENTO_NOME}}` | Nome do empreendimento |
+| `{{EMPREENDIMENTO_MUNICIPIO}}` | Município |
+| `{{EMPREENDIMENTO_UF}}` | UF |
+| `{{RT_NOME}}` | Responsável técnico — nome |
+| `{{RT_FORMACAO}}` | Formação |
+| `{{RT_REGISTRO_CONSELHO}}` | Registro no conselho |
+| `{{RT_ART}}` | ART |
+| `{{USO_PRETENDIDO}}` | Uso pretendido |
+| `{{CAPACIDADE_UTIL_M3}}` | Capacidade útil (m³) |
+| `{{ESPELHO_DAGUA_M2}}` | Espelho d'água (m²) |
+| `{{VOLUME_UTIL_RIPPL_M3}}` | Volume útil Rippl (m³) |
+| `{{DEMANDA_ANUAL_M3}}` | Demanda anual (m³) |
+| `{{SECAO_IDENTIFICACAO}}` | Identificação |
+| `{{SECAO_CARACTERISTICAS}}` | Características do reservatório |
+| `{{SECAO_DEMANDA}}` | Demanda hídrica |
+| `{{SECAO_RIPPL}}` | Regularização — Rippl |
+| `{{DATA_EMISSAO}}` | Data de emissão |
+| `{{LOCAL_EMISSAO}}` | Local de emissão |
+| `{{VINCULO_PROJETO_BARRAGEM_ID}}` | Projeto técnico vinculado |
+| `{{VINCULO_OUTORGA_ID}}` | Outorga vinculada |
+
+---
+
+### Referência rápida — módulo Barragens
+
+| Slug template | Função de placeholders | Export DOCX |
+|---------------|------------------------|-------------|
+| `barragens` | `buildBarragemPlaceholderExtras` | `src/lib/barragem/export-docx.ts` |
+| `seguranca-barragens` | `buildSegurancaPlaceholderExtras` | `src/lib/seguranca-barragens/export-docx.ts` |
+| `piscinao-off-stream` | `buildPiscinaoPlaceholderExtras` | `src/lib/piscinao-off-stream/export-docx.ts` |
+
+Upload do template: **Configurações → Templates** (coleção `companySettings/docxTemplates`).
 
 ## Exemplo de frase no Word
 

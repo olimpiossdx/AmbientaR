@@ -965,11 +965,21 @@ export type BarragemNivelCota = {
   volumeAcumuladoM3?: string;
 };
 
+export type BarragemTipoEstrutura =
+  | 'terra_homogenea'
+  | 'terra_zonada'
+  | 'enrocamento'
+  | 'concreto_gravidade'
+  | 'barramento_sem_regularizacao';
+
 /** Projeto Técnico de Barragem (memorial descritivo + exportação DOCX/PDF). */
 export type ProjetoTecnicoBarragem = {
   id: string;
   status?: 'Rascunho' | 'Aprovado';
   arquivoCodigo?: string;
+  tipoEstrutura?: BarragemTipoEstrutura;
+  geoAnalysisId?: string;
+  outorgaProcessoId?: string;
   apresentacao?: string;
   requerente: {
     clientId?: string;
@@ -1032,6 +1042,218 @@ export type ProjetoTecnicoBarragem = {
   conservacaoManutencao?: string;
   literaturaConsultada?: string;
   anexosDescricao?: string;
+  /** Balanço hídrico / regularização — método de Rippl (manual §5.5). */
+  regularizacaoRippl?: {
+    volumeUtilRipplM3?: string;
+    demandaAnualM3?: string;
+    memorial?: string;
+    ripplSeries?: RipplSerieMensalRow[];
+  };
+  /** Triagem geotécnica — Bishop simplificado (manual §8). */
+  estabilidadeTaludes?: {
+    metodoCalculo?: 'bishop' | 'morgenstern_price';
+    cenario?: 'operacao_normal' | 'final_construcao' | 'rebaixamento_rapido' | 'sismo';
+    coesaoKpa?: string;
+    anguloAtritoGrau?: string;
+    fatorSeguranca?: string;
+    lambdaMorgenstern?: string;
+    fatias?: Array<{
+      label?: string;
+      larguraM?: string;
+      pesoKN?: string;
+      anguloBaseGrau?: string;
+      ubKN?: string;
+    }>;
+    memorial?: string;
+  };
+  /** Triagem estrutural — concreto gravidade (manual §9.4–9.5). */
+  estabilidadeConcretoGravidade?: {
+    alturaAguaM?: string;
+    pesoEspecificoConcretoKNm3?: string;
+    areaSecaoM2?: string;
+    pesoProprioKN?: string;
+    subpressaoKN?: string;
+    areaBaseM2?: string;
+    coesaoKpa?: string;
+    anguloAtritoGrau?: string;
+    bracoPesoM?: string;
+    fsDeslizamento?: string;
+    fsTombamento?: string;
+    tensaoMediaKpa?: string;
+    tensaoMaxKpa?: string;
+    tensaoMinKpa?: string;
+    memorial?: string;
+  };
+};
+
+/** Linha da série mensal Rippl (barragem e piscinão). */
+export type RipplSerieMensalRow = {
+  label?: string;
+  qAfluenteM3s?: string;
+  qDemandaM3s?: string;
+  diasNoPeriodo?: string;
+  evapM3?: string;
+};
+
+/** Resultados HEC-RAS importados no estudo de segurança. */
+export type HecRasResultadosEstudo = {
+  importedAt?: string;
+  sourceFile?: string;
+  formatoOrigem?: 'ambientar' | 'geojson' | 'csv';
+  resumo?: {
+    areaInundadaM2?: string;
+    profundidadeMaxM?: string;
+    velocidadeMaxMs?: string;
+    tempoChegadaMinMin?: string;
+    tempoChegadaMaxH?: string;
+    vazaoPicoModeladaM3s?: string;
+    cenarioModelado?: string;
+    software?: string;
+    dataSimulacao?: string;
+  };
+  pontos?: Array<{
+    label?: string;
+    lat?: string;
+    lng?: string;
+    profundidadeMaxM?: string;
+    velocidadeMaxMs?: string;
+    tempoChegadaMin?: string;
+  }>;
+  geojsonStats?: {
+    featureCount?: string;
+    bbox?: string;
+    storedInline?: string;
+  };
+  geojsonInline?: Record<string, unknown>;
+  memorial?: string;
+  observacoes?: string;
+};
+
+export type SegurancaBarragemNivelAnomalia = 'normal' | 'atencao' | 'alerta' | 'emergencia';
+
+export type SegurancaBarragemNivelPae = 'verde' | 'amarelo' | 'laranja' | 'vermelho';
+
+export type SegurancaBarragemDpa = 'baixo' | 'medio' | 'alto';
+
+/** Estudo de Segurança de Barragem (PSB, inspeções, PAE, Dam Break triagem). */
+export type EstudoSegurancaBarragem = {
+  id: string;
+  status?: 'Rascunho' | 'Aprovado';
+  projetoTecnicoBarragemId?: string;
+  geoAnalysisId?: string;
+  outorgaProcessoId?: string;
+  /** RCA vinculado ao licenciamento do empreendimento (opcional). */
+  rcaId?: string;
+  /** PCA vinculado ao licenciamento do empreendimento (opcional). */
+  pcaId?: string;
+  requerente: {
+    clientId?: string;
+    nome: string;
+    cpfCnpj: string;
+  };
+  empreendimento: {
+    projectId?: string;
+    nome: string;
+    municipio?: string;
+    uf?: string;
+    car?: string;
+  };
+  responsavelTecnico: {
+    nome: string;
+    cpf?: string;
+    email?: string;
+    telefone?: string;
+    formacao: string;
+    registroConselho: string;
+    art?: string;
+  };
+  classificacao?: {
+    categoriaRisco?: string;
+    danoPotencialAssociado?: SegurancaBarragemDpa;
+    volumeReservatorioM3?: string;
+    alturaBarragemM?: string;
+    observacoes?: string;
+  };
+  psb?: {
+    itens?: Record<string, boolean>;
+    observacoes?: string;
+  };
+  inspecao?: {
+    itens?: Record<string, boolean>;
+    nivelAnomalia?: SegurancaBarragemNivelAnomalia;
+    observacoes?: string;
+  };
+  pae?: {
+    nivelAtual?: SegurancaBarragemNivelPae;
+    contatos?: string;
+    rotasFuga?: string;
+    observacoes?: string;
+  };
+  damBreak?: {
+    cenario?: string;
+    larguraBrechaM?: string;
+    tempoFormacaoH?: string;
+    volumeMobilizadoM3?: string;
+    vazaoPicoM3s?: string;
+    observacoes?: string;
+  };
+  hecRasResultados?: HecRasResultadosEstudo;
+  localEmissao?: string;
+  dataEmissao?: string;
+};
+
+/** Cadastro de piscinão off-stream (reservatório fora do leito do curso d'água). */
+export type PiscinaoOffStream = {
+  id: string;
+  status?: 'Rascunho' | 'Aprovado';
+  projetoTecnicoBarragemId?: string;
+  geoAnalysisId?: string;
+  outorgaProcessoId?: string;
+  requerente: {
+    clientId?: string;
+    nome: string;
+    cpfCnpj: string;
+  };
+  empreendimento: {
+    projectId?: string;
+    nome: string;
+    municipio?: string;
+    uf?: string;
+    car?: string;
+  };
+  responsavelTecnico: {
+    nome: string;
+    cpf?: string;
+    email?: string;
+    telefone?: string;
+    formacao: string;
+    registroConselho: string;
+    art?: string;
+  };
+  caracteristicas?: {
+    usoPretendido?: string;
+    capacidadeUtilM3?: string;
+    espelhoDaguaM2?: string;
+    profundidadeMediaM?: string;
+    tempoResidenciaDias?: string;
+    observacoes?: string;
+  };
+  demandaHidrica?: {
+    vazaoCaptacaoLs?: string;
+    demandaAnualM3?: string;
+    volumeUtilRipplM3?: string;
+    ripplSeries?: Array<{
+      label?: string;
+      qAfluenteM3s?: string;
+      qDemandaM3s?: string;
+      diasNoPeriodo?: string;
+      evapM3?: string;
+    }>;
+    regularizacao?: string;
+    observacoes?: string;
+  };
+  localEmissao?: string;
+  dataEmissao?: string;
 };
 
 /** Nível de complexidade do estudo espeleológico (IS SISEMA 08/2017). */
@@ -1731,7 +1953,7 @@ export type AppUser = {
   displayName?: string;
   email: string;
   role: UserRole;
-  status: 'active' | 'inactive' | 'pending_invite';
+  status: 'active' | 'inactive' | 'pending_invite' | 'pending_registration';
   /** CPF pessoal do usuário (identificação). */
   userCpf?: string;
   /** CPF/CNPJ do interessado: usado para vincular e acessar dados de empreendedor/cliente. */
@@ -1763,6 +1985,12 @@ export type AppUser = {
   linkedClientId?: string;
   /** Empreendedor já existente vinculado ao perfil (evita duplicar em Empreendedores). */
   linkedEmpreendedorId?: string;
+  /** Origem do cadastro (gov.br, email, convite). */
+  registrationSource?: 'govbr' | 'email' | 'invite' | 'admin';
+  authProviders?: Array<'password' | 'govbr'>;
+  govbrLinkedAt?: any;
+  govbrCpfVerified?: boolean;
+  govbrConfiabilidade?: 'bronze' | 'silver' | 'gold';
   /** Acesso anual à plataforma (Clientes Gestão / Autônomo). ISO 8601; ausente com perfis antigos = sem bloqueio. */
   platformAccessValidUntil?: string | null;
   platformPaymentStatus?: PlatformPaymentStatus;

@@ -13,4 +13,6 @@ export const TEMPLATE_CARDS: { slug: string; title: string; description: string 
   { slug: 'fauna', title: 'Fauna', description: 'Template base para estudos de Fauna.' },
   { slug: 'outorgas', title: 'Outorgas', description: 'Template base para estudos de Outorgas.' },
   { slug: 'barragens', title: 'Estudos de Barragens', description: 'Template base para Projeto Técnico de Barragem e estudos de barragens.' },
+  { slug: 'seguranca-barragens', title: 'Segurança de Barragens', description: 'Template base para PSB, PAE, inspeções e Dam Break (triagem).' },
+  { slug: 'piscinao-off-stream', title: 'Piscinão off-stream', description: 'Template base para cadastro de piscinão, demanda hídrica e Rippl.' },
 ];

@@ -52,6 +52,7 @@ export {
   Mail,
   Send,
   Truck,
+  LayoutGrid,
   List,
   LineChart,
   BarChart2,

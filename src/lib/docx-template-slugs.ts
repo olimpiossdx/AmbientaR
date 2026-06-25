@@ -12,6 +12,8 @@ export const DOCX_TEMPLATE_SLUGS = [
   "fauna",
   "outorgas",
   "barragens",
+  "seguranca-barragens",
+  "piscinao-off-stream",
 ] as const;
 
 export type DocxTemplateSlug = (typeof DOCX_TEMPLATE_SLUGS)[number];

@@ -17,7 +17,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Loader2, PlusCircle, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import type { ProjetoTecnicoBarragem, Empreendedor as Client, Project } from '@/lib/types';
+import type { ProjetoTecnicoBarragem, Empreendedor as Client, Project, OutorgaProcesso } from '@/lib/types';
 import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
 import { handleFirestoreFormError } from '@/lib/firestore-form-errors';
 
@@ -38,7 +38,10 @@ import {
 import {
   BARRAGEM_APRESENTACAO_MODELO,
   BARRAGEM_CONSERVACAO_MODELO,
-  BARRAGEM_INFO_TOPOGRAFICAS_MODELO} from './barragem-defaults';
+  BARRAGEM_INFO_TOPOGRAFICAS_MODELO,
+  BARRAGEM_TIPOS_ESTRUTURA,
+  BARRAGEM_DEFINICAO_POR_TIPO,
+} from './barragem-defaults';
 import {
   BarragemMemorialSection,
   BARRAGEM_MEMORIAL_TEXTAREA_CLASS} from './barragem-memorial-section';
@@ -48,6 +51,16 @@ import {
   barragemCoordenadasToLatLngStrings,
   barragemLatLngStringsToCoordenadas,
   geographicLocationToBarragemCoordenadas} from '@/lib/barragem/barragem-coordenadas';
+import { BarragemCalculosPanel, type CalculosFormApi } from '@/components/barragem/barragem-calculos-panel';
+import { BarragemRipplPanel, type BarragemRipplFormApi } from '@/components/barragem/barragem-rippl-panel';
+import { BarragemGeotecniaPanel, type BarragemGeotecniaFormApi } from '@/components/barragem/barragem-geotecnia-panel';
+import {
+  BarragemConcretoGravidadePanel,
+  type BarragemConcretoGravidadeFormApi,
+} from '@/components/barragem/barragem-concreto-gravidade-panel';
+import { recalcularTabelaNiveis } from '@/lib/barragem/barragem-tabela-niveis';
+import { criarSerieRipplMensalVazia } from '@/lib/barragem/calculos';
+import { StudyGeoImportPanel } from '@/components/studies/study-geo-import-panel';
 import { createDefaultMonitoringPontoCoordenadas } from '@/lib/monitoring-pontos-form';
 
 const nivelSchema = z.object({
@@ -60,6 +73,17 @@ const nivelSchema = z.object({
 const formSchema = z.object({
   status: z.enum(['Rascunho', 'Aprovado']).optional(),
   arquivoCodigo: z.string().optional(),
+  tipoEstrutura: z
+    .enum([
+      'terra_homogenea',
+      'terra_zonada',
+      'enrocamento',
+      'concreto_gravidade',
+      'barramento_sem_regularizacao',
+    ])
+    .optional(),
+  geoAnalysisId: z.string().optional(),
+  outorgaProcessoId: z.string().optional(),
   apresentacao: z.string().optional(),
   requerente: z.object({
     clientId: z.string().optional(),
@@ -117,6 +141,67 @@ const formSchema = z.object({
       coeficienteEscoamento: z.string().optional(),
       vazaoCheia: z.string().optional()})
     .optional(),
+  regularizacaoRippl: z
+    .object({
+      volumeUtilRipplM3: z.string().optional(),
+      demandaAnualM3: z.string().optional(),
+      memorial: z.string().optional(),
+      ripplSeries: z
+        .array(
+          z.object({
+            label: z.string().optional(),
+            qAfluenteM3s: z.string().optional(),
+            qDemandaM3s: z.string().optional(),
+            diasNoPeriodo: z.string().optional(),
+            evapM3: z.string().optional(),
+          }),
+        )
+        .optional(),
+    })
+    .optional(),
+  estabilidadeTaludes: z
+    .object({
+      metodoCalculo: z.enum(['bishop', 'morgenstern_price']).optional(),
+      cenario: z
+        .enum(['operacao_normal', 'final_construcao', 'rebaixamento_rapido', 'sismo'])
+        .optional(),
+      coesaoKpa: z.string().optional(),
+      anguloAtritoGrau: z.string().optional(),
+      fatorSeguranca: z.string().optional(),
+      lambdaMorgenstern: z.string().optional(),
+      memorial: z.string().optional(),
+      fatias: z
+        .array(
+          z.object({
+            label: z.string().optional(),
+            larguraM: z.string().optional(),
+            pesoKN: z.string().optional(),
+            anguloBaseGrau: z.string().optional(),
+            ubKN: z.string().optional(),
+          }),
+        )
+        .optional(),
+    })
+    .optional(),
+  estabilidadeConcretoGravidade: z
+    .object({
+      alturaAguaM: z.string().optional(),
+      pesoEspecificoConcretoKNm3: z.string().optional(),
+      areaSecaoM2: z.string().optional(),
+      pesoProprioKN: z.string().optional(),
+      subpressaoKN: z.string().optional(),
+      areaBaseM2: z.string().optional(),
+      coesaoKpa: z.string().optional(),
+      anguloAtritoGrau: z.string().optional(),
+      bracoPesoM: z.string().optional(),
+      fsDeslizamento: z.string().optional(),
+      fsTombamento: z.string().optional(),
+      tensaoMediaKpa: z.string().optional(),
+      tensaoMaxKpa: z.string().optional(),
+      tensaoMinKpa: z.string().optional(),
+      memorial: z.string().optional(),
+    })
+    .optional(),
   dimensionamentoCapacidadeCheia: z.string().optional(),
   extravasor: z.string().optional(),
   implantacaoProjeto: z.string().optional(),
@@ -137,6 +222,9 @@ function emptyDefaults(): BarragemFormValues {
   return {
     status: 'Rascunho',
     arquivoCodigo: '',
+    tipoEstrutura: 'terra_homogenea',
+    geoAnalysisId: '',
+    outorgaProcessoId: '',
     apresentacao: BARRAGEM_APRESENTACAO_MODELO,
     requerente: { clientId: '', nome: '', cpfCnpj: '' },
     empreendimento: {
@@ -185,6 +273,51 @@ function emptyDefaults(): BarragemFormValues {
       intensidadeChuva: '',
       coeficienteEscoamento: '',
       vazaoCheia: ''},
+    regularizacaoRippl: {
+      volumeUtilRipplM3: '',
+      demandaAnualM3: '',
+      memorial: '',
+      ripplSeries: criarSerieRipplMensalVazia().map((p) => ({
+        label: p.label,
+        qAfluenteM3s: '',
+        qDemandaM3s: '',
+        diasNoPeriodo: String(p.diasNoPeriodo ?? 30),
+        evapM3: '0',
+      })),
+    },
+    estabilidadeTaludes: {
+      metodoCalculo: 'bishop',
+      cenario: 'operacao_normal',
+      coesaoKpa: '',
+      anguloAtritoGrau: '',
+      fatorSeguranca: '',
+      lambdaMorgenstern: '',
+      memorial: '',
+      fatias: Array.from({ length: 5 }, (_, i) => ({
+        label: `F${i + 1}`,
+        larguraM: '',
+        pesoKN: '',
+        anguloBaseGrau: '',
+        ubKN: '0',
+      })),
+    },
+    estabilidadeConcretoGravidade: {
+      alturaAguaM: '',
+      pesoEspecificoConcretoKNm3: '24',
+      areaSecaoM2: '',
+      pesoProprioKN: '',
+      subpressaoKN: '0',
+      areaBaseM2: '',
+      coesaoKpa: '',
+      anguloAtritoGrau: '',
+      bracoPesoM: '',
+      fsDeslizamento: '',
+      fsTombamento: '',
+      tensaoMediaKpa: '',
+      tensaoMaxKpa: '',
+      tensaoMinKpa: '',
+      memorial: '',
+    },
     dimensionamentoCapacidadeCheia: '',
     extravasor: '',
     implantacaoProjeto: '',
@@ -196,7 +329,7 @@ function emptyDefaults(): BarragemFormValues {
 export function BarragemForm({ currentItem, onCreated, onCancel }: BarragemFormProps) {
   const [loading, setLoading] = React.useState(false);
   const { toast } = useToast();
-  const { firestore } = useFirebase();
+  const { firestore, user } = useFirebase();
 
   const clientsQuery = useMemoFirebase(
     () => (firestore ? collection(firestore, 'clients') : null),
@@ -208,6 +341,11 @@ export function BarragemForm({ currentItem, onCreated, onCancel }: BarragemFormP
     [firestore],
   );
   const { data: projects, isLoading: isLoadingProjects } = useCollection<Project>(projectsQuery);
+  const outorgasQuery = useMemoFirebase(
+    () => (firestore ? collection(firestore, 'outorga_processos') : null),
+    [firestore],
+  );
+  const { data: outorgas } = useCollection<OutorgaProcesso>(outorgasQuery);
 
   const form = useForm<BarragemFormValues>({
     resolver: zodResolver(formSchema),
@@ -231,6 +369,17 @@ export function BarragemForm({ currentItem, onCreated, onCancel }: BarragemFormP
   const selectedRequerenteId = form.watch('requerente.clientId');
   const selectedProjectId = form.watch('empreendimento.projectId');
   const geoDatum = form.watch('informacoesBasicas.coordenadas.datum') as Datum | undefined;
+
+  const outorgasFiltradas = React.useMemo(() => {
+    if (!outorgas?.length) return [];
+    const pid = selectedProjectId?.trim();
+    const cid = selectedRequerenteId?.trim();
+    return outorgas.filter((o) => {
+      if (pid && o.projectId === pid) return true;
+      if (cid && o.empreendedorId === cid) return true;
+      return !pid && !cid;
+    });
+  }, [outorgas, selectedProjectId, selectedRequerenteId]);
   const isLegacyDatum =
     geoDatum != null &&
     String(geoDatum).trim() !== '' &&
@@ -475,6 +624,43 @@ export function BarragemForm({ currentItem, onCreated, onCancel }: BarragemFormP
                 />
                 <FormField
                   control={form.control}
+                  name="tipoEstrutura"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Tipo de estrutura</FormLabel>
+                      <Select
+                        onValueChange={(v) => {
+                          field.onChange(v);
+                          const atual = form.getValues('definicaoBarragem');
+                          if (!atual?.trim() && v in BARRAGEM_DEFINICAO_POR_TIPO) {
+                            form.setValue(
+                              'definicaoBarragem',
+                              BARRAGEM_DEFINICAO_POR_TIPO[
+                                v as keyof typeof BARRAGEM_DEFINICAO_POR_TIPO
+                              ],
+                            );
+                          }
+                        }}
+                        value={field.value ?? 'terra_homogenea'}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione o tipo" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {BARRAGEM_TIPOS_ESTRUTURA.map((t) => (
+                            <SelectItem key={t.value} value={t.value}>
+                              {t.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
                   name="empreendimento.denominacao"
                   render={({ field }) => (
                     <FormItem>
@@ -565,6 +751,67 @@ export function BarragemForm({ currentItem, onCreated, onCancel }: BarragemFormP
                   )}
                 />
               </div>
+                </CardContent>
+              </Card>
+
+              <StudyGeoImportPanel
+                userId={user?.uid}
+                empreendimentoId={selectedProjectId}
+                initialGeoAnalysisId={form.watch('geoAnalysisId')}
+                onImported={(r) => {
+                  form.setValue('geoAnalysisId', r.geoAnalysisId);
+                  const topoAtual = form.getValues('informacoesBasicas.topograficas') ?? '';
+                  const sep = topoAtual.trim() ? '\n\n' : '';
+                  form.setValue(
+                    'informacoesBasicas.topograficas',
+                    `${topoAtual}${sep}--- Importado de geo_analyses/${r.geoAnalysisId} ---\nÁrea do perímetro: ${r.areaHa.toFixed(2)} ha\n\n${r.factualSummary}`,
+                  );
+                  if (r.hidrologiaResumo) {
+                    const bacia = form.getValues('calculosHidrologicos.caracteristicasBacia') ?? '';
+                    const sepB = bacia.trim() ? '\n\n' : '';
+                    form.setValue(
+                      'calculosHidrologicos.caracteristicasBacia',
+                      `${bacia}${sepB}Contexto hidrologia (SIG):\n${r.hidrologiaResumo}`,
+                    );
+                  }
+                }}
+              />
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Processo de outorga (opcional)</CardTitle>
+                  <CardDescription>
+                    Vincule um processo IGAM de barramento já iniciado em Outorgas (processos).
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <FormField
+                    control={form.control}
+                    name="outorgaProcessoId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Processo</FormLabel>
+                        <Select
+                          onValueChange={(v) => field.onChange(v === '_none_' ? '' : v)}
+                          value={field.value || '_none_'}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Nenhum" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="_none_">Nenhum</SelectItem>
+                            {outorgasFiltradas.map((o) => (
+                              <SelectItem key={o.id} value={o.id}>
+                                {o.modoUsoLabel} — {o.municipio ?? o.id.slice(0, 8)}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </FormItem>
+                    )}
+                  />
                 </CardContent>
               </Card>
 
@@ -793,24 +1040,49 @@ export function BarragemForm({ currentItem, onCreated, onCancel }: BarragemFormP
                 />
               </div>
               <div className="space-y-2">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap items-center justify-between gap-2">
                   <FormLabel>Tabela de níveis (cota / área / volume)</FormLabel>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() =>
-                      append({
-                        cota: '',
-                        areaM2: '',
-                        alturaM: '',
-                        volumeM3: '',
-                        volumeAcumuladoM3: ''})
-                    }
-                  >
-                    <PlusCircle className="mr-1 h-4 w-4" />
-                    Linha
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => {
+                        const rows = form.getValues('capacidadeReservatorio.tabelaNiveis') ?? [];
+                        const updated = recalcularTabelaNiveis(rows);
+                        form.setValue('capacidadeReservatorio.tabelaNiveis', updated);
+                        const last = updated[updated.length - 1];
+                        if (last?.volumeAcumuladoM3) {
+                          form.setValue(
+                            'capacidadeReservatorio.volumeArmazenadoM3',
+                            last.volumeAcumuladoM3,
+                          );
+                        }
+                        toast({
+                          title: 'Volumes recalculados',
+                          description: 'Tabela cota-área-volume atualizada pelo método do trapezio.',
+                        });
+                      }}
+                    >
+                      Recalcular volumes
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() =>
+                        append({
+                          cota: '',
+                          areaM2: '',
+                          alturaM: '',
+                          volumeM3: '',
+                          volumeAcumuladoM3: ''})
+                      }
+                    >
+                      <PlusCircle className="mr-1 h-4 w-4" />
+                      Linha
+                    </Button>
+                  </div>
                 </div>
                 {fields.map((field, index) => (
                   <div key={field.id} className="grid gap-2 rounded border p-2 md:grid-cols-6">
@@ -845,6 +1117,69 @@ export function BarragemForm({ currentItem, onCreated, onCancel }: BarragemFormP
             </TabsContent>
 
             <TabsContent value="estruturas" className="mt-4 space-y-4">
+              {form.watch('tipoEstrutura') === 'concreto_gravidade' ? (
+                <>
+                  <BarragemConcretoGravidadePanel
+                    form={form as unknown as BarragemConcretoGravidadeFormApi}
+                  />
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-base">Memorial estrutural (concreto gravidade)</CardTitle>
+                      <CardDescription>
+                        Preenchido ao calcular FS de deslizamento e tombamento.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <FormField
+                        control={form.control}
+                        name="estabilidadeConcretoGravidade.memorial"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormControl>
+                              <Textarea
+                                rows={6}
+                                className={BARRAGEM_MEMORIAL_TEXTAREA_CLASS}
+                                {...field}
+                                value={field.value ?? ''}
+                              />
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+                    </CardContent>
+                  </Card>
+                </>
+              ) : (
+                <>
+              <BarragemGeotecniaPanel form={form as unknown as BarragemGeotecniaFormApi} />
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Memorial geotécnico</CardTitle>
+                  <CardDescription>
+                    Preenchido ao calcular FS (Bishop ou Morgenstern-Price).
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <FormField
+                    control={form.control}
+                    name="estabilidadeTaludes.memorial"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormControl>
+                          <Textarea
+                            rows={6}
+                            className={BARRAGEM_MEMORIAL_TEXTAREA_CLASS}
+                            {...field}
+                            value={field.value ?? ''}
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                </CardContent>
+              </Card>
+                </>
+              )}
               {(
                 [
                   { name: 'aterro' as const, title: '4. Aterro', rows: 5 },
@@ -876,6 +1211,59 @@ export function BarragemForm({ currentItem, onCreated, onCancel }: BarragemFormP
             </TabsContent>
 
             <TabsContent value="hidrologia" className="mt-4 space-y-4">
+              <BarragemCalculosPanel form={form as unknown as CalculosFormApi} />
+              <BarragemRipplPanel form={form as unknown as BarragemRipplFormApi} />
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Memorial Rippl</CardTitle>
+                  <CardDescription>
+                    Preenchido automaticamente ao calcular; pode editar antes de exportar.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="grid gap-4 md:grid-cols-2">
+                  <FormField
+                    control={form.control}
+                    name="regularizacaoRippl.volumeUtilRipplM3"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Volume útil necessário (m³)</FormLabel>
+                        <FormControl>
+                          <Input {...field} value={field.value ?? ''} readOnly className="bg-muted/50" />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="regularizacaoRippl.demandaAnualM3"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Demanda anual (m³)</FormLabel>
+                        <FormControl>
+                          <Input {...field} value={field.value ?? ''} readOnly className="bg-muted/50" />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="regularizacaoRippl.memorial"
+                    render={({ field }) => (
+                      <FormItem className="md:col-span-2">
+                        <FormLabel>Regularização / tabela Rippl</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            rows={8}
+                            className={BARRAGEM_MEMORIAL_TEXTAREA_CLASS}
+                            {...field}
+                            value={field.value ?? ''}
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                </CardContent>
+              </Card>
               <BarragemMemorialSection title="9. Cálculos hidrológicos">
                 {(
                   [

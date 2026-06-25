@@ -28,6 +28,8 @@
     "coordinates:verify": "npx tsx scripts/coordinates-verify.ts",
     "coordinates:audit": "npx tsx scripts/coordinates-audit.ts",
     "coordinates:check": "node scripts/coordinates-check.mjs",
+    "barragem:calculos-check": "npx tsx scripts/barragem-calculos-verify.ts",
+    "barragem:module-check": "node scripts/barragem-module-verify.mjs",
     "memorial-descritivo:check": "npx tsx scripts/memorial-descritivo-verify.ts",
     "geo:probe": "npx tsx scripts/geo-probe.ts",
     "geo:resolve-car-test": "npx tsx scripts/test-resolve-car.ts",

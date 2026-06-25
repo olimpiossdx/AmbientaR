@@ -1,4 +1,6 @@
 import type { ProjetoTecnicoBarragem } from '@/lib/types';
+import { extractMemoriaisCalculoAutomaticos } from '@/lib/barragem/barragem-memorial-calculo';
+import { buildRipplExportBody } from '@/lib/barragem/barragem-rippl-export';
 
 export type BarragemExportSection = {
   title: string;
@@ -117,6 +119,54 @@ export function buildBarragemExportSections(
     pushSection(e.title, e.body ?? '');
   }
 
+  const est = projeto.estabilidadeTaludes;
+  if (fmt(est?.memorial) || fmt(est?.fatorSeguranca)) {
+    const metodoLabel =
+      est?.metodoCalculo === 'morgenstern_price'
+        ? 'Morgenstern-Price (meia-seno)'
+        : 'Bishop simplificado';
+    const geoBody = [
+      `Método: ${metodoLabel}`,
+      est?.cenario ? `Cenário: ${est.cenario.replace(/_/g, ' ')}` : '',
+      block('FS', est?.fatorSeguranca),
+      est?.metodoCalculo === 'morgenstern_price'
+        ? block('λ (interfatias)', est?.lambdaMorgenstern)
+        : '',
+      block('c′ (kPa)', est?.coesaoKpa),
+      block('φ′ (°)', est?.anguloAtritoGrau),
+      fmt(est?.memorial),
+    ]
+      .filter(Boolean)
+      .join('\n\n');
+    sections.push({
+      title: `Estabilidade de taludes — ${metodoLabel}`,
+      body: geoBody,
+      pageBreakBefore: true,
+    });
+  }
+
+  const cg = projeto.estabilidadeConcretoGravidade;
+  if (fmt(cg?.memorial) || fmt(cg?.fsDeslizamento) || fmt(cg?.fsTombamento)) {
+    const cgBody = [
+      block('Altura d\'água (m)', cg?.alturaAguaM),
+      block('FS deslizamento', cg?.fsDeslizamento),
+      block('FS tombamento', cg?.fsTombamento),
+      block('σ_média (kPa)', cg?.tensaoMediaKpa),
+      block('σ_máx (kPa)', cg?.tensaoMaxKpa),
+      block('σ_mín (kPa)', cg?.tensaoMinKpa),
+      block('c′ base (kPa)', cg?.coesaoKpa),
+      block('φ′ base (°)', cg?.anguloAtritoGrau),
+      fmt(cg?.memorial),
+    ]
+      .filter(Boolean)
+      .join('\n\n');
+    sections.push({
+      title: 'Concreto gravidade — deslizamento e tombamento',
+      body: cgBody,
+      pageBreakBefore: true,
+    });
+  }
+
   const hidrologia = [
     block('9.1 Características da bacia hidrográfica', hid?.caracteristicasBacia),
     block('9.2 Tempo de concentração', hid?.tempoConcentracao),
@@ -128,6 +178,39 @@ export function buildBarragemExportSections(
     .join('\n\n');
   if (hidrologia) {
     sections.push({ title: '9. Cálculos hidrológicos', body: hidrologia });
+  }
+
+  const ripplBody = buildRipplExportBody(
+    projeto.regularizacaoRippl?.ripplSeries,
+    projeto.regularizacaoRippl?.memorial,
+  );
+  if (ripplBody) {
+    const ripplHeader = [
+      projeto.regularizacaoRippl?.volumeUtilRipplM3
+        ? `Volume útil necessário (Rippl): ${fmt(projeto.regularizacaoRippl.volumeUtilRipplM3)} m³`
+        : '',
+      projeto.regularizacaoRippl?.demandaAnualM3
+        ? `Demanda anual: ${fmt(projeto.regularizacaoRippl.demandaAnualM3)} m³`
+        : '',
+    ]
+      .filter(Boolean)
+      .join('\n');
+    sections.push({
+      title: '9.6 Regularização — método de Rippl',
+      body: ripplHeader ? `${ripplHeader}\n\n${ripplBody}` : ripplBody,
+    });
+  }
+
+  const memorialCalculo = extractMemoriaisCalculoAutomaticos(
+    hid?.tempoConcentracao,
+    hid?.vazaoCheia,
+    projeto.extravasor,
+  );
+  if (memorialCalculo) {
+    sections.push({
+      title: 'Memoriais de cálculo (automáticos)',
+      body: memorialCalculo,
+    });
   }
 
   pushSection(

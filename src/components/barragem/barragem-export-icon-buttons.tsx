@@ -11,7 +11,11 @@ import { doc } from 'firebase/firestore';
 import { guardBrandingExportFromHook } from '@/lib/pdf-branding-layout';
 import type { ProjetoTecnicoBarragem } from '@/lib/types';
 import type { DocxTemplatesState } from '@/lib/docx-template-slugs';
-import { validateBarragemForExport } from '@/lib/barragem/barragem-export-validation';
+import {
+  validateBarragemForExport,
+  barragemExportBlockingIssues,
+  barragemExportWarnings,
+} from '@/lib/barragem/barragem-export-validation';
 import {
   generateBarragemExportDocxBlobBranded,
   generateBarragemExportDocxFromTemplate,
@@ -53,14 +57,22 @@ export function BarragemExportIconButtons({ projeto }: BarragemExportIconButtons
   const [busy, setBusy] = React.useState<'pdf' | 'docx' | null>(null);
 
   const runValidation = (): boolean => {
-    const issues = validateBarragemForExport(projeto);
-    if (issues.length > 0) {
+    const all = validateBarragemForExport(projeto);
+    const blocking = barragemExportBlockingIssues(all);
+    const warnings = barragemExportWarnings(all);
+    if (blocking.length > 0) {
       toast({
         variant: 'destructive',
         title: 'Exportação indisponível',
-        description: issues.map((i) => i.message).join(' '),
+        description: blocking.map((i) => i.message).join(' '),
       });
       return false;
+    }
+    if (warnings.length > 0) {
+      toast({
+        title: 'Avisos na exportação',
+        description: warnings.map((i) => i.message).join(' '),
+      });
     }
     return true;
   };
