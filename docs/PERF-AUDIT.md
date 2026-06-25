@@ -594,3 +594,26 @@ Fora do plano F00–F18; **uma rota por PR**, mesmo protocolo de debug.
 | Shared | 92,4 kB | **92,4 kB** |
 
 **Próximo candidato F19h:** sub-rotas ainda pesadas (ex. `/commercial-proposals/new` ~411 kB, `/contracts` ~402 kB).
+
+### F19h — propostas/contratos lazy forms e listagem ✅ (2026-06-25)
+
+| Ficheiro | Mudança |
+|----------|---------|
+| `commercial-proposals/new/page.tsx` | `ProposalForm` via `dynamic()` |
+| `commercial-proposals/[id]/edit/page.tsx` | `ProposalForm` via `dynamic()` |
+| `contracts/page.tsx` + `contracts-list-view.tsx` | Shell + listagem |
+| `contracts/new/page.tsx` | `ContractForm` via `dynamic()` |
+| `contracts/[id]/edit/page.tsx` | `ContractForm` via `dynamic()` |
+
+**Verificação:** `npm run typecheck` · `npm run build`
+
+| Rota | Baseline (F17) | Após F19h |
+|------|----------------|-----------|
+| `/commercial-proposals/new` | ~411 kB | **147 kB** (−264 kB) |
+| `/commercial-proposals/[id]/edit` | ~410 kB | **295 kB** (−115 kB) |
+| `/contracts` | ~402 kB | **147 kB** (−255 kB) |
+| `/contracts/new` | ~388 kB | **147 kB** (−241 kB) |
+| `/contracts/[id]/edit` | ~388 kB | **295 kB** (−93 kB) |
+| Shared | 92,4 kB | **92,4 kB** |
+
+**Próximo candidato F19i:** `/contracts-suppliers` (~392 kB), `/cash-flow` (~382 kB).
