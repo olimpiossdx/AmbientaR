@@ -540,3 +540,22 @@ Fora do plano F00–F18; **uma rota por PR**, mesmo protocolo de debug.
 | Shared | 92,2 kB | **92,2 kB** |
 
 **Próximo candidato F19e:** auditar rotas restantes >300 kB no output de `npm run build` (ex. `/coleta-campo/nova` ~374 kB, parcelas ~348 kB).
+
+### F19e — coleta campo nova/parcela lazy views ✅ (2026-06-25)
+
+| Ficheiro | Mudança |
+|----------|---------|
+| `coleta-campo/nova/page.tsx` | Shell fino com `dynamic()` |
+| `coleta-campo/nova/nova-campanha-view.tsx` | Formulário nova campanha |
+| `coleta-campo/[id]/parcelas/[parcelaId]/page.tsx` | Shell fino com `dynamic()` |
+| `coleta-campo/[id]/parcelas/[parcelaId]/parcela-detail-view.tsx` | Lançamento de árvores |
+
+**Verificação:** `npm run typecheck` · `npm run build`
+
+| Rota | Baseline (F17) | Após F19e |
+|------|----------------|-----------|
+| `/coleta-campo/nova` | ~374 kB | **146 kB** (−228 kB) |
+| `/coleta-campo/[id]/parcelas/[parcelaId]` | ~348 kB | **146 kB** (−202 kB) |
+| Shared | 92,2 kB | **92,4 kB** |
+
+**Próximo candidato F19f:** `/coleta-campo` listagem (~341 kB) e outras rotas >300 kB no output de `npm run build`.
