@@ -68,6 +68,55 @@ async function triggerServerPushForUsers(
   }
 }
 
+async function createCrossUserNotificationViaApi(
+  targetUserId: string,
+  payload: CreateNotificationPayload & { sourceType: string; sourceId: string },
+  options?: { ensureUnread?: boolean },
+): Promise<boolean> {
+  if (typeof window === 'undefined') return false;
+  try {
+    const auth = getAuth();
+    const idToken = await auth.currentUser?.getIdToken();
+    if (!idToken) return false;
+
+    const res = await fetch('/api/notifications/create', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${idToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        targetUserId,
+        title: payload.title,
+        description: payload.description,
+        link: payload.link,
+        sourceType: payload.sourceType,
+        sourceId: payload.sourceId,
+        actorRole: payload.actorRole,
+        ensureUnread: options?.ensureUnread ?? false,
+      }),
+    });
+
+    if (!res.ok) {
+      const data = (await res.json().catch(() => ({}))) as { error?: string };
+      console.warn('[Notificações] API cross-user:', data.error ?? res.status);
+      return false;
+    }
+
+    const data = (await res.json()) as { created?: boolean };
+    return data.created !== false;
+  } catch (e) {
+    console.warn('[Notificações] API cross-user:', e);
+    return false;
+  }
+}
+
+function isCrossUserNotification(targetUserId: string): boolean {
+  if (typeof window === 'undefined') return false;
+  const currentUid = getAuth().currentUser?.uid;
+  return Boolean(currentUid && currentUid !== targetUserId);
+}
+
 /**
  * Cria uma notificação para um usuário (subcoleção users/{userId}/notifications).
  */
@@ -98,6 +147,21 @@ export async function createNotificationWithPush(
   payload: CreateNotificationPayload,
   options?: CreateNotificationOptions,
 ): Promise<void> {
+  if (
+    isCrossUserNotification(userId) &&
+    payload.sourceType &&
+    payload.sourceId
+  ) {
+    await createCrossUserNotificationViaApi(
+      userId,
+      payload as CreateNotificationPayload & {
+        sourceType: string;
+        sourceId: string;
+      },
+    );
+    return;
+  }
+
   await createNotificationForUser(firestore, userId, payload);
   if (options?.push !== false) {
     void triggerServerPushForUsers([userId], payload);
@@ -112,6 +176,12 @@ export async function ensureUnreadNotification(
   options?: CreateNotificationOptions,
 ): Promise<boolean> {
   if (!userId?.trim()) return false;
+
+  if (isCrossUserNotification(userId)) {
+    return createCrossUserNotificationViaApi(userId, payload, {
+      ensureUnread: true,
+    });
+  }
 
   const notificationsRef = collection(firestore, `users/${userId}/notifications`);
   const existing = await getDocs(

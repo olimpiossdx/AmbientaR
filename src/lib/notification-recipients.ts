@@ -1,5 +1,17 @@
-import { collection, doc, getDoc, getDocs, query, where, type Firestore } from "firebase/firestore";
-import type { License } from "@/lib/types";
+import {
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  query,
+  where,
+  type Firestore,
+} from "firebase/firestore";
+import {
+  buildUserProfileDocumentVariants,
+  normalizeDocumentDigits,
+} from "@/lib/document-lookup";
+import type { AppUser, License } from "@/lib/types";
 
 type PortalEntityFields = {
   userId?: string;
@@ -116,6 +128,56 @@ export async function getRecipientUserIdsFromCondicionanteReference(
   return [];
 }
 
+async function findTitularUserIdsByLinkedEntityIds(
+  firestore: Firestore,
+  clientId?: string | null,
+  empreendedorId?: string | null,
+): Promise<string[]> {
+  const ids = new Set<string>();
+  const usersRef = collection(firestore, "users");
+
+  if (clientId?.trim()) {
+    const snap = await getDocs(
+      query(usersRef, where("linkedClientId", "==", clientId.trim())),
+    );
+    snap.docs.forEach((d) => ids.add(d.id));
+  }
+
+  if (empreendedorId?.trim()) {
+    const snap = await getDocs(
+      query(usersRef, where("linkedEmpreendedorId", "==", empreendedorId.trim())),
+    );
+    snap.docs.forEach((d) => ids.add(d.id));
+  }
+
+  return Array.from(ids);
+}
+
+async function findTitularUserIdsByProfileDocument(
+  firestore: Firestore,
+  rawDocument: string,
+): Promise<string[]> {
+  const variants = buildUserProfileDocumentVariants(rawDocument).slice(0, 10);
+  if (variants.length === 0) return [];
+
+  const ids = new Set<string>();
+  const usersRef = collection(firestore, "users");
+  const fields: Array<keyof Pick<AppUser, "cpf" | "userCpf" | "titularDocument">> = [
+    "cpf",
+    "userCpf",
+    "titularDocument",
+  ];
+
+  for (const field of fields) {
+    for (const variant of variants) {
+      const snap = await getDocs(query(usersRef, where(field, "==", variant)));
+      snap.docs.forEach((d) => ids.add(d.id));
+    }
+  }
+
+  return Array.from(ids);
+}
+
 /** Titular(es) vinculados a um CPF/CNPJ (cliente ou empreendedor). */
 export async function getTitularUserIdsByDocument(
   firestore: Firestore,
@@ -128,8 +190,23 @@ export async function getTitularUserIdsByDocument(
     firestore,
     rawDocument,
   );
+
   const ids = new Set<string>();
   if (client?.userId?.trim()) ids.add(client.userId.trim());
   if (empreendedor?.userId?.trim()) ids.add(empreendedor.userId.trim());
+
+  const fromLinked = await findTitularUserIdsByLinkedEntityIds(
+    firestore,
+    client?.id,
+    empreendedor?.id,
+  );
+  fromLinked.forEach((id) => ids.add(id));
+
+  const fromProfile = await findTitularUserIdsByProfileDocument(
+    firestore,
+    rawDocument,
+  );
+  fromProfile.forEach((id) => ids.add(id));
+
   return Array.from(ids);
 }

@@ -21,27 +21,49 @@ async function notifyTitularOfAccessRequest(
     requesterName: string;
     requestType: AccessRequestType;
   },
-): Promise<void> {
+): Promise<boolean> {
   const titularIds = await getTitularUserIdsByDocument(firestore, params.document);
-  if (titularIds.length === 0) return;
+  if (titularIds.length === 0) return false;
 
   const roleLabel =
     params.requestType === "consultor_representante"
       ? "consultor-representante"
       : "representante";
 
+  let notified = false;
   await Promise.all(
-    titularIds.map((titularId) =>
-      ensureUnreadNotification(firestore, titularId, {
+    titularIds.map(async (titularId) => {
+      const ok = await ensureUnreadNotification(firestore, titularId, {
         title: "Pedido de acesso pendente",
         description: `${params.requesterName} solicitou acesso como ${roleLabel}.`,
         link: NOTIFICATION_LINKS.usersAccessRequests,
         sourceType: NOTIFICATION_SOURCE.access_request_pending,
         sourceId: params.requestId,
         actorRole: params.requestType,
-      }),
-    ),
+      });
+      if (ok) notified = true;
+    }),
   );
+  return notified;
+}
+
+/** Garante notificação para pedidos pendentes visíveis ao titular (backfill). */
+export async function ensureTitularNotificationsForPendingRequests(
+  firestore: Firestore,
+  requests: Pick<
+    AccessRequest,
+    "id" | "requestedByName" | "cpfOfInterested" | "requestType"
+  >[],
+): Promise<void> {
+  for (const req of requests) {
+    const requestType = getAccessRequestType(req);
+    await notifyTitularOfAccessRequest(firestore, {
+      requestId: req.id,
+      document: req.cpfOfInterested,
+      requesterName: req.requestedByName,
+      requestType,
+    });
+  }
 }
 
 export async function createAccessRequestsForDelegate(
@@ -54,10 +76,11 @@ export async function createAccessRequestsForDelegate(
     documents: string[];
     existingDigits?: Set<string>;
   },
-): Promise<number> {
+): Promise<{ created: number; titularNotified: boolean }> {
   const existingSet = params.existingDigits ?? new Set<string>();
   const requestType = params.role;
   let created = 0;
+  let titularNotified = false;
 
   for (const cpfOuCnpj of params.documents) {
     const normalized = normalizeDocumentDigits(cpfOuCnpj);
@@ -75,17 +98,18 @@ export async function createAccessRequestsForDelegate(
         createdAt: new Date().toISOString(),
       } as Omit<AccessRequest, "id">);
       created += 1;
-      await notifyTitularOfAccessRequest(firestore, {
+      const notified = await notifyTitularOfAccessRequest(firestore, {
         requestId: ref.id,
         document: normalized,
         requesterName: params.name,
         requestType,
       });
+      if (notified) titularNotified = true;
     } catch (e) {
       console.warn("Erro ao criar pedido de acesso para", normalized, e);
     }
   }
-  return created;
+  return { created, titularNotified };
 }
 
 /** Pedidos do próprio representante ou consultor (exclui tipo de outro perfil). */

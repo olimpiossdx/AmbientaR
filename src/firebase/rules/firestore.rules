@@ -468,6 +468,27 @@ service cloud.firestore {
     }
     
     /**
+     * @description Representante/consultor adiciona-se às listas de aprovação ao confirmar convite.
+     * Só permite alterar approvedUserIds / approvedConsultorIds / primaryConsultorUid.
+     */
+    function isSelfDelegateAccessGrant() {
+      let role = getRole();
+      let keys = request.resource.data.diff(resource.data).affectedKeys();
+      return isSignedIn() && (
+        (
+          role == 'consultor_representante' &&
+          keys.hasOnly(['approvedConsultorIds', 'primaryConsultorUid']) &&
+          request.auth.uid in request.resource.data.approvedConsultorIds
+        ) ||
+        (
+          role == 'representative' &&
+          keys.hasOnly(['approvedUserIds']) &&
+          request.auth.uid in request.resource.data.approvedUserIds
+        )
+      );
+    }
+
+    /**
      * @description Allows any authenticated user to manage commercial client data.
      * Read: any signed-in user (so client-role can read linked client doc without needing getRole()).
      * @path /databases/{database}/documents/clients/{clientId}
@@ -480,7 +501,7 @@ service cloud.firestore {
         && request.resource.data.userId == request.auth.uid
         && (getRole() == 'client' || getRole() == 'cliente_autonomo')
       );
-      allow update: if isAdmin() || isFinancial() || isSales() || (
+      allow update: if isAdmin() || isFinancial() || isSales() || isSelfDelegateAccessGrant() || (
         isSignedIn()
         && request.resource.data.userId == request.auth.uid
         && (

@@ -156,6 +156,13 @@ async function grantAccessForTitularDocument(
       empreendedorIds: empreendedoresToUpdate.map((e) => e.id),
       assignedByUid: params.titularUid,
     });
+    try {
+      await updateDoc(doc(firestore, "users", params.professionalUserId), {
+        pendingAccess: false,
+      });
+    } catch {
+      /* perfil pode não existir */
+    }
   }
 }
 
@@ -202,7 +209,7 @@ export async function createDelegateInviteFromTitular(
       title: "Convite de vínculo com titular",
       description: `${input.titularUser.name} indicou você como ${
         input.role === "consultor_representante" ? "consultor-representante" : "representante"
-      }. Confirme ciência do vínculo em Usuários.`,
+      }. Confirme ciência do vínculo em Cadastro → Usuários.`,
       link: "/users#delegate-invite-ack",
       sourceType: NOTIFICATION_SOURCE.delegate_invite,
       sourceId: ref.id,

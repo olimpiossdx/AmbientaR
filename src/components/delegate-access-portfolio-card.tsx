@@ -152,7 +152,7 @@ export function DelegateAccessPortfolioCard({
     if (!firestore) return;
     setSubmitting(true);
     try {
-      const created = await createAccessRequestsForDelegate(firestore, {
+      const { created, titularNotified } = await createAccessRequestsForDelegate(firestore, {
         requesterUserId,
         email: requesterEmail,
         name: requesterName,
@@ -163,8 +163,10 @@ export function DelegateAccessPortfolioCard({
       if (created > 0) {
         toast({
           title: "Pedido enviado",
-          description:
-            "O titular (empreendedor) receberá o pedido em Configurações → Usuários e poderá aprovar ou recusar.",
+          description: titularNotified
+            ? "O titular receberá o pedido em Cadastro → Usuários e poderá aprovar ou recusar."
+            : "Pedido registrado, mas nenhum titular com este CPF/CNPJ foi encontrado para notificar. Confirme o documento ou peça ao titular que complete o cadastro.",
+          variant: titularNotified ? "default" : "destructive",
         });
         setNewDocument("");
         setDialogOpen(false);
@@ -189,13 +191,13 @@ export function DelegateAccessPortfolioCard({
     role === "consultor_representante" ? (
       <>
         Pedidos feitos no cadastro e novas solicitações aparecem abaixo. O
-        titular aprova ou recusa em Configurações → Usuários. Após aprovação,
+        titular aprova ou recusa em Cadastro → Usuários. Após aprovação,
         gerencie em <strong>Minha Carteira</strong> no menu.
       </>
     ) : (
       <>
         Informe o CPF/CNPJ de cada titular cujos dados deseja acessar. O titular
-        aprova ou recusa em Configurações → Usuários.
+        aprova ou recusa em Cadastro → Usuários.
       </>
     );
 
@@ -348,7 +350,7 @@ export function DelegateAccessPortfolioCard({
             <DialogDescription>
               Informe o CPF ou CNPJ do titular ou empreendimento cujos dados você
               precisa operar. O empreendedor (titular) poderá aprovar ou recusar
-              em Configurações → Usuários.
+              em Cadastro → Usuários.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-2 py-2">

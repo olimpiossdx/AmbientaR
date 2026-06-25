@@ -284,6 +284,12 @@ const AppLayoutClientInner = ({ children }: { children: React.ReactNode }) => {
     if (notification.sourceType === NOTIFICATION_SOURCE.access_request_pending) {
       return "bg-emerald-500/10 border-b border-emerald-500/20";
     }
+    if (notification.sourceType === NOTIFICATION_SOURCE.access_request_resolved) {
+      return "bg-emerald-500/10 border-b border-emerald-500/20";
+    }
+    if (notification.sourceType === NOTIFICATION_SOURCE.delegate_invite) {
+      return "bg-emerald-500/10 border-b border-emerald-500/20";
+    }
     return "";
   };
 

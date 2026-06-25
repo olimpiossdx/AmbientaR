@@ -95,6 +95,7 @@ import {
   TitularSentInvitesList,
 } from "@/components/delegate-invite-panel";
 import {
+  ensureTitularNotificationsForPendingRequests,
   filterAccessRequestsForDelegate,
 } from "@/lib/delegate-access-requests";
 import { useToast } from "@/hooks/use-toast";
@@ -132,7 +133,6 @@ import {
   filterAccessRequestsForTitularPortal,
 } from "@/lib/access-request-titular-match";
 import {
-  buildTitularAccessMatchDocumentSet,
   buildTitularCpfCnpjSet,
   buildTitularOwnedEntitiesForAccessMatch,
 } from "@/lib/titular-document-set";
@@ -1067,11 +1067,22 @@ export default function UsersPage() {
 
   const myCpfCnpjSet = useMemo(
     () =>
-      buildTitularAccessMatchDocumentSet({
+      buildTitularCpfCnpjSet({
         profile: profileForTitular ?? undefined,
-        ownedEntities: ownedEntitiesForMatch,
+        myClients,
+        myEmpreendedores,
+        clientById,
+        empreendedorById,
+        extraDocuments: ownedEntitiesForMatch.map((e) => e.cpfCnpj),
       }),
-    [profileForTitular, ownedEntitiesForMatch],
+    [
+      profileForTitular,
+      myClients,
+      myEmpreendedores,
+      clientById,
+      empreendedorById,
+      ownedEntitiesForMatch,
+    ],
   );
 
   const titularDocumentList = useMemo(
@@ -1106,7 +1117,7 @@ export default function UsersPage() {
       for (const portalDocument of documents) {
         if (cancelled) return;
         try {
-          await linkClientGestaoToExistingRecords(
+          const linked = await linkClientGestaoToExistingRecords(
             firestore,
             sessionUid,
             portalDocument,
@@ -1114,6 +1125,16 @@ export default function UsersPage() {
             profile?.linkedClientId ?? null,
             profile?.linkedEmpreendedorId ?? null,
           );
+          const userUpdates: Record<string, string> = {};
+          if (linked.linkedClientId && !profile?.linkedClientId) {
+            userUpdates.linkedClientId = linked.linkedClientId;
+          }
+          if (linked.linkedEmpreendedorId && !profile?.linkedEmpreendedorId) {
+            userUpdates.linkedEmpreendedorId = linked.linkedEmpreendedorId;
+          }
+          if (Object.keys(userUpdates).length > 0) {
+            await updateDoc(doc(firestore, "users", sessionUid), userUpdates);
+          }
         } catch (e) {
           console.warn("Vínculo titular ↔ empreendedor:", portalDocument, e);
         }
@@ -1147,6 +1168,30 @@ export default function UsersPage() {
       ),
     [allPendingRequests, myCpfCnpjSet, ownedEntitiesForMatch],
   );
+
+  useEffect(() => {
+    if (!firestore || !sessionUid || !user || !isClientePortalRole(user.role)) {
+      return;
+    }
+    if (!pendingRequestsForMe.length) return;
+
+    let cancelled = false;
+    (async () => {
+      if (cancelled) return;
+      try {
+        await ensureTitularNotificationsForPendingRequests(
+          firestore,
+          pendingRequestsForMe,
+        );
+      } catch (e) {
+        console.warn("Backfill notificações de pedidos pendentes:", e);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [firestore, sessionUid, user, pendingRequestsForMe]);
 
   const approvedRequestsForMe = useMemo(
     () =>
@@ -1405,6 +1450,15 @@ export default function UsersPage() {
             empreendedorIds: empreendedoresToUpdate.map((e) => e.id),
             assignedByUid: portalUid,
           });
+        }
+        if (isConsultorRequest && userIdToAdd) {
+          try {
+            await updateDoc(doc(firestore, "users", userIdToAdd), {
+              pendingAccess: false,
+            });
+          } catch {
+            /* perfil do consultor pode não existir ainda */
+          }
         }
       }
 
