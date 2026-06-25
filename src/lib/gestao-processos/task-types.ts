@@ -27,6 +27,10 @@ export type OfficeTask = {
   prazo?: string;
   assigneeUid?: string;
   assigneeName?: string;
+  demandanteUid?: string;
+  demandanteName?: string;
+  /** Tarefa criada pelo próprio usuário para organizar o dia. */
+  isOrganizacaoPessoal?: boolean;
   createdByUid?: string;
   createdByName?: string;
   empreendedorId?: string;

@@ -10,7 +10,6 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -20,6 +19,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { handleFirestoreFormError } from "@/lib/firestore-form-errors";
 import {
@@ -33,25 +42,20 @@ import {
   doc,
   documentId,
   updateDoc,
+  deleteField,
   query,
   where,
   getDocs,
 } from "firebase/firestore";
-import type { Client, Project } from "@/lib/types";
+import type { CarStoredFile, Client, Project } from "@/lib/types";
 import { sortByPropertyNamePt } from "@/lib/sort-pt-br";
 import { Skeleton } from "@/components/ui/skeleton";
 import { UploadPreparationDialog } from "@/components/shared/upload-preparation-dialog";
-import { useStorageFileUpload } from "@/hooks/use-storage-file-upload";
-import { isPdfLikeFile } from "@/lib/file-mime";
-import { FileText, Upload, Map as MapIcon } from "lucide-react";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { useCarFileUpload } from "@/hooks/use-car-file-upload";
+import { Upload } from "lucide-react";
 import { resolvePortalAuthUid } from "@/lib/auth-user-id";
 import {
+  canManageCarRecord,
   canManageCarUploadsOnProject,
   isClienteAutonomo,
   isClientePortalRole,
@@ -65,27 +69,27 @@ import { filterProjectsForClientCpfCnpj } from "@/lib/empreendedor-project-selec
 import { EmpreendedorProjectFilter } from "@/components/documentos-ambientais/empreendedor-project-filter";
 import { isEmpreendedorScopedPortalRole } from "@/lib/portal-empreendedor-scope";
 import type { Empreendedor } from "@/lib/types";
+import { CarFileUploadZone } from "@/components/documentos-ambientais/car-file-upload-zone";
+import { CarRecordCard } from "@/components/documentos-ambientais/car-record-card";
+import { CarEditDialog } from "@/components/documentos-ambientais/car-edit-dialog";
+import { buildCarPayload } from "@/lib/car/car-files";
+import type { CarUploadKind } from "@/hooks/use-car-file-upload";
 
 export default function CarPage() {
   const { firestore } = useFirebase();
   const { user } = useAuth();
   const { toast } = useToast();
-  const carUploadKindRef = React.useRef<"car" | "car-shp">("car");
-  const { uploadFile, dialogProps } = useStorageFileUpload({
-    storageFolder: "car",
-    storagePathPrefix: "car/",
-    buildStoragePath: (_file, safe) =>
-      `${carUploadKindRef.current}/${Date.now()}-${safe}`,
-  });
+  const { uploadCarFiles, dialogProps, limitLabel } = useCarFileUpload();
   const canManageCar = canManageCarUploadsOnProject(user?.role);
+  const canDownloadCar = canManageCarRecord(user?.role);
 
   const [clientId, setClientId] = React.useState("");
   const [projectId, setProjectId] = React.useState("");
   const [receiptNumber, setReceiptNumber] = React.useState("");
-  const [pdfUrl, setPdfUrl] = React.useState("");
-  const [shpUrl, setShpUrl] = React.useState("");
+  const [pdfFiles, setPdfFiles] = React.useState<CarStoredFile[]>([]);
+  const [geometryFiles, setGeometryFiles] = React.useState<CarStoredFile[]>([]);
   const [uploadingPdf, setUploadingPdf] = React.useState(false);
-  const [uploadingShp, setUploadingShp] = React.useState(false);
+  const [uploadingGeometry, setUploadingGeometry] = React.useState(false);
   const [saving, setSaving] = React.useState(false);
   const [fallbackClients, setFallbackClients] = React.useState<Client[] | null>(
     null,
@@ -101,6 +105,9 @@ export default function CarPage() {
   >(undefined);
   const [listFilterEmpreendedorId, setListFilterEmpreendedorId] = React.useState("");
   const [listFilterProjectId, setListFilterProjectId] = React.useState("");
+  const [editingProject, setEditingProject] = React.useState<Project | null>(null);
+  const [deletingProject, setDeletingProject] = React.useState<Project | null>(null);
+  const [deleting, setDeleting] = React.useState(false);
 
   const portalUid = resolvePortalAuthUid(user);
 
@@ -136,7 +143,7 @@ export default function CarPage() {
       setFallbackClients(null);
       return;
     }
-    const repUid = user.id ?? (user as any).uid;
+    const repUid = user.id ?? (user as { uid?: string }).uid;
     const accessRequestsRef = collection(firestore, "access_requests");
     const clientsRef = collection(firestore, "clients");
     const qApproved = query(
@@ -301,6 +308,14 @@ export default function CarPage() {
     [displayedClients],
   );
 
+  const manageableProjectIds = React.useMemo(() => {
+    if (!canManageCarRecord(user?.role)) return new Set<string>();
+    if (isClienteAutonomo(user?.role)) {
+      return new Set((projects ?? []).map((p) => p.id));
+    }
+    return new Set((projects ?? []).map((p) => p.id));
+  }, [projects, user?.role]);
+
   const displayedProjects = React.useMemo(() => {
     if (!projects) return [];
     if (isRepresentativeLikePortalRole(user?.role)) {
@@ -358,78 +373,34 @@ export default function CarPage() {
     return list;
   }, [projectsWithCar, listFilterEmpreendedorId, listFilterProjectId]);
 
-  const handlePdfChange: React.ChangeEventHandler<HTMLInputElement> = async (
-    event,
-  ) => {
-    if (!canManageCar) return;
-    const inputEl = event.currentTarget;
-    const file = inputEl.files?.[0];
-    if (!file || !firestore) return;
-
-    if (!isPdfLikeFile(file)) {
-      toast({
-        variant: "destructive",
-        title: "Tipo de arquivo inválido",
-        description: "Envie um arquivo em PDF para o recibo do CAR.",
-      });
-      return;
-    }
-
+  const handleUpload = async (files: File[], kind: CarUploadKind) => {
+    if (!canManageCar || !firestore) return;
+    const setUploading = kind === "pdf" ? setUploadingPdf : setUploadingGeometry;
+    const setFiles = kind === "pdf" ? setPdfFiles : setGeometryFiles;
+    setUploading(true);
     try {
-      setUploadingPdf(true);
-      // Permite selecionar o mesmo arquivo novamente.
-      inputEl.value = "";
-
-      carUploadKindRef.current = "car";
-      const url = await uploadFile(file);
-      if (!url) return;
-      setPdfUrl(url);
-      toast({
-        title: "Recibo enviado",
-        description: "O PDF foi carregado com sucesso.",
+      const uploaded = await uploadCarFiles(files, kind, (message) => {
+        toast({ variant: "destructive", title: "Arquivo inválido", description: message });
       });
+      if (uploaded.length > 0) {
+        setFiles((prev) => [...prev, ...uploaded]);
+        toast({
+          title: uploaded.length > 1 ? "Arquivos enviados" : "Arquivo enviado",
+          description:
+            kind === "pdf"
+              ? `${uploaded.length} PDF(s) pronto(s) para salvar.`
+              : `${uploaded.length} arquivo(s) de geometria pronto(s).`,
+        });
+      }
     } catch (error) {
-      console.error("Erro ao enviar PDF do CAR:", error);
+      console.error("Erro no upload CAR:", error);
       toast({
         variant: "destructive",
         title: "Erro no upload",
-        description: "Não foi possível enviar o PDF do CAR.",
+        description: "Não foi possível enviar o arquivo.",
       });
     } finally {
-      setUploadingPdf(false);
-    }
-  };
-
-  const handleShpChange: React.ChangeEventHandler<HTMLInputElement> = async (
-    event,
-  ) => {
-    if (!canManageCar) return;
-    const inputEl = event.currentTarget;
-    const file = inputEl.files?.[0];
-    if (!file || !firestore) return;
-
-    try {
-      setUploadingShp(true);
-      // Permite selecionar o mesmo arquivo novamente.
-      inputEl.value = "";
-
-      carUploadKindRef.current = "car-shp";
-      const url = await uploadFile(file);
-      if (!url) return;
-      setShpUrl(url);
-      toast({
-        title: "Arquivo de geometria enviado",
-        description: "O arquivo SHP/ZIP foi carregado.",
-      });
-    } catch (error) {
-      console.error("Erro ao enviar SHP do CAR:", error);
-      toast({
-        variant: "destructive",
-        title: "Erro no upload",
-        description: "Não foi possível enviar o arquivo de geometria.",
-      });
-    } finally {
-      setUploadingShp(false);
+      setUploading(false);
     }
   };
 
@@ -461,11 +432,11 @@ export default function CarPage() {
       });
       return;
     }
-    if (!pdfUrl) {
+    if (pdfFiles.length === 0) {
       toast({
         variant: "destructive",
         title: "Envie o PDF do CAR.",
-        description: "O recibo em PDF é obrigatório para salvar o registro.",
+        description: "Ao menos um recibo em PDF é obrigatório para salvar.",
       });
       return;
     }
@@ -485,13 +456,12 @@ export default function CarPage() {
 
     setSaving(true);
     const projectRef = doc(firestore, "projects", projectId);
-
-    const carData = {
+    const carData = buildCarPayload({
       clientId: clientId || undefined,
-      receiptNumber: receiptNumber.trim(),
-      pdfUrl,
-      shpUrl: shpUrl || undefined,
-    };
+      receiptNumber,
+      pdfFiles,
+      geometryFiles,
+    });
 
     try {
       await updateDoc(projectRef, { car: carData });
@@ -518,9 +488,9 @@ export default function CarPage() {
           "O cadastro ambiental rural foi vinculado ao empreendimento.",
       });
       setReceiptNumber("");
-      setPdfUrl("");
-      setShpUrl("");
-    } catch (error: any) {
+      setPdfFiles([]);
+      setGeometryFiles([]);
+    } catch (error) {
       handleFirestoreFormError(error, {
         toast,
         title: "Erro ao salvar CAR",
@@ -532,6 +502,31 @@ export default function CarPage() {
       });
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleDeleteCar = async () => {
+    if (!firestore || !deletingProject) return;
+    setDeleting(true);
+    const projectRef = doc(firestore, "projects", deletingProject.id);
+    try {
+      await updateDoc(projectRef, { car: deleteField() });
+      toast({
+        title: "CAR excluído",
+        description: "O vínculo do CAR com o empreendimento foi removido.",
+      });
+      setDeletingProject(null);
+    } catch (error) {
+      handleFirestoreFormError(error, {
+        toast,
+        title: "Erro ao excluir CAR",
+        context: {
+          path: projectRef.path,
+          operation: "update",
+        },
+      });
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -558,8 +553,8 @@ export default function CarPage() {
             <CardTitle>Vincular CAR a Empreendimento</CardTitle>
             <CardDescription>
               {isClienteAutonomo(user?.role)
-                ? "Nos seus empreendimentos, informe o número do recibo, envie o PDF do CAR e, se quiser, o arquivo de geometria (SHP/ZIP). A lista abaixo mostra os registros já vinculados."
-                : "Suba o recibo do CAR em PDF e o arquivo de geometria (SHP/ZIP), vinculando ao cliente e à fazenda."}
+                ? "Informe o número do recibo, envie PDFs e, se quiser, arquivos de geometria (SHP/ZIP). Arraste os arquivos para as áreas de upload ou clique para selecionar."
+                : "Vincule o recibo do CAR em PDF e arquivos de geometria ao cliente e à fazenda. Arraste os arquivos ou clique nas áreas de upload."}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -631,51 +626,49 @@ export default function CarPage() {
                   </div>
                 </div>
 
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label>Número do Recibo do CAR</Label>
-                    <Input
-                      value={receiptNumber}
-                      onChange={(e) => setReceiptNumber(e.target.value)}
-                      placeholder="Ex: MG-1234-5678-9012"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Recibo / Documento em PDF</Label>
-                    <Input
-                      type="file"
-                      accept="application/pdf"
-                      onChange={handlePdfChange}
-                      disabled={uploadingPdf}
-                    />
-                    {uploadingPdf && (
-                      <p className="text-xs text-muted-foreground">
-                        Enviando PDF do CAR...
-                      </p>
-                    )}
-                  </div>
+                <div className="space-y-2">
+                  <Label>Número do Recibo do CAR</Label>
+                  <Input
+                    value={receiptNumber}
+                    onChange={(e) => setReceiptNumber(e.target.value)}
+                    placeholder="Ex: MG-1234-5678-9012"
+                  />
                 </div>
 
-                <div className="space-y-2">
-                  <Label>Arquivo de Geometria (SHP ou ZIP)</Label>
-                  <Input
-                    type="file"
-                    accept=".zip,.shp"
-                    onChange={handleShpChange}
-                    disabled={uploadingShp}
+                <div className="grid gap-4 md:grid-cols-2">
+                  <CarFileUploadZone
+                    label="Recibo / Documentos em PDF"
+                    description="Obrigatório. Um ou mais PDFs do recibo CAR."
+                    accept="application/pdf,.pdf"
+                    files={pdfFiles}
+                    uploading={uploadingPdf}
+                    limitLabel={limitLabel}
+                    fileKind="pdf"
+                    onFilesAdded={(files) => void handleUpload(files, "pdf")}
+                    onRemove={(index) =>
+                      setPdfFiles((prev) => prev.filter((_, i) => i !== index))
+                    }
                   />
-                  {uploadingShp && (
-                    <p className="text-xs text-muted-foreground">
-                      Enviando arquivo de geometria...
-                    </p>
-                  )}
+                  <CarFileUploadZone
+                    label="Arquivos de Geometria (SHP ou ZIP)"
+                    description="Opcional. Geometria do imóvel rural."
+                    accept=".zip,.shp,application/zip"
+                    files={geometryFiles}
+                    uploading={uploadingGeometry}
+                    limitLabel={limitLabel}
+                    fileKind="geometry"
+                    onFilesAdded={(files) => void handleUpload(files, "geometry")}
+                    onRemove={(index) =>
+                      setGeometryFiles((prev) => prev.filter((_, i) => i !== index))
+                    }
+                  />
                 </div>
 
                 <div className="flex justify-end">
                   <Button
                     type="button"
-                    onClick={handleSave}
-                    disabled={saving || uploadingPdf || uploadingShp}
+                    onClick={() => void handleSave()}
+                    disabled={saving || uploadingPdf || uploadingGeometry}
                     className="gap-2"
                   >
                     <Upload className="h-4 w-4" />
@@ -697,8 +690,8 @@ export default function CarPage() {
             </CardTitle>
             <CardDescription>
               {canManageCar
-                ? "Consulte rapidamente quais fazendas já possuem CAR vinculado, com acesso aos arquivos enviados."
-                : "Visualize quais empreendimentos já possuem CAR vinculado e abra os anexos. No plano Cliente Autônomo, o titular envia o recibo e os arquivos na área de cadastro acima; no plano Cliente Gestão e para representantes, o envio e a alteração ficam a cargo da equipe AmbientaR."}
+                ? "Consulte, visualize, baixe, edite ou exclua os CARs vinculados às fazendas."
+                : "Visualize quais empreendimentos já possuem CAR vinculado e abra os anexos."}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -715,112 +708,96 @@ export default function CarPage() {
                 />
               </div>
             )}
-            <TooltipProvider>
-              <div className="space-y-4">
-                {loadingProjects &&
-                  Array.from({ length: 3 }).map((_, i) => (
-                    <Skeleton
-                      key={i}
-                      className="h-28 w-full rounded-lg"
+            <div className="space-y-4">
+              {loadingProjects &&
+                Array.from({ length: 3 }).map((_, i) => (
+                  <Skeleton
+                    key={i}
+                    className="h-28 w-full rounded-lg"
+                  />
+                ))}
+              {!loadingProjects &&
+                filteredProjectsWithCar.map((p) => {
+                  const car = p.car!;
+                  const client = car.clientId
+                    ? clientsMap.get(car.clientId)
+                    : undefined;
+                  const clientLabel = client
+                    ? `${client.name} — ${client.cpfCnpj}`
+                    : undefined;
+                  const canManageThisRecord =
+                    canManageCarRecord(user?.role) &&
+                    manageableProjectIds.has(p.id);
+
+                  return (
+                    <CarRecordCard
+                      key={p.id}
+                      project={p}
+                      car={car}
+                      clientLabel={clientLabel}
+                      canManage={canManageThisRecord}
+                      canDownload={canDownloadCar}
+                      onEdit={() => setEditingProject(p)}
+                      onDelete={() => setDeletingProject(p)}
                     />
-                  ))}
-                {!loadingProjects &&
-                  filteredProjectsWithCar.map((p) => {
-                    const car = p.car!;
-                    const client = car.clientId
-                      ? clientsMap.get(car.clientId)
-                      : undefined;
-                    return (
-                      <Card
-                        key={p.id}
-                        className="overflow-hidden border-border/80 shadow-sm transition-shadow hover:shadow-md"
-                      >
-                        <CardContent className="p-4 sm:p-5">
-                          <div className="flex flex-col gap-4">
-                            <div className="min-w-0 space-y-2">
-                              <h3 className="text-balance text-base font-semibold leading-snug text-foreground sm:text-lg">
-                                {p.propertyName}
-                                {p.municipio ? ` — ${p.municipio}/${p.uf}` : ""}
-                              </h3>
-                              <p className="text-sm text-muted-foreground">
-                                {client
-                                  ? `${client.name} — ${client.cpfCnpj}`
-                                  : "Cliente não vinculado"}
-                              </p>
-                              <p className="text-sm text-muted-foreground">
-                                Nº recibo CAR: {car.receiptNumber}
-                              </p>
-                            </div>
-                            <Separator className="bg-border/60" />
-                            <div className="flex flex-wrap items-center gap-1">
-                              {car.pdfUrl && (
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Button
-                                      asChild
-                                      variant="ghost"
-                                      size="icon"
-                                      className="h-9 w-9 shrink-0"
-                                    >
-                                      <a
-                                        href={car.pdfUrl}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                      >
-                                        <FileText className="h-4 w-4" />
-                                        <span className="sr-only">
-                                          Ver recibo PDF
-                                        </span>
-                                      </a>
-                                    </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent>
-                                    <p>Abrir recibo em PDF</p>
-                                  </TooltipContent>
-                                </Tooltip>
-                              )}
-                              {car.shpUrl && (
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Button
-                                      asChild
-                                      variant="ghost"
-                                      size="icon"
-                                      className="h-9 w-9 shrink-0"
-                                    >
-                                      <a
-                                        href={car.shpUrl}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                      >
-                                        <MapIcon className="h-4 w-4" />
-                                        <span className="sr-only">
-                                          Baixar geometria
-                                        </span>
-                                      </a>
-                                    </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent>
-                                    <p>Baixar arquivo SHP/ZIP</p>
-                                  </TooltipContent>
-                                </Tooltip>
-                              )}
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    );
-                  })}
-                {!loadingProjects && filteredProjectsWithCar.length === 0 && (
-                  <div className="flex h-24 items-center justify-center rounded-md border-2 border-dashed border-muted-foreground/25 text-center text-sm text-muted-foreground">
-                    Nenhum empreendimento possui CAR vinculado ainda.
-                  </div>
-                )}
-              </div>
-            </TooltipProvider>
+                  );
+                })}
+              {!loadingProjects && filteredProjectsWithCar.length === 0 && (
+                <div className="flex h-24 items-center justify-center rounded-md border-2 border-dashed border-muted-foreground/25 text-center text-sm text-muted-foreground">
+                  Nenhum empreendimento possui CAR vinculado ainda.
+                </div>
+              )}
+            </div>
           </CardContent>
         </Card>
       </main>
+
+      {editingProject?.car ? (
+        <CarEditDialog
+          open={!!editingProject}
+          onOpenChange={(open) => {
+            if (!open) setEditingProject(null);
+          }}
+          project={editingProject}
+          car={editingProject.car}
+          clientId={editingProject.car.clientId}
+          limitLabel={limitLabel}
+          uploadCarFiles={uploadCarFiles}
+          onSaved={() => setEditingProject(null)}
+        />
+      ) : null}
+
+      <AlertDialog
+        open={!!deletingProject}
+        onOpenChange={(open) => {
+          if (!open) setDeletingProject(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir registro de CAR?</AlertDialogTitle>
+            <AlertDialogDescription>
+              O vínculo do CAR com{" "}
+              <span className="font-medium text-foreground">
+                {deletingProject?.propertyName}
+              </span>{" "}
+              será removido. Os arquivos no armazenamento não são apagados
+              automaticamente.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => void handleDeleteCar()}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting ? "Excluindo..." : "Excluir"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <UploadPreparationDialog {...dialogProps} />
     </div>
   );

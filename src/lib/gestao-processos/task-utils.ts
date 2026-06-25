@@ -1,4 +1,7 @@
 import { daysUntilIsoDate } from "@/lib/client-deadline-alerts";
+import type { AppUser, Empreendedor } from "@/lib/types";
+import { getRoleLabelPt } from "@/lib/user-role-labels";
+import type { ConsultoriaProject, OfficeProcess } from "@/lib/gestao-processos/types";
 import type {
   OfficeTask,
   OfficeTaskFilterTab,
@@ -33,15 +36,144 @@ export function formatOfficeTaskPrazo(prazo?: string | null): string {
   return `${formatted} (${dias} dia(s))`;
 }
 
-export function officeTaskSearchBlob(task: OfficeTask): string {
+export function resolveOfficeTaskDemandanteUid(task: OfficeTask): string | undefined {
+  return task.demandanteUid ?? task.createdByUid;
+}
+
+export function isOfficeTaskOrganizacaoPessoal(task: OfficeTask): boolean {
+  if (task.isOrganizacaoPessoal === true) return true;
+  if (task.isOrganizacaoPessoal === false) return false;
+  const demandante = resolveOfficeTaskDemandanteUid(task);
+  return Boolean(
+    demandante &&
+      task.assigneeUid &&
+      demandante === task.assigneeUid &&
+      demandante === task.createdByUid,
+  );
+}
+
+export function officeTaskVisibleToUser(
+  task: OfficeTask,
+  uid: string | undefined | null,
+  canSeeAll: boolean,
+): boolean {
+  if (canSeeAll) return true;
+  if (!uid) return false;
+  const demandanteUid = resolveOfficeTaskDemandanteUid(task);
+  return (
+    task.assigneeUid === uid ||
+    task.createdByUid === uid ||
+    demandanteUid === uid
+  );
+}
+
+export function filterOfficeTasksVisibleToUser(
+  tasks: OfficeTask[],
+  uid: string | undefined | null,
+  canSeeAll: boolean,
+): OfficeTask[] {
+  if (canSeeAll) return tasks;
+  return tasks.filter((t) => officeTaskVisibleToUser(t, uid, false));
+}
+
+export type OfficeTaskUserRef = {
+  name: string;
+  roleLabel: string;
+};
+
+export type OfficeTaskDisplayFields = {
+  seiSlaAvulso: { kind: "avulso" } | { kind: "processo"; tipo: string; numero: string };
+  empreendedorName: string;
+  empreendimentoName: string;
+  demandante: OfficeTaskUserRef | null;
+  responsavel: OfficeTaskUserRef | null;
+  isPessoal: boolean;
+};
+
+export function formatOfficeTaskUserRef(ref: OfficeTaskUserRef | null): string {
+  if (!ref) return "—";
+  return `${ref.name} · ${ref.roleLabel}`;
+}
+
+function resolveUserRef(
+  uid: string | undefined,
+  usersByUid: ReadonlyMap<string, AppUser>,
+): OfficeTaskUserRef | null {
+  if (!uid) return null;
+  const u = usersByUid.get(uid);
+  if (!u) return { name: uid, roleLabel: "" };
+  return {
+    name: u.name || u.email || uid,
+    roleLabel: getRoleLabelPt(u.role),
+  };
+}
+
+export function resolveOfficeTaskDisplayFields(
+  task: OfficeTask,
+  ctx: {
+    usersByUid: ReadonlyMap<string, AppUser>;
+    empreendedoresById: ReadonlyMap<string, Empreendedor>;
+    projectsById: ReadonlyMap<string, ConsultoriaProject>;
+    processesById: ReadonlyMap<string, OfficeProcess>;
+  },
+): OfficeTaskDisplayFields {
+  const process = task.officeProcessId
+    ? ctx.processesById.get(task.officeProcessId)
+    : undefined;
+  const project = task.consultoriaProjectId
+    ? ctx.projectsById.get(task.consultoriaProjectId)
+    : undefined;
+  const empreendedor = task.empreendedorId
+    ? ctx.empreendedoresById.get(task.empreendedorId)
+    : undefined;
+
+  const empreendedorName =
+    empreendedor?.name?.trim() ||
+    process?.empreendedorName?.trim() ||
+    project?.empreendedorName?.trim() ||
+    "—";
+
+  const empreendimentoName =
+    process?.empreendimentoName?.trim() ||
+    project?.empreendimentoName?.trim() ||
+    "—";
+
+  const seiSlaAvulso: OfficeTaskDisplayFields["seiSlaAvulso"] = process
+    ? {
+        kind: "processo",
+        tipo: process.tipoProcesso.toUpperCase(),
+        numero: process.numeroProcesso,
+      }
+    : { kind: "avulso" };
+
+  return {
+    seiSlaAvulso,
+    empreendedorName,
+    empreendimentoName,
+    demandante: resolveUserRef(resolveOfficeTaskDemandanteUid(task), ctx.usersByUid),
+    responsavel: resolveUserRef(task.assigneeUid, ctx.usersByUid),
+    isPessoal: isOfficeTaskOrganizacaoPessoal(task),
+  };
+}
+
+export function officeTaskSearchBlob(
+  task: OfficeTask,
+  display?: OfficeTaskDisplayFields,
+): string {
   return [
     task.titulo,
     task.descricao,
     task.assigneeName,
+    task.demandanteName,
     task.createdByName,
     task.categoria,
     task.status,
     task.conclusaoNota,
+    display?.empreendedorName,
+    display?.empreendimentoName,
+    display?.seiSlaAvulso.kind === "processo"
+      ? `${display.seiSlaAvulso.tipo} ${display.seiSlaAvulso.numero}`
+      : "avulso",
   ]
     .filter(Boolean)
     .join(" ")
@@ -110,4 +242,9 @@ export function countOfficeTasksForUser(
     overdue: active.filter((t) => isOfficeTaskOverdue(t)).length,
     today: active.filter((t) => isOfficeTaskDueToday(t)).length,
   };
+}
+
+export function isOfficeTaskCompletedOnTime(task: OfficeTask): boolean | null {
+  if (task.status !== "concluida" || !task.prazo || !task.concluidaEm) return null;
+  return task.concluidaEm <= task.prazo;
 }

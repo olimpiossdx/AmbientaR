@@ -4,8 +4,9 @@ import * as React from "react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { useCollection, useFirebase, useMemoFirebase } from "@/firebase";
-import { collection } from "firebase/firestore";
+import { useFirebase } from "@/firebase";
+import { useOfficeTasksCollection } from "@/lib/gestao-processos/use-office-tasks-collection";
+import { canSeeAllOfficeTasks } from "@/lib/gestao-processos/role-guards";
 import type { OfficeTask } from "@/lib/gestao-processos/task-types";
 import { OFFICE_TASK_STATUS_LABELS } from "@/lib/gestao-processos/task-types";
 import {
@@ -38,13 +39,14 @@ export function OfficeLinkedTasks({
   compact = false,
   maxItems = 12,
 }: OfficeLinkedTasksProps) {
-  const { firestore } = useFirebase();
+  const { firestore, user } = useFirebase();
+  const canSeeAll = canSeeAllOfficeTasks(user?.role);
 
-  const tasksQuery = useMemoFirebase(
-    () => (firestore ? collection(firestore, "officeTasks") : null),
-    [firestore],
+  const { data: allTasks } = useOfficeTasksCollection(
+    Boolean(firestore),
+    user?.uid,
+    canSeeAll,
   );
-  const { data: allTasks } = useCollection<OfficeTask>(tasksQuery);
 
   const linkedTasks = React.useMemo(() => {
     const linked = (allTasks ?? []).filter(filter);

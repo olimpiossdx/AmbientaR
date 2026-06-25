@@ -12,6 +12,7 @@ import {
 import type {
   Contract,
   Expense,
+  ExpenseCategory,
   Invoice,
   ProjectRoiCase,
   ProjectRoiSemaforo,
@@ -34,6 +35,19 @@ export type ProjectRoiExtratoLine = {
   sourceCollection: string;
   /** Receita registrada como abatimento de crédito (compensação em serviços). */
   isAbatimento?: boolean;
+  category?: ExpenseCategory;
+  impostoValor?: number;
+  centroCusto?: string;
+  contractId?: string;
+  invoiceId?: string;
+  supplierId?: string;
+  clientId?: string;
+  isEstorno?: boolean;
+  estornoDeId?: string;
+  hasComprovante?: boolean;
+  fileUrl?: string;
+  /** Saldo de caixa acumulado após a linha (linhas informativas de orçamento não alteram). */
+  saldoAcumulado?: number | null;
 };
 
 export type ProjectRoiSnapshot = {
@@ -94,6 +108,21 @@ export function extratoValorVariant(line: ProjectRoiExtratoLine): ExtratoValorVa
     return isAbatimentoExtratoLine(line) ? 'debito' : 'credito';
   }
   return 'debito';
+}
+
+/** Saldo de caixa acumulado linha a linha (orçamento inicial é informativo). */
+export function computeExtratoSaldoAcumulado(
+  lines: ProjectRoiExtratoLine[],
+): ProjectRoiExtratoLine[] {
+  let saldo = 0;
+  return lines.map((line) => {
+    if (line.kind === 'orcamento_credito') {
+      return { ...line, saldoAcumulado: null };
+    }
+    const variant = extratoValorVariant(line);
+    saldo += variant === 'credito' ? line.amount : -line.amount;
+    return { ...line, saldoAcumulado: saldo };
+  });
 }
 
 function amountOf(v: unknown): number {
@@ -276,6 +305,9 @@ export function buildProjectRoiSnapshot(
       description: `Fatura ${inv.invoiceNumber} (paga)`,
       amount: amountOf(inv.amount),
       counterparty: options?.clientNameById?.get(inv.clientId),
+      clientId: inv.clientId,
+      contractId: inv.contractId,
+      centroCusto: inv.centroCusto,
       sourceCollection: 'invoices',
     });
   }
@@ -290,6 +322,14 @@ export function buildProjectRoiSnapshot(
       counterparty: r.clientId
         ? options?.clientNameById?.get(r.clientId)
         : undefined,
+      clientId: r.clientId,
+      contractId: r.contractId,
+      invoiceId: r.invoiceId,
+      centroCusto: r.centroCusto,
+      isEstorno: r.isEstorno,
+      estornoDeId: r.estornoDeId,
+      hasComprovante: Boolean(r.fileUrl?.trim()),
+      fileUrl: r.fileUrl,
       sourceCollection: 'revenues',
       isAbatimento: isAbatimentoDescription(r.description),
     });
@@ -305,6 +345,15 @@ export function buildProjectRoiSnapshot(
       counterparty: e.supplierId
         ? options?.supplierNameById?.get(e.supplierId)
         : undefined,
+      supplierId: e.supplierId,
+      category: e.category,
+      impostoValor: e.impostoValor,
+      contractId: e.contractId,
+      centroCusto: e.centroCusto,
+      isEstorno: e.isEstorno,
+      estornoDeId: e.estornoDeId,
+      hasComprovante: Boolean(e.fileUrl?.trim()),
+      fileUrl: e.fileUrl,
       sourceCollection: 'expenses',
     });
   }
@@ -314,6 +363,8 @@ export function buildProjectRoiSnapshot(
     if (b.kind === 'orcamento_credito' && a.kind !== 'orcamento_credito') return 1;
     return a.date < b.date ? -1 : a.date > b.date ? 1 : 0;
   });
+
+  const extratoComSaldo = computeExtratoSaldoAcumulado(extrato);
 
   return {
     orcamento,
@@ -329,7 +380,7 @@ export function buildProjectRoiSnapshot(
     resultado,
     margemPct,
     semaforo,
-    extrato,
+    extrato: extratoComSaldo,
     horasRegistradas,
     custoHoraImplicito,
     margemPorHora,

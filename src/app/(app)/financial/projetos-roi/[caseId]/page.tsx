@@ -37,8 +37,12 @@ import {
   buildProjectRoiSnapshot,
   extratoLineTipoLabel,
   extratoValorVariant,
+  isAbatimentoExtratoLine,
   type ProjectRoiExtratoLine,
 } from '@/lib/project-roi-aggregator';
+import { buildSupplierPaymentSummary } from '@/lib/project-roi-supplier-summary';
+import { expenseCategoryLabel } from '@/lib/project-roi-export';
+import type { ProjectRoiExportInput } from '@/lib/project-roi-export';
 import {
   encerrarRoiCase,
   deleteRoiCase,
@@ -46,9 +50,9 @@ import {
   reabrirRoiCase,
 } from '@/lib/project-roi-case-service';
 import {
-  downloadProjectRoiDreCsv,
   formatDreLineValue,
 } from '@/lib/project-roi-dre-export';
+import { ProjectRoiExportButtons } from '@/components/financial/project-roi-export-buttons';
 import {
   createTransactionEstorno,
   isTransactionEstornada,
@@ -74,7 +78,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { ArrowLeft, Download, Plus, Trash2 } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
+import { Switch } from '@/components/ui/switch';
+import { ArrowLeft, ChevronDown, Paperclip, Plus, Trash2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   AlertDialog,
@@ -202,6 +213,38 @@ export default function ProjetosRoiDetailPage() {
         (roiCase.contractId && sc.clientContractId === roiCase.contractId),
     );
   }, [supplierContracts, roiCase]);
+
+  const supplierSummary = React.useMemo(() => {
+    if (!roiCase || !expenses || !revenues) {
+      return { totalPaid: 0, groups: [] };
+    }
+    return buildSupplierPaymentSummary(
+      expenses,
+      roiCase,
+      supplierMap,
+      revenues,
+      linkedSupplierContracts,
+    );
+  }, [expenses, roiCase, supplierMap, revenues, linkedSupplierContracts]);
+
+  const exportInput = React.useMemo((): ProjectRoiExportInput | null => {
+    if (!roiCase || !snap) return null;
+    return {
+      roiCase,
+      snap,
+      title:
+        roiCase.apelido ||
+        roiCase.empreendimentoTexto ||
+        roiCase.sourceProposalNumber ||
+        roiCase.id,
+      supplierSummary,
+    };
+  }, [roiCase, snap, supplierSummary]);
+
+  const [extratoFilter, setExtratoFilter] = React.useState<
+    'all' | 'saidas' | 'entradas'
+  >('all');
+  const [groupBySupplier, setGroupBySupplier] = React.useState(false);
 
   const [apelido, setApelido] = React.useState('');
   const [horasEstimadas, setHorasEstimadas] = React.useState('');
@@ -479,16 +522,7 @@ export default function ProjetosRoiDetailPage() {
                     DRE gerencial deste caso — não altera a DRE Contábil global da
                     empresa.
                   </p>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() =>
-                      downloadProjectRoiDreCsv(roiCase, snap, title)
-                    }
-                  >
-                    <Download className="h-4 w-4 mr-2" />
-                    Exportar CSV
-                  </Button>
+                  <ProjectRoiExportButtons input={exportInput} layout="wrap" />
                 </div>
                 <Card>
                   <CardContent className="pt-6">
@@ -580,49 +614,57 @@ export default function ProjetosRoiDetailPage() {
             )}
           </TabsContent>
 
-          <TabsContent value="extrato" className="mt-4">
+          <TabsContent value="extrato" className="mt-4 space-y-4">
             <Card>
-              <CardContent className="p-0">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Data</TableHead>
-                      <TableHead>Descrição</TableHead>
-                      <TableHead>Tipo</TableHead>
-                      <TableHead className="text-right">Valor</TableHead>
-                      <TableHead className="w-[100px]" />
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {snap?.extrato.length ? (
-                      snap.extrato.map((line) => (
-                        <TableRow key={`${line.sourceCollection}-${line.id}`}>
-                          <TableCell>{line.date}</TableCell>
-                          <TableCell>{line.description}</TableCell>
-                          <TableCell className="text-xs">
-                            {extratoLineTipoLabel(line)}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <ExtratoValorCell line={line} />
-                          </TableCell>
-                          <TableCell>
-                            <ExtratoEstornoButton
-                              line={line}
-                              revenues={revenues ?? undefined}
-                              expenses={expenses ?? undefined}
-                            />
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    ) : (
-                      <TableRow>
-                        <TableCell colSpan={5} className="text-center text-muted-foreground">
-                          Nenhum lançamento vinculado a este caso.
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
+              <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <CardTitle className="text-base">Extrato do caso</CardTitle>
+                  <CardDescription>
+                    Lançamentos vinculados com saldo de caixa acumulado.
+                  </CardDescription>
+                </div>
+                <ProjectRoiExportButtons input={exportInput} layout="wrap" />
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex flex-wrap items-center gap-4">
+                  <div className="flex items-center gap-2">
+                    <Label className="text-xs text-muted-foreground">Filtro</Label>
+                    <Select
+                      value={extratoFilter}
+                      onValueChange={(v) =>
+                        setExtratoFilter(v as 'all' | 'saidas' | 'entradas')
+                      }
+                    >
+                      <SelectTrigger className="w-[180px] h-8">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Todos</SelectItem>
+                        <SelectItem value="saidas">Só saídas (fornecedores)</SelectItem>
+                        <SelectItem value="entradas">Só entradas</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      id="group-supplier"
+                      checked={groupBySupplier}
+                      onCheckedChange={setGroupBySupplier}
+                    />
+                    <Label htmlFor="group-supplier" className="text-sm cursor-pointer">
+                      Agrupar saídas por fornecedor
+                    </Label>
+                  </div>
+                </div>
+                <div className="overflow-x-auto">
+                  <ExtratoTable
+                    lines={snap?.extrato ?? []}
+                    filter={extratoFilter}
+                    groupBySupplier={groupBySupplier}
+                    revenues={revenues ?? undefined}
+                    expenses={expenses ?? undefined}
+                  />
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
@@ -754,7 +796,88 @@ export default function ProjetosRoiDetailPage() {
             )}
           </TabsContent>
 
-          <TabsContent value="fornecedores" className="mt-4">
+          <TabsContent value="fornecedores" className="mt-4 space-y-4">
+            <Card>
+              <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <CardTitle className="text-base">Pagamentos por prestador</CardTitle>
+                  <CardDescription>
+                    Despesas do caso agrupadas por fornecedor — total pago{' '}
+                    {formatCurrencyBRL(supplierSummary.totalPaid)}.
+                  </CardDescription>
+                </div>
+                <ProjectRoiExportButtons input={exportInput} layout="wrap" />
+              </CardHeader>
+              <CardContent className="p-0">
+                {supplierSummary.groups.length ? (
+                  <div className="divide-y">
+                    {supplierSummary.groups.map((group) => (
+                      <Collapsible key={group.supplierId} defaultOpen={false}>
+                        <CollapsibleTrigger asChild>
+                          <button
+                            type="button"
+                            className="flex w-full items-center justify-between gap-2 px-4 py-3 text-left hover:bg-muted/50"
+                          >
+                            <div className="min-w-0 flex-1">
+                              <p className="font-medium truncate">{group.supplierName}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {group.paymentCount} pagamento(s) ·{' '}
+                                {group.pctOfCasePaid.toFixed(1)}% do pago no caso
+                                {group.lastPaymentDate
+                                  ? ` · último: ${group.lastPaymentDate}`
+                                  : ''}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-3 shrink-0">
+                              <span className="font-semibold">
+                                {formatCurrencyBRL(group.totalPaid)}
+                              </span>
+                              {group.contractedValue != null && (
+                                <span className="text-xs text-muted-foreground hidden sm:inline">
+                                  contratado {formatCurrencyBRL(group.contractedValue)}
+                                </span>
+                              )}
+                              <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                            </div>
+                          </button>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent>
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead>Data</TableHead>
+                                <TableHead>Descrição</TableHead>
+                                <TableHead>Categoria</TableHead>
+                                <TableHead className="text-right">Valor</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {group.payments.map((p) => (
+                                <TableRow key={p.id}>
+                                  <TableCell>{p.date}</TableCell>
+                                  <TableCell>{p.description}</TableCell>
+                                  <TableCell className="text-xs">
+                                    {expenseCategoryLabel(p.category)}
+                                  </TableCell>
+                                  <TableCell className="text-right">
+                                    {formatCurrencyBRL(p.amount)}
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </CollapsibleContent>
+                      </Collapsible>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="p-4 text-sm text-center text-muted-foreground">
+                    Nenhuma despesa vinculada a este caso.
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+
             <Card>
               <CardHeader>
                 <CardTitle className="text-base">Contratos com fornecedores</CardTitle>
@@ -1051,6 +1174,179 @@ export default function ProjetosRoiDetailPage() {
         </AlertDialogContent>
       </AlertDialog>
     </div>
+  );
+}
+
+function filterExtratoLines(
+  lines: ProjectRoiExtratoLine[],
+  filter: 'all' | 'saidas' | 'entradas',
+): ProjectRoiExtratoLine[] {
+  if (filter === 'all') return lines;
+  if (filter === 'saidas') {
+    return lines.filter(
+      (l) =>
+        l.kind === 'expense' ||
+        (l.kind === 'revenue' && isAbatimentoExtratoLine(l)),
+    );
+  }
+  return lines.filter(
+    (l) =>
+      l.kind === 'orcamento_credito' ||
+      l.kind === 'invoice_paid' ||
+      (l.kind === 'revenue' && !isAbatimentoExtratoLine(l)),
+  );
+}
+
+function ExtratoTable({
+  lines,
+  filter,
+  groupBySupplier,
+  revenues,
+  expenses,
+}: {
+  lines: ProjectRoiExtratoLine[];
+  filter: 'all' | 'saidas' | 'entradas';
+  groupBySupplier: boolean;
+  revenues?: Revenue[];
+  expenses?: Expense[];
+}) {
+  const filtered = filterExtratoLines(lines, filter);
+
+  const nonExpenses = filtered.filter((l) => l.kind !== 'expense');
+  const expenseLines = filtered.filter((l) => l.kind === 'expense');
+
+  const expenseGroups = React.useMemo(() => {
+    const map = new Map<string, ProjectRoiExtratoLine[]>();
+    for (const line of expenseLines) {
+      const key = line.supplierId || line.counterparty || '__sem_fornecedor__';
+      const list = map.get(key) ?? [];
+      list.push(line);
+      map.set(key, list);
+    }
+    return [...map.entries()].sort((a, b) => {
+      const totalA = a[1].reduce((s, l) => s + l.amount, 0);
+      const totalB = b[1].reduce((s, l) => s + l.amount, 0);
+      return totalB - totalA;
+    });
+  }, [expenseLines]);
+
+  if (!filtered.length) {
+    return (
+      <p className="text-sm text-center text-muted-foreground py-6">
+        Nenhum lançamento para o filtro selecionado.
+      </p>
+    );
+  }
+
+  const headers = (
+    <TableRow>
+      <TableHead className="whitespace-nowrap">Data</TableHead>
+      <TableHead className="whitespace-nowrap">Tipo</TableHead>
+      <TableHead>Descrição</TableHead>
+      <TableHead className="whitespace-nowrap">Contraparte</TableHead>
+      <TableHead className="whitespace-nowrap">Categoria</TableHead>
+      <TableHead className="whitespace-nowrap text-right">Imposto</TableHead>
+      <TableHead className="whitespace-nowrap text-right">Valor</TableHead>
+      <TableHead className="whitespace-nowrap text-right">Saldo acum.</TableHead>
+      <TableHead className="whitespace-nowrap">Status</TableHead>
+      <TableHead className="w-10" />
+      <TableHead className="w-[90px]" />
+    </TableRow>
+  );
+
+  const renderRow = (line: ProjectRoiExtratoLine) => (
+    <TableRow key={`${line.sourceCollection}-${line.id}`}>
+      <TableCell className="whitespace-nowrap">{line.date}</TableCell>
+      <TableCell className="text-xs whitespace-nowrap">
+        {extratoLineTipoLabel(line)}
+      </TableCell>
+      <TableCell className="max-w-[200px] truncate" title={line.description}>
+        {line.description}
+      </TableCell>
+      <TableCell className="whitespace-nowrap">{line.counterparty ?? '—'}</TableCell>
+      <TableCell className="text-xs whitespace-nowrap">
+        {line.kind === 'expense' ? expenseCategoryLabel(line.category) : '—'}
+      </TableCell>
+      <TableCell className="text-right text-xs whitespace-nowrap">
+        {line.impostoValor != null && line.impostoValor > 0
+          ? formatCurrencyBRL(line.impostoValor)
+          : '—'}
+      </TableCell>
+      <TableCell className="text-right whitespace-nowrap">
+        <ExtratoValorCell line={line} />
+      </TableCell>
+      <TableCell className="text-right text-xs whitespace-nowrap">
+        {line.saldoAcumulado != null
+          ? formatCurrencyBRL(line.saldoAcumulado)
+          : '—'}
+      </TableCell>
+      <TableCell>
+        {line.isEstorno ? (
+          <Badge variant="secondary" className="text-xs">
+            Estorno
+          </Badge>
+        ) : (
+          '—'
+        )}
+      </TableCell>
+      <TableCell>
+        {line.hasComprovante && line.fileUrl ? (
+          <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
+            <a href={line.fileUrl} target="_blank" rel="noopener noreferrer">
+              <Paperclip className="h-4 w-4" />
+              <span className="sr-only">Comprovante</span>
+            </a>
+          </Button>
+        ) : line.hasComprovante ? (
+          <Paperclip className="h-4 w-4 text-muted-foreground" />
+        ) : null}
+      </TableCell>
+      <TableCell>
+        <ExtratoEstornoButton
+          line={line}
+          revenues={revenues}
+          expenses={expenses}
+        />
+      </TableCell>
+    </TableRow>
+  );
+
+  if (groupBySupplier && filter !== 'entradas') {
+    return (
+      <Table>
+        <TableHeader>{headers}</TableHeader>
+        <TableBody>
+          {nonExpenses.map(renderRow)}
+          {expenseGroups.map(([key, groupLines]) => {
+            const name =
+              groupLines[0]?.counterparty ||
+              (key === '__sem_fornecedor__' ? 'Sem fornecedor' : key);
+            const subtotal = groupLines.reduce((a, l) => a + l.amount, 0);
+            return (
+              <React.Fragment key={key}>
+                <TableRow className="bg-muted/40">
+                  <TableCell colSpan={6} className="font-medium">
+                    {name}
+                  </TableCell>
+                  <TableCell className="text-right font-medium">
+                    {formatCurrencyBRL(subtotal)}
+                  </TableCell>
+                  <TableCell colSpan={4} />
+                </TableRow>
+                {groupLines.map(renderRow)}
+              </React.Fragment>
+            );
+          })}
+        </TableBody>
+      </Table>
+    );
+  }
+
+  return (
+    <Table>
+      <TableHeader>{headers}</TableHeader>
+      <TableBody>{filtered.map(renderRow)}</TableBody>
+    </Table>
   );
 }
 

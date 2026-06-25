@@ -42,6 +42,7 @@ import type {
   Contract,
   Empreendedor,
   Expense,
+  Fornecedor,
   Invoice,
   Project,
   ProjectRoiCase,
@@ -118,6 +119,10 @@ export default function ProjetosRoiListPage() {
     () => (firestore && user ? collection(firestore, 'clients') : null),
     [firestore, user],
   );
+  const suppliersQ = useMemoFirebase(
+    () => (firestore && user ? collection(firestore, 'suppliers') : null),
+    [firestore, user],
+  );
   const roiSettingsRef = useMemoFirebase(
     () => (firestore ? doc(firestore, 'companySettings', 'projectRoi') : null),
     [firestore],
@@ -130,6 +135,7 @@ export default function ProjetosRoiListPage() {
   const { data: invoices } = useCollection<Invoice>(invoicesQ);
   const { data: projects } = useCollection<Project>(projectsQ);
   const { data: clients } = useCollection<Client>(clientsQ);
+  const { data: suppliers } = useCollection<Fornecedor>(suppliersQ);
   const { data: roiSettings } = useDoc<ProjectRoiCompanySettings>(roiSettingsRef);
 
   const canWrite = canWriteProjectRoi(role);
@@ -153,6 +159,12 @@ export default function ProjetosRoiListPage() {
     clients?.forEach((c) => m.set(c.id, c.name));
     return m;
   }, [clients]);
+
+  const supplierMap = React.useMemo(() => {
+    const m = new Map<string, string>();
+    suppliers?.forEach((s) => m.set(s.id, s.name || s.id));
+    return m;
+  }, [suppliers]);
 
   const runSync = React.useCallback(async () => {
     if (!firestore || !contracts) return;
@@ -199,6 +211,7 @@ export default function ProjetosRoiListPage() {
       .map((c) => {
         const snap = buildProjectRoiSnapshot(c, revenues, expenses, invoices, {
           clientNameById: clientMap,
+          supplierNameById: supplierMap,
           semaforoThresholds: roiSettings?.semaforo,
         });
         const project = c.projectId ? projectMap.get(c.projectId) : undefined;
@@ -220,7 +233,7 @@ export default function ProjetosRoiListPage() {
         );
       })
       .sort((a, b) => (a.case.updatedAt < b.case.updatedAt ? 1 : -1));
-  }, [cases, revenues, expenses, invoices, search, clientMap, projectMap, roiSettings?.semaforo]);
+  }, [cases, revenues, expenses, invoices, search, clientMap, supplierMap, projectMap, roiSettings?.semaforo]);
 
   const activeRows = rows.filter(
     (r) =>

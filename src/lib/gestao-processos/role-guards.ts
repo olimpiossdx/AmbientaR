@@ -49,3 +49,31 @@ export function canAccessOfficeTasks(
 ): boolean {
   return hasAnyRoleOrAdmin(role, GESTAO_PROCESSOS_INTERNAL_READ_ROLES);
 }
+
+/** Admin e gestor veem todas as tarefas na lista. */
+export function canSeeAllOfficeTasks(
+  role: UserRole | undefined | null,
+): boolean {
+  return hasAnyRoleOrAdmin(role, ["admin", "gestor"]);
+}
+
+/** Qualquer perfil interno do submenu Tarefas pode registrar demanda. */
+export function canCreateOfficeTask(
+  role: UserRole | undefined | null,
+): boolean {
+  return hasAnyRoleOrAdmin(role, GESTAO_PROCESSOS_INTERNAL_READ_ROLES);
+}
+
+/** Só admin e gestor atribuem responsável a outra pessoa. */
+export function canAssignOfficeTaskToOthers(
+  role: UserRole | undefined | null,
+): boolean {
+  return hasAnyRoleOrAdmin(role, ["admin", "gestor"]);
+}
+
+/** Submenu Indicadores de Prazos — apenas administrador. */
+export function canAccessGestaoProcessosIndicadores(
+  role: UserRole | undefined | null,
+): boolean {
+  return role === "admin";
+}

@@ -1,6 +1,6 @@
 # Auditoria de Rotas e Menu
 
-Gerado em: 2026-06-24T14:36:33.283Z
+Gerado em: 2026-06-25T17:57:54.435Z
 
 Classificação inicial para limpeza cirúrgica. Rotas órfãs não devem ser removidas automaticamente; precisam de validação funcional antes.
 
@@ -302,12 +302,13 @@ Total: 3
 
 ## Rotas estáticas sem entrada direta no menu
 
-Total: 7
+Total: 8
 
 | Rota | Arquivo |
 |------|---------|
 | `/gestao-processos` | `src/app/(app)/gestao-processos/page.tsx` |
 | `/gestao-processos/fluxo` | `src/app/(app)/gestao-processos/fluxo/page.tsx` |
+| `/gestao-processos/indicadores` | `src/app/(app)/gestao-processos/indicadores/page.tsx` |
 | `/gestao-processos/planilha` | `src/app/(app)/gestao-processos/planilha/page.tsx` |
 | `/gestao-processos/projetos` | `src/app/(app)/gestao-processos/projetos/page.tsx` |
 | `/gestao-processos/tarefas` | `src/app/(app)/gestao-processos/tarefas/page.tsx` |

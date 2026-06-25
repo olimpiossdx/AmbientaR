@@ -6,12 +6,13 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useCollection, useFirebase, useMemoFirebase } from "@/firebase";
-import { collection } from "firebase/firestore";
+import { useFirebase } from "@/firebase";
+import { useOfficeTasksCollection } from "@/lib/gestao-processos/use-office-tasks-collection";
 import type { OfficeTask } from "@/lib/gestao-processos/task-types";
 import { OFFICE_TASK_STATUS_LABELS } from "@/lib/gestao-processos/task-types";
 import {
   filterOfficeTasksByTab,
+  filterOfficeTasksVisibleToUser,
   formatOfficeTaskPrazo,
   isOfficeTaskOverdue,
   sortOfficeTasksByPrazo,
@@ -19,7 +20,7 @@ import {
 import {
   GESTAO_PROCESSOS_TAREFAS_PATH,
 } from "@/lib/gestao-processos-menu";
-import { canAccessOfficeTasks } from "@/lib/gestao-processos/role-guards";
+import { canAccessOfficeTasks, canSeeAllOfficeTasks } from "@/lib/gestao-processos/role-guards";
 import { cn } from "@/lib/utils";
 import { ChevronRight, ListTodo } from "lucide-react";
 
@@ -29,21 +30,25 @@ export default function OfficeTasksWidget() {
   const { firestore, user } = useFirebase();
   const canAccess = canAccessOfficeTasks(user?.role);
 
-  const tasksQuery = useMemoFirebase(
-    () => (firestore && canAccess ? collection(firestore, "officeTasks") : null),
-    [firestore, canAccess],
+  const { data: tasks, isLoading } = useOfficeTasksCollection(
+    Boolean(firestore && canAccess),
+    user?.uid,
+    canSeeAllOfficeTasks(user?.role),
   );
-  const { data: tasks, isLoading } = useCollection<OfficeTask>(tasksQuery);
+
+  const canSeeAll = canSeeAllOfficeTasks(user?.role);
 
   const myTasks = React.useMemo(() => {
-    const mine = filterOfficeTasksByTab(tasks ?? [], "minhas", user?.uid);
+    const visible = filterOfficeTasksVisibleToUser(tasks ?? [], user?.uid, canSeeAll);
+    const mine = filterOfficeTasksByTab(visible, "minhas", user?.uid);
     return sortOfficeTasksByPrazo(mine).slice(0, MAX_ITEMS);
-  }, [tasks, user?.uid]);
+  }, [tasks, user?.uid, canSeeAll]);
 
   const overdueCount = React.useMemo(() => {
-    const mine = filterOfficeTasksByTab(tasks ?? [], "minhas", user?.uid);
+    const visible = filterOfficeTasksVisibleToUser(tasks ?? [], user?.uid, canSeeAll);
+    const mine = filterOfficeTasksByTab(visible, "minhas", user?.uid);
     return mine.filter((t) => isOfficeTaskOverdue(t)).length;
-  }, [tasks, user?.uid]);
+  }, [tasks, user?.uid, canSeeAll]);
 
   if (!canAccess) return null;
 

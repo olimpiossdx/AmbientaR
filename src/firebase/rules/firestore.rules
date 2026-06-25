@@ -688,19 +688,54 @@ service cloud.firestore {
 
     /**
      * Tarefas avulsas do escritório — Gestão de Projetos e Processos.
-     * Leitura: equipa interna (sem portal cliente).
-     * Escrita: admin, técnico e gestor.
+     * Leitura: admin/gestor veem tudo; demais perfis só tarefas ligadas a si.
+     * Escrita: equipa interna cria; atribuição a terceiros só admin/gestor.
      * @path /databases/{database}/documents/officeTasks/{taskId}
      */
-    function canReadOfficeTask() {
-      return isAdmin() || (isSignedIn() && getRole() in [
+    function isOfficeTaskInternalRole() {
+      return isSignedIn() && getRole() in [
         'technical', 'gestor', 'supervisor', 'advogado', 'diretor_fauna'
-      ]);
+      ];
+    }
+
+    function canAssignOfficeTaskAssignee() {
+      return isAdmin() || getRole() == 'gestor';
+    }
+
+    function canCreateOfficeTask() {
+      return isAdmin() || isOfficeTaskInternalRole();
+    }
+
+    function officeTaskDemandanteUid(data) {
+      return data.get('demandanteUid', data.get('createdByUid', ''));
+    }
+
+    function isOfficeTaskParticipant(data) {
+      return data.assigneeUid == request.auth.uid
+        || data.createdByUid == request.auth.uid
+        || officeTaskDemandanteUid(data) == request.auth.uid;
+    }
+
+    function officeTaskAssigneeUnchanged() {
+      return request.resource.data.get('assigneeUid', '') == resource.data.get('assigneeUid', '')
+        && request.resource.data.get('assigneeName', '') == resource.data.get('assigneeName', '');
+    }
+
+    function canReadOfficeTask() {
+      return isAdmin() || getRole() == 'gestor' || (
+        isOfficeTaskInternalRole() && isOfficeTaskParticipant(resource.data)
+      );
     }
 
     match /officeTasks/{taskId} {
       allow read: if canReadOfficeTask();
-      allow create, update, delete: if canWriteOfficeProcess();
+      allow create: if canCreateOfficeTask();
+      allow delete: if canWriteOfficeProcess() || canAssignOfficeTaskAssignee();
+      allow update: if canAssignOfficeTaskAssignee() || canWriteOfficeProcess() || (
+        canCreateOfficeTask()
+        && isOfficeTaskParticipant(resource.data)
+        && officeTaskAssigneeUnchanged()
+      );
     }
     
     /**

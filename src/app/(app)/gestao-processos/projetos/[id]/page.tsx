@@ -42,6 +42,7 @@ import {
 } from "@/lib/gestao-processos-menu";
 import {
   canAccessOfficeTasks,
+  canAssignOfficeTaskToOthers,
   canWriteGestaoProcessos,
   isGestaoProcessosPortalReadOnly,
 } from "@/lib/gestao-processos/role-guards";
@@ -115,6 +116,7 @@ export default function ConsultoriaProjectDetailPage() {
   const { toast } = useToast();
 
   const canWrite = canWriteGestaoProcessos(user?.role);
+  const canAssignTasks = canAssignOfficeTaskToOthers(user?.role);
   const canViewTasks = canAccessOfficeTasks(user?.role);
   const isPortalReadOnly = isGestaoProcessosPortalReadOnly(user?.role);
 
@@ -376,6 +378,9 @@ export default function ConsultoriaProjectDetailPage() {
     if (!firestore || !project || !user) return;
     setSavingTask(true);
     try {
+      const demandante = values.demandanteUid
+        ? technicalUsers.find((u) => u.uid === values.demandanteUid)
+        : undefined;
       const assignee = values.assigneeUid
         ? technicalUsers.find((u) => u.uid === values.assigneeUid)
         : undefined;
@@ -387,8 +392,16 @@ export default function ConsultoriaProjectDetailPage() {
         status: values.status,
         prioridade: values.prioridade || undefined,
         prazo: values.prazo || undefined,
+        demandanteUid: values.demandanteUid || user.uid,
+        demandanteName:
+          demandante?.name ||
+          demandante?.email ||
+          user.name ||
+          user.email ||
+          user.uid,
         assigneeUid: values.assigneeUid || undefined,
         assigneeName: assignee?.name || assignee?.email,
+        isOrganizacaoPessoal: false,
         empreendedorId: values.empreendedorId || project.empreendedorId,
         consultoriaProjectId: project.id,
         officeProcessId: values.officeProcessId || undefined,
@@ -757,7 +770,8 @@ export default function ConsultoriaProjectDetailPage() {
           }}
           saving={savingTask}
           onSubmit={persistOfficeTask}
-          technicalUsers={technicalUsers}
+          internalUsers={technicalUsers}
+          canAssignToOthers={canAssignTasks}
           empreendedores={empreendedores ?? []}
           consultoriaProjects={allConsultoriaProjects ?? []}
           officeProcesses={officeProcesses ?? []}

@@ -21,6 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { AppUser, Empreendedor } from "@/lib/types";
+import { getRoleLabelPt } from "@/lib/user-role-labels";
 import type {
   ConsultoriaProject,
   OfficeProcess,
@@ -45,6 +46,7 @@ export type OfficeTaskFormValues = {
   status: OfficeTaskStatus;
   prioridade: OfficeProcessPrioridade | "";
   prazo: string;
+  demandanteUid: string;
   assigneeUid: string;
   empreendedorId: string;
   consultoriaProjectId: string;
@@ -58,6 +60,7 @@ const EMPTY_FORM: OfficeTaskFormValues = {
   status: "pendente",
   prioridade: "media",
   prazo: "",
+  demandanteUid: "",
   assigneeUid: "",
   empreendedorId: "",
   consultoriaProjectId: "",
@@ -73,11 +76,18 @@ function toFormValues(task?: OfficeTask | null): OfficeTaskFormValues {
     status: task.status,
     prioridade: task.prioridade ?? "",
     prazo: task.prazo ?? "",
+    demandanteUid: task.demandanteUid ?? task.createdByUid ?? "",
     assigneeUid: task.assigneeUid ?? "",
     empreendedorId: task.empreendedorId ?? "",
     consultoriaProjectId: task.consultoriaProjectId ?? "",
     officeProcessId: task.officeProcessId ?? "",
   };
+}
+
+function userOptionLabel(u: AppUser): string {
+  const name = u.name || u.email || u.uid;
+  const role = getRoleLabelPt(u.role);
+  return role ? `${name} · ${role}` : name;
 }
 
 type OfficeTaskFormDialogProps = {
@@ -87,7 +97,8 @@ type OfficeTaskFormDialogProps = {
   defaults?: Partial<OfficeTaskFormValues>;
   saving?: boolean;
   onSubmit: (values: OfficeTaskFormValues) => void | Promise<void>;
-  technicalUsers: AppUser[];
+  internalUsers: AppUser[];
+  canAssignToOthers: boolean;
   empreendedores?: Empreendedor[];
   consultoriaProjects?: ConsultoriaProject[];
   officeProcesses?: OfficeProcess[];
@@ -100,7 +111,8 @@ export function OfficeTaskFormDialog({
   defaults,
   saving,
   onSubmit,
-  technicalUsers,
+  internalUsers,
+  canAssignToOthers,
   empreendedores = [],
   consultoriaProjects = [],
   officeProcesses = [],
@@ -135,7 +147,9 @@ export function OfficeTaskFormDialog({
         <DialogHeader>
           <DialogTitle>{initial ? "Editar tarefa" : "Nova tarefa"}</DialogTitle>
           <DialogDescription>
-            Registe o pedido, o prazo e o técnico responsável para não se perder.
+            {canAssignToOthers
+              ? "Registe a demanda, o prazo e atribua o responsável pela resolução."
+              : "Organize suas demandas do dia — visível para você e para a gestão."}
           </DialogDescription>
         </DialogHeader>
 
@@ -232,14 +246,43 @@ export function OfficeTaskFormDialog({
               />
             </div>
 
+            {canAssignToOthers ? (
+              <div className="space-y-2">
+                <Label>Responsável pela resolução</Label>
+                <Select
+                  value={form.assigneeUid || "none"}
+                  onValueChange={(v) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      assigneeUid: v === "none" ? "" : v,
+                    }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">—</SelectItem>
+                    {internalUsers.map((u) => (
+                      <SelectItem key={u.uid} value={u.uid}>
+                        {userOptionLabel(u)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            ) : null}
+          </div>
+
+          {canAssignToOthers ? (
             <div className="space-y-2">
-              <Label>Técnico responsável</Label>
+              <Label>Demandante da demanda</Label>
               <Select
-                value={form.assigneeUid || "none"}
+                value={form.demandanteUid || "none"}
                 onValueChange={(v) =>
                   setForm((prev) => ({
                     ...prev,
-                    assigneeUid: v === "none" ? "" : v,
+                    demandanteUid: v === "none" ? "" : v,
                   }))
                 }
               >
@@ -248,15 +291,15 @@ export function OfficeTaskFormDialog({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">—</SelectItem>
-                  {technicalUsers.map((u) => (
+                  {internalUsers.map((u) => (
                     <SelectItem key={u.uid} value={u.uid}>
-                      {u.name || u.email}
+                      {userOptionLabel(u)}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
-          </div>
+          ) : null}
 
           {initial ? (
             <div className="space-y-2">
@@ -281,83 +324,87 @@ export function OfficeTaskFormDialog({
             </div>
           ) : null}
 
-          <div className="space-y-2">
-            <Label>Empreendedor (opcional)</Label>
-            <Select
-              value={form.empreendedorId || "none"}
-              onValueChange={(v) =>
-                setForm((prev) => ({
-                  ...prev,
-                  empreendedorId: v === "none" ? "" : v,
-                }))
-              }
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">—</SelectItem>
-                {empreendedores.map((e) => (
-                  <SelectItem key={e.id} value={e.id}>
-                    {e.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          {canAssignToOthers ? (
+            <>
+              <div className="space-y-2">
+                <Label>Empreendedor (opcional)</Label>
+                <Select
+                  value={form.empreendedorId || "none"}
+                  onValueChange={(v) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      empreendedorId: v === "none" ? "" : v,
+                    }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">—</SelectItem>
+                    {empreendedores.map((e) => (
+                      <SelectItem key={e.id} value={e.id}>
+                        {e.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-          <div className="space-y-2">
-            <Label>Projeto de consultoria (opcional)</Label>
-            <Select
-              value={form.consultoriaProjectId || "none"}
-              onValueChange={(v) =>
-                setForm((prev) => ({
-                  ...prev,
-                  consultoriaProjectId: v === "none" ? "" : v,
-                  officeProcessId: "",
-                }))
-              }
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">—</SelectItem>
-                {consultoriaProjects.map((p) => (
-                  <SelectItem key={p.id} value={p.id}>
-                    {p.code ? `${p.code} — ` : ""}
-                    {p.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+              <div className="space-y-2">
+                <Label>Projeto de consultoria (opcional)</Label>
+                <Select
+                  value={form.consultoriaProjectId || "none"}
+                  onValueChange={(v) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      consultoriaProjectId: v === "none" ? "" : v,
+                      officeProcessId: "",
+                    }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">—</SelectItem>
+                    {consultoriaProjects.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.code ? `${p.code} — ` : ""}
+                        {p.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-          {linkedProcesses.length > 0 ? (
-            <div className="space-y-2">
-              <Label>Processo (opcional)</Label>
-              <Select
-                value={form.officeProcessId || "none"}
-                onValueChange={(v) =>
-                  setForm((prev) => ({
-                    ...prev,
-                    officeProcessId: v === "none" ? "" : v,
-                  }))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">—</SelectItem>
-                  {linkedProcesses.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>
-                      {p.numeroProcesso}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+              {linkedProcesses.length > 0 ? (
+                <div className="space-y-2">
+                  <Label>Processo (opcional)</Label>
+                  <Select
+                    value={form.officeProcessId || "none"}
+                    onValueChange={(v) =>
+                      setForm((prev) => ({
+                        ...prev,
+                        officeProcessId: v === "none" ? "" : v,
+                      }))
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">—</SelectItem>
+                      {linkedProcesses.map((p) => (
+                        <SelectItem key={p.id} value={p.id}>
+                          {p.numeroProcesso}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              ) : null}
+            </>
           ) : null}
 
           <DialogFooter>

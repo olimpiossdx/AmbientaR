@@ -56,6 +56,7 @@ import {
 } from "@/lib/gestao-processos/pipeline-utils";
 import {
   canAccessOfficeTasks,
+  canAssignOfficeTaskToOthers,
   canWriteGestaoProcessos,
   isGestaoProcessosPortalReadOnly,
 } from "@/lib/gestao-processos/role-guards";
@@ -146,6 +147,7 @@ export function GestaoProcessosFluxoView() {
   const createRequested = searchParams?.get("novo") === "1";
 
   const canWrite = canWriteGestaoProcessos(user?.role);
+  const canAssignTasks = canAssignOfficeTaskToOthers(user?.role);
   const canViewTasks = canAccessOfficeTasks(user?.role);
   const isPortalReadOnly = isGestaoProcessosPortalReadOnly(user?.role);
 
@@ -443,6 +445,9 @@ export function GestaoProcessosFluxoView() {
     if (!firestore || !user || !taskFormProcess) return;
     setSavingTask(true);
     try {
+      const demandante = values.demandanteUid
+        ? technicalUsers.find((u) => u.uid === values.demandanteUid)
+        : undefined;
       const assignee = values.assigneeUid
         ? technicalUsers.find((u) => u.uid === values.assigneeUid)
         : undefined;
@@ -454,8 +459,16 @@ export function GestaoProcessosFluxoView() {
         status: values.status,
         prioridade: values.prioridade || undefined,
         prazo: values.prazo || undefined,
+        demandanteUid: values.demandanteUid || user.uid,
+        demandanteName:
+          demandante?.name ||
+          demandante?.email ||
+          user.name ||
+          user.email ||
+          user.uid,
         assigneeUid: values.assigneeUid || undefined,
         assigneeName: assignee?.name || assignee?.email,
+        isOrganizacaoPessoal: false,
         empreendedorId: values.empreendedorId || taskFormProcess.empreendedorId,
         consultoriaProjectId:
           values.consultoriaProjectId || taskFormProcess.consultoriaProjectId,
@@ -876,7 +889,8 @@ export function GestaoProcessosFluxoView() {
           }}
           saving={savingTask}
           onSubmit={persistOfficeTask}
-          technicalUsers={technicalUsers}
+          internalUsers={technicalUsers}
+          canAssignToOthers={canAssignTasks}
           empreendedores={empreendedores ?? []}
           consultoriaProjects={consultoriaProjects ?? []}
           officeProcesses={processes ?? []}

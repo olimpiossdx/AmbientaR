@@ -36,13 +36,16 @@ import {
   setDoc,
   updateDoc,
 } from "firebase/firestore";
+import { useOfficeTasksCollection } from "@/lib/gestao-processos/use-office-tasks-collection";
 import { useToast } from "@/hooks/use-toast";
 import type { AppUser, Empreendedor } from "@/lib/types";
-import {
-  GESTAO_PROCESSOS_TAREFAS_LABEL,
-} from "@/lib/gestao-processos-menu";
+import { GESTAO_PROCESSOS_INTERNAL_READ_ROLES } from "@/lib/gestao-processos-menu";
+import { GESTAO_PROCESSOS_TAREFAS_LABEL } from "@/lib/gestao-processos-menu";
 import {
   canAccessOfficeTasks,
+  canAssignOfficeTaskToOthers,
+  canCreateOfficeTask,
+  canSeeAllOfficeTasks,
   canWriteGestaoProcessos,
 } from "@/lib/gestao-processos/role-guards";
 import type { ConsultoriaProject, OfficeProcess } from "@/lib/gestao-processos/types";
@@ -54,10 +57,14 @@ import {
 } from "@/lib/gestao-processos/task-types";
 import {
   filterOfficeTasksByTab,
+  filterOfficeTasksVisibleToUser,
   formatOfficeTaskPrazo,
   isOfficeTaskOverdue,
   officeTaskSearchBlob,
+  officeTaskVisibleToUser,
+  resolveOfficeTaskDisplayFields,
   sortOfficeTasksByPrazo,
+  type OfficeTaskUserRef,
 } from "@/lib/gestao-processos/task-utils";
 import {
   OfficeTaskFormDialog,
@@ -85,6 +92,20 @@ function statusBadgeClass(status: OfficeTask["status"]): string {
   );
 }
 
+function UserTableCell({ ref }: { ref: OfficeTaskUserRef | null }) {
+  if (!ref) {
+    return <span className="text-muted-foreground">—</span>;
+  }
+  return (
+    <div className="min-w-[8rem] text-sm">
+      <p className="font-medium leading-tight">{ref.name}</p>
+      {ref.roleLabel ? (
+        <p className="text-xs text-muted-foreground">{ref.roleLabel}</p>
+      ) : null}
+    </div>
+  );
+}
+
 export function GestaoProcessosTarefasView() {
   const searchParams = useSearchParams();
   const { toast } = useToast();
@@ -100,13 +121,16 @@ export function GestaoProcessosTarefasView() {
   const [saving, setSaving] = React.useState(false);
 
   const canAccess = canAccessOfficeTasks(user?.role);
-  const canWrite = canWriteGestaoProcessos(user?.role);
+  const canCreate = canCreateOfficeTask(user?.role);
+  const canAssign = canAssignOfficeTaskToOthers(user?.role);
+  const canSeeAll = canSeeAllOfficeTasks(user?.role);
+  const canWriteProcess = canWriteGestaoProcessos(user?.role);
 
-  const tasksQuery = useMemoFirebase(
-    () => (firestore && canAccess ? collection(firestore, "officeTasks") : null),
-    [firestore, canAccess],
+  const { data: tasks, isLoading } = useOfficeTasksCollection(
+    Boolean(firestore && canAccess),
+    user?.uid,
+    canSeeAll,
   );
-  const { data: tasks, isLoading } = useCollection<OfficeTask>(tasksQuery);
 
   const usersQuery = useMemoFirebase(
     () => (firestore && canAccess ? collection(firestore, "users") : null),
@@ -132,13 +156,9 @@ export function GestaoProcessosTarefasView() {
   );
   const { data: officeProcesses } = useCollection<OfficeProcess>(processesQuery);
 
-  const technicalUsers = React.useMemo(
+  const internalUsers = React.useMemo(
     () =>
-      users?.filter((u) =>
-        ["admin", "technical", "gestor", "supervisor", "diretor_fauna", "advogado"].includes(
-          u.role,
-        ),
-      ) ?? [],
+      users?.filter((u) => GESTAO_PROCESSOS_INTERNAL_READ_ROLES.includes(u.role)) ?? [],
     [users],
   );
 
@@ -152,10 +172,35 @@ export function GestaoProcessosTarefasView() {
     [empreendedores],
   );
 
+  const projectsById = React.useMemo(
+    () => new Map(consultoriaProjects?.map((p) => [p.id, p]) ?? []),
+    [consultoriaProjects],
+  );
+
+  const processesById = React.useMemo(
+    () => new Map(officeProcesses?.map((p) => [p.id, p]) ?? []),
+    [officeProcesses],
+  );
+
+  const displayContext = React.useMemo(
+    () => ({
+      usersByUid,
+      empreendedoresById,
+      projectsById,
+      processesById,
+    }),
+    [usersByUid, empreendedoresById, projectsById, processesById],
+  );
+
+  const visibleTasks = React.useMemo(
+    () => filterOfficeTasksVisibleToUser(tasks ?? [], user?.uid, canSeeAll),
+    [tasks, user?.uid, canSeeAll],
+  );
+
   const filteredTasks = React.useMemo(() => {
     const projetoFilter = searchParams?.get("projeto");
     const processoFilter = searchParams?.get("processo");
-    let base = filterOfficeTasksByTab(tasks ?? [], tab, user?.uid);
+    let base = filterOfficeTasksByTab(visibleTasks, tab, user?.uid);
     if (projetoFilter) {
       base = base.filter((t) => t.consultoriaProjectId === projetoFilter);
     }
@@ -164,13 +209,16 @@ export function GestaoProcessosTarefasView() {
     }
     const q = search.trim().toLowerCase();
     const searched = q
-      ? base.filter((t) => officeTaskSearchBlob(t).includes(q))
+      ? base.filter((t) => {
+          const display = resolveOfficeTaskDisplayFields(t, displayContext);
+          return officeTaskSearchBlob(t, display).includes(q);
+        })
       : base;
     return sortOfficeTasksByPrazo(searched);
-  }, [tasks, tab, user?.uid, search, searchParams]);
+  }, [visibleTasks, tab, user?.uid, search, searchParams, displayContext]);
 
   const stats = React.useMemo(() => {
-    const active = (tasks ?? []).filter(
+    const active = visibleTasks.filter(
       (t) => t.status !== "concluida" && t.status !== "cancelada",
     );
     return {
@@ -180,19 +228,19 @@ export function GestaoProcessosTarefasView() {
         : 0,
       atrasadas: active.filter((t) => isOfficeTaskOverdue(t)).length,
     };
-  }, [tasks, user?.uid]);
+  }, [visibleTasks, user?.uid]);
 
   React.useEffect(() => {
     const taskId = searchParams?.get("tarefa");
     if (!taskId || !tasks?.length) return;
     const found = tasks.find((t) => t.id === taskId);
-    if (found) {
+    if (found && officeTaskVisibleToUser(found, user?.uid, canSeeAll)) {
       setSelectedTask(found);
       setDetailOpen(true);
     }
-  }, [searchParams, tasks]);
+  }, [searchParams, tasks, user?.uid, canSeeAll]);
 
-  const resolveAssigneeName = (uid: string) => {
+  const resolveUserName = (uid: string) => {
     const u = usersByUid.get(uid);
     return u?.name || u?.email || uid;
   };
@@ -209,23 +257,60 @@ export function GestaoProcessosTarefasView() {
     });
   };
 
-  const buildPayload = (values: OfficeTaskFormValues) =>
-    omitUndefined({
+  const buildPayload = (values: OfficeTaskFormValues) => {
+    const selfUid = user!.uid;
+    const selfName = user!.name || user!.email || selfUid;
+
+    if (canAssign) {
+      const demandanteUid = values.demandanteUid || undefined;
+      const assigneeUid = values.assigneeUid || undefined;
+      const isPessoal =
+        Boolean(assigneeUid && demandanteUid && assigneeUid === demandanteUid) &&
+        assigneeUid === selfUid &&
+        !values.officeProcessId;
+
+      return omitUndefined({
+        titulo: values.titulo.trim(),
+        descricao: values.descricao.trim() || undefined,
+        categoria: values.categoria,
+        status: values.status,
+        prioridade: values.prioridade || undefined,
+        prazo: values.prazo || undefined,
+        demandanteUid,
+        demandanteName: demandanteUid ? resolveUserName(demandanteUid) : undefined,
+        assigneeUid,
+        assigneeName: assigneeUid ? resolveUserName(assigneeUid) : undefined,
+        isOrganizacaoPessoal: isPessoal || undefined,
+        empreendedorId: values.empreendedorId || undefined,
+        consultoriaProjectId: values.consultoriaProjectId || undefined,
+        officeProcessId: values.officeProcessId || undefined,
+        updatedAt: serverTimestamp(),
+      });
+    }
+
+    return omitUndefined({
       titulo: values.titulo.trim(),
       descricao: values.descricao.trim() || undefined,
       categoria: values.categoria,
       status: values.status,
       prioridade: values.prioridade || undefined,
       prazo: values.prazo || undefined,
-      assigneeUid: values.assigneeUid || undefined,
-      assigneeName: values.assigneeUid
-        ? resolveAssigneeName(values.assigneeUid)
-        : undefined,
-      empreendedorId: values.empreendedorId || undefined,
-      consultoriaProjectId: values.consultoriaProjectId || undefined,
-      officeProcessId: values.officeProcessId || undefined,
+      demandanteUid: selfUid,
+      demandanteName: selfName,
+      assigneeUid: selfUid,
+      assigneeName: selfName,
+      isOrganizacaoPessoal: true,
       updatedAt: serverTimestamp(),
     });
+  };
+
+  const canManageTask = (task: OfficeTask) =>
+    canAssign ||
+    canWriteProcess ||
+    officeTaskVisibleToUser(task, user?.uid, false);
+
+  const canDeleteTask = (task: OfficeTask) =>
+    canAssign || canWriteProcess || (task.isOrganizacaoPessoal && task.createdByUid === user?.uid);
 
   const persistTask = async (values: OfficeTaskFormValues) => {
     if (!firestore || !user) return;
@@ -234,11 +319,9 @@ export function GestaoProcessosTarefasView() {
       const payload = buildPayload(values);
       if (editingTask) {
         await updateDoc(doc(firestore, "officeTasks", editingTask.id), payload);
-        if (
-          values.assigneeUid &&
-          values.assigneeUid !== editingTask.assigneeUid
-        ) {
-          await notifyAssignee(values.assigneeUid, values.titulo.trim(), editingTask.id);
+        const newAssignee = payload.assigneeUid as string | undefined;
+        if (canAssign && newAssignee && newAssignee !== editingTask.assigneeUid) {
+          await notifyAssignee(newAssignee, values.titulo.trim(), editingTask.id);
         }
         toast({ title: "Tarefa atualizada" });
       } else {
@@ -249,8 +332,9 @@ export function GestaoProcessosTarefasView() {
           createdByName: user.name || user.email || user.uid,
           createdAt: serverTimestamp(),
         });
-        if (values.assigneeUid) {
-          await notifyAssignee(values.assigneeUid, values.titulo.trim(), ref.id);
+        const newAssignee = payload.assigneeUid as string | undefined;
+        if (canAssign && newAssignee && newAssignee !== user.uid) {
+          await notifyAssignee(newAssignee, values.titulo.trim(), ref.id);
         }
         toast({ title: "Tarefa criada" });
       }
@@ -306,6 +390,7 @@ export function GestaoProcessosTarefasView() {
         assigneeUid: user.uid,
         assigneeName: user.name || user.email || user.uid,
         status: "em_andamento",
+        isOrganizacaoPessoal: false,
         updatedAt: serverTimestamp(),
       });
       toast({ title: "Tarefa assumida" });
@@ -365,7 +450,7 @@ export function GestaoProcessosTarefasView() {
         title={GESTAO_PROCESSOS_TAREFAS_LABEL}
         description="Demandas avulsas do dia a dia — mapas, correções, ligações, procurações e outros pedidos com prazo."
       >
-        {canWrite ? (
+        {canCreate ? (
           <Button
             onClick={() => {
               setEditingTask(null);
@@ -437,7 +522,7 @@ export function GestaoProcessosTarefasView() {
               <p className="text-sm text-muted-foreground">
                 Nenhuma tarefa neste filtro.
               </p>
-              {canWrite ? (
+              {canCreate ? (
                 <Button
                   variant="outline"
                   size="sm"
@@ -453,49 +538,97 @@ export function GestaoProcessosTarefasView() {
           </Card>
         ) : (
           <Card>
-            <CardContent className="p-0">
+            <CardContent className="overflow-x-auto p-0">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Título</TableHead>
+                    <TableHead className="min-w-[10rem]">Título</TableHead>
+                    <TableHead className="min-w-[11rem] whitespace-nowrap">
+                      SEI/SLA/Avulso
+                    </TableHead>
+                    <TableHead className="hidden lg:table-cell min-w-[8rem]">
+                      Empreendedor
+                    </TableHead>
+                    <TableHead className="hidden lg:table-cell min-w-[8rem]">
+                      Empreendimento
+                    </TableHead>
                     <TableHead className="hidden md:table-cell">Categoria</TableHead>
-                    <TableHead>Responsável</TableHead>
+                    <TableHead className="min-w-[8rem]">Demandante</TableHead>
+                    <TableHead className="min-w-[8rem]">Responsável</TableHead>
                     <TableHead>Prazo</TableHead>
                     <TableHead>Status</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredTasks.map((task) => (
-                    <TableRow
-                      key={task.id}
-                      className="cursor-pointer"
-                      onClick={() => {
-                        setSelectedTask(task);
-                        setDetailOpen(true);
-                      }}
-                    >
-                      <TableCell className="font-medium">{task.titulo}</TableCell>
-                      <TableCell className="hidden md:table-cell text-muted-foreground">
-                        {OFFICE_TASK_CATEGORIA_LABELS[task.categoria]}
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {task.assigneeName ?? "—"}
-                      </TableCell>
-                      <TableCell
-                        className={cn(
-                          "text-sm",
-                          isOfficeTaskOverdue(task) && "font-medium text-red-600",
-                        )}
+                  {filteredTasks.map((task) => {
+                    const display = resolveOfficeTaskDisplayFields(task, displayContext);
+                    return (
+                      <TableRow
+                        key={task.id}
+                        className="cursor-pointer"
+                        onClick={() => {
+                          setSelectedTask(task);
+                          setDetailOpen(true);
+                        }}
                       >
-                        {formatOfficeTaskPrazo(task.prazo)}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className={statusBadgeClass(task.status)}>
-                          {OFFICE_TASK_STATUS_LABELS[task.status]}
-                        </Badge>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                        <TableCell className="font-medium">
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            <span>{task.titulo}</span>
+                            {display.isPessoal ? (
+                              <Badge variant="secondary" className="text-[10px]">
+                                Pessoal
+                              </Badge>
+                            ) : null}
+                          </div>
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap text-sm">
+                          {display.seiSlaAvulso.kind === "avulso" ? (
+                            <span className="text-muted-foreground">Avulso</span>
+                          ) : (
+                            <div className="flex items-center gap-1.5">
+                              <Badge variant="outline" className="text-[10px] uppercase">
+                                {display.seiSlaAvulso.tipo}
+                              </Badge>
+                              <span
+                                className="max-w-[7rem] truncate font-mono text-xs"
+                                title={display.seiSlaAvulso.numero}
+                              >
+                                {display.seiSlaAvulso.numero}
+                              </span>
+                            </div>
+                          )}
+                        </TableCell>
+                        <TableCell className="hidden lg:table-cell max-w-[10rem] truncate text-sm text-muted-foreground">
+                          {display.empreendedorName}
+                        </TableCell>
+                        <TableCell className="hidden lg:table-cell max-w-[10rem] truncate text-sm text-muted-foreground">
+                          {display.empreendimentoName}
+                        </TableCell>
+                        <TableCell className="hidden md:table-cell text-muted-foreground">
+                          {OFFICE_TASK_CATEGORIA_LABELS[task.categoria]}
+                        </TableCell>
+                        <TableCell>
+                          <UserTableCell ref={display.demandante} />
+                        </TableCell>
+                        <TableCell>
+                          <UserTableCell ref={display.responsavel} />
+                        </TableCell>
+                        <TableCell
+                          className={cn(
+                            "text-sm whitespace-nowrap",
+                            isOfficeTaskOverdue(task) && "font-medium text-red-600",
+                          )}
+                        >
+                          {formatOfficeTaskPrazo(task.prazo)}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className={statusBadgeClass(task.status)}>
+                            {OFFICE_TASK_STATUS_LABELS[task.status]}
+                          </Badge>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </CardContent>
@@ -512,7 +645,8 @@ export function GestaoProcessosTarefasView() {
         initial={editingTask}
         saving={saving}
         onSubmit={persistTask}
-        technicalUsers={technicalUsers}
+        internalUsers={internalUsers}
+        canAssignToOthers={!!canAssign}
         empreendedores={empreendedores ?? []}
         consultoriaProjects={consultoriaProjects ?? []}
         officeProcesses={officeProcesses ?? []}
@@ -522,8 +656,11 @@ export function GestaoProcessosTarefasView() {
         task={selectedTask}
         open={detailOpen}
         onOpenChange={setDetailOpen}
-        canWrite={canWrite}
+        canManage={!!(selectedTask && canManageTask(selectedTask))}
+        canAssignToOthers={!!canAssign}
+        canDelete={!!(selectedTask && canDeleteTask(selectedTask))}
         currentUid={user?.uid}
+        usersByUid={usersByUid}
         empreendedoresById={empreendedoresById}
         consultoriaProjects={consultoriaProjects ?? []}
         officeProcesses={officeProcesses ?? []}

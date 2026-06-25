@@ -21,7 +21,11 @@ import {
 } from "@/lib/gestao-processos/task-types";
 import {
   formatOfficeTaskPrazo,
+  formatOfficeTaskUserRef,
+  isOfficeTaskOrganizacaoPessoal,
   isOfficeTaskOverdue,
+  resolveOfficeTaskDemandanteUid,
+  resolveOfficeTaskDisplayFields,
 } from "@/lib/gestao-processos/task-utils";
 import { OFFICE_PROCESS_PRIORIDADE_LABELS } from "@/components/gestao-processos/process-form-dialog";
 import {
@@ -31,7 +35,8 @@ import {
 } from "@/lib/gestao-processos-menu";
 import { consultoriaProjectLabel } from "@/lib/gestao-processos/consultoria-project-utils";
 import type { ConsultoriaProject, OfficeProcess } from "@/lib/gestao-processos/types";
-import type { Empreendedor } from "@/lib/types";
+import type { AppUser, Empreendedor } from "@/lib/types";
+import { getRoleLabelPt } from "@/lib/user-role-labels";
 import { cn } from "@/lib/utils";
 import { Loader2, Pencil, Trash2 } from "lucide-react";
 
@@ -48,8 +53,11 @@ type OfficeTaskDetailSheetProps = {
   task: OfficeTask | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  canWrite: boolean;
+  canManage: boolean;
+  canAssignToOthers: boolean;
+  canDelete: boolean;
   currentUid?: string | null;
+  usersByUid?: ReadonlyMap<string, AppUser>;
   empreendedoresById?: ReadonlyMap<string, Empreendedor>;
   consultoriaProjects?: ConsultoriaProject[];
   officeProcesses?: OfficeProcess[];
@@ -65,8 +73,11 @@ export function OfficeTaskDetailSheet({
   task,
   open,
   onOpenChange,
-  canWrite,
+  canManage,
+  canAssignToOthers,
+  canDelete,
   currentUid,
+  usersByUid,
   empreendedoresById,
   consultoriaProjects = [],
   officeProcesses = [],
@@ -97,11 +108,22 @@ export function OfficeTaskDetailSheet({
     : undefined;
   const isActive =
     task.status !== "concluida" && task.status !== "cancelada";
+  const isPessoal = isOfficeTaskOrganizacaoPessoal(task);
   const canAssume =
-    canWrite &&
+    canAssignToOthers &&
     isActive &&
     !task.assigneeUid &&
     currentUid;
+
+  const display = resolveOfficeTaskDisplayFields(task, {
+    usersByUid: usersByUid ?? new Map(),
+    empreendedoresById: empreendedoresById ?? new Map(),
+    projectsById: new Map(consultoriaProjects.map((p) => [p.id, p])),
+    processesById: new Map(officeProcesses.map((p) => [p.id, p])),
+  });
+
+  const demandanteUid = resolveOfficeTaskDemandanteUid(task);
+  const demandanteUser = demandanteUid ? usersByUid?.get(demandanteUid) : undefined;
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -123,6 +145,9 @@ export function OfficeTaskDetailSheet({
             >
               {OFFICE_TASK_STATUS_LABELS[task.status]}
             </Badge>
+            {isPessoal ? (
+              <Badge variant="secondary">Organização pessoal</Badge>
+            ) : null}
             {task.prioridade ? (
               <Badge variant="secondary">
                 {OFFICE_PROCESS_PRIORIDADE_LABELS[task.prioridade]}
@@ -137,11 +162,41 @@ export function OfficeTaskDetailSheet({
             label="Prazo"
             value={formatOfficeTaskPrazo(task.prazo)}
           />
-          <DetailField label="Responsável" value={task.assigneeName} />
-          <DetailField label="Pedido por" value={task.createdByName} />
+          <DetailField
+            label="Demandante"
+            value={
+              display.demandante
+                ? formatOfficeTaskUserRef(display.demandante)
+                : task.demandanteName
+            }
+          />
+          <DetailField
+            label="Responsável pela resolução"
+            value={
+              display.responsavel
+                ? formatOfficeTaskUserRef(display.responsavel)
+                : task.assigneeName
+            }
+          />
+          <DetailField label="Registrado por" value={task.createdByName} />
+          {task.concluidaEm ? (
+            <DetailField label="Concluída em" value={task.concluidaEm} />
+          ) : null}
 
-          {empreendedor ? (
-            <DetailField label="Empreendedor" value={empreendedor.name} />
+          <DetailField label="Empreendedor" value={display.empreendedorName} />
+          <DetailField label="Empreendimento" value={display.empreendimentoName} />
+
+          {display.seiSlaAvulso.kind === "processo" ? (
+            <DetailField
+              label="SEI/SLA"
+              value={`${display.seiSlaAvulso.tipo} — ${display.seiSlaAvulso.numero}`}
+            />
+          ) : (
+            <DetailField label="Tipo" value="Avulso" />
+          )}
+
+          {empreendedor && !task.empreendedorId ? null : empreendedor ? (
+            <DetailField label="Empreendedor (cadastro)" value={empreendedor.name} />
           ) : null}
 
           {project ? (
@@ -168,11 +223,17 @@ export function OfficeTaskDetailSheet({
             </div>
           ) : null}
 
+          {demandanteUser && demandanteUid !== task.createdByUid ? (
+            <p className="text-xs text-muted-foreground">
+              Perfil do demandante: {getRoleLabelPt(demandanteUser.role)}
+            </p>
+          ) : null}
+
           {task.conclusaoNota ? (
             <DetailField label="Nota de conclusão" value={task.conclusaoNota} />
           ) : null}
 
-          {isActive && canWrite ? (
+          {isActive && canManage ? (
             <>
               <Separator />
               <div className="flex flex-wrap gap-2">
@@ -263,7 +324,7 @@ export function OfficeTaskDetailSheet({
             </>
           ) : null}
 
-          {canWrite ? (
+          {canManage ? (
             <>
               <Separator />
               <div className="flex flex-wrap gap-2">
@@ -271,16 +332,18 @@ export function OfficeTaskDetailSheet({
                   <Pencil className="mr-2 h-4 w-4" />
                   Editar
                 </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="text-destructive hover:text-destructive"
-                  disabled={saving}
-                  onClick={onDelete}
-                >
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  Excluir
-                </Button>
+                {canDelete ? (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="text-destructive hover:text-destructive"
+                    disabled={saving}
+                    onClick={onDelete}
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Excluir
+                  </Button>
+                ) : null}
               </div>
             </>
           ) : null}

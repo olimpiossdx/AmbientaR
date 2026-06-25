@@ -257,6 +257,18 @@ export function canManageCarUploadsOnProject(
   return !isClientePortalRole(role) && role !== "representative";
 }
 
+/** Editar ou excluir registro CAR já vinculado ao empreendimento. */
+export function canManageCarRecord(
+  role: UserRole | undefined | null,
+): boolean {
+  return hasAnyRoleOrAdmin(role, [
+    "gestor",
+    "supervisor",
+    "technical",
+    "cliente_autonomo",
+  ]);
+}
+
 /**
  * Criar/editar propostas comerciais na UI (`commercialProposals`).
  * Aceitar/rejeitar: `canAcceptRejectCommercialProposals` (admin/financeiro; Firestore bloqueia vendas).
