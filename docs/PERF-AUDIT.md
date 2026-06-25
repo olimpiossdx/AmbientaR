@@ -375,14 +375,16 @@ Comandos: `NODE_OPTIONS=--max-old-space-size=8192 npm run build` · `npm run app
 
 **Conclusão F17:** ganhos de runtime concentrados no Bloco 2 (`/analise-ambiental` −4,3 %). Shared permanece ~92 kB (meta &lt; 88 kB não atingida). Bloco 3 (F13–F16) melhorou manutenção e linhas das rotas `(.)` sem impacto mensurável no shared chunk.
 
-**Plano de performance (F00–F18):** concluído. Manutenção: `npm run perf:check` antes de PRs que toquem rotas, geo ou shell.
+**Plano de performance (F00–F18):** concluído. Revalidado em 2026-06-25 — ver secção «Revalidação global».
 
 ### F18 — Automação leve ✅ (2026-06-23)
 
 | Ação | Detalhe |
 |------|---------|
 | `scripts/perf-check.mjs` | `typecheck` → `audit:routes` → zero `@turf/turf` / `run-wave-a-analysis` em `"use client"` |
-| `package.json` | script `perf:check` |
+| `scripts/perf-phase-debug.mjs` | Conferência estrutural F04–F18 (FormShells, lazy, credenciais) |
+| `scripts/perf-smoke-http.mjs` | Smoke HTTP 14 rotas (dev `:9002`; após `build` limpar `.next/server` se MODULE_NOT_FOUND) |
+| `package.json` | scripts `perf:check`, `perf:phase-debug`, `perf:smoke-http`, `perf:smoke-all`, `dev:clean-cache` |
 | `AGENTS.md` | links `PERF-ROADMAP-DETALHADO.md` / `PERF-AUDIT.md`; regra **uma fase = um PR** |
 
 **Não incluído (de propósito):** gate de bundle size no CI.
@@ -400,4 +402,69 @@ Comandos: `NODE_OPTIONS=--max-old-space-size=8192 npm run build` · `npm run app
 
 **Analyzer:** `npm run analyze` (heap 8 GB via `scripts/analyze-build.mjs`).
 
-**Próximo passo sugerido:** **F16** (estudos técnicos lote 3) — [`PERF-ROADMAP-DETALHADO.md`](PERF-ROADMAP-DETALHADO.md).
+---
+
+## Revalidação global (2026-06-25)
+
+Conferência fase a fase sem alterar código (só documentação desatualizada no roadmap).
+
+| Fase | Conferência | Resultado |
+|------|-------------|-----------|
+| F04–F06 | Sem `*-SERVIDOR*`; launchers em `scripts/launchers/`; credenciais em `config/` | ✅ |
+| F07–F09 | `dynamic()` em CRM, financeiro, monitoramento | ✅ |
+| F10 | `@turf/turf` só servidor (`fiscal-ambiental/*`) | ✅ |
+| F11 | `upload-pipeline.ts` com `import()` lazy | ✅ |
+| F12 | Providers lazy em `(app)/layout.tsx` | ✅ |
+| F13–F15 | `license-form-shell`, `invoice-form-shell`, `outorga-form-shell`, `responsible-form-shell`, `company-form-shell` | ✅ |
+| F16 | `study-form-shell` + estudos sem `(.)` com shell página; `intervencao-ambiental` → redirect PIA | ✅ |
+| F17 | `npm run build` + `npm run apphosting:check` (status **0**) | ✅ |
+| F18 | `npm run perf:check` | ✅ |
+
+**Métricas build (2026-06-25):**
+
+| Métrica | Baseline | Revalidação 2026-06-25 |
+|---------|----------|------------------------|
+| Shared First Load | 91,3 kB | **91,8 kB** |
+| `/login` | 288 kB | **288 kB** |
+| `/analise-ambiental` | 464 kB | **446 kB** (−18 kB) |
+| `/licenses` (lista) | — | **389 kB** |
+| `/licenses/new` | — | **380 kB** |
+
+**Rotas `(.)` intercept:** 24 ficheiros, **~425 linhas** totais (antes ~921 em F17).
+
+**Manutenção:** `npm run perf:check` antes de PRs que toquem rotas, geo ou shell. Não reabrir fases sem regressão comprovada.
+
+### G1 — Smoke global + debug estrutural ✅ (2026-06-25)
+
+Comandos (dev em `http://localhost:9002`):
+
+```bash
+npm run perf:phase-debug   # 18/18 checks estruturais F04–F18
+npm run perf:smoke-http    # 14/14 rotas HTTP (200 ou redirect)
+npm run perf:check         # typecheck + rotas + turf cliente
+```
+
+| Checklist global | Resultado |
+|------------------|-----------|
+| Login `/login` | ✅ 200 |
+| Painel `/` | ✅ 200 |
+| CRM F07 (`/crm`, `/crm/reports`) | ✅ 200 |
+| Financeiro F08 (`/cash-flow`, `/fluxo-projetado`) | ✅ 200 |
+| Monitoramento F09 (`/monitoring/manual`) | ✅ 200 |
+| Análise F10 (`/analise-ambiental`) | ✅ 200 |
+| Licenses F13 (lista + `/new`) | ✅ 200 |
+| Portal F14 (`/invoices`, `/outorgas`) | ✅ 200 |
+| Cadastro F15 (`/technical-responsible`) | ✅ 200 |
+| Estudos F16 (`/studies/rca`) | ✅ 200 |
+
+**Debug encontrado e corrigido:** após `npm run build`, o dev em `:9002` devolveu `500 MODULE_NOT_FOUND` (`react-day-picker` em `.next/server/vendor-chunks`). **Correção:** `npm run dev:clean-cache` (ou apagar `.next/server` e `.next/cache`) e depois `npm run dev`. Não é regressão de código — cache dev inconsistente com artefactos de produção.
+
+### G2 — FormShell modal (estrutural) ✅ (2026-06-25)
+
+```bash
+npm run perf:form-shell-debug
+```
+
+**24/24** rotas `(.)` com `FormShell` / `StudyFormShell` + `variant="modal"` ou redirect legado (`intervencao-ambiental` → PIA).
+
+Rotas de **página cheia** (`new/page.tsx`, `[id]/edit/page.tsx` sem `(.)`) não entram neste check — smoke manual: abrir modal na lista vs URL directa.

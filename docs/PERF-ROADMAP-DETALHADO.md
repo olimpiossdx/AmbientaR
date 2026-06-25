@@ -2,6 +2,8 @@
 
 Plano conservador: **mesmas URLs, mesmas telas, mesmos fluxos**. Cada fase é **uma unidade de trabalho** com verificação antes de avançar.
 
+**Status do plano (2026-06-25):** F00–F18 **concluídas** — conferência em [`PERF-AUDIT.md`](PERF-AUDIT.md). Manutenção: `npm run perf:check`.
+
 **Baseline atual (2026-06-23):**
 
 | Métrica | Valor |
@@ -37,28 +39,28 @@ flowchart TB
     F02[F02 Lazy shell]
     F03[F03 Config deps]
   end
-  subgraph bloco1 [Bloco 1 — Repositório 3–4 dias]
-    F04[F04 Credenciais]
-    F05[F05 Legado SERVIDOR]
-    F06[F06 Launchers raiz]
+  subgraph bloco1 [Bloco 1 — Concluído]
+    F04[F04 Credenciais ✅]
+    F05[F05 Legado SERVIDOR ✅]
+    F06[F06 Launchers raiz ✅]
   end
-  subgraph bloco2 [Bloco 2 — Bundle browser 5–7 dias]
-    F07[F07 Recharts CRM]
-    F08[F08 Recharts financeiro]
-    F09[F09 Recharts monitoramento]
-    F10[F10 Turf cliente]
-    F11[F11 Upload pipeline]
-    F12[F12 Shell layout]
+  subgraph bloco2 [Bloco 2 — Concluído]
+    F07[F07 Recharts CRM ✅]
+    F08[F08 Recharts financeiro ✅]
+    F09[F09 Recharts monitoramento ✅]
+    F10[F10 Turf cliente ✅]
+    F11[F11 Upload pipeline ✅]
+    F12[F12 Shell layout ✅]
   end
-  subgraph bloco3 [Bloco 3 — Rotas modais 2–3 semanas]
-    F13[F13 Piloto licenses]
-    F14[F14 Portal docs]
-    F15[F15 Estudos lote 1]
-    F16[F16 Estudos lote 2]
+  subgraph bloco3 [Bloco 3 — Concluído]
+    F13[F13 Piloto licenses ✅]
+    F14[F14 Portal docs ✅]
+    F15[F15 Estudos lote 1 ✅]
+    F16[F16 Estudos lote 2 ✅]
   end
-  subgraph bloco4 [Bloco 4 — Fecho 2 dias]
-    F17[F17 Medição final]
-    F18[F18 CI documentação]
+  subgraph bloco4 [Bloco 4 — Concluído]
+    F17[F17 Medição final ✅]
+    F18[F18 CI documentação ✅]
   end
   bloco0 --> bloco1 --> bloco2 --> bloco3 --> bloco4
 ```
@@ -66,10 +68,10 @@ flowchart TB
 | Bloco | Fases | Duração sugerida | Foco |
 |-------|-------|------------------|------|
 | 0 | F00–F03 | — | ✅ Feito |
-| 1 | F04–F06 | 3–4 dias | Segurança e raiz (não afeta runtime) |
-| 2 | F07–F12 | 5–7 dias | Peso no browser |
-| 3 | F13–F16 | 2–3 semanas | Menos duplicação de rotas |
-| 4 | F17–F18 | 2 dias | Medir e automatizar |
+| 1 | F04–F06 | 3–4 dias | ✅ Segurança e raiz |
+| 2 | F07–F12 | 5–7 dias | ✅ Peso no browser |
+| 3 | F13–F16 | 2–3 semanas | ✅ Rotas modais / FormShell |
+| 4 | F17–F18 | 2 dias | ✅ Medição e `perf:check` |
 
 **Ritmo:** 1 fase por dia útil (ou 2 fases leves 🟢 no mesmo dia). **Nunca** misturar Bloco 2 e Bloco 3 na mesma PR.
 
@@ -110,11 +112,11 @@ flowchart TB
 
 ---
 
-## Bloco 1 — Repositório e segurança
+## Bloco 1 — Repositório e segurança ✅ (2026-06-23)
 
 > Não altera bundle. Pode correr em paralelo com Bloco 2 se forem pessoas diferentes; senão, **antes** do Bloco 2.
 
-### F04 — Credenciais fora da raiz 🟢
+### F04 — Credenciais fora da raiz ✅ 🟢
 
 **Objetivo:** eliminar risco de commit acidental de segredos.
 
@@ -136,7 +138,7 @@ flowchart TB
 
 ---
 
-### F05 — Apagar legado `*-SERVIDOR*` 🟢
+### F05 — Apagar legado `*-SERVIDOR*` ✅ 🟢
 
 **Objetivo:** menos ruído no repo; ficheiros excluídos do `tsc` e sem imports.
 
@@ -160,7 +162,7 @@ flowchart TB
 
 ---
 
-### F06 — Launchers e docs na raiz 🟢
+### F06 — Launchers e docs na raiz ✅ 🟢
 
 **Objetivo:** raiz só com README, AGENTS, configs.
 
@@ -179,11 +181,11 @@ flowchart TB
 
 ---
 
-## Bloco 2 — Bundle no browser (maior impacto em velocidade)
+## Bloco 2 — Bundle no browser ✅ (2026-06-23)
 
 > **Uma biblioteca ou um grupo de ficheiros por fase.** Smoke após cada uma.
 
-### F07 — Recharts: CRM 🟡
+### F07 — Recharts: CRM ✅ 🟡
 
 **Objetivo:** gráficos CRM não entram no chunk inicial de rotas que não usam CRM.
 
@@ -213,7 +215,7 @@ const CrmDashboard = dynamic(() => import("./crm-dashboard"), {
 
 ---
 
-### F08 — Recharts: financeiro 🟡
+### F08 — Recharts: financeiro ✅ 🟡
 
 | Ficheiro | Ação |
 |----------|------|
@@ -233,7 +235,7 @@ const CrmDashboard = dynamic(() => import("./crm-dashboard"), {
 
 ---
 
-### F09 — Recharts: monitoramento 🟡
+### F09 — Recharts: monitoramento ✅ 🟡
 
 | Ficheiro | Ação |
 |----------|------|
@@ -247,7 +249,7 @@ const CrmDashboard = dynamic(() => import("./crm-dashboard"), {
 
 ---
 
-### F10 — Turf no cliente 🟡
+### F10 — Turf no cliente ✅ 🟡
 
 **Objetivo:** garantir que nenhum módulo `"use client"` puxa barrel `@turf/turf`.
 
@@ -277,7 +279,7 @@ const CrmDashboard = dynamic(() => import("./crm-dashboard"), {
 
 ---
 
-### F11 — Upload pipeline lazy 🟢
+### F11 — Upload pipeline lazy ✅ 🟢
 
 | Ficheiro | Ação |
 |----------|------|
@@ -289,7 +291,7 @@ const CrmDashboard = dynamic(() => import("./crm-dashboard"), {
 
 ---
 
-### F12 — Shell do layout autenticado 🟡
+### F12 — Shell do layout autenticado ✅ 🟡
 
 **Objetivo:** aliviar chunk compartilhado (91,3 kB) sem quebrar offline.
 
@@ -313,7 +315,7 @@ const CrmDashboard = dynamic(() => import("./crm-dashboard"), {
 
 ---
 
-## Bloco 3 — Rotas modais (24 ficheiros `(.)`)
+## Bloco 3 — Rotas modais (24 ficheiros `(.)`) ✅ (2026-06-23)
 
 > **Problema:** modal (`Dialog`) ≠ página cheia (`Card` + `PageHeader`). Re-export quebra UX.
 
@@ -338,7 +340,7 @@ const CrmDashboard = dynamic(() => import("./crm-dashboard"), {
 
 ---
 
-### F13 — Piloto: licenses 🟡
+### F13 — Piloto: licenses ✅ 🟡
 
 **Objetivo:** provar padrão `FormShell` sem regressão.
 
@@ -365,7 +367,7 @@ const CrmDashboard = dynamic(() => import("./crm-dashboard"), {
 
 ---
 
-### F14 — Portal documentos (lote 1) 🟡
+### F14 — Portal documentos (lote 1) ✅ 🟡
 
 Aplicar padrão F13 a:
 
@@ -380,7 +382,7 @@ Aplicar padrão F13 a:
 
 ---
 
-### F15 — Cadastro técnico (lote 2) 🟡
+### F15 — Cadastro técnico (lote 2) ✅ 🟡
 
 1. `technical-responsible`
 2. `responsible-company`
@@ -389,7 +391,7 @@ Aplicar padrão F13 a:
 
 ---
 
-### F16 — Estudos técnicos (lote 3 e 4) 🔴
+### F16 — Estudos técnicos (lote 3 e 4) ✅ 🔴
 
 **Lote 3** (formulários médios):
 
@@ -409,9 +411,9 @@ Aplicar padrão F13 a:
 
 ---
 
-## Bloco 4 — Medição e manutenção
+## Bloco 4 — Medição e manutenção ✅ (2026-06-23; revalidado 2026-06-25)
 
-### F17 — Medição final e comparativo 🟢
+### F17 — Medição final e comparativo ✅ 🟢
 
 | Comando | Registar em PERF-AUDIT |
 |---------|------------------------|
@@ -431,7 +433,7 @@ Aplicar padrão F13 a:
 
 ---
 
-### F18 — Automação leve 🟢
+### F18 — Automação leve ✅ 🟢
 
 | Ação | Detalhe |
 |------|---------|
@@ -490,4 +492,4 @@ Aplicar padrão F13 a:
 3. Executar protocolo de 6 passos no topo.
 4. Marcar ✅ em [`PERF-AUDIT.md`](PERF-AUDIT.md) com data e métricas.
 
-**Próxima fase recomendada:** **F04** (credenciais) ou **F07** (recharts CRM) se prioridade for só velocidade no browser.
+**Plano F00–F18:** concluído. Revalidação periódica: `npm run perf:check` + `npm run apphosting:check` antes de deploy. Detalhe por fase em [`PERF-AUDIT.md`](PERF-AUDIT.md).
