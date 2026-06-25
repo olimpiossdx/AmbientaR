@@ -21,6 +21,11 @@ import {
   normalizeDocumentDigits,
 } from "@/lib/document-lookup";
 import { createConsultorAssignment } from "@/lib/consultor-assignments";
+import {
+  canClaimEntityUserId,
+  ensureConsultorAssignmentOnce,
+  syncAccessRequestsAfterInviteAccepted,
+} from "@/lib/delegate-access-sync";
 import { createNotificationWithPush } from "@/lib/notifications";
 import { NOTIFICATION_SOURCE } from "@/lib/notification-events";
 
@@ -149,7 +154,7 @@ async function grantAccessForTitularDocument(
   }
 
   if (isConsultor) {
-    await createConsultorAssignment(firestore, {
+    await ensureConsultorAssignmentOnce(firestore, {
       consultorUid: params.professionalUserId,
       titularUid: params.titularUid,
       clientId: clientsToUpdate[0]?.id,
@@ -198,6 +203,32 @@ export async function createDelegateInviteFromTitular(
 
   if (existingUser) {
     const professionalId = existingUser.uid || existingUser.id;
+
+    const existingInvites = await getDocs(
+      query(
+        collection(input.firestore, "delegate_invites"),
+        where("createdByUserId", "==", titularUid),
+        where("targetUserId", "==", professionalId),
+      ),
+    );
+    const docDigits = titularDocument;
+    const duplicateInvite = existingInvites.docs.find((d) => {
+      const data = d.data() as { titularDocument?: string; status?: string; role?: string };
+      return (
+        normalizeDocumentDigits(data.titularDocument ?? "") === docDigits &&
+        data.role === input.role &&
+        (data.status === "pending" ||
+          data.status === "pending_professional_ack" ||
+          data.status === "accepted")
+      );
+    });
+    if (duplicateInvite) {
+      return {
+        inviteId: duplicateInvite.id,
+        status: duplicateInvite.data().status as DelegateInviteStatus,
+      };
+    }
+
     const ref = await addDoc(collection(input.firestore, "delegate_invites"), {
       ...base,
       targetUserId: professionalId,
@@ -241,6 +272,14 @@ export async function acceptDelegateInvite(
     role: params.invite.role,
     titularDocument: params.invite.titularDocument,
     titularUid,
+  });
+
+  await syncAccessRequestsAfterInviteAccepted(firestore, {
+    titularUid,
+    professionalUid: acceptingUid,
+    titularDocument: params.invite.titularDocument,
+    role: params.invite.role,
+    professionalName: params.acceptingUser.name,
   });
 
   await updateDoc(doc(firestore, "delegate_invites", params.invite.id), {

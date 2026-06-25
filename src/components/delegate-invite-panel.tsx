@@ -303,15 +303,27 @@ export function TitularDelegateInviteCard({
 type SentInvitesListProps = {
   invites: DelegateInvite[] | null | undefined;
   titularUid: string;
+  /** UIDs já aprovados em clients/empreendedores — oculta convite pendente duplicado. */
+  approvedProfessionalUids?: string[];
 };
 
 export function TitularSentInvitesList({
   invites,
   titularUid,
+  approvedProfessionalUids = [],
 }: SentInvitesListProps) {
+  const approvedSet = useMemo(
+    () => new Set(approvedProfessionalUids),
+    [approvedProfessionalUids],
+  );
   const sent = useMemo(
-    () => filterInvitesCreatedByTitular(invites, titularUid),
-    [invites, titularUid],
+    () =>
+      filterInvitesCreatedByTitular(invites, titularUid).filter((inv) => {
+        if (inv.status !== "pending_professional_ack") return true;
+        const target = inv.targetUserId?.trim();
+        return !target || !approvedSet.has(target);
+      }),
+    [invites, titularUid, approvedSet],
   );
   if (sent.length === 0) return null;
 

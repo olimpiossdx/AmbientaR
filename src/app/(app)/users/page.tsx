@@ -23,7 +23,6 @@ import {
 import { cn } from "@/lib/utils";
 import { isClientePortalRole } from "@/lib/role-guards";
 import {
-  createConsultorAssignment,
   getAccessRequestType,
 } from "@/lib/consultor-assignments";
 import { isUserConsideredOnline } from "@/lib/user-presence";
@@ -49,6 +48,7 @@ import { FirestorePermissionError } from "@/firebase/errors";
 import {
   collection,
   deleteDoc,
+  getDoc,
   doc,
   query,
   where,
@@ -137,6 +137,11 @@ import {
   buildTitularOwnedEntitiesForAccessMatch,
 } from "@/lib/titular-document-set";
 import { linkClientGestaoToExistingRecords } from "@/lib/link-client-gestao-records";
+import {
+  canClaimEntityUserId,
+  ensureConsultorAssignmentOnce,
+  syncDelegateInvitesAfterAccessApproved,
+} from "@/lib/delegate-access-sync";
 import {
   lookupClientAndEmpreendedorByDocument,
   normalizeDocumentDigits,
@@ -1211,13 +1216,8 @@ export default function UsersPage() {
     myEmpreendedores?.forEach((e) =>
       e.approvedConsultorIds?.forEach((uid) => set.add(uid)),
     );
-    approvedRequestsForMe
-      .filter((r) => getAccessRequestType(r) === "consultor_representante")
-      .forEach((r) => {
-        if (r.requestedByUserId) set.add(r.requestedByUserId);
-      });
     return Array.from(set);
-  }, [myClients, myEmpreendedores, approvedRequestsForMe]);
+  }, [myClients, myEmpreendedores]);
 
   // IDs de representantes aprovados (requestedByUserId dos pedidos aprovados).
   const approvedRepresentativeIds = useMemo(() => {
@@ -1229,6 +1229,40 @@ export default function UsersPage() {
       });
     return Array.from(set);
   }, [approvedRequestsForMe]);
+
+  useEffect(() => {
+    if (!firestore || !sessionUid || !user || !isClientePortalRole(user.role)) {
+      return;
+    }
+    if (approvedConsultorUids.length === 0) return;
+    const docs = Array.from(myCpfCnpjSet).filter(
+      (d) => normalizeDocumentDigits(d).length >= 11,
+    );
+    if (docs.length === 0) return;
+
+    let cancelled = false;
+    (async () => {
+      for (const consultorId of approvedConsultorUids) {
+        if (cancelled) return;
+        for (const titularDocument of docs) {
+          try {
+            await syncDelegateInvitesAfterAccessApproved(firestore, {
+              titularUid: sessionUid,
+              professionalUid: consultorId,
+              titularDocument,
+              role: "consultor_representante",
+            });
+          } catch (e) {
+            console.warn("Sync convite/consultor:", e);
+          }
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [firestore, sessionUid, user, approvedConsultorUids, myCpfCnpjSet]);
 
   // Carrega detalhes dos representantes aprovados para exibir na UI.
   useEffect(() => {
@@ -1279,18 +1313,28 @@ export default function UsersPage() {
         const consultors: AppUser[] = [];
         for (const consultorId of approvedConsultorUids) {
           try {
-            const snap = await getDocs(
+            const byUid = await getDocs(
               query(
                 collection(firestore, "users"),
                 where("uid", "==", consultorId),
               ),
             );
-            snap.forEach((docSnap) => {
-              consultors.push({
-                ...(docSnap.data() as AppUser),
-                id: docSnap.id,
+            if (!byUid.empty) {
+              byUid.forEach((docSnap) => {
+                consultors.push({
+                  ...(docSnap.data() as AppUser),
+                  id: docSnap.id,
+                });
               });
-            });
+              continue;
+            }
+            const byDocId = await getDoc(doc(firestore, "users", consultorId));
+            if (byDocId.exists()) {
+              consultors.push({
+                ...(byDocId.data() as AppUser),
+                id: byDocId.id,
+              });
+            }
           } catch (e) {
             console.warn("Erro ao carregar consultor aprovado", consultorId, e);
           }
@@ -1364,11 +1408,12 @@ export default function UsersPage() {
     try {
       const request = pendingRequestsForMe.find((r) => r.id === requestId);
       if (!request) return;
+      const titularAuthUid = user.uid || user.id;
       const requestRef = doc(firestore, "access_requests", requestId);
       await updateDoc(requestRef, {
         status: approve ? "approved" : "rejected",
         resolvedAt: new Date().toISOString(),
-        resolvedByUserId: user.id,
+        resolvedByUserId: titularAuthUid,
       });
       if (approve) {
         const userIdToAdd = request.requestedByUserId;
@@ -1396,30 +1441,40 @@ export default function UsersPage() {
             request.cpfOfInterested || "",
           );
           if (lookup.client?.id) {
-            const linkedClientRecord = {
-              ...lookup.client,
-              id: lookup.client.id,
-            } as Client;
-            clientsToUpdate = [linkedClientRecord];
-            if (portalUid) {
+            clientsToUpdate = [
+              {
+                ...lookup.client,
+                id: lookup.client.id,
+              } as Client,
+            ];
+            if (
+              portalUid &&
+              canClaimEntityUserId(lookup.client.userId, portalUid)
+            ) {
               await updateDoc(doc(firestore, "clients", lookup.client.id), {
                 userId: portalUid,
               });
             }
           }
           if (lookup.empreendedor?.id) {
-            const linkedEmpRecord = {
-              ...lookup.empreendedor,
-              id: lookup.empreendedor.id,
-            } as Empreendedor;
-            empreendedoresToUpdate = [linkedEmpRecord];
-            if (portalUid) {
-              await updateDoc(doc(firestore, "empreendedores", lookup.empreendedor.id), {
-                userId: portalUid,
-              });
+            empreendedoresToUpdate = [
+              {
+                ...lookup.empreendedor,
+                id: lookup.empreendedor.id,
+              } as Empreendedor,
+            ];
+            if (
+              portalUid &&
+              canClaimEntityUserId(lookup.empreendedor.userId, portalUid)
+            ) {
+              await updateDoc(
+                doc(firestore, "empreendedores", lookup.empreendedor.id),
+                { userId: portalUid },
+              );
             }
           }
         }
+
         const isConsultorRequest =
           getAccessRequestType(request) === "consultor_representante";
         for (const c of clientsToUpdate) {
@@ -1443,12 +1498,27 @@ export default function UsersPage() {
               });
         }
         if (isConsultorRequest && portalUid) {
-          await createConsultorAssignment(firestore, {
+          await ensureConsultorAssignmentOnce(firestore, {
             consultorUid: userIdToAdd,
             titularUid: portalUid,
             clientId: clientsToUpdate[0]?.id,
             empreendedorIds: empreendedoresToUpdate.map((e) => e.id),
             assignedByUid: portalUid,
+          });
+          await syncDelegateInvitesAfterAccessApproved(firestore, {
+            titularUid: portalUid,
+            professionalUid: userIdToAdd,
+            titularDocument: request.cpfOfInterested || "",
+            role: "consultor_representante",
+            resolvedByName: request.requestedByName,
+          });
+        } else if (!isConsultorRequest && portalUid) {
+          await syncDelegateInvitesAfterAccessApproved(firestore, {
+            titularUid: portalUid,
+            professionalUid: userIdToAdd,
+            titularDocument: request.cpfOfInterested || "",
+            role: "representative",
+            resolvedByName: request.requestedByName,
           });
         }
         if (isConsultorRequest && userIdToAdd) {
@@ -1462,7 +1532,7 @@ export default function UsersPage() {
         }
       }
 
-      const titularUid = user.uid || user.id;
+      const titularUid = titularAuthUid;
       if (titularUid) {
         await markNotificationsReadBySource(
           firestore,
@@ -1494,6 +1564,7 @@ export default function UsersPage() {
           : "O pedido foi recusado.",
       });
     } catch (e) {
+      console.error("Erro ao processar pedido de acesso:", e);
       toast({
         variant: "destructive",
         title: "Erro",
@@ -1906,6 +1977,10 @@ export default function UsersPage() {
                       <TitularSentInvitesList
                         invites={delegateInvites}
                         titularUid={portalUid || user?.id || ""}
+                        approvedProfessionalUids={[
+                          ...approvedConsultorUids,
+                          ...approvedRepresentativeIds,
+                        ]}
                       />
                     </CardContent>
                   </Card>

@@ -489,6 +489,34 @@ service cloud.firestore {
     }
 
     /**
+     * @description Titular aprova consultor/representante (campos de aprovação em clients).
+     */
+    function isTitularClientApprovalUpdate() {
+      let role = getRole();
+      if (!(role == 'client' || role == 'cliente_autonomo')) {
+        return false;
+      }
+      let keys = request.resource.data.diff(resource.data).affectedKeys();
+      let approvalFields = keys.hasOnly(['approvedConsultorIds', 'approvedUserIds', 'primaryConsultorUid']);
+      let claimAndApprove = keys.hasOnly(['approvedConsultorIds', 'approvedUserIds', 'primaryConsultorUid', 'userId'])
+        && request.resource.data.userId == request.auth.uid;
+      let orphanClaim = keys.hasOnly(['userId'])
+        && request.resource.data.userId == request.auth.uid
+        && (
+          !('userId' in resource.data) ||
+          resource.data.userId == '' ||
+          resource.data.userId == request.auth.uid
+        );
+      let owned = resource.data.userId == request.auth.uid;
+      let orphan = !('userId' in resource.data) || resource.data.userId == '';
+      return isSignedIn() && (
+        (approvalFields && (owned || orphan)) ||
+        (claimAndApprove && (owned || orphan)) ||
+        orphanClaim
+      );
+    }
+
+    /**
      * @description Allows any authenticated user to manage commercial client data.
      * Read: any signed-in user (so client-role can read linked client doc without needing getRole()).
      * @path /databases/{database}/documents/clients/{clientId}
@@ -501,7 +529,7 @@ service cloud.firestore {
         && request.resource.data.userId == request.auth.uid
         && (getRole() == 'client' || getRole() == 'cliente_autonomo')
       );
-      allow update: if isAdmin() || isFinancial() || isSales() || isSelfDelegateAccessGrant() || (
+      allow update: if isAdmin() || isFinancial() || isSales() || isSelfDelegateAccessGrant() || isTitularClientApprovalUpdate() || (
         isSignedIn()
         && request.resource.data.userId == request.auth.uid
         && (

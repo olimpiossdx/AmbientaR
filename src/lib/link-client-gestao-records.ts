@@ -10,7 +10,7 @@ import {
 } from "firebase/firestore";
 import { lookupClientAndEmpreendedorByDocument, normalizeDocumentDigits } from "@/lib/document-lookup";
 import { resolveEntityType } from "@/lib/cpf-cnpj";
-
+import { canClaimEntityUserId } from "@/lib/delegate-access-sync";
 /** Vincula `userId` em clientes/empreendedores já cadastrados (perfil Cliente Gestão / titular). */
 export async function linkClientGestaoToExistingRecords(
   firestore: Firestore,
@@ -53,12 +53,18 @@ export async function linkClientGestaoToExistingRecords(
   };
 
   if (clientDocId) {
-    await setDoc(doc(firestore, "clients", clientDocId), linkedData, { merge: true });
+    const existingClientUserId = client?.userId;
+    if (canClaimEntityUserId(existingClientUserId, userId)) {
+      await setDoc(doc(firestore, "clients", clientDocId), linkedData, { merge: true });
+    }
   }
   if (empreendedorDocId) {
-    await setDoc(doc(firestore, "empreendedores", empreendedorDocId), linkedEmpreendedorData, {
-      merge: true,
-    });
+    const existingEmpUserId = empreendedor?.userId;
+    if (canClaimEntityUserId(existingEmpUserId, userId)) {
+      await setDoc(doc(firestore, "empreendedores", empreendedorDocId), linkedEmpreendedorData, {
+        merge: true,
+      });
+    }
   }
 
   const existingClients = await getDocs(
@@ -68,12 +74,13 @@ export async function linkClientGestaoToExistingRecords(
     query(collection(firestore, "empreendedores"), where("userId", "==", userId)),
   );
   for (const snap of existingClients.docs) {
+    if (snap.id === clientDocId) continue;
     await updateDoc(doc(firestore, "clients", snap.id), linkedData);
   }
   for (const snap of existingEmpreendedores.docs) {
+    if (snap.id === empreendedorDocId) continue;
     await updateDoc(doc(firestore, "empreendedores", snap.id), linkedEmpreendedorData);
   }
-
   return {
     linkedClientId: clientDocId ?? linkedClientId,
     linkedEmpreendedorId: empreendedorDocId ?? linkedEmpreendedorId,
