@@ -223,6 +223,10 @@ export type Revenue = {
   estornoDeId?: string;
   isEstorno?: boolean;
   estornadoPorId?: string;
+  /** Soft-delete (Projetos & ROI) — não entra no caixa operacional. */
+  deletedAt?: string;
+  deletedByUid?: string;
+  deleteJustification?: string;
 };
 
 export type ExpenseCategory =
@@ -256,6 +260,10 @@ export type Expense = {
   estornoDeId?: string;
   isEstorno?: boolean;
   estornadoPorId?: string;
+  /** Soft-delete (Projetos & ROI) — não entra no caixa operacional. */
+  deletedAt?: string;
+  deletedByUid?: string;
+  deleteJustification?: string;
 };
 
 export type Transaction = (Revenue | Expense) & { type: 'revenue' | 'expense' };

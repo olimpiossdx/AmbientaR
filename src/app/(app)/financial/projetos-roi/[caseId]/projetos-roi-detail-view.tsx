@@ -53,10 +53,7 @@ import {
   formatDreLineValue,
 } from '@/lib/project-roi-dre-export';
 import { ProjectRoiExportButtons } from '@/components/financial/project-roi-export-buttons';
-import {
-  createTransactionEstorno,
-  isTransactionEstornada,
-} from '@/lib/project-roi-estorno';
+import { DeleteRoiTransactionButton } from '@/components/financial/delete-roi-transaction-button';
 import { ProjectRoiSemaforoBadge } from '@/components/financial/project-roi-semaforo-badge';
 import { TransactionForm } from '@/app/(app)/cash-flow/transaction-form';
 import { useToast } from '@/hooks/use-toast';
@@ -382,12 +379,15 @@ export function ProjetosRoiDetailView() {
     if (!firestore || !caseId) return;
     setDeleting(true);
     try {
-      const { unlinkedTransactions } = await deleteRoiCase(firestore, caseId);
+      const { deletedTransactions } = await deleteRoiCase(firestore, caseId, {
+        deletedByUid: user?.uid,
+        caseLabel: title,
+      });
       toast({
         title: 'Projeto excluído',
         description:
-          unlinkedTransactions > 0
-            ? `${unlinkedTransactions} lançamento(s) desvinculado(s) do caso.`
+          deletedTransactions > 0
+            ? `${deletedTransactions} lançamento(s) excluído(s) com registro de auditoria.`
             : 'O caso foi removido.',
       });
       router.push('/financial/projetos-roi');
@@ -663,6 +663,7 @@ export function ProjetosRoiDetailView() {
                     groupBySupplier={groupBySupplier}
                     revenues={revenues ?? undefined}
                     expenses={expenses ?? undefined}
+                    canWrite={canWrite}
                   />
                 </div>
               </CardContent>
@@ -1206,12 +1207,14 @@ function ExtratoTable({
   groupBySupplier,
   revenues,
   expenses,
+  canWrite,
 }: {
   lines: ProjectRoiExtratoLine[];
   filter: 'all' | 'saidas' | 'entradas';
   groupBySupplier: boolean;
   revenues?: Revenue[];
   expenses?: Expense[];
+  canWrite?: boolean;
 }) {
   const filtered = filterExtratoLines(lines, filter);
 
@@ -1286,7 +1289,7 @@ function ExtratoTable({
       <TableCell>
         {line.isEstorno ? (
           <Badge variant="secondary" className="text-xs">
-            Estorno
+            Legado
           </Badge>
         ) : (
           '—'
@@ -1305,11 +1308,13 @@ function ExtratoTable({
         ) : null}
       </TableCell>
       <TableCell>
-        <ExtratoEstornoButton
-          line={line}
-          revenues={revenues}
-          expenses={expenses}
-        />
+        {canWrite ? (
+          <ExtratoExcluirButton
+            line={line}
+            revenues={revenues}
+            expenses={expenses}
+          />
+        ) : null}
       </TableCell>
     </TableRow>
   );
@@ -1365,7 +1370,7 @@ function ExtratoValorCell({ line }: { line: ProjectRoiExtratoLine }) {
   );
 }
 
-function ExtratoEstornoButton({
+function ExtratoExcluirButton({
   line,
   revenues,
   expenses,
@@ -1374,12 +1379,7 @@ function ExtratoEstornoButton({
   revenues?: Revenue[];
   expenses?: Expense[];
 }) {
-  const { firestore } = useFirebase();
-  const { toast } = useToast();
-  const [busy, setBusy] = React.useState(false);
-
   if (line.kind === 'orcamento_credito') return null;
-
   if (line.kind !== 'revenue' && line.kind !== 'expense') return null;
 
   const item =
@@ -1387,44 +1387,13 @@ function ExtratoEstornoButton({
       ? revenues?.find((r) => r.id === line.id)
       : expenses?.find((e) => e.id === line.id);
 
-  if (!item || item.isEstorno) return null;
-
-  const jaEstornada =
-    revenues && expenses
-      ? isTransactionEstornada(item, revenues, expenses)
-      : Boolean(item.estornadoPorId);
-
-  if (jaEstornada) {
-    return (
-      <span className="text-xs text-muted-foreground">Estornado</span>
-    );
-  }
+  if (!item || item.deletedAt || item.isEstorno) return null;
 
   return (
-    <Button
-      variant="ghost"
-      size="sm"
-      disabled={busy}
-      onClick={async () => {
-        if (!firestore) return;
-        setBusy(true);
-        try {
-          await createTransactionEstorno(
-            firestore,
-            item,
-            line.kind as 'revenue' | 'expense',
-          );
-          toast({ title: 'Estorno registrado' });
-        } catch (e) {
-          console.error(e);
-          toast({ variant: 'destructive', title: 'Erro ao estornar' });
-        } finally {
-          setBusy(false);
-        }
-      }}
-    >
-      {busy ? '…' : 'Estornar'}
-    </Button>
+    <DeleteRoiTransactionButton
+      item={item}
+      kind={line.kind as 'revenue' | 'expense'}
+    />
   );
 }
 

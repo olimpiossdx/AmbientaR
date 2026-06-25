@@ -13,6 +13,7 @@ import {
 } from 'firebase/firestore';
 import type { Firestore } from 'firebase/firestore';
 import type { Contract, ProjectRoiCase } from '@/lib/types';
+import { softDeleteFinancialTransactionById } from '@/lib/financial-transaction-delete';
 import { stripUndefinedDeep } from '@/lib/firestore-payload';
 import {
   caseFromContract,
@@ -136,12 +137,12 @@ export async function reabrirRoiCase(
   });
 }
 
-/** Promove caso manual para formal quando contrato assinado é vinculado. */
-/** Exclui caso gerencial, apaga horas e desvincula lançamentos classificados nele. */
+/** Exclui caso gerencial, apaga horas e soft-delete dos lançamentos vinculados. */
 export async function deleteRoiCase(
   firestore: Firestore,
   caseId: string,
-): Promise<{ unlinkedTransactions: number }> {
+  options?: { deletedByUid?: string; caseLabel?: string },
+): Promise<{ deletedTransactions: number }> {
   const entriesSnap = await getDocs(
     collection(firestore, 'project_roi_cases', caseId, 'time_entries'),
   );
@@ -153,26 +154,43 @@ export async function deleteRoiCase(
     ),
   );
 
-  let unlinkedTransactions = 0;
-  for (const coll of [
-    'revenues',
-    'expenses',
-    'invoices',
-    'supplierContracts',
-  ] as const) {
+  const deletedByUid = options?.deletedByUid?.trim() || 'system';
+  const justification = `Caso ROI excluído${
+    options?.caseLabel?.trim() ? `: ${options.caseLabel.trim()}` : ''
+  }`;
+
+  let deletedTransactions = 0;
+  for (const coll of ['revenues', 'expenses'] as const) {
+    const snap = await getDocs(
+      query(collection(firestore, coll), where('projectRoiCaseId', '==', caseId)),
+    );
+    await Promise.all(
+      snap.docs.map(async (d) => {
+        await softDeleteFinancialTransactionById(
+          firestore,
+          d.id,
+          coll === 'revenues' ? 'revenue' : 'expense',
+          justification,
+          deletedByUid,
+        );
+        deletedTransactions += 1;
+      }),
+    );
+  }
+
+  for (const coll of ['invoices', 'supplierContracts'] as const) {
     const snap = await getDocs(
       query(collection(firestore, coll), where('projectRoiCaseId', '==', caseId)),
     );
     await Promise.all(
       snap.docs.map(async (d) => {
         await updateDoc(doc(firestore, coll, d.id), { projectRoiCaseId: '' });
-        unlinkedTransactions += 1;
       }),
     );
   }
 
   await deleteDoc(doc(firestore, 'project_roi_cases', caseId));
-  return { unlinkedTransactions };
+  return { deletedTransactions };
 }
 
 export async function linkManualCaseToContract(

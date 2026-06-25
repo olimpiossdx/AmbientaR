@@ -142,6 +142,10 @@ function shouldSkipAsEstorno(item: Revenue | Expense): boolean {
   return Boolean(item.isEstorno);
 }
 
+function shouldSkipDeleted(item: Revenue | Expense): boolean {
+  return Boolean(item.deletedAt?.trim());
+}
+
 /** Vínculo explícito ao caso (lançamento gerencial Projetos & ROI). */
 export function transactionLinksToCase(
   item: {
@@ -227,12 +231,14 @@ export function buildProjectRoiSnapshot(
   const linkedRevenues = revenues.filter(
     (r) =>
       transactionLinksToCase(r, roiCase) &&
+      !shouldSkipDeleted(r) &&
       !shouldSkipAsEstorno(r) &&
       !isNeutralizedByEstorno(r.id, revenues, expenses),
   );
   const linkedExpenses = expenses.filter(
     (e) =>
       transactionLinksToCase(e, roiCase) &&
+      !shouldSkipDeleted(e) &&
       !shouldSkipAsEstorno(e) &&
       !isNeutralizedByEstorno(e.id, revenues, expenses),
   );

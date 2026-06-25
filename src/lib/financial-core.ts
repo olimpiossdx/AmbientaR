@@ -66,8 +66,8 @@ export function calculateDre(
   regime: DreRevenueRegime = 'combinado_sem_duplicar',
 ): DreBreakdown {
   const inPeriod = (part: string) => inYearPeriod(part, year);
-  const caixaRevenues = filterCompanyCaixaRevenues(revenues);
-  const caixaExpenses = filterCompanyCaixaExpenses(expenses);
+  const caixaRevenues = filterCompanyCaixaRevenues(revenues, expenses);
+  const caixaExpenses = filterCompanyCaixaExpenses(expenses, revenues);
   const caixaInvoices = invoices.filter((i) => !i.projectRoiCaseId?.trim());
 
   const receitaFaturas = caixaInvoices
@@ -77,16 +77,17 @@ export function calculateDre(
   const revenuesInPeriod = caixaRevenues.filter((r) =>
     inPeriod(datePart(r.date)),
   );
+  // Sempre usar revenues/expenses completos para neutralização por estorno.
   const receitaCaixaTotal = revenuesInPeriod.reduce(
     (acc, r) =>
-      acc + revenueAmountForCompanyCaixa(r, caixaRevenues, caixaExpenses),
+      acc + revenueAmountForCompanyCaixa(r, revenues, expenses),
     0,
   );
   const receitaCaixaVinculadaFatura = revenuesInPeriod
     .filter((r) => r.invoiceId)
     .reduce(
       (acc, r) =>
-        acc + revenueAmountForCompanyCaixa(r, caixaRevenues, caixaExpenses),
+        acc + revenueAmountForCompanyCaixa(r, revenues, expenses),
       0,
     );
   const receitaCaixaAvulsa = receitaCaixaTotal - receitaCaixaVinculadaFatura;
@@ -115,12 +116,12 @@ export function calculateDre(
     .filter((e) => e.category === 'depreciacao' || e.depreciacaoBemId)
     .reduce(
       (acc, e) =>
-        acc + expenseAmountForCompanyCaixa(e, caixaRevenues, caixaExpenses),
+        acc + expenseAmountForCompanyCaixa(e, revenues, expenses),
       0,
     );
   const despesasOperacionais = despesasInPeriod.reduce(
     (acc, e) =>
-      acc + expenseAmountForCompanyCaixa(e, caixaRevenues, caixaExpenses),
+      acc + expenseAmountForCompanyCaixa(e, revenues, expenses),
     0,
   );
 

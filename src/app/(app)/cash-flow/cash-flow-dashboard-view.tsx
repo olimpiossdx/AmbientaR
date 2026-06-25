@@ -20,6 +20,8 @@ import { useFinancialMenuDebug } from '@/lib/financial-menu-debug';
 import {
   filterCompanyCaixaExpenses,
   filterCompanyCaixaRevenues,
+  expenseAmountForCompanyCaixa,
+  revenueAmountForCompanyCaixa,
 } from '@/lib/financial-transaction-scope';
 
 type PeriodType = 'day' | 'month' | 'year';
@@ -92,21 +94,21 @@ export function CashFlowDashboardView() {
     () =>
       rawRevenues
         ? sortByIsoDateField(
-            filterCompanyCaixaRevenues(rawRevenues),
+            filterCompanyCaixaRevenues(rawRevenues, rawExpenses ?? []),
             'date',
           )
         : undefined,
-    [rawRevenues],
+    [rawRevenues, rawExpenses],
   );
   const allExpenses = useMemo(
     () =>
       rawExpenses
         ? sortByIsoDateField(
-            filterCompanyCaixaExpenses(rawExpenses),
+            filterCompanyCaixaExpenses(rawExpenses, rawRevenues ?? []),
             'date',
           )
         : undefined,
-    [rawExpenses],
+    [rawExpenses, rawRevenues],
   );
   const clientsMap = useMemo(() => new Map(clients?.map(c => [c.id, c.name])), [clients]);
 
@@ -159,6 +161,21 @@ export function CashFlowDashboardView() {
   const formatCurrency = (v: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
   const periodLabel = periodType === 'day' ? periodDay : periodType === 'month' ? periodMonth : periodYear;
 
+  const sumCaixaRevenueAmount = (list: Revenue[]) =>
+    list.reduce(
+      (s, r) =>
+        s +
+        revenueAmountForCompanyCaixa(r, rawRevenues ?? [], rawExpenses ?? []),
+      0,
+    );
+  const sumCaixaExpenseAmount = (list: Expense[]) =>
+    list.reduce(
+      (s, e) =>
+        s +
+        expenseAmountForCompanyCaixa(e, rawRevenues ?? [], rawExpenses ?? []),
+      0,
+    );
+
   const handleExportPdf = async () => {
     if (isExportingPdf) return;
     setIsExportingPdf(true);
@@ -203,7 +220,7 @@ export function CashFlowDashboardView() {
     });
     y += 6;
     doc.setFont('helvetica', 'bold');
-    doc.text('Total Receitas: ' + formatCurrency(revenuesInPeriod.reduce((s, r) => s + r.amount, 0)), margins.left, y);
+    doc.text('Total Receitas: ' + formatCurrency(sumCaixaRevenueAmount(revenuesInPeriod)), margins.left, y);
     y += 10;
     doc.setFont('helvetica', 'bold');
     doc.text('Despesas', margins.left, y);
@@ -219,7 +236,7 @@ export function CashFlowDashboardView() {
     });
     y += 6;
     doc.setFont('helvetica', 'bold');
-    doc.text('Total Despesas: ' + formatCurrency(expensesInPeriod.reduce((s, e) => s + e.amount, 0)), margins.left, y);
+    doc.text('Total Despesas: ' + formatCurrency(sumCaixaExpenseAmount(expensesInPeriod)), margins.left, y);
 
     session.finalize();
     downloadJsPdf(doc, 'lancamentos_caixa_' + periodLabel.replace(/-/g, '') + '.pdf');
@@ -232,8 +249,8 @@ export function CashFlowDashboardView() {
   const handlePrint = () => {
     const revRows = revenuesInPeriod.map((r) => '<tr><td>' + new Date(r.date).toLocaleDateString('pt-BR') + '</td><td>' + (r.description || '').slice(0, 60) + '</td><td class="text-right">' + formatCurrency(r.amount) + '</td></tr>').join('');
     const expRows = expensesInPeriod.map((e) => '<tr><td>' + new Date(e.date).toLocaleDateString('pt-BR') + '</td><td>' + (e.description || '').slice(0, 60) + '</td><td class="text-right">' + formatCurrency(e.amount) + '</td></tr>').join('');
-    const totalRev = formatCurrency(revenuesInPeriod.reduce((s, r) => s + r.amount, 0));
-    const totalExp = formatCurrency(expensesInPeriod.reduce((s, e) => s + e.amount, 0));
+    const totalRev = formatCurrency(sumCaixaRevenueAmount(revenuesInPeriod));
+    const totalExp = formatCurrency(sumCaixaExpenseAmount(expensesInPeriod));
     const periodText = periodType === 'day' ? 'Dia ' : periodType === 'month' ? 'M├¬s ' : 'Ano ';
     const win = window.open('', '_blank');
     if (!win) { toast({ variant: 'destructive', title: 'Erro', description: 'Permita pop-ups para imprimir.' }); return; }

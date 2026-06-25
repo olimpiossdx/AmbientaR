@@ -246,15 +246,19 @@ export function ProjetosRoiListView() {
     if (!firestore || !caseToDelete) return;
     setDeleting(true);
     try {
-      const { unlinkedTransactions } = await deleteRoiCase(
+      const { deletedTransactions } = await deleteRoiCase(
         firestore,
         caseToDelete.id,
+        {
+          deletedByUid: user?.uid,
+          caseLabel: caseToDelete.title || caseToDelete.id,
+        },
       );
       toast({
         title: 'Projeto excluído',
         description:
-          unlinkedTransactions > 0
-            ? `${unlinkedTransactions} lançamento(s) desvinculado(s) do caso.`
+          deletedTransactions > 0
+            ? `${deletedTransactions} lançamento(s) excluído(s) com registro de auditoria.`
             : 'O caso foi removido da lista.',
       });
       setCaseToDelete(null);

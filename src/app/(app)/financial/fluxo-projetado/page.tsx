@@ -45,8 +45,8 @@ export default function FluxoProjetadoPage() {
   const projection = useMemo(() => {
     const allRev = revenues || [];
     const allExp = expenses || [];
-    const caixaRevenues = filterCompanyCaixaRevenues(allRev);
-    const caixaExpenses = filterCompanyCaixaExpenses(allExp);
+    const caixaRevenues = filterCompanyCaixaRevenues(allRev, allExp);
+    const caixaExpenses = filterCompanyCaixaExpenses(allExp, allRev);
 
     const today = new Date().toISOString().slice(0, 10);
     const d30 = addDays(today, 30);

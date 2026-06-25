@@ -30,6 +30,10 @@ import { AiProviderBadge } from '@/components/ai/ai-provider-badge';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection } from 'firebase/firestore';
 import type { Revenue, Expense } from '@/lib/types';
+import {
+  filterCompanyCaixaExpenses,
+  filterCompanyCaixaRevenues,
+} from '@/lib/financial-transaction-scope';
 import { BrDateFormControl } from '@/components/form/br-date-input';
 import { GenerateFinancialReportInputSchema } from '@/lib/types';
 
@@ -75,15 +79,24 @@ export default function FinancialReportingClient() {
     setReport(null);
     setReportProvider(null);
 
-    const filteredRevenues = revenuesData?.filter(r => {
-      const date = new Date(r.date);
-      return date >= values.startDate && date <= values.endDate;
-    }) || [];
-    
-    const filteredExpenses = expensesData?.filter(e => {
+    const revAll = revenuesData ?? [];
+    const expAll = expensesData ?? [];
+
+    const filteredRevenues = filterCompanyCaixaRevenues(
+      revAll.filter((r) => {
+        const date = new Date(r.date);
+        return date >= values.startDate && date <= values.endDate;
+      }),
+      expAll,
+    );
+
+    const filteredExpenses = filterCompanyCaixaExpenses(
+      expAll.filter((e) => {
         const date = new Date(e.date);
         return date >= values.startDate && date <= values.endDate;
-    }) || [];
+      }),
+      revAll,
+    );
     
     if (filteredRevenues.length === 0 && filteredExpenses.length === 0) {
         toast({

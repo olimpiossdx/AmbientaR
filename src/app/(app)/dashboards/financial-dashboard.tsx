@@ -100,7 +100,7 @@ export default function FinancialDashboard() {
             </CardHeader>
             <CardContent>
               {isLoading ? <Skeleton className="h-8 w-3/4" /> : <div className="text-2xl font-bold">{formatCurrency(dashboardStats.revenue)}</div>}
-              <p className="text-xs text-muted-foreground mt-1">Faturas pagas + caixa avulso</p>
+              <p className="text-xs text-muted-foreground mt-1">Lançamentos de entrada no caixa operacional</p>
             </CardContent>
           </Card>
           <Card>

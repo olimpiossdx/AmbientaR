@@ -64,13 +64,17 @@ export default function ExportContabilPage() {
     const rows: string[][] = [
       ['Tipo', 'Data', 'Valor', 'Descrição', 'Cliente/Fornecedor', 'Categoria', 'Centro custo'],
     ];
+    const revPool = revenues ?? [];
+    const expPool = expenses ?? [];
     filterCompanyCaixaRevenues(
-      revenues?.filter((r) => datePart(r.date).startsWith(String(y))) ?? [],
+      revPool.filter((r) => datePart(r.date).startsWith(String(y))),
+      expPool,
     ).forEach((r) => {
       rows.push(['Receita', r.date, String(r.amount), r.description, r.clientId || '', '', r.centroCusto || '']);
     });
     filterCompanyCaixaExpenses(
-      expenses?.filter((e) => datePart(e.date).startsWith(String(y))) ?? [],
+      expPool.filter((e) => datePart(e.date).startsWith(String(y))),
+      revPool,
     ).forEach((e) => {
         rows.push([
           'Despesa',

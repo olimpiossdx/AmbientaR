@@ -63,8 +63,8 @@ export function buildCompanyFinancialKpis(
 ): CompanyFinancialKpis {
   const recentLimit = options?.recentLimit ?? 5;
   const caixaInvoices = filterCompanyCaixaInvoices(invoices);
-  const caixaRevenues = filterCompanyCaixaRevenues(revenues);
-  const caixaExpenses = filterCompanyCaixaExpenses(expenses);
+  const caixaRevenues = filterCompanyCaixaRevenues(revenues, expenses);
+  const caixaExpenses = filterCompanyCaixaExpenses(expenses, revenues);
 
   const dre = calculateDre(
     invoices,
@@ -74,7 +74,7 @@ export function buildCompanyFinancialKpis(
     'combinado_sem_duplicar',
   );
 
-  const totalRevenue = dre.receitaBruta;
+  const totalRevenue = dre.receitaCaixa;
   const totalExpenses = dre.despesasOperacionais;
   const totalProfit = dre.resultadoLiquido;
 

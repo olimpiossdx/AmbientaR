@@ -69,8 +69,8 @@ export default function ConciliacaoPage() {
     return bankLines.map((bl, idx) => {
       const pool =
         bl.type === 'credit'
-          ? filterCompanyCaixaRevenues(revenues || [])
-          : filterCompanyCaixaExpenses(expenses || []);
+          ? filterCompanyCaixaRevenues(revenues || [], expenses || [])
+          : filterCompanyCaixaExpenses(expenses || [], revenues || []);
       const match = pool.find((t) => {
         const amt = Math.abs(Number(t.amount) - bl.amount) < 0.02;
         const dt = datePart(t.date) === datePart(bl.date);

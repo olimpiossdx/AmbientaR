@@ -47,8 +47,8 @@ export function CashFlowChart() {
     useCollection<Expense>(expensesQuery);
 
   const chartData = useMemo(() => {
-    const revenues = filterCompanyCaixaRevenues(revenuesData || []);
-    const expenses = filterCompanyCaixaExpenses(expensesData || []);
+    const revenues = filterCompanyCaixaRevenues(revenuesData || [], expensesData || []);
+    const expenses = filterCompanyCaixaExpenses(expensesData || [], revenuesData || []);
     const allRev = revenuesData || [];
     const allExp = expensesData || [];
 

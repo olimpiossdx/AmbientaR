@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { getAbcBadgeClass, getAbcBarColor, truncateAbcLabel } from '@/lib/abc-analysis';
+import { filterCompanyCaixaRevenues } from '@/lib/financial-transaction-scope';
 import { Button } from '@/components/ui/button';
 import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
 import { collection } from 'firebase/firestore';
@@ -153,7 +154,7 @@ export function AbcCurveView() {
     const inPeriod = (part: string) => part >= start && part <= end;
 
     if (selectedSource === 'revenues' || selectedSource === 'both') {
-      revenuesData.forEach(revenue => {
+      filterCompanyCaixaRevenues(revenuesData).forEach((revenue) => {
         const date = datePart(revenue.date);
         if (!revenue.clientId || !inPeriod(date)) return;
         const amount = Number(revenue.amount) || 0;
