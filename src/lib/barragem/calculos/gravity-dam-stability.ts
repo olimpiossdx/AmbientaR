@@ -132,16 +132,21 @@ export function gravityDamStability(
     warnings.push('Tensão de tração na base (σ_mín < 0) — revisar geometria ou fundação.');
   }
 
-  let status: BarragemCalculoResult<GravityDamStabilityResult>['status'] = 'ok';
+  let status: BarragemCalculoResult<GravityDamStabilityResult>['status'] = 'calculado';
   if (
     fsDeslizamento < GRAVITY_DAM_FS_MIN.deslizamento ||
     fsTombamento < GRAVITY_DAM_FS_MIN.tombamento ||
     tensoes.tensaoMinKpa < 0
   ) {
     status = 'nao_atende';
-  } else if (warnings.length) {
-    status = 'revisar';
+  } else if (
+    fsDeslizamento >= GRAVITY_DAM_FS_MIN.deslizamento &&
+    fsTombamento >= GRAVITY_DAM_FS_MIN.tombamento &&
+    tensoes.tensaoMinKpa >= 0
+  ) {
+    status = 'atende';
   }
+  if (warnings.length && status === 'calculado') status = 'revisar';
 
   return {
     input: { ...input, gammaAguaKNm3: gammaW },
