@@ -1,22 +1,26 @@
-"use client";
+'use client';
 
-import { PageHeader } from "@/components/page-header";
+import dynamic from 'next/dynamic';
+import { PageHeader } from '@/components/page-header';
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
-import { RelatorioResgateForm } from "../relatorio-form";
-import { useFaunaStudyPageSave } from "../../_shared/use-fauna-study-page-save";
+} from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useFaunaStudyPageSave } from '../../_shared/use-fauna-study-page-save';
 
-export default function EditResgateRelatorioFaunaPage({
-  params,
-}: {
-  params: { id: string };
-}) {
-  const handleSave = useFaunaStudyPageSave("resgate_relatorio");
+const RelatorioResgateForm = dynamic(
+  () => import('../relatorio-form').then((m) => ({ default: m.RelatorioResgateForm })),
+  {
+    loading: () => <Skeleton className="h-96 w-full" />,
+    ssr: false,
+  },
+);
+
+export default function EditResgateRelatorioFaunaPage({ params }: { params: { id: string } }) {
+  const handleSave = useFaunaStudyPageSave('resgate_relatorio');
 
   return (
     <div className="flex flex-col h-full">

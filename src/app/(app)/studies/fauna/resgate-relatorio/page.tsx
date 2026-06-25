@@ -1,41 +1,46 @@
-"use client";
+'use client';
 
-import { Suspense } from "react";
-import { useSearchParams } from "next/navigation";
-import { PageHeader } from "@/components/page-header";
+import dynamic from 'next/dynamic';
+import { Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { PageHeader } from '@/components/page-header';
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
   CardDescription,
-} from "@/components/ui/card";
-import { RelatorioResgateForm } from "./relatorio-form";
-import { useDoc, useFirebase, useMemoFirebase } from "@/firebase";
-import { doc } from "firebase/firestore";
-import type { FaunaStudy } from "@/lib/types";
-import { Skeleton } from "@/components/ui/skeleton";
-import { useFaunaStudyPageSave } from "../_shared/use-fauna-study-page-save";
-import { ProjetoVinculadoBanner } from "../_shared/projeto-vinculado-banner";
+} from '@/components/ui/card';
+import { useDoc, useFirebase, useMemoFirebase } from '@/firebase';
+import { doc } from 'firebase/firestore';
+import type { FaunaStudy } from '@/lib/types';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useFaunaStudyPageSave } from '../_shared/use-fauna-study-page-save';
+import { ProjetoVinculadoBanner } from '../_shared/projeto-vinculado-banner';
+
+const RelatorioResgateForm = dynamic(
+  () => import('./relatorio-form').then((m) => ({ default: m.RelatorioResgateForm })),
+  {
+    loading: () => <Skeleton className="h-96 w-full" />,
+    ssr: false,
+  },
+);
 
 function ResgateRelatorioFaunaPageContent() {
   const searchParams = useSearchParams();
-  const projetoId = searchParams?.get("projetoId") ?? null;
+  const projetoId = searchParams?.get('projetoId') ?? null;
   const { firestore } = useFirebase();
-  const handleSave = useFaunaStudyPageSave("resgate_relatorio");
+  const handleSave = useFaunaStudyPageSave('resgate_relatorio');
 
   const projetoRef = useMemoFirebase(
-    () =>
-      firestore && projetoId
-        ? doc(firestore, "faunaStudies", projetoId)
-        : null,
+    () => (firestore && projetoId ? doc(firestore, 'faunaStudies', projetoId) : null),
     [firestore, projetoId],
   );
   const { data: seedStudy, isLoading } = useDoc<FaunaStudy>(projetoRef);
 
   const wrappedSave = async (
     data: Record<string, unknown> & { id?: string },
-    status: "draft" | "completed",
+    status: 'draft' | 'completed',
   ) => {
     const base = seedStudy
       ? {
@@ -64,10 +69,7 @@ function ResgateRelatorioFaunaPageContent() {
             ) : (
               <>
                 <ProjetoVinculadoBanner study={seedStudy} />
-                <RelatorioResgateForm
-                  seedStudy={seedStudy ?? null}
-                  onSave={wrappedSave}
-                />
+                <RelatorioResgateForm seedStudy={seedStudy ?? null} onSave={wrappedSave} />
               </>
             )}
           </CardContent>
@@ -80,9 +82,7 @@ function ResgateRelatorioFaunaPageContent() {
 export default function ResgateRelatorioFaunaPage() {
   return (
     <Suspense
-      fallback={
-        <div className="p-6 text-sm text-muted-foreground">Carregando...</div>
-      }
+      fallback={<div className="p-6 text-sm text-muted-foreground">Carregando...</div>}
     >
       <ResgateRelatorioFaunaPageContent />
     </Suspense>

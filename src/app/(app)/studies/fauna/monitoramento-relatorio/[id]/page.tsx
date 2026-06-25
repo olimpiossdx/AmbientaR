@@ -1,22 +1,26 @@
-"use client";
+'use client';
 
-import { PageHeader } from "@/components/page-header";
+import dynamic from 'next/dynamic';
+import { PageHeader } from '@/components/page-header';
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
-import { RelatorioMonitoramentoForm } from "../relatorio-form";
-import { useFaunaStudyPageSave } from "../../_shared/use-fauna-study-page-save";
+} from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useFaunaStudyPageSave } from '../../_shared/use-fauna-study-page-save';
 
-export default function EditMonitoramentoRelatorioFaunaPage({
-  params,
-}: {
-  params: { id: string };
-}) {
-  const handleSave = useFaunaStudyPageSave("monitoramento_relatorio");
+const RelatorioMonitoramentoForm = dynamic(
+  () => import('../relatorio-form').then((m) => ({ default: m.RelatorioMonitoramentoForm })),
+  {
+    loading: () => <Skeleton className="h-96 w-full" />,
+    ssr: false,
+  },
+);
+
+export default function EditMonitoramentoRelatorioFaunaPage({ params }: { params: { id: string } }) {
+  const handleSave = useFaunaStudyPageSave('monitoramento_relatorio');
 
   return (
     <div className="flex flex-col h-full">
@@ -27,10 +31,7 @@ export default function EditMonitoramentoRelatorioFaunaPage({
             <CardTitle>Formulário de Relatório Técnico</CardTitle>
           </CardHeader>
           <CardContent>
-            <RelatorioMonitoramentoForm
-              documentId={params.id}
-              onSave={handleSave}
-            />
+            <RelatorioMonitoramentoForm documentId={params.id} onSave={handleSave} />
           </CardContent>
         </Card>
       </main>

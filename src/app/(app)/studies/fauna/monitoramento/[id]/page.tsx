@@ -1,30 +1,34 @@
-"use client";
+'use client';
 
-import { PageHeader } from "@/components/page-header";
+import dynamic from 'next/dynamic';
+import { PageHeader } from '@/components/page-header';
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
   CardDescription,
-} from "@/components/ui/card";
-import { MonitoramentoForm } from "../monitoramento-form";
-import { useDoc, useFirebase, useMemoFirebase } from "@/firebase";
-import { doc } from "firebase/firestore";
-import type { FaunaStudy } from "@/lib/types";
-import { Skeleton } from "@/components/ui/skeleton";
-import { useFaunaStudyPageSave } from "../../_shared/use-fauna-study-page-save";
+} from '@/components/ui/card';
+import { useDoc, useFirebase, useMemoFirebase } from '@/firebase';
+import { doc } from 'firebase/firestore';
+import type { FaunaStudy } from '@/lib/types';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useFaunaStudyPageSave } from '../../_shared/use-fauna-study-page-save';
 
-export default function EditMonitoramentoFaunaPage({
-  params,
-}: {
-  params: { id: string };
-}) {
+const MonitoramentoForm = dynamic(
+  () => import('../monitoramento-form').then((m) => ({ default: m.MonitoramentoForm })),
+  {
+    loading: () => <Skeleton className="h-96 w-full" />,
+    ssr: false,
+  },
+);
+
+export default function EditMonitoramentoFaunaPage({ params }: { params: { id: string } }) {
   const { firestore } = useFirebase();
-  const handleSave = useFaunaStudyPageSave("monitoramento_projeto");
+  const handleSave = useFaunaStudyPageSave('monitoramento_projeto');
 
   const studyRef = useMemoFirebase(
-    () => (firestore ? doc(firestore, "faunaStudies", params.id) : null),
+    () => (firestore ? doc(firestore, 'faunaStudies', params.id) : null),
     [firestore, params.id],
   );
   const { data: study, isLoading } = useDoc<FaunaStudy>(studyRef);
@@ -36,9 +40,7 @@ export default function EditMonitoramentoFaunaPage({
         <Card>
           <CardHeader>
             <CardTitle>Formulário de Projeto Técnico</CardTitle>
-            <CardDescription>
-              Atualize o projeto de monitoramento de fauna.
-            </CardDescription>
+            <CardDescription>Atualize o projeto de monitoramento de fauna.</CardDescription>
           </CardHeader>
           <CardContent>
             {isLoading ? (
@@ -49,9 +51,7 @@ export default function EditMonitoramentoFaunaPage({
                 onSave={handleSave}
               />
             ) : (
-              <p className="text-sm text-muted-foreground">
-                Estudo não encontrado.
-              </p>
+              <p className="text-sm text-muted-foreground">Estudo não encontrado.</p>
             )}
           </CardContent>
         </Card>
@@ -59,4 +59,3 @@ export default function EditMonitoramentoFaunaPage({
     </div>
   );
 }
-

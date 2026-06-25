@@ -695,3 +695,23 @@ Fora do plano F00–F18; **uma rota por PR**, mesmo protocolo de debug.
 | Shared | 92,4 kB | **92,4 kB** |
 
 **Próximo candidato F19m:** rotas fauna em `/studies/fauna/*` (~341 kB), `/ai-lab/automations` (~333 kB).
+
+### F19m — sub-rotas fauna (estudos) e AI Lab lazy ✅ (2026-06-25)
+
+| Ficheiro | Mudança |
+|----------|---------|
+| `studies/fauna/*/page.tsx` (12 rotas) | Formulários via `dynamic()` |
+| `ai-lab/automations/page.tsx` + `ai-lab-automations-view.tsx` | Shell + painel automações |
+
+**Verificação:** `npm run typecheck` · `npm run build`
+
+| Rota | Baseline (F17) | Após F19m |
+|------|----------------|-----------|
+| `/studies/fauna/inventario` | ~341 kB | **296 kB** (−45 kB) |
+| `/studies/fauna/monitoramento` | ~341 kB | **296 kB** (−45 kB) |
+| `/studies/fauna/resgate` | ~341 kB | **296 kB** (−45 kB) |
+| `/studies/fauna/*-relatorio` | ~327 kB | **296–297 kB** (−30 kB) |
+| `/ai-lab/automations` | ~335 kB | **147 kB** (−188 kB) |
+| Shared | 92,4 kB | **92,4 kB** |
+
+**Próximo candidato F19n:** `/` (~319 kB), `/analise-ambiental` já feito — auditar rotas ~300 kB restantes.

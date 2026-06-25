@@ -1,11 +1,21 @@
 'use client';
+
+import dynamic from 'next/dynamic';
 import { PageHeader } from '@/components/page-header';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { InventarioFaunaForm } from './inventario-form';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useFaunaStudyPageSave } from '../_shared/use-fauna-study-page-save';
 
+const InventarioFaunaForm = dynamic(
+  () => import('./inventario-form').then((m) => ({ default: m.InventarioFaunaForm })),
+  {
+    loading: () => <Skeleton className="h-96 w-full" />,
+    ssr: false,
+  },
+);
+
 export default function InventarioFaunaPage() {
-    const handleSave = useFaunaStudyPageSave('inventario_projeto');
+  const handleSave = useFaunaStudyPageSave('inventario_projeto');
 
   return (
     <div className="flex flex-col h-full">
@@ -15,7 +25,8 @@ export default function InventarioFaunaPage() {
           <CardHeader>
             <CardTitle>Formulário de Projeto Técnico</CardTitle>
             <CardDescription>
-              Preencha os campos abaixo para gerar o projeto técnico para autorização de manejo de fauna.
+              Preencha os campos abaixo para gerar o projeto técnico para autorização de manejo de
+              fauna.
             </CardDescription>
           </CardHeader>
           <CardContent>

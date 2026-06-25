@@ -1,5 +1,6 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import { PageHeader } from '@/components/page-header';
 import {
   Card,
@@ -8,8 +9,16 @@ import {
   CardTitle,
   CardDescription,
 } from '@/components/ui/card';
-import { MonitoramentoForm } from './monitoramento-form';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useFaunaStudyPageSave } from '../_shared/use-fauna-study-page-save';
+
+const MonitoramentoForm = dynamic(
+  () => import('./monitoramento-form').then((m) => ({ default: m.MonitoramentoForm })),
+  {
+    loading: () => <Skeleton className="h-96 w-full" />,
+    ssr: false,
+  },
+);
 
 export default function MonitoramentoFaunaPage() {
   const handleSave = useFaunaStudyPageSave('monitoramento_projeto');

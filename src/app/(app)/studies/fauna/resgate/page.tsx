@@ -1,5 +1,6 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import { PageHeader } from '@/components/page-header';
 import {
   Card,
@@ -8,8 +9,16 @@ import {
   CardTitle,
   CardDescription,
 } from '@/components/ui/card';
-import { ResgateForm } from './resgate-form';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useFaunaStudyPageSave } from '../_shared/use-fauna-study-page-save';
+
+const ResgateForm = dynamic(
+  () => import('./resgate-form').then((m) => ({ default: m.ResgateForm })),
+  {
+    loading: () => <Skeleton className="h-96 w-full" />,
+    ssr: false,
+  },
+);
 
 export default function ResgateFaunaPage() {
   const handleSave = useFaunaStudyPageSave('resgate_projeto');

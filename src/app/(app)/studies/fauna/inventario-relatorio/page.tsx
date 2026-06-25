@@ -1,41 +1,46 @@
-"use client";
+'use client';
 
-import { Suspense } from "react";
-import { useSearchParams } from "next/navigation";
-import { PageHeader } from "@/components/page-header";
+import dynamic from 'next/dynamic';
+import { Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { PageHeader } from '@/components/page-header';
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
   CardDescription,
-} from "@/components/ui/card";
-import { RelatorioInventarioForm } from "./relatorio-form";
-import { useDoc, useFirebase, useMemoFirebase } from "@/firebase";
-import { doc } from "firebase/firestore";
-import type { FaunaStudy } from "@/lib/types";
-import { Skeleton } from "@/components/ui/skeleton";
-import { useFaunaStudyPageSave } from "../_shared/use-fauna-study-page-save";
-import { ProjetoVinculadoBanner } from "../_shared/projeto-vinculado-banner";
+} from '@/components/ui/card';
+import { useDoc, useFirebase, useMemoFirebase } from '@/firebase';
+import { doc } from 'firebase/firestore';
+import type { FaunaStudy } from '@/lib/types';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useFaunaStudyPageSave } from '../_shared/use-fauna-study-page-save';
+import { ProjetoVinculadoBanner } from '../_shared/projeto-vinculado-banner';
+
+const RelatorioInventarioForm = dynamic(
+  () => import('./relatorio-form').then((m) => ({ default: m.RelatorioInventarioForm })),
+  {
+    loading: () => <Skeleton className="h-96 w-full" />,
+    ssr: false,
+  },
+);
 
 function InventarioRelatorioFaunaPageContent() {
   const searchParams = useSearchParams();
-  const projetoId = searchParams?.get("projetoId") ?? null;
+  const projetoId = searchParams?.get('projetoId') ?? null;
   const { firestore } = useFirebase();
-  const handleSave = useFaunaStudyPageSave("inventario_relatorio");
+  const handleSave = useFaunaStudyPageSave('inventario_relatorio');
 
   const projetoRef = useMemoFirebase(
-    () =>
-      firestore && projetoId
-        ? doc(firestore, "faunaStudies", projetoId)
-        : null,
+    () => (firestore && projetoId ? doc(firestore, 'faunaStudies', projetoId) : null),
     [firestore, projetoId],
   );
   const { data: seedStudy, isLoading } = useDoc<FaunaStudy>(projetoRef);
 
   const wrappedSave = async (
     data: Record<string, unknown> & { id?: string },
-    status: "draft" | "completed",
+    status: 'draft' | 'completed',
   ) => {
     const base = seedStudy
       ? {
@@ -81,9 +86,7 @@ function InventarioRelatorioFaunaPageContent() {
 export default function InventarioRelatorioFaunaPage() {
   return (
     <Suspense
-      fallback={
-        <div className="p-6 text-sm text-muted-foreground">Carregando...</div>
-      }
+      fallback={<div className="p-6 text-sm text-muted-foreground">Carregando...</div>}
     >
       <InventarioRelatorioFaunaPageContent />
     </Suspense>
