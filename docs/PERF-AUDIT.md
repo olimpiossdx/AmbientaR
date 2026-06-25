@@ -468,3 +468,27 @@ npm run perf:form-shell-debug
 **24/24** rotas `(.)` com `FormShell` / `StudyFormShell` + `variant="modal"` ou redirect legado (`intervencao-ambiental` → PIA).
 
 Rotas de **página cheia** (`new/page.tsx`, `[id]/edit/page.tsx` sem `(.)`) não entram neste check — smoke manual: abrir modal na lista vs URL directa.
+
+---
+
+## Pós-roadmap — rotas pesadas (F19+)
+
+Fora do plano F00–F18; **uma rota por PR**, mesmo protocolo de debug.
+
+### F19a — `/projects/new` e `/projects/[id]/edit` lazy `ProjectForm` ✅ (2026-06-25)
+
+| Ficheiro | Mudança |
+|----------|---------|
+| `projects/new/page.tsx` | `ProjectForm` via `dynamic()` (`ssr: false`) |
+| `projects/[id]/edit/page.tsx` | idem |
+
+**Verificação:** `npm run typecheck` · `npm run build`
+
+| Rota | Baseline (F17) | Após F19a |
+|------|----------------|-----------|
+| `/projects/new` | ~534 kB | **295 kB** (−239 kB) |
+| `/projects/[id]/edit` | — | **295 kB** |
+| `/projects` (lista) | — | **319 kB** |
+| Shared | 91,8 kB | **91,9 kB** |
+
+**Próximo candidato F19b:** `/gestao-processos/fluxo` (~577 kB) — lazy do kanban/view pesado, sem alterar fluxo.

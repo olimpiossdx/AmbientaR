@@ -1,11 +1,19 @@
 'use client';
+import dynamic from 'next/dynamic';
 import { PageHeader } from '@/components/page-header';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { ProjectForm } from '../project-form';
 import { useRouter } from 'next/navigation';
 import { Suspense } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useCadastroGestaoWriteGuard } from '@/hooks/use-cadastro-gestao-write-guard';
+
+const ProjectForm = dynamic(
+  () => import('../project-form').then((m) => ({ default: m.ProjectForm })),
+  {
+    loading: () => <Skeleton className="h-96 w-full" />,
+    ssr: false,
+  },
+);
 
 function NewProjectPageContent() {
     const router = useRouter();
