@@ -661,3 +661,20 @@ Fora do plano F00–F18; **uma rota por PR**, mesmo protocolo de debug.
 | Shared | 92,4 kB | **92,4 kB** |
 
 **Próximo candidato F19k:** `/ctf-ibama` (~380 kB), `/fauna` (~375 kB).
+
+### F19k — CTF IBAMA e fauna lazy views ✅ (2026-06-25)
+
+| Ficheiro | Mudança |
+|----------|---------|
+| `ctf-ibama/page.tsx` + `ctf-ibama-list-view.tsx` | Shell + listagem CTF |
+| `fauna/page.tsx` + `fauna-management-view.tsx` | Shell + gestão fauna |
+
+**Verificação:** `npm run typecheck` · `npm run build`
+
+| Rota | Baseline (F17) | Após F19k |
+|------|----------------|-----------|
+| `/ctf-ibama` | ~381 kB | **147 kB** (−234 kB) |
+| `/fauna` | ~376 kB | **147 kB** (−229 kB) |
+| Shared | 92,4 kB | **92,4 kB** |
+
+**Próximo candidato F19l:** `/studies/fauna` (~356 kB), `/calendar` (~358 kB).
