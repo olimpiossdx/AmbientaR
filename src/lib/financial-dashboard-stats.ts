@@ -54,17 +54,57 @@ const MONTH_NAMES = [
   'Dez',
 ] as const;
 
+/** Transações recentes do caixa operacional (exclui Projetos & ROI). */
+export function buildRecentCompanyCaixaTransactions(
+  revenues: Revenue[],
+  expenses: Expense[],
+  options?: { limit?: number; existingRoiCaseIds?: ReadonlySet<string> },
+): Transaction[] {
+  const recentLimit = options?.limit ?? 5;
+  const caseIds = options?.existingRoiCaseIds;
+  const caixaRevenues = filterCompanyCaixaRevenues(revenues, expenses, caseIds);
+  const caixaExpenses = filterCompanyCaixaExpenses(expenses, revenues, caseIds);
+
+  const allTransactions: Transaction[] = [
+    ...caixaRevenues.map((r) => ({ ...r, type: 'revenue' as const })),
+    ...caixaExpenses.map((e) => ({ ...e, type: 'expense' as const })),
+  ];
+
+  return allTransactions
+    .map((t) => {
+      const net =
+        t.type === 'revenue'
+          ? revenueAmountForCompanyCaixa(t, revenues, expenses, caseIds)
+          : expenseAmountForCompanyCaixa(t, revenues, expenses, caseIds);
+      return { ...t, net };
+    })
+    .filter((t) => t.net !== 0)
+    .sort((a, b) => safeDateTime(b.date) - safeDateTime(a.date))
+    .slice(0, recentLimit)
+    .map(({ net: _net, ...t }) => ({
+      ...t,
+      amount:
+        t.type === 'revenue'
+          ? revenueAmountForCompanyCaixa(t, revenues, expenses, caseIds)
+          : expenseAmountForCompanyCaixa(t, revenues, expenses, caseIds),
+    }));
+}
+
 export function buildCompanyFinancialKpis(
   invoices: Invoice[],
   revenues: Revenue[],
   expenses: Expense[],
   year: number,
-  options?: { recentLimit?: number },
+  options?: {
+    recentLimit?: number;
+    existingRoiCaseIds?: ReadonlySet<string>;
+  },
 ): CompanyFinancialKpis {
   const recentLimit = options?.recentLimit ?? 5;
+  const caseIds = options?.existingRoiCaseIds;
   const caixaInvoices = filterCompanyCaixaInvoices(invoices);
-  const caixaRevenues = filterCompanyCaixaRevenues(revenues, expenses);
-  const caixaExpenses = filterCompanyCaixaExpenses(expenses, revenues);
+  const caixaRevenues = filterCompanyCaixaRevenues(revenues, expenses, caseIds);
+  const caixaExpenses = filterCompanyCaixaExpenses(expenses, revenues, caseIds);
 
   const dre = calculateDre(
     invoices,
@@ -88,7 +128,7 @@ export function buildCompanyFinancialKpis(
     if (!inYearPeriod(part, year)) continue;
     const month = MONTH_NAMES[new Date(part).getMonth()];
     if (!month) continue;
-    const amt = revenueAmountForCompanyCaixa(r, revenues, expenses);
+    const amt = revenueAmountForCompanyCaixa(r, revenues, expenses, caseIds);
     if (amt === 0) continue;
     monthlyData[month].revenue += amt;
   }
@@ -98,7 +138,7 @@ export function buildCompanyFinancialKpis(
     if (!inYearPeriod(part, year)) continue;
     const month = MONTH_NAMES[new Date(part).getMonth()];
     if (!month) continue;
-    const amt = expenseAmountForCompanyCaixa(e, revenues, expenses);
+    const amt = expenseAmountForCompanyCaixa(e, revenues, expenses, caseIds);
     if (amt === 0) continue;
     monthlyData[month].expenses += amt;
   }
@@ -109,29 +149,11 @@ export function buildCompanyFinancialKpis(
     Despesa: monthlyData[month]?.expenses ?? 0,
   })).slice(0, new Date().getFullYear() === year ? new Date().getMonth() + 1 : 12);
 
-  const allTransactions: Transaction[] = [
-    ...caixaRevenues.map((r) => ({ ...r, type: 'revenue' as const })),
-    ...caixaExpenses.map((e) => ({ ...e, type: 'expense' as const })),
-  ];
-
-  const recentTransactions = allTransactions
-    .map((t) => {
-      const net =
-        t.type === 'revenue'
-          ? revenueAmountForCompanyCaixa(t, revenues, expenses)
-          : expenseAmountForCompanyCaixa(t, revenues, expenses);
-      return { ...t, net };
-    })
-    .filter((t) => t.net !== 0)
-    .sort((a, b) => safeDateTime(b.date) - safeDateTime(a.date))
-    .slice(0, recentLimit)
-    .map(({ net: _net, ...t }) => ({
-      ...t,
-      amount:
-        t.type === 'revenue'
-          ? revenueAmountForCompanyCaixa(t, revenues, expenses)
-          : expenseAmountForCompanyCaixa(t, revenues, expenses),
-    }));
+  const recentTransactions = buildRecentCompanyCaixaTransactions(
+    revenues,
+    expenses,
+    { limit: recentLimit, existingRoiCaseIds: caseIds },
+  );
 
   const today = new Date().toISOString().slice(0, 10);
   const overdue = caixaInvoices.filter(

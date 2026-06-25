@@ -28,7 +28,7 @@ import {
   buildCompanyFinancialKpis,
   filterCompanyCaixaInvoices,
 } from '@/lib/financial-dashboard-stats';
-import type { Revenue, Expense, Invoice } from '@/lib/types';
+import type { Revenue, Expense, Invoice, ProjectRoiCase } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const CURRENT_YEAR = new Date().getFullYear();
@@ -47,10 +47,21 @@ export default function FinancialDashboard() {
     if (!firestore || !user) return null;
     return query(collection(firestore, 'invoices'), limit(200));
   }, [firestore, user]);
+  const roiCasesQuery = useMemoFirebase(() => {
+    if (!firestore || !user) return null;
+    return collection(firestore, 'project_roi_cases');
+  }, [firestore, user]);
 
   const { data: revenuesData, isLoading: isLoadingRevenues } = useCollection<Revenue>(revenuesQuery);
   const { data: expensesData, isLoading: isLoadingExpenses } = useCollection<Expense>(expensesQuery);
   const { data: invoicesData, isLoading: isLoadingInvoices } = useCollection<Invoice>(invoicesQuery);
+  const { data: roiCasesData, isLoading: isLoadingRoiCases } =
+    useCollection<ProjectRoiCase>(roiCasesQuery);
+
+  const existingRoiCaseIds = useMemo(
+    () => new Set((roiCasesData ?? []).map((c) => c.id)),
+    [roiCasesData],
+  );
 
   const { dashboardStats, chartData, recentTransactions } = useMemo(() => {
     const kpis = buildCompanyFinancialKpis(
@@ -58,7 +69,7 @@ export default function FinancialDashboard() {
       revenuesData || [],
       expensesData || [],
       CURRENT_YEAR,
-      { recentLimit: 5 },
+      { recentLimit: 5, existingRoiCaseIds },
     );
 
     const caixaInvoices = filterCompanyCaixaInvoices(invoicesData || []);
@@ -80,7 +91,7 @@ export default function FinancialDashboard() {
       chartData: kpis.monthlyChart,
       recentTransactions: kpis.recentTransactions,
     };
-  }, [revenuesData, expensesData, invoicesData]);
+  }, [revenuesData, expensesData, invoicesData, existingRoiCaseIds]);
 
   const formatCurrency = (value: number) =>
     new Intl.NumberFormat('pt-BR', {
@@ -88,7 +99,8 @@ export default function FinancialDashboard() {
       currency: 'BRL',
     }).format(value);
 
-  const isLoading = isLoadingRevenues || isLoadingExpenses || isLoadingInvoices;
+  const isLoading =
+    isLoadingRevenues || isLoadingExpenses || isLoadingInvoices || isLoadingRoiCases;
 
   return (
     <div className="space-y-6">
@@ -158,6 +170,9 @@ export default function FinancialDashboard() {
           <Card className="lg:col-span-3">
             <CardHeader>
               <CardTitle>Transações Recentes (Caixa)</CardTitle>
+              <p className="text-xs text-muted-foreground">
+                Somente caixa operacional — exclui Projetos &amp; ROI
+              </p>
             </CardHeader>
             <CardContent>
               <Table>

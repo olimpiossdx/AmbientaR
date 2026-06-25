@@ -308,10 +308,10 @@ export function TransactionForm({
     if (values.requestId) dataToSave.requestId = values.requestId;
     if (values.projectId) dataToSave.projectId = values.projectId;
     if (values.centroCusto) dataToSave.centroCusto = values.centroCusto;
-    if (values.projectRoiCaseId) {
-      dataToSave.projectRoiCaseId = values.projectRoiCaseId;
-    } else if (defaultProjectRoiCaseId) {
+    if (defaultProjectRoiCaseId) {
       dataToSave.projectRoiCaseId = defaultProjectRoiCaseId;
+    } else if (values.projectRoiCaseId) {
+      dataToSave.projectRoiCaseId = values.projectRoiCaseId;
     } else if (hideProjectRoiCase) {
       dataToSave.projectRoiCaseId = '';
     }

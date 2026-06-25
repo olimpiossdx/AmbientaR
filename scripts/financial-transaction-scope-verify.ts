@@ -7,6 +7,7 @@ import {
   isExcludedFromCompanyCaixa,
   revenueAmountForCompanyCaixa,
 } from '../src/lib/financial-transaction-scope';
+import { buildRecentCompanyCaixaTransactions } from '../src/lib/financial-dashboard-stats';
 import type { Expense, Revenue } from '../src/lib/types';
 
 function assert(name: string, ok: boolean): void {
@@ -51,7 +52,23 @@ const revenues: Revenue[] = [
   },
 ];
 
-const expenses: Expense[] = [];
+const expenses: Expense[] = [
+  {
+    id: 'e1',
+    date: '2026-05-15',
+    amount: 5_000,
+    description: 'Despesa caixa',
+  },
+  {
+    id: 'e-roi',
+    date: '2026-05-20',
+    amount: 2_000,
+    description: 'Despesa ROI',
+    projectRoiCaseId: 'case-1',
+  },
+];
+
+const caseIds = new Set(['case-1']);
 
 function main() {
   console.log('=== financial-transaction-scope verify ===\n');
@@ -86,6 +103,25 @@ function main() {
       revenues,
       expenses,
     ) === 0,
+  );
+
+  const recent = buildRecentCompanyCaixaTransactions(revenues, expenses, {
+    limit: 10,
+    existingRoiCaseIds: caseIds,
+  });
+  assert(
+    'transações recentes excluem ROI',
+    recent.every((t) => !t.projectRoiCaseId?.trim()),
+  );
+  assert(
+    'transações recentes incluem só caixa operacional',
+    recent.some((t) => t.id === 'r1') &&
+      recent.some((t) => t.id === 'e1') &&
+      !recent.some((t) => t.id === 'r-roi' || t.id === 'e-roi'),
+  );
+  assert(
+    'transações recentes ordenadas por data (mais recente primeiro)',
+    recent[0]?.id === 'e1',
   );
 }
 
