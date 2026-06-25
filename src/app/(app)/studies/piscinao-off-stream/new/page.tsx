@@ -1,36 +1,27 @@
 'use client';
 
-import { Suspense } from 'react';
-import { useRouter } from 'next/navigation';
-import { PiscinaoOffStreamForm } from '../piscinao-off-stream-form';
-import { StudyFormShell } from '@/components/studies/study-form-shell';
+import dynamic from 'next/dynamic';
+import { Skeleton } from '@/components/ui/skeleton';
+import { PageHeader } from '@/components/page-header';
 
-const LIST_PATH = '/studies/piscinao-off-stream';
-
-function NewPiscinaoOffStreamPageContent() {
-  const router = useRouter();
-
-  return (
-    <StudyFormShell
-      variant="page"
-      title="Piscinão off-stream"
-      description="Cadastro de reservatório fora do leito do curso d'água. Vincule a projeto técnico ou outorga quando existirem."
-      notFoundTitle="Cadastro não encontrado"
-      pageHeaderTitle="Novo piscinão"
-      cardContentClassName="min-h-[480px]"
-    >
-      <PiscinaoOffStreamForm
-        onCreated={(id) => router.push(`/studies/piscinao-off-stream/${id}/edit`)}
-        onCancel={() => router.push(LIST_PATH)}
-      />
-    </StudyFormShell>
-  );
-}
+const NewPiscinaoOffStreamView = dynamic(
+  () =>
+    import('./new-piscinao-off-stream-view').then((m) => ({
+      default: m.NewPiscinaoOffStreamView,
+    })),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex flex-col h-full">
+        <PageHeader title="Novo piscinão" />
+        <main className="flex-1 p-4 md:p-6">
+          <Skeleton className="h-96 w-full max-w-4xl mx-auto rounded-lg" />
+        </main>
+      </div>
+    ),
+  },
+);
 
 export default function NewPiscinaoOffStreamPage() {
-  return (
-    <Suspense fallback={<div>Carregando...</div>}>
-      <NewPiscinaoOffStreamPageContent />
-    </Suspense>
-  );
+  return <NewPiscinaoOffStreamView />;
 }

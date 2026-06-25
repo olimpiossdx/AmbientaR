@@ -1237,3 +1237,48 @@ Fora do plano F00–F18; **uma rota por PR**, mesmo protocolo de debug.
 | `/studies/fauna/resgate` (+ `[id]`, relatórios) | ~299–300 kB | **150 kB** |
 
 **Próximo candidato F20k:** hubs estudos pesados (`studies/assistant` ~356 kB, `barragem`/`cavidades` ~344–438 kB, `educacao-ambiental` ~362–524 kB, `eia-rima` ~340–387 kB), fiscal-ambiental (`dashboard` ~268 kB, `workspace/[id]` ~261 kB), `gestao-processos/fluxo` (~260 kB), rotas ~299 kB restantes (`carteira/[clientId]`, `cash-flow/[id]/edit`, `commercial-proposals/[id]/edit`, etc.).
+
+### F20k — hubs estudos, fiscal-ambiental, fluxo e rotas ~300 kB lazy ✅ (2026-06-25)
+
+| Ficheiro | Mudança |
+|----------|---------|
+| `studies/assistant` | Shell + view |
+| `studies/barragem/`, `new`, `[id]/edit` | Shell + views |
+| `studies/cavidades/`, `new`, `[id]/edit` | Shell + views |
+| `studies/educacao-ambiental/`, `novo`, `[id]/edit`, `dispensas/[id]`, `solicitar-dispensa` | Shell + views |
+| `studies/eia-rima/`, `new`, `[id]/edit` | Shell + views |
+| `gestao-processos/fluxo` | Shell + view |
+| `ia/fiscal-ambiental-digital/dashboard`, `configuracoes`, `workspace/[workspaceId]` | `dynamic()` dos client components |
+| `carteira/[clientId]`, `cash-flow/[id]/edit`, `commercial-proposals/[id]/edit` | Shell + views |
+| `documentos-ambientais/pasta-cliente`, `external` | Shell + views |
+
+**Verificação:** `npm run typecheck` · `npm run build` (`build-f20k.log`; `node scripts/clean-next-dev.mjs` antes do build se dev turbo corromper cache)
+
+| Rota | Baseline (F17) | Após F20k |
+|------|----------------|-----------|
+| `/studies/assistant` | ~357 kB | **151 kB** |
+| `/studies/barragem` | ~356 kB | **151 kB** |
+| `/studies/barragem/new` | ~413 kB | **151 kB** |
+| `/studies/barragem/[id]/edit` | ~439 kB | **151 kB** |
+| `/studies/cavidades` | ~345 kB | **151 kB** |
+| `/studies/cavidades/new` | ~409 kB | **151 kB** |
+| `/studies/cavidades/[id]/edit` | ~430 kB | **151 kB** |
+| `/studies/educacao-ambiental` | ~362 kB | **151 kB** |
+| `/studies/educacao-ambiental/novo` | ~451 kB | **151 kB** |
+| `/studies/educacao-ambiental/[id]/edit` | ~462 kB | **151 kB** |
+| `/studies/educacao-ambiental/dispensas/[id]` | ~524 kB | **151 kB** |
+| `/studies/educacao-ambiental/solicitar-dispensa` | ~517 kB | **151 kB** |
+| `/studies/eia-rima` | ~340 kB | **151 kB** |
+| `/studies/eia-rima/new` | ~388 kB | **151 kB** |
+| `/studies/eia-rima/[id]/edit` | ~340 kB | **151 kB** |
+| `/gestao-processos/fluxo` | ~260 kB | **108 kB** |
+| `/ia/fiscal-ambiental-digital/dashboard` | ~269 kB | **151 kB** |
+| `/ia/fiscal-ambiental-digital/configuracoes` | ~260 kB | **151 kB** |
+| `/ia/fiscal-ambiental-digital/workspace/[workspaceId]` | ~262 kB | **108 kB** |
+| `/carteira/[clientId]` | ~309 kB | **151 kB** |
+| `/cash-flow/[id]/edit` | ~300 kB | **151 kB** |
+| `/commercial-proposals/[id]/edit` | ~299 kB | **151 kB** |
+| `/documentos-ambientais/pasta-cliente` | ~300 kB | **151 kB** |
+| `/external` | ~299 kB | **151 kB** |
+
+**Próximo candidato F20l:** estudos restantes (`compensacao-ambiental/[tipo]` ~328 kB, `seguranca-barragens`, `piscinao-off-stream`, `procuracao`, `outorgas/processo`, `las-ras`, `relatorios-diversos`), fiscal-ambiental sub-rotas (~177–193 kB), `forgot-password`/`login` (~293 kB), hubs georeferenciamento se necessário.

@@ -1,43 +1,20 @@
-
 'use client';
 
-import { Suspense } from 'react';
-import Link from 'next/link';
-import { LoginForm } from './login-form';
-import { PublicAuthLayout } from '@/components/auth/public-auth-layout';
+import dynamic from 'next/dynamic';
+import { Skeleton } from '@/components/ui/skeleton';
 
-function LoginPageContent() {
-  return (
-    <PublicAuthLayout>
-      <div className="space-y-6">
-        <LoginForm />
-
-        <div className="space-y-4 text-center text-sm">
-          <p className="text-muted-foreground">
-            Não tem uma conta?{' '}
-            <Link
-              href="/register"
-              className="font-medium text-primary underline underline-offset-2 hover:no-underline"
-            >
-              Cadastre-se
-            </Link>
-          </p>
-          <Link
-            href="/forgot-password"
-            className="inline-block text-primary underline underline-offset-2 hover:no-underline"
-          >
-            Esqueceu a senha?
-          </Link>
-        </div>
+const LoginView = dynamic(
+  () => import('./login-view').then((m) => ({ default: m.LoginView })),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex min-h-screen items-center justify-center p-4">
+        <Skeleton className="h-[420px] w-full max-w-md rounded-lg" />
       </div>
-    </PublicAuthLayout>
-  );
-}
+    ),
+  },
+);
 
 export default function LoginPage() {
-  return (
-    <Suspense>
-      <LoginPageContent />
-    </Suspense>
-  );
+  return <LoginView />;
 }

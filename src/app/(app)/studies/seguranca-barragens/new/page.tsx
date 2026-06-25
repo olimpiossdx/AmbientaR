@@ -1,36 +1,27 @@
 'use client';
 
-import { Suspense } from 'react';
-import { useRouter } from 'next/navigation';
-import { SegurancaBarragensForm } from '../seguranca-barragens-form';
-import { StudyFormShell } from '@/components/studies/study-form-shell';
+import dynamic from 'next/dynamic';
+import { Skeleton } from '@/components/ui/skeleton';
+import { PageHeader } from '@/components/page-header';
 
-const LIST_PATH = '/studies/seguranca-barragens';
-
-function NewSegurancaBarragensPageContent() {
-  const router = useRouter();
-
-  return (
-    <StudyFormShell
-      variant="page"
-      title="Segurança de barragens"
-      description="PSB, inspeções, PAE e triagem de Dam Break. Classificação preliminar sujeita a revisão do RT."
-      notFoundTitle="Estudo não encontrado"
-      pageHeaderTitle="Novo estudo de segurança"
-      cardContentClassName="min-h-[480px]"
-    >
-      <SegurancaBarragensForm
-        onCreated={(id) => router.push(`/studies/seguranca-barragens/${id}/edit`)}
-        onCancel={() => router.push(LIST_PATH)}
-      />
-    </StudyFormShell>
-  );
-}
+const NewSegurancaBarragensView = dynamic(
+  () =>
+    import('./new-seguranca-barragens-view').then((m) => ({
+      default: m.NewSegurancaBarragensView,
+    })),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex flex-col h-full">
+        <PageHeader title="Novo estudo de segurança" />
+        <main className="flex-1 p-4 md:p-6">
+          <Skeleton className="h-96 w-full max-w-4xl mx-auto rounded-lg" />
+        </main>
+      </div>
+    ),
+  },
+);
 
 export default function NewSegurancaBarragensPage() {
-  return (
-    <Suspense fallback={<div>Carregando...</div>}>
-      <NewSegurancaBarragensPageContent />
-    </Suspense>
-  );
+  return <NewSegurancaBarragensView />;
 }

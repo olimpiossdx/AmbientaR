@@ -1,23 +1,25 @@
 'use client';
 
-import { StudyDocumentsListPage } from '@/components/studies/study-documents-list-page';
+import dynamic from 'next/dynamic';
+import { Skeleton } from '@/components/ui/skeleton';
+import { PageHeader } from '@/components/page-header';
+
+const LasRasListView = dynamic(
+  () => import('./las-ras-list-view').then((m) => ({ default: m.LasRasListView })),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex flex-col h-full">
+        <PageHeader title="Licenciamento Ambiental Simplificado (LAS/RAS)" />
+        <main className="flex-1 p-4 md:p-6 space-y-4">
+          <Skeleton className="h-24 w-full" />
+          <Skeleton className="h-[420px] w-full rounded-lg" />
+        </main>
+      </div>
+    ),
+  },
+);
 
 export default function LasRasListPage() {
-  return (
-    <StudyDocumentsListPage
-      collectionName="lasRas"
-      templateSlug="las-ras"
-      studySlug="las-ras"
-      studyLabel="LAS-RAS"
-      pageTitle="Licenciamento Ambiental Simplificado (LAS/RAS)"
-      addButtonLabel="Novo LAS/RAS"
-      newHref="/studies/las-ras/new"
-      editHref={(id) => `/studies/las-ras/${id}/edit`}
-      draftCardTitle="LAS/RAS em elaboração"
-      approvedCardTitle="LAS/RAS aprovados"
-      emptyDraft="Nenhum LAS/RAS em elaboração."
-      emptyApproved="Nenhum LAS/RAS aprovado."
-      viewDialogDescription="Detalhes do Relatório Ambiental Simplificado."
-    />
-  );
+  return <LasRasListView />;
 }
