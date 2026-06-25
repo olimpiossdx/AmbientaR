@@ -18,7 +18,8 @@ import { collection } from "firebase/firestore";
 import { useOfficeTasksCollection } from "@/lib/gestao-processos/use-office-tasks-collection";
 import type { AppUser } from "@/lib/types";
 import {
-  GESTAO_PROCESSOS_INDICADORES_LABEL,
+  GESTAO_PROCESSOS_INDICADORES_ANALISE_PATH,
+  GESTAO_PROCESSOS_INDICADORES_RESUMO_LABEL,
   gestaoProcessosDetailPath,
 } from "@/lib/gestao-processos-menu";
 import { canAccessGestaoProcessosIndicadores } from "@/lib/gestao-processos/role-guards";
@@ -105,7 +106,7 @@ export function GestaoProcessosIndicadoresView() {
     return (
       <div className="p-6">
         <p className="text-sm text-muted-foreground">
-          Acesso restrito ao administrador.
+          Acesso restrito ao administrador e ao gestor ambiental.
         </p>
       </div>
     );
@@ -114,9 +115,18 @@ export function GestaoProcessosIndicadoresView() {
   return (
     <>
       <PageHeader
-        title={GESTAO_PROCESSOS_INDICADORES_LABEL}
+        title={GESTAO_PROCESSOS_INDICADORES_RESUMO_LABEL}
         description="Visão inicial de cumprimento de prazos em tarefas, processos e projetos — norte operacional da consultoria."
       />
+
+      <div className="px-4 md:px-6">
+        <Link
+          href={GESTAO_PROCESSOS_INDICADORES_ANALISE_PATH}
+          className="text-sm text-primary hover:underline"
+        >
+          Ver gráfico de análise →
+        </Link>
+      </div>
 
       <div className="space-y-6 p-4 md:p-6">
         {isLoading ? (

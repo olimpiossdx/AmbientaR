@@ -56,6 +56,12 @@ import {
 } from '@/lib/geospatial/localizacao-request-snapshot';
 import type { LocalizacaoResolvida, RequestLocalizacaoImovel } from '@/lib/types/localizacao-imovel';
 import { LICENCIAMENTO_MENU_LABEL } from '@/lib/licenciamento-menu';
+import {
+  GESTAO_PROCESSOS_FLUXO_PATH,
+  gestaoProcessosProjetoDetailPath,
+} from '@/lib/gestao-processos-menu';
+import type { ConsultoriaProject } from '@/lib/gestao-processos/types';
+import { consultoriaProjectLabel } from '@/lib/gestao-processos/consultoria-project-utils';
 import { isProcessosPortalReadOnlyRole } from '@/lib/role-guards';
 import { fetchEmpreendedorIdsForProcessosPortal } from '@/lib/requests-portal-empreendedor-ids';
 import {
@@ -451,6 +457,19 @@ function EditRequestPageContent() {
 
     const requestDocRef = useMemoFirebase(() => (firestore && requestId ? doc(firestore, 'requests', requestId) : null), [firestore, requestId]);
     const { data: request, isLoading: isLoadingRequest } = useDoc<Request>(requestDocRef);
+
+    const consultoriaProjectRef = useMemoFirebase(
+        () =>
+            firestore && request?.consultoriaProjectId
+                ? doc(firestore, 'consultoriaProjects', request.consultoriaProjectId)
+                : null,
+        [firestore, request?.consultoriaProjectId],
+    );
+    const { data: consultoriaProject } = useDoc<ConsultoriaProject>(consultoriaProjectRef);
+
+    const tramiteBackHref = request?.consultoriaProjectId
+        ? gestaoProcessosProjetoDetailPath(request.consultoriaProjectId)
+        : GESTAO_PROCESSOS_FLUXO_PATH;
 
     const [portalEmpreendedorIds, setPortalEmpreendedorIds] = React.useState<
         string[] | undefined
@@ -893,7 +912,7 @@ function EditRequestPageContent() {
         updateDoc(requestRef, dataToSave)
             .then(() => {
                 toast({ title: "Trâmite atualizado", description: "As alterações foram salvas."});
-                router.push('/requests');
+                router.push(tramiteBackHref);
             })
             .catch((err: unknown) => {
                 console.error("Error updating request:", err);
@@ -967,8 +986,8 @@ function EditRequestPageContent() {
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <Button type="button" variant="outline" onClick={() => router.push('/requests')}>
-                                Voltar ao {LICENCIAMENTO_MENU_LABEL.toLowerCase()}
+                            <Button type="button" variant="outline" onClick={() => router.push(tramiteBackHref)}>
+                                Voltar ao fluxo de processos
                             </Button>
                         </CardContent>
                     </Card>
@@ -988,6 +1007,26 @@ function EditRequestPageContent() {
             />
             <main className="flex-1 overflow-auto p-4 md:p-6">
                 <div className="max-w-4xl mx-auto space-y-8">
+                    {request?.consultoriaProjectId ? (
+                        <Card className="border-primary/30 bg-primary/5">
+                            <CardContent className="flex flex-wrap items-center justify-between gap-2 p-4">
+                                <p className="text-sm">
+                                    Vinculado ao projeto de consultoria{' '}
+                                    <strong>
+                                        {consultoriaProject
+                                            ? consultoriaProjectLabel(
+                                                  request.consultoriaProjectId,
+                                                  [consultoriaProject],
+                                              ) ?? consultoriaProject.name
+                                            : '…'}
+                                    </strong>
+                                </p>
+                                <Button variant="outline" size="sm" asChild>
+                                    <Link href={tramiteBackHref}>Ver projeto</Link>
+                                </Button>
+                            </CardContent>
+                        </Card>
+                    ) : null}
                     <fieldset
                         disabled={readOnly}
                         className="min-w-0 space-y-8 border-0 p-0 m-0 disabled:opacity-95"
@@ -1192,12 +1231,12 @@ function EditRequestPageContent() {
 
                     <div className="flex justify-end gap-4 mt-6">
                         {readOnly ? (
-                            <Button type="button" variant="outline" onClick={() => router.push('/requests')}>
+                            <Button type="button" variant="outline" onClick={() => router.push(tramiteBackHref)}>
                                 Voltar à lista
                             </Button>
                         ) : (
                             <>
-                                <Button variant="outline" onClick={() => router.push('/requests')}>Cancelar</Button>
+                                <Button variant="outline" onClick={() => router.push(tramiteBackHref)}>Cancelar</Button>
                                 <Button onClick={handleUpdateProcess} disabled={!isFormValid || loading}>
                                     {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                                     Salvar Alterações

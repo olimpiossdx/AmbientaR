@@ -2532,6 +2532,9 @@ export type Request = {
     services: string[];
     status: 'Draft' | 'Submitted' | 'In Progress' | 'Completed';
     createdAt: any;
+    /** Projeto de consultoria (`consultoriaProjects/{id}`) — Gestão de Projetos e Processos. */
+    consultoriaProjectId?: string;
+    updatedAt?: any;
     solicitationNumber?: string;
     interventionChecklist?: import("@/lib/intervention-checklist").InterventionChecklistItem[];
     /** Opções marcadas sob "Autorização para Intervenção Ambiental" (IDs definidos em `INTERVENTION_SUBSERVICES`). */

@@ -1,6 +1,7 @@
 import { hasAnyRoleOrAdmin } from "@/lib/role-guards";
 import type { UserRole } from "@/lib/types";
 import {
+  GESTAO_PROCESSOS_INDICADORES_ROLES,
   GESTAO_PROCESSOS_INTERNAL_READ_ROLES,
   GESTAO_PROCESSOS_PORTAL_READ_ROLES,
   GESTAO_PROCESSOS_WRITE_ROLES,
@@ -71,9 +72,9 @@ export function canAssignOfficeTaskToOthers(
   return hasAnyRoleOrAdmin(role, ["admin", "gestor"]);
 }
 
-/** Submenu Indicadores de Prazos — apenas administrador. */
+/** Submenu Indicadores de Prazos — administrador e gestor ambiental. */
 export function canAccessGestaoProcessosIndicadores(
   role: UserRole | undefined | null,
 ): boolean {
-  return role === "admin";
+  return hasAnyRoleOrAdmin(role, GESTAO_PROCESSOS_INDICADORES_ROLES);
 }

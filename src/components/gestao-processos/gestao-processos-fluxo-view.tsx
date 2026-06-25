@@ -117,6 +117,8 @@ import {
   formatLicenciamentoSolicitationNumber,
 } from "@/lib/licenciamento-tramite-report";
 import { LICENCIAMENTO_REQUESTS_PATH } from "@/lib/licenciamento-menu";
+import { filterOrphanLicenciamentoRequests, linkRequestsToConsultoriaProject } from "@/lib/gestao-processos/request-consultoria-link";
+import { LinkRequestToProjectDialog } from "@/components/gestao-processos/link-request-to-project-dialog";
 import { cn } from "@/lib/utils";
 
 function faseBadgeClass(fase: OfficeProcessFase): string {
@@ -168,6 +170,9 @@ export function GestaoProcessosFluxoView() {
   const [taskFormOpen, setTaskFormOpen] = React.useState(false);
   const [taskFormProcess, setTaskFormProcess] = React.useState<OfficeProcess | null>(null);
   const [savingTask, setSavingTask] = React.useState(false);
+  const [linkRequestTarget, setLinkRequestTarget] = React.useState<Request | null>(null);
+  const [linkRequestOpen, setLinkRequestOpen] = React.useState(false);
+  const [linkingRequest, setLinkingRequest] = React.useState(false);
 
   const processesQuery = useMemoFirebase(
     () => (firestore ? collection(firestore, "officeProcesses") : null),
@@ -317,18 +322,18 @@ export function GestaoProcessosFluxoView() {
     [filteredProcesses],
   );
 
-  const activeRequests = React.useMemo(() => {
-    let list = (requests ?? []).filter((r) => r.status !== "Completed");
+  const orphanRequests = React.useMemo(() => {
+    let list = filterOrphanLicenciamentoRequests(requests ?? [], processes ?? []);
     if (isPortalReadOnly && portalEmpIds) {
       list = list.filter((r) => portalEmpIds.includes(r.empreendedorId));
     }
     return list.sort((a, b) =>
-      (a.solicitationNumber ?? a.id).localeCompare(
-        b.solicitationNumber ?? b.id,
+      formatLicenciamentoSolicitationNumber(a).localeCompare(
+        formatLicenciamentoSolicitationNumber(b),
         "pt-BR",
       ),
     );
-  }, [requests, isPortalReadOnly, portalEmpIds]);
+  }, [requests, processes, isPortalReadOnly, portalEmpIds]);
 
   const selectedProcess = React.useMemo(
     () => filteredProcesses.find((p) => p.id === selectedId) ?? null,
@@ -596,6 +601,32 @@ export function GestaoProcessosFluxoView() {
     }
   };
 
+  const handleLinkRequestToProject = async (consultoriaProjectId: string) => {
+    if (!firestore || !linkRequestTarget) return;
+    setLinkingRequest(true);
+    try {
+      await linkRequestsToConsultoriaProject(
+        firestore,
+        [linkRequestTarget.id],
+        consultoriaProjectId,
+      );
+      toast({
+        title: "Trâmite vinculado",
+        description: "O trâmite foi associado ao projeto de consultoria.",
+      });
+      setLinkRequestOpen(false);
+      setLinkRequestTarget(null);
+    } catch (e) {
+      toast({
+        variant: "destructive",
+        title: "Erro ao vincular trâmite",
+        description: (e as Error).message,
+      });
+    } finally {
+      setLinkingRequest(false);
+    }
+  };
+
   const handleDelete = async () => {
     if (!firestore || !deleteTarget) return;
     setDeleting(true);
@@ -822,14 +853,20 @@ export function GestaoProcessosFluxoView() {
           )}
         </div>
 
-        {!faseFilter && activeRequests.length > 0 ? (
+        {!faseFilter && orphanRequests.length > 0 ? (
           <div className="space-y-3">
-            <h2 className="text-sm font-medium text-muted-foreground">
-              Trâmites de licenciamento integrados ({activeRequests.length})
-            </h2>
+            <div className="space-y-1">
+              <h2 className="text-sm font-medium text-muted-foreground">
+                Trâmites de licenciamento sem projeto ({orphanRequests.length})
+              </h2>
+              <p className="text-xs text-muted-foreground">
+                Trâmites activos ainda não vinculados a um projeto de consultoria.
+                Após vincular, passam a aparecer na página do projeto.
+              </p>
+            </div>
             <div className="space-y-2">
-              {activeRequests.map((req) => (
-                <Card key={req.id} className="border-border/60">
+              {orphanRequests.map((req) => (
+                <Card key={req.id} className="border-dashed border-border/60">
                   <CardContent className="flex flex-wrap items-center justify-between gap-2 p-4">
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
@@ -846,11 +883,26 @@ export function GestaoProcessosFluxoView() {
                         {projectsMap.get(req.projectId) ?? "—"}
                       </p>
                     </div>
-                    <Button variant="outline" size="sm" asChild>
+                    <div className="flex flex-wrap gap-2">
+                      {canWrite ? (
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => {
+                            setLinkRequestTarget(req);
+                            setLinkRequestOpen(true);
+                          }}
+                        >
+                          Vincular ao projeto
+                        </Button>
+                      ) : null}
+                      <Button variant="outline" size="sm" asChild>
                         <Link href={`${LICENCIAMENTO_REQUESTS_PATH}/${req.id}/edit`}>
                           Abrir trâmite
                         </Link>
                       </Button>
+                    </div>
                   </CardContent>
                 </Card>
               ))}
@@ -954,6 +1006,18 @@ export function GestaoProcessosFluxoView() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <LinkRequestToProjectDialog
+        open={linkRequestOpen}
+        onOpenChange={(open) => {
+          setLinkRequestOpen(open);
+          if (!open) setLinkRequestTarget(null);
+        }}
+        request={linkRequestTarget}
+        projects={consultoriaProjects ?? []}
+        linking={linkingRequest}
+        onConfirm={handleLinkRequestToProject}
+      />
     </>
   );
 }

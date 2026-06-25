@@ -715,3 +715,85 @@ Fora do plano F00–F18; **uma rota por PR**, mesmo protocolo de debug.
 | Shared | 92,4 kB | **92,4 kB** |
 
 **Próximo candidato F19n:** `/` (~319 kB), `/analise-ambiental` já feito — auditar rotas ~300 kB restantes.
+
+### F19n — home e CRM hub lazy views ✅ (2026-06-25)
+
+| Ficheiro | Mudança |
+|----------|---------|
+| `(app)/page.tsx` + `dashboard-router-view.tsx` | Shell + roteador de painéis por role |
+| `crm/page.tsx` + `crm-hub-view.tsx` | Shell + pipeline/kanban CRM |
+
+**Verificação:** `npm run typecheck` · `npm run build`
+
+| Rota | Baseline (F17) | Após F19n |
+|------|----------------|-----------|
+| `/` | ~320 kB | **95.5 kB** |
+| `/crm` | ~311 kB | **147 kB** |
+
+**Próximo candidato F19o:** `/car` (~341 kB), `/financial/abc-curve` (~344 kB).
+
+### F19o — CAR e curva ABC lazy views ✅ (2026-06-25)
+
+| Ficheiro | Mudança |
+|----------|---------|
+| `car/page.tsx` + `car-list-view.tsx` | Shell + listagem/upload CAR |
+| `financial/abc-curve/page.tsx` + `abc-curve-view.tsx` | Shell + análise ABC (charts já lazy) |
+
+**Verificação:** `npm run typecheck` · `npm run build`
+
+| Rota | Baseline (F17) | Após F19o |
+|------|----------------|-----------|
+| `/car` | ~342 kB | **147 kB** |
+| `/financial/abc-curve` | ~344 kB | **147 kB** |
+
+**Próximo candidato F19p:** `/crm/opportunities` (~312 kB), `/financial/abc-fornecedores` (~307 kB).
+
+### F19p — oportunidades CRM e ABC fornecedores lazy views ✅ (2026-06-25)
+
+| Ficheiro | Mudança |
+|----------|---------|
+| `crm/opportunities/page.tsx` + `crm-opportunities-view.tsx` | Shell + pipeline de oportunidades |
+| `financial/abc-fornecedores/page.tsx` + `abc-fornecedores-view.tsx` | Shell + curva ABC fornecedores |
+
+**Verificação:** `npm run typecheck` · `npm run build`
+
+| Rota | Baseline (F17) | Após F19p |
+|------|----------------|-----------|
+| `/crm/opportunities` | ~312 kB | **147 kB** |
+| `/financial/abc-fornecedores` | ~307 kB | **147 kB** |
+
+**Próximo candidato F19q:** `/financial/abc-servicos` (~306 kB), `/crm/reports` (~322 kB).
+
+### F19q — ABC serviços e relatórios CRM lazy views ✅ (2026-06-25)
+
+| Ficheiro | Mudança |
+|----------|---------|
+| `financial/abc-servicos/page.tsx` + `abc-servicos-view.tsx` | Shell + curva ABC serviços |
+| `crm/reports/page.tsx` + `crm-reports-view.tsx` | Shell + relatórios CRM |
+
+**Verificação:** `npm run typecheck` · `npm run build`
+
+| Rota | Baseline (F17) | Após F19q |
+|------|----------------|-----------|
+| `/financial/abc-servicos` | ~306 kB | **147 kB** |
+| `/crm/reports` | ~322 kB | **147 kB** |
+
+**Próximo candidato F19r:** rotas ~300 kB restantes (`/audit-log`, `/carteira`, `/consultas`, georeferenciamento hub).
+
+### F19r — audit-log, carteira e consultas lazy views ✅ (2026-06-25)
+
+| Ficheiro | Mudança |
+|----------|---------|
+| `audit-log/page.tsx` + `audit-log-view.tsx` | Shell + log de auditoria |
+| `carteira/page.tsx` + `carteira-view.tsx` | Shell + carteira consultor/cliente |
+| `consultas/page.tsx` + `consultas-view.tsx` | Shell + hub de consultas |
+
+**Verificação:** `npm run typecheck` · `npm run build`
+
+| Rota | Baseline (F17) | Após F19r |
+|------|----------------|-----------|
+| `/audit-log` | ~323 kB | TBD |
+| `/carteira` | ~306 kB | TBD |
+| `/consultas` | ~306 kB | TBD |
+
+**Próximo candidato F19s:** rotas georeferenciamento (~329–330 kB), `gestao-processos/tarefas` (~397 kB).

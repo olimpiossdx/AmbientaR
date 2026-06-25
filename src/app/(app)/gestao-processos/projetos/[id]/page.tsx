@@ -36,7 +36,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import type { Empreendedor, Project, AppUser } from "@/lib/types";
+import type { Empreendedor, Project, AppUser, Request } from "@/lib/types";
 import {
   GESTAO_PROCESSOS_PROJETOS_PATH,
 } from "@/lib/gestao-processos-menu";
@@ -82,6 +82,8 @@ import {
   type ProcessFormValues,
 } from "@/components/gestao-processos/process-form-dialog";
 import { LinkProcessesDialog } from "@/components/gestao-processos/link-processes-dialog";
+import { LinkRequestsDialog } from "@/components/gestao-processos/link-requests-dialog";
+import { ConsultoriaProjectRequests } from "@/components/gestao-processos/consultoria-project-requests";
 import { ConsultoriaProjectTasks } from "@/components/gestao-processos/consultoria-project-tasks";
 import {
   OfficeTaskFormDialog,
@@ -92,6 +94,11 @@ import { formatProjectCoordinatesDisplay } from "@/lib/coordinates/format-projec
 import { NOTIFICATION_LINKS, NOTIFICATION_SOURCE } from "@/lib/notification-events";
 import { notifyPortalUsers } from "@/lib/notifications";
 import { cn } from "@/lib/utils";
+import {
+  filterRequestsForConsultoriaProject,
+  linkRequestsToConsultoriaProject,
+  unlinkRequestFromConsultoriaProject,
+} from "@/lib/gestao-processos/request-consultoria-link";
 
 function omitUndefined(values: Record<string, unknown>): Record<string, unknown> {
   return Object.fromEntries(
@@ -124,11 +131,14 @@ export default function ConsultoriaProjectDetailPage() {
   const [formOpen, setFormOpen] = React.useState(false);
   const [deleteOpen, setDeleteOpen] = React.useState(false);
   const [linkOpen, setLinkOpen] = React.useState(false);
+  const [linkRequestsOpen, setLinkRequestsOpen] = React.useState(false);
   const [activePlannedType, setActivePlannedType] =
     React.useState<ConsultoriaProjectPlannedProcessType | null>(null);
   const [processFormOpen, setProcessFormOpen] = React.useState(false);
   const [linking, setLinking] = React.useState(false);
+  const [linkingRequests, setLinkingRequests] = React.useState(false);
   const [unlinkingId, setUnlinkingId] = React.useState<string | null>(null);
+  const [unlinkingRequestId, setUnlinkingRequestId] = React.useState<string | null>(null);
   const [saving, setSaving] = React.useState(false);
   const [savingProcess, setSavingProcess] = React.useState(false);
   const [deleting, setDeleting] = React.useState(false);
@@ -160,6 +170,10 @@ export default function ConsultoriaProjectDetailPage() {
     () => (firestore ? collection(firestore, "projects") : null),
     [firestore],
   );
+  const requestsQuery = useMemoFirebase(
+    () => (firestore ? collection(firestore, "requests") : null),
+    [firestore],
+  );
   const usersQuery = useMemoFirebase(
     () => (firestore && canViewTasks ? collection(firestore, "users") : null),
     [firestore, canViewTasks],
@@ -170,6 +184,7 @@ export default function ConsultoriaProjectDetailPage() {
   const { data: officeProcesses } = useCollection<OfficeProcess>(processesQuery);
   const { data: empreendedores } = useCollection<Empreendedor>(empreendedoresQuery);
   const { data: cadastroProjects } = useCollection<Project>(cadastroProjectsQuery);
+  const { data: allRequests } = useCollection<Request>(requestsQuery);
   const { data: users } = useCollection<AppUser>(usersQuery);
 
   const technicalUsers = React.useMemo(
@@ -207,6 +222,21 @@ export default function ConsultoriaProjectDetailPage() {
     () =>
       (officeProcesses ?? []).filter((p) => p.consultoriaProjectId === projectId),
     [officeProcesses, projectId],
+  );
+
+  const linkedRequests = React.useMemo(
+    () => filterRequestsForConsultoriaProject(allRequests ?? [], projectId),
+    [allRequests, projectId],
+  );
+
+  const empreendedorNameById = React.useMemo(
+    () => new Map((empreendedores ?? []).map((e) => [e.id, e.name])),
+    [empreendedores],
+  );
+
+  const cadastroProjectNameById = React.useMemo(
+    () => new Map((cadastroProjects ?? []).map((p) => [p.id, p.propertyName])),
+    [cadastroProjects],
   );
 
   const projectStats = React.useMemo(
@@ -318,6 +348,48 @@ export default function ConsultoriaProjectDetailPage() {
       });
     } finally {
       setUnlinkingId(null);
+    }
+  };
+
+  const handleLinkRequests = async (requestIds: string[]) => {
+    if (!firestore || !project) return;
+    setLinkingRequests(true);
+    try {
+      const count = await linkRequestsToConsultoriaProject(
+        firestore,
+        requestIds,
+        project.id,
+      );
+      toast({
+        title: "Trâmites vinculados",
+        description: `${count} trâmite(s) associado(s) ao projeto.`,
+      });
+      setLinkRequestsOpen(false);
+    } catch (e) {
+      toast({
+        variant: "destructive",
+        title: "Erro ao vincular trâmites",
+        description: (e as Error).message,
+      });
+    } finally {
+      setLinkingRequests(false);
+    }
+  };
+
+  const handleUnlinkRequest = async (requestId: string) => {
+    if (!firestore) return;
+    setUnlinkingRequestId(requestId);
+    try {
+      await unlinkRequestFromConsultoriaProject(firestore, requestId);
+      toast({ title: "Trâmite desvinculado" });
+    } catch (e) {
+      toast({
+        variant: "destructive",
+        title: "Erro ao desvincular trâmite",
+        description: (e as Error).message,
+      });
+    } finally {
+      setUnlinkingRequestId(null);
     }
   };
 
@@ -710,6 +782,31 @@ export default function ConsultoriaProjectDetailPage() {
           </CardContent>
         </Card>
 
+        <Card>
+          <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-2 space-y-0">
+            <CardTitle className="text-base">Trâmites de licenciamento</CardTitle>
+            {canWrite ? (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setLinkRequestsOpen(true)}
+              >
+                <Link2 className="mr-2 h-4 w-4" />
+                Vincular trâmites
+              </Button>
+            ) : null}
+          </CardHeader>
+          <CardContent>
+            <ConsultoriaProjectRequests
+              requests={linkedRequests}
+              cadastroProjectNameById={cadastroProjectNameById}
+              canWrite={canWrite}
+              unlinkingId={unlinkingRequestId}
+              onUnlink={canWrite ? handleUnlinkRequest : undefined}
+            />
+          </CardContent>
+        </Card>
+
         {canViewTasks ? (
           <ConsultoriaProjectTasks
             consultoriaProjectId={project.id}
@@ -732,6 +829,18 @@ export default function ConsultoriaProjectDetailPage() {
         cadastroById={cadastroById}
         consultoriaProjects={allConsultoriaProjects ?? []}
         onConfirm={handleLinkProcesses}
+      />
+
+      <LinkRequestsDialog
+        open={linkRequestsOpen}
+        onOpenChange={setLinkRequestsOpen}
+        project={project}
+        requests={allRequests ?? []}
+        processes={officeProcesses ?? []}
+        empreendedorNameById={empreendedorNameById}
+        cadastroProjectNameById={cadastroProjectNameById}
+        linking={linkingRequests}
+        onConfirm={handleLinkRequests}
       />
 
       <ProcessFormDialog

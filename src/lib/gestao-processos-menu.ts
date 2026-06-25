@@ -1,5 +1,12 @@
 import type { NavSubItem, UserRole } from "@/lib/types";
-import { BarChart3, FolderKanban, GitBranch, ListTodo } from "lucide-react";
+import {
+  BarChart3,
+  FolderKanban,
+  GitBranch,
+  LayoutDashboard,
+  LineChart,
+  ListTodo,
+} from "lucide-react";
 
 export const GESTAO_PROCESSOS_MENU_LABEL = "Gestão de Projetos e Processos";
 export const GESTAO_PROCESSOS_PATH = "/gestao-processos";
@@ -14,6 +21,12 @@ export const GESTAO_PROCESSOS_TAREFAS_LABEL = "Tarefas";
 export const GESTAO_PROCESSOS_TAREFAS_PATH = `${GESTAO_PROCESSOS_PATH}/tarefas`;
 export const GESTAO_PROCESSOS_INDICADORES_LABEL = "Indicadores de Prazos";
 export const GESTAO_PROCESSOS_INDICADORES_PATH = `${GESTAO_PROCESSOS_PATH}/indicadores`;
+export const GESTAO_PROCESSOS_INDICADORES_RESUMO_LABEL = "Resumo";
+export const GESTAO_PROCESSOS_INDICADORES_ANALISE_LABEL = "Gráfico de Análise";
+export const GESTAO_PROCESSOS_INDICADORES_ANALISE_PATH = `${GESTAO_PROCESSOS_INDICADORES_PATH}/analise`;
+
+/** Indicadores de prazos — administrador e gestor ambiental. */
+export const GESTAO_PROCESSOS_INDICADORES_ROLES: UserRole[] = ["admin", "gestor"];
 
 /** @deprecated Use GESTAO_PROCESSOS_FLUXO_LABEL */
 export const GESTAO_PROCESSOS_VISAO_LABEL = GESTAO_PROCESSOS_FLUXO_LABEL;
@@ -77,10 +90,23 @@ export function buildGestaoProcessosNavSubItems(): NavSubItem[] {
       roles: GESTAO_PROCESSOS_INTERNAL_READ_ROLES,
     },
     {
-      href: GESTAO_PROCESSOS_INDICADORES_PATH,
       label: GESTAO_PROCESSOS_INDICADORES_LABEL,
       icon: BarChart3,
-      roles: ["admin"],
+      roles: GESTAO_PROCESSOS_INDICADORES_ROLES,
+      subItems: [
+        {
+          href: GESTAO_PROCESSOS_INDICADORES_PATH,
+          label: GESTAO_PROCESSOS_INDICADORES_RESUMO_LABEL,
+          icon: LayoutDashboard,
+          roles: GESTAO_PROCESSOS_INDICADORES_ROLES,
+        },
+        {
+          href: GESTAO_PROCESSOS_INDICADORES_ANALISE_PATH,
+          label: GESTAO_PROCESSOS_INDICADORES_ANALISE_LABEL,
+          icon: LineChart,
+          roles: GESTAO_PROCESSOS_INDICADORES_ROLES,
+        },
+      ],
     },
   ];
 }
