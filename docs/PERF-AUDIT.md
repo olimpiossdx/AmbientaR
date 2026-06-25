@@ -559,3 +559,19 @@ Fora do plano F00–F18; **uma rota por PR**, mesmo protocolo de debug.
 | Shared | 92,2 kB | **92,4 kB** |
 
 **Próximo candidato F19f:** `/coleta-campo` listagem (~341 kB) e outras rotas >300 kB no output de `npm run build`.
+
+### F19f — `/coleta-campo` listagem lazy `ColetaCampoListView` ✅ (2026-06-25)
+
+| Ficheiro | Mudança |
+|----------|---------|
+| `coleta-campo/page.tsx` | Shell fino com `dynamic()` |
+| `coleta-campo/coleta-campo-list-view.tsx` | Listagem de campanhas |
+
+**Verificação:** `npm run typecheck` · `npm run build`
+
+| Rota | Baseline (F17) | Após F19f |
+|------|----------------|-----------|
+| `/coleta-campo` | ~341 kB | **146 kB** (−195 kB) |
+| Shared | 92,4 kB | **92,4 kB** |
+
+**Próximo candidato F19g:** rotas >400 kB (ex. `/analise-ambiental` ~446 kB, propostas comerciais ~428 kB).
