@@ -3,7 +3,6 @@
 import dynamic from 'next/dynamic';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PageHeader } from '@/components/page-header';
-import { GESTAO_PROCESSOS_PROJETOS_LABEL } from '@/lib/gestao-processos-menu';
 
 const GestaoProcessosProjetosView = dynamic(
   () =>
@@ -15,7 +14,7 @@ const GestaoProcessosProjetosView = dynamic(
     loading: () => (
       <div className="flex flex-col h-full">
         <PageHeader
-          title={GESTAO_PROCESSOS_PROJETOS_LABEL}
+          title="Projetos"
           description="Casos da consultoria e conjuntos de processos ambientais."
         />
         <main className="flex-1 p-4 md:p-6 space-y-4">

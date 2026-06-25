@@ -1,58 +1,25 @@
 'use client';
 
-import { Suspense } from 'react';
-import { useParams } from 'next/navigation';
-import { OutorgaForm } from '../../outorga-form';
-import { useDoc, useFirebase, useMemoFirebase } from '@/firebase';
-import { doc } from 'firebase/firestore';
-import type { WaterPermit } from '@/lib/types';
-import {
-  StudyFormShell,
-  useStudyFormShellSuccess,
-} from '@/components/studies/study-form-shell';
+import dynamic from 'next/dynamic';
+import { Skeleton } from '@/components/ui/skeleton';
+import { PageHeader } from '@/components/page-header';
 
-const LIST_PATH = '/studies/outorgas';
-const PAGE_WIDTH = 'max-w-2xl mx-auto';
-
-const TITLE = 'Editar Pedido de Outorga';
-const DESCRIPTION = 'Atualize os detalhes do pedido abaixo.';
-const NOT_FOUND =
-  'O registro que você está tentando editar não foi encontrado.';
-
-function EditOutorgaPageContent() {
-  const params = useParams();
-  const itemId = (params?.id as string | undefined) ?? '';
-  const onSuccess = useStudyFormShellSuccess('page', LIST_PATH);
-
-  const { firestore } = useFirebase();
-
-  const itemDocRef = useMemoFirebase(() => {
-    if (!firestore || !itemId) return null;
-    return doc(firestore, 'outorgas', itemId);
-  }, [firestore, itemId]);
-
-  const { data: item, isLoading } = useDoc<WaterPermit>(itemDocRef);
-
-  return (
-    <StudyFormShell
-      variant="page"
-      title={TITLE}
-      description={DESCRIPTION}
-      notFoundTitle="Outorga não encontrada"
-      pageHeaderTitle={`Editando Outorga: ${item?.permitNumber || '...'}`}
-      pageWidthClassName={PAGE_WIDTH}
-      isLoading={isLoading}
-      notFoundMessage={!item && !isLoading ? NOT_FOUND : undefined}
-    >
-      {item ? <OutorgaForm currentItem={item} onSuccess={onSuccess} /> : null}
-    </StudyFormShell>
-  );
-}
+const EditOutorgaView = dynamic(
+  () => import('./edit-outorga-view').then((m) => ({ default: m.EditOutorgaView })),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex flex-col h-full">
+        <PageHeader title="Editando Outorga" />
+        <main className="flex-1 p-4 md:p-6 space-y-4">
+          <Skeleton className="h-16 w-full" />
+          <Skeleton className="h-96 w-full" />
+        </main>
+      </div>
+    ),
+  },
+);
 
 export default function EditOutorgaPage() {
-  return (
-    <Suspense fallback={<div>Carregando...</div>}>
-      <EditOutorgaPageContent />
-    </Suspense>
-  );
+  return <EditOutorgaView />;
 }

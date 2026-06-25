@@ -1,7 +1,7 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { InvoiceFormModalSuspenseFallback } from '../invoice-form-shell';
+import { InterceptModalLoading } from '@/components/intercept-modal-loading';
 
 const NewInvoiceModalView = dynamic(
   () =>
@@ -10,7 +10,7 @@ const NewInvoiceModalView = dynamic(
     })),
   {
     ssr: false,
-    loading: () => <InvoiceFormModalSuspenseFallback />,
+    loading: () => <InterceptModalLoading />,
   },
 );
 

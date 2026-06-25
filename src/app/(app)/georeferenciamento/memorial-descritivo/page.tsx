@@ -4,18 +4,16 @@ import dynamic from 'next/dynamic';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PageHeader } from '@/components/page-header';
 
-const MemorialDescritivoWorkbench = dynamic(
-  () =>
-    import('@/components/memorial-descritivo/memorial-descritivo-workbench').then((m) => ({
-      default: m.MemorialDescritivoWorkbench,
-    })),
+const GeorefMemorialView = dynamic(
+  () => import('./georef-memorial-view').then((m) => ({ default: m.GeorefMemorialView })),
   {
     ssr: false,
     loading: () => (
       <div className="flex flex-col h-full">
         <PageHeader title="Memorial descritivo" />
-        <main className="flex-1 p-4 md:p-6">
-          <Skeleton className="h-96 w-full" />
+        <main className="flex-1 p-4 md:p-6 space-y-4">
+          <Skeleton className="h-24 w-full" />
+          <Skeleton className="h-[420px] w-full rounded-lg" />
         </main>
       </div>
     ),
@@ -23,5 +21,5 @@ const MemorialDescritivoWorkbench = dynamic(
 );
 
 export default function GeorefMemorialDescritivoPage() {
-  return <MemorialDescritivoWorkbench context="georef" />;
+  return <GeorefMemorialView />;
 }

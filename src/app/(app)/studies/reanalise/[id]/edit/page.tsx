@@ -1,31 +1,25 @@
 'use client';
 
-import { Suspense } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import { StudyDynamicEditPage } from '@/components/studies/study-dynamic-edit-page';
+import dynamic from 'next/dynamic';
+import { Skeleton } from '@/components/ui/skeleton';
+import { PageHeader } from '@/components/page-header';
 
-function EditReanalisePageContent() {
-  const router = useRouter();
-  const params = useParams();
-  const id = (params?.id as string | undefined) ?? '';
-
-  return (
-    <StudyDynamicEditPage
-      studySlug="reanalise"
-      collectionName="reanalises"
-      documentId={id}
-      pageTitlePrefix="Editando reanálise"
-      listHref="/studies/reanalise"
-      listagemVariant="project"
-      onSuccess={() => router.push('/studies/reanalise')}
-    />
-  );
-}
+const EditReanaliseView = dynamic(
+  () => import('./edit-reanalise-view').then((m) => ({ default: m.EditReanaliseView })),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex flex-col h-full">
+        <PageHeader title="Editando reanálise" />
+        <main className="flex-1 p-4 md:p-6 space-y-4">
+          <Skeleton className="h-16 w-full" />
+          <Skeleton className="h-96 w-full" />
+        </main>
+      </div>
+    ),
+  },
+);
 
 export default function EditReanalisePage() {
-  return (
-    <Suspense fallback={<div>Carregando...</div>}>
-      <EditReanalisePageContent />
-    </Suspense>
-  );
+  return <EditReanaliseView />;
 }

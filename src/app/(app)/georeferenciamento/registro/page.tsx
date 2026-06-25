@@ -1,15 +1,11 @@
-"use client";
+'use client';
 
-import dynamic from "next/dynamic";
-import { Skeleton } from "@/components/ui/skeleton";
-import { PageHeader } from "@/components/page-header";
-import { PROCESSO_REGISTRO } from "@/lib/georeferenciamento/processos";
+import dynamic from 'next/dynamic';
+import { Skeleton } from '@/components/ui/skeleton';
+import { PageHeader } from '@/components/page-header';
 
-const GeorefSectionPage = dynamic(
-  () =>
-    import("@/components/georeferenciamento/georef-section-page").then((m) => ({
-      default: m.GeorefSectionPage,
-    })),
+const GeorefRegistroView = dynamic(
+  () => import('./georef-registro-view').then((m) => ({ default: m.GeorefRegistroView })),
   {
     ssr: false,
     loading: () => (
@@ -24,17 +20,5 @@ const GeorefSectionPage = dynamic(
 );
 
 export default function GeorefRegistroPage() {
-  return (
-    <GeorefSectionPage
-      title="Cartório e registro de imóveis"
-      description="Montagem do pacote para protocolo no RI: certificação SIGEF, planta, memorial, ART, anuências, CCIR, ITR e CAR conforme exigido pelo oficial registrador."
-      processo={PROCESSO_REGISTRO}
-      links={[
-        {
-          label: "CCIR (INCRA)",
-          href: "https://www.gov.br/incra/pt-br/assuntos/cadastro-credito-rural/ccir",
-        },
-      ]}
-    />
-  );
+  return <GeorefRegistroView />;
 }

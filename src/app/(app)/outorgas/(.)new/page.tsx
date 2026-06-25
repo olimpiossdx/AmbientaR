@@ -1,7 +1,7 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { OutorgaFormModalSuspenseFallback } from '../outorga-form-shell';
+import { InterceptModalLoading } from '@/components/intercept-modal-loading';
 
 const NewOutorgaModalView = dynamic(
   () =>
@@ -10,7 +10,7 @@ const NewOutorgaModalView = dynamic(
     })),
   {
     ssr: false,
-    loading: () => <OutorgaFormModalSuspenseFallback />,
+    loading: () => <InterceptModalLoading />,
   },
 );
 

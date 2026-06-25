@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import * as React from "react";
 import Link from "next/link";
@@ -143,7 +143,7 @@ export function GeorefProcessoDetailView() {
   if (!project) {
     return (
       <div className="p-6 text-center text-muted-foreground">
-        Processo não encontrado.{" "}
+        Processo n├úo encontrado.{" "}
         <Link href="/georeferenciamento/processos" className="text-primary underline">
           Voltar
         </Link>
@@ -157,7 +157,7 @@ export function GeorefProcessoDetailView() {
         <Button variant="ghost" size="sm" asChild>
           <Link href="/georeferenciamento/processos">
             <ArrowLeft className="mr-1 h-4 w-4" />
-            Trâmites fundiários
+            Tr├ómites fundi├írios
           </Link>
         </Button>
       </PageHeader>
@@ -186,8 +186,8 @@ export function GeorefProcessoDetailView() {
             />
             {project.localizacaoImovel ? (
               <p className="text-xs text-muted-foreground">
-                Localização SICAR confirmada · {project.localizacaoImovel.areaHa.toFixed(2)} ha ·{" "}
-                {project.localizacaoImovel.municipio}/{project.localizacaoImovel.uf} · método{" "}
+                Localiza├º├úo SICAR confirmada ┬À {project.localizacaoImovel.areaHa.toFixed(2)} ha ┬À{" "}
+                {project.localizacaoImovel.municipio}/{project.localizacaoImovel.uf} ┬À m├®todo{" "}
                 {project.localizacaoImovel.metodoEntrada}
               </p>
             ) : null}
@@ -214,7 +214,7 @@ export function GeorefProcessoDetailView() {
               </div>
               <div className="grid gap-2 sm:grid-cols-2">
                 <div className="grid gap-2">
-                  <Label>Área (ha)</Label>
+                  <Label>├ürea (ha)</Label>
                   <Input
                     type="number"
                     step="0.01"
@@ -228,12 +228,12 @@ export function GeorefProcessoDetailView() {
                   />
                 </div>
                 <div className="grid gap-2">
-                  <Label>Município / UF</Label>
+                  <Label>Munic├¡pio / UF</Label>
                   <div className="flex gap-2">
                     <Input
                       value={project.municipio ?? ""}
                       onChange={(e) => setProject({ ...project, municipio: e.target.value })}
-                      placeholder="Município"
+                      placeholder="Munic├¡pio"
                     />
                     <Input
                       className="w-20"
@@ -245,7 +245,7 @@ export function GeorefProcessoDetailView() {
                 </div>
               </div>
               <div className="grid gap-2">
-                <Label>Matrícula</Label>
+                <Label>Matr├¡cula</Label>
                 <Input
                   value={project.matricula ?? ""}
                   onChange={(e) => setProject({ ...project, matricula: e.target.value })}
@@ -269,7 +269,7 @@ export function GeorefProcessoDetailView() {
               </div>
               <div className="grid gap-2 sm:grid-cols-2">
                 <div className="grid gap-2">
-                  <Label>Responsável técnico</Label>
+                  <Label>Respons├ível t├®cnico</Label>
                   <Input
                     value={project.responsavelTecnico ?? ""}
                     onChange={(e) =>
@@ -295,7 +295,7 @@ export function GeorefProcessoDetailView() {
                 />
               </div>
               <div className="grid gap-2">
-                <Label>Observações</Label>
+                <Label>Observa├º├Áes</Label>
                 <Textarea
                   value={project.notes ?? ""}
                   onChange={(e) => setProject({ ...project, notes: e.target.value })}

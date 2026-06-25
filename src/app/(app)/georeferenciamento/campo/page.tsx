@@ -1,22 +1,11 @@
-"use client";
+'use client';
 
-import * as React from "react";
-import dynamic from "next/dynamic";
-import { Skeleton } from "@/components/ui/skeleton";
-import { PageHeader } from "@/components/page-header";
-import { PROCESSO_CAMPO } from "@/lib/georeferenciamento/processos";
-import {
-  localizacaoToGeorefPatch,
-  GEOREF_CAMPO_DRAFT_KEY,
-} from "@/lib/geospatial/localizacao-request-snapshot";
-import type { LocalizacaoResolvida } from "@/lib/types/localizacao-imovel";
-import { useToast } from "@/hooks/use-toast";
+import dynamic from 'next/dynamic';
+import { Skeleton } from '@/components/ui/skeleton';
+import { PageHeader } from '@/components/page-header';
 
-const GeorefSectionPage = dynamic(
-  () =>
-    import("@/components/georeferenciamento/georef-section-page").then((m) => ({
-      default: m.GeorefSectionPage,
-    })),
+const GeorefCampoView = dynamic(
+  () => import('./georef-campo-view').then((m) => ({ default: m.GeorefCampoView })),
   {
     ssr: false,
     loading: () => (
@@ -31,34 +20,5 @@ const GeorefSectionPage = dynamic(
 );
 
 export default function GeorefCampoPage() {
-  const { toast } = useToast();
-
-  const handleLocalizacaoConfirmed = React.useCallback(
-    (resolved: LocalizacaoResolvida) => {
-      const patch = localizacaoToGeorefPatch(resolved);
-      try {
-        localStorage.setItem(GEOREF_CAMPO_DRAFT_KEY, JSON.stringify(patch));
-      } catch {
-        /* ignore */
-      }
-      toast({
-        title: "Ponto de campo registrado",
-        description: `${patch.areaHa?.toFixed(2) ?? "—"} ha · CAR ${patch.car ?? "—"}. Rascunho salvo neste navegador.`,
-      });
-    },
-    [toast],
-  );
-
-  return (
-    <GeorefSectionPage
-      title="Campo e levantamento GNSS"
-      description="Planejamento, coleta de vértices, fotos de campo e processamento com QA de precisão (sigmas), conforme MTGIR e método declarado na planilha SIGEF."
-      processo={PROCESSO_CAMPO}
-      showMapLink
-      localizador={{
-        defaultInputMode: "gps",
-        onConfirmed: handleLocalizacaoConfirmed,
-      }}
-    />
-  );
+  return <GeorefCampoView />;
 }

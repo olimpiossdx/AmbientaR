@@ -1,7 +1,7 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { LicenseFormModalSuspenseFallback } from '../license-form-shell';
+import { InterceptModalLoading } from '@/components/intercept-modal-loading';
 
 const NewLicenseModalView = dynamic(
   () =>
@@ -10,7 +10,7 @@ const NewLicenseModalView = dynamic(
     })),
   {
     ssr: false,
-    loading: () => <LicenseFormModalSuspenseFallback />,
+    loading: () => <InterceptModalLoading />,
   },
 );
 

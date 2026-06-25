@@ -1,11 +1,11 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { StudyFormModalSuspenseFallback } from '@/components/studies/study-form-shell';
+import { InterceptModalLoading } from '@/components/intercept-modal-loading';
 
 const EditPradaModalView = dynamic(
   () => import('./edit-prada-modal-view').then((m) => ({ default: m.EditPradaModalView })),
-  { ssr: false, loading: () => <StudyFormModalSuspenseFallback /> },
+  { ssr: false, loading: () => <InterceptModalLoading /> },
 );
 
 export default function EditPradaModal() {

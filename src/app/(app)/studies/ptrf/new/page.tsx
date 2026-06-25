@@ -1,34 +1,25 @@
 'use client';
 
-import { Suspense } from 'react';
-import { PtrfForm } from '../ptrf-form';
-import {
-  StudyFormShell,
-  useStudyFormShellSuccess,
-} from '@/components/studies/study-form-shell';
+import dynamic from 'next/dynamic';
+import { Skeleton } from '@/components/ui/skeleton';
+import { PageHeader } from '@/components/page-header';
 
-const LIST_PATH = '/studies/ptrf';
-
-function NewPtrfPageContent() {
-  const onSuccess = useStudyFormShellSuccess('page', LIST_PATH);
-
-  return (
-    <StudyFormShell
-      variant="page"
-      title="Adicionar Novo PTRF"
-      description="Preencha os detalhes para criar um novo PTRF."
-      notFoundTitle="PTRF não encontrado"
-      pageHeaderTitle="Novo Projeto Técnico de Recomposição de Flora (PTRF)"
-    >
-      <PtrfForm currentItem={null} onSuccess={onSuccess} />
-    </StudyFormShell>
-  );
-}
+const NewPtrfView = dynamic(
+  () => import('./new-ptrf-view').then((m) => ({ default: m.NewPtrfView })),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex flex-col h-full">
+        <PageHeader title="Novo Projeto Técnico de Recomposição de Flora" />
+        <main className="flex-1 p-4 md:p-6 space-y-4">
+          <Skeleton className="h-16 w-full" />
+          <Skeleton className="h-96 w-full" />
+        </main>
+      </div>
+    ),
+  },
+);
 
 export default function NewPtrfPage() {
-  return (
-    <Suspense fallback={<div>Carregando...</div>}>
-      <NewPtrfPageContent />
-    </Suspense>
-  );
+  return <NewPtrfView />;
 }

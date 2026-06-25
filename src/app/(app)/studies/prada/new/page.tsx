@@ -1,34 +1,25 @@
 'use client';
 
-import { Suspense } from 'react';
-import { PradaForm } from '../prada-form';
-import {
-  StudyFormShell,
-  useStudyFormShellSuccess,
-} from '@/components/studies/study-form-shell';
+import dynamic from 'next/dynamic';
+import { Skeleton } from '@/components/ui/skeleton';
+import { PageHeader } from '@/components/page-header';
 
-const LIST_PATH = '/studies/prada';
-
-function NewPradaPageContent() {
-  const onSuccess = useStudyFormShellSuccess('page', LIST_PATH);
-
-  return (
-    <StudyFormShell
-      variant="page"
-      title="Adicionar Novo PRADA"
-      description="Preencha os detalhes para criar um novo PRADA."
-      notFoundTitle="PRADA não encontrado"
-      pageHeaderTitle="Novo Plano de Recuperação de Áreas Degradadas (PRADA)"
-    >
-      <PradaForm currentItem={null} onSuccess={onSuccess} />
-    </StudyFormShell>
-  );
-}
+const NewPradaView = dynamic(
+  () => import('./new-prada-view').then((m) => ({ default: m.NewPradaView })),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex flex-col h-full">
+        <PageHeader title="Novo Plano de Recuperação de Áreas Degradadas" />
+        <main className="flex-1 p-4 md:p-6 space-y-4">
+          <Skeleton className="h-16 w-full" />
+          <Skeleton className="h-96 w-full" />
+        </main>
+      </div>
+    ),
+  },
+);
 
 export default function NewPradaPage() {
-  return (
-    <Suspense fallback={<div>Carregando...</div>}>
-      <NewPradaPageContent />
-    </Suspense>
-  );
+  return <NewPradaView />;
 }

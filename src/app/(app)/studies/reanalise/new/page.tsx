@@ -1,43 +1,25 @@
 'use client';
 
-import { Suspense, useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { StudyDynamicCreationPage } from '@/components/studies/study-dynamic-creation-page';
+import dynamic from 'next/dynamic';
+import { Skeleton } from '@/components/ui/skeleton';
+import { PageHeader } from '@/components/page-header';
 
-function NewReanalisePageContent() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const isDynamic = searchParams?.get('form') === 'dynamic';
-
-  useEffect(() => {
-    if (!isDynamic) {
-      router.replace('/studies/reanalise/new?form=dynamic');
-    }
-  }, [isDynamic, router]);
-
-  const handleSuccess = () => router.push('/studies/reanalise');
-
-  if (!isDynamic) {
-    return <div className="p-6 text-sm text-muted-foreground">Redirecionando…</div>;
-  }
-
-  return (
-    <StudyDynamicCreationPage
-      studySlug="reanalise"
-      studyLabel="Reanálise"
-      pageTitle="Nova reanálise (formulário do documento)"
-      cardTitle="Processo de reanálise"
-      listagemVariant="project"
-      staticFormHref="/studies/reanalise/new"
-      onSuccess={handleSuccess}
-    />
-  );
-}
+const NewReanaliseView = dynamic(
+  () => import('./new-reanalise-view').then((m) => ({ default: m.NewReanaliseView })),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex flex-col h-full">
+        <PageHeader title="Nova reanálise" />
+        <main className="flex-1 p-4 md:p-6 space-y-4">
+          <Skeleton className="h-16 w-full" />
+          <Skeleton className="h-96 w-full" />
+        </main>
+      </div>
+    ),
+  },
+);
 
 export default function NewReanalisePage() {
-  return (
-    <Suspense fallback={<div>Carregando...</div>}>
-      <NewReanalisePageContent />
-    </Suspense>
-  );
+  return <NewReanaliseView />;
 }

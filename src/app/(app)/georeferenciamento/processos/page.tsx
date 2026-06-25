@@ -4,11 +4,8 @@ import dynamic from 'next/dynamic';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PageHeader } from '@/components/page-header';
 
-const GeorefProjectsPanel = dynamic(
-  () =>
-    import('@/components/georeferenciamento/georef-projects-panel').then((m) => ({
-      default: m.GeorefProjectsPanel,
-    })),
+const GeorefProcessosView = dynamic(
+  () => import('./georef-processos-view').then((m) => ({ default: m.GeorefProcessosView })),
   {
     ssr: false,
     loading: () => (
@@ -24,5 +21,5 @@ const GeorefProjectsPanel = dynamic(
 );
 
 export default function GeorefProcessosPage() {
-  return <GeorefProjectsPanel />;
+  return <GeorefProcessosView />;
 }

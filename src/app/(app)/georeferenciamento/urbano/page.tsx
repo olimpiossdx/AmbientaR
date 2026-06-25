@@ -1,15 +1,11 @@
-"use client";
+'use client';
 
-import dynamic from "next/dynamic";
-import { Skeleton } from "@/components/ui/skeleton";
-import { PageHeader } from "@/components/page-header";
-import { PROCESSO_URBANO_CARTORIO } from "@/lib/georeferenciamento/processos";
+import dynamic from 'next/dynamic';
+import { Skeleton } from '@/components/ui/skeleton';
+import { PageHeader } from '@/components/page-header';
 
-const GeorefSectionPage = dynamic(
-  () =>
-    import("@/components/georeferenciamento/georef-section-page").then((m) => ({
-      default: m.GeorefSectionPage,
-    })),
+const GeorefUrbanoView = dynamic(
+  () => import('./georef-urbano-view').then((m) => ({ default: m.GeorefUrbanoView })),
   {
     ssr: false,
     loading: () => (
@@ -24,18 +20,5 @@ const GeorefSectionPage = dynamic(
 );
 
 export default function GeorefUrbanoPage() {
-  return (
-    <GeorefSectionPage
-      title="Lote urbano — memorial e registro"
-      description="Levantamento topográfico com GNSS, planta e memorial em SIRGAS2000/UTM, aprovação municipal quando exigida e protocolo no Registro de Imóveis."
-      processo={PROCESSO_URBANO_CARTORIO}
-      showMapLink
-      links={[
-        {
-          label: "Serviço — validar levantamento rural (referência técnica)",
-          href: "https://www.gov.br/pt-br/servicos/validar-levantamento-topografico-de-imovel-rural",
-        },
-      ]}
-    />
-  );
+  return <GeorefUrbanoView />;
 }

@@ -1,7 +1,7 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { StudyFormModalSuspenseFallback } from '@/components/studies/study-form-shell';
+import { InterceptModalLoading } from '@/components/intercept-modal-loading';
 
 const NewPcaModalView = dynamic(
   () =>
@@ -10,7 +10,7 @@ const NewPcaModalView = dynamic(
     })),
   {
     ssr: false,
-    loading: () => <StudyFormModalSuspenseFallback />,
+    loading: () => <InterceptModalLoading />,
   },
 );
 

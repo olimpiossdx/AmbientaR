@@ -1282,3 +1282,184 @@ Fora do plano F00–F18; **uma rota por PR**, mesmo protocolo de debug.
 | `/external` | ~299 kB | **151 kB** |
 
 **Próximo candidato F20l:** estudos restantes (`compensacao-ambiental/[tipo]` ~328 kB, `seguranca-barragens`, `piscinao-off-stream`, `procuracao`, `outorgas/processo`, `las-ras`, `relatorios-diversos`), fiscal-ambiental sub-rotas (~177–193 kB), `forgot-password`/`login` (~293 kB), hubs georeferenciamento se necessário.
+
+### F20l — estudos restantes, fiscal sub-rotas e auth lazy ✅ (2026-06-25)
+
+| Ficheiro | Mudança |
+|----------|---------|
+| `studies/compensacao-ambiental/[tipo]` | Shell + view |
+| `studies/seguranca-barragens/`, `new`, `[id]/edit` | Shell + views |
+| `studies/piscinao-off-stream/`, `new`, `[id]/edit` | Shell + views |
+| `studies/procuracao/`, `new`, `[id]/edit` | Shell + views |
+| `studies/outorgas/processo/[id]` | Shell + view |
+| `studies/las-ras/`, `new`, `[id]/edit` | Shell + views |
+| `studies/relatorios-diversos/carvao-vegetal`, `ptrf-prad`, `transporte-residuos` | Shell + views |
+| `ia/fiscal-ambiental-digital/*` (11 sub-rotas) | `dynamic()` dos client components |
+| `login`, `forgot-password` | Shell + views |
+
+**Verificação:** `npm run typecheck` · `npm run build` (`build-f20l.log`)
+
+| Rota | Baseline (F17) | Após F20l |
+|------|----------------|-----------|
+| `/studies/compensacao-ambiental/[tipo]` | ~329 kB | **152 kB** |
+| `/studies/seguranca-barragens` | ~370 kB | **152 kB** |
+| `/studies/seguranca-barragens/new` | ~368 kB | **152 kB** |
+| `/studies/seguranca-barragens/[id]/edit` | ~393 kB | **152 kB** |
+| `/studies/piscinao-off-stream` | ~363 kB | **152 kB** |
+| `/studies/piscinao-off-stream/new` | ~357 kB | **152 kB** |
+| `/studies/piscinao-off-stream/[id]/edit` | ~381 kB | **152 kB** |
+| `/studies/procuracao` | ~351 kB | **152 kB** |
+| `/studies/procuracao/new` | ~372 kB | **152 kB** |
+| `/studies/procuracao/[id]/edit` | ~372 kB | **152 kB** |
+| `/studies/outorgas/processo/[id]` | ~406 kB | **152 kB** |
+| `/studies/las-ras` | ~352 kB | **152 kB** |
+| `/studies/las-ras/new` | ~387 kB | **152 kB** |
+| `/studies/las-ras/[id]/edit` | ~386 kB | **152 kB** |
+| `/studies/relatorios-diversos/carvao-vegetal` | ~362 kB | **152 kB** |
+| `/studies/relatorios-diversos/ptrf-prad` | ~377 kB | **152 kB** |
+| `/studies/relatorios-diversos/transporte-residuos` | ~383 kB | **152 kB** |
+| `/ia/fiscal-ambiental-digital/biblioteca` … `relatorios` | ~178–193 kB | **152 kB** |
+| `/ia/fiscal-ambiental-digital/workspace/novo` | ~150 kB | **109 kB** |
+| `/login` | ~294 kB | **108 kB** |
+| `/forgot-password` | ~294 kB | **108 kB** |
+
+**Próximo candidato F20m:** estudos ainda pesados (`studies/pia`, `prada`, `ptrf`, `reanalise`, `mapas`, `mtr`, hub `outorgas`, `outorgas/[id]/edit`), hub `compensacao-ambiental` (~167 kB), georeferenciamento (~154–164 kB).
+
+### F20m — PIA/PRADA/PTRF, reanálise, mapas MCA, MTR, outorgas, georef lazy ✅ (2026-06-25)
+
+| Ficheiro | Mudança |
+|----------|---------|
+| `studies/pia/`, `new`, `[id]/edit` | Shell + views |
+| `studies/prada/`, `new`, `[id]/edit` | Shell + views |
+| `studies/ptrf/`, `new`, `[id]/edit` | Shell + views |
+| `studies/reanalise/`, `new`, `[id]/edit` | Shell + views |
+| `studies/mapas` | Shell + `dynamic(McaWorkbench)` |
+| `studies/mtr` | Shell + view |
+| `studies/outorgas/`, `[id]/edit` | Shell + views |
+| `studies/compensacao-ambiental` (hub) | Shell + view |
+| `georeferenciamento/` (hub + 12 sub-rotas) | Shell + views |
+| `georeferenciamento/processos/[id]` | View restaurada (conteúdo real; shell já existia) |
+
+**Verificação:** `npm run typecheck` · `npm run build` (`build-f20m.log`)
+
+| Rota | Baseline (F20l) | Após F20m |
+|------|-----------------|-----------|
+| `/studies/mapas` | ~405 kB | **152 kB** |
+| `/studies/pia` | ~358 kB | **152 kB** |
+| `/studies/pia/new` | ~384 kB | **152 kB** |
+| `/studies/pia/[id]/edit` | ~416 kB | **152 kB** |
+| `/studies/prada` | ~346 kB | **152 kB** |
+| `/studies/prada/new`, `[id]/edit` | ~375 kB | **152 kB** |
+| `/studies/ptrf` | ~341 kB | **152 kB** |
+| `/studies/ptrf/new`, `[id]/edit` | ~342 kB | **152 kB** |
+| `/studies/reanalise` | ~353 kB | **152 kB** |
+| `/studies/reanalise/new` | ~372 kB | **152 kB** |
+| `/studies/reanalise/[id]/edit` | ~369 kB | **152 kB** |
+| `/studies/mtr` | ~300 kB | **152 kB** |
+| `/studies/outorgas` | ~330 kB | **152 kB** |
+| `/studies/outorgas/[id]/edit` | ~360 kB | **152 kB** |
+| `/studies/compensacao-ambiental` (hub) | ~167 kB | **152 kB** |
+| `/georeferenciamento` | ~164 kB | **152 kB** |
+| `/georeferenciamento/*` (sub-rotas) | ~152–156 kB | **152 kB** |
+
+**Próximo candidato F20n:** rotas ainda acima de ~152 kB — `studies/barragens` (~163 kB), `bank-access` (~163 kB), `settings/files` (~162 kB), `settings/appearance` (~159 kB), `gestao-processos/planilha` e `projetos` (~154 kB); intercept modals `(.)*` permanecem ~153 kB (fora de escopo).
+
+### F20n — barragens hub, bank-access, settings, social-media, gestão processos ✅ (2026-06-25)
+
+| Ficheiro | Mudança |
+|----------|---------|
+| `studies/barragens` | Shell + `barragens-hub-view` |
+| `bank-access` | Shell + `bank-access-view` |
+| `settings/files` | Shell + `settings-files-view` |
+| `settings/appearance` | Shell + `appearance-view` |
+| `social-media` | Shell + `social-media-view` (153 kB residual) |
+| `gestao-processos/planilha`, `projetos` | Removido import estático de `gestao-processos-menu` no shell (puxava Lucide) |
+
+**Verificação:** `npm run typecheck` · `npm run build` (`build-f20n.log`)
+
+| Rota | Baseline (F20m) | Após F20n |
+|------|-----------------|-----------|
+| `/studies/barragens` | ~163 kB | **152 kB** |
+| `/bank-access` | ~163 kB | **152 kB** |
+| `/settings/files` | ~162 kB | **152 kB** |
+| `/settings/appearance` | ~159 kB | **152 kB** |
+| `/social-media` | ~153 kB | **152 kB** |
+| `/gestao-processos/planilha` | ~154 kB | **152 kB** |
+| `/gestao-processos/projetos` | ~154 kB | **152 kB** |
+
+**Próximo candidato F20o:** rotas residuais ~153 kB — `cash-flow/new`, `multas-defesas` (+ `[id]`, `nova`), `commercial-proposals/new`, `contracts/new`; intercept modals `(.)*` ~153–154 kB (fora de escopo).
+
+### F20o — formulários new e multas-defesas lazy ✅ (2026-06-25)
+
+| Ficheiro | Mudança |
+|----------|---------|
+| `cash-flow/new` | Shell + `new-cash-flow-view` |
+| `commercial-proposals/new` | Shell + `new-commercial-proposal-view` |
+| `contracts/new` | Shell + `new-contract-view` |
+| `multas-defesas/`, `[id]`, `nova` | Strings literais no skeleton (sem import de menu) |
+
+**Verificação:** `npm run typecheck` · `npm run build` (`build-f20o.log`)
+
+| Rota | Baseline (F20n) | Após F20o |
+|------|-----------------|-----------|
+| `/cash-flow/new` | ~153 kB | **152 kB** |
+| `/commercial-proposals/new` | ~153 kB | **152 kB** |
+| `/contracts/new` | ~153 kB | **152 kB** |
+| `/multas-defesas` | ~153 kB | **152 kB** |
+| `/multas-defesas/[id]` | ~153 kB | **152 kB** |
+| `/multas-defesas/nova` | ~153 kB | **152 kB** |
+
+**Estado F20 (lazy full-page):** todas as rotas full-page auditadas estão em **152 kB** First Load JS (shared ~98.6 kB + shell ~4.6 kB). Resíduo ~153–154 kB apenas em **intercept modals** `(.)*` — fora de escopo do padrão conservador (já ~153 kB antes de F20).
+
+### F20p — intercept modals `(.)*`: fallback leve nos shells ✅ (2026-06-25)
+
+| Ficheiro | Mudança |
+|----------|---------|
+| `src/components/intercept-modal-loading.tsx` | Fallback mínimo (Skeleton) — sem Dialog/form-shell |
+| 22 shells `(.)new` / `(.)[id]/edit` | Substituído `*FormModalSuspenseFallback` por `InterceptModalLoading` no `dynamic()` loading |
+
+**Verificação:** `npm run typecheck` · `npm run build` (`build-f20p.log`)
+
+| Rota | Baseline (F20o) | Após F20p |
+|------|-----------------|-----------|
+| `/invoices/(.)new`, `(.)[id]/edit` | ~153 kB | **109 kB** |
+| `/licenses/(.)new`, `(.)[id]/edit` | ~153 kB | **109 kB** |
+| `/outorgas/(.)new`, `(.)[id]/edit` | ~154 kB | **109 kB** |
+| `/responsible-company/(.)*`, `/technical-responsible/(.)*` | ~153–154 kB | **109 kB** |
+| `/studies/{pia,prada,ptrf,pca,rca,eia-rima}/(.)*` | ~153–154 kB | **109 kB** |
+
+**Nota:** First Load JS dos intercepts desce para ~109 kB (shared auth layout + shell ~2.3 kB); o formulário modal carrega no chunk lazy ao abrir. Fallback rico (`Dialog`) permanece nos `*-modal-view` (Suspense interno).
+
+**Próximo candidato F20q:** `/canais` (~153 kB) — única rota full-page residual acima de 152 kB pós-F20p.
+
+### F20q — canais lazy ✅ (2026-06-25)
+
+| Ficheiro | Mudança |
+|----------|---------|
+| `canais/` | Shell + `canais-view` |
+
+**Verificação:** `npm run typecheck` · `npm run build` (`build-f20q.log`)
+
+| Rota | Baseline (F20p) | Após F20q |
+|------|-----------------|-----------|
+| `/canais` | ~153 kB | **152 kB** |
+
+**Estado F20 (fechamento):** auditoria lazy-load concluída — rotas full-page em **152 kB**, intercept modals `(.)*` em **~109 kB** First Load JS. Bloco F20 encerrado.
+
+### Revalidação F20q — comparativo final (2026-06-25)
+
+Comandos: `npm run typecheck` · `npm run build` (`build-f20q.log`) · `npm run perf:check`.
+
+| Métrica | Baseline (F17) | Revalidação 2026-06-25 (pré-F20) | Após F20q |
+|---------|----------------|----------------------------------|-----------|
+| Shared First Load (app) | 91,3 kB | 91,8 kB | **98,6 kB** |
+| `/` (dashboard) | 316 kB | 316 kB | **101 kB** |
+| `/login` | 288 kB | 288 kB | **109 kB** |
+| `/analise-ambiental` | 464 kB | 446 kB | **152 kB** |
+| `/licenses` (lista) | 387 kB | 389 kB | **152 kB** |
+| `/licenses/new` | 378 kB | 380 kB | **152 kB** |
+| `/studies/mapas` | — | ~405 kB | **152 kB** |
+| `/licenses/(.)new` | ~384 kB | ~150 kB | **109 kB** |
+| Rotas full-page máx. | >580 kB | >300 kB | **152 kB** |
+
+**Conclusão:** F19–F20q reduziram rotas pesadas para shells ~4,6 kB + shared; conteúdo pesado em chunks lazy (`ssr: false`). Shared subiu ~7 kB vs F17 (layout/providers acumulados) — meta &lt;88 kB shared continua fora de alcance sem refactor estrutural do shell. Intercept modals: fallback leve (`InterceptModalLoading`) evita puxar `*-form-shell` no First Load JS.
