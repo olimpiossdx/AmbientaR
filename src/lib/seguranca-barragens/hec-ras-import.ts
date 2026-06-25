@@ -91,8 +91,24 @@ function bboxFromFeatures(features: Feature[]): string | undefined {
     for (const c of coords) visit(c);
   };
 
+  const visitGeometry = (geometry: Geometry): void => {
+    switch (geometry.type) {
+      case 'GeometryCollection':
+        for (const g of geometry.geometries) visitGeometry(g);
+        break;
+      case 'Point':
+      case 'LineString':
+      case 'Polygon':
+      case 'MultiPoint':
+      case 'MultiLineString':
+      case 'MultiPolygon':
+        visit(geometry.coordinates);
+        break;
+    }
+  };
+
   for (const f of features) {
-    if (f.geometry) visit((f.geometry as Geometry).coordinates);
+    if (f.geometry) visitGeometry(f.geometry);
   }
 
   if (!Number.isFinite(minLng)) return undefined;
@@ -337,7 +353,7 @@ export function parseHecRasResultadosFile(
       return parsed;
     }
     if (obj.type === 'FeatureCollection' && Array.isArray(obj.features)) {
-      const summary = summarizeGeoJson(obj as FeatureCollection);
+      const summary = summarizeGeoJson(obj as unknown as FeatureCollection);
       let geojsonInline: Record<string, unknown> | undefined;
       const warnings: string[] = [];
       const serialized = content;

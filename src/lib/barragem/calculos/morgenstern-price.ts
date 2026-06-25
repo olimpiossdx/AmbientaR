@@ -211,7 +211,7 @@ export function morgensternPriceHalfSine(
     warnings.push(
       `FS = ${FS.toFixed(2)} abaixo do mínimo preliminar (${criterio.fsMin}) para ${criterio.label}.`,
     );
-  } else {
+  } else if (Number.isFinite(FS) && FS >= criterio.fsMin) {
     status = 'atende';
   }
   if (warnings.length && status === 'calculado') status = 'revisar';
