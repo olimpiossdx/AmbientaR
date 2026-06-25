@@ -453,6 +453,26 @@ export type ProjectPerimetroReferencia = {
   uploadedBy?: string;
 };
 
+/** Arquivo do CAR armazenado no Firebase Storage. */
+export type CarStoredFile = {
+  url: string;
+  name: string;
+};
+
+/** Cadastro Ambiental Rural vinculado ao empreendimento. */
+export type ProjectCar = {
+  /** ID do cliente associado ao CAR (opcional) */
+  clientId?: string;
+  /** Número do recibo do CAR */
+  receiptNumber: string;
+  /** Primeiro PDF — espelho legado para integrações */
+  pdfUrl?: string;
+  /** Primeira geometria — espelho legado para PEA / geoespacial */
+  shpUrl?: string;
+  pdfFiles?: CarStoredFile[];
+  geometryFiles?: CarStoredFile[];
+};
+
 export type Project = {
   id: string;
   empreendedorId: string;
@@ -526,16 +546,7 @@ export type Project = {
     barragemExistente?: DamSheetData;
     alteamento?: DamSheetData;
   };
-  car?: {
-    /** ID do cliente associado ao CAR (opcional) */
-    clientId?: string;
-    /** Número do recibo do CAR */
-    receiptNumber: string;
-    /** URL do recibo/caracterização em PDF no Storage */
-    pdfUrl?: string;
-    /** URL do arquivo de geometria (SHP/ZIP) no Storage */
-    shpUrl?: string;
-  };
+  car?: ProjectCar;
   /** Perímetro de referência opcional (KML/KMZ/SHP) — auxiliar para análises; separado do CAR e do MCA. */
   perimetroReferencia?: ProjectPerimetroReferencia;
   projectArea?: {
@@ -2352,6 +2363,8 @@ export type FaunaStudy = {
     id: string;
     studyType: 'inventario_projeto' | 'inventario_relatorio' | 'monitoramento_projeto' | 'monitoramento_relatorio' | 'resgate_projeto' | 'resgate_relatorio' | 'externo';
     empreendedorId: string;
+    /** Empreendimento vinculado (coleção `projects`). */
+    projectId?: string;
     consultoriaId: string;
     documentName?: string;
     fileUrl?: string;

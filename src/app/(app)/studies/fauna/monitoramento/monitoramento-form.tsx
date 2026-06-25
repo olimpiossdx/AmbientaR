@@ -17,9 +17,11 @@ import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
 import { collection } from 'firebase/firestore';
 import type { Empreendedor, EnvironmentalCompany, FaunaStudy } from '@/lib/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { StudyEmpreendedorProjectFields } from '@/components/studies/study-empreendedor-project-fields';
 
 const formSchema = z.object({
   empreendedorId: z.string().min(1, "Selecione um empreendedor."),
+  projectId: z.string().optional(),
   consultoriaId: z.string().min(1, "Selecione uma consultoria."),
   empreendedor: z.object({
     name: z.string().min(1, "Razão Social é obrigatória."),
@@ -88,6 +90,7 @@ export function MonitoramentoForm({ currentItem, onSave }: MonitoramentoFormProp
     resolver: zodResolver(formSchema),
     defaultValues: currentItem?.studyType === 'monitoramento_projeto' ? {
       empreendedorId: currentItem.empreendedorId,
+      projectId: currentItem.projectId ?? '',
       consultoriaId: currentItem.consultoriaId,
       empreendedor: currentItem.empreendedor ?? { name: '', cpfCnpj: '', address: '', phone: '', email: '' },
       consultoria: currentItem.consultoria ?? { name: '', cnpj: '', address: '', phone: '', email: '' },
@@ -174,7 +177,14 @@ export function MonitoramentoForm({ currentItem, onSave }: MonitoramentoFormProp
                 <AccordionContent className="space-y-6 pt-4">
                     <div className="space-y-4 p-4 border rounded-md">
                         <h3 className="font-semibold text-base">1.1. Empreendedor</h3>
-                        <FormField control={form.control} name="empreendedorId" render={({ field }) => ( <FormItem><FormLabel>Selecionar Empreendedor</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value} disabled={isLoadingEmpreendedores}><FormControl><SelectTrigger><SelectValue placeholder={isLoadingEmpreendedores ? "Carregando..." : "Selecione"} /></SelectTrigger></FormControl><SelectContent>{empreendedores?.map(e => <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)}/>
+                        <h3 className="font-semibold text-base">1.1. Empreendedor e empreendimento</h3>
+                        <StudyEmpreendedorProjectFields
+                          form={form}
+                          empreendedorName="empreendedorId"
+                          projectName="projectId"
+                          empreendedorLabel="Selecionar empreendedor"
+                          projectLabel="Selecionar empreendimento"
+                        />
                         <FormField control={form.control} name="empreendedor.name" render={({ field }) => (<FormItem><FormLabel>Razão Social</FormLabel><FormControl><Input {...field} disabled /></FormControl></FormItem>)} />
                         <FormField control={form.control} name="empreendedor.cpfCnpj" render={({ field }) => (<FormItem><FormLabel>CPF/CNPJ</FormLabel><FormControl><MaskedInput mask="cpfCnpj" {...field} disabled /></FormControl></FormItem>)} />
                         <FormField control={form.control} name="empreendedor.address" render={({ field }) => (<FormItem><FormLabel>Endereço</FormLabel><FormControl><Input {...field} disabled /></FormControl></FormItem>)} />

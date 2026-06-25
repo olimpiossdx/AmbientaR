@@ -40,6 +40,7 @@ function InventarioRelatorioFaunaPageContent() {
     const base = seedStudy
       ? {
           empreendedorId: seedStudy.empreendedorId,
+          projectId: seedStudy.projectId,
           consultoriaId: seedStudy.consultoriaId,
         }
       : {};

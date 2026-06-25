@@ -19,7 +19,7 @@ import { BrDateFormControl } from '@/components/form/br-date-input';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import type { UseFormReturn } from 'react-hook-form';
 import type { Empreendedor, Project } from '@/lib/types';
-import { filterProjectsByEmpreendedorId } from '@/lib/processos-form-order';
+import { PcaListagemShellEmpreendedorField, PcaListagemShellProjectField } from '@/components/studies/pca-listagem-shell-entity-fields';
 import { PcaTextField, PcaTextAreaField, PcaCoordenadasReadOnlyField } from '../listagem-a/pca-form-listagem-a-helpers';
 import type { PcaListagemFFormValues } from './pca-listagem-f-schema';
 import { PCA_LISTAGEM_F_SUBACTIVITIES } from '@/lib/pca/pca-listagem-f-catalog';
@@ -41,9 +41,6 @@ export function PcaFormListagemFShell({
   isLoadingProjects,
   readOnlyEmpreendimento,
 }: PcaFormListagemFShellProps) {
-  const clientId = form.watch('empreendedor.clientId');
-  const projectsForSelect = filterProjectsByEmpreendedorId(projects, clientId);
-
   return (
     <Accordion type="multiple" defaultValue={['identificacao', 'empreendimento']} className="w-full">
       <AccordionItem value="identificacao">
@@ -110,34 +107,7 @@ export function PcaFormListagemFShell({
             )}
           />
 
-          <FormField
-            control={form.control}
-            name="empreendedor.clientId"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Empreendedor cadastrado</FormLabel>
-                <Select
-                  onValueChange={field.onChange}
-                  value={field.value ?? ''}
-                  disabled={isLoadingClients || readOnlyEmpreendimento}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder={isLoadingClients ? 'Carregando…' : 'Selecione'} />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {clients.map((c) => (
-                      <SelectItem key={c.id} value={c.id}>
-                        {c.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          <PcaListagemShellEmpreendedorField form={form} readOnlyEmpreendimento={readOnlyEmpreendimento} />
           <PcaTextField form={form as never} name="empreendedor.nome" label="Nome / razão social" />
           <div className="grid gap-4 md:grid-cols-2">
             <PcaTextField form={form as never} name="empreendedor.cpfCnpj" label="CPF / CNPJ" />
@@ -150,34 +120,7 @@ export function PcaFormListagemFShell({
       <AccordionItem value="empreendimento">
         <AccordionTrigger>Empreendimento</AccordionTrigger>
         <AccordionContent className="space-y-4">
-          <FormField
-            control={form.control}
-            name="empreendimento.projectId"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Empreendimento cadastrado</FormLabel>
-                <Select
-                  onValueChange={field.onChange}
-                  value={field.value ?? ''}
-                  disabled={isLoadingProjects || readOnlyEmpreendimento}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder={isLoadingProjects ? 'Carregando…' : 'Selecione'} />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {projectsForSelect.map((p) => (
-                      <SelectItem key={p.id} value={p.id}>
-                        {p.propertyName || p.fantasyName}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          <PcaListagemShellProjectField form={form} readOnlyEmpreendimento={readOnlyEmpreendimento} />
           <PcaTextField form={form as never} name="empreendimento.nome" label="Nome do empreendimento" />
           <div className="grid gap-4 md:grid-cols-2">
             <PcaTextField form={form as never} name="empreendimento.municipio" label="Município" />

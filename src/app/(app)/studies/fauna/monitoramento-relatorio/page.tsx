@@ -40,6 +40,7 @@ function MonitoramentoRelatorioFaunaPageContent() {
     const base = seedStudy
       ? {
           empreendedorId: seedStudy.empreendedorId,
+          projectId: seedStudy.projectId,
           consultoriaId: seedStudy.consultoriaId,
         }
       : {};

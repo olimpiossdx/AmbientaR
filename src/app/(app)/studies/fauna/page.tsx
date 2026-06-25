@@ -434,7 +434,7 @@ export default function StudiesFaunaPage() {
             projectId={filterProjectId}
             onEmpreendedorIdChange={setFilterEmpreendedorId}
             onProjectIdChange={setFilterProjectId}
-            showProject={false}
+            showProject
           />
           <Card>
             <CardHeader>
