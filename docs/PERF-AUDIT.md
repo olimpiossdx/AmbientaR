@@ -617,3 +617,24 @@ Fora do plano F00–F18; **uma rota por PR**, mesmo protocolo de debug.
 | Shared | 92,4 kB | **92,4 kB** |
 
 **Próximo candidato F19i:** `/contracts-suppliers` (~392 kB), `/cash-flow` (~382 kB).
+
+### F19i — fornecedores e fluxo de caixa lazy views ✅ (2026-06-25)
+
+| Ficheiro | Mudança |
+|----------|---------|
+| `contracts-suppliers/page.tsx` + `contracts-suppliers-list-view.tsx` | Shell + listagem |
+| `cash-flow/page.tsx` + `cash-flow-dashboard-view.tsx` | Shell + dashboard (PDF) |
+| `cash-flow/new/page.tsx` | `TransactionForm` via `dynamic()` |
+| `cash-flow/[id]/edit/page.tsx` | `TransactionForm` via `dynamic()` |
+
+**Verificação:** `npm run typecheck` · `npm run build`
+
+| Rota | Baseline (F17) | Após F19i |
+|------|----------------|-----------|
+| `/contracts-suppliers` | ~392 kB | **147 kB** (−245 kB) |
+| `/cash-flow` | ~383 kB | **147 kB** (−236 kB) |
+| `/cash-flow/new` | ~375 kB | **147 kB** (−228 kB) |
+| `/cash-flow/[id]/edit` | ~375 kB | **296 kB** (−79 kB) |
+| Shared | 92,4 kB | **92,4 kB** |
+
+**Próximo candidato F19j:** `/empreendedores` (~341 kB), `/clients` (~332 kB).
