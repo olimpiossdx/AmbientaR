@@ -3,6 +3,7 @@ import type {
   Inconformidade,
   InsignificantWaterUseType,
   PermitStatus,
+  TacStatus,
 } from "@/lib/types";
 
 /** Níveis de criticidade de inconformidade (vistoria de campo). */
@@ -152,6 +153,17 @@ export const permitStatusBadgeClassRich: Record<PermitStatus, string> = {
     "bg-yellow-500/20 text-yellow-700 border-yellow-500/30 dark:bg-yellow-500/10 dark:text-yellow-400 dark:border-yellow-500/20",
   Cancelada:
     "bg-yellow-500/20 text-yellow-700 border-yellow-500/30 dark:bg-yellow-500/10 dark:text-yellow-400 dark:border-yellow-500/20",
+  "Em Andamento":
+    "bg-yellow-500/20 text-yellow-700 border-yellow-500/30 dark:bg-yellow-500/10 dark:text-yellow-400 dark:border-yellow-500/20",
+};
+
+export const tacStatusBadgeClassRich: Record<TacStatus, string> = {
+  Vigente:
+    "bg-emerald-500/20 text-emerald-700 border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20",
+  Concluído:
+    "bg-blue-500/20 text-blue-700 border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-400 dark:border-blue-500/20",
+  Cancelado:
+    "bg-red-500/20 text-red-700 border-red-500/30 dark:bg-red-500/10 dark:text-red-400 dark:border-red-500/20",
   "Em Andamento":
     "bg-yellow-500/20 text-yellow-700 border-yellow-500/30 dark:bg-yellow-500/10 dark:text-yellow-400 dark:border-yellow-500/20",
 };

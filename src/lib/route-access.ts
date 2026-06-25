@@ -230,6 +230,7 @@ export const DOCUMENTOS_AMBIENTAIS_MOBILE_HREF_ORDER = [
   '/documentos-ambientais/pasta-cliente',
   '/ctf-ibama',
   '/licenses',
+  '/tacs',
   '/mtr-declaracao',
   '/outorgas',
   '/usos-insignificantes',

@@ -25,6 +25,7 @@ export const EMPREENDEDOR_ID_REFERENCE_QUERIES: ReadonlyArray<{
 }> = [
   { collection: "projects", field: "empreendedorId" },
   { collection: "licenses", field: "empreendedorId" },
+  { collection: "tacs", field: "empreendedorId" },
   { collection: "outorgas", field: "empreendedorId" },
   { collection: "intervencoes", field: "empreendedorId" },
   { collection: "faunaStudies", field: "empreendedorId" },

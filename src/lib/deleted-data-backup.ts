@@ -22,13 +22,14 @@ function canSkipBackupOnFailure(user: AppUser | null | undefined): boolean {
   );
 }
 
-type SupportedParentCollection = "licenses" | "outorgas" | "intervencoes";
+type SupportedParentCollection = "licenses" | "tacs" | "outorgas" | "intervencoes";
 
 const REFERENCE_TYPE_BY_COLLECTION: Record<
   SupportedParentCollection,
   Condicionante["referenceType"]
 > = {
   licenses: "licenca",
+  tacs: "tac",
   outorgas: "outorga",
   intervencoes: "intervencao",
 };

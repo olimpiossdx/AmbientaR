@@ -20,6 +20,29 @@
       },
       "required": ["empreendedorId", "projectId", "permitType", "processNumber", "permitNumber", "issuingBody", "issueDate", "expirationDate", "status"]
     },
+    "Tac": {
+      "title": "Tac",
+      "description": "Termo de Ajustamento de Conduta (TAC) ambiental.",
+      "type": "object",
+      "properties": {
+        "empreendedorId": { "type": "string", "description": "Reference to Empreendedor." },
+        "projectId": { "type": "string", "description": "Reference to Project." },
+        "gtacId": { "type": "string", "description": "ID do TAC no GTAC (EcoSistemas MG)." },
+        "protocolNumber": { "type": "string", "description": "Número do protocolo do pedido de TAC." },
+        "processNumber": { "type": "string", "description": "Número do processo SEI." },
+        "tacNumber": { "type": "string", "description": "Identificador interno do TAC." },
+        "issuingBody": { "type": "string", "description": "Unidade administrativa / órgão emissor." },
+        "issueDate": { "type": "string", "format": "date-time", "description": "Data de assinatura." },
+        "publicationDate": { "type": "string", "format": "date-time", "description": "Data de publicação." },
+        "expirationDate": { "type": "string", "format": "date-time", "description": "Data de vencimento." },
+        "status": { "type": "string", "enum": ["Vigente", "Concluído", "Cancelado", "Em Andamento"] },
+        "description": { "type": "string" },
+        "licensingProcessBeforeTac": { "type": "string", "description": "Processo de licenciamento anterior (texto livre)." },
+        "licensingProcessAfterTac": { "type": "string", "description": "Processo de licenciamento formalizado posteriormente (texto livre)." },
+        "fileUrl": { "type": "string" }
+      },
+      "required": ["empreendedorId", "projectId", "processNumber", "issuingBody", "issueDate", "status"]
+    },
     "Service": {
       "title": "Service",
       "description": "Represents a service offered by the company with its cost and price.",
@@ -1043,7 +1066,7 @@
         "properties": {
             "id": { "type": "string", "description": "Unique identifier for the Condicionante." },
             "referenceId": { "type": "string", "description": "ID of the associated Project (license) or WaterPermit (outorga)." },
-            "referenceType": { "type": "string", "enum": ["licenca", "outorga", "intervencao"], "description": "The type of document the condition is linked to." },
+            "referenceType": { "type": "string", "enum": ["licenca", "outorga", "intervencao", "tac"], "description": "The type of document the condition is linked to." },
             "description": { "type": "string", "description": "The full description of the environmental condition." },
             "dueDate": { "type": "string", "format": "date-time", "description": "The deadline for complying with the condition." },
             "status": { "type": "string", "enum": ["Pendente", "Cumprida", "Atrasada", "Não Aplicável"], "description": "The current compliance status of the condition." },
@@ -2448,6 +2471,10 @@
       "licenses": {
         "schema": { "$ref": "#/entities/License" },
         "description": "Stores all environmental licenses."
+      },
+      "tacs": {
+        "schema": { "$ref": "#/entities/Tac" },
+        "description": "Stores all Termos de Ajustamento de Conduta (TAC)."
       },
       "projects": {
         "schema": {

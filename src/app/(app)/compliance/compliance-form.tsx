@@ -31,6 +31,7 @@ import type {
   WaterPermit,
   EnvironmentalIntervention,
   License,
+  Tac,
   Empreendedor} from "@/lib/types";
 import {
   useFirebase,
@@ -63,7 +64,7 @@ import {
 
 const formSchema = z.object({
   referenceId: z.string().min(1, "Selecione um documento de referência."),
-  referenceType: z.enum(["licenca", "outorga", "intervencao"]),
+  referenceType: z.enum(["licenca", "outorga", "intervencao", "tac"]),
   description: z.string().min(1, "A descrição da condicionante é obrigatória."),
   dueDate: z.date({ required_error: "A data de vencimento é obrigatória." }),
   status: z.enum(
@@ -76,7 +77,7 @@ type FormValues = z.infer<typeof formSchema>;
 
 interface ComplianceFormProps {
   currentItem?: Condicionante | null;
-  referenceType: "licenca" | "outorga" | "intervencao";
+  referenceType: "licenca" | "outorga" | "intervencao" | "tac";
   onSuccess?: () => void;
 }
 
@@ -123,7 +124,7 @@ export function ComplianceForm({
 
   const projectsQuery = useMemoFirebase(
     () =>
-      firestore && referenceType === "licenca"
+      firestore && (referenceType === "licenca" || referenceType === "tac")
         ? collection(firestore, "projects")
         : null,
     [firestore, referenceType],
@@ -140,6 +141,16 @@ export function ComplianceForm({
   );
   const { data: licenses, isLoading: isLoadingLicenses } =
     useCollection<License>(licensesQuery);
+
+  const tacsQuery = useMemoFirebase(
+    () =>
+      firestore && referenceType === "tac"
+        ? collection(firestore, "tacs")
+        : null,
+    [firestore, referenceType],
+  );
+  const { data: tacs, isLoading: isLoadingTacs } =
+    useCollection<Tac>(tacsQuery);
 
   const outorgasQuery = useMemoFirebase(
     () =>
@@ -199,6 +210,11 @@ export function ComplianceForm({
       if (lic?.empreendedorId) {
         setFilterEmpreendedorId(normalizeEntityId(lic.empreendedorId));
       }
+    } else if (referenceType === "tac") {
+      const tac = tacs?.find((t) => t.id === refId);
+      if (tac?.empreendedorId) {
+        setFilterEmpreendedorId(normalizeEntityId(tac.empreendedorId));
+      }
     } else if (referenceType === "outorga") {
       const out = outorgas?.find((o) => o.id === refId);
       if (out?.empreendedorId) {
@@ -214,6 +230,7 @@ export function ComplianceForm({
     currentItem,
     referenceType,
     licenses,
+    tacs,
     outorgas,
     intervencoes,
     filterEmpreendedorId,
@@ -238,6 +255,13 @@ export function ComplianceForm({
             normalizeEntityId(o.empreendedorId) === filterEmpreendedorId,
         );
       }
+      if (referenceType === "tac") {
+        return tacs?.some(
+          (t) =>
+            t.id === refId &&
+            normalizeEntityId(t.empreendedorId) === filterEmpreendedorId,
+        );
+      }
       return intervencoes?.some(
         (i) =>
           i.id === refId &&
@@ -245,7 +269,7 @@ export function ComplianceForm({
       );
     })();
     if (!stillValid) form.setValue("referenceId", "");
-  }, [filterEmpreendedorId, referenceType, licenses, outorgas, intervencoes, form]);
+  }, [filterEmpreendedorId, referenceType, licenses, tacs, outorgas, intervencoes, form]);
 
   const handleFileChange = async (
     event: React.ChangeEvent<HTMLInputElement>,
@@ -315,6 +339,26 @@ export function ComplianceForm({
             "Outorga"})) ?? []
       );
     }
+    if (referenceType === "tac") {
+      const projectsMap = new Map(projects?.map((p) => [p.id, p]) ?? []);
+      return (
+        tacs
+          ?.filter((t) => matchesEmpreendedor(t.empreendedorId))
+          .map((t) => ({
+          id: t.id,
+          name:
+            [
+              t.processNumber,
+              t.tacNumber,
+              projectsMap.get(t.projectId)?.propertyName,
+            ]
+              .filter(Boolean)
+              .join(" — ") ||
+            t.processNumber ||
+            t.id ||
+            "TAC"})) ?? []
+      );
+    }
     if (referenceType === "intervencao") {
       return (
         intervencoes
@@ -329,7 +373,7 @@ export function ComplianceForm({
       );
     }
     return [];
-  }, [referenceType, licenses, projects, outorgas, intervencoes, filterEmpreendedorId]);
+  }, [referenceType, licenses, projects, tacs, outorgas, intervencoes, filterEmpreendedorId]);
 
   const empreendedoresForSelect = React.useMemo(
     () =>
@@ -343,6 +387,7 @@ export function ComplianceForm({
   const isLoadingReference =
     isLoadingLicenses ||
     isLoadingProjects ||
+    isLoadingTacs ||
     isLoadingOutorgas ||
     isLoadingIntervencoes ||
     isLoadingEmpreendedores;
@@ -351,6 +396,8 @@ export function ComplianceForm({
     switch (referenceType) {
       case "licenca":
         return "Licença de Referência";
+      case "tac":
+        return "TAC de Referência";
       case "outorga":
         return "Outorga de Referência";
       case "intervencao":
@@ -388,7 +435,8 @@ export function ComplianceForm({
           const refType = (values.referenceType || referenceType) as
             | "licenca"
             | "outorga"
-            | "intervencao";
+            | "intervencao"
+            | "tac";
           const recipients = await getRecipientUserIdsFromCondicionanteReference(
             firestore,
             refType,
@@ -444,7 +492,8 @@ export function ComplianceForm({
           const refType = (values.referenceType || referenceType) as
             | "licenca"
             | "outorga"
-            | "intervencao";
+            | "intervencao"
+            | "tac";
           const recipients = await getRecipientUserIdsFromCondicionanteReference(
             firestore,
             refType,

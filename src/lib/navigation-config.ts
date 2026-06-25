@@ -515,6 +515,21 @@ export const allNavItems: NavItem[] = [
         ],
       },
       {
+        href: "/tacs",
+        label: "TAC — Termo de Ajust. de Conduta",
+        icon: Scale,
+        roles: [
+          "admin",
+          "client",
+      "cliente_autonomo",
+          "representative",
+          "gestor",
+          "supervisor",
+          "technical",
+          "advogado",
+        ],
+      },
+      {
         href: "/mtr-declaracao",
         label: "MTR-Declaração",
         icon: Truck,

@@ -123,6 +123,7 @@ export const PACKAGE_LIMITS: Record<ClientPackage, PackageLimits> = {
 /** Coleções do portal com limite “1 registro por tipo” no plano gratuito. */
 export const PORTAL_MODULE_COLLECTIONS = [
   "licenses",
+  "tacs",
   "outorgas",
   "condicionantes",
   "usosInsignificantes",
@@ -133,6 +134,7 @@ export type PortalModuleCollection = (typeof PORTAL_MODULE_COLLECTIONS)[number];
 
 export const PORTAL_MODULE_LABELS: Record<PortalModuleCollection, string> = {
   licenses: "licença",
+  tacs: "TAC",
   outorgas: "outorga",
   condicionantes: "condicionante",
   usosInsignificantes: "uso insignificante",

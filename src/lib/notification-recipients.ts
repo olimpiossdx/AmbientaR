@@ -11,7 +11,7 @@ import {
   buildUserProfileDocumentVariants,
   normalizeDocumentDigits,
 } from "@/lib/document-lookup";
-import type { AppUser, License } from "@/lib/types";
+import type { AppUser, License, Tac } from "@/lib/types";
 
 type PortalEntityFields = {
   userId?: string;
@@ -101,7 +101,7 @@ export async function getRecipientUserIdsByRecipientName(
 /** Destinatários do portal para uma condicionante (licença, outorga ou intervenção). */
 export async function getRecipientUserIdsFromCondicionanteReference(
   firestore: Firestore,
-  referenceType: "licenca" | "outorga" | "intervencao",
+  referenceType: "licenca" | "outorga" | "intervencao" | "tac",
   referenceId: string,
 ): Promise<string[]> {
   if (!referenceId?.trim()) return [];
@@ -111,6 +111,13 @@ export async function getRecipientUserIdsFromCondicionanteReference(
     const license = licenseSnap.data() as License | undefined;
     if (!license?.projectId) return [];
     return getRecipientUserIdsForProject(firestore, license.projectId);
+  }
+
+  if (referenceType === "tac") {
+    const tacSnap = await getDoc(doc(firestore, "tacs", referenceId.trim()));
+    const tac = tacSnap.data() as Tac | undefined;
+    if (!tac?.projectId) return [];
+    return getRecipientUserIdsForProject(firestore, tac.projectId);
   }
 
   if (referenceType === "outorga") {

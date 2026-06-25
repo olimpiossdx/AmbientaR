@@ -29,6 +29,7 @@ import type {
   EnvironmentalIntervention,
   FaunaStudy,
   ManualMonitoringLog,
+  Tac,
 } from '@/lib/types';
 
 const MAX_IN_QUERY = 10;
@@ -47,6 +48,7 @@ export async function getAmbientalContextByEmpreendimentoId(
     empreendedor: null,
     empresaAmbiental: null,
     licencas: [],
+    tacs: [],
     outorgas: [],
     intervencoes: [],
     faunaStudies: [],
@@ -61,13 +63,20 @@ export async function getAmbientalContextByEmpreendimentoId(
   const empreendedorId = empreendimento?.empreendedorId;
   if (!empreendedorId) return result;
 
-  const [empreendedorSnap, companySnap, licensesSnap, outorgasSnap, intervencoesSnap, faunaSnap, projectsSnap] =
+  const [empreendedorSnap, companySnap, licensesSnap, tacsSnap, outorgasSnap, intervencoesSnap, faunaSnap, projectsSnap] =
     await Promise.all([
       getDoc(doc(firestore, 'empreendedores', empreendedorId)),
       getFirstEnvironmentalCompany(firestore),
       getDocs(
         query(
           collection(firestore, 'licenses'),
+          where('empreendedorId', '==', empreendedorId),
+          limit(50)
+        )
+      ),
+      getDocs(
+        query(
+          collection(firestore, 'tacs'),
           where('empreendedorId', '==', empreendedorId),
           limit(50)
         )
@@ -107,6 +116,7 @@ export async function getAmbientalContextByEmpreendimentoId(
     : null;
   result.empresaAmbiental = companySnap;
   result.licencas = licensesSnap.docs.map((d) => ({ id: d.id, ...d.data() } as License));
+  result.tacs = tacsSnap.docs.map((d) => ({ id: d.id, ...d.data() } as Tac));
   result.outorgas = outorgasSnap.docs.map((d) => ({ id: d.id, ...d.data() } as WaterPermit));
   result.intervencoes = intervencoesSnap.docs.map((d) => ({ id: d.id, ...d.data() } as EnvironmentalIntervention));
   result.faunaStudies = faunaSnap.docs.map((d) => ({ id: d.id, ...d.data() } as FaunaStudy));
@@ -145,6 +155,9 @@ export function formatAmbientalContextForPrompt(ctx: AmbientalContext): string {
   }
   if (ctx.licencas.length > 0) {
     parts.push(`Licenças: ${ctx.licencas.map((l) => `${l.permitType ?? 'Licença'} ${l.processNumber ?? ''}`).join('; ')}`);
+  }
+  if (ctx.tacs.length > 0) {
+    parts.push(`TACs: ${ctx.tacs.map((t) => t.processNumber ?? t.tacNumber ?? t.id).join('; ')}`);
   }
   if (ctx.outorgas.length > 0) {
     parts.push(`Outorgas: ${ctx.outorgas.map((o) => o.permitNumber ?? o.id).join('; ')}`);

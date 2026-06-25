@@ -24,6 +24,7 @@ import {
   Droplets,
   FileCheck2,
   Trees,
+  Scale,
   Paperclip,
   Pencil,
   Trash2,
@@ -50,6 +51,7 @@ import type {
   AppUser,
   Empreendedor,
   License,
+  Tac,
 } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
@@ -110,7 +112,7 @@ export function ComplianceView() {
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
   const [editingItem, setEditingItem] = useState<Condicionante | null>(null);
   const [selectedType, setSelectedType] = useState<
-    "licenca" | "outorga" | "intervencao"
+    "licenca" | "outorga" | "intervencao" | "tac"
   >("licenca");
   const [searchTerm, setSearchTerm] = useState("");
   const [filterEmpreendedorId, setFilterEmpreendedorId] = useState("");
@@ -260,6 +262,22 @@ export function ComplianceView() {
   const { data: licenses, isLoading: isLoadingLicenses } =
     useCollection<License>(licensesQuery);
 
+  const tacsQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    if (isClientLike) {
+      if (!empreendedorIdsForUser || empreendedorIdsForUser.length === 0)
+        return null;
+      return query(
+        collection(firestore, "tacs"),
+        where("empreendedorId", "in", empreendedorIdsForUser),
+        limit(200),
+      );
+    }
+    return query(collection(firestore, "tacs"), limit(200));
+  }, [firestore, isClientLike, empreendedorIdsForUser]);
+  const { data: tacs, isLoading: isLoadingTacs } =
+    useCollection<Tac>(tacsQuery);
+
   const projectIds = useMemo(
     () => projects?.map((p) => p.id) || [],
     [projects],
@@ -268,6 +286,7 @@ export function ComplianceView() {
     () => licenses?.map((l) => l.id) || [],
     [licenses],
   );
+  const tacIds = useMemo(() => tacs?.map((t) => t.id) || [], [tacs]);
 
   const [licenseIdsByProject, setLicenseIdsByProject] = useState<string[]>([]);
   useEffect(() => {
@@ -311,9 +330,10 @@ export function ComplianceView() {
     const ids = new Set<string>();
     licenseIds.forEach((id) => ids.add(id));
     licenseIdsByProject.forEach((id) => ids.add(id));
+    tacIds.forEach((id) => ids.add(id));
     projectIds.forEach((id) => ids.add(id));
     return Array.from(ids);
-  }, [licenseIds, licenseIdsByProject, projectIds]);
+  }, [licenseIds, licenseIdsByProject, tacIds, projectIds]);
 
   const referenceIdChunks = useMemo(() => {
     if (
@@ -522,6 +542,10 @@ export function ComplianceView() {
     () => new Map(licenses?.map((l) => [l.id, l])),
     [licenses],
   );
+  const tacsMap = useMemo(
+    () => new Map(tacs?.map((t) => [t.id, t])),
+    [tacs],
+  );
   const outorgasMap = useMemo(
     () => new Map(outorgas?.map((o) => [o.id, o])),
     [outorgas],
@@ -547,6 +571,7 @@ export function ComplianceView() {
     isLoadingCondicionantes ||
     isLoadingProjects ||
     isLoadingLicenses ||
+    isLoadingTacs ||
     isLoadingOutorgas ||
     isLoadingIntervencoes ||
     (isClientLike && empreendedorIdsForUser === undefined) ||
@@ -565,6 +590,7 @@ export function ComplianceView() {
         if (!refId) return false;
         let empId: string | undefined;
         if (refType === "licenca") empId = licensesMap.get(refId)?.empreendedorId;
+        else if (refType === "tac") empId = tacsMap.get(refId)?.empreendedorId;
         else if (refType === "outorga") empId = outorgasMap.get(refId)?.empreendedorId;
         else if (refType === "intervencao") empId = intervencoesMap.get(refId)?.empreendedorId;
         return normalizeEntityId(empId) === eid;
@@ -608,19 +634,22 @@ export function ComplianceView() {
     filterEmpreendedorId,
     filterProjectId,
     licensesMap,
+    tacsMap,
     outorgasMap,
     intervencoesMap,
   ]);
 
-  const { licencaGroups, outorgaGroups, intervencaoGroups } = useMemo(() => {
+  const { licencaGroups, tacGroups, outorgaGroups, intervencaoGroups } = useMemo(() => {
     if (!filteredCondicionantes)
       return {
         licencaGroups: new Map(),
+        tacGroups: new Map(),
         outorgaGroups: new Map(),
         intervencaoGroups: new Map(),
       };
 
     const licencaGroups = new Map<string, Condicionante[]>();
+    const tacGroups = new Map<string, Condicionante[]>();
     const outorgaGroups = new Map<string, Condicionante[]>();
     const intervencaoGroups = new Map<string, Condicionante[]>();
 
@@ -640,6 +669,10 @@ export function ComplianceView() {
         const group = licencaGroups.get(refId) || [];
         group.push(item);
         licencaGroups.set(refId, group);
+      } else if (refType === "tac") {
+        const group = tacGroups.get(refId) || [];
+        group.push(item);
+        tacGroups.set(refId, group);
       } else if (refType === "outorga") {
         const group = outorgaGroups.get(refId) || [];
         group.push(item);
@@ -654,6 +687,9 @@ export function ComplianceView() {
     licencaGroups.forEach((arr, k) =>
       licencaGroups.set(k, arr.sort(sortByCreated)),
     );
+    tacGroups.forEach((arr, k) =>
+      tacGroups.set(k, arr.sort(sortByCreated)),
+    );
     outorgaGroups.forEach((arr, k) =>
       outorgaGroups.set(k, arr.sort(sortByCreated)),
     );
@@ -661,10 +697,10 @@ export function ComplianceView() {
       intervencaoGroups.set(k, arr.sort(sortByCreated)),
     );
 
-    return { licencaGroups, outorgaGroups, intervencaoGroups };
+    return { licencaGroups, tacGroups, outorgaGroups, intervencaoGroups };
   }, [filteredCondicionantes]);
 
-  const handleAddNew = (type: "licenca" | "outorga" | "intervencao") => {
+  const handleAddNew = (type: "licenca" | "outorga" | "intervencao" | "tac") => {
     setEditingItem(null);
     setSelectedType(type);
     setIsDialogOpen(true);
@@ -1046,6 +1082,58 @@ export function ComplianceView() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
+            <Scale className="w-5 h-5" />
+            Condicionantes de TAC
+          </CardTitle>
+          <CardDescription>
+            Condicionantes vinculadas a Termos de Ajustamento de Conduta.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <Skeleton className="h-40 w-full" />
+          ) : (
+            <Accordion type="single" collapsible className="w-full">
+              {Array.from(tacGroups.entries()).map(([refId, items]) => {
+                const tac = tacsMap.get(refId);
+                const title = tac
+                  ? `${tac.processNumber || tac.tacNumber || "TAC"} — ${projectsMap.get(tac.projectId)?.propertyName ?? "Empreendimento"}`
+                  : `Referência ${refId}`;
+                const subtitle = tac
+                  ? [tac.tacNumber, tac.status, projectsMap.get(tac.projectId)?.propertyName]
+                      .filter(Boolean)
+                      .join(" · ")
+                  : refId;
+                return (
+                  <AccordionItem value={refId} key={refId}>
+                    <AccordionTrigger>
+                      <div className="flex flex-col items-start text-left">
+                        <span className="font-semibold">{title}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {subtitle}
+                        </span>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent>
+                      {renderConditionantesList(items)}
+                    </AccordionContent>
+                  </AccordionItem>
+                );
+              })}
+              {tacGroups.size === 0 && (
+                <div className="h-24 text-center flex items-center justify-center border-2 border-dashed rounded-md">
+                  <p className="text-muted-foreground">
+                    Nenhuma condicionante de TAC encontrada.
+                  </p>
+                </div>
+              )}
+            </Accordion>
+          )}
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
             <Droplets className="w-5 h-5" />
             Condicionantes de Outorgas
           </CardTitle>
@@ -1161,6 +1249,9 @@ export function ComplianceView() {
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => handleAddNew("licenca")}>
                   Licença
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleAddNew("tac")}>
+                  TAC — Termo de Ajust. de Conduta
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => handleAddNew("outorga")}>
                   Outorga

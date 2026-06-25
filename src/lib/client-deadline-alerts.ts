@@ -131,7 +131,7 @@ async function runCondicionanteDeadlineAlerts(
       description?: string;
       dueDate?: string;
       status?: string;
-      referenceType?: "licenca" | "outorga" | "intervencao";
+      referenceType?: "licenca" | "outorga" | "intervencao" | "tac";
       referenceId?: string;
     };
 
@@ -264,6 +264,46 @@ async function runLicencaExpirationAlerts(
           options,
         );
       }
+    }
+  }
+}
+
+async function runTacExpirationAlerts(
+  firestore: Firestore,
+  empreendedorIds: string[],
+  options?: { excludeUserId?: string },
+): Promise<void> {
+  for (const chunk of chunkArray(empreendedorIds, 10)) {
+    const snap = await getDocs(
+      query(collection(firestore, "tacs"), where("empreendedorId", "in", chunk)),
+    );
+    for (const docSnap of snap.docs) {
+      const data = docSnap.data() as {
+        empreendedorId?: string;
+        processNumber?: string;
+        tacNumber?: string;
+        expirationDate?: string;
+      };
+      const dias = daysUntilIsoDate(data.expirationDate);
+      if (dias === null || dias < 0 || dias > 5 || !isPrazoAlertDay(dias)) continue;
+
+      const recipients = await getRecipientUserIdsForEmpreendedor(
+        firestore,
+        data.empreendedorId,
+      );
+      await notifyDocumentExpiration(
+        firestore,
+        recipients,
+        {
+          dias,
+          label: "TAC",
+          permitNumber: data.tacNumber || data.processNumber,
+          link: NOTIFICATION_LINKS.tacs,
+          sourceType: NOTIFICATION_SOURCE.prazo_tac,
+          sourceId: `${docSnap.id}_d${dias}`,
+        },
+        options,
+      );
     }
   }
 }
@@ -407,6 +447,7 @@ export async function runClientPortalDeadlineAlerts(
   await runMultaDefesaDeadlineAlerts(firestore, uniqueEmp, options);
   await runCondicionanteDeadlineAlerts(firestore, allowedPortalUsers, options);
   await runLicencaExpirationAlerts(firestore, uniqueEmp, options);
+  await runTacExpirationAlerts(firestore, uniqueEmp, options);
   await runOutorgaExpirationAlerts(firestore, uniqueEmp, options);
   await runCtfIbamaExpirationAlerts(firestore, uniqueEmp, options);
   await runIntervencaoExpirationAlerts(firestore, uniqueEmp, options);

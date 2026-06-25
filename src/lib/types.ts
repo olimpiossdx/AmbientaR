@@ -448,6 +448,27 @@ export type License = {
   fileUrl?: string;
 };
 
+export type TacStatus = 'Vigente' | 'Concluído' | 'Cancelado' | 'Em Andamento';
+
+export type Tac = {
+  id: string;
+  empreendedorId: string;
+  projectId: string;
+  gtacId?: string;
+  protocolNumber?: string;
+  processNumber: string;
+  tacNumber?: string;
+  issuingBody: string;
+  issueDate: string;
+  publicationDate?: string;
+  expirationDate?: string;
+  status: TacStatus;
+  description?: string;
+  licensingProcessBeforeTac?: string;
+  licensingProcessAfterTac?: string;
+  fileUrl?: string;
+};
+
 export type ProjectPerimetroReferenciaFileType = 'kml' | 'kmz' | 'shp';
 
 /** Perímetro opcional guardado no cadastro do empreendimento (referência para análises). */
@@ -878,7 +899,7 @@ export type EnvironmentalIntervention = {
 export type Condicionante = {
     id: string;
     referenceId: string;
-    referenceType: 'licenca' | 'outorga' | 'intervencao';
+    referenceType: 'licenca' | 'outorga' | 'intervencao' | 'tac';
     description: string;
     dueDate: string;
     status: 'Pendente' | 'Em execução' | 'Cumprida' | 'Atrasada' | 'Não Aplicável';
@@ -3193,6 +3214,7 @@ export type AmbientalContext = {
   consulta?: Consulta | null;
   laudo?: Laudo | null;
   licencas: License[];
+  tacs: Tac[];
   outorgas: WaterPermit[];
   intervencoes: EnvironmentalIntervention[];
   condicionantes?: Condicionante[];

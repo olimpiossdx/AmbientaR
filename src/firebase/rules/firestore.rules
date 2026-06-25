@@ -86,6 +86,9 @@ service cloud.firestore {
             : refType == 'intervencao' && refId is string && refId.size() > 0 &&
                 exists(/databases/$(database)/documents/intervencoes/$(refId))
             ? get(/databases/$(database)/documents/intervencoes/$(refId)).data.empreendedorId
+            : refType == 'tac' && refId is string && refId.size() > 0 &&
+                exists(/databases/$(database)/documents/tacs/$(refId))
+            ? get(/databases/$(database)/documents/tacs/$(refId)).data.empreendedorId
             : '';
     }
 
@@ -679,6 +682,20 @@ service cloud.firestore {
      * Clients can list (app filtra por empreendedor do titular).
      */
     match /licenses/{licenseId} {
+      allow read: if request.auth != null;
+      allow create: if isManager() || isAdmin() ||
+        canClienteAutonomoManageEmpreendedor(request.resource.data.empreendedorId) ||
+        canConsultorManageEmpreendedor(request.resource.data.empreendedorId);
+      allow update, delete: if isManager() || isAdmin() ||
+        canClienteAutonomoManageEmpreendedor(resource.data.empreendedorId) ||
+        canConsultorManageEmpreendedor(resource.data.empreendedorId);
+    }
+
+    /**
+     * @description Termos de Ajustamento de Conduta (TAC).
+     * Mesmas regras de acesso que licenças ambientais.
+     */
+    match /tacs/{tacId} {
       allow read: if request.auth != null;
       allow create: if isManager() || isAdmin() ||
         canClienteAutonomoManageEmpreendedor(request.resource.data.empreendedorId) ||
