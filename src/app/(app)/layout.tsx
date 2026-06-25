@@ -39,6 +39,7 @@ import {
   Recycle,
   UserRound,
 } from "lucide-react";
+import { AppBootSplash } from "@/components/app-boot-splash";
 import type {
   AppUser,
   Notification,
@@ -372,14 +373,7 @@ const AppLayoutClientInner = ({ children }: { children: React.ReactNode }) => {
   };
 
   if (!isInitialized || isProfileLoading || !user) {
-    return (
-      <div className="flex h-screen w-full items-center justify-center bg-background">
-        <div className="flex flex-col items-center gap-4">
-          <Leaf className="w-12 h-12 animate-pulse text-primary" />
-          <p className="text-muted-foreground">Carregando...</p>
-        </div>
-      </div>
-    );
+    return <AppBootSplash />;
   }
 
   return (

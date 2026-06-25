@@ -14,6 +14,7 @@ import {
   buildPerimetroReferenciaStoragePath,
   parsePerimetroReferenciaFile,
 } from '@/lib/project-perimetro-referencia';
+import { perimetroReferenciaForFirestore } from '@/lib/firestore-payload';
 
 export type ProjectPerimetroReferenciaSectionProps = {
   projectId?: string;
@@ -162,5 +163,7 @@ export async function finalizePendingPerimetroReferencia(
   const safe = sanitizeStorageFileName(pendingFile.name);
   const storagePath = buildPerimetroReferenciaStoragePath(projectId, safe);
   const fileUrl = await uploadFileToStorage(pendingFile, storagePath);
-  return buildPerimetroReferenciaPayload(parsed, pendingFile, fileUrl, uploadedBy);
+  return perimetroReferenciaForFirestore(
+    buildPerimetroReferenciaPayload(parsed, pendingFile, fileUrl, uploadedBy),
+  );
 }

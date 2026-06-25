@@ -14,7 +14,7 @@ import type { Project, Empreendedor, ProjectPerimetroReferencia } from '@/lib/ty
 import { useFirebase, useCollection, useMemoFirebase, useAuth } from '@/firebase';
 import { assertCanCreateEmpreendimentoAction } from '@/app/(app)/projects/package-actions';
 import { handleFirestoreFormError } from '@/lib/firestore-form-errors';
-import { stripUndefinedDeep } from '@/lib/firestore-payload';
+import { prepareProjectPayloadForFirestore } from '@/lib/firestore-payload';
 import { collection, doc, addDoc, updateDoc } from 'firebase/firestore';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { FormDefault } from './form-default';
@@ -253,12 +253,12 @@ export function ProjectForm({ currentItem, onSuccess, onCancel }: ProjectFormPro
       return;
     }
     
-    const dataToSave = stripUndefinedDeep(
+    const dataToSave = prepareProjectPayloadForFirestore(
       cleanEmptyValues(
         enrichProjectFormCoordinates({
           ...values,
           perimetroReferencia: perimetroReferencia ?? undefined}),
-      ),
+      ) as Record<string, unknown>,
     );
 
     const listagemGTipo = (values as Record<string, unknown>).listagemG as
@@ -271,25 +271,23 @@ export function ProjectForm({ currentItem, onSuccess, onCancel }: ProjectFormPro
 
     if (currentItem) {
       const docRef = doc(firestore, 'projects', currentItem.id);
-      updateDoc(docRef, dataToSave)
-        .then(() => {
-          toast({
-            title: 'Projeto atualizado!',
-            description: 'As informações foram salvas com sucesso.'});
-          onSuccess?.();
-        })
-        .catch((error) => {
-          handleFirestoreFormError(error, {
-            toast,
-            title: 'Erro ao salvar projeto',
-            context: {
-              path: docRef.path,
-              operation: 'update',
-              requestResourceData: dataToSave}});
-        })
-        .finally(() => {
-          setLoading(false);
-        });
+      try {
+        await updateDoc(docRef, dataToSave);
+        toast({
+          title: 'Projeto atualizado!',
+          description: 'As informações foram salvas com sucesso.'});
+        onSuccess?.();
+      } catch (error) {
+        handleFirestoreFormError(error, {
+          toast,
+          title: 'Erro ao salvar projeto',
+          context: {
+            path: docRef.path,
+            operation: 'update',
+            requestResourceData: dataToSave}});
+      } finally {
+        setLoading(false);
+      }
     } else {
       if (user && auth?.currentUser) {
         try {
@@ -315,48 +313,46 @@ export function ProjectForm({ currentItem, onSuccess, onCancel }: ProjectFormPro
       }
 
       const collectionRef = collection(firestore, 'projects');
-      addDoc(collectionRef, dataToSave)
-        .then(async (ref) => {
-          if (pendingPerimetroFileRef.current && perimetroReferencia) {
-            try {
-              const finalPerimetro = await finalizePendingPerimetroReferencia(
-                ref.id,
-                perimetroReferencia,
-                pendingPerimetroFileRef.current,
-                user?.uid,
-              );
-              if (finalPerimetro) {
-                await updateDoc(doc(firestore, 'projects', ref.id), {
-                  perimetroReferencia: finalPerimetro});
-              }
-            } catch (e) {
-              console.error('Falha ao enviar perímetro de referência:', e);
-              toast({
-                variant: 'destructive',
-                title: 'Empreendimento criado, mas perímetro não foi enviado',
-                description:
-                  e instanceof Error ? e.message : 'Edite o empreendimento e tente novamente.'});
+      try {
+        const ref = await addDoc(collectionRef, dataToSave);
+        if (pendingPerimetroFileRef.current && perimetroReferencia) {
+          try {
+            const finalPerimetro = await finalizePendingPerimetroReferencia(
+              ref.id,
+              perimetroReferencia,
+              pendingPerimetroFileRef.current,
+              user?.uid,
+            );
+            if (finalPerimetro) {
+              await updateDoc(doc(firestore, 'projects', ref.id), {
+                perimetroReferencia: finalPerimetro});
             }
+          } catch (e) {
+            console.error('Falha ao enviar perímetro de referência:', e);
+            toast({
+              variant: 'destructive',
+              title: 'Empreendimento criado, mas perímetro não foi enviado',
+              description:
+                e instanceof Error ? e.message : 'Edite o empreendimento e tente novamente.'});
           }
-          toast({
-            title: 'Projeto criado!',
-            description: `O projeto ${values.propertyName} foi adicionado com sucesso.`});
-          form.reset();
-          pendingPerimetroFileRef.current = null;
-          onSuccess?.();
-        })
-        .catch((error) => {
-          handleFirestoreFormError(error, {
-            toast,
-            title: 'Erro ao salvar projeto',
-            context: {
-              path: collectionRef.path,
-              operation: 'create',
-              requestResourceData: dataToSave}});
-        })
-        .finally(() => {
-          setLoading(false);
-        });
+        }
+        toast({
+          title: 'Projeto criado!',
+          description: `O projeto ${values.propertyName} foi adicionado com sucesso.`});
+        form.reset();
+        pendingPerimetroFileRef.current = null;
+        onSuccess?.();
+      } catch (error) {
+        handleFirestoreFormError(error, {
+          toast,
+          title: 'Erro ao salvar projeto',
+          context: {
+            path: collectionRef.path,
+            operation: 'create',
+            requestResourceData: dataToSave}});
+      } finally {
+        setLoading(false);
+      }
     }
   }
   

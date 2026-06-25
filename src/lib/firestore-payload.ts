@@ -1,3 +1,5 @@
+import type { ProjectPerimetroReferencia } from '@/lib/types';
+
 /**
  * Remove `undefined` em profundidade — Firestore rejeita campos undefined no addDoc/updateDoc.
  */
@@ -25,6 +27,33 @@ export function stripUndefinedDeep<T>(value: T): T {
     }
   }
   return out as T;
+}
+
+/**
+ * Firestore não aceita arrays aninhados (ex.: coordenadas GeoJSON em polígonos).
+ * O arquivo do perímetro fica no Storage; a geometria é re-lida pelo fileUrl quando necessário.
+ */
+export function perimetroReferenciaForFirestore(
+  perimetro: ProjectPerimetroReferencia | undefined,
+): ProjectPerimetroReferencia | undefined {
+  if (!perimetro) return undefined;
+  const { geojson: _geojson, ...rest } = perimetro;
+  if (Object.keys(rest).length === 0) return undefined;
+  return rest as ProjectPerimetroReferencia;
+}
+
+/** Prepara payload de empreendimento (`projects`) para addDoc/updateDoc. */
+export function prepareProjectPayloadForFirestore<T extends Record<string, unknown>>(
+  payload: T,
+): T {
+  const cleaned = stripUndefinedDeep(payload) as T & {
+    perimetroReferencia?: ProjectPerimetroReferencia;
+  };
+  if (!cleaned.perimetroReferencia) return cleaned as T;
+  return {
+    ...cleaned,
+    perimetroReferencia: perimetroReferenciaForFirestore(cleaned.perimetroReferencia),
+  } as T;
 }
 
 const FIRESTORE_ERROR_MESSAGES_PT: Record<string, string> = {
@@ -61,6 +90,9 @@ export function getFirestoreErrorMessage(error: unknown, code?: string): string 
     const msg = error.message;
     if (msg.includes('Missing or insufficient permissions')) {
       return FIRESTORE_ERROR_MESSAGES_PT['permission-denied'];
+    }
+    if (msg.includes('Nested arrays are not supported')) {
+      return 'Não foi possível gravar geometria aninhada no banco. O perímetro será salvo apenas como arquivo; tente salvar novamente.';
     }
     return msg;
   }
