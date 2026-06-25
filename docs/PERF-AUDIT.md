@@ -678,3 +678,20 @@ Fora do plano F00–F18; **uma rota por PR**, mesmo protocolo de debug.
 | Shared | 92,4 kB | **92,4 kB** |
 
 **Próximo candidato F19l:** `/studies/fauna` (~356 kB), `/calendar` (~358 kB).
+
+### F19l — hub fauna (estudos) e agenda lazy views ✅ (2026-06-25)
+
+| Ficheiro | Mudança |
+|----------|---------|
+| `studies/fauna/page.tsx` + `studies-fauna-hub-view.tsx` | Shell + hub fauna |
+| `calendar/page.tsx` + `calendar-page-view.tsx` | Shell + agenda |
+
+**Verificação:** `npm run typecheck` · `npm run build`
+
+| Rota | Baseline (F17) | Após F19l |
+|------|----------------|-----------|
+| `/studies/fauna` | ~357 kB | **147 kB** (−210 kB) |
+| `/calendar` | ~358 kB | **147 kB** (−211 kB) |
+| Shared | 92,4 kB | **92,4 kB** |
+
+**Próximo candidato F19m:** rotas fauna em `/studies/fauna/*` (~341 kB), `/ai-lab/automations` (~333 kB).
