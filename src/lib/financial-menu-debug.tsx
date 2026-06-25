@@ -14,37 +14,19 @@ import { getNavDebugInfo, type NavDebugInfo } from '@/lib/nav-debug';
 import { allNavItems } from '@/lib/navigation-config';
 import type { NavItem, NavSubItem, UserRole } from '@/lib/types';
 import { canAccessNavItem } from '@/lib/role-guards';
+import {
+  FINANCEIRO_MENU_PATHS,
+  FINANCIAL_ROUTES,
+  isFinanceiroMenuPath,
+  isFinancialRoute,
+} from '@/lib/financeiro-menu-paths';
 
-/** Prefixos e rotas exatas do menu Financeiro (subitens de allNavItems "Financeiro") */
-export const FINANCIAL_ROUTES = [
-  '/clients',
-  '/suppliers',
-  '/invoices',
-  '/commercial-proposals',
-  '/financial/painel',
-  '/financial/projetos-roi',
-  '/financial/fluxo-projetado',
-  '/financial/conciliacao',
-  '/financial/abc-servicos',
-  '/financial/abc-fornecedores',
-  '/financial/orcamento',
-  '/financial/export-contabil',
-  '/contracts',
-  '/contracts-suppliers',
-  '/services',
-  '/cash-flow',
-  '/financial/dre-contabil',
-  '/financial/abc-curve',
-  '/financial/bens-patrimonio',
-  '/bank-access',
-] as const;
-
-export function isFinancialRoute(pathname: string): boolean {
-  const base = pathname.split('?')[0];
-  return FINANCIAL_ROUTES.some(
-    (route) => base === route || base.startsWith(route + '/')
-  );
-}
+export {
+  FINANCEIRO_MENU_PATHS,
+  FINANCIAL_ROUTES,
+  isFinanceiroMenuPath,
+  isFinancialRoute,
+};
 
 /** Retorna o item "Financeiro" de allNavItems e os subitens filtrados por role */
 export function getFinancialMenuForRole(userRole: UserRole): { item: NavItem | null; visibleSubItems: { label: string; href?: string; roles?: string[] }[] } {

@@ -1,3 +1,4 @@
+import { isFinanceiroMenuPath } from "@/lib/financeiro-menu-paths";
 import type { UserRole } from "@/lib/types";
 
 /** Rotas exclusivas do consultor (não existem para representante). */
@@ -19,15 +20,16 @@ export function isConsultorExtraPath(href: string): boolean {
 }
 
 /**
- * Consultor-representante vê as **mesmas telas** que o representante
- * (itens cujo menu inclui `representative`), mais rotas extras (ex.: carteira).
- * Não herda menus de gestor/técnico/supervisor.
+ * Consultor-representante espelha o representante (itens com `representative` no menu),
+ * mais rotas extras (ex.: carteira). **Não** vê o menu Financeiro nem herda
+ * gestor/técnico/supervisor.
  */
 export function canConsultorAccessNavItem(
   allowedRoles: UserRole[] | undefined | null,
   href?: string,
 ): boolean {
   if (href && isConsultorExtraPath(href)) return true;
+  if (isFinanceiroMenuPath(href)) return false;
   if (!allowedRoles?.length) return false;
   if (allowedRoles.includes("consultor_representante")) return true;
   return allowedRoles.includes("representative");
