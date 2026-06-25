@@ -1,7 +1,27 @@
 "use client";
 
-import { GeorefSectionPage } from "@/components/georeferenciamento/georef-section-page";
+import dynamic from "next/dynamic";
+import { Skeleton } from "@/components/ui/skeleton";
+import { PageHeader } from "@/components/page-header";
 import { PROCESSO_REGISTRO } from "@/lib/georeferenciamento/processos";
+
+const GeorefSectionPage = dynamic(
+  () =>
+    import("@/components/georeferenciamento/georef-section-page").then((m) => ({
+      default: m.GeorefSectionPage,
+    })),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex flex-col h-full">
+        <PageHeader title="Cartório e registro de imóveis" />
+        <main className="flex-1 p-4 md:p-6">
+          <Skeleton className="h-96 w-full" />
+        </main>
+      </div>
+    ),
+  },
+);
 
 export default function GeorefRegistroPage() {
   return (

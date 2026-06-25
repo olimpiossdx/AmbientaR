@@ -792,8 +792,88 @@ Fora do plano F00–F18; **uma rota por PR**, mesmo protocolo de debug.
 
 | Rota | Baseline (F17) | Após F19r |
 |------|----------------|-----------|
-| `/audit-log` | ~323 kB | TBD |
-| `/carteira` | ~306 kB | TBD |
-| `/consultas` | ~306 kB | TBD |
+| `/audit-log` | ~323 kB | **147 kB** |
+| `/carteira` | ~306 kB | **147 kB** |
+| `/consultas` | ~306 kB | **147 kB** |
 
 **Próximo candidato F19s:** rotas georeferenciamento (~329–330 kB), `gestao-processos/tarefas` (~397 kB).
+
+### F19s — georeferenciamento sub-rotas lazy ✅ (2026-06-25)
+
+| Ficheiro | Mudança |
+|----------|---------|
+| `georeferenciamento/{ambiental,campo,documentos,registro,rural,urbano,validacoes}/page.tsx` | `GeorefSectionPage` em `dynamic()` |
+| `georeferenciamento/processos/page.tsx` | `GeorefProjectsPanel` lazy |
+| `georeferenciamento/historico-car/` | Shell + `historico-car-view.tsx` |
+
+**Verificação:** `npm run typecheck` · `npm run build`
+
+| Rota | Baseline (F17) | Após F19s |
+|------|----------------|-----------|
+| `/georeferenciamento/ambiental` | ~330 kB | **152 kB** |
+| `/georeferenciamento/campo` | ~330 kB | **152 kB** |
+| `/georeferenciamento/documentos` | ~329 kB | **151 kB** |
+| `/georeferenciamento/registro` | ~329 kB | **151 kB** |
+| `/georeferenciamento/rural` | ~329 kB | **151 kB** |
+| `/georeferenciamento/urbano` | ~329 kB | **151 kB** |
+| `/georeferenciamento/validacoes` | ~329 kB | **150 kB** |
+| `/georeferenciamento/processos` | ~322 kB | **147 kB** |
+| `/georeferenciamento/historico-car` | ~324 kB | **147 kB** |
+
+**Próximo candidato F19t:** `georeferenciamento/processos/[id]` (~497 kB), `gestao-processos/tarefas` (~397 kB), `gestao-processos/planilha` (~540 kB).
+
+### F19t — georef detalhe e gestão processos lazy ✅ (2026-06-25)
+
+| Ficheiro | Mudança |
+|----------|---------|
+| `georeferenciamento/processos/[id]/` | Shell + `georef-processo-detail-view.tsx` |
+| `gestao-processos/planilha/` | Shell + `gestao-processos-planilha-view.tsx` |
+| `gestao-processos/tarefas/page.tsx` | `GestaoProcessosTarefasView` em `dynamic()` |
+
+**Verificação:** `npm run typecheck` · `npm run build`
+
+| Rota | Baseline (F17) | Após F19t |
+|------|----------------|-----------|
+| `/georeferenciamento/processos/[id]` | ~498 kB | **147 kB** |
+| `/gestao-processos/planilha` | ~540 kB | **149 kB** |
+| `/gestao-processos/tarefas` | ~397 kB | **104 kB** |
+
+**Próximo candidato F19u:** `financial/projetos-roi/[caseId]` (~583 kB), `gestao-processos/projetos` (~390 kB).
+
+### F19u — ROI detalhe e projetos gestão lazy ✅ (2026-06-25)
+
+| Ficheiro | Mudança |
+|----------|---------|
+| `financial/projetos-roi/[caseId]/` | Shell + `projetos-roi-detail-view.tsx` |
+| `gestao-processos/projetos/` | Shell + `gestao-processos-projetos-view.tsx` |
+| `gestao-processos/projetos/[id]/` | Shell + `consultoria-project-detail-view.tsx` |
+
+**Verificação:** `npm run typecheck` · `npm run build`
+
+| Rota | Baseline (F17) | Após F19u |
+|------|----------------|-----------|
+| `/financial/projetos-roi/[caseId]` | ~583 kB | **148 kB** |
+| `/gestao-processos/projetos` | ~390 kB | **149 kB** |
+| `/gestao-processos/projetos/[id]` | ~419 kB | **148 kB** |
+
+**Próximo candidato F19v:** `inspections/new` e `inspections/[id]/edit` (~472 kB), `financial/projetos-roi` listagem (~339 kB).
+
+### F19v — vistorias e ROI listagem lazy ✅ (2026-06-25)
+
+| Ficheiro | Mudança |
+|----------|---------|
+| `inspections/new/` + `new-inspection-view.tsx` | Shell + formulário nova vistoria |
+| `inspections/[id]/edit/` + `edit-inspection-view.tsx` | Shell + edição vistoria |
+| `inspections/page.tsx` + `inspections-list-view.tsx` | Shell + listagem vistorias |
+| `financial/projetos-roi/page.tsx` + `projetos-roi-list-view.tsx` | Shell + listagem ROI |
+
+**Verificação:** `npm run typecheck` · `npm run build`
+
+| Rota | Baseline (F17) | Após F19v |
+|------|----------------|-----------|
+| `/inspections/new` | ~472 kB | **148 kB** |
+| `/inspections/[id]/edit` | ~473 kB | **148 kB** |
+| `/inspections` | ~338 kB | **148 kB** |
+| `/financial/projetos-roi` | ~339 kB | **148 kB** |
+
+**Próximo candidato F19w:** rotas ~320–330 kB restantes (`inspections/reports`, `gestao-processos/indicadores`, hubs diversos).
