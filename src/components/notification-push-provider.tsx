@@ -9,14 +9,26 @@ import { isClientePortalRole } from "@/lib/role-guards";
 import { canAccessOfficeTasks } from "@/lib/gestao-processos/role-guards";
 import { getPackageLimits } from "@/lib/package-limits";
 import { fetchEmpreendedorIdsForRepresentative } from "@/lib/representative-empreendedor-ids";
+import { fetchEmpreendedorIdsForConsultor } from "@/lib/consultor-empreendedor-ids";
 import { runClientPortalDeadlineAlerts } from "@/lib/client-deadline-alerts";
 import { runOfficeTaskDeadlineAlerts } from "@/lib/gestao-processos/office-task-deadline-alerts";
+import { syncCadastroIncompletoNotification } from "@/lib/cadastro-incompleto-alerts";
 import { registerDeviceFcmToken } from "@/lib/fcm-client";
 import {
   canUseBrowserNotifications,
   requestBrowserNotificationPermission,
   showBrowserNotificationForAppAlert,
 } from "@/lib/push-notifications";
+
+import type { UserRole } from "@/lib/types";
+
+function isPortalDeadlineRole(role: UserRole | undefined): boolean {
+  return (
+    isClientePortalRole(role) ||
+    role === "representative" ||
+    role === "consultor_representante"
+  );
+}
 
 /**
  * Escuta novas entradas em `users/{uid}/notifications` e dispara alerta nativo (PWA/celular).
@@ -30,6 +42,7 @@ export function NotificationPushProvider() {
   const initializedRef = React.useRef(false);
   const deadlinesRanRef = React.useRef(false);
   const officeTasksDeadlinesRanRef = React.useRef(false);
+  const cadastroSyncRanRef = React.useRef(false);
 
   const notificationsQuery = useMemoFirebase(() => {
     if (!firestore || !profileAligned || !sessionUid) return null;
@@ -69,7 +82,18 @@ export function NotificationPushProvider() {
 
   React.useEffect(() => {
     if (!firestore || !user || !profileAligned || !sessionUid) return;
-    if (!isClientePortalRole(user.role) && user.role !== "representative") return;
+    if (!isClientePortalRole(user.role)) return;
+    if (cadastroSyncRanRef.current) return;
+    cadastroSyncRanRef.current = true;
+
+    void syncCadastroIncompletoNotification(firestore, user).catch((e) => {
+      console.warn("[NotificationPushProvider] cadastro incompleto:", e);
+    });
+  }, [firestore, user, profileAligned, sessionUid]);
+
+  React.useEffect(() => {
+    if (!firestore || !user || !profileAligned || !sessionUid) return;
+    if (!isPortalDeadlineRole(user.role)) return;
     const limits = getPackageLimits(user);
     if (!limits.allowsDeadlineAlerts) return;
     if (deadlinesRanRef.current) return;
@@ -80,6 +104,8 @@ export function NotificationPushProvider() {
         let empreendedorIds: string[] = [];
         if (user.role === "representative") {
           empreendedorIds = await fetchEmpreendedorIdsForRepresentative(firestore, user);
+        } else if (user.role === "consultor_representante") {
+          empreendedorIds = await fetchEmpreendedorIdsForConsultor(firestore, user);
         } else {
           const snap = await getDocs(
             query(

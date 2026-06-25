@@ -22,6 +22,12 @@ export const NOTIFICATION_SOURCE = {
   fatura: "fatura",
   proposta_comercial: "proposta_comercial",
   contrato: "contrato",
+  onboarding: "onboarding",
+  cadastro_incompleto: "cadastro_incompleto",
+  access_request_pending: "access_request_pending",
+  access_request_resolved: "access_request_resolved",
+  portal_invite: "portal_invite",
+  delegate_invite: "delegate_invite",
 } as const;
 
 export type NotificationSourceType =
@@ -43,4 +49,7 @@ export const NOTIFICATION_LINKS = {
   contracts: "/contracts",
   inspectionsReports: "/inspections/reports",
   gestaoProcessosTarefas: "/gestao-processos/tarefas",
+  empreendedores: "/empreendedores",
+  usersAccessRequests: "/users#access-requests-card",
+  usersDelegateAccess: "/users#delegate-access-portfolio",
 } as const;

@@ -9,6 +9,40 @@ import {
 import type { AccessRequest, AccessRequestType, AppUser } from "@/lib/types";
 import { normalizeDocumentDigits } from "@/lib/document-lookup";
 import { getAccessRequestType } from "@/lib/consultor-assignments";
+import { NOTIFICATION_LINKS, NOTIFICATION_SOURCE } from "@/lib/notification-events";
+import { getTitularUserIdsByDocument } from "@/lib/notification-recipients";
+import { ensureUnreadNotification } from "@/lib/notifications";
+
+async function notifyTitularOfAccessRequest(
+  firestore: Firestore,
+  params: {
+    requestId: string;
+    document: string;
+    requesterName: string;
+    requestType: AccessRequestType;
+  },
+): Promise<void> {
+  const titularIds = await getTitularUserIdsByDocument(firestore, params.document);
+  if (titularIds.length === 0) return;
+
+  const roleLabel =
+    params.requestType === "consultor_representante"
+      ? "consultor-representante"
+      : "representante";
+
+  await Promise.all(
+    titularIds.map((titularId) =>
+      ensureUnreadNotification(firestore, titularId, {
+        title: "Pedido de acesso pendente",
+        description: `${params.requesterName} solicitou acesso como ${roleLabel}.`,
+        link: NOTIFICATION_LINKS.usersAccessRequests,
+        sourceType: NOTIFICATION_SOURCE.access_request_pending,
+        sourceId: params.requestId,
+        actorRole: params.requestType,
+      }),
+    ),
+  );
+}
 
 export async function createAccessRequestsForDelegate(
   firestore: Firestore,
@@ -30,7 +64,7 @@ export async function createAccessRequestsForDelegate(
     if (normalized.length < 11 || existingSet.has(normalized)) continue;
     existingSet.add(normalized);
     try {
-      await addDoc(collection(firestore, "access_requests"), {
+      const ref = await addDoc(collection(firestore, "access_requests"), {
         requestedByUserId: params.requesterUserId,
         requestedByEmail: params.email,
         requestedByName: params.name,
@@ -41,6 +75,12 @@ export async function createAccessRequestsForDelegate(
         createdAt: new Date().toISOString(),
       } as Omit<AccessRequest, "id">);
       created += 1;
+      await notifyTitularOfAccessRequest(firestore, {
+        requestId: ref.id,
+        document: normalized,
+        requesterName: params.name,
+        requestType,
+      });
     } catch (e) {
       console.warn("Erro ao criar pedido de acesso para", normalized, e);
     }

@@ -34,7 +34,11 @@ export async function showBrowserNotificationForAppAlert(
     icon: DEFAULT_ICON,
     badge: DEFAULT_ICON,
     tag,
-    data: { link: item.link || "/" },
+    data: {
+      link: item.link || "/",
+      sourceType: item.sourceType || "",
+      sourceId: item.sourceId || "",
+    },
     requireInteraction: false,
   };
 

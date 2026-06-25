@@ -16,9 +16,15 @@
 | CAR, fauna, uso insignificante | Novo documento |
 | Financeiro | Proposta, fatura, contrato |
 | Ofícios | Ofício concluído (destinatário pelo nome) |
-| Vistoria | Relatório aprovado (já existia) |
+| Vistoria | Relatório aprovado |
+| Cadastro incompleto | Titular com `cadastroIncompleto` (empreendedor) — sincronizado na sessão |
+| Pedido de acesso | Representante/consultor solicita vínculo; titular aprova/rejeita |
+| Convite portal | Admin cria acesso Cliente Gestão |
+| Convite delegado | Titular indica representante/consultor |
 
-Destinatários: titular do empreendedor/cliente + representantes em `approvedUserIds`.
+Destinatários: titular do empreendedor/cliente + representantes (`approvedUserIds`) + consultores (`approvedConsultorIds`).
+
+**Badge no ícone (PWA):** contagem de não lidas via Badging API (`navigator.setAppBadge`), quando o browser suportar.
 
 ## Configurar push FCM (obrigatório para celular com app fechado)
 
@@ -80,7 +86,9 @@ Detalhes de variáveis e erros: [`docs/APP-HOSTING-VARIAVEIS.md`](./APP-HOSTING-
 
 ## Ficheiros técnicos
 
-- `src/lib/notifications.ts` — criar avisos + disparar push
+- `src/lib/cadastro-incompleto-alerts.ts` — aviso de empreendedor incompleto
+- `src/lib/app-badge.ts` — badge no ícone PWA
+- `src/lib/notification-admin-server.ts` — notificações server-side (convite portal)
 - `src/components/notification-push-provider.tsx` — escuta e prazos
 - `src/lib/client-deadline-alerts.ts` — prazos automáticos
 - `public/firebase-messaging-sw.js` — background push

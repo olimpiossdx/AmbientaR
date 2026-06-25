@@ -3,6 +3,8 @@ import type { Auth } from "firebase-admin/auth";
 import type { Firestore } from "firebase-admin/firestore";
 import type { Client, ClientPackage } from "@/lib/types";
 import { normalizeDocumentDigits } from "@/lib/document-lookup";
+import { notifyUserWithPushAdmin } from "@/lib/notification-admin-server";
+import { NOTIFICATION_SOURCE } from "@/lib/notification-events";
 
 export type CreatePortalAccessInput = {
   clientId: string;
@@ -160,6 +162,16 @@ export async function createPortalAccessForClientGestao(
           { merge: true },
         );
     }
+
+    await notifyUserWithPushAdmin(db, uid, {
+      title: "Acesso ao portal liberado",
+      description:
+        "Sua conta Cliente Gestão foi criada. Faça login com o e-mail informado e defina sua senha.",
+      link: "/login",
+      sourceType: NOTIFICATION_SOURCE.portal_invite,
+      sourceId: clientId,
+      actorRole: "admin",
+    });
 
     return {
       userId: uid,

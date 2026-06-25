@@ -59,7 +59,7 @@ const baseSchema = z.object({
   name: z.string().min(2, 'O nome é obrigatório.'),
   email: z.string().email('Por favor, insira um e-mail válido.'),
   role: z.enum(['admin', 'client', 'cliente_autonomo', 'representative', 'consultor_representante', 'technical', 'sales', 'financial', 'gestor', 'supervisor', 'diretor_fauna', 'advogado']),
-  status: z.enum(['active', 'inactive', 'pending_invite']),
+  status: z.enum(['active', 'inactive', 'pending_invite', 'pending_registration']),
   userCpf: z.string().optional(),
   titularDocument: z.string().optional(),
   accessDocuments: z.array(z.object({ value: z.string() })).optional(),

@@ -141,6 +141,8 @@ import {
   lookupClientAndEmpreendedorByDocument,
   normalizeDocumentDigits,
 } from "@/lib/document-lookup";
+import { createNotificationWithPush, markNotificationsReadBySource } from "@/lib/notifications";
+import { NOTIFICATION_LINKS, NOTIFICATION_SOURCE } from "@/lib/notification-events";
 
 const DetailItem = ({
   label,
@@ -1405,6 +1407,30 @@ export default function UsersPage() {
           });
         }
       }
+
+      const titularUid = user.uid || user.id;
+      if (titularUid) {
+        await markNotificationsReadBySource(
+          firestore,
+          titularUid,
+          NOTIFICATION_SOURCE.access_request_pending,
+          requestId,
+        );
+      }
+
+      if (request.requestedByUserId) {
+        await createNotificationWithPush(firestore, request.requestedByUserId, {
+          title: approve ? "Acesso aprovado" : "Pedido de acesso recusado",
+          description: approve
+            ? `${user.name} aprovou seu pedido de acesso.`
+            : `${user.name} recusou seu pedido de acesso.`,
+          link: NOTIFICATION_LINKS.usersDelegateAccess,
+          sourceType: NOTIFICATION_SOURCE.access_request_resolved,
+          sourceId: requestId,
+          actorRole: user.role,
+        });
+      }
+
       toast({
         title: approve ? "Acesso aprovado" : "Pedido rejeitado",
         description: approve

@@ -21,7 +21,8 @@ import {
   normalizeDocumentDigits,
 } from "@/lib/document-lookup";
 import { createConsultorAssignment } from "@/lib/consultor-assignments";
-import { createNotificationForUser } from "@/lib/notifications";
+import { createNotificationWithPush } from "@/lib/notifications";
+import { NOTIFICATION_SOURCE } from "@/lib/notification-events";
 
 export type DelegateInviteStatus =
   | "pending"
@@ -197,13 +198,13 @@ export async function createDelegateInviteFromTitular(
       status: "pending_professional_ack",
     });
 
-    await createNotificationForUser(input.firestore, professionalId, {
+    await createNotificationWithPush(input.firestore, professionalId, {
       title: "Convite de vínculo com titular",
       description: `${input.titularUser.name} indicou você como ${
         input.role === "consultor_representante" ? "consultor-representante" : "representante"
       }. Confirme ciência do vínculo em Usuários.`,
       link: "/users#delegate-invite-ack",
-      sourceType: "delegate_invite",
+      sourceType: NOTIFICATION_SOURCE.delegate_invite,
       sourceId: ref.id,
       actorRole: "client",
     });
@@ -243,7 +244,7 @@ export async function acceptDelegateInvite(
     targetUserName: params.acceptingUser.name,
   });
 
-  await createNotificationForUser(firestore, titularUid, {
+  await createNotificationWithPush(firestore, titularUid, {
     title: "Vínculo confirmado",
     description: `${params.acceptingUser.name} aceitou operar como ${
       params.invite.role === "consultor_representante"
@@ -251,7 +252,7 @@ export async function acceptDelegateInvite(
         : "representante"
     } do titular ${params.invite.titularDocument}.`,
     link: "/users#delegate-invites-sent",
-    sourceType: "delegate_invite",
+    sourceType: NOTIFICATION_SOURCE.delegate_invite,
     sourceId: params.invite.id,
   });
 }

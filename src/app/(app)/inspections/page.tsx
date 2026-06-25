@@ -78,7 +78,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
 import { FirestorePermissionError } from "@/firebase/errors";
-import { createNotificationForUser } from "@/lib/notifications";
+import { createNotificationWithPush } from "@/lib/notifications";
 import { downloadJsPdf } from "@/lib/branding-pdf";
 import { buildInspectionFieldReportPdf } from "@/lib/inspection-field-report-pdf";
 import {
@@ -194,7 +194,7 @@ export default function InspectionsListPage() {
 
       const projectInfo = projectsMap.get(inspectionData.projectId);
       if (projectInfo?.userId) {
-        await createNotificationForUser(firestore, projectInfo.userId, {
+        await createNotificationWithPush(firestore, projectInfo.userId, {
           title: "Relatório de vistoria aprovado",
           description: `O relatório para o empreendimento "${projectInfo.name}" foi aprovado. Confirme a leitura em Relatórios de Campo.`,
           link: "/inspections/reports",

@@ -5,6 +5,8 @@ export type PushPayload = {
   title: string;
   body: string;
   link?: string;
+  sourceType?: string;
+  sourceId?: string;
 };
 
 /**
@@ -46,6 +48,8 @@ export async function sendPushToPortalUsers(
         link: payload.link || "/",
         title: payload.title,
         body: payload.body,
+        ...(payload.sourceType ? { sourceType: payload.sourceType } : {}),
+        ...(payload.sourceId ? { sourceId: payload.sourceId } : {}),
       },
       webpush: {
         fcmOptions: {

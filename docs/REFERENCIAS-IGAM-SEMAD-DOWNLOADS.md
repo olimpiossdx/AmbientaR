@@ -12,7 +12,7 @@ Muitos PDFs do IGAM bloqueiam download automático (403 em bots). Abra os links 
 
 | Documento | URL |
 |-----------|-----|
-| Formulários + TRs por código (menu oficial) | https://igam.mg.gov.br/outorga/formularios |
+| Formulários + TRs por código (menu oficial) | https://igasimm.mg.gov.br/outorga/formularios |
 | Lista SEMAD (TR 01–18) | https://meioambiente.mg.gov.br/w/formularios-para-elaboracao-de-processo-de-outorga |
 | Repositório institucional IGAM | https://igam.mg.gov.br/w/repositorio-institucional |
 | Página SOUT (tutoriais + repositório) | https://igam.mg.gov.br/w/sistema-de-outorga-de-direito-de-uso-de-recursos-hidricos-sout |
@@ -172,6 +172,7 @@ docs/referencias-igam/**/*.pdf
 
 ## Relacionado no repositório
 
-- Catálogo atual: [`src/lib/outorga-mg-catalog.ts`](../src/lib/outorga-mg-catalog.ts)
-- Plano mestre: Hub Projeto Frentes + `igam-tr-catalog.ts` (Fase 0)
+- Catálogo modos de uso: [`src/lib/outorga-mg-catalog.ts`](../src/lib/outorga-mg-catalog.ts)
+- TR estruturado (Fase 0): [`src/lib/igam-tr-catalog.ts`](../src/lib/igam-tr-catalog.ts)
 - Tipos UI: `InsignificantWaterUseType` em [`src/lib/types.ts`](../src/lib/types.ts)
+- Plano mestre: Hub Projeto Frentes — Fase 1+ (`ambiental-frentes-registry.ts`, launcher)

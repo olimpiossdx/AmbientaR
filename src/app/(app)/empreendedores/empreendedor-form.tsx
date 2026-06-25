@@ -39,6 +39,7 @@ import {
 import { useCollection, useMemoFirebase } from "@/firebase";
 import type { AppUser } from "@/lib/types";
 import { isClientePortalRole } from "@/lib/role-guards";
+import { clearCadastroIncompletoNotifications } from "@/lib/cadastro-incompleto-alerts";
 import {
   Select,
   SelectContent,
@@ -791,6 +792,7 @@ export function EmpreendedorForm({
           try {
             await updateDoc(doc(firestore, "users", user.id), {
               cadastroIncompleto: false});
+            await clearCadastroIncompletoNotifications(firestore, user.id);
           } catch (_) {}
         }
 

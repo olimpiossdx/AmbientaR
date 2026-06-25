@@ -28,7 +28,11 @@ messaging.onBackgroundMessage((payload) => {
     body,
     icon: "/icons/icon-192x192.png",
     badge: "/icons/icon-192x192.png",
-    data: { link },
+    data: {
+      link,
+      sourceType: payload.data?.sourceType || "",
+      sourceId: payload.data?.sourceId || "",
+    },
     tag: payload.data?.sourceType
       ? `${payload.data.sourceType}:${payload.data.sourceId || ""}`
       : "ambientar-alert",

@@ -10,6 +10,8 @@ export async function POST(req: Request) {
       title?: string;
       description?: string;
       link?: string;
+      sourceType?: string;
+      sourceId?: string;
     };
 
     const userIds = Array.isArray(body.userIds) ? body.userIds : [];
@@ -28,6 +30,8 @@ export async function POST(req: Request) {
       title,
       body: description || title,
       link: typeof body.link === "string" ? body.link : undefined,
+      sourceType: typeof body.sourceType === "string" ? body.sourceType : undefined,
+      sourceId: typeof body.sourceId === "string" ? body.sourceId : undefined,
     });
 
     return NextResponse.json({ ok: true, ...result });

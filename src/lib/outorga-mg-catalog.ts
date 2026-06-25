@@ -3,6 +3,7 @@
  * Fontes: Portaria IGAM 48/2019 (Tabela 01), Tabelas de Apoio, custos vigentes 01/01/2026, Decreto 47.705/2019.
  * UFEMG: Resolução SEF nº 5.969/2025 (exercício 2026).
  */
+import { buildChecklistFromTr } from "@/lib/igam-tr-catalog";
 
 export const OUTORGA_MG_EXERCICIO_TAXAS = 2026;
 export const OUTORGA_MG_UFEMG = 5.7899;
@@ -17,7 +18,7 @@ export const OUTORGA_MG_LINKS = {
   ufemgSef: "https://www.fazenda.mg.gov.br/empresas/legislacao_tributaria/resolucoes/ufemg.html",
   orientacoesSout:
     "https://igam.mg.gov.br/w/orientacoes-para-obtencao-de-outorga-1",
-  formularios: "https://igam.mg.gov.br/outorga/formularios",
+  formularios: "https://igasimm.mg.gov.br/outorga/formularios",
   tabelasApoio:
     "https://igam.mg.gov.br/documents/d/igam/tabelas_de_apoio_abr_2020-pdf",
   decreto47705Almg:
@@ -312,7 +313,7 @@ export const OUTORGA_MODOS_USO_MG: OutorgaModoUsoDef[] = [
     label: "Perfuração de poço tubular profundo",
     categoria: "subterranea",
     tipoServico: "autorizacao_perfuracao",
-    trPdfUrl: `${IGAM_DOC}/cod_07-perfuracao_poco_tubular_set_2023-pdf`,
+    trPdfUrl: `${IGAM_DOC}/cod_07-autorizacao_poco_tubular_set_2023-pdf`,
     taxaAnaliseBrl: 77.53,
     formularioTecnico: "Água Subterrânea",
     selecionavelNovaOutorga: true,
@@ -322,7 +323,7 @@ export const OUTORGA_MODOS_USO_MG: OutorgaModoUsoDef[] = [
     label: "Captação em poço tubular já existente",
     categoria: "subterranea",
     tipoServico: "outorga",
-    trPdfUrl: `${IGAM_DOC}/cod_08-captacao_poco_tubular_existente_set_2023-pdf`,
+    trPdfUrl: `${IGAM_DOC}/cod_08-captacao_agua_subterranea_poco_tubular_set_2023-pdf`,
     taxaAnaliseBrl: 724.72,
     formularioTecnico: "Água Subterrânea",
     selecionavelNovaOutorga: true,
@@ -371,7 +372,7 @@ export const OUTORGA_MODOS_USO_MG: OutorgaModoUsoDef[] = [
     label: "Captação em nascente / surgência",
     categoria: "subterranea",
     tipoServico: "outorga",
-    trPdfUrl: `${IGAM_DOC}/cod_11-captacao_nascente_set_2023-pdf`,
+    trPdfUrl: `${IGAM_DOC}/cod_11-captacao_agua_subterranea_surgencia_set_2023-pdf`,
     taxaAnaliseBrl: 724.72,
     formularioTecnico: "Água Subterrânea",
     selecionavelNovaOutorga: true,
@@ -584,16 +585,7 @@ export function getModoUsoByCodigo(
 }
 
 export function buildChecklistForModo(codigo: string): OutorgaChecklistItemDef[] {
-  const modo = getModoUsoByCodigo(codigo);
-  const extra = modo?.checklistExtra ?? [];
-  const ids = new Set<string>();
-  const merged: OutorgaChecklistItemDef[] = [];
-  for (const item of [...OUTORGA_CHECKLIST_GERAL, ...extra]) {
-    if (ids.has(item.id)) continue;
-    ids.add(item.id);
-    merged.push(item);
-  }
-  return merged;
+  return buildChecklistFromTr(codigo);
 }
 
 /** Links oficiais IGAM/SEMAD para o código escolhido (sem campos undefined). */

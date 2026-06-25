@@ -7,6 +7,11 @@ import {
   serverTimestamp,
   doc,
   getDoc,
+  getDocs,
+  query,
+  where,
+  updateDoc,
+  writeBatch,
 } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import type { License, Project, WaterPermit, EnvironmentalIntervention } from '@/lib/types';
@@ -18,6 +23,21 @@ import {
   getRecipientUserIdsByRecipientName,
   getRecipientUserIdsFromCondicionanteReference,
 } from '@/lib/notification-recipients';
+
+export type CreateNotificationPayload = {
+  title: string;
+  description: string;
+  link?: string;
+  sourceType?: string;
+  sourceId?: string;
+  /** Perfil/origem do alerta para exibição no sino (ex: Gestão Ambiental, Financeiro). */
+  actorRole?: UserRole | string;
+};
+
+export type CreateNotificationOptions = {
+  /** Dispara FCM via API (padrão: true). */
+  push?: boolean;
+};
 
 async function triggerServerPushForUsers(
   userIds: string[],
@@ -39,6 +59,8 @@ async function triggerServerPushForUsers(
         title: payload.title,
         description: payload.description,
         link: payload.link,
+        sourceType: payload.sourceType,
+        sourceId: payload.sourceId,
       }),
     });
   } catch (e) {
@@ -46,24 +68,13 @@ async function triggerServerPushForUsers(
   }
 }
 
-export type CreateNotificationPayload = {
-  title: string;
-  description: string;
-  link?: string;
-  sourceType?: string;
-  sourceId?: string;
-  /** Perfil/origem do alerta para exibição no sino (ex: Gestão Ambiental, Financeiro). */
-  actorRole?: UserRole | string;
-};
-
 /**
  * Cria uma notificação para um usuário (subcoleção users/{userId}/notifications).
- * Usado para alertas de condicionantes, relatórios, vistorias, etc.
  */
 export async function createNotificationForUser(
   firestore: Firestore,
   userId: string,
-  payload: CreateNotificationPayload
+  payload: CreateNotificationPayload,
 ): Promise<void> {
   if (!userId?.trim()) return;
   const notificationsRef = collection(firestore, `users/${userId}/notifications`);
@@ -80,12 +91,75 @@ export async function createNotificationForUser(
   });
 }
 
-/** Vários destinatários (portal cliente / representantes). */
+/** Cria notificação e dispara push FCM (quando em browser autenticado). */
+export async function createNotificationWithPush(
+  firestore: Firestore,
+  userId: string,
+  payload: CreateNotificationPayload,
+  options?: CreateNotificationOptions,
+): Promise<void> {
+  await createNotificationForUser(firestore, userId, payload);
+  if (options?.push !== false) {
+    void triggerServerPushForUsers([userId], payload);
+  }
+}
+
+/** Cria só se não existir não lida com o mesmo sourceType + sourceId. */
+export async function ensureUnreadNotification(
+  firestore: Firestore,
+  userId: string,
+  payload: CreateNotificationPayload & { sourceType: string; sourceId: string },
+  options?: CreateNotificationOptions,
+): Promise<boolean> {
+  if (!userId?.trim()) return false;
+
+  const notificationsRef = collection(firestore, `users/${userId}/notifications`);
+  const existing = await getDocs(
+    query(
+      notificationsRef,
+      where('sourceType', '==', payload.sourceType),
+      where('sourceId', '==', payload.sourceId),
+    ),
+  );
+  const hasUnread = existing.docs.some((d) => d.data().isRead === false);
+  if (hasUnread) return false;
+
+  await createNotificationWithPush(firestore, userId, payload, options);
+  return true;
+}
+
+/** Marca como lidas notificações por sourceType (e sourceId opcional). */
+export async function markNotificationsReadBySource(
+  firestore: Firestore,
+  userId: string,
+  sourceType: string,
+  sourceId?: string,
+): Promise<void> {
+  if (!userId?.trim() || !sourceType?.trim()) return;
+
+  const notificationsRef = collection(firestore, `users/${userId}/notifications`);
+  const constraints = [where('sourceType', '==', sourceType)] as Parameters<
+    typeof query
+  >[1][];
+  if (sourceId?.trim()) {
+    constraints.push(where('sourceId', '==', sourceId));
+  }
+
+  const snap = await getDocs(query(notificationsRef, ...constraints));
+  const unread = snap.docs.filter((d) => d.data().isRead === false);
+  if (unread.length === 0) return;
+
+  const batch = writeBatch(firestore);
+  unread.forEach((d) => batch.update(d.ref, { isRead: true }));
+  await batch.commit();
+}
+
+/** Vários destinatários (portal cliente / representantes / consultores). */
 export async function notifyPortalUsers(
   firestore: Firestore,
   userIds: Iterable<string>,
   payload: CreateNotificationPayload,
-  options?: { excludeUserId?: string },
+  options?: { excludeUserId?: string; push?: boolean },
 ): Promise<void> {
   const unique = [...new Set(userIds)].filter(
     (id) => id?.trim() && id !== options?.excludeUserId,
@@ -93,7 +167,9 @@ export async function notifyPortalUsers(
   await Promise.all(
     unique.map((uid) => createNotificationForUser(firestore, uid, payload)),
   );
-  void triggerServerPushForUsers(unique, payload);
+  if (options?.push !== false) {
+    void triggerServerPushForUsers(unique, payload);
+  }
 }
 
 export async function notifyEmpreendedorPortalUsers(

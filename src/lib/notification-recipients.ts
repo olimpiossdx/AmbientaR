@@ -1,7 +1,25 @@
 import { collection, doc, getDoc, getDocs, query, where, type Firestore } from "firebase/firestore";
 import type { License } from "@/lib/types";
 
-/** UIDs que devem ver alertas no portal (titular + representantes aprovados). */
+type PortalEntityFields = {
+  userId?: string;
+  approvedUserIds?: string[];
+  approvedConsultorIds?: string[];
+};
+
+function collectPortalRecipientIds(data: PortalEntityFields): string[] {
+  const ids = new Set<string>();
+  if (data.userId?.trim()) ids.add(data.userId.trim());
+  for (const uid of data.approvedUserIds || []) {
+    if (typeof uid === "string" && uid.trim()) ids.add(uid.trim());
+  }
+  for (const uid of data.approvedConsultorIds || []) {
+    if (typeof uid === "string" && uid.trim()) ids.add(uid.trim());
+  }
+  return Array.from(ids);
+}
+
+/** UIDs que devem ver alertas no portal (titular + representantes + consultores aprovados). */
 export async function getRecipientUserIdsForEmpreendedor(
   firestore: Firestore,
   empreendedorId: string | undefined | null,
@@ -9,13 +27,7 @@ export async function getRecipientUserIdsForEmpreendedor(
   if (!empreendedorId?.trim()) return [];
   const snap = await getDoc(doc(firestore, "empreendedores", empreendedorId.trim()));
   if (!snap.exists()) return [];
-  const data = snap.data() as { userId?: string; approvedUserIds?: string[] };
-  const ids = new Set<string>();
-  if (data.userId?.trim()) ids.add(data.userId.trim());
-  for (const uid of data.approvedUserIds || []) {
-    if (typeof uid === "string" && uid.trim()) ids.add(uid.trim());
-  }
-  return Array.from(ids);
+  return collectPortalRecipientIds(snap.data() as PortalEntityFields);
 }
 
 export async function getRecipientUserIdsForProject(
@@ -33,7 +45,7 @@ export async function getRecipientUserIdsForProject(
   return Array.from(ids);
 }
 
-/** Cliente financeiro (`clients/{id}`) → titular e representantes. */
+/** Cliente financeiro (`clients/{id}`) → titular, representantes e consultores. */
 export async function getRecipientUserIdsForClient(
   firestore: Firestore,
   clientId: string | undefined | null,
@@ -41,12 +53,7 @@ export async function getRecipientUserIdsForClient(
   if (!clientId?.trim()) return [];
   const snap = await getDoc(doc(firestore, "clients", clientId.trim()));
   if (!snap.exists()) return [];
-  const data = snap.data() as { userId?: string; approvedUserIds?: string[] };
-  const ids = new Set<string>();
-  if (data.userId?.trim()) ids.add(data.userId.trim());
-  for (const uid of data.approvedUserIds || []) {
-    if (typeof uid === "string" && uid.trim()) ids.add(uid.trim());
-  }
+  const ids = new Set(collectPortalRecipientIds(snap.data() as PortalEntityFields));
   if (ids.size === 0 && clientId.trim()) {
     ids.add(clientId.trim());
   }
@@ -69,11 +76,9 @@ export async function getRecipientUserIdsByRecipientName(
       query(collection(firestore, col), where("name", "==", name)),
     );
     for (const d of snap.docs) {
-      const data = d.data() as { userId?: string; approvedUserIds?: string[] };
-      if (data.userId?.trim()) ids.add(data.userId.trim());
-      for (const uid of data.approvedUserIds || []) {
-        if (typeof uid === "string" && uid.trim()) ids.add(uid.trim());
-      }
+      collectPortalRecipientIds(d.data() as PortalEntityFields).forEach((id) =>
+        ids.add(id),
+      );
     }
   };
 
@@ -109,4 +114,22 @@ export async function getRecipientUserIdsFromCondicionanteReference(
   }
 
   return [];
+}
+
+/** Titular(es) vinculados a um CPF/CNPJ (cliente ou empreendedor). */
+export async function getTitularUserIdsByDocument(
+  firestore: Firestore,
+  rawDocument: string,
+): Promise<string[]> {
+  const { lookupClientAndEmpreendedorByDocument } = await import(
+    "@/lib/document-lookup"
+  );
+  const { client, empreendedor } = await lookupClientAndEmpreendedorByDocument(
+    firestore,
+    rawDocument,
+  );
+  const ids = new Set<string>();
+  if (client?.userId?.trim()) ids.add(client.userId.trim());
+  if (empreendedor?.userId?.trim()) ids.add(empreendedor.userId.trim());
+  return Array.from(ids);
 }

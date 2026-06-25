@@ -32,6 +32,7 @@ import {
   serverTimestamp} from "firebase/firestore";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { isClientePortalRole } from "@/lib/role-guards";
+import { clearCadastroIncompletoNotifications } from "@/lib/cadastro-incompleto-alerts";
 import {
   Select,
   SelectContent,
@@ -587,6 +588,7 @@ export function ClientForm({
           try {
             await updateDoc(doc(firestore, "users", user.id), {
               cadastroIncompleto: false});
+            await clearCadastroIncompletoNotifications(firestore, user.id);
           } catch (_) {}
         }
 
