@@ -82,6 +82,8 @@ import {
 import type { ManualMonitoringChartsProps } from "@/app/(app)/monitoring/manual/manual-monitoring-charts";
 import { fetchEmpreendedorIdsForPortalScope, isEmpreendedorScopedPortalRole } from "@/lib/portal-empreendedor-scope";
 import { isClientePortalRole, isRepresentativeLikePortalRole, canPerformManualMonitoringWrite } from "@/lib/role-guards";
+import { buildEmpreendedorSelectOptions, normalizeEntityId } from "@/lib/empreendedor-project-select";
+import { Label } from "@/components/ui/label";
 
 const ManualMonitoringCharts = dynamic<ManualMonitoringChartsProps>(
   () => import("@/app/(app)/monitoring/manual/manual-monitoring-charts"),
@@ -107,6 +109,7 @@ export default function ManualMonitoringPage() {
   );
   const [selectedOutorga, setSelectedOutorga] = useState<string>("");
   const [selectedPonto, setSelectedPonto] = useState<string>("");
+  const [selectedEmpreendedorId, setSelectedEmpreendedorId] = useState("");
   const [yearFilter, setYearFilter] = useState<string>(String(new Date().getFullYear()));
   const [monthFilter, setMonthFilter] = useState<string>("ano_todo");
   const [empreendedorIdsForUser, setEmpreendedorIdsForUser] = useState<
@@ -192,19 +195,34 @@ export default function ManualMonitoringPage() {
       ),
     [outorgas],
   );
+  const outorgasForSelect = useMemo(() => {
+    if (!selectedEmpreendedorId) return outorgasManuais;
+    const eid = normalizeEntityId(selectedEmpreendedorId);
+    return outorgasManuais.filter(
+      (o) => normalizeEntityId(o.empreendedorId) === eid,
+    );
+  }, [outorgasManuais, selectedEmpreendedorId]);
   const empreendedoresQuery = useMemoFirebase(
     () => (firestore ? query(collection(firestore, "empreendedores"), limit(200)) : null),
     [firestore],
   );
   const { data: empreendedores } = useCollection<Empreendedor>(empreendedoresQuery);
+  const empreendedoresForSelect = useMemo(
+    () =>
+      buildEmpreendedorSelectOptions({
+        list: empreendedores,
+        selectedId: selectedEmpreendedorId,
+      }),
+    [empreendedores, selectedEmpreendedorId],
+  );
   const projectsQuery = useMemoFirebase(
     () => (firestore ? query(collection(firestore, "projects"), limit(200)) : null),
     [firestore],
   );
   const { data: projects } = useCollection<Project>(projectsQuery);
   const outorga = useMemo(
-    () => outorgasManuais.find((o) => o.id === selectedOutorga),
-    [outorgasManuais, selectedOutorga],
+    () => outorgasForSelect.find((o) => o.id === selectedOutorga),
+    [outorgasForSelect, selectedOutorga],
   );
   const outorgaPontos =
     outorga?.pontosDeMonitoramento ?? EMPTY_PONTOS_DE_MONITORAMENTO;
@@ -213,6 +231,15 @@ export default function ManualMonitoringPage() {
     isLoadingOutorgas ||
     (isEmpreendedorScopedPortalRole(user?.role) &&
       empreendedorIdsForUser === undefined);
+
+  useEffect(() => {
+    if (!selectedEmpreendedorId) return;
+    const stillExists = outorgasForSelect.some((o) => o.id === selectedOutorga);
+    if (!stillExists) {
+      setSelectedOutorga("");
+      setSelectedPonto("");
+    }
+  }, [outorgasForSelect, selectedOutorga, selectedEmpreendedorId]);
 
   useEffect(() => {
     if (!selectedOutorga) return;
@@ -436,23 +463,48 @@ export default function ManualMonitoringPage() {
                 adicionar registros.
               </CardDescription>
             </CardHeader>
-            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label>Empreendedor</Label>
+                <Select
+                  value={selectedEmpreendedorId || undefined}
+                  onValueChange={(value) => {
+                    setSelectedEmpreendedorId(value);
+                    setSelectedOutorga("");
+                    setSelectedPonto("");
+                  }}
+                  disabled={isLoadingOutorgasList}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o empreendedor" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {empreendedoresForSelect.map((e) => (
+                      <SelectItem key={e.id} value={e.id}>
+                        {e.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
               <Select
                 value={selectedOutorga}
                 onValueChange={setSelectedOutorga}
-                disabled={isLoadingOutorgasList}
+                disabled={!selectedEmpreendedorId || isLoadingOutorgasList}
               >
                 <SelectTrigger>
                   <SelectValue
                     placeholder={
-                      isLoadingOutorgasList
-                        ? "Carregando..."
-                        : "Selecione uma Outorga"
+                      !selectedEmpreendedorId
+                        ? "Selecione o empreendedor primeiro"
+                        : isLoadingOutorgasList
+                          ? "Carregando..."
+                          : "Selecione uma Outorga"
                     }
                   />
                 </SelectTrigger>
                 <SelectContent>
-                  {outorgasManuais.map((o) => (
+                  {outorgasForSelect.map((o) => (
                     <SelectItem key={o.id} value={o.id}>
                       {o.permitNumber} - {o.description}
                     </SelectItem>

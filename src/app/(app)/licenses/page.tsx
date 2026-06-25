@@ -74,6 +74,7 @@ import { backupAndDeleteParentWithCondicionantes } from "@/lib/deleted-data-back
 import { CardSearchInput } from "@/components/card-search-input";
 import { fetchEmpreendedorIdsForPortalScope, isEmpreendedorScopedPortalRole } from "@/lib/portal-empreendedor-scope";
 import { canPerformOperationalWrite } from "@/lib/role-guards";
+import { EmpreendedorProjectFilter } from "@/components/documentos-ambientais/empreendedor-project-filter";
 
 const canPerformWriteActions = (user: AppUser | null): boolean => {
   if (!user) return false;
@@ -101,6 +102,8 @@ export default function LicensesPage() {
   const [editingLicense, setEditingLicense] = useState<License | null>(null);
   const [viewingLicense, setViewingLicense] = useState<License | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [filterEmpreendedorId, setFilterEmpreendedorId] = useState("");
+  const [filterProjectId, setFilterProjectId] = useState("");
   const [empreendedorIdsForUser, setEmpreendedorIdsForUser] = useState<
     string[] | undefined
   >(undefined);
@@ -213,10 +216,21 @@ export default function LicensesPage() {
       ),
     [licenses],
   );
+  const scopedLicenses = useMemo(() => {
+    let list = sortedLicenses;
+    if (filterEmpreendedorId) {
+      list = list.filter((l) => l.empreendedorId === filterEmpreendedorId);
+    }
+    if (filterProjectId) {
+      list = list.filter((l) => l.projectId === filterProjectId);
+    }
+    return list;
+  }, [sortedLicenses, filterEmpreendedorId, filterProjectId]);
+
   const filteredLicenses = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
-    if (!term) return sortedLicenses;
-    return sortedLicenses.filter((license) => {
+    if (!term) return scopedLicenses;
+    return scopedLicenses.filter((license) => {
       const empreendedor = (empreendedoresMap.get(license.empreendedorId) || "").toLowerCase();
       const empreendimento = (projectsMap.get(license.projectId || "") || "").toLowerCase();
       return (
@@ -228,7 +242,9 @@ export default function LicensesPage() {
         empreendimento.includes(term)
       );
     });
-  }, [sortedLicenses, searchTerm, empreendedoresMap, projectsMap]);
+  }, [scopedLicenses, searchTerm, empreendedoresMap, projectsMap]);
+
+  const showEntityFilter = !isEmpreendedorScopedPortalRole(user?.role);
 
   const handleAddNew = () => {
     router.push("/licenses/new");
@@ -328,6 +344,18 @@ export default function LicensesPage() {
                 Acompanhe e gerencie todas as licenças ambientais dos seus
                 clientes.
               </CardDescription>
+              {showEntityFilter && (
+                <EmpreendedorProjectFilter
+                  empreendedores={allEmpreendedores}
+                  allProjects={allProjects}
+                  empreendedorId={filterEmpreendedorId}
+                  projectId={filterProjectId}
+                  onEmpreendedorIdChange={setFilterEmpreendedorId}
+                  onProjectIdChange={setFilterProjectId}
+                  isLoading={isLoadingEmpreendedores || isLoadingProjects}
+                  className="pt-2"
+                />
+              )}
               <CardSearchInput
                 value={searchTerm}
                 onChange={setSearchTerm}

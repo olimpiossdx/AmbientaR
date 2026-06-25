@@ -68,6 +68,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { fetchEmpreendedorIdsForPortalScope, isEmpreendedorScopedPortalRole } from "@/lib/portal-empreendedor-scope";
 import { isClientePortalRole, canPerformOperationalWrite } from "@/lib/role-guards";
+import { EmpreendedorProjectFilter } from "@/components/documentos-ambientais/empreendedor-project-filter";
 
 const canPerformWriteActions = (user: AppUser | null): boolean => {
   if (!user) return false;
@@ -99,6 +100,7 @@ export default function IntervencoesPage() {
   const [editingItem, setEditingItem] =
     useState<EnvironmentalIntervention | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [filterEmpreendedorId, setFilterEmpreendedorId] = useState("");
   const [empreendedorIdsForUser, setEmpreendedorIdsForUser] = useState<
     string[] | undefined
   >(undefined);
@@ -190,10 +192,17 @@ export default function IntervencoesPage() {
       ),
     [intervencoes],
   );
+  const scopedIntervencoes = useMemo(() => {
+    if (!filterEmpreendedorId) return sortedIntervencoes;
+    return sortedIntervencoes.filter(
+      (item) => item.empreendedorId === filterEmpreendedorId,
+    );
+  }, [sortedIntervencoes, filterEmpreendedorId]);
+
   const filteredIntervencoes = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
-    if (!term) return sortedIntervencoes;
-    return sortedIntervencoes.filter((item) => {
+    if (!term) return scopedIntervencoes;
+    return scopedIntervencoes.filter((item) => {
       const empreendedor = (empreendedoresMap.get(item.empreendedorId) || "").toLowerCase();
       return (
         (item.processNumber || "").toLowerCase().includes(term) ||
@@ -202,7 +211,9 @@ export default function IntervencoesPage() {
         empreendedor.includes(term)
       );
     });
-  }, [sortedIntervencoes, searchTerm, empreendedoresMap]);
+  }, [scopedIntervencoes, searchTerm, empreendedoresMap]);
+
+  const showEntityFilter = !isEmpreendedorScopedPortalRole(user?.role);
 
   const isLoading =
     isLoadingIntervencoes ||
@@ -288,6 +299,19 @@ export default function IntervencoesPage() {
               <CardDescription>
                 Acompanhe todas as autorizações para intervenção ambiental.
               </CardDescription>
+              {showEntityFilter && (
+                <EmpreendedorProjectFilter
+                  empreendedores={empreendedores}
+                  allProjects={[]}
+                  empreendedorId={filterEmpreendedorId}
+                  projectId=""
+                  onEmpreendedorIdChange={setFilterEmpreendedorId}
+                  onProjectIdChange={() => {}}
+                  showProject={false}
+                  isLoading={isLoadingEmpreendedores}
+                  className="pt-2"
+                />
+              )}
               <CardSearchInput
                 value={searchTerm}
                 onChange={setSearchTerm}

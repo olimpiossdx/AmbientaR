@@ -74,6 +74,8 @@ import {
 } from "@/components/ui/select";
 import { fetchEmpreendedorIdsForPortalScope, isEmpreendedorScopedPortalRole } from "@/lib/portal-empreendedor-scope";
 import { isClientePortalRole, isRepresentativeLikePortalRole } from "@/lib/role-guards";
+import { buildEmpreendedorSelectOptions, normalizeEntityId } from "@/lib/empreendedor-project-select";
+import { Label } from "@/components/ui/label";
 
 const TelemetricPointsMap = dynamic(
   () =>
@@ -93,6 +95,7 @@ export default function TelemetricMonitoringPage() {
     useState<TelemetriaFonte>("outorga");
   const [selectedOutorgaId, setSelectedOutorgaId] = useState<string>("");
   const [selectedUsoId, setSelectedUsoId] = useState<string>("");
+  const [selectedEmpreendedorId, setSelectedEmpreendedorId] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [yearFilter, setYearFilter] = useState<string>(String(new Date().getFullYear()));
@@ -214,13 +217,60 @@ export default function TelemetricMonitoringPage() {
 
   const outorgasTelemetrizadas = useMemo(() => {
     if (!allOutorgas) return [];
-    return allOutorgas.filter((o) => o.monitoringType === "telemetric");
-  }, [allOutorgas]);
+    let list = allOutorgas.filter((o) => o.monitoringType === "telemetric");
+    if (selectedEmpreendedorId) {
+      const eid = normalizeEntityId(selectedEmpreendedorId);
+      list = list.filter(
+        (o) => normalizeEntityId(o.empreendedorId) === eid,
+      );
+    }
+    return list;
+  }, [allOutorgas, selectedEmpreendedorId]);
 
   const usosTelemetrizados = useMemo(() => {
     if (!allUsosInsignificantes) return [];
-    return allUsosInsignificantes.filter((u) => u.monitoringType === "telemetric");
-  }, [allUsosInsignificantes]);
+    let list = allUsosInsignificantes.filter(
+      (u) => u.monitoringType === "telemetric",
+    );
+    if (selectedEmpreendedorId) {
+      const eid = normalizeEntityId(selectedEmpreendedorId);
+      list = list.filter(
+        (u) => normalizeEntityId(u.empreendedorId) === eid,
+      );
+    }
+    return list;
+  }, [allUsosInsignificantes, selectedEmpreendedorId]);
+
+  const empreendedoresForSelect = useMemo(
+    () =>
+      buildEmpreendedorSelectOptions({
+        list: empreendedores,
+        selectedId: selectedEmpreendedorId,
+      }),
+    [empreendedores, selectedEmpreendedorId],
+  );
+
+  useEffect(() => {
+    if (!selectedEmpreendedorId) return;
+    if (
+      selectedOutorgaId &&
+      !outorgasTelemetrizadas.some((o) => o.id === selectedOutorgaId)
+    ) {
+      setSelectedOutorgaId("");
+    }
+    if (
+      selectedUsoId &&
+      !usosTelemetrizados.some((u) => u.id === selectedUsoId)
+    ) {
+      setSelectedUsoId("");
+    }
+  }, [
+    selectedEmpreendedorId,
+    outorgasTelemetrizadas,
+    usosTelemetrizados,
+    selectedOutorgaId,
+    selectedUsoId,
+  ]);
 
   const selectedOutorga = useMemo(
     () => outorgasTelemetrizadas.find((o) => o.id === selectedOutorgaId),
@@ -477,6 +527,29 @@ export default function TelemetricMonitoringPage() {
           <CardContent className="space-y-4">
             <div className="flex flex-col md:flex-row gap-4">
               <div className="w-full md:w-80 shrink-0 space-y-3">
+                <div className="space-y-2">
+                  <Label>Empreendedor</Label>
+                  <Select
+                    value={selectedEmpreendedorId || undefined}
+                    onValueChange={(value) => {
+                      setSelectedEmpreendedorId(value);
+                      setSelectedOutorgaId("");
+                      setSelectedUsoId("");
+                    }}
+                    disabled={isLoadingList}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione o empreendedor" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {empreendedoresForSelect.map((e) => (
+                        <SelectItem key={e.id} value={e.id}>
+                          {e.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
                 <div className="flex flex-wrap gap-1">
                   <Button
                     type="button"
@@ -508,12 +581,18 @@ export default function TelemetricMonitoringPage() {
                   </Button>
                 </div>
                 <p className="text-sm font-medium text-muted-foreground">
-                  {telemetryFonte === "outorga"
-                    ? "Selecione a portaria"
-                    : "Selecione o uso"}
+                  {!selectedEmpreendedorId
+                    ? "Selecione o empreendedor acima"
+                    : telemetryFonte === "outorga"
+                      ? "Selecione a portaria"
+                      : "Selecione o uso"}
                 </p>
                 {isLoadingList ? (
                   <Skeleton className="h-10 w-full rounded-md" />
+                ) : !selectedEmpreendedorId ? (
+                  <p className="p-3 text-sm text-muted-foreground border rounded-md">
+                    Escolha o empreendedor para ver outorgas ou usos vinculados.
+                  </p>
                 ) : telemetryFonte === "outorga" ? (
                   <div className="border rounded-md max-h-52 overflow-y-auto divide-y">
                     {outorgasTelemetrizadas.length === 0 ? (

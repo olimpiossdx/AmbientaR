@@ -61,6 +61,10 @@ import {
 import { fetchEmpreendedorIdsForPortalScope } from "@/lib/portal-empreendedor-scope";
 import { NOTIFICATION_LINKS, NOTIFICATION_SOURCE } from "@/lib/notification-events";
 import { notifyProjectPortalUsers } from "@/lib/notifications";
+import { filterProjectsForClientCpfCnpj } from "@/lib/empreendedor-project-select";
+import { EmpreendedorProjectFilter } from "@/components/documentos-ambientais/empreendedor-project-filter";
+import { isEmpreendedorScopedPortalRole } from "@/lib/portal-empreendedor-scope";
+import type { Empreendedor } from "@/lib/types";
 
 export default function CarPage() {
   const { firestore } = useFirebase();
@@ -95,6 +99,8 @@ export default function CarPage() {
   const [empreendedorIdsForTitular, setEmpreendedorIdsForTitular] = React.useState<
     string[] | undefined
   >(undefined);
+  const [listFilterEmpreendedorId, setListFilterEmpreendedorId] = React.useState("");
+  const [listFilterProjectId, setListFilterProjectId] = React.useState("");
 
   const portalUid = resolvePortalAuthUid(user);
 
@@ -279,45 +285,78 @@ export default function CarPage() {
   const { data: projects, isLoading: loadingProjects } =
     useCollection<Project>(projectsQuery);
 
+  const empreendedoresStaffQuery = useMemoFirebase(() => {
+    if (!firestore || !user || isRepresentativeLikePortalRole(user.role)) {
+      return null;
+    }
+    return collection(firestore, "empreendedores");
+  }, [firestore, user]);
+
+  const { data: empreendedoresStaff } = useCollection<Empreendedor>(
+    empreendedoresStaffQuery,
+  );
+
   const clientsMap = React.useMemo(
     () => new Map(displayedClients.map((c) => [c.id, c])),
     [displayedClients],
   );
 
-  const onlyDigits = (v: string) => (v || "").replace(/\D/g, "");
-
   const displayedProjects = React.useMemo(() => {
     if (!projects) return [];
-    if (!isRepresentativeLikePortalRole(user?.role)) return projects;
-    if (!clientId) return [];
+    if (isRepresentativeLikePortalRole(user?.role)) {
+      if (!clientId) return [];
+      const client = clientsMap.get(clientId);
+      return filterProjectsForClientCpfCnpj(
+        projects,
+        empreendedoresForRep,
+        client?.cpfCnpj,
+      );
+    }
+    if (!clientId) return sortByPropertyNamePt(projects);
     const client = clientsMap.get(clientId);
-    if (!client?.cpfCnpj) return [];
-    const clientDigits = onlyDigits(client.cpfCnpj);
-    if (clientDigits.length < 11) return [];
-    const empIdsOfClient = empreendedoresForRep
-      .filter(
-        (e) =>
-          e.cpfCnpj &&
-          (onlyDigits(e.cpfCnpj) === clientDigits ||
-            e.cpfCnpj === client.cpfCnpj),
-      )
-      .map((e) => e.id);
-    if (empIdsOfClient.length === 0) return [];
-    return sortByPropertyNamePt(
-      projects.filter(
-        (p) => p.empreendedorId && empIdsOfClient.includes(p.empreendedorId),
-      ),
+    return filterProjectsForClientCpfCnpj(
+      projects,
+      empreendedoresStaff ?? [],
+      client?.cpfCnpj,
     );
-  }, [projects, user?.role, clientId, clientsMap, empreendedoresForRep]);
+  }, [
+    projects,
+    user?.role,
+    clientId,
+    clientsMap,
+    empreendedoresForRep,
+    empreendedoresStaff,
+  ]);
 
   React.useEffect(() => {
-    if (isRepresentativeLikePortalRole(user?.role) && !clientId) setProjectId("");
-  }, [user?.role, clientId]);
+    if (!clientId) {
+      if (isRepresentativeLikePortalRole(user?.role)) setProjectId("");
+      return;
+    }
+    if (projectId && !displayedProjects.some((p) => p.id === projectId)) {
+      setProjectId("");
+    }
+  }, [user?.role, clientId, projectId, displayedProjects]);
+
+  const showStaffListFilter = !isEmpreendedorScopedPortalRole(user?.role);
 
   const projectsWithCar = React.useMemo(
     () => (projects ?? []).filter((p) => !!p.car),
     [projects],
   );
+
+  const filteredProjectsWithCar = React.useMemo(() => {
+    let list = projectsWithCar;
+    if (listFilterEmpreendedorId) {
+      list = list.filter(
+        (p) => p.empreendedorId === listFilterEmpreendedorId,
+      );
+    }
+    if (listFilterProjectId) {
+      list = list.filter((p) => p.id === listFilterProjectId);
+    }
+    return list;
+  }, [projectsWithCar, listFilterEmpreendedorId, listFilterProjectId]);
 
   const handlePdfChange: React.ChangeEventHandler<HTMLInputElement> = async (
     event,
@@ -544,7 +583,7 @@ export default function CarPage() {
                       value={clientId}
                       onValueChange={(v) => {
                         setClientId(v);
-                        if (isRepresentativeLikePortalRole(user?.role)) setProjectId("");
+                        setProjectId("");
                       }}
                     >
                       <SelectTrigger>
@@ -564,22 +603,24 @@ export default function CarPage() {
                     <Select
                       value={projectId}
                       onValueChange={setProjectId}
-                      disabled={isRepresentativeLikePortalRole(user?.role) && !clientId}
+                      disabled={
+                        (isRepresentativeLikePortalRole(user?.role) && !clientId) ||
+                        (Boolean(clientId) && displayedProjects.length === 0)
+                      }
                     >
                       <SelectTrigger>
                         <SelectValue
                           placeholder={
                             isRepresentativeLikePortalRole(user?.role) && !clientId
                               ? "Selecione primeiro o cliente"
-                              : "Selecione o empreendimento"
+                              : clientId && displayedProjects.length === 0
+                                ? "Nenhum empreendimento para este cliente"
+                                : "Selecione o empreendimento"
                           }
                         />
                       </SelectTrigger>
                       <SelectContent>
-                        {(isRepresentativeLikePortalRole(user?.role)
-                          ? displayedProjects
-                          : (projects ?? [])
-                        ).map((p) => (
+                        {displayedProjects.map((p) => (
                           <SelectItem key={p.id} value={p.id}>
                             {p.propertyName}{" "}
                             {p.municipio ? `— ${p.municipio}/${p.uf}` : ""}
@@ -661,6 +702,19 @@ export default function CarPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
+            {showStaffListFilter && (
+              <div className="mb-4">
+                <EmpreendedorProjectFilter
+                  empreendedores={empreendedoresStaff}
+                  allProjects={projects}
+                  empreendedorId={listFilterEmpreendedorId}
+                  projectId={listFilterProjectId}
+                  onEmpreendedorIdChange={setListFilterEmpreendedorId}
+                  onProjectIdChange={setListFilterProjectId}
+                  isLoading={loadingProjects}
+                />
+              </div>
+            )}
             <TooltipProvider>
               <div className="space-y-4">
                 {loadingProjects &&
@@ -671,7 +725,7 @@ export default function CarPage() {
                     />
                   ))}
                 {!loadingProjects &&
-                  projectsWithCar.map((p) => {
+                  filteredProjectsWithCar.map((p) => {
                     const car = p.car!;
                     const client = car.clientId
                       ? clientsMap.get(car.clientId)
@@ -757,7 +811,7 @@ export default function CarPage() {
                       </Card>
                     );
                   })}
-                {!loadingProjects && projectsWithCar.length === 0 && (
+                {!loadingProjects && filteredProjectsWithCar.length === 0 && (
                   <div className="flex h-24 items-center justify-center rounded-md border-2 border-dashed border-muted-foreground/25 text-center text-sm text-muted-foreground">
                     Nenhum empreendimento possui CAR vinculado ainda.
                   </div>

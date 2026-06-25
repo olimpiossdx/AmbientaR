@@ -30,14 +30,15 @@ import type {
   Project,
   WaterPermit,
   EnvironmentalIntervention,
-  License} from "@/lib/types";
+  License,
+  Empreendedor} from "@/lib/types";
 import {
   useFirebase,
   useCollection,
   useMemoFirebase} from "@/firebase";
 
 import { AttachmentPreviewSection } from "@/components/shared/attachment-preview-section";
-import { collection, doc, addDoc, updateDoc } from "firebase/firestore";
+import { collection, doc, addDoc, updateDoc, limit, query } from "firebase/firestore";
 import {
   getRecipientUserIdsFromCondicionanteReference,
   notifyPortalUsers} from "@/lib/notifications";
@@ -55,6 +56,10 @@ import {
   TooltipProvider,
   TooltipTrigger} from "@/components/ui/tooltip";
 import { Input } from "@/components/ui/input";
+import {
+  buildEmpreendedorSelectOptions,
+  normalizeEntityId,
+} from "@/lib/empreendedor-project-select";
 
 const formSchema = z.object({
   referenceId: z.string().min(1, "Selecione um documento de referência."),
@@ -100,10 +105,21 @@ export function ComplianceForm({
   const [uploadedFileUrl, setUploadedFileUrl] = React.useState<string | null>(
     currentItem?.fileUrl || null,
   );
+  const [filterEmpreendedorId, setFilterEmpreendedorId] = React.useState("");
   const { toast } = useToast();
   const { firestore, user: currentUser, auth } = useFirebase();
   const { uploadFile, dialogProps, limitLabel } = useStorageFileUpload({
     storageFolder: "condicionantes"});
+
+  const empreendedoresQuery = useMemoFirebase(
+    () =>
+      firestore
+        ? query(collection(firestore, "empreendedores"), limit(200))
+        : null,
+    [firestore],
+  );
+  const { data: empreendedores, isLoading: isLoadingEmpreendedores } =
+    useCollection<Empreendedor>(empreendedoresQuery);
 
   const projectsQuery = useMemoFirebase(
     () =>
@@ -175,6 +191,62 @@ export function ComplianceForm({
     }
   }, [currentItem, referenceType, form]);
 
+  React.useEffect(() => {
+    if (!currentItem?.referenceId || filterEmpreendedorId) return;
+    const refId = currentItem.referenceId;
+    if (referenceType === "licenca") {
+      const lic = licenses?.find((l) => l.id === refId);
+      if (lic?.empreendedorId) {
+        setFilterEmpreendedorId(normalizeEntityId(lic.empreendedorId));
+      }
+    } else if (referenceType === "outorga") {
+      const out = outorgas?.find((o) => o.id === refId);
+      if (out?.empreendedorId) {
+        setFilterEmpreendedorId(normalizeEntityId(out.empreendedorId));
+      }
+    } else if (referenceType === "intervencao") {
+      const intv = intervencoes?.find((i) => i.id === refId);
+      if (intv?.empreendedorId) {
+        setFilterEmpreendedorId(normalizeEntityId(intv.empreendedorId));
+      }
+    }
+  }, [
+    currentItem,
+    referenceType,
+    licenses,
+    outorgas,
+    intervencoes,
+    filterEmpreendedorId,
+  ]);
+
+  React.useEffect(() => {
+    if (!filterEmpreendedorId) return;
+    const refId = form.getValues("referenceId");
+    if (!refId) return;
+    const stillValid = (() => {
+      if (referenceType === "licenca") {
+        return licenses?.some(
+          (l) =>
+            l.id === refId &&
+            normalizeEntityId(l.empreendedorId) === filterEmpreendedorId,
+        );
+      }
+      if (referenceType === "outorga") {
+        return outorgas?.some(
+          (o) =>
+            o.id === refId &&
+            normalizeEntityId(o.empreendedorId) === filterEmpreendedorId,
+        );
+      }
+      return intervencoes?.some(
+        (i) =>
+          i.id === refId &&
+          normalizeEntityId(i.empreendedorId) === filterEmpreendedorId,
+      );
+    })();
+    if (!stillValid) form.setValue("referenceId", "");
+  }, [filterEmpreendedorId, referenceType, licenses, outorgas, intervencoes, form]);
+
   const handleFileChange = async (
     event: React.ChangeEvent<HTMLInputElement>,
   ) => {
@@ -205,10 +277,17 @@ export function ComplianceForm({
   };
 
   const referenceItems = React.useMemo(() => {
+    const matchesEmpreendedor = (empreendedorId?: string | null) => {
+      if (!filterEmpreendedorId) return true;
+      return normalizeEntityId(empreendedorId) === filterEmpreendedorId;
+    };
+
     if (referenceType === "licenca") {
       const projectsMap = new Map(projects?.map((p) => [p.id, p]) ?? []);
       return (
-        licenses?.map((l) => ({
+        licenses
+          ?.filter((l) => matchesEmpreendedor(l.empreendedorId))
+          .map((l) => ({
           id: l.id,
           name:
             [
@@ -225,7 +304,9 @@ export function ComplianceForm({
     }
     if (referenceType === "outorga") {
       return (
-        outorgas?.map((o) => ({
+        outorgas
+          ?.filter((o) => matchesEmpreendedor(o.empreendedorId))
+          .map((o) => ({
           id: o.id,
           name:
             [o.permitNumber, o.description].filter(Boolean).join(" - ") ||
@@ -236,7 +317,9 @@ export function ComplianceForm({
     }
     if (referenceType === "intervencao") {
       return (
-        intervencoes?.map((i) => ({
+        intervencoes
+          ?.filter((i) => matchesEmpreendedor(i.empreendedorId))
+          .map((i) => ({
           id: i.id,
           name:
             [i.processNumber, i.description].filter(Boolean).join(" - ") ||
@@ -246,13 +329,23 @@ export function ComplianceForm({
       );
     }
     return [];
-  }, [referenceType, licenses, projects, outorgas, intervencoes]);
+  }, [referenceType, licenses, projects, outorgas, intervencoes, filterEmpreendedorId]);
+
+  const empreendedoresForSelect = React.useMemo(
+    () =>
+      buildEmpreendedorSelectOptions({
+        list: empreendedores,
+        selectedId: filterEmpreendedorId,
+      }),
+    [empreendedores, filterEmpreendedorId],
+  );
 
   const isLoadingReference =
     isLoadingLicenses ||
     isLoadingProjects ||
     isLoadingOutorgas ||
-    isLoadingIntervencoes;
+    isLoadingIntervencoes ||
+    isLoadingEmpreendedores;
 
   const getReferenceLabel = () => {
     switch (referenceType) {
@@ -407,6 +500,40 @@ export function ComplianceForm({
           className="h-full flex flex-col overflow-hidden"
         >
           <div className="form-scroll-body space-y-4">
+            <FormItem>
+              <FormLabel>Empreendedor</FormLabel>
+              <Select
+                value={filterEmpreendedorId || undefined}
+                onValueChange={(value) => {
+                  setFilterEmpreendedorId(value);
+                  form.setValue("referenceId", "");
+                }}
+                disabled={isLoadingEmpreendedores}
+              >
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue
+                      placeholder={
+                        isLoadingEmpreendedores
+                          ? "Carregando..."
+                          : "Selecione o empreendedor primeiro"
+                      }
+                    />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {empreendedoresForSelect.map((emp) => (
+                    <SelectItem key={emp.id} value={emp.id}>
+                      {emp.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormDescription>
+                Somente documentos deste empreendedor aparecerão na lista abaixo.
+              </FormDescription>
+            </FormItem>
+
             <FormField
               control={form.control}
               name="referenceId"
@@ -416,15 +543,19 @@ export function ComplianceForm({
                   <Select
                     onValueChange={field.onChange}
                     value={field.value || undefined}
-                    disabled={isLoadingReference}
+                    disabled={isLoadingReference || !filterEmpreendedorId}
                   >
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue
                           placeholder={
-                            isLoadingReference
-                              ? "Carregando..."
-                              : "Selecione um documento"
+                            !filterEmpreendedorId
+                              ? "Selecione um empreendedor primeiro"
+                              : isLoadingReference
+                                ? "Carregando..."
+                                : referenceItems.length === 0
+                                  ? "Nenhum documento para este empreendedor"
+                                  : "Selecione um documento"
                           }
                         />
                       </SelectTrigger>

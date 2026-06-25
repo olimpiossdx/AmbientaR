@@ -5,6 +5,45 @@ import {
   sortProjectsByPropertyName,
 } from "@/lib/processos-form-order";
 
+export function onlyDigitsCpfCnpj(value: string | null | undefined): string {
+  return (value ?? "").replace(/\D/g, "");
+}
+
+/** IDs de empreendedores cujo CPF/CNPJ coincide com o do cliente titular. */
+export function empreendedorIdsMatchingClientCpfCnpj(
+  empreendedores: readonly { id: string; cpfCnpj?: string | null }[],
+  clientCpfCnpj: string | null | undefined,
+): string[] {
+  const clientDigits = onlyDigitsCpfCnpj(clientCpfCnpj);
+  if (clientDigits.length < 11) return [];
+  return empreendedores
+    .filter((e) => {
+      if (!e.cpfCnpj) return false;
+      const digits = onlyDigitsCpfCnpj(e.cpfCnpj);
+      return digits === clientDigits || e.cpfCnpj === clientCpfCnpj;
+    })
+    .map((e) => e.id);
+}
+
+/** Empreendimentos vinculados ao cliente (via CPF/CNPJ do empreendedor). */
+export function filterProjectsForClientCpfCnpj(
+  projects: readonly Project[] | null | undefined,
+  empreendedores: readonly { id: string; cpfCnpj?: string | null }[],
+  clientCpfCnpj: string | null | undefined,
+): Project[] {
+  if (!projects?.length) return [];
+  const empIds = empreendedorIdsMatchingClientCpfCnpj(
+    empreendedores,
+    clientCpfCnpj,
+  );
+  if (empIds.length === 0) return [];
+  return sortProjectsByPropertyName(
+    projects.filter(
+      (p) => p.empreendedorId && empIds.includes(p.empreendedorId),
+    ),
+  );
+}
+
 /** Normaliza IDs vindos do Firestore ou de selects. */
 export function normalizeEntityId(raw: unknown): string {
   if (raw == null) return "";

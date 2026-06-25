@@ -88,6 +88,8 @@ import {
 } from "@/lib/deleted-data-backup";
 import { CardSearchInput } from "@/components/card-search-input";
 import { fetchEmpreendedorIdsForPortalScope, isEmpreendedorScopedPortalRole } from "@/lib/portal-empreendedor-scope";
+import { EmpreendedorProjectFilter } from "@/components/documentos-ambientais/empreendedor-project-filter";
+import { normalizeEntityId } from "@/lib/empreendedor-project-select";
 import {
   isClientePortalRole,
   isRepresentativeLikePortalRole,
@@ -111,6 +113,8 @@ export default function CompliancePage() {
     "licenca" | "outorga" | "intervencao"
   >("licenca");
   const [searchTerm, setSearchTerm] = useState("");
+  const [filterEmpreendedorId, setFilterEmpreendedorId] = useState("");
+  const [filterProjectId, setFilterProjectId] = useState("");
 
   const { firestore, user } = useFirebase();
   const { toast } = useToast();
@@ -527,6 +531,18 @@ export default function CompliancePage() {
     [intervencoes],
   );
 
+  const empreendedoresQuery = useMemoFirebase(
+    () =>
+      firestore
+        ? query(collection(firestore, "empreendedores"), limit(200))
+        : null,
+    [firestore],
+  );
+  const { data: empreendedores, isLoading: isLoadingEmpreendedores } =
+    useCollection<Empreendedor>(empreendedoresQuery);
+
+  const showEntityFilter = !isClientLike;
+
   const isLoading =
     isLoadingCondicionantes ||
     isLoadingProjects ||
@@ -538,7 +554,33 @@ export default function CompliancePage() {
 
   const filteredCondicionantes = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
-    const base = condicionantes || [];
+    let base = condicionantes || [];
+    if (filterEmpreendedorId) {
+      const eid = normalizeEntityId(filterEmpreendedorId);
+      base = base.filter((item) => {
+        const refType = String(item.referenceType ?? "")
+          .trim()
+          .toLowerCase();
+        const refId = item.referenceId ?? "";
+        if (!refId) return false;
+        let empId: string | undefined;
+        if (refType === "licenca") empId = licensesMap.get(refId)?.empreendedorId;
+        else if (refType === "outorga") empId = outorgasMap.get(refId)?.empreendedorId;
+        else if (refType === "intervencao") empId = intervencoesMap.get(refId)?.empreendedorId;
+        return normalizeEntityId(empId) === eid;
+      });
+    }
+    if (filterProjectId) {
+      const pid = normalizeEntityId(filterProjectId);
+      base = base.filter((item) => {
+        const refType = String(item.referenceType ?? "")
+          .trim()
+          .toLowerCase();
+        const refId = item.referenceId ?? "";
+        if (refType !== "licenca" || !refId) return false;
+        return normalizeEntityId(licensesMap.get(refId)?.projectId) === pid;
+      });
+    }
     const termFiltered = !term
       ? base
       : base.filter((item) => {
@@ -560,7 +602,15 @@ export default function CompliancePage() {
         sensitivity: "base",
       }),
     );
-  }, [condicionantes, searchTerm]);
+  }, [
+    condicionantes,
+    searchTerm,
+    filterEmpreendedorId,
+    filterProjectId,
+    licensesMap,
+    outorgasMap,
+    intervencoesMap,
+  ]);
 
   const { licencaGroups, outorgaGroups, intervencaoGroups } = useMemo(() => {
     if (!filteredCondicionantes)
@@ -908,6 +958,27 @@ export default function CompliancePage() {
           Não foi possível carregar a lista de condicionantes. Verifique as
           regras de acesso no Firestore ou faça deploy das regras atualizadas.
         </div>
+      )}
+      {showEntityFilter && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Filtrar por titular</CardTitle>
+            <CardDescription>
+              Restrinja condicionantes ao empreendedor e, se quiser, ao
+              empreendimento da licença de referência.
+            </CardDescription>
+            <EmpreendedorProjectFilter
+              empreendedores={empreendedores}
+              allProjects={projects}
+              empreendedorId={filterEmpreendedorId}
+              projectId={filterProjectId}
+              onEmpreendedorIdChange={setFilterEmpreendedorId}
+              onProjectIdChange={setFilterProjectId}
+              isLoading={isLoadingEmpreendedores || isLoadingProjects}
+              className="pt-2"
+            />
+          </CardHeader>
+        </Card>
       )}
       <Card>
         <CardHeader>

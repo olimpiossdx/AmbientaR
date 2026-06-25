@@ -11,6 +11,8 @@ import { useCollection, useFirebase, useMemoFirebase } from '@/firebase';
 import { collection, query, where } from 'firebase/firestore';
 import type { FaunaStudy, Empreendedor } from '@/lib/types';
 import { usePortalEmpreendedorIds } from '@/hooks/use-portal-empreendedor-ids';
+import { isEmpreendedorScopedPortalRole } from '@/lib/portal-empreendedor-scope';
+import { EmpreendedorProjectFilter } from '@/components/documentos-ambientais/empreendedor-project-filter';
 import { getFaunaStudyLabel } from '@/lib/fauna-study-utils';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
@@ -24,6 +26,7 @@ import { ESTUDOS_TECNICOS_MENU_LABEL } from '@/lib/navigation-config';
 
 export default function FaunaManagementPage() {
   const [isFormOpen, setIsFormOpen] = React.useState(false);
+  const [filterEmpreendedorId, setFilterEmpreendedorId] = React.useState('');
   const { firestore, user } = useFirebase();
   const { toast } = useToast();
   const portalEmpreendedorIds = usePortalEmpreendedorIds();
@@ -83,6 +86,15 @@ export default function FaunaManagementPage() {
       ),
     [studies],
   );
+
+  const showEntityFilter = !isEmpreendedorScopedPortalRole(user?.role);
+
+  const displayedStudies = React.useMemo(() => {
+    if (!filterEmpreendedorId) return sortedStudies;
+    return sortedStudies.filter(
+      (s) => s.empreendedorId === filterEmpreendedorId,
+    );
+  }, [sortedStudies, filterEmpreendedorId]);
   const formatCreatedAt = (value: unknown) => {
     const timestamp = getSortDateValue(value);
     if (!Number.isFinite(timestamp)) return "N/A";
@@ -125,6 +137,19 @@ export default function FaunaManagementPage() {
               <CardDescription>
                 Documentos concluídos pela consultoria e arquivos enviados pelo cliente. Estudos em elaboração ficam em {ESTUDOS_TECNICOS_MENU_LABEL} → Estudos de Fauna.
               </CardDescription>
+              {showEntityFilter && (
+                <EmpreendedorProjectFilter
+                  empreendedores={empreendedores}
+                  allProjects={[]}
+                  empreendedorId={filterEmpreendedorId}
+                  projectId=""
+                  onEmpreendedorIdChange={setFilterEmpreendedorId}
+                  onProjectIdChange={() => {}}
+                  showProject={false}
+                  isLoading={isLoadingEmpreendedores}
+                  className="pt-2"
+                />
+              )}
             </CardHeader>
             <CardContent>
               <TooltipProvider>
@@ -138,7 +163,7 @@ export default function FaunaManagementPage() {
                       </CardContent>
                     </Card>
                   ))}
-                  {!isLoading && sortedStudies?.map((study) => (
+                  {!isLoading && displayedStudies?.map((study) => (
                     <Card key={study.id} className="rounded-xl border-border/70 shadow-sm">
                       <CardContent className="p-4 space-y-3">
                         <div className="flex items-start justify-between gap-3">
@@ -203,7 +228,7 @@ export default function FaunaManagementPage() {
                       </CardContent>
                     </Card>
                   ))}
-                  {!isLoading && sortedStudies?.length === 0 && (
+                  {!isLoading && displayedStudies?.length === 0 && (
                     <div className="h-24 flex items-center justify-center text-sm text-muted-foreground">
                       Nenhum estudo concluído encontrado.
                     </div>
@@ -228,7 +253,7 @@ export default function FaunaManagementPage() {
                         <TableCell className="text-right"><Skeleton className="h-8 w-24 ml-auto" /></TableCell>
                       </TableRow>
                     ))}
-                    {!isLoading && sortedStudies?.map((study) => (
+                    {!isLoading && displayedStudies?.map((study) => (
                       <TableRow key={study.id}>
                         <TableCell className="font-medium">{empreendedorMap.get(study.empreendedorId) || 'Não definido'}</TableCell>
                         <TableCell>{getStudyOrDocumentName(study)}</TableCell>
@@ -295,7 +320,7 @@ export default function FaunaManagementPage() {
                         </TableCell>
                       </TableRow>
                     ))}
-                    {!isLoading && sortedStudies?.length === 0 && (
+                    {!isLoading && displayedStudies?.length === 0 && (
                       <TableRow>
                         <TableCell colSpan={5} className="h-24 text-center">Nenhum estudo concluído encontrado.</TableCell>
                       </TableRow>

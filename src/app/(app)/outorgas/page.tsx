@@ -66,6 +66,7 @@ import { CardSearchInput } from "@/components/card-search-input";
 import { fetchEmpreendedorIdsForPortalScope, isEmpreendedorScopedPortalRole } from "@/lib/portal-empreendedor-scope";
 import { isClientePortalRole } from "@/lib/role-guards";
 import { isDebugAgentIngestEnabled } from "@/lib/deploy-flags";
+import { EmpreendedorProjectFilter } from "@/components/documentos-ambientais/empreendedor-project-filter";
 
 import { canPerformOperationalWrite } from "@/lib/role-guards";
 
@@ -97,6 +98,8 @@ export default function OutorgasPage() {
   const [editingItem, setEditingItem] = useState<WaterPermit | null>(null);
   const [viewingItem, setViewingItem] = useState<WaterPermit | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [filterEmpreendedorId, setFilterEmpreendedorId] = useState("");
+  const [filterProjectId, setFilterProjectId] = useState("");
   const [empreendedorIdsForUser, setEmpreendedorIdsForUser] = useState<
     string[] | undefined
   >(undefined);
@@ -197,10 +200,21 @@ export default function OutorgasPage() {
       ),
     [outorgas],
   );
+  const scopedOutorgas = useMemo(() => {
+    let list = sortedOutorgas;
+    if (filterEmpreendedorId) {
+      list = list.filter((o) => o.empreendedorId === filterEmpreendedorId);
+    }
+    if (filterProjectId) {
+      list = list.filter((o) => o.projectId === filterProjectId);
+    }
+    return list;
+  }, [sortedOutorgas, filterEmpreendedorId, filterProjectId]);
+
   const filteredOutorgas = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
-    if (!term) return sortedOutorgas;
-    return sortedOutorgas.filter((item) => {
+    if (!term) return scopedOutorgas;
+    return scopedOutorgas.filter((item) => {
       const empreendedor = (empreendedoresMap.get(item.empreendedorId) || "").toLowerCase();
       const empreendimento = (projectsMap.get(item.projectId || "") || "").toLowerCase();
       return (
@@ -212,7 +226,9 @@ export default function OutorgasPage() {
         empreendimento.includes(term)
       );
     });
-  }, [sortedOutorgas, searchTerm, empreendedoresMap, projectsMap]);
+  }, [scopedOutorgas, searchTerm, empreendedoresMap, projectsMap]);
+
+  const showEntityFilter = !isEmpreendedorScopedPortalRole(user?.role);
 
   const isLoading =
     isLoadingOutorgas ||
@@ -324,6 +340,18 @@ export default function OutorgasPage() {
                 Acompanhe e gerencie todas as outorgas de uso de água dos seus
                 clientes.
               </CardDescription>
+              {showEntityFilter && (
+                <EmpreendedorProjectFilter
+                  empreendedores={empreendedores}
+                  allProjects={projects}
+                  empreendedorId={filterEmpreendedorId}
+                  projectId={filterProjectId}
+                  onEmpreendedorIdChange={setFilterEmpreendedorId}
+                  onProjectIdChange={setFilterProjectId}
+                  isLoading={isLoadingEmpreendedores || isLoadingProjects}
+                  className="pt-2"
+                />
+              )}
               <CardSearchInput
                 value={searchTerm}
                 onChange={setSearchTerm}
