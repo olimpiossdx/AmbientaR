@@ -312,14 +312,23 @@ export type MmBrandedPdfSession = {
   finalize: () => void;
 };
 
+export type MmBrandedPdfSessionOptions = {
+  orientation?: 'portrait' | 'landscape';
+};
+
 /** Sessão padrão A4 em mm para relatórios financeiros e similares. */
 export async function createMmBrandedPdfSession(
   urls: BrandingImageUrls,
   margins: PdfBrandingMargins = PDF_BRANDING_MARGINS_MM,
   preloadedImages?: BrandingPdfImages | null,
+  options?: MmBrandedPdfSessionOptions,
 ): Promise<MmBrandedPdfSession> {
   const { default: jsPDF } = await import('jspdf');
-  const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+  const doc = new jsPDF({
+    unit: 'mm',
+    format: 'a4',
+    orientation: options?.orientation ?? 'portrait',
+  });
   const branding = await loadPdfBranding(doc, urls, margins, 0.15, preloadedImages);
   drawWatermarkOnPage(doc, branding);
   const pageWidth = doc.internal.pageSize.getWidth();

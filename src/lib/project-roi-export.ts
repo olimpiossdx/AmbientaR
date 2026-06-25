@@ -206,33 +206,63 @@ export function downloadProjectRoiExcel(input: ProjectRoiExportInput): void {
   URL.revokeObjectURL(url);
 }
 
+const EXTRATO_COL_WEIGHTS = [7, 7, 22, 16, 12, 9, 9, 9, 5, 4];
+const SUPPLIER_COL_WEIGHTS = [28, 8, 16, 8, 16, 24];
+
+function colWidthsFromWeights(tableWidth: number, weights: number[]): number[] {
+  const total = weights.reduce((sum, w) => sum + w, 0);
+  return weights.map((w) => (tableWidth * w) / total);
+}
+
+function colXPositions(marginsLeft: number, colWidths: number[]): number[] {
+  const positions: number[] = [];
+  let x = marginsLeft;
+  for (const w of colWidths) {
+    positions.push(x);
+    x += w;
+  }
+  return positions;
+}
+
 function renderPdfTable(
   session: MmBrandedPdfSession,
   headers: string[],
   rows: string[][],
   startY: number,
+  colWeights?: number[],
 ): number {
   const { doc, margins } = session;
   let y = startY;
-  const colCount = headers.length;
   const pageWidth = doc.internal.pageSize.getWidth();
   const tableWidth = pageWidth - margins.left - margins.right;
-  const colWidth = tableWidth / colCount;
+  const weights =
+    colWeights && colWeights.length === headers.length
+      ? colWeights
+      : headers.map(() => 1);
+  const colWidths = colWidthsFromWeights(tableWidth, weights);
+  const colX = colXPositions(margins.left, colWidths);
+  const lineHeight = 4;
 
-  doc.setFont('helvetica', 'bold');
+  const drawRow = (cells: string[], bold: boolean) => {
+    doc.setFont('helvetica', bold ? 'bold' : 'normal');
+    const cellLines = cells.map((cell, i) =>
+      doc.splitTextToSize(String(cell), colWidths[i]! - 1),
+    );
+    const rowLines = Math.max(1, ...cellLines.map((lines) => lines.length));
+    const rowHeight = rowLines * lineHeight;
+    y = session.ensureSpace(y, rowHeight);
+    cellLines.forEach((lines, i) => {
+      doc.text(lines, colX[i]!, y, { maxWidth: colWidths[i]! - 1 });
+    });
+    y += rowHeight;
+  };
+
   doc.setFontSize(8);
-  headers.forEach((h, i) => {
-    doc.text(h.slice(0, 18), margins.left + i * colWidth, y);
-  });
-  y += 4;
+  drawRow(headers, true);
   doc.setFont('helvetica', 'normal');
 
   for (const row of rows) {
-    y = session.ensureSpace(y, 5);
-    row.forEach((cell, i) => {
-      doc.text(String(cell).slice(0, 22), margins.left + i * colWidth, y);
-    });
-    y += 4;
+    drawRow(row, false);
   }
   return y + 4;
 }
@@ -246,7 +276,9 @@ export async function generateProjectRoiPdfBlob(
     throw new Error('Configure a identidade visual em Configurações para exportar PDF.');
   }
   const brandingUrls = brandingUrlsFromLocal(brandingData);
-  const session = await createMmBrandedPdfSession(brandingUrls, undefined, pdfImages);
+  const session = await createMmBrandedPdfSession(brandingUrls, undefined, pdfImages, {
+    orientation: 'landscape',
+  });
 
   const { roiCase, snap, title, supplierSummary } = input;
   let y = writeBrandedPdfTitle(session, 'Projetos & ROI — Relatório gerencial', 14);
@@ -281,6 +313,7 @@ export async function generateProjectRoiPdfBlob(
     EXTRATO_HEADERS,
     extratoTableRows(snap.extrato),
     y,
+    EXTRATO_COL_WEIGHTS,
   );
 
   y = writeBrandedPdfTitle(session, 'Pagamentos por prestador', 11, y);
@@ -296,6 +329,7 @@ export async function generateProjectRoiPdfBlob(
       g.contractedValue != null ? formatCurrencyBRL(g.contractedValue) : '—',
     ]),
     y,
+    SUPPLIER_COL_WEIGHTS,
   );
 
   session.finalize();
