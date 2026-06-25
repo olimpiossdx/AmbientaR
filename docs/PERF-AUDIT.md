@@ -492,3 +492,18 @@ Fora do plano F00–F18; **uma rota por PR**, mesmo protocolo de debug.
 | Shared | 91,8 kB | **91,9 kB** |
 
 **Próximo candidato F19b:** `/gestao-processos/fluxo` (~577 kB) — lazy do kanban/view pesado, sem alterar fluxo.
+
+### F19b — `/gestao-processos/fluxo` lazy `GestaoProcessosFluxoView` ✅ (2026-06-25)
+
+| Ficheiro | Mudança |
+|----------|---------|
+| `gestao-processos/fluxo/page.tsx` | `GestaoProcessosFluxoView` via `dynamic()` (`ssr: false`) |
+
+**Verificação:** `npm run typecheck` · `npm run build`
+
+| Rota | Baseline (F17) | Após F19b |
+|------|----------------|-----------|
+| `/gestao-processos/fluxo` | ~577 kB | **255 kB** (−322 kB) |
+| Shared | 91,9 kB | **92,2 kB** |
+
+**Próximo candidato F19c:** `/coleta-campo/[id]` (~583 kB) ou `/georeferenciamento/memorial-descritivo` (~536 kB).
