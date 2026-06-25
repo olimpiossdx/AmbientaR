@@ -493,9 +493,6 @@ service cloud.firestore {
      */
     function isTitularClientApprovalUpdate() {
       let role = getRole();
-      if (!(role == 'client' || role == 'cliente_autonomo')) {
-        return false;
-      }
       let keys = request.resource.data.diff(resource.data).affectedKeys();
       let approvalFields = keys.hasOnly(['approvedConsultorIds', 'approvedUserIds', 'primaryConsultorUid']);
       let claimAndApprove = keys.hasOnly(['approvedConsultorIds', 'approvedUserIds', 'primaryConsultorUid', 'userId'])
@@ -509,11 +506,13 @@ service cloud.firestore {
         );
       let owned = resource.data.userId == request.auth.uid;
       let orphan = !('userId' in resource.data) || resource.data.userId == '';
-      return isSignedIn() && (
-        (approvalFields && (owned || orphan)) ||
-        (claimAndApprove && (owned || orphan)) ||
-        orphanClaim
-      );
+      return isSignedIn()
+        && (role == 'client' || role == 'cliente_autonomo')
+        && (
+          (approvalFields && (owned || orphan)) ||
+          (claimAndApprove && (owned || orphan)) ||
+          orphanClaim
+        );
     }
 
     /**
