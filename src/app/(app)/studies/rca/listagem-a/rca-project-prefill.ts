@@ -20,6 +20,61 @@ function deepCloneRecord<T>(value: T | undefined | null): T | undefined {
 
 export type RcaProjectPrefillResult = Partial<RcaListagemAFormValues>;
 
+function empreendedorTipoPessoa(
+  entityType?: Empreendedor['entityType'],
+): 'Pessoa Física' | 'Pessoa Jurídica' {
+  if (entityType === 'Pessoa Física' || entityType === 'Produtor Rural') {
+    return 'Pessoa Física';
+  }
+  return 'Pessoa Jurídica';
+}
+
+/** Campos de empreendedor preenchidos a partir do cadastro (Módulo 1 / Listagem A). */
+export function prefillEmpreendedorFieldsFromClient(client: Empreendedor) {
+  const extended = client as Empreendedor & { distrito?: string; caixaPostal?: string };
+  return {
+    clientId: client.id,
+    nome: client.name ?? '',
+    cpfCnpj: client.cpfCnpj ?? '',
+    endereco: client.address ?? '',
+    municipio: client.municipio ?? '',
+    uf: client.uf ?? '',
+    cep: client.cep ?? '',
+    fone: client.phone ?? '',
+    fax: client.fax ?? '',
+    email: client.email ?? '',
+    tipoPessoa: empreendedorTipoPessoa(client.entityType),
+    distrito: extended.distrito ?? '',
+    caixaPostal: extended.caixaPostal ?? '',
+  };
+}
+
+/** Campos de empreendimento preenchidos a partir do cadastro (Módulo 1 / Listagem A). */
+export function prefillEmpreendimentoFieldsFromProject(
+  project: Project,
+  empreendedor?: Empreendedor | null,
+) {
+  return {
+    projectId: project.id,
+    nome: project.propertyName || '',
+    nomeFantasia: project.fantasyName || '',
+    inscricaoIncra: project.incraCode || '',
+    cnpj: project.cnpj || '',
+    zonaRural: project.zoneType || 'Não',
+    endereco: project.address || '',
+    caixaPostal: project.caixaPostal || '',
+    municipio: project.municipio || '',
+    distrito: project.district || '',
+    uf: project.uf || '',
+    cep: project.cep || '',
+    fone: empreendedor?.phone || '',
+    fax: empreendedor?.fax || '',
+    email: empreendedor?.email || '',
+    inscricaoEstadual: project.inscricaoEstadual || '',
+    inscricaoMunicipal: project.inscricaoMunicipal || '',
+  };
+}
+
 export function prefillRcaListagemAFromProject(
   project: Project,
   empreendedor?: Empreendedor | null,
@@ -35,23 +90,9 @@ export function prefillRcaListagemAFromProject(
     activity: RCA_LISTAGEM_A_ACTIVITY,
     subActivity,
     formularioTipo,
-    empreendimento: {
-      projectId: project.id,
-      nome: project.fantasyName || project.propertyName || '',
-      municipio: project.municipio ?? '',
-      endereco: project.address ?? '',
-      nomeFantasia: project.fantasyName ?? '',
-      cnpj: project.cnpj ?? '',
-    },
+    empreendimento: prefillEmpreendimentoFieldsFromProject(project, empreendedor),
     empreendedor: empreendedor
-      ? {
-          clientId: empreendedor.id,
-          nome: empreendedor.name ?? '',
-          cpfCnpj: empreendedor.cpfCnpj ?? '',
-          endereco: empreendedor.address ?? '',
-          email: empreendedor.email ?? '',
-          fone: empreendedor.phone ?? '',
-        }
+      ? prefillEmpreendedorFieldsFromClient(empreendedor)
       : undefined,
     listagemA: deepCloneRecord(projectRecord.listagemA as Record<string, unknown>) ?? {},
     geographicLocation: deepCloneRecord(project.geographicLocation),

@@ -1,6 +1,5 @@
 'use client';
 
-import type { Empreendedor as Client, Project } from '@/lib/types';
 import type { UseFormReturn } from 'react-hook-form';
 import {
   RcaBooleanRadio,
@@ -12,14 +11,9 @@ import { RcaFormLavraSubterranea } from './rca-form-lavra-subterranea';
 
 type RcaFormBarragemRejeitosProps = {
   form: UseFormReturn<any>;
-  clients: Client[];
-  isLoadingClients: boolean;
-  projects: Project[];
-  isLoadingProjects: boolean;
 };
 
-export function RcaFormBarragemRejeitos(props: RcaFormBarragemRejeitosProps) {
-  const { form } = props;
+export function RcaFormBarragemRejeitos({ form }: RcaFormBarragemRejeitosProps) {
 
   return (
     <div className="space-y-4">
@@ -59,7 +53,7 @@ export function RcaFormBarragemRejeitos(props: RcaFormBarragemRejeitosProps) {
           label="Plano de ação de emergência"
         />
       </RcaSectionCard>
-      <RcaFormLavraSubterranea {...props} />
+      <RcaFormLavraSubterranea form={form} />
     </div>
   );
 }

@@ -32,12 +32,12 @@ import { RcaFormRochasOrnamentais } from './rca-form-rochas-ornamentais';
 import { RcaFormExtracaoAreiaCascalho } from './rca-form-extracao-areia-cascalho';
 import { RcaFormBarragemRejeitos } from './rca-form-barragem-rejeitos';
 import {
-  prefillRcaListagemAFromProject,
   serializeRcaListagemAForFirestore,
-  shouldPrefillFromProject} from './rca-project-prefill';
+} from './rca-project-prefill';
 import { getRcaListagemAInitialValues } from '../lib/rca-form-initial-values';
 import { RcaGeographicLocationSection } from '../lib/rca-geographic-location-section';
 import { RcaFormListagemShell } from '../rca-form-listagem-shell';
+import { useRcaListagemAPrefill } from './use-rca-listagem-a-prefill';
 
 interface RcaFormListagemAProps {
   currentItem?: RCA | null;
@@ -80,13 +80,12 @@ export function RcaFormListagemA({ currentItem, onSuccess }: RcaFormListagemAPro
     () => (firestore ? collection(firestore, 'empreendedores') : null),
     [firestore],
   );
-  const { data: clients, isLoading: isLoadingClients } =
-    useCollection<Empreendedor>(empreendedoresQuery);
+  const { data: clients } = useCollection<Empreendedor>(empreendedoresQuery);
   const projectsQuery = useMemoFirebase(
     () => (firestore ? collection(firestore, 'projects') : null),
     [firestore],
   );
-  const { data: projects, isLoading: isLoadingProjects } = useCollection<Project>(projectsQuery);
+  const { data: projects } = useCollection<Project>(projectsQuery);
 
   const isApproved = currentItem?.status === 'Aprovado';
   const hasSnapshot = Boolean(
@@ -101,8 +100,14 @@ export function RcaFormListagemA({ currentItem, onSuccess }: RcaFormListagemAPro
 
   const formularioTipo =
     form.watch('formularioTipo') ?? RCA_LISTAGEM_A_FORM_TIPO_PADRAO;
-  const selectedClientId = form.watch('empreendedor.clientId') as string | undefined;
-  const selectedProjectId = form.watch('empreendimento.projectId') as string | undefined;
+
+  useRcaListagemAPrefill({
+    form,
+    clients,
+    projects,
+    currentStatus: currentItem?.status,
+    hasSnapshot,
+  });
 
   const setFormularioTipo = React.useCallback(
     (tipo: RcaListagemAFormTipo) => {
@@ -112,54 +117,6 @@ export function RcaFormListagemA({ currentItem, onSuccess }: RcaFormListagemAPro
     },
     [form],
   );
-
-  React.useEffect(() => {
-    if (!shouldPrefillFromProject(currentItem?.status, hasSnapshot)) return;
-    if (!selectedClientId || !clients?.length) return;
-    const client = clients.find((c) => c.id === selectedClientId);
-    if (!client) return;
-    form.setValue('empreendedor.nome', client.name ?? '');
-    form.setValue('empreendedor.cpfCnpj', client.cpfCnpj ?? '');
-    form.setValue('empreendedor.endereco', client.address ?? '');
-    form.setValue('empreendedor.email', client.email ?? '');
-    form.setValue('empreendedor.fone', client.phone ?? '');
-  }, [selectedClientId, clients, form, currentItem?.status, hasSnapshot]);
-
-  React.useEffect(() => {
-    if (!shouldPrefillFromProject(currentItem?.status, hasSnapshot)) return;
-    if (!selectedProjectId || !projects?.length) return;
-    const project = projects.find((p) => p.id === selectedProjectId);
-    if (!project) return;
-    const empreendedor = clients?.find((c) => c.id === selectedClientId);
-    const patch = prefillRcaListagemAFromProject(project, empreendedor);
-    if (patch.subActivity) form.setValue('subActivity', patch.subActivity);
-    if (patch.formularioTipo) form.setValue('formularioTipo', patch.formularioTipo);
-    if (patch.empreendimento) {
-      form.setValue('empreendimento', {
-        ...form.getValues('empreendimento'),
-        ...patch.empreendimento});
-    }
-    if (patch.listagemA) {
-      form.setValue('listagemA', { ...form.getValues('listagemA'), ...patch.listagemA });
-    }
-    if (patch.geographicLocation) {
-      form.setValue('geographicLocation', patch.geographicLocation as never);
-    }
-    if (patch.restricoesLocacionais) {
-      form.setValue('restricoesLocacionais', patch.restricoesLocacionais as never);
-    }
-    if (patch.unidadesConservacao) {
-      form.setValue('unidadesConservacao', patch.unidadesConservacao as never);
-    }
-  }, [
-    selectedProjectId,
-    projects,
-    clients,
-    selectedClientId,
-    form,
-    currentItem?.status,
-    hasSnapshot,
-  ]);
 
   async function handleSave(status: 'Rascunho' | 'Aprovado') {
     setLoading(true);
@@ -210,12 +167,7 @@ export function RcaFormListagemA({ currentItem, onSuccess }: RcaFormListagemAPro
     }
   }
 
-  const formProps = {
-    form,
-    clients: clients ?? [],
-    isLoadingClients,
-    projects: projects ?? [],
-    isLoadingProjects};
+  const formProps = { form };
 
   return (
     <Form {...form}>
@@ -246,7 +198,11 @@ export function RcaFormListagemA({ currentItem, onSuccess }: RcaFormListagemAPro
             onTipoChange={setFormularioTipo}
           />
 
-          <RcaFormListagemShell form={form} readOnlyEmpreendimento={isApproved} />
+          <RcaFormListagemShell
+            form={form}
+            readOnlyEmpreendimento={isApproved}
+            identificacaoMode="vinculoResumido"
+          />
 
           <RcaGeographicLocationSection form={form} metadataVariant="project" />
 

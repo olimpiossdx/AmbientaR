@@ -1,6 +1,5 @@
 'use client';
 
-import type { Empreendedor as Client, Project } from '@/lib/types';
 import type { UseFormReturn } from 'react-hook-form';
 import {
   RcaBooleanRadio,
@@ -12,14 +11,9 @@ import { RcaFormLavraSubterranea } from './rca-form-lavra-subterranea';
 
 type RcaFormExtracaoAreiaCascalhoProps = {
   form: UseFormReturn<any>;
-  clients: Client[];
-  isLoadingClients: boolean;
-  projects: Project[];
-  isLoadingProjects: boolean;
 };
 
-export function RcaFormExtracaoAreiaCascalho(props: RcaFormExtracaoAreiaCascalhoProps) {
-  const { form } = props;
+export function RcaFormExtracaoAreiaCascalho({ form }: RcaFormExtracaoAreiaCascalhoProps) {
 
   return (
     <div className="space-y-4">
@@ -63,7 +57,7 @@ export function RcaFormExtracaoAreiaCascalho(props: RcaFormExtracaoAreiaCascalho
           label="Medidas de controle ambiental"
         />
       </RcaSectionCard>
-      <RcaFormLavraSubterranea {...props} />
+      <RcaFormLavraSubterranea form={form} />
     </div>
   );
 }

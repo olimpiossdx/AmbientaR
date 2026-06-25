@@ -20,18 +20,27 @@ import {
   RcaTextField,
 } from '@/app/(app)/studies/rca/listagem-a/rca-form-listagem-a-helpers';
 
+export type RcaFormListagemIdentificacaoMode = 'full' | 'vinculoResumido';
+
 export type RcaFormListagemShellProps = {
   form: UseFormReturn<any>;
   readOnlyEmpreendimento?: boolean;
   /** Exibe campos do termo de referência na secção de identificação. */
   showTermoReferencia?: boolean;
+  /**
+   * `vinculoResumido`: só TR + selects em cascata (Listagem A — detalhes no Módulo 1).
+   * `full`: inclui campos texto resumidos (listagens B–H).
+   */
+  identificacaoMode?: RcaFormListagemIdentificacaoMode;
 };
 
 export function RcaFormListagemShell({
   form,
   readOnlyEmpreendimento = false,
   showTermoReferencia = true,
+  identificacaoMode = 'full',
 }: RcaFormListagemShellProps) {
+  const showResumoTexto = identificacaoMode === 'full';
   return (
     <Accordion
       type="multiple"
@@ -87,13 +96,17 @@ export function RcaFormListagemShell({
             showProject={false}
             disabled={readOnlyEmpreendimento}
           />
-          <RcaTextField form={form} name="empreendedor.nome" label="Nome / razão social" />
-          <div className="grid gap-4 md:grid-cols-2">
-            <RcaTextField form={form} name="empreendedor.cpfCnpj" label="CPF / CNPJ" />
-            <RcaTextField form={form} name="empreendedor.fone" label="Telefone" />
-          </div>
-          <RcaTextField form={form} name="empreendedor.email" label="E-mail" />
-          <RcaTextField form={form} name="empreendedor.endereco" label="Endereço" />
+          {showResumoTexto && (
+            <>
+              <RcaTextField form={form} name="empreendedor.nome" label="Nome / razão social" />
+              <div className="grid gap-4 md:grid-cols-2">
+                <RcaTextField form={form} name="empreendedor.cpfCnpj" label="CPF / CNPJ" />
+                <RcaTextField form={form} name="empreendedor.fone" label="Telefone" />
+              </div>
+              <RcaTextField form={form} name="empreendedor.email" label="E-mail" />
+              <RcaTextField form={form} name="empreendedor.endereco" label="Endereço" />
+            </>
+          )}
         </AccordionContent>
       </AccordionItem>
 
@@ -106,12 +119,16 @@ export function RcaFormListagemShell({
             showEmpreendedor={false}
             disabled={readOnlyEmpreendimento}
           />
-          <RcaTextField form={form} name="empreendimento.nome" label="Nome do empreendimento" />
-          <div className="grid gap-4 md:grid-cols-2">
-            <RcaTextField form={form} name="empreendimento.municipio" label="Município" />
-            <RcaTextField form={form} name="empreendimento.uf" label="UF" />
-          </div>
-          <RcaTextField form={form} name="empreendimento.endereco" label="Endereço" />
+          {showResumoTexto && (
+            <>
+              <RcaTextField form={form} name="empreendimento.nome" label="Nome do empreendimento" />
+              <div className="grid gap-4 md:grid-cols-2">
+                <RcaTextField form={form} name="empreendimento.municipio" label="Município" />
+                <RcaTextField form={form} name="empreendimento.uf" label="UF" />
+              </div>
+              <RcaTextField form={form} name="empreendimento.endereco" label="Endereço" />
+            </>
+          )}
         </AccordionContent>
       </AccordionItem>
     </Accordion>

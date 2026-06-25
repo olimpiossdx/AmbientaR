@@ -11,28 +11,17 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { MaskedInput } from '@/components/ui/masked-input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import type { Empreendedor as Client, Project, OwnerCondition, RegularizacaoSituacao, ManagementCategory, Jurisdiction, Biome, ZeeGeofisicoItem, ZeeSocioeconomicoItem } from '@/lib/types';
+import type { OwnerCondition, RegularizacaoSituacao, ManagementCategory, Jurisdiction, Biome, ZeeGeofisicoItem, ZeeSocioeconomicoItem } from '@/lib/types';
 import { Textarea } from '@/components/ui/textarea';
 import { PlusCircle, Trash2 } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 interface RcaFormLavraSubterraneaProps {
     form: any;
-    clients: Client[];
-    isLoadingClients: boolean;
-    projects: Project[];
-    isLoadingProjects: boolean;
 }
 
 const ownerConditions: { value: OwnerCondition, label: string }[] = [
@@ -167,10 +156,8 @@ const anexoOptions = [
 ];
 
 
-export function RcaFormLavraSubterranea({ form, clients, isLoadingClients, projects, isLoadingProjects }: RcaFormLavraSubterraneaProps) {
+export function RcaFormLavraSubterranea({ form }: RcaFormLavraSubterraneaProps) {
     
-    const selectedClientId = form.watch('empreendedor.clientId');
-    const selectedProjectId = form.watch('empreendimento.projectId');
     const correspondenceIsSame = form.watch('empreendimento.correspondenceIsSame');
     const fazUsoAgendaVerde = form.watch('agendaVerde.fazUso');
     const fazUsoAgendaAzul = form.watch('agendaAzul.fazUsoAutorizacao');
@@ -183,60 +170,17 @@ export function RcaFormLavraSubterranea({ form, clients, isLoadingClients, proje
     const { fields: efluentesIndustriaisFields, append: appendEfluente, remove: removeEfluente } = useFieldArray({ control: form.control, name: 'efluentesIndustriais' });
     const { fields: residuosSolidosGeradosFields, append: appendResiduoGerado, remove: removeResiduoGerado } = useFieldArray({ control: form.control, name: 'residuosSolidosGerados' });
     
-    React.useEffect(() => {
-        if (selectedClientId && clients) {
-          const client = clients.find(c => c.id === selectedClientId);
-          if (client) {
-            form.setValue('empreendedor.nome', client.name || '');
-            form.setValue('empreendedor.cpfCnpj', client.cpfCnpj || '');
-            form.setValue('empreendedor.endereco', client.address || '');
-            form.setValue('empreendedor.municipio', client.municipio || '');
-            form.setValue('empreendedor.uf', client.uf || '');
-            form.setValue('empreendedor.cep', client.cep || '');
-            form.setValue('empreendedor.fone', client.phone || '');
-            form.setValue('empreendedor.fax', client.fax || '');
-            form.setValue('empreendedor.email', client.email || '');
-            form.setValue('empreendedor.tipoPessoa', client.entityType === 'Pessoa Física' || client.entityType === 'Produtor Rural' ? 'Pessoa Física' : 'Pessoa Jurídica');
-          }
-        }
-      }, [selectedClientId, clients, form]);
-    
-      React.useEffect(() => {
-        if (selectedProjectId && projects) {
-          const project = projects.find(p => p.id === selectedProjectId);
-          if (project) {
-            form.setValue('empreendimento.nome', project.propertyName || '');
-            form.setValue('empreendimento.nomeFantasia', project.fantasyName || '');
-            form.setValue('empreendimento.inscricaoIncra', project.incraCode || '');
-            form.setValue('empreendimento.cnpj', project.cnpj || '');
-            form.setValue('empreendimento.zonaRural', project.zoneType || 'Não');
-            form.setValue('empreendimento.endereco', project.address || '');
-            form.setValue('empreendimento.caixaPostal', project.caixaPostal || '');
-            form.setValue('empreendimento.municipio', project.municipio || '');
-            form.setValue('empreendimento.distrito', project.district || '');
-            form.setValue('empreendimento.uf', project.uf || '');
-            form.setValue('empreendimento.cep', project.cep || '');
-            form.setValue('empreendimento.fone', project.clientId && clients ? clients.find(c => c.id === project.clientId)?.phone || '' : '');
-            form.setValue('empreendimento.fax', project.clientId && clients ? clients.find(c => c.id === project.clientId)?.fax || '' : '');
-            form.setValue('empreendimento.email', project.clientId && clients ? clients.find(c => c.id === project.clientId)?.email || '' : '');
-            form.setValue('empreendimento.inscricaoEstadual', project.inscricaoEstadual || '');
-            form.setValue('empreendimento.inscricaoMunicipal', project.inscricaoMunicipal || '');
-          }
-        }
-      }, [selectedProjectId, projects, clients, form]);
-    
     return (
         <Accordion type="multiple" defaultValue={['item-1', 'item-2', 'item-3', 'item-4', 'item-5', 'item-6', 'item-7']} className="w-full">
             <AccordionItem value="item-1">
                 <AccordionTrigger>MÓDULO 1 - IDENTIFICAÇÃO</AccordionTrigger>
                  <AccordionContent className="space-y-6 p-1">
+                    <p className="text-sm text-muted-foreground">
+                        Empreendedor e empreendimento são escolhidos na seção acima. Os campos abaixo
+                        complementam a identificação do termo de referência.
+                    </p>
                     <div className="space-y-4 p-4 border rounded-md">
                         <h3 className="font-semibold">1. IDENTIFICAÇÃO DO EMPREENDEDOR</h3>
-                        <FormField control={form.control} name="empreendedor.clientId" render={({ field }) => (
-                            <FormItem><FormLabel>Buscar Empreendedor Cadastrado</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value} disabled={isLoadingClients}><FormControl><SelectTrigger>
-                                <SelectValue placeholder={isLoadingClients ? "Carregando..." : "Selecione um cliente"} />
-                            </SelectTrigger></FormControl><SelectContent>{clients?.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>
-                        )} />
                         <FormField control={form.control} name="empreendedor.nome" render={({ field }) => (<FormItem><FormLabel>Nome</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <FormField control={form.control} name="empreendedor.cpfCnpj" render={({ field }) => (<FormItem><FormLabel>CPF/CNPJ</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
@@ -290,11 +234,6 @@ export function RcaFormLavraSubterranea({ form, clients, isLoadingClients, proje
                     {/* 2. IDENTIFICAÇÃO DO EMPREENDIMENTO */}
                     <div className="space-y-4 p-4 border rounded-md">
                          <h3 className="font-semibold">2. IDENTIFICAÇÃO DO EMPREENDIMENTO</h3>
-                        <FormField control={form.control} name="empreendimento.projectId" render={({ field }) => (
-                            <FormItem><FormLabel>Buscar Empreendimento Cadastrado</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value} disabled={isLoadingProjects}><FormControl><SelectTrigger>
-                                <SelectValue placeholder={isLoadingProjects ? "Carregando..." : "Selecione um empreendimento"} />
-                            </SelectTrigger></FormControl><SelectContent>{projects?.map(p => <SelectItem key={p.id} value={p.id}>{p.propertyName}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>
-                        )} />
                          <FormField control={form.control} name="empreendimento.nome" render={({ field }) => (<FormItem><FormLabel>Nome / Razão Social</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
                         <div className="grid grid-cols-2 gap-4">
                             <FormField control={form.control} name="empreendimento.nomeFantasia" render={({ field }) => (<FormItem><FormLabel>Nome Fantasia</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
