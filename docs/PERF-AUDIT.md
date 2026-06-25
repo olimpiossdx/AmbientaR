@@ -575,3 +575,22 @@ Fora do plano F00–F18; **uma rota por PR**, mesmo protocolo de debug.
 | Shared | 92,4 kB | **92,4 kB** |
 
 **Próximo candidato F19g:** rotas >400 kB (ex. `/analise-ambiental` ~446 kB, propostas comerciais ~428 kB).
+
+### F19g — análise ambiental, propostas e compliance lazy views ✅ (2026-06-25)
+
+| Ficheiro | Mudança |
+|----------|---------|
+| `analise-ambiental/page.tsx` + `analise-ambiental-view.tsx` | Shell + view geoespacial |
+| `commercial-proposals/page.tsx` + `commercial-proposals-list-view.tsx` | Shell + listagem |
+| `compliance/page.tsx` + `compliance-view.tsx` | Shell + condicionantes |
+
+**Verificação:** `npm run typecheck` · `npm run build`
+
+| Rota | Baseline (F17) | Após F19g |
+|------|----------------|-----------|
+| `/analise-ambiental` | ~446 kB | **146 kB** (−300 kB) |
+| `/commercial-proposals` | ~428 kB | **146 kB** (−282 kB) |
+| `/compliance` | ~400 kB | **146 kB** (−254 kB) |
+| Shared | 92,4 kB | **92,4 kB** |
+
+**Próximo candidato F19h:** sub-rotas ainda pesadas (ex. `/commercial-proposals/new` ~411 kB, `/contracts` ~402 kB).
