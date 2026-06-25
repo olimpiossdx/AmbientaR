@@ -507,3 +507,36 @@ Fora do plano F00–F18; **uma rota por PR**, mesmo protocolo de debug.
 | Shared | 91,9 kB | **92,2 kB** |
 
 **Próximo candidato F19c:** `/coleta-campo/[id]` (~583 kB) ou `/georeferenciamento/memorial-descritivo` (~536 kB).
+
+### F19c — `/coleta-campo/[id]` lazy `CampanhaDetailView` ✅ (2026-06-25)
+
+| Ficheiro | Mudança |
+|----------|---------|
+| `coleta-campo/[id]/page.tsx` | Shell fino com `dynamic()` |
+| `coleta-campo/[id]/campanha-detail-view.tsx` | View completa (Excel, consolidação, coordenadas) |
+
+**Verificação:** `npm run typecheck` · `npm run build` · `npm run perf:phase-debug` (18/18)
+
+| Rota | Baseline (F17) | Após F19c |
+|------|----------------|-----------|
+| `/coleta-campo/[id]` | ~583 kB | **146 kB** (−437 kB) |
+| Shared | 91,9 kB | **92,2 kB** |
+
+**Próximo candidato F19d:** `/georeferenciamento/memorial-descritivo` (~536 kB) — lazy de `MemorialDescritivoWorkbench`.
+
+### F19d — memorial descritivo lazy `MemorialDescritivoWorkbench` ✅ (2026-06-25)
+
+| Ficheiro | Mudança |
+|----------|---------|
+| `georeferenciamento/memorial-descritivo/page.tsx` | `MemorialDescritivoWorkbench` via `dynamic()` (`ssr: false`) |
+| `studies/memorial-descritivo/page.tsx` | Mesmo padrão (`context="studies"`) |
+
+**Verificação:** `npm run typecheck` · `npm run build`
+
+| Rota | Baseline (F17) | Após F19d |
+|------|----------------|-----------|
+| `/georeferenciamento/memorial-descritivo` | ~541 kB | **146 kB** (−395 kB) |
+| `/studies/memorial-descritivo` | ~541 kB | **146 kB** (−395 kB) |
+| Shared | 92,2 kB | **92,2 kB** |
+
+**Próximo candidato F19e:** auditar rotas restantes >300 kB no output de `npm run build` (ex. `/coleta-campo/nova` ~374 kB, parcelas ~348 kB).
