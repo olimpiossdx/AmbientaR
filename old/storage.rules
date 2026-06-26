@@ -1,0 +1,105 @@
+
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function userRoleForStorage() {
+      return firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role;
+    }
+
+    /** PDF e geometria do CAR: leitura para autenticados; escrita para perfis que gerem CAR. */
+    function mayWriteCarStorage() {
+      return request.auth != null &&
+        firestore.exists(/databases/(default)/documents/users/$(request.auth.uid)) &&
+        userRoleForStorage() != 'client' &&
+        userRoleForStorage() != 'representative';
+    }
+
+    /** Uploads financeiros: apenas admin e financeiro. */
+    function mayWriteFinancialStorage() {
+      return request.auth != null &&
+        firestore.exists(/databases/(default)/documents/users/$(request.auth.uid)) &&
+        (userRoleForStorage() == 'admin' || userRoleForStorage() == 'financial');
+    }
+
+    function underFinancialSize() {
+      return request.resource.size < 20 * 1024 * 1024;
+    }
+
+    function underDefaultSize() {
+      return request.resource.size < 40 * 1024 * 1024;
+    }
+
+    /** Vistoria em campo: evidências do checklist, laudos e assinaturas. */
+    function mayWriteInspectionStorage() {
+      return request.auth != null;
+    }
+
+    match /inspections/{allPaths=**} {
+      allow read: if request.auth != null;
+      allow write: if mayWriteInspectionStorage() && underDefaultSize();
+    }
+
+    /** PDF externo anexo ao extrato socioambiental (cooperativa / terceiros). */
+    match /socioambiental/{userId}/{fileName} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null &&
+        request.auth.uid == userId &&
+        underDefaultSize();
+    }
+
+    match /car/{fileName} {
+      allow read: if request.auth != null;
+      allow write: if mayWriteCarStorage();
+    }
+
+    match /car-shp/{fileName} {
+      allow read: if request.auth != null;
+      allow write: if mayWriteCarStorage();
+    }
+
+    // Permite leitura pública de imagens de branding.
+    // A escrita é permitida apenas para o dono do diretório (usuário autenticado).
+    match /branding/{userId}/{allPaths=**} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Pastas financeiras / contratos: leitura autenticada; escrita admin/financeiro.
+    match /invoices/{allPaths=**} {
+      allow read: if request.auth != null;
+      allow write: if mayWriteFinancialStorage() && underFinancialSize();
+    }
+    match /contracts/{allPaths=**} {
+      allow read: if request.auth != null;
+      allow write: if mayWriteFinancialStorage() && underFinancialSize();
+    }
+    match /receipts/{allPaths=**} {
+      allow read: if request.auth != null;
+      allow write: if mayWriteFinancialStorage() && underFinancialSize();
+    }
+    match /signed-contracts/{allPaths=**} {
+      allow read: if request.auth != null;
+      allow write: if mayWriteFinancialStorage() && underFinancialSize();
+    }
+    match /transactions/{allPaths=**} {
+      allow read: if request.auth != null;
+      allow write: if mayWriteFinancialStorage() && underFinancialSize();
+    }
+    match /commercial-proposals/{allPaths=**} {
+      allow read: if request.auth != null;
+      allow write: if mayWriteFinancialStorage() && underFinancialSize();
+    }
+    match /supplier-contracts/{allPaths=**} {
+      allow read: if request.auth != null;
+      allow write: if mayWriteFinancialStorage() && underFinancialSize();
+    }
+    
+    // Demais pastas da app: leitura/escrita para utilizadores autenticados (até 40 MB).
+    match /{allPaths=**} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && underDefaultSize();
+    }
+  }
+}

@@ -1,0 +1,3422 @@
+
+
+import type { LucideIcon } from "lucide-react";
+import type { Feature, Polygon } from "geojson";
+
+export type EntityType = 'Pessoa Física' | 'Pessoa Jurídica' | 'Produtor Rural';
+
+export type AuditLog = {
+    id: string;
+    userId: string;
+    userName: string;
+    action: string;
+    details: Record<string, any>;
+    timestamp: any;
+};
+
+
+export type Empreendedor = {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  address: string;
+  numero?: string;
+  projectIds?: string[];
+  cpfCnpj?: string;
+  entityType?: EntityType | EntityType[];
+  municipio?: string;
+  bairro?: string;
+  uf?: string;
+  cep?: string;
+  fax?: string;
+  correspondenceLogradouro?: string;
+  correspondenceNumero?: string;
+  correspondenceBairro?: string;
+  correspondenceMunicipio?: string;
+  correspondenceUf?: string;
+  correspondenceCep?: string;
+  userId?: string;
+  /** IDs de usuários que o titular aprovou para acessar os dados deste empreendedor (acesso com CPF diferente). */
+  approvedUserIds?: string[];
+  /** IDs de consultores-representantes aprovados (escrita operacional delegada). */
+  approvedConsultorIds?: string[];
+  /** Consultor principal ativo na carteira deste empreendedor. */
+  primaryConsultorUid?: string;
+  sourceClientId?: string;
+  dataNascimento?: string;
+  ctfIbama?: string;
+  /** Cartão de Cadastro CTF/IBAMA (PDF ou imagem). */
+  ctfIbamaCartaoUrl?: string;
+  ctfIbamaCartaoUpdatedAt?: string;
+  /** Certificado de Regularidade CTF/IBAMA. */
+  ctfIbamaCertificadoUrl?: string;
+  /** Validade do certificado (ISO yyyy-MM-dd). */
+  ctfIbamaCertificadoValidade?: string;
+  ctfIbamaCertificadoUpdatedAt?: string;
+  /** UID do titular que criou/possui este empreendedor base. */
+  ownerUserId?: string;
+  titularDocument?: string;
+  titularType?: "pessoa_fisica" | "pessoa_juridica";
+  cadastroIncompleto?: boolean;
+  onboardingStep?: string;
+  cnpjLookupStatus?: "not_applicable" | "success" | "failed" | "not_found";
+  /** Credenciais e preferências MTR-MG (sync automático / PDF). */
+  mtrIntegracao?: {
+    pessoaCodigo?: number;
+    usuarioCpf?: string;
+    senha?: string;
+    /** Busca periódica CDF/manifestos no WebService. */
+    autoSyncEnabled?: boolean;
+    /** Intervalo mínimo entre syncs automáticos (horas; padrão 24). */
+    autoSyncIntervalHours?: number;
+    /** Após sync, baixa PDF do MTR para novos registros (limite por execução). */
+    autoBaixarPdf?: boolean;
+    lastSyncAt?: string;
+    lastSyncSummary?: string;
+    lastSyncError?: string;
+  };
+};
+
+export type CompanyBankAccountType = 'corrente' | 'poupanca';
+
+export type EnvironmentalCompany = {
+    id: string;
+    name: string;
+    fantasyName?: string;
+    cnpj: string;
+    address?: string;
+    numero?: string;
+    caixaPostal?: string;
+    municipio?: string;
+    district?: string;
+    uf?: string;
+    cep?: string;
+    ddd?: string;
+    phone?: string;
+    fax?: string;
+    email?: string;
+    /** Conta corrente para recebimento (contrato SaaS e pagamento da plataforma). */
+    bankName?: string;
+    bankAgency?: string;
+    bankAccount?: string;
+    bankAccountType?: CompanyBankAccountType;
+    /** Chave PIX (e-mail, CNPJ, telefone ou aleatória). */
+    pixKey?: string;
+    /** Código PIX copia e cola (BR Code). */
+    pixCopyPaste?: string;
+};
+
+/** Snapshot público (companySettings) — contrato de cadastro e instruções de pagamento. */
+export type PlatformContractPublic = {
+  activeCompanyId: string;
+  name: string;
+  fantasyName?: string;
+  cnpj: string;
+  address?: string;
+  numero?: string;
+  municipio?: string;
+  district?: string;
+  uf?: string;
+  cep?: string;
+  email?: string;
+  bankName?: string;
+  bankAgency?: string;
+  bankAccount?: string;
+  bankAccountType?: CompanyBankAccountType;
+  pixKey?: string;
+  pixCopyPaste?: string;
+  updatedAt?: string;
+};
+
+export type TechnicalResponsible = {
+    id: string;
+    name: string;
+    cpf: string;
+    identidade?: string;
+    emissor?: string;
+    nacionalidade?: string;
+    estadoCivil?: string;
+    profession: string;
+    registrationNumber: string;
+    art?: string;
+    address?: string;
+    numero?: string;
+    bairro?: string;
+    municipio?: string;
+    uf?: string;
+    cep?: string;
+}
+
+/** Cliente (cadastro financeiro/CRM). Dados podem ser preenchidos a partir de Análise Socioambiental. */
+export type Client = {
+  id: string;
+  name: string;
+  cpfCnpj: string;
+  /** UID do usuário (perfil cliente) que pode acessar faturas e dados deste cliente. */
+  userId?: string;
+  /** IDs de usuários que o titular aprovou para acessar os dados (acesso com CPF diferente). */
+  approvedUserIds?: string[];
+  /** IDs de consultores-representantes aprovados (escrita operacional delegada). */
+  approvedConsultorIds?: string[];
+  /** Consultor principal ativo na carteira deste cliente. */
+  primaryConsultorUid?: string;
+  /** UIDs com login portal Cliente Gestão vinculado a este cadastro (vários responsáveis). */
+  portalUserIds?: string[];
+  entityType?: EntityType;
+  phone?: string;
+  email?: string;
+  identidade?: string;
+  emissor?: string;
+  nacionalidade?: string;
+  estadoCivil?: string;
+  dataNascimento?: string;
+  ctfIbama?: string;
+  ctfIbamaCartaoUrl?: string;
+  ctfIbamaCartaoUpdatedAt?: string;
+  ctfIbamaCertificadoUrl?: string;
+  ctfIbamaCertificadoValidade?: string;
+  ctfIbamaCertificadoUpdatedAt?: string;
+  address?: string;
+  numero?: string;
+  bairro?: string;
+  municipio?: string;
+  uf?: string;
+  cep?: string;
+  /** ID da análise socioambiental vinculada (preenchimento automático / relatórios) */
+  analiseSocioambientalId?: string;
+}
+
+export type Invoice = {
+  id: string;
+  clientId: string;
+  contractId?: string;
+  invoiceNumber: string;
+  invoiceDate: string;
+  dueDate: string;
+  amount: number;
+  status: 'Paid' | 'Unpaid' | 'Overdue';
+  fileUrl?: string;
+  /** Centro de custo / processo ambiental */
+  requestId?: string;
+  projectId?: string;
+  centroCusto?: string;
+  projectRoiCaseId?: string;
+};
+
+export type Revenue = {
+  id: string;
+  clientId?: string;
+  date: string;
+  amount: number;
+  description: string;
+  fileUrl?: string;
+  /** Evita dupla contagem na DRE quando vinculada a fatura paga */
+  invoiceId?: string;
+  contractId?: string;
+  requestId?: string;
+  projectId?: string;
+  centroCusto?: string;
+  /** Caso em Projetos & ROI (opcional) */
+  projectRoiCaseId?: string;
+  reconciledAt?: string;
+  estornoDeId?: string;
+  isEstorno?: boolean;
+  estornadoPorId?: string;
+  /** Soft-delete (Projetos & ROI) — não entra no caixa operacional. */
+  deletedAt?: string;
+  deletedByUid?: string;
+  deleteJustification?: string;
+};
+
+export type ExpenseCategory =
+  | 'operacional'
+  | 'pessoal'
+  | 'subcontratacao'
+  | 'impostos'
+  | 'depreciacao'
+  | 'aquisicao_bem'
+  | 'financeiro'
+  | 'outros';
+
+export type Expense = {
+  id: string;
+  date: string;
+  amount: number;
+  description: string;
+  fileUrl?: string;
+  category?: ExpenseCategory;
+  supplierId?: string;
+  requestId?: string;
+  projectId?: string;
+  centroCusto?: string;
+  contractId?: string;
+  projectRoiCaseId?: string;
+  impostoValor?: number;
+  /** Despesa gerada por depreciação de bem */
+  depreciacaoBemId?: string;
+  bensPatrimonioId?: string;
+  reconciledAt?: string;
+  estornoDeId?: string;
+  isEstorno?: boolean;
+  estornadoPorId?: string;
+  /** Soft-delete (Projetos & ROI) — não entra no caixa operacional. */
+  deletedAt?: string;
+  deletedByUid?: string;
+  deleteJustification?: string;
+};
+
+export type Transaction = (Revenue | Expense) & { type: 'revenue' | 'expense' };
+
+export type Appointment = {
+  id: string;
+  description: string;
+  startTime: string;
+  endTime: string;
+  type: 'appointment' | 'deadline' | 'audit';
+  clientId?: string;
+  location?: string;
+  ownerId?: string;
+  ownerRole?: UserRole;
+};
+
+export type PermitType = 'LP' | 'LI' | 'LO' | 'LAS' | 'AAF' | 'Outra';
+export type PermitStatus = 'Válida' | 'Vencida' | 'Em Renovação' | 'Suspensa' | 'Cancelada' | 'Em Andamento';
+export type OwnerCondition = 'Proprietário' | 'Arrendatário' | 'Parceiro' | 'Posseiro' | 'Outros';
+/** Referencial geodésico. Padrão operacional AmbientaR (MG): SIRGAS2000. */
+export type Datum = 'SIRGAS2000' | 'SAD-69' | 'WGS-84' | 'Córrego Alegre';
+export type CoordinateFormat = 'Lat/Long' | 'UTM';
+/** Fuso UTM; padrão MG: 23S (SIRGAS2000 / EPSG:31983). */
+export type Fuso = '22' | '23' | '24';
+
+/** Par lat/lng decimal derivado (WGS84/SIRGAS2000 geográfico, sinal Sul/Oeste). */
+export type CoordinateDecimal = {
+  lat: number;
+  lng: number;
+};
+
+/** Campos comuns de localização geográfica (GMS ou UTM + metadados). */
+export type GeographicLocationFields = {
+  latLong?: {
+    lat: { grau?: string; min?: string; seg?: string };
+    long: { grau?: string; min?: string; seg?: string };
+  };
+  utm?: {
+    x?: string;
+    y?: string;
+    fuso?: Fuso;
+  };
+  /** Derivado no submit a partir de GMS ou UTM; opcional em registros legados. */
+  decimal?: CoordinateDecimal;
+  local?: string;
+  additionalLocationInfo?: string;
+  hydrographicBasin?: string;
+  hydrographicSubBasin?: string;
+  upgrh?: string;
+  nearestWaterCourse?: string;
+};
+
+/** Localização geográfica completa (empreendimento / formulários com datum obrigatório). */
+export type GeographicLocation = GeographicLocationFields & {
+  datum: Datum;
+  format: CoordinateFormat;
+};
+
+/** Variante parcial (RCA e documentos espelhados). */
+export type GeographicLocationPartial = GeographicLocationFields & {
+  datum?: Datum;
+  format?: CoordinateFormat;
+};
+export type Biome = 'Cerrado' | 'Mata Atlântica' | 'Outro' | 'Não';
+export type ManagementCategory = 'Uso Sustentável' | 'Proteção Integral';
+export type Jurisdiction = 'Federal' | 'Estadual' | 'Municipal' | 'Privada';
+export type ZoneType = 'Rural' | 'Residencial' | 'Comercial' | 'Não';
+export type LegalReserveStatus = 'not_rural' | 'demarcation_in_progress' | 'commitment_signed' | 'demarcation_done' | 'registered';
+export type RegularizacaoSituacao = 'Regularizada' | 'Em Análise' | 'Não Regularizada';
+export type TipoPessoa = 'Pessoa Física' | 'Pessoa Jurídica';
+
+export type InputDetail = {
+    used?: boolean;
+    storageLocation?: string;
+};
+
+export type PhysicalStructure = {
+  name: string;
+  quantity: number;
+  area: number;
+  description: string;
+}
+
+export type BarragemAlternativa = {
+  identificacaoArea?: string;
+  distanciaGeracaoRejeito?: number;
+  jusanteContribuicaoPluvial?: boolean;
+  topografia?: {
+    alturaTalude?: 'Menor que 30 metros' | 'Entre 30 e 60 metros' | 'Maior que 60 metros';
+    areaInundacao?: number;
+    volumeTerraMovimentada?: number;
+    distanciaAreaEmprestimo?: number;
+  };
+  hidrologia?: {
+    areaContribuicao?: 'Menor que 5 vezes área do lago' | 'Entre 5 e 10 vezes a área do lago' | 'Maior que 10 vezes a área do lago';
+    aporteAguasSuperficiais?: number;
+    aporteAguaPluvial?: number;
+  };
+  geologia?: {
+    descricaoGeologiaLocal?: string;
+    permeabilidade?: number;
+    disponibilidadeMaterialNatural?: string;
+    condicoesFundacao?: string;
+  };
+  aguaSubterranea?: {
+    profundidadeLencolFreatico?: number;
+  };
+};
+
+export type DamSheetData = {
+  areaBaciaContribuicao?: number;
+  areaDesmatamento?: number;
+  elevacaoBase?: number;
+  elevacaoCrista?: number;
+  alturaMaximaFinal?: number;
+  larguraCrista?: number;
+  comprimentoFinalCrista?: number;
+  anguloTaludeGeral?: number;
+  alturaBancadas?: number;
+  larguraBermas?: number;
+  volumeTotalFinalMacico?: number;
+  volumeFinalReservatorio?: number;
+  descargaMaximaVertedouro?: number;
+  areaReservatorio?: number;
+  alturaMaximaAtual?: number;
+};
+
+export type AnaliseSolo = {
+  cultura: string;
+  parametros?: {
+    RAS?: string; MO?: string; P?: string; K?: string; PH?: string;
+    VA?: string; Al?: string; Ca?: string; Mg?: string; SB?: string;
+    TEXTURA?: string;
+  };
+};
+
+export type AtividadeAgricola = {
+  especificacao: string;
+  sistema: 'Convencional' | 'Orgânico';
+  area: number;
+  certificado?: string;
+};
+
+export type Irrigacao = {
+  cultura: string;
+  tipo: string;
+  vazao: string;
+  pontoCaptacao: string;
+  classificacaoAgua: string;
+  volumeOutorgado: string;
+  velocidadeInfiltracao: string;
+  laminaDagua: string;
+  turnoRega: string;
+};
+
+export type AtividadeAgropecuaria = {
+  especificacao: string;
+  cabecas: number;
+};
+
+export type OutraAtividade = {
+  especificacao: string;
+  codigo?: string;
+  unidade?: string;
+  quantidade?: number;
+  inicio?: string;
+};
+
+export type License = {
+  id: string;
+  empreendedorId: string;
+  projectId: string;
+  permitType: PermitType;
+  licenseNumber?: string;
+  processNumber: string;
+  permitNumber: string;
+  issuingBody: string;
+  issueDate: string;
+  expirationDate: string;
+  status: PermitStatus;
+  description?: string;
+  fileUrl?: string;
+};
+
+export type TacStatus = 'Vigente' | 'Concluído' | 'Cancelado' | 'Em Andamento';
+
+export type Tac = {
+  id: string;
+  empreendedorId: string;
+  projectId: string;
+  gtacId?: string;
+  protocolNumber?: string;
+  processNumber: string;
+  tacNumber?: string;
+  issuingBody: string;
+  issueDate: string;
+  publicationDate?: string;
+  expirationDate?: string;
+  status: TacStatus;
+  description?: string;
+  licensingProcessBeforeTac?: string;
+  licensingProcessAfterTac?: string;
+  fileUrl?: string;
+};
+
+export type ProjectPerimetroReferenciaFileType = 'kml' | 'kmz' | 'shp';
+
+/** Perímetro opcional guardado no cadastro do empreendimento (referência para análises). */
+export type ProjectPerimetroReferencia = {
+  fileUrl?: string;
+  fileName?: string;
+  fileType?: ProjectPerimetroReferenciaFileType;
+  geojson?: Feature<Polygon>;
+  areaHa?: number;
+  uploadedAt?: string;
+  uploadedBy?: string;
+};
+
+/** Arquivo do CAR armazenado no Firebase Storage. */
+export type CarStoredFile = {
+  url: string;
+  name: string;
+};
+
+/** Cadastro Ambiental Rural vinculado ao empreendimento. */
+export type ProjectCar = {
+  /** ID do cliente associado ao CAR (opcional) */
+  clientId?: string;
+  /** Número do recibo do CAR */
+  receiptNumber: string;
+  /** Primeiro PDF — espelho legado para integrações */
+  pdfUrl?: string;
+  /** Primeira geometria — espelho legado para PEA / geoespacial */
+  shpUrl?: string;
+  pdfFiles?: CarStoredFile[];
+  geometryFiles?: CarStoredFile[];
+};
+
+export type Project = {
+  id: string;
+  empreendedorId: string;
+  userId?: string;
+  assignedTeam?: string[];
+  activity: string;
+  propertyName: string;
+  fantasyName?: string;
+  incraCode?: string;
+  cnpj?: string;
+  zoneType?: ZoneType;
+  caixaPostal?: string;
+  inscricaoEstadual?: string;
+  inscricaoMunicipal?: string;
+  correspondenceIsSame?: boolean;
+  correspondenceAddress?: string;
+  correspondenceCaixaPostal?: string;
+  correspondenceMunicipio?: string;
+  correspondenceUf?: string;
+  correspondenceCep?: string;
+  matricula?: string;
+  comarca?: string;
+  address?: string;
+  numero?: string;
+  cep?: string;
+  municipio?: string;
+  district?: string;
+  uf?: string;
+  ownerCondition?: OwnerCondition[];
+  geographicLocation?: GeographicLocation;
+  locationalRestrictions?: {
+    biome: Biome;
+    biomeOther?: string;
+    hasNativeVegetation?: boolean;
+    nativeVegetation?: string[];
+    nativeVegetationOther?: string;
+    inPermanentPreservationArea?: boolean;
+    propertyHasPermanentPreservationArea?: boolean;
+    isPermanentPreservationAreaPreserved?: boolean;
+    isPermanentPreservationAreaProtected?: boolean;
+    inKarstArea: boolean;
+    inFluvialLacustrineArea: boolean;
+  };
+  conservationUnit?: {
+    isInConservationUnit: 'Sim' | 'Não';
+    distance?: string;
+    ucName?: string;
+    managementCategory?: ManagementCategory;
+    jurisdiction?: Jurisdiction;
+    managingBody?: string;
+  };
+  legalReserve?: {
+    status: LegalReserveStatus;
+    commitmentProcessNumber?: string;
+    demarcationProcessNumber?: string;
+  };
+  criteriosDN130?: {
+    possuiRPPN?: boolean;
+    areaAntropizadaConsolidada?: boolean;
+    compromissoFormal?: boolean;
+    compromissos?: string[];
+    adotaSistemasReducaoVulnerabilidade?: boolean;
+    sistemasReducaoDescricao?: string;
+    usaQueimaCana?: boolean;
+    praticasDesenvolvidas?: string[];
+    outrosSistemasAgroecologicos?: string;
+  };
+  barragemAlternativas?: BarragemAlternativa[];
+  damTechnicalSheet?: {
+    barragemNova?: DamSheetData;
+    barragemExistente?: DamSheetData;
+    alteamento?: DamSheetData;
+  };
+  car?: ProjectCar;
+  /** Perímetro de referência opcional (KML/KMZ/SHP) — auxiliar para análises; separado do CAR e do MCA. */
+  perimetroReferencia?: ProjectPerimetroReferencia;
+  projectArea?: {
+    totalArea?: number;
+    builtArea?: number;
+  };
+  jobCreation?: {
+    fixos?: number;
+    temporarios?: number;
+    terceirizados?: number;
+    residentFamilies?: number;
+  };
+  equipments?: {
+    name: string;
+    quantity: number;
+  }[];
+  agriculturalInputs?: {
+    gesso?: InputDetail;
+    calcario?: InputDetail;
+    silica?: InputDetail;
+    fertilizantes?: {
+        fosfatagem?: InputDetail;
+        outros?: InputDetail;
+    };
+    defensivos?: {
+        herbicida?: InputDetail;
+        inseticida?: InputDetail;
+        fungicida?: InputDetail;
+        outros?: InputDetail;
+    };
+    acaricida?: InputDetail;
+    vermifugo?: InputDetail;
+    antibioticos?: InputDetail;
+    hormonios?: InputDetail;
+    vacinas?: InputDetail;
+    outros?: { name: string; storageLocation: string; }[];
+  };
+  physicalStructures?: PhysicalStructure[];
+  analiseSolo?: AnaliseSolo[];
+  atividadesAgricolas?: {
+    olericultura?: AtividadeAgricola[];
+    culturasAnuais?: AtividadeAgricola[];
+    culturasPerenes?: AtividadeAgricola[];
+  };
+  irrigacao?: Irrigacao[];
+  atividadesFlorestais?: {
+    silvicultura?: { especie: string, area: number }[];
+    carvoejamento?: { tipo: 'Nativo' | 'Plantada', especie: string, volume: number }[];
+  };
+  atividadesAgropecuarias?: AtividadeAgropecuaria[];
+  outrasAtividades?: OutraAtividade[];
+  processNumber?: string;
+  issuingBody?: string;
+  issueDate?: string;
+  expirationDate?: string;
+  status?: PermitStatus;
+  description?: string;
+  fileUrl?: string;
+  clientId?: string;
+};
+
+/** Tipo do ponto de monitoramento: bomba (captação) ou monitoramento a jusante */
+export type PontoMonitoramentoTipo = 'bomba' | 'jusante';
+
+export type PontoDeMonitoramento = {
+  id: string;
+  nome: string;
+  /** 'bomba' = ponto da bomba/captação; 'jusante' = monitoramento a jusante */
+  tipo?: PontoMonitoramentoTipo;
+  /** Latitude para exibição no mapa (IGAM/ANA) */
+  lat?: number;
+  /** Longitude para exibição no mapa */
+  lng?: number;
+  /** Identificador da estação no Firebase RTDB ou gateway (ingestão) */
+  rtdbDeviceId?: string;
+  /** Calibração YF-S201/S401: pulsos por litro (ex.: 450). Sobrescreve default no firmware/backend. */
+  pulsesPerLiter?: number;
+  /** Diâmetro interno da tubulação no trecho do sensor (m), para velocidade média V = Q/A */
+  internalDiameterM?: number;
+  /** Código do ponto no sistema MIRA, quando divulgado pelo IGAM */
+  miraPointCode?: string;
+};
+
+/** Tipo de leitura do monitoramento: manual (lançamento diário) ou telemétrica (satélite) */
+export type MonitoringType = 'manual' | 'telemetric';
+
+export type WaterPermit = {
+  id: string;
+  empreendedorId: string;
+  projectId?: string;
+  permitNumber: string; // Portaria de Outorga
+  interventionType?: string;
+  processNumber: string;
+  issueDate: string;
+  expirationDate: string;
+  status: PermitStatus;
+  description: string; // Finalidade (e.g., Captação de água subterrânea)
+  fileUrl?: string;
+  /** manual = lançamento no Manual-Lançamento; telemetric = leitura no Telemetrico-Leitura */
+  monitoringType?: MonitoringType;
+  pontosDeMonitoramento: PontoDeMonitoramento[];
+  /** Identificação da estação/portaria no ambiente MIRA (quando aplicável) */
+  miraStationId?: string;
+  /** Limite de vazão condicionado na outorga (m³/s) — referência para alertas / FR; conforme condicionante */
+  condicionanteFlowLimitM3s?: number;
+  /** Limite de captação mensal (m³). */
+  monthlyLimitM3?: number;
+  /** Limite de captação diário (m³). */
+  dailyLimitM3?: number;
+  /** Limite diário de horas de operação. */
+  dailyHoursLimit?: number;
+  /** Limite máximo de dias com captação no mês. */
+  maxDaysPerMonth?: number;
+  /** Código Tabela 01 IGAM (ex.: "01", "18") */
+  modoUsoCodigo?: string;
+  /** ID do processo em `outorga_processos` que originou a portaria */
+  outorgaProcessoId?: string;
+};
+
+export type OutorgaTipoServico =
+  | 'outorga'
+  | 'renovacao'
+  | 'retificacao'
+  | 'preventiva'
+  | 'drdh'
+  | 'coletiva'
+  | 'uso_insignificante'
+  | 'uso_isento'
+  | 'autorizacao_perfuracao'
+  | 'emergencial';
+
+export type OutorgaEtapaProcesso =
+  | 'rascunho'
+  | 'elaboracao_estudos'
+  | 'documentacao'
+  | 'taxa_paga'
+  | 'protocolado'
+  | 'analise'
+  | 'exigencia'
+  | 'deferido'
+  | 'indeferido'
+  | 'publicado';
+
+export type OutorgaChecklistDocumento = {
+  id: string;
+  label: string;
+  obrigatorio: boolean;
+  cumprido: boolean;
+  anexoUrl?: string;
+};
+
+export type OutorgaHistoricoEtapa = {
+  etapa: OutorgaEtapaProcesso;
+  em: string;
+  nota?: string;
+};
+
+export type OutorgaTaxaServico = {
+  codigo: string;
+  valorBrl?: number;
+  exercicio: number;
+  ufemg: number;
+  comprovanteUrl?: string;
+};
+
+export type OutorgaLinksExternos = {
+  /** PDF do termo de referência do código (IGAM). */
+  trPdfUrl?: string;
+  trTitulo?: string;
+  /** Portal de formulários e TRs — igam.mg.gov.br/outorga/formularios */
+  formularios?: string;
+  custosOutorga?: string;
+  taxasProcessos?: string;
+  tabelasApoio?: string;
+  sout?: string;
+  sei?: string;
+  /** Lista pública de outorgas — SEMAD / licenciamento MG */
+  consultaPublica?: string;
+  legislacaoDecreto?: string;
+  portariaTabela01?: string;
+};
+
+/** Campos editáveis do estudo técnico / formulário (TR convertido em rascunho). */
+export type OutorgaEstudoTr = Record<string, string>;
+
+/** Pedido de outorga em tramitação (coleção `outorga_processos`). */
+export type OutorgaProcesso = {
+  id: string;
+  empreendedorId: string;
+  projectId?: string;
+  modoUsoCodigo: string;
+  modoUsoLabel: string;
+  tipoServico: OutorgaTipoServico;
+  etapaProcesso: OutorgaEtapaProcesso;
+  historicoEtapas: OutorgaHistoricoEtapa[];
+  checklistDocumentos: OutorgaChecklistDocumento[];
+  taxaServico?: OutorgaTaxaServico;
+  linksExternos?: OutorgaLinksExternos;
+  /** Rascunho editável do estudo técnico para o pedido de outorga. */
+  estudoTr?: OutorgaEstudoTr;
+  finalidade?: string;
+  processNumber?: string;
+  municipio?: string;
+  coordenadas?: string;
+  vazaoRequerida?: string;
+  monthlyLimitM3?: number;
+  dailyLimitM3?: number;
+  dailyHoursLimit?: number;
+  maxDaysPerMonth?: number;
+  condicionanteFlowLimitM3s?: number;
+  miraStationId?: string;
+  /** Portaria vinculada após publicação */
+  outorgaId?: string;
+  createdBy?: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+/** Tipos de uso insignificante de água (submenu Usos Insignificantes). */
+export type InsignificantWaterUseType =
+  | "Poço Tubular"
+  | "Captação Superficial"
+  | "Captação Em Barramento"
+  | "Barramento Sem Captação"
+  | "Captação em Nascente"
+  | "Captação em Cisterna";
+
+/** Registro de uso insignificante — estrutura análoga à outorga (coleção `usosInsignificantes`). */
+export type InsignificantWaterUse = {
+  id: string;
+  usoType: InsignificantWaterUseType;
+  empreendedorId: string;
+  projectId?: string;
+  permitNumber: string;
+  processNumber: string;
+  issueDate: string;
+  expirationDate: string;
+  status: PermitStatus;
+  description: string;
+  fileUrl?: string;
+  monitoringType?: MonitoringType;
+  pontosDeMonitoramento: PontoDeMonitoramento[];
+  /** IGAM / MIRA — mesmo padrão da outorga */
+  miraStationId?: string;
+  condicionanteFlowLimitM3s?: number;
+  monthlyLimitM3?: number;
+  dailyLimitM3?: number;
+  dailyHoursLimit?: number;
+  maxDaysPerMonth?: number;
+};
+
+/** Qualidade da leitura após validação no backend ou no edge */
+export type TelemetryDataQuality = "valid" | "suspect" | "invalid";
+
+/** Leitura telemétrica recebida por equipamento (segundo a segundo). Unidades IGAM/ANA: vazão m³/s, m³/h. */
+export type TelemetryReading = {
+  id: string;
+  /** Preenchido quando a telemetria refere-se a uma outorga */
+  outorgaId?: string;
+  /** Preenchido quando a telemetria refere-se a uso insignificante (mutuamente exclusivo na ingestão) */
+  usoInsignificanteId?: string;
+  pontoId: string;
+  /** Timestamp do evento (segundo a segundo) */
+  timestamp: string; // ISO
+  /** true = bomba ligada, false = desligada */
+  pumpOn: boolean;
+  /** Vazão instantânea (m³/s) - padrão ANA/IGAM */
+  flowRateM3s?: number;
+  /** Vazão (m³/h) - padrão ANA/IGAM */
+  flowRateM3h?: number;
+  /** Pulsos contados na janela de 1 s (sensor tipo YF-S201), se disponível */
+  pulsesPerSecond?: number;
+  /** Vazão derivada em L/min (intermediário de campo) */
+  flowRateLmin?: number;
+  /** Nível hidráulico (m) — medido ou convertido de distância */
+  nivelM?: number;
+  /** Volume captado na leitura (m³), quando consolidado pelo gateway/integrador. */
+  volumeM3?: number;
+  /** Horas ativas relacionadas à leitura (para consolidação diária/mensal). */
+  hoursActive?: number;
+  /** pH */
+  ph?: number;
+  /** Vazão residual a jusante (m³/s) - quando abaixo do mínimo dispara alerta laranja */
+  downstreamResidualM3s?: number;
+  /** Nível mínimo da régua a jusante (m) - referência para alerta */
+  downstreamMinLevelM?: number;
+  /** Alerta: corte total da vazão (bomba desligada e residual zerada) → vermelho */
+  alertRed?: boolean;
+  /** Alerta: residual a jusante abaixo do mínimo → laranja */
+  alertOrange?: boolean;
+  dataQuality?: TelemetryDataQuality;
+};
+
+export type ManualMonitoringLog = {
+    id: string;
+    outorgaId: string;
+    pontoId: string;
+    logDate: string;
+    startTime: string;
+    endTime: string;
+    flowRateLps: number;
+    flowRateM3h: number;
+    horimeterStart: number;
+    horimeterEnd: number;
+    userId: string;
+    createdAt: any;
+}
+
+export type EnvironmentalIntervention = {
+  id: string;
+  empreendedorId:string;
+  processNumber: string;
+  issuingBody: string; // IEF / SEMAD
+  issueDate: string;
+  expirationDate: string;
+  status: PermitStatus;
+  description: string; // Tipo (e.g., Supressão de Vegetação Nativa)
+  fileUrl?: string;
+};
+
+export type Condicionante = {
+    id: string;
+    referenceId: string;
+    referenceType: 'licenca' | 'outorga' | 'intervencao' | 'tac';
+    description: string;
+    dueDate: string;
+    status: 'Pendente' | 'Em execução' | 'Cumprida' | 'Atrasada' | 'Não Aplicável';
+    recurrence: 'Única' | 'Mensal' | 'Trimestral' | 'Semestral' | 'Anual';
+    fileUrl?: string;
+};
+
+export type AreaRecuperacao = {
+    identificacao: string;
+    descricao: string;
+    extensao: number;
+    justificativa: string;
+};
+
+export type CronogramaEtapa = {
+    etapa: string;
+    dataInicio: string | Date;
+    dataFim: string | Date;
+}
+
+export type MetodologiaAtracaoFauna = {
+    titulo: string;
+    descricao: string;
+}
+
+export type AvaliacaoResultadoItem = {
+    metrica: string;
+    indicador: string;
+    graduacao?: number;
+};
+
+export type Prada = {
+  id: string;
+  status?: 'Rascunho' | 'Aprovado';
+  requerente: {
+    clientId?: string;
+    nome: string;
+    cpfCnpj: string;
+  };
+  proprietario?: {
+    clientId?: string;
+    nome?: string;
+    cpfCnpj?: string;
+  };
+  empreendimento: {
+    projectId?: string;
+    nome: string;
+    denominacao: string;
+    car: string;
+    matricula: string;
+  };
+  responsavelTecnico: {
+    nome: string;
+    cpf: string;
+    email?: string;
+    telefone?: string;
+    formacao: string;
+    registroConselho: string;
+    art: string;
+    ctfAida?: string;
+  };
+  objetivosPrada?: string[];
+  objetivoDescricao?: string;
+  areasRecuperacao?: AreaRecuperacao[];
+  cronograma?: CronogramaEtapa[];
+  metodologiaAtracaoFauna?: MetodologiaAtracaoFauna[];
+  opcaoPrada?: 'WebAmbiente' | 'Projeto-Técnico';
+  formasDeReconstituicao?: string[];
+  reconstituicaoDescricao?: string;
+  regeneracaoNatural?: string;
+  enriquecimento?: string;
+  reflorestamento?: string;
+  especiesIndicadas?: {
+    pioneiras?: string[];
+    secundarias?: string[];
+    climax?: string[];
+    frutiferas?: string[];
+    exoticas?: string[];
+    justificativaExoticas?: string;
+  };
+  projetoImplantacao?: {
+    combateFormigas?: string;
+    preparoSolo?: string;
+    espacamentoAlinhamento?: string;
+    coveamentoAdubacao?: string;
+    plantio?: string;
+    coroamento?: string;
+    tratosCulturais?: string;
+    replantio?: string;
+    preservacaoRecursos?: string;
+    atracaoFauna?: string;
+  };
+  avaliacaoResultados?: AvaliacaoResultadoItem[];
+  referenciasBibliograficas?: string;
+};
+
+/** Nível de cota do reservatório (tabela de capacidade). */
+export type BarragemNivelCota = {
+  cota?: string;
+  areaM2?: string;
+  alturaM?: string;
+  volumeM3?: string;
+  volumeAcumuladoM3?: string;
+};
+
+export type BarragemTipoEstrutura =
+  | 'terra_homogenea'
+  | 'terra_zonada'
+  | 'enrocamento'
+  | 'concreto_gravidade'
+  | 'barramento_sem_regularizacao';
+
+/** Projeto Técnico de Barragem (memorial descritivo + exportação DOCX/PDF). */
+export type ProjetoTecnicoBarragem = {
+  id: string;
+  status?: 'Rascunho' | 'Aprovado';
+  arquivoCodigo?: string;
+  tipoEstrutura?: BarragemTipoEstrutura;
+  geoAnalysisId?: string;
+  outorgaProcessoId?: string;
+  apresentacao?: string;
+  requerente: {
+    clientId?: string;
+    nome: string;
+    cpfCnpj: string;
+  };
+  empreendimento: {
+    projectId?: string;
+    nome: string;
+    denominacao?: string;
+    municipio?: string;
+    uf?: string;
+    car?: string;
+    matricula?: string;
+  };
+  responsavelTecnico: {
+    nome: string;
+    cpf?: string;
+    email?: string;
+    telefone?: string;
+    formacao: string;
+    registroConselho: string;
+    art?: string;
+  };
+  usoPretendido?: string;
+  espelhoDaguaM2?: string;
+  capacidadeArmazenamentoM3?: string;
+  localEmissao?: string;
+  dataEmissao?: string;
+  informacoesBasicas?: {
+    topograficas?: string;
+    latitude?: string;
+    longitude?: string;
+    altitude?: string;
+  };
+  definicaoBarragem?: string;
+  capacidadeReservatorio?: {
+    descricao?: string;
+    cotaEspelhoDagua?: string;
+    cotaTerrenoNatural?: string;
+    areaEspelhoM2?: string;
+    volumeArmazenadoM3?: string;
+    tabelaNiveis?: BarragemNivelCota[];
+  };
+  aterro?: string;
+  taludesAterro?: string;
+  fundacao?: string;
+  drenoPe?: string;
+  descargaFundo?: string;
+  calculosHidrologicos?: {
+    caracteristicasBacia?: string;
+    tempoConcentracao?: string;
+    intensidadeChuva?: string;
+    coeficienteEscoamento?: string;
+    vazaoCheia?: string;
+  };
+  dimensionamentoCapacidadeCheia?: string;
+  extravasor?: string;
+  implantacaoProjeto?: string;
+  conservacaoManutencao?: string;
+  literaturaConsultada?: string;
+  anexosDescricao?: string;
+  /** Balanço hídrico / regularização — método de Rippl (manual §5.5). */
+  regularizacaoRippl?: {
+    volumeUtilRipplM3?: string;
+    demandaAnualM3?: string;
+    memorial?: string;
+    ripplSeries?: RipplSerieMensalRow[];
+  };
+  /** Triagem geotécnica — Bishop simplificado (manual §8). */
+  estabilidadeTaludes?: {
+    metodoCalculo?: 'bishop' | 'morgenstern_price';
+    cenario?: 'operacao_normal' | 'final_construcao' | 'rebaixamento_rapido' | 'sismo';
+    coesaoKpa?: string;
+    anguloAtritoGrau?: string;
+    fatorSeguranca?: string;
+    lambdaMorgenstern?: string;
+    fatias?: Array<{
+      label?: string;
+      larguraM?: string;
+      pesoKN?: string;
+      anguloBaseGrau?: string;
+      ubKN?: string;
+    }>;
+    memorial?: string;
+  };
+  /** Triagem estrutural — concreto gravidade (manual §9.4–9.5). */
+  estabilidadeConcretoGravidade?: {
+    alturaAguaM?: string;
+    pesoEspecificoConcretoKNm3?: string;
+    areaSecaoM2?: string;
+    pesoProprioKN?: string;
+    subpressaoKN?: string;
+    areaBaseM2?: string;
+    coesaoKpa?: string;
+    anguloAtritoGrau?: string;
+    bracoPesoM?: string;
+    fsDeslizamento?: string;
+    fsTombamento?: string;
+    tensaoMediaKpa?: string;
+    tensaoMaxKpa?: string;
+    tensaoMinKpa?: string;
+    memorial?: string;
+  };
+};
+
+/** Linha da série mensal Rippl (barragem e piscinão). */
+export type RipplSerieMensalRow = {
+  label?: string;
+  qAfluenteM3s?: string;
+  qDemandaM3s?: string;
+  diasNoPeriodo?: string;
+  evapM3?: string;
+};
+
+/** Resultados HEC-RAS importados no estudo de segurança. */
+export type HecRasResultadosEstudo = {
+  importedAt?: string;
+  sourceFile?: string;
+  formatoOrigem?: 'ambientar' | 'geojson' | 'csv';
+  resumo?: {
+    areaInundadaM2?: string;
+    profundidadeMaxM?: string;
+    velocidadeMaxMs?: string;
+    tempoChegadaMinMin?: string;
+    tempoChegadaMaxH?: string;
+    vazaoPicoModeladaM3s?: string;
+    cenarioModelado?: string;
+    software?: string;
+    dataSimulacao?: string;
+  };
+  pontos?: Array<{
+    label?: string;
+    lat?: string;
+    lng?: string;
+    profundidadeMaxM?: string;
+    velocidadeMaxMs?: string;
+    tempoChegadaMin?: string;
+  }>;
+  geojsonStats?: {
+    featureCount?: string;
+    bbox?: string;
+    storedInline?: string;
+  };
+  geojsonInline?: Record<string, unknown>;
+  memorial?: string;
+  observacoes?: string;
+};
+
+export type SegurancaBarragemNivelAnomalia = 'normal' | 'atencao' | 'alerta' | 'emergencia';
+
+export type SegurancaBarragemNivelPae = 'verde' | 'amarelo' | 'laranja' | 'vermelho';
+
+export type SegurancaBarragemDpa = 'baixo' | 'medio' | 'alto';
+
+/** Estudo de Segurança de Barragem (PSB, inspeções, PAE, Dam Break triagem). */
+export type EstudoSegurancaBarragem = {
+  id: string;
+  status?: 'Rascunho' | 'Aprovado';
+  projetoTecnicoBarragemId?: string;
+  geoAnalysisId?: string;
+  outorgaProcessoId?: string;
+  /** RCA vinculado ao licenciamento do empreendimento (opcional). */
+  rcaId?: string;
+  /** PCA vinculado ao licenciamento do empreendimento (opcional). */
+  pcaId?: string;
+  requerente: {
+    clientId?: string;
+    nome: string;
+    cpfCnpj: string;
+  };
+  empreendimento: {
+    projectId?: string;
+    nome: string;
+    municipio?: string;
+    uf?: string;
+    car?: string;
+  };
+  responsavelTecnico: {
+    nome: string;
+    cpf?: string;
+    email?: string;
+    telefone?: string;
+    formacao: string;
+    registroConselho: string;
+    art?: string;
+  };
+  classificacao?: {
+    categoriaRisco?: string;
+    danoPotencialAssociado?: SegurancaBarragemDpa;
+    volumeReservatorioM3?: string;
+    alturaBarragemM?: string;
+    observacoes?: string;
+  };
+  psb?: {
+    itens?: Record<string, boolean>;
+    observacoes?: string;
+  };
+  inspecao?: {
+    itens?: Record<string, boolean>;
+    nivelAnomalia?: SegurancaBarragemNivelAnomalia;
+    observacoes?: string;
+  };
+  pae?: {
+    nivelAtual?: SegurancaBarragemNivelPae;
+    contatos?: string;
+    rotasFuga?: string;
+    observacoes?: string;
+  };
+  damBreak?: {
+    cenario?: string;
+    larguraBrechaM?: string;
+    tempoFormacaoH?: string;
+    volumeMobilizadoM3?: string;
+    vazaoPicoM3s?: string;
+    observacoes?: string;
+  };
+  hecRasResultados?: HecRasResultadosEstudo;
+  localEmissao?: string;
+  dataEmissao?: string;
+};
+
+/** Cadastro de piscinão off-stream (reservatório fora do leito do curso d'água). */
+export type PiscinaoOffStream = {
+  id: string;
+  status?: 'Rascunho' | 'Aprovado';
+  projetoTecnicoBarragemId?: string;
+  geoAnalysisId?: string;
+  outorgaProcessoId?: string;
+  requerente: {
+    clientId?: string;
+    nome: string;
+    cpfCnpj: string;
+  };
+  empreendimento: {
+    projectId?: string;
+    nome: string;
+    municipio?: string;
+    uf?: string;
+    car?: string;
+  };
+  responsavelTecnico: {
+    nome: string;
+    cpf?: string;
+    email?: string;
+    telefone?: string;
+    formacao: string;
+    registroConselho: string;
+    art?: string;
+  };
+  caracteristicas?: {
+    usoPretendido?: string;
+    capacidadeUtilM3?: string;
+    espelhoDaguaM2?: string;
+    profundidadeMediaM?: string;
+    tempoResidenciaDias?: string;
+    observacoes?: string;
+  };
+  demandaHidrica?: {
+    vazaoCaptacaoLs?: string;
+    demandaAnualM3?: string;
+    volumeUtilRipplM3?: string;
+    ripplSeries?: Array<{
+      label?: string;
+      qAfluenteM3s?: string;
+      qDemandaM3s?: string;
+      diasNoPeriodo?: string;
+      evapM3?: string;
+    }>;
+    regularizacao?: string;
+    observacoes?: string;
+  };
+  localEmissao?: string;
+  dataEmissao?: string;
+};
+
+/** Nível de complexidade do estudo espeleológico (IS SISEMA 08/2017). */
+export type EstudoCavidadeNivel =
+  | 'triagem'
+  | 'laudo_urbano'
+  | 'laudo_prospecao'
+  | 'avaliacao_impacto'
+  | 'relevancia_compensacao'
+  | 'criterio_locacional';
+
+export type EstudoCavidadePotencialCecav =
+  | 'nao_aplicavel'
+  | 'baixo'
+  | 'medio'
+  | 'alto'
+  | 'muito_alto'
+  | 'misto';
+
+export type EstudoCavidadeCavidadeRegistro = {
+  codigo?: string;
+  denominacao?: string;
+  tipo?: 'caverna' | 'abismo' | 'abrigo' | 'outro';
+  latitude?: string;
+  longitude?: string;
+  desenvolvimentoLinearM?: string;
+  litologia?: string;
+  grauRelevancia?: 'maximo' | 'alto' | 'medio' | 'baixo' | 'nao_classificado';
+  naAda?: boolean;
+  observacoes?: string;
+};
+
+/** Estudo espeleológico / cavidades para licenciamento MG. */
+export type EstudoCavidade = {
+  id: string;
+  status?: 'Rascunho' | 'Aprovado';
+  nivelEstudo?: EstudoCavidadeNivel;
+  requerente: {
+    clientId?: string;
+    nome: string;
+    cpfCnpj: string;
+  };
+  empreendimento: {
+    projectId?: string;
+    nome: string;
+    municipio?: string;
+    uf?: string;
+    car?: string;
+  };
+  responsavelTecnico: {
+    /** ID em `technicalResponsibles` (Configurações → Responsáveis técnicos). */
+    technicalResponsibleId?: string;
+    nome: string;
+    formacao: string;
+    registroConselho: string;
+    art?: string;
+  };
+  processo?: {
+    sla?: string;
+    sei?: string;
+    supram?: string;
+    modalidadeSugerida?: string;
+    classeAtividade?: string;
+  };
+  triagem?: {
+    potencialCecav?: EstudoCavidadePotencialCecav;
+    criterioLocacionalIncide?: boolean;
+    adaUrbanizada?: boolean;
+    observacoesIde?: string;
+    pedidoNaoIncidenciaCriterio?: boolean;
+    justificativaNaoIncidencia?: string;
+  };
+  prospecao?: {
+    kmCaminhamento?: string;
+    areaAdaHa?: string;
+    conclusaoSemCavidades?: boolean;
+    mapaPotencialNotas?: string;
+    memorialProspecao?: string;
+  };
+  impactos?: {
+    haImpactoIrreversivel?: boolean;
+    medidasMitigadoras?: string;
+    areaInfluenciaNotas?: string;
+    compensacaoNotas?: string;
+  };
+  cavidadesRegistradas?: EstudoCavidadeCavidadeRegistro[];
+  apresentacao?: string;
+  memorialCriterioLocacional?: string;
+  checklistIs08?: Record<string, boolean>;
+  linksUteis?: {
+    ecosistemasUrl?: string;
+    ideSisemaNotas?: string;
+  };
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+export type PTRF = {
+  id: string;
+  status?: 'Rascunho' | 'Aprovado';
+  requerente: {
+    clientId?: string;
+    nome: string;
+    cpfCnpj: string;
+  };
+  empreendimento: {
+    projectId?: string;
+    nome: string;
+    car: string;
+  };
+  responsavelTecnico: {
+    nome: string;
+    cpf: string;
+    formacao: string;
+    registroConselho: string;
+  };
+  objetivoDescricao?: string;
+  referenciasBibliograficas?: string;
+};
+
+
+export type PiaType = 'Simplificado' | 'Corretivo' | 'Inventário Florestal' | 'Censo Florestal';
+
+export type PiaExportRefSummary = {
+    versionId: string;
+    storagePath: string;
+    downloadUrl: string;
+    fileName: string;
+    createdAt: string;
+    sectionManifest: string[];
+};
+
+export type PIA = {
+    id: string;
+    type: PiaType;
+    status?: 'Rascunho' | 'Aprovado';
+    /** Processo (`requests`) que originou ou vincula este PIA. */
+    requestId?: string;
+    /** Inventário florestal (`inventories`) para seção 5. */
+    inventoryId?: string;
+    floraResumo?: string;
+    requerente: {
+        clientId?: string;
+        nome: string;
+        cpfCnpj: string;
+    };
+    empreendimento: {
+        projectId?: string;
+        nome: string;
+        denominacao?: string;
+        car?: string;
+        atividades?: string;
+    };
+    /** Histórico de exportações Word/PDF (Storage). */
+    exportVersions?: Array<PiaExportRefSummary & { format: 'docx' | 'pdf'; createdBy?: string }>;
+    latestExport?: {
+        docx?: PiaExportRefSummary;
+        pdf?: PiaExportRefSummary;
+    };
+    /** Campos adicionais do formulário (proprietário, diagnóstico, etc.) persistidos no documento. */
+    [key: string]: unknown;
+}
+
+
+/** @deprecated Prefer `DispensaPeaRecord` from `@/lib/pea/types`. */
+export type DispensaPEA = import('@/lib/pea/types').DispensaPeaRecord;
+
+export type { PeaProgram, DispensaPeaRecord, PeaMonitoramento, PeaProjeto } from '@/lib/pea/types';
+
+export type ZeeGeofisicoItem = {
+    classificacao?: string;
+    percentual?: number;
+};
+
+export type ZeeSocioeconomicoItem = {
+    municipio?: string;
+    ips?: number;
+    populacao?: number;
+    distribuicaoEspacial?: number;
+    razaoDependencia?: number;
+    malhaRodoviaria?: number;
+    vaIndustria?: number;
+    vaServicos?: number;
+    vaAgropecuaria?: number;
+    exportacoes?: number;
+    doet?: number;
+    concentracaoFundiaria?: number;
+    agricultoresFamiliares?: number;
+    nivelTecnologico?: number;
+    icmsEcologico?: number;
+    renda?: number;
+    saude?: number;
+    educacao?: number;
+    idhM?: number;
+    ocupacaoEconomica?: number;
+    gestaoDesenvolvimentoRural?: number;
+    capacidadeInstitucional?: number;
+    gestaoAmbiental?: number;
+    orgJuridicas?: number;
+    orgFiscalizacaoControle?: number;
+    orgEnsinoSuperiorProfissional?: number;
+    orgSegurancaPublica?: number;
+};
+
+
+export type RCA = {
+  id: string;
+  status?: 'Rascunho' | 'Aprovado';
+  activity: string;
+  subActivity?: string;
+  termoReferencia?: {
+    titulo?: string;
+    processo?: string;
+    dataEmissao?: string | Date;
+    versao?: string;
+  };
+  empreendedor?: {
+    clientId?: string;
+    nome?: string;
+    cpfCnpj?: string;
+    identidade?: string;
+    orgaoExpedidor?: string;
+    uf?: string;
+    endereco?: string;
+    caixaPostal?: string;
+    municipio?: string;
+    distrito?: string;
+    cep?: string;
+    ddd?: string;
+    fone?: string;
+    fax?: string;
+    email?: string;
+    tipoPessoa?: TipoPessoa;
+    cadastroProdutorRural?: string;
+    condicao?: OwnerCondition;
+    cargo?: string;
+  };
+  empreendimento?: {
+    projectId?: string;
+    nome?: string;
+    inscricaoIncra?: string;
+    nomeFantasia?: string;
+    cnpj?: string;
+    zonaRural?: 'Sim' | 'Não' | 'Residencial' | 'Comercial';
+    endereco?: string;
+    caixaPostal?: string;
+    municipio?: string;
+    distrito?: string;
+    uf?: string;
+    cep?: string;
+    ddd?: string;
+    fone?: string;
+    fax?: string;
+    email?: string;
+    inscricaoEstadual?: string;
+    inscricaoMunicipal?: string;
+    correspondenciaIsSame?: boolean;
+    correspondenceAddress?: string;
+    correspondenceCaixaPostal?: string;
+    correspondenceMunicipio?: string;
+    correspondenceUf?: string;
+    correspondenceCep?: string;
+    correspondenceDdd?: string;
+    correspondenceFone?: string;
+    correspondenceFax?: string;
+    correspondenceEmail?: string;
+  };
+  responsavelAmbiental?: {
+    nome?: string;
+    cpf?: string;
+    registroConselho?: string;
+    art?: string;
+    endereco?: string;
+    caixaPostal?: string;
+    municipio?: string;
+    distrito?: string;
+    uf?: string;
+    cep?: string;
+    ddd?: string;
+    fone?: string;
+    fax?: string;
+    email?: string;
+  };
+  responsaveisEstudo?: {
+    empresa?: Omit<EnvironmentalCompany, 'id'>,
+    tecnicos?: Omit<TechnicalResponsible, 'id'>[],
+    outrosProfissionais?: {
+      estudo?: string;
+      nome?: string;
+      art?: string;
+    }[],
+  };
+  geographicLocation?: GeographicLocationPartial;
+  atividades?: {
+    principal?: string;
+    codigo?: string;
+    unidade?: string;
+    quantidade?: string;
+    inicioAtividade?: string;
+  }[];
+  faseRegularizacao?: {
+    isAmpliacao?: boolean;
+    processoAnterior?: string;
+    fase?: 'LI' | 'LIC' | 'LP+LI' | 'LOC';
+    classe?: string;
+  };
+  agendaVerde?: {
+    fazUso?: boolean;
+    reservaLegal?: RegularizacaoSituacao;
+    ocupacaoApp?: RegularizacaoSituacao;
+    supressaoNativa?: RegularizacaoSituacao;
+    intervencaoApp?: RegularizacaoSituacao;
+    destoca?: RegularizacaoSituacao;
+    aproveitamentoLenhoso?: RegularizacaoSituacao;
+    corteIsoladas?: RegularizacaoSituacao;
+    coletaNativa?: RegularizacaoSituacao;
+    manejoSustentavel?: RegularizacaoSituacao;
+  };
+  agendaAzul?: {
+    usaConcessionaria?: boolean;
+    concessionaria?: string;
+    fazUsoAutorizacao?: boolean;
+    captacaoCursoAgua?: RegularizacaoSituacao;
+    pocoTubular?: RegularizacaoSituacao;
+    pocoManual?: RegularizacaoSituacao;
+    rebaixamento?: RegularizacaoSituacao;
+    surgencia?: RegularizacaoSituacao;
+    lancamentoEfluente?: RegularizacaoSituacao;
+    outros?: { especificacao: string; situacao: RegularizacaoSituacao }[];
+  };
+  restricoesLocacionais?: {
+    biome?: Biome;
+    biomeOutro?: string;
+    hasNativeVegetation?: boolean;
+    nativeVegetation?: string[];
+    nativeVegetationOther?: string;
+    inPermanentPreservationArea?: boolean;
+    propertyHasPermanentPreservationArea?: boolean;
+    isPermanentPreservationAreaPreserved?: boolean;
+    isPermanentPreservationAreaProtected?: boolean;
+    inKarstArea?: boolean;
+    inFluvialLacustrineArea?: boolean;
+  };
+  unidadesConservacao?: {
+    dentroOuRaio10km?: boolean;
+    distancia?: string;
+    nomeUC?: string;
+    categoriaManejo?: ManagementCategory;
+    jurisdicao?: Jurisdiction;
+    orgaoGestor?: string;
+  };
+  criteriosDN130?: {
+    possuiRPPN?: boolean;
+    areaAntropizadaConsolidada?: boolean;
+    compromissos?: string[];
+    adotaSistemasReducaoVulnerabilidade?: boolean;
+    sistemasReducaoDescricao?: string;
+    usaQueimaCana?: boolean;
+    praticasDesenvolvidas?: string[];
+    outrosSistemasAgroecologicos?: string;
+  };
+  recursosHumanos?: { fixos: number, temporarios: number, terceirizados: number, producao: number, administrativo: number, manutencao: number };
+  regimeOperacao?: { horasDia: number, diasSemana: number, turnos: number, trabalhadoresTurno: number, sazonalidade: boolean, sazonalidadeDescricao: string };
+  capacidadeInstalada?: number;
+  consumoMateriaPrima?: number;
+  producaoNominal?: string;
+  materiasPrimas?: any[];
+  equipamentosProducao?: any[];
+  equipamentosCalor?: any[];
+  residuosSolidos?: any[];
+  produtos?: any[];
+  produtosFabricados?: any[];
+  equipamentos?: any[];
+  capacidade?: any;
+  trabalhadores?: {
+    fixos?: number;
+    temporarios?: number;
+    familiasResidentes?: number;
+  };
+  areaEmpreendimento?: {
+    total?: number;
+    construida?: number;
+    explorada?: number;
+    preservada?: number;
+    destinada?: number;
+    corposDagua?: string;
+    interesseHistorico?: boolean;
+    interesseCenico?: boolean;
+    interesseCultural?: boolean;
+    interesseCientifico?: boolean;
+    interesseNatural?: boolean;
+  };
+  analiseSolo?: AnaliseSolo[];
+  atividadesAgricolas?: {
+    olericultura?: AtividadeAgricola[];
+    culturasAnuais?: AtividadeAgricola[];
+    culturasPerenes?: AtividadeAgricola[];
+  };
+  irrigacao?: Irrigacao[];
+  atividadesFlorestais?: {
+    silvicultura?: { especie: string, area: number }[];
+    carvoejamento?: { tipo: 'Nativo' | 'Plantada', especie: string, volume: number }[];
+  };
+  atividadesAgropecuarias?: { especificacao: string, cabecas: number }[];
+  outrasAtividades?: { especificacao: string, codigo: string, unidade: string, quantidade: string, inicio: string }[];
+  infraestrutura?: {
+      tipo: string;
+      quantidade: number;
+      area: number;
+      descricao: string;
+  }[];
+  insumos?: {
+      tipo: string;
+      local: string;
+  }[];
+  manutencaoEquipamentos?: string;
+  destinoEfluentesLavador?: string[];
+  destinoResiduosLavador?: string[];
+  destinoEfluentesAgricolas?: string[];
+  destinoEmbalagensAgrotoxicos?: string[];
+  efluentesDomesticos?: { local: string; destinos: string[] }[];
+  residuosDomesticos?: { local: string; destinos: string[] }[];
+  destinoEfluentesAgropecuarios?: string[];
+  destinoResiduosAgropecuarios?: string[];
+  destinoRestosAnimais?: string[];
+  queimaAgricola?: string[];
+  retornoLavouras?: string[];
+  fertirrigacao?: string[];
+  compostagem?: string[];
+  tratamentoEfluentes?: string[];
+  outrosDestinosEfluentes?: string;
+  reciclagemEmbalagens?: string;
+  tripliceLavagem?: string;
+  incineracaoEmbalagens?: string;
+  outrosDestinosEmbalagens?: string;
+  impactosAmbientais?: {
+      identificacao: string;
+      local: string;
+      medida: string;
+  }[];
+  diagnosticoAPPeRL?: {
+      localizacao: string;
+      estadoConservacao: 'Inicial' | 'Intermediário' | 'Avançado' | 'Primário' | 'Misto';
+  };
+  analiseViabilidadeLocacional?: {
+      alternativa: number;
+      local: string;
+      justificativa: string;
+  }[];
+  impactosMeioFisico?: string[];
+  impactosMeioBiotico?: string[];
+  impactosMeioSocioeconomico?: string[];
+  zeeGeofisico?: {
+      [key: string]: ZeeGeofisicoItem;
+  };
+  zeeSocioeconomico?: ZeeSocioeconomicoItem[];
+  anexos?: string[];
+  anexosOutros?: string;
+  usoMadeira?: { consome: boolean, possuiRegistroIEF: boolean };
+  capacidadeEstocagem?: { cotaMaxima: number, percentualMedio: number };
+  processoProdutivo?: { descricao: string };
+  reatores?: { tipoForno: string, identificacao: string, volumeUtil: number, capacidade: number }[];
+  efluentesHidricosReatores?: { identificacao: string, vazao: number, lancamento: string, tratamento: string }[];
+  emissoesResiduosReatores?: { identificacao: string, taxa: string, sistemaControle: string, eficiencia: number }[];
+};
+
+export type TemplateField = 
+    | 'templatesRcaListagemA' | 'templatesRcaListagemB' | 'templatesRcaListagemC' | 'templatesRcaListagemD' | 'templatesRcaListagemE' | 'templatesRcaListagemF' | 'templatesRcaListagemG'
+    | 'templatesPcaListagemA' | 'templatesPcaListagemB' | 'templatesPcaListagemC' | 'templatesPcaListagemD' | 'templatesPcaListagemE' | 'templatesPcaListagemF' | 'templatesPcaListagemG'
+    | 'templatesEiaListagemA' | 'templatesEiaListagemB' | 'templatesEiaListagemC' | 'templatesEiaListagemD' | 'templatesEiaListagemE' | 'templatesEiaListagemF' | 'templatesEiaListagemG'
+    | 'templatesLasRasListagemA' | 'templatesLasRasListagemB' | 'templatesLasRasListagemC' | 'templatesLasRasListagemD' | 'templatesLasRasListagemE' | 'templatesLasRasListagemF' | 'templatesLasRasListagemG'
+    | 'templatesFauna' | 'templatesInventarioFlorestal' | 'templatesRequerimentoIntervencao' | 'templatesPrada' | 'templatesPtrf'
+    | 'templatesRima' | 'templatesOutorgas' | 'templatesSegurancaBarragem' | 'templatesEstudosCavidades' | 'templatesReservaLegal'
+    | 'templatesEducacaoAmbiental' | 'templatesProjetoTecnicoBarragem';
+
+
+export type CompanySettings = {
+    id?: string; // Should be a singleton, e.g., 'branding'
+    headerImageUrl?: string | null;
+    footerImageUrl?: string | null;
+    watermarkImageUrl?: string | null;
+    logoUsage?: 'pdf_only' | 'system_wide';
+    systemLogoSource?: 'header' | 'watermark';
+    templatesRcaListagemA?: { name: string; url: string; }[];
+    templatesRcaListagemB?: { name: string; url: string; }[];
+    templatesRcaListagemC?: { name: string; url: string; }[];
+    templatesRcaListagemD?: { name: string; url: string; }[];
+    templatesRcaListagemE?: { name: string; url: string; }[];
+    templatesRcaListagemF?: { name: string; url: string; }[];
+    templatesRcaListagemG?: { name: string; url: string; }[];
+    templatesPcaListagemA?: { name: string; url: string; }[];
+    templatesPcaListagemB?: { name: string; url: string; }[];
+    templatesPcaListagemC?: { name: string; url: string; }[];
+    templatesPcaListagemD?: { name: string; url: string; }[];
+    templatesPcaListagemE?: { name: string; url: string; }[];
+    templatesPcaListagemF?: { name: string; url: string; }[];
+    templatesPcaListagemG?: { name: string; url: string; }[];
+    templatesEiaListagemA?: { name: string; url: string; }[];
+    templatesEiaListagemB?: { name: string; url: string; }[];
+    templatesEiaListagemC?: { name: string; url: string; }[];
+    templatesEiaListagemD?: { name: string; url: string; }[];
+    templatesEiaListagemE?: { name: string; url: string; }[];
+    templatesEiaListagemF?: { name: string; url: string; }[];
+    templatesEiaListagemG?: { name: string; url: string; }[];
+    templatesLasRasListagemA?: { name: string; url: string; }[];
+    templatesLasRasListagemB?: { name: string; url: string; }[];
+    templatesLasRasListagemC?: { name: string; url: string; }[];
+    templatesLasRasListagemD?: { name: string; url: string; }[];
+    templatesLasRasListagemE?: { name: string; url: string; }[];
+    templatesLasRasListagemF?: { name: string; url: string; }[];
+    templatesLasRasListagemG?: { name: string; url: string; }[];
+    templatesFauna?: { name: string; url: string; }[];
+    templatesInventarioFlorestal?: { name: string; url: string; }[];
+    templatesRequerimentoIntervencao?: { name: string; url: string; }[];
+    templatesPrada?: { name: string; url: string; }[];
+    templatesPtrf?: { name: string; url: string; }[];
+    templatesRima?: { name: string; url: string; }[];
+    templatesOutorgas?: { name: string; url: string; }[];
+    templatesSegurancaBarragem?: { name: string; url: string; }[];
+    templatesEstudosCavidades?: { name: string; url: string; }[];
+    templatesReservaLegal?: { name: string; url: string; }[];
+    templatesEducacaoAmbiental?: { name: string; url: string; }[];
+    templatesProjetoTecnicoBarragem?: { name: string; url: string; }[];
+}
+
+export type PCA = {
+  id: string;
+  status?: 'Rascunho' | 'Aprovado';
+  activity: string;
+  /** Código da listagem DN 217 (A–H) quando formulário estruturado. */
+  listagemCode?: string;
+  subActivity?: string;
+  formularioTipo?: 'geral' | 'principal' | 'lavra_subterranea' | 'fundidos_ferro_aco' | string;
+  formSource?: 'react' | 'dynamic' | 'legacy';
+  /** Snapshot congelado na aprovação (modelo híbrido). */
+  projectSnapshot?: {
+    projectId?: string | null;
+    listagemCode?: string;
+    subActivity?: string;
+    formularioTipo?: string;
+    listagemA?: Record<string, unknown>;
+    listagemB?: Record<string, unknown>;
+    listagemC?: Record<string, unknown>;
+    listagemD?: Record<string, unknown>;
+    listagemE?: Record<string, unknown>;
+    listagemF?: Record<string, unknown>;
+    listagemG?: Record<string, unknown>;
+    listagemH?: Record<string, unknown>;
+    empreendimento?: Record<string, unknown>;
+    snapshotAt?: string;
+  };
+  /** Dados técnicos PCA Listagem A (formulário próprio). */
+  listagemA?: Record<string, unknown>;
+  /** Dados técnicos PCA Listagem B (formulário próprio). */
+  listagemB?: Record<string, unknown>;
+  /** Dados técnicos PCA Listagem C (formulário próprio). */
+  listagemC?: Record<string, unknown>;
+  /** Dados técnicos PCA Listagem D (formulário próprio). */
+  listagemD?: Record<string, unknown>;
+  /** Dados técnicos PCA Listagem E (formulário próprio). */
+  listagemE?: Record<string, unknown>;
+  /** Dados técnicos PCA Listagem F (formulário próprio). */
+  listagemF?: Record<string, unknown>;
+  /** Dados técnicos PCA Listagem G (formulário próprio). */
+  listagemG?: Record<string, unknown>;
+  /** Dados técnicos PCA Listagem H (formulário próprio). */
+  listagemH?: Record<string, unknown>;
+  termoReferencia: {
+    titulo: string;
+    processo: string;
+    dataEmissao: string | Date;
+    versao?: string;
+  };
+  empreendedor: {
+    clientId?: string;
+    nome: string;
+    cpfCnpj: string;
+    endereco: string;
+    contato: string;
+  };
+  empreendimento: {
+    projectId?: string;
+    nome: string;
+    municipio: string;
+    endereco: string;
+    coordenadas: string;
+    atividade: string;
+    tipologia: string;
+    faseLicenciamento: 'LP' | 'LI' | 'LO' | 'AAF' | 'Outra';
+  };
+  objetoEstudo: {
+    objeto: string;
+    fundamentacaoLegal: string;
+  };
+  conteudoEstudo: {
+    introducao: string;
+    caracterizacaoEmpreendimento: string;
+    diagnosticoMeioFisico: string;
+    diagnosticoMeioBiotico: string;
+    diagnosticoMeioSocioeconomico: string;
+    analiseImpactos: string;
+    medidasMitigadoras: string;
+    programasAmbientais: string;
+    conclusao: string;
+    referencias: string;
+    anexos: string;
+  };
+  equipeTecnica: {
+    qualificacoes: string;
+    arts: string;
+  };
+};
+
+export type UserRole =
+  | 'admin'
+  | 'client'
+  | 'cliente_autonomo'
+  | 'representative'
+  | 'consultor_representante'
+  | 'technical'
+  | 'sales'
+  | 'financial'
+  | 'gestor'
+  | 'supervisor'
+  | 'diretor_fauna'
+  | 'advogado';
+
+export type AccessRequestType = 'representative' | 'consultor_representante';
+
+export type ClientPackage = 'gratuito' | 'basico' | 'intermediario' | 'avancado' | 'completo' | 'sob_consulta';
+
+/** Pagamento anual único para acesso à plataforma (titulares). */
+export type PlatformPaymentMethod = 'pix' | 'credit_card' | 'debit_card';
+
+export type PlatformPaymentStatus =
+  | 'exempt'
+  | 'pending_verification'
+  | 'pending_contract'
+  | 'paid'
+  | 'expired';
+
+/** Registo de pedido de pagamento (PIX dinâmico Sicoob / mock). */
+export type PlatformPaymentRequest = {
+  id: string;
+  userId: string;
+  email: string;
+  name: string;
+  packageId: ClientPackage;
+  method: PlatformPaymentMethod;
+  /** Valor exibido no cadastro (referência). */
+  amountLabel: string;
+  amountBrl?: number;
+  status: 'pending_verification' | 'confirmed' | 'rejected' | 'expired';
+  provider?: 'sicoob' | 'mock';
+  txid?: string;
+  qrExpiresAt?: string | null;
+  pixCopiaECola?: string | null;
+  sicoobStatus?: string | null;
+  webhookLastEvent?: string | null;
+  resolvedBy?: 'webhook' | 'admin' | 'cron' | 'debug';
+  createdAt: any;
+  resolvedAt?: any;
+};
+
+export type ClientPackageInfo = {
+  id: ClientPackage;
+  name: string;
+  description: string;
+  price: string;
+  /** Ex.: equivalente mensal ou nota AmbBot */
+  priceDetail?: string;
+  features: string[];
+  highlighted?: boolean;
+};
+
+export type NavItem = {
+  href?: string;
+  label: string;
+  icon: LucideIcon;
+  roles?: UserRole[];
+  subItems?: NavSubItem[];
+};
+
+export type NavSubItem = {
+  href?: string;
+  label: string;
+  icon?: LucideIcon;
+  external?: boolean;
+  subItems?: NavSubItem[];
+  roles?: UserRole[];
+};
+
+export type AppUser = {
+  id: string; // Firestore document ID
+  uid: string; // Firebase Auth UID
+  name: string;
+  displayName?: string;
+  email: string;
+  role: UserRole;
+  status: 'active' | 'inactive' | 'pending_invite' | 'pending_registration';
+  /** CPF pessoal do usuário (identificação). */
+  userCpf?: string;
+  /** CPF/CNPJ do interessado: usado para vincular e acessar dados de empreendedor/cliente. */
+  cpf?: string;
+  cnpjs?: string[];
+  photoURL?: string;
+  isOnline?: boolean;
+  /** Atualizado pelo heartbeat de presença; usado com TTL na UI. */
+  lastSeenAt?: any;
+  lastLogin?: any;
+  dataNascimento?: string;
+  phone?: string;
+  package?: ClientPackage;
+  contractAcceptedAt?: any;
+  contractSignature?: string;
+  /** Rotina nova: aceite de plataforma (cópia imutável em platform_subscription_acceptances). */
+  platformSubscriptionAcceptanceId?: string;
+  platformSubscriptionLedgerId?: string;
+  /** true quando o usuário se cadastrou pelo "Cadastre-se" (login) e ainda não completou o cadastro no menu Cadastro. Usado para exibir alerta no sino. */
+  cadastroIncompleto?: boolean;
+  /** Representante/consultor aguardando vínculo a um titular. */
+  pendingAccess?: boolean;
+  /** Etapa atual do onboarding pós-cadastro. */
+  onboardingStep?: string;
+  /** CPF/CNPJ do titular/empreendedor base (Cliente Autônomo). */
+  titularDocument?: string;
+  titularType?: "pessoa_fisica" | "pessoa_juridica";
+  /** Cliente financeiro já existente vinculado ao perfil (evita duplicar em Clientes). */
+  linkedClientId?: string;
+  /** Empreendedor já existente vinculado ao perfil (evita duplicar em Empreendedores). */
+  linkedEmpreendedorId?: string;
+  /** Origem do cadastro (gov.br, email, convite). */
+  registrationSource?: 'govbr' | 'email' | 'invite' | 'admin';
+  authProviders?: Array<'password' | 'govbr'>;
+  govbrLinkedAt?: any;
+  govbrCpfVerified?: boolean;
+  govbrConfiabilidade?: 'bronze' | 'silver' | 'gold';
+  /** Acesso anual à plataforma (Clientes Gestão / Autônomo). ISO 8601; ausente com perfis antigos = sem bloqueio. */
+  platformAccessValidUntil?: string | null;
+  platformPaymentStatus?: PlatformPaymentStatus;
+  platformPaymentMethod?: PlatformPaymentMethod;
+  platformPaymentVerifiedAt?: any;
+  /** Contato comercial: gratuito/básico via contrato; demais planos via opt-in no cadastro. */
+  allowsCommercialContact?: boolean;
+  /** Aceite de cookies de publicidade (banner no app; espelho opcional do localStorage). */
+  advertisingCookieConsentAt?: string;
+  /** Marcação automática quando assinatura paga vence (downgrade suave). */
+  platformSubscriptionLapsedAt?: any;
+  /** Período UTC (YYYY-MM) do contador de AmbBot incluído no plano. */
+  ambbotUsagePeriod?: string;
+  /** Análises AmbBot incluídas já usadas no período atual. */
+  ambbotIncludedUsed?: number;
+  /** Créditos pré-pagos de consultas AmbBot avulsas. */
+  ambbotPrepaidCredits?: number;
+};
+
+/** Pedido de acesso: representante ou consultor-representante solicita vínculo ao titular. */
+export type AccessRequest = {
+  id: string;
+  /** UID do usuário que solicitou o acesso. */
+  requestedByUserId: string;
+  requestedByEmail: string;
+  requestedByName: string;
+  /** CPF ou CNPJ do titular dos dados (interessado) cujo cadastro o solicitante quer acessar. */
+  cpfOfInterested: string;
+  targetDocument?: string;
+  /** Tipo de delegação solicitada (omitido = representante, retrocompatível). */
+  requestType?: AccessRequestType;
+  /** Mensagem opcional do consultor ao titular. */
+  consultorNotes?: string;
+  status: 'pending' | 'approved' | 'rejected';
+  createdAt: any;
+  resolvedAt?: any;
+  resolvedByUserId?: string;
+};
+
+export type DelegateInviteStatus =
+  | "pending"
+  | "pending_professional_ack"
+  | "accepted"
+  | "expired";
+
+export type DelegateInvite = {
+  id: string;
+  createdByUserId: string;
+  createdByName?: string;
+  titularDocument: string;
+  targetEmail?: string;
+  targetCpf?: string;
+  targetUserId?: string;
+  targetUserName?: string;
+  role: AccessRequestType;
+  status: DelegateInviteStatus;
+  createdAt: string;
+  acceptedAt?: string;
+  acceptedByUserId?: string;
+};
+
+export type ConsultorAssignmentStatus =
+  | 'pending'
+  | 'active'
+  | 'revoked'
+  | 'transferred';
+
+/** Histórico de carteira consultor ↔ titular (handoff e transferência). */
+export type ConsultorAssignment = {
+  id: string;
+  consultorUid: string;
+  titularUid: string;
+  clientId?: string;
+  empreendedorIds: string[];
+  status: ConsultorAssignmentStatus;
+  assignedAt: any;
+  assignedByUid: string;
+  transferredToUid?: string;
+  transferredAt?: any;
+  handoffNotes?: string;
+  handoffChecklist?: { item: string; done: boolean }[];
+};
+
+export type OpportunityStage = 'Qualificação' | 'Proposta' | 'Negociação' | 'Fechado Ganho' | 'Fechado Perdido';
+
+export type Opportunity = {
+    id: string;
+    name: string;
+    clientId: string;
+    value: number;
+    closeDate: string;
+    stage: OpportunityStage;
+    assignedTo?: string;
+    /** Visita de campo / prospecção com GPS (L4.4). */
+    localizacaoImovel?: import("@/lib/types/localizacao-imovel").RequestLocalizacaoImovel;
+};
+
+export type CommercialProposalItem = {
+  description: string;
+  value: number;
+};
+
+export type CommercialProposal = {
+  id: string;
+  clientId: string;
+  empreendimento?: string;
+  proposalNumber: string;
+  proposalDate: string;
+  validUntilDate: string;
+  items: CommercialProposalItem[];
+  paymentTerms?: string;
+  amount: number;
+  status: 'Draft' | 'Sent' | 'Accepted' | 'Rejected';
+  fileUrl?: string;
+  contractId?: string;
+};
+
+
+export type Contract = {
+    id: string;
+    status: 'Rascunho' | 'Aprovado';
+    sourceProposalId?: string;
+    sourceProposalNumber?: string;
+    /** Legado: documentos antigos podem ter clientId na raiz. */
+    clientId?: string;
+    contratante: {
+        clientId: string;
+        nome: string;
+        cpfCnpj: string;
+        identidade?: string;
+        emissor?: string;
+        nacionalidade?: string;
+        estadoCivil?: string;
+        endereco?: string;
+        numero?: string;
+        bairro?: string;
+        cep?: string;
+        municipio?: string;
+        uf?: string;
+    };
+    contratado: {
+        name: string;
+        address?: string;
+        cnpj?: string;
+        municipio?: string;
+        uf?: string;
+    };
+    responsavelTecnico: {
+        responsibleId: string;
+        name: string;
+        profession?: string;
+        nacionalidade?: string;
+        estadoCivil?: string;
+        cpf?: string;
+        identidade?: string;
+        emissor?: string;
+        address?: string;
+        municipio?: string;
+        uf?: string;
+        registrationNumber?: string;
+        art?: string;
+    };
+    objeto: {
+        empreendimento?: string;
+        municipio?: string;
+        uf?: string;
+        servicos: string;
+        itens?: { descricao: string; valor: number }[];
+    };
+    pagamento: {
+        valorTotal: number;
+        valorExtenso: string;
+        forma: string;
+        banco?: string;
+        agencia?: string;
+        conta?: string;
+        pix?: string;
+    };
+    foro: {
+        comarca: string;
+        uf: string;
+    };
+    dataContrato: string;
+    /** PDF gerado para assinatura (modelo de contrato com cláusulas). */
+    contractPdfUrl?: string;
+    /** PDF do contrato já assinado (upload manual). */
+    fileUrl?: string;
+};
+
+
+export type Contact = {
+    id: string;
+    name: string;
+    email: string;
+    phone?: string;
+    company?: string;
+    status: 'New' | 'Contacted' | 'Qualified' | 'Unqualified';
+};
+
+/** Nível de inclusão (inventário multinível) — modal Grupos de Parcela. */
+export type InventoryInclusionLevel = {
+    id: string;
+    codNi: string;
+    descricao: string;
+    areaM2: number;
+};
+
+/** Estrato amostral — modal Grupos de Parcela. */
+export type InventoryStratum = {
+    id: string;
+    codigo: string;
+    descricao: string;
+    areaHa: number;
+};
+
+/** Unidade primária de amostragem — modal Grupos de Parcela. */
+export type InventoryPrimaryUnit = {
+    id: string;
+    unidade: string;
+    areaM2: number;
+    descricao: string;
+    largura: number;
+    comprimento: number;
+    lat1: string;
+    lon1: string;
+    lat2: string;
+    lon2: string;
+    declividade: string;
+    altitude: string;
+    /** Código do estrato associado (opcional). */
+    estratoCodigo?: string;
+};
+
+export type InventoryPlotGroups = {
+    inclusionLevels: InventoryInclusionLevel[];
+    strata: InventoryStratum[];
+    primaryUnits: InventoryPrimaryUnit[];
+};
+
+/** Fórmula de volume ou outro parâmetro cadastrado no projeto. */
+export type InventoryFormula = {
+    id: string;
+    descricao: string;
+    expressao: string;
+    /** Se a fórmula está ativa para cálculos. */
+    ativa?: boolean;
+    dadosDe?: string;
+};
+
+export type InventoryProject = {
+    id: string;
+    nome: string;
+    descricao?: string;
+    data: string;
+    tipoProjeto: string;
+    ownerId: string;
+    /** Processo (`requests`) vinculado. */
+    requestId?: string;
+    /** Empreendimento (`projects`) vinculado. */
+    projectId?: string;
+    createdAt: any;
+    /** IDs de fotos selecionadas para relatório (ver `ProjectPhotosDialog`). */
+    selectedPhotoIds?: string[];
+    /** Ordem de exibição das fotos no projeto. */
+    photoOrder?: string[];
+    /** URL pública da imagem de capa do cartão do projeto (ex.: `/inventory-project-photos/...`). Se ausente, usa o modelo ipê-amarelo padrão. */
+    coverImageUrl?: string;
+    updatedAt?: any;
+    /** Dados importados da planilha (ver `ImportDialog`). */
+    importedSpecies?: Array<{
+        id: string;
+        codigoEspecie: string;
+        nomeCientifico: string;
+        nomeComum: string;
+        familia: string;
+    }>;
+    importedParcels?: Array<{
+        id: string;
+        parcela: string;
+        areaM2: string;
+        up: string;
+        us: string;
+        ni: string;
+        regNatural: boolean;
+    }>;
+    importedTrees?: Array<{
+        id: string;
+        parcela: string;
+        numArvore: string;
+        nomeComum: string;
+        nomeCientifico: string;
+        cap: string;
+        altTotal: string;
+        /** Altura comercial (m); preenchida ao importar da Coleta de campo. */
+        altComercial?: string;
+        dap: string;
+        areaParcela: string;
+    }>;
+    importSummary?: {
+        importedAt?: any;
+        totalSpecies?: number;
+        totalParcels?: number;
+        totalTrees?: number;
+        /** Origem do último import (`excel` | `coleta_campo`). */
+        source?: 'excel' | 'coleta_campo';
+        coletaCampanhaId?: string;
+    };
+    /** Grupos de parcela (níveis de inclusão, estratos, unidades primárias). */
+    plotGroups?: InventoryPlotGroups;
+    /** Fórmulas cadastradas neste inventário (volume, etc.). */
+    inventoryFormulas?: InventoryFormula[];
+}
+
+/** Execução registada na calculadora do inventário (subcoleção `calculationRuns`). */
+export type InventoryCalculationRun = {
+    module: string;
+    subModule?: string;
+    label: string;
+    parameters: Record<string, unknown>;
+    result: Record<string, unknown>;
+    status: 'stub' | 'completed' | 'error';
+    createdAt: any;
+};
+
+export type Notification = {
+    id: string;
+    userId: string;
+    title: string;
+    description: string;
+    link?: string;
+    isRead: boolean;
+    createdAt: any;
+    /** Tipo da origem (ex: 'inspection_report') para deduplicar e marcar como lida. */
+    sourceType?: string;
+    /** ID do recurso (ex: id da inspeção) para deduplicar e marcar como lida. */
+    sourceId?: string;
+    /** Perfil que gerou o alerta (ex: gestor, financial) para exibição no sino. */
+    actorRole?: string;
+};
+
+export type Chat = {
+    participants: string[];
+    lastMessage: string;
+    lastMessageTimestamp: any;
+    lastMessageSenderId: string;
+}
+
+export type ChatMessage = {
+    id: string;
+    senderId: string;
+    receiverId: string;
+    text: string;
+    timestamp: any;
+    read: boolean;
+    deletedFor?: string[];
+};
+
+export type FaunaStudy = {
+    id: string;
+    studyType: 'inventario_projeto' | 'inventario_relatorio' | 'monitoramento_projeto' | 'monitoramento_relatorio' | 'resgate_projeto' | 'resgate_relatorio' | 'externo';
+    empreendedorId: string;
+    /** Empreendimento vinculado (coleção `projects`). */
+    projectId?: string;
+    consultoriaId: string;
+    documentName?: string;
+    fileUrl?: string;
+    empreendedor?: any; // Substituir por tipo Empreendedor
+    consultoria?: any; // Substituir por tipo EnvironmentalCompany
+    caracterizacaoEmpreendimento?: string;
+    caracterizacaoAreaEstudo?: {
+        area?: string;
+        clima?: string;
+    };
+    caracterizacaoAmbientalSecundaria?: string;
+    listaEspeciesSecundaria?: string;
+    impactosPotenciais?: {
+        vetores: string;
+        analiseInteracao: string;
+    };
+    metodologiaInventariamento?: string;
+    equipes?: string;
+    referencias?: string;
+    numeroAutorizacao?: string;
+    responsaveisTecnicosRelatorio?: string;
+    areaDiretamenteAfetada?: string;
+    resultados?: {
+        caracterizacaoAmbientalPrimaria?: string;
+        listaEspeciesPrimaria?: string;
+        impactosAmbientais?: string;
+    };
+    discussao?: string;
+    recomendacoes?: string;
+    objetivosMonitoramento?: string;
+    perguntasHipoteses?: string;
+    cronogramaExecucao?: string;
+    destinoMaterialBiologico?: string;
+    areasIntervencao?: string;
+    areasSoltura?: string;
+    programaResgate?: {
+        metodologias?: string;
+        baseSalvamento?: string;
+    };
+    cursoCapacitacao?: string;
+    planoSupressao?: string;
+    acoesResgate?: string;
+    status?: 'draft' | 'completed';
+    createdAt?: any;
+    ownerId?: string;
+};
+
+export type MtrDeclaracaoTipo = "cdf" | "manifesto" | "declaracao" | "outro";
+export type MtrDeclaracaoSource = "upload" | "api_cdf" | "api_manifesto";
+
+export type MtrDeclaracao = {
+  id: string;
+  empreendedorId: string;
+  titulo: string;
+  tipo: MtrDeclaracaoTipo;
+  source: MtrDeclaracaoSource;
+  fileUrl?: string;
+  /** Código CDF, código de barras do manifesto ou identificador externo. */
+  externalCodigo?: string;
+  periodoInicio?: string;
+  periodoFim?: string;
+  listaMtr?: number[];
+  createdAt?: unknown;
+  syncedAt?: string;
+  ownerId?: string;
+};
+
+export type Inconformidade = {
+    description: string;
+    criticality: 'Baixa' | 'Média' | 'Alta' | 'Urgente';
+    imageUrls?: string[];
+};
+
+export type FieldInspectionMotivo =
+    | 'Denúncia'
+    | 'Rotina'
+    | 'Condicionante'
+    | 'Auto anterior';
+
+export type FieldInspectionAtoVinculadoTipo = 'licenca' | 'outorga' | 'uso_insignificante';
+
+/** Ato autorizativo (licença, outorga ou uso insignificante) vinculado à vistoria. */
+export type FieldInspectionAtoVinculado = {
+    tipo: FieldInspectionAtoVinculadoTipo;
+    id: string;
+    /** Rótulo para exibição/PDF (snapshot na data da vistoria). */
+    rotulo: string;
+};
+
+export type FieldInspectionIdentificacao = {
+    razaoSocial?: string;
+    nomeFantasia?: string;
+    cnpjCpf?: string;
+    atividadePrincipal?: string;
+    enderecoCompleto?: string;
+    coordenadasGeograficas?: string;
+    /** Atos selecionados no formulário (licenças, outorgas, usos insignificantes). */
+    atosVinculados?: FieldInspectionAtoVinculado[];
+    /** Observações complementares (texto livre). */
+    processoLicenciamentoOutorga?: string;
+    motivoFiscalizacao?: FieldInspectionMotivo[];
+};
+
+export type FieldInspectionChecklistStatus =
+    | 'conforme'
+    | 'nao_conforme'
+    | 'nao_aplicavel'
+    | 'nao_verificado';
+
+export type FieldInspectionChecklistResponse = {
+    sectionId: string;
+    itemId: string;
+    label: string;
+    status: FieldInspectionChecklistStatus;
+    criticality?: Inconformidade['criticality'];
+    observations?: string;
+    imageUrls?: string[];
+};
+
+export type Inspection = {
+    id: string;
+    empreendedorId: string;
+    projectId: string;
+    inspectionDate: string;
+    inspectorId: string;
+    inspectorName: string;
+    inconformidades: Inconformidade[];
+    /** Seção 1 — identificação do empreendimento (snapshot na data da vistoria). */
+    identificacao?: FieldInspectionIdentificacao;
+    /** Seções 2–7 — checklist de fiscalização. */
+    checklistResponses?: FieldInspectionChecklistResponse[];
+    /** Seção 8 — observações gerais da equipe. */
+    teamObservations?: string;
+    /** Documentos extra opcionais (mapas, ofícios, PDFs gerais) — além dos anexos por inconformidade. */
+    laudoAttachmentUrls?: string[];
+    createdAt: any;
+    status?: 'Em Aberto' | 'Aprovada';
+    accompaniedBy?: string;
+    signatureUrl?: string;
+    readBy?: {
+        [userId: string]: string; // userId: timestamp ISO string
+    };
+}
+
+export type AiaProfile = {
+    orgao: string;
+    uf: string;
+};
+
+export type AiaImovelSnapshot = import("@/lib/intervention-checklist").AiaImovelSnapshot;
+
+export type AiaLinkedArtifacts = {
+    piaId?: string;
+    inventoryId?: string;
+    mapJobId?: string;
+    georefProjectId?: string;
+};
+
+export type TipoIntervencaoAia = import("@/lib/intervention-checklist").TipoIntervencaoAia;
+
+export type Request = {
+    id: string;
+    empreendedorId: string;
+    projectId: string;
+    services: string[];
+    status: 'Draft' | 'Submitted' | 'In Progress' | 'Completed';
+    createdAt: any;
+    /** Projeto de consultoria (`consultoriaProjects/{id}`) — Gestão de Projetos e Processos. */
+    consultoriaProjectId?: string;
+    updatedAt?: any;
+    solicitationNumber?: string;
+    interventionChecklist?: import("@/lib/intervention-checklist").InterventionChecklistItem[];
+    /** Opções marcadas sob "Autorização para Intervenção Ambiental" (IDs definidos em `INTERVENTION_SUBSERVICES`). */
+    interventionSubservices?: import("@/lib/intervention-checklist").InterventionSubserviceId[];
+    /** Perfil regulatório (ex.: IEF-MG). */
+    aiaProfile?: AiaProfile;
+    /** Tipo de intervenção conforme documento de arquitetura AIA. */
+    tipoIntervencao?: TipoIntervencaoAia;
+    /** Snapshot do imóvel para regras condicionais do checklist. */
+    imovelSnapshot?: AiaImovelSnapshot;
+    /** Imóvel localizado via SICAR (L4.2 localizador). */
+    localizacaoImovel?: import("@/lib/types/localizacao-imovel").RequestLocalizacaoImovel;
+    /** Vínculos com PIA, inventário, mapas e georef. */
+    linkedArtifacts?: AiaLinkedArtifacts;
+    licensingData?: {
+        activities?: {
+            id: string;
+            codeGroup: 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | 'H';
+            subItem: string;
+            description?: string;
+            enterpriseSize?: number;
+            sizeUnit?: 'ha' | 'm2' | 'un';
+            autoPorte?: 'P' | 'M' | 'G';
+            autoPotencial?: 'P' | 'M' | 'G';
+        }[];
+        grading: {
+            porte: 'P' | 'M' | 'G';
+            potencial: 'P' | 'M' | 'G';
+            criterioLocacional: '0' | '1' | '2';
+            classeSugerida: 1 | 3 | 4 | 5 | 6;
+            modalidadeSugerida: string;
+        };
+        documents: {
+            id: string;
+            label: string;
+            checked: boolean;
+            fileName?: string;
+            fileUrl?: string;
+        }[];
+        /** Última análise geoespacial para sugestão do critério locacional (DN 217). */
+        locationalAnalysis?: {
+            inputMode: 'car' | 'polygon' | 'coordinates' | 'draw';
+            inputPreview: string;
+            suggestedCriterio: '0' | '1' | '2';
+            reasons: string[];
+            analyzedAt: string;
+        };
+        /** Se true, não sobrescreve o critério locacional ao rodar nova análise. */
+        criterioLocacionalManual?: boolean;
+    };
+}
+
+export type Fornecedor = {
+  id: string;
+  name: string;
+  cpfCnpj: string;
+  entityType: 'Pessoa Física' | 'Pessoa Jurídica';
+  email?: string;
+  phone?: string;
+  serviceType?: string;
+  cep?: string;
+  logradouro?: string;
+  bairro?: string;
+  municipio?: string;
+  uf?: string;
+  referencia?: string;
+  bankDetails?: {
+    bankName?: string;
+    agency?: string;
+    account?: string;
+    pixKey?: string;
+  };
+};
+
+/** Tipo principal do bem (ativo imobilizado). */
+export type BemPatrimonioCategoria = 'movel' | 'imovel';
+
+/** Subtipo detalhado para classificação e relatórios. */
+export type BemPatrimonioSubtipo =
+  | 'veiculo'
+  | 'moto'
+  | 'motocicleta'
+  | 'barco'
+  | 'equipamento'
+  | 'maquina'
+  | 'informatica'
+  | 'moveis_utensilios'
+  | 'lote'
+  | 'terreno'
+  | 'fazenda'
+  | 'predio'
+  | 'galpao'
+  | 'sala_comercial'
+  | 'outro';
+
+export type BemPatrimonioStatus = 'ativo' | 'baixado' | 'alienado' | 'em_manutencao';
+
+export type BemPatrimonioMetodoDepreciacao = 'linear' | 'nao_depreciavel';
+
+/** Bem do ativo imobilizado (IRPJ / contabilidade — base para LALUR e depreciação). */
+export type BemPatrimonio = {
+  id: string;
+  /** Código interno / plaqueta de patrimônio */
+  codigoPatrimonio?: string;
+  descricao: string;
+  categoria: BemPatrimonioCategoria;
+  subtipo: BemPatrimonioSubtipo;
+  status: BemPatrimonioStatus;
+  /** Identificação adicional: placa, RENAVAM, nº série, matrícula etc. */
+  identificacao?: string;
+  /** Aquisição */
+  dataAquisicao: string;
+  valorAquisicao: number;
+  notaFiscalNumero?: string;
+  notaFiscalSerie?: string;
+  notaFiscalChave?: string;
+  fornecedorNome?: string;
+  fornecedorCnpj?: string;
+  fornecedorId?: string;
+  /** Despesa de aquisição vinculada (coleção expenses) */
+  expenseId?: string;
+  /** Contabilidade / SPED */
+  contaContabilAtivo?: string;
+  contaContabilDepreciacao?: string;
+  contaContabilDespesaDepreciacao?: string;
+  centroCusto?: string;
+  classificacaoFiscal?: string;
+  unidadeMedida?: string;
+  /** Depreciação */
+  metodoDepreciacao: BemPatrimonioMetodoDepreciacao;
+  vidaUtilMeses?: number;
+  taxaDepreciacaoAnual?: number;
+  valorResidual?: number;
+  depreciacaoAcumulada?: number;
+  depreciarNoMesAquisicao?: boolean;
+  /** Imóveis / localização */
+  logradouro?: string;
+  municipio?: string;
+  uf?: string;
+  cep?: string;
+  matricula?: string;
+  inscricaoMunicipal?: string;
+  areaM2?: number;
+  /** Documentos e observações fiscais */
+  fileUrl?: string;
+  observacoes?: string;
+  lalurObservacoes?: string;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+export type SupplierContract = {
+  id: string;
+  status: 'Rascunho' | 'Aprovado';
+  contractNumber: string;
+  contratante: {
+    nome: string;
+    cnpj: string;
+    endereco?: string;
+    numero?: string;
+    bairro?: string;
+    municipio?: string;
+    uf?: string;
+    cep?: string;
+  };
+  prestador: {
+    supplierId: string;
+    nome: string;
+    cpfCnpj: string;
+    serviceType?: string;
+    email?: string;
+    phone?: string;
+    endereco?: string;
+  };
+  objeto: {
+    empreendimento?: string;
+    municipio?: string;
+    uf?: string;
+    servicos: string;
+    observacoes?: string;
+    itens?: { descricao: string; valor: number }[];
+  };
+  pagamento: {
+    valorTotal: number;
+    valorExtenso: string;
+    forma: string;
+    banco?: string;
+    agencia?: string;
+    conta?: string;
+    pix?: string;
+  };
+  foro: {
+    comarca: string;
+    uf: string;
+  };
+  dataContrato: string;
+  contractPdfUrl?: string;
+  fileUrl?: string;
+  projectRoiCaseId?: string;
+  clientContractId?: string;
+  projectId?: string;
+};
+
+/** Entrada de timesheet no caso Projetos & ROI (Fase 3). */
+export type ProjectRoiTimeEntry = {
+  id: string;
+  date: string;
+  hours: number;
+  userId?: string;
+  userDisplayName?: string;
+  activity?: string;
+  notes?: string;
+  createdAt: string;
+};
+
+/** Parcela prevista no caso Projetos & ROI (Fase 2). */
+export type ProjectRoiParcelaPrevista = {
+  id: string;
+  vencimento: string;
+  valor: number;
+  status?: 'prevista' | 'recebida' | 'atrasada';
+  observacao?: string;
+};
+
+export type ProjectRoiCaseOrigin = 'formal' | 'manual';
+
+export type ProjectRoiCaseGovernanceStatus =
+  | 'pendente_assinatura'
+  | 'pendente_vinculo_empreendimento'
+  | 'ativo'
+  | 'informal'
+  | 'encerrado';
+
+export type ProjectRoiCase = {
+  id: string;
+  origin: ProjectRoiCaseOrigin;
+  statusGovernanca: ProjectRoiCaseGovernanceStatus;
+  projectId?: string;
+  empreendimentoTexto?: string;
+  empreendedorId?: string;
+  clientId?: string;
+  contractId?: string;
+  sourceProposalId?: string;
+  sourceProposalNumber?: string;
+  apelido?: string;
+  orcamentoValor?: number;
+  orcamentoItens?: { descricao: string; valor: number }[];
+  impostoEstimadoValor?: number;
+  aliquotaImpostoPct?: number;
+  impostoObservacao?: string;
+  horasEstimadas?: number;
+  horasRegistradas?: number;
+  parcelasPrevistas?: ProjectRoiParcelaPrevista[];
+  observacoes?: string;
+  contractSignedAt?: string;
+  encerradoAt?: string;
+  createdAt: string;
+  createdByUid?: string;
+  updatedAt: string;
+  updatedByUid?: string;
+};
+
+export type ProjectRoiSemaforo =
+  | 'ganhando'
+  | 'perdendo'
+  | 'empatando'
+  | 'sem_movimento';
+
+export type Service = {
+  id: string;
+  name: string;
+  description?: string;
+  cost?: number;
+  price: number;
+};
+
+export type ProposalItem = CommercialProposalItem;
+export type Proposal = CommercialProposal;
+
+export type ConsultaStatus =
+  | 'nova'
+  | 'em_andamento'
+  | 'aguardando_dados'
+  | 'em_analise'
+  | 'concluida'
+  | 'cancelada';
+
+export type ConsultaCanal = 'web' | 'whatsapp' | 'instagram' | 'interno';
+
+export type ConsultaTipoServico =
+  | 'RCA'
+  | 'PIA'
+  | 'PCA'
+  | 'PRADA'
+  | 'InventarioFlorestal'
+  | 'Fauna'
+  | 'Outorgas'
+  | 'EducacaoAmbiental'
+  | 'RelatorioDiverso'
+  | 'Outro';
+
+export type Consulta = {
+  id: string;
+  canal: ConsultaCanal;
+  tipoServico: ConsultaTipoServico;
+  status: ConsultaStatus;
+  empreendedorId: string;
+  empreendimentoId?: string;
+  responsavelTecnicoUserId?: string;
+  solicitanteNome?: string;
+  solicitanteEmail?: string;
+  descricao?: string;
+  descricaoProblema?: string;
+  origemLead?: string;
+  slaPrevisto?: string;
+  observacoes?: string;
+  createdAt?: any;
+  updatedAt?: any;
+  [key: string]: any;
+};
+
+export type LaudoStatus =
+  | 'rascunho'
+  | 'coletando_dados'
+  | 'gerando'
+  | 'pronto'
+  | 'enviado'
+  | 'cancelado';
+
+export type Laudo = {
+  id: string;
+  consultaId?: string;
+  tipoEstudo: ConsultaTipoServico;
+  status: LaudoStatus;
+  empreendedorId: string;
+  empreendimentoId?: string;
+  titulo?: string;
+  conteudo?: string;
+  arquivoUrl?: string;
+  createdAt?: any;
+  updatedAt?: any;
+  [key: string]: any;
+};
+
+export type Oficio = {
+  id: string;
+  /** Texto composto do destinatário (busca, notificações, registos antigos). */
+  recipient: string;
+  recipientSalutation?: string;
+  recipientName?: string;
+  recipientRole?: string;
+  recipientOrganization?: string;
+  recipientAddress?: string;
+  recipientCity?: string;
+  subject: string;
+  /** Linha "Referente:" (modelo consolidado). */
+  referente?: string;
+  /** Processo SEI/SLA ou número processual. */
+  processoSei?: string;
+  reference?: string;
+  greeting?: string;
+  body: string;
+  closing?: string;
+  attachments?: string;
+  /** Dados do solicitante/responsável legal (antes do fecho). */
+  solicitante?: string;
+  /** Assinatura "p/p Nome" (responsável legal). */
+  signatoryProcuracao?: string;
+  municipio: string;
+  estado: string;
+  assinanteId: string;
+  assinanteNome?: string;
+  assinanteCargo?: string;
+  assinaturaDigitalUrl?: string;
+  dataEmissao?: string;
+  oficioNumber?: string;
+  status?: 'Rascunho' | 'Emitido' | 'Enviado' | 'Cancelado' | 'Concluído';
+  createdAt?: any;
+  updatedAt?: any;
+  [key: string]: any;
+};
+
+export type EiaRima = {
+  id: string;
+  status?: 'Rascunho' | 'Aprovado';
+  requerente: {
+    clientId?: string;
+    nome: string;
+  };
+  empreendimento: {
+    projectId?: string;
+    nome: string;
+  };
+  processo: string;
+  createdAt?: any;
+  updatedAt?: any;
+  [key: string]: any;
+};
+
+/** LAS/RAS — formulário estático ou dinâmico (coleção `lasRas`). */
+export type LasRas = {
+  id: string;
+  status?: 'Rascunho' | 'Aprovado';
+  formSource?: 'dynamic' | 'static';
+  requerente?: {
+    clientId?: string;
+    nome?: string;
+  };
+  empreendimento?: {
+    projectId?: string;
+    nome?: string;
+    activity?: string;
+    [key: string]: unknown;
+  };
+  ras?: {
+    caracterizacaoEmpreendimento?: string;
+    caracterizacaoArea?: string;
+    diagnosticoAmbiental?: string;
+    impactosAmbientais?: string;
+    medidasControle?: string;
+  };
+  createdAt?: string;
+  updatedAt?: string;
+  [key: string]: unknown;
+};
+
+/** Procurador nomeado na procuração (responsável técnico da consultoria). */
+export type ProcuracaoProcurador = {
+  responsibleId: string;
+  name: string;
+  profession?: string;
+  cpf?: string;
+  identidade?: string;
+  emissor?: string;
+  estadoCivil?: string;
+  nacionalidade?: string;
+  address?: string;
+  municipio?: string;
+  uf?: string;
+};
+
+/** Outorgante (empreendedor titular do mandato). */
+export type ProcuracaoOutorgante = {
+  empreendedorId: string;
+  nome: string;
+  cpfCnpj: string;
+  address?: string;
+  municipio?: string;
+  uf?: string;
+  /** Pessoa jurídica — responsável legal */
+  responsavelLegalNome?: string;
+  responsavelLegalCpf?: string;
+  responsavelLegalRg?: string;
+  responsavelLegalRgEmissor?: string;
+  responsavelLegalEndereco?: string;
+};
+
+/** Outorgada (empresa consultoria) e procuradores. */
+export type ProcuracaoOutorgado = {
+  companyId: string;
+  companyName: string;
+  companyCnpj: string;
+  companyAddress?: string;
+  procuradores: ProcuracaoProcurador[];
+};
+
+export type ProcuracaoEmpreendimento = {
+  projectId: string;
+  nome: string;
+  municipio?: string;
+  uf?: string;
+  cnpj?: string;
+};
+
+/** Procuração para representação do empreendedor/empreendimento (coleção `procuracoes`). */
+export type Procuracao = {
+  id: string;
+  status?: 'Rascunho' | 'Aprovado' | 'Assinada';
+  outorgante: ProcuracaoOutorgante;
+  outorgado: ProcuracaoOutorgado;
+  textoPoderes: string;
+  empreendimentos: ProcuracaoEmpreendimento[];
+  dataDocumento?: string;
+  localDocumento?: string;
+  /** PDF gerado para assinatura. */
+  contractPdfUrl?: string;
+  /** PDF assinado (upload). */
+  fileUrl?: string;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+/** Reanálise de processo — formulário dinâmico (coleção `reanalises`). */
+export type Reanalise = {
+  id: string;
+  status?: 'Rascunho' | 'Aprovado';
+  formSource?: 'dynamic' | 'static';
+  requerente?: {
+    clientId?: string;
+    nome?: string;
+  };
+  empreendimento?: {
+    projectId?: string;
+    nome?: string;
+    activity?: string;
+    [key: string]: unknown;
+  };
+  processo?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  [key: string]: unknown;
+};
+
+export type InventarioStatus = 'rascunho' | 'em_campo' | 'sincronizado' | 'concluida';
+
+/** Resumo gravado ao consolidar planilha Excel da campanha. */
+export type ColetaExportSummary = {
+  totalParcels: number;
+  totalTrees: number;
+  totalSpecies: number;
+  excelRowCount: number;
+};
+
+/** Campanha de coleta de campo (coleção `inventarios`). */
+export type ColetaCampanhaModo = 'vinculada' | 'solta';
+export type ColetaTipoInventario = 'simples' | 'multinivel';
+
+export type Inventario = {
+  id: string;
+  /** Preenchido quando modo = vinculada. */
+  empreendimentoId?: string;
+  empreendedorId?: string;
+  modo?: ColetaCampanhaModo;
+  tipoInventario?: ColetaTipoInventario;
+  nomeEmpreendimentoManual?: string;
+  nomeEmpreendedorManual?: string;
+  localManual?: string;
+  dataInicio?: string | any;
+  dataFim?: string | any;
+  status?: InventarioStatus;
+  observacoes?: string;
+  sincronizado?: boolean;
+  /** Referência opcional a projeto de inventário florestal (somente metadado). */
+  projectIdInventario?: string;
+  /** Planilha consolidada no Storage (gerada ao concluir ou reconsolidar). */
+  exportExcelStoragePath?: string;
+  exportExcelUrl?: string;
+  exportConsolidatedAt?: any;
+  exportSummary?: ColetaExportSummary;
+  createdAt?: any;
+  updatedAt?: any;
+  [key: string]: any;
+};
+
+export type ParcelaCoordenada = {
+  latitude: number;
+  longitude: number;
+};
+
+export type InventarioParcela = {
+  id: string;
+  inventarioId: string;
+  codigo: string;
+  area?: number;
+  /** Coordenada central da parcela */
+  latitude?: number;
+  longitude?: number;
+  /** Quatro vértices da área de amarração (polígono fechado) */
+  areaAmarracao?: ParcelaCoordenada[];
+  observacoes?: string;
+  /** Inventário multinível */
+  up?: string;
+  us?: string;
+  ni?: string;
+  ordem?: number;
+  createdAt?: any;
+  [key: string]: any;
+};
+
+export type InventarioIndividuo = {
+  id: string;
+  inventarioId: string;
+  parcelaId: string;
+  numero?: number;
+  especie?: string;
+  nomeCientifico?: string;
+  nomeComum?: string;
+  nomePopular?: string;
+  familia?: string;
+  dap?: number;
+  cap?: number;
+  altura?: number;
+  altComercial?: number;
+  observacoes?: string;
+  sincronizado?: boolean;
+  createdAt?: any;
+  [key: string]: any;
+};
+
+export type KnowledgeSourceTipo =
+  | 'lei'
+  | 'deliberacao'
+  | 'resolucao'
+  | 'portaria'
+  | 'termo_referencia'
+  | 'laudo_antigo'
+  | 'nota_interna'
+  | 'outro';
+
+export type KnowledgeSourceStatus = 'vigente' | 'revogada' | 'alterada';
+export type ModoInclusao = 'manual' | 'upload' | 'importacao' | 'crawler' | 'robo_sugeriu';
+
+export type KnowledgeSource = {
+  id: string;
+  tipo: KnowledgeSourceTipo;
+  status?: KnowledgeSourceStatus;
+  modoInclusao?: ModoInclusao;
+  uf?: string;
+  orgao?: string;
+  numero?: string;
+  titulo?: string;
+  dataPublicacao?: string;
+  assunto?: string;
+  urlOficial?: string;
+  aprovado?: boolean;
+  arquivado?: boolean;
+  createdAt?: any;
+  updatedAt?: any;
+};
+
+export type RagIndexEntry = {
+  id: string;
+  knowledgeSourceId?: string;
+  tipoDocumento: KnowledgeSourceTipo;
+  uf?: string;
+  orgao?: string;
+  numero?: string;
+  titulo?: string;
+  chunkText: string;
+  chunkIndex?: number;
+  createdAt?: any;
+};
+
+export type AmbientalContext = {
+  empreendedor?: Empreendedor | null;
+  empreendimento?: Project | null;
+  empresaAmbiental?: EnvironmentalCompany | null;
+  consulta?: Consulta | null;
+  laudo?: Laudo | null;
+  licencas: License[];
+  tacs: Tac[];
+  outorgas: WaterPermit[];
+  intervencoes: EnvironmentalIntervention[];
+  condicionantes?: Condicionante[];
+  faunaStudies: FaunaStudy[];
+  manualMonitoringLogs: ManualMonitoringLog[];
+  outrosProjetos: Project[];
+  [key: string]: any;
+};
+
+export type CharcoalProductionPerformance = {
+  id: string;
+  numeroDocumento?: string;
+  data: string; // ISO date string
+  mesReferencia: string; // "YYYY-MM" format
+  proprietario: {
+    nome: string;
+    endereco: string;
+    municipio: string;
+    cep: string;
+    telefone: string;
+  };
+  empreendimento: {
+    denominacao: string;
+    areaTotal: number; // in hectares
+    endereco: string;
+    paCopam: string;
+    municipioDistrito: string;
+    cep: string;
+  };
+  dadosMadeira: {
+    dataColheita: string; // ISO date string
+    periodo: 'chuvoso' | 'seca';
+    residuos: boolean;
+    umidadeEstimada: number;
+    tempoMedioSecagem: number;
+  };
+  carbonizacao: {
+    bateladasMes: number;
+    volumeMadeiraEnfornada: number;
+    volumeCarvaoProduzido: number;
+    rendimentoVolumetrico: number;
+    rendimentoGravimetrico: number;
+  };
+  temperaturaMedia?: {
+    fornosAmostrados?: number;
+    medicoesTotais?: number;
+    temperatura?: number;
+    realizadaPor?: ('Pirômetro' | 'Termopares' | 'Outro')[];
+    outro?: string;
+  };
+  integridadeFornos?: {
+    manutencaoEstrutura?: {
+      data: string;
+      duracao: string;
+      operacao: string;
+    }[];
+    limpezaPiso?: {
+      data: string;
+      duracao: string;
+    }[];
+    limpezaConexoes?: {
+      data: string;
+      duracao: string;
+      operacao: string;
+    }[];
+  };
+  createdAt: any;
+};
+
+export type TransporteResiduosPerigosos = {
+    id: string;
+    empreendedor: {
+        id?: string;
+        nome?: string;
+        cnpjCpf?: string;
+        endereco?: string;
+        telefone?: string;
+        email?: string;
+    };
+    empreendimento: {
+        id?: string;
+        nome?: string;
+        endereco?: string;
+        municipioUf?: string;
+    };
+    empresaResponsavel?: {
+        id?: string;
+        razaoSocial?: string;
+        endereco?: string;
+        cnpjCpf?: string;
+        telefone?: string;
+        email?: string;
+        ctfAida?: string;
+    };
+    responsavelTecnico: {
+        id?: string;
+        nome?: string;
+        formacao?: string;
+        registroClasse?: string;
+        art?: string;
+        ctfAidaIbama?: string;
+    };
+    veiculosTransporte?: {
+        tipo?: string;
+        placa?: string;
+        anoFabricacao?: string;
+        acondicionamento?: 'Granel' | 'Fracionado';
+        civNumero?: string;
+        civValidade?: string;
+    }[];
+    equipamentosGranel?: {
+        tipoCarroceria?: string;
+        placaFabricacao?: string;
+        anoFabricacao?: string;
+        cippNumero?: string;
+        cippValidade?: string;
+    }[];
+    classificacaoProdutos?: {
+        nomeTecnico?: string;
+        nomeComercial?: string;
+        numeroOnu?: string;
+        classeRisco?: string;
+        acondicionamento?: string;
+    }[];
+    classificacaoResiduos?: {
+        nomeTecnico?: string;
+        nomeComercial?: string;
+        numeroOnu?: string;
+        classeRisco?: string;
+        acondicionamento?: string;
+    }[];
+    origemDestinoProdutos?: {
+        produto?: string;
+        produtorNome?: string;
+        produtorEndereco?: string;
+        consumidorNome?: string;
+        consumidorEndereco?: string;
+        viasPreferenciais?: string;
+    }[];
+    origemDestinoResiduos?: {
+        residuo?: string;
+        geradorNome?: string;
+        geradorEndereco?: string;
+        destinadorNome?: string;
+        destinadorEndereco?: string;
+        viasPreferenciais?: string;
+    }[];
+    anexoART?: string;
+    createdAt?: any;
+};
+
+
+// Moved from ai/flows
+import { z } from 'zod';
+export const GenerateSustainabilityReportInputSchema = z.object({
+  projectData: z.string().describe('Project data, including details about the project activities and resources used.'),
+  environmentalMetrics: z.string().describe('Environmental metrics data, including measurements of emissions, waste, water usage, and other relevant environmental factors.'),
+  context: z.string().optional().describe('Any other relevant information about the project or the environmental context, to help customize the sustainability report.'),
+});
+export type GenerateSustainabilityReportInput = z.infer<typeof GenerateSustainabilityReportInputSchema>;
+
+export const GenerateSustainabilityReportOutputSchema = z.object({
+  report: z.string().describe('The generated sustainability report.'),
+});
+export type GenerateSustainabilityReportOutput = z.infer<typeof GenerateSustainabilityReportOutputSchema>;
+
+export const GenerateFinancialReportInputSchema = z.object({
+  revenues: z.string().describe('A JSON string representing an array of revenue objects.'),
+  expenses: z.string().describe('A JSON string representing an array of expense objects.'),
+  context: z.string().optional().describe('Any other relevant information or specific instructions for generating the report.'),
+});
+export type GenerateFinancialReportInput = z.infer<typeof GenerateFinancialReportInputSchema>;
+
+export const GenerateFinancialReportOutputSchema = z.object({
+  report: z.string().describe('The generated financial report in a structured format.'),
+});
+export type GenerateFinancialReportOutput = z.infer<typeof GenerateFinancialReportOutputSchema>;
+
+export const AssistantInputSchema = z.object({
+  prompt: z.string().describe('A pergunta do usuário para o assistente.'),
+  /** Modo DeepSeek (menu Estudos Técnicos → Assistente IA). */
+  tipo: z.enum(['geral', 'mira', 'outorga', 'financeiro', 'rag', 'mcp']).optional(),
+});
+export type AssistantInput = z.infer<typeof AssistantInputSchema>;
+
+export const AssistantOutputSchema = z.object({
+  response: z.string().describe('A resposta gerada pelo assistente de IA.'),
+});
+export type AssistantOutput = z.infer<typeof AssistantOutputSchema>;
+// End moved types
+    
+
+
+
+
+
+
+
+
+
+  
+
+
+
+

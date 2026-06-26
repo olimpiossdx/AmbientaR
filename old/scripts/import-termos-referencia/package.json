@@ -1,0 +1,16 @@
+{
+  "name": "import-termos-referencia",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Importa PDF/DOCX da pasta termos de referencia para Firestore (knowledge_sources + rag_index)",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "import": "node index.js"
+  },
+  "dependencies": {
+    "firebase-admin": "^12.0.0",
+    "mammoth": "^1.8.0",
+    "pdf-parse": "^1.1.1"
+  }
+}
