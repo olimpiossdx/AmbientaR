@@ -1,4 +1,0 @@
-{"timestamp": "2025-08-14T21:13:07.130251", "level": "ERROR", "logger": "ambientar", "message": "Pacotes faltando: jinja2, reportlab", "asctime": "2025-08-14 21:13:07,130"}
-{"timestamp": "2025-08-14T21:13:07.195951", "level": "ERROR", "logger": "ambientar", "message": "Dependências não satisfeitas. Encerrando aplicação.", "asctime": "2025-08-14 21:13:07,195"}
-{"timestamp": "2025-08-14T21:25:23.883723", "level": "ERROR", "logger": "ambientar", "message": "Falha na conexão com banco de dados", "error_type": "ImportError", "error_message": "cannot import name 'ambientar' from 'config' (unknown location)", "asctime": "2025-08-14 21:25:23,883"}
-{"timestamp": "2025-08-15T19:23:02.000038", "level": "ERROR", "logger": "ambientar", "message": "Falha na conexão com banco de dados", "error_type": "ImportError", "error_message": "cannot import name 'ambientar' from 'config' (unknown location)", "asctime": "2025-08-15 19:23:02,000"}
