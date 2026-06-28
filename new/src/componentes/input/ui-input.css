@@ -1,0 +1,89 @@
+@layer components {
+  /* ==========================================================================
+     UI INPUT COMPONENT
+     Namespace: ui-input
+     Tema claro como base; dark mode apenas via .dark
+     ========================================================================== */
+
+  .ui-input-container {
+    @apply flex w-full flex-col gap-1;
+  }
+
+  .ui-input {
+    @apply w-full px-3 text-gray-900 transition-all duration-200 focus:outline-none;
+    @apply placeholder:text-gray-400;
+    @apply disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500;
+    @apply dark:text-white dark:placeholder:text-gray-500 dark:disabled:bg-gray-800 dark:disabled:text-gray-400;
+  }
+
+  .ui-input--outlined {
+    @apply rounded-md border border-gray-400 bg-white shadow-sm;
+    @apply hover:border-gray-600 focus:border-blue-600 focus:ring-1 focus:ring-blue-600;
+    @apply dark:border-gray-500 dark:bg-gray-800 dark:hover:border-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500;
+  }
+
+  .ui-input--filled {
+    @apply rounded-t-md rounded-b-none border-x-0 border-t-0 border-b-2 border-gray-300 bg-gray-100 shadow-none;
+    @apply hover:bg-gray-200 focus:border-blue-600 focus:bg-gray-200;
+    @apply dark:border-gray-600 dark:bg-gray-800 dark:hover:bg-gray-700 dark:focus:border-blue-500 dark:focus:bg-gray-700;
+  }
+
+  .ui-input--ghost {
+    @apply rounded-md border border-transparent bg-transparent shadow-none;
+    @apply hover:bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500;
+    @apply dark:hover:bg-gray-800/30 dark:focus:bg-gray-800;
+  }
+
+  .ui-input--sm {
+    @apply h-9 py-1.5 text-sm;
+  }
+
+  .ui-input--md {
+    @apply h-11 py-2.5 text-base;
+  }
+
+  .ui-input--lg {
+    @apply h-12 py-3 text-lg;
+  }
+
+  .ui-input--floating-outlined-sm {
+    @apply h-9 pt-4 pb-1 text-sm;
+  }
+
+  .ui-input--floating-outlined-md {
+    @apply h-14 pt-6 pb-2 text-base;
+  }
+
+  .ui-input--floating-outlined-lg {
+    @apply h-12 pt-5 pb-2 text-lg;
+  }
+
+  .ui-input--floating-filled-sm {
+    @apply h-9 pt-4 pb-1 text-sm;
+  }
+
+  .ui-input--floating-filled-md {
+    @apply h-14 pt-6 pb-2 text-base;
+  }
+
+  .ui-input--floating-filled-lg {
+    @apply h-12 pt-5 pb-2 text-lg;
+  }
+
+  .ui-input--floating-ghost-sm {
+    @apply h-9 pt-4 pb-1 text-sm;
+  }
+
+  .ui-input--floating-ghost-md {
+    @apply h-14 pt-6 pb-2 text-base;
+  }
+
+  .ui-input--floating-ghost-lg {
+    @apply h-12 pt-5 pb-2 text-lg;
+  }
+
+  .ui-input[data-invalid],
+  .ui-input[data-invalid='true'] {
+    @apply border-red-500 text-red-600 placeholder:text-red-300 focus:border-red-500 focus:ring-red-500/30;
+  }
+}

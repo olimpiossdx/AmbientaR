@@ -1,0 +1,12 @@
+import React from 'react';
+import { cn } from '../../utils/cn';
+import type { SignaturePadProps } from './signature-pad.types';
+export const SignaturePad = React.forwardRef<HTMLDivElement, SignaturePadProps>(({ name, width = 600, height = 180, disabled, clearLabel = 'Limpar assinatura', showClear = true, strokeStyle = '#111827', lineWidth = 2, onChange, className, ...props }, ref) => {
+ const canvasRef = React.useRef<HTMLCanvasElement>(null); const inputRef = React.useRef<HTMLInputElement>(null); const drawingRef = React.useRef(false);
+ const updateValue = () => { const canvas = canvasRef.current; const input = inputRef.current; if (!canvas || !input) return; const value = canvas.toDataURL('image/png'); input.value = value; input.dispatchEvent(new Event('change', { bubbles: true })); onChange?.(value); };
+ const pos = (event: React.PointerEvent<HTMLCanvasElement>) => { const rect = event.currentTarget.getBoundingClientRect(); return { x: event.clientX - rect.left, y: event.clientY - rect.top }; };
+ const draw = (event: React.PointerEvent<HTMLCanvasElement>) => { if (!drawingRef.current || disabled) return; const ctx = event.currentTarget.getContext('2d'); if (!ctx) return; const p = pos(event); ctx.lineTo(p.x, p.y); ctx.stroke(); updateValue(); };
+ const clear = () => { const canvas = canvasRef.current; const input = inputRef.current; if (!canvas || !input) return; canvas.getContext('2d')?.clearRect(0, 0, canvas.width, canvas.height); input.value = ''; input.dispatchEvent(new Event('change', { bubbles: true })); onChange?.(''); };
+ return <div ref={ref} className={cn('grid gap-2', className)} {...props}><canvas ref={canvasRef} width={width} height={height} aria-label="Campo de assinatura" className={cn('w-full rounded-md border border-gray-300 bg-white touch-none', disabled && 'opacity-60')} onPointerDown={(e) => { if (disabled) return; drawingRef.current = true; e.currentTarget.setPointerCapture(e.pointerId); const ctx = e.currentTarget.getContext('2d'); const p = pos(e); if (ctx) { ctx.beginPath(); ctx.strokeStyle = strokeStyle; ctx.lineWidth = lineWidth; ctx.lineCap = 'round'; ctx.moveTo(p.x, p.y); } }} onPointerMove={draw} onPointerUp={(e) => { drawingRef.current = false; e.currentTarget.releasePointerCapture(e.pointerId); updateValue(); }} /><input ref={inputRef} type="hidden" name={name} />{showClear && <button type="button" className="w-fit rounded border px-3 py-1 text-sm disabled:opacity-50" disabled={disabled} onClick={clear}>{clearLabel}</button>}</div>;
+});
+SignaturePad.displayName = 'SignaturePad';
