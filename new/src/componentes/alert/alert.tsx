@@ -13,10 +13,10 @@ import type { AlertVariant, IAlertProps } from "./propTypes.alert";
 const variants = {
  info: {
   container:
-   "bg-sky-50 border-sky-200 text-sky-800",
-  icon: "text-sky-500",
+   "bg-primary/10 border-primary/20 text-foreground",
+  icon: "text-primary",
   close:
-   "hover:bg-sky-100 focus-visible:ring-sky-500/30",
+   "hover:bg-primary/15 focus-visible:ring-ring/30",
   DefaultIcon: Info,
  },
 
@@ -40,19 +40,19 @@ const variants = {
 
  error: {
   container:
-   "bg-rose-50 border-rose-200 text-rose-800",
-  icon: "text-rose-500",
+   "bg-destructive/10 border-destructive/20 text-destructive",
+  icon: "text-destructive",
   close:
-   "hover:bg-rose-100 focus-visible:ring-rose-500/30",
+   "hover:bg-destructive/15 focus-visible:ring-destructive/30",
   DefaultIcon: AlertCircle,
  },
 
  neutral: {
   container:
-   "bg-slate-50 border-slate-200 text-slate-700",
-  icon: "text-slate-500",
+   "bg-muted border-border text-foreground",
+  icon: "text-muted-foreground",
   close:
-   "hover:bg-slate-100 focus-visible:ring-slate-500/30",
+   "hover:bg-accent focus-visible:ring-ring/30",
   DefaultIcon: Info,
  },
 } satisfies Record<
@@ -112,7 +112,7 @@ const Alert = React.memo(
      role={roleByVariant[variant]}
      aria-live={liveByVariant[variant]}
      className={cn(
-      "flex w-full items-start gap-3 rounded-xl border border-l-4 p-4 shadow-sm",
+      "flex w-full items-start gap-3 rounded-lg border border-l-4 p-4 shadow-sm",
       "animate-in fade-in slide-in-from-top-2 duration-300",
       style.container,
       className,
@@ -146,7 +146,7 @@ const Alert = React.memo(
        aria-label={closeLabel}
        className={cn(
         "-mr-1 -mt-1 inline-flex shrink-0 items-center justify-center rounded-md p-1.5 transition-colors",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-white",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
         style.icon,
         style.close,
        )}

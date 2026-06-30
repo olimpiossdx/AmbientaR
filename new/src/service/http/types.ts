@@ -55,6 +55,7 @@ export interface ApiResponse<TData = void> {
     attempts: number;
     retried: boolean;
   };
+  metadata?: Record<string, unknown>;
   raw?: unknown;
 }
 
@@ -72,6 +73,7 @@ export interface ApiEnvelope<TData = unknown> {
   notifications?: ApiNotification[];
   notificacoes?: LegacyApiNotification[];
   total?: number;
+  metadata?: Record<string, unknown>;
   [key: string]: unknown;
 }
 
@@ -124,6 +126,8 @@ export interface ApiRequestConfig<TBody = unknown>
   baseURL?: string;
   url?: string;
   method?: HttpMethod;
+  skipAuthRefresh?: boolean;
+  authRetry?: boolean;
   headers?: HeadersInit;
   params?: ApiRequestParams;
   body?: TBody;
@@ -147,8 +151,22 @@ export type RequestInterceptor = (
   config: ResolvedApiRequestConfig,
 ) => Promise<ResolvedApiRequestConfig> | ResolvedApiRequestConfig;
 
+export interface ResponseInterceptorContext<TData = void, TBody = unknown> {
+  client: {
+    request: <TResponse = void, TRequestBody = unknown>(
+      endpoint: string,
+      config?: ApiRequestConfig<TRequestBody>,
+    ) => Promise<ApiResponse<TResponse>>;
+  };
+  endpoint: string;
+  url: string;
+  config: ResolvedApiRequestConfig<TBody>;
+  retryOriginal: <TResponse = TData>() => Promise<ApiResponse<TResponse>>;
+}
+
 export type ResponseInterceptor = <TData = void>(
   response: ApiResponse<TData>,
+  context: ResponseInterceptorContext<TData>,
 ) => Promise<ApiResponse<TData>> | ApiResponse<TData>;
 
 // Aliases temporarios para facilitar migracao do contrato antigo.

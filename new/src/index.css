@@ -53,6 +53,8 @@
 
   --animate-page-load-progress: page-load-progress 1.5s ease-in-out infinite;
   --animate-page-fade-in: page-fade-in 0.5s ease-out forwards;
+  --animate-fade-in-up: fade-in-up 0.5s ease-out forwards;
+  --animate-shake: shake 0.3s ease-in-out;
 }
 
 @layer base {
@@ -192,7 +194,142 @@
   }
 }
 
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+
+  20%,
+  60% {
+    transform: translateX(-4px);
+  }
+
+  40%,
+  80% {
+    transform: translateX(4px);
+  }
+}
+
+@keyframes ds-enter {
+  from {
+    opacity: var(--ds-enter-opacity, 1);
+    transform:
+      translate3d(
+        var(--ds-enter-translate-x, 0),
+        var(--ds-enter-translate-y, 0),
+        0
+      )
+      scale(var(--ds-enter-scale, 1));
+  }
+
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes ds-exit {
+  from {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+
+  to {
+    opacity: var(--ds-exit-opacity, 1);
+    transform:
+      translate3d(
+        var(--ds-exit-translate-x, 0),
+        var(--ds-exit-translate-y, 0),
+        0
+      )
+      scale(var(--ds-exit-scale, 1));
+  }
+}
+
 @layer utilities {
+  .animate-fade-in-up {
+    animation: var(--animate-fade-in-up);
+  }
+
+  .animate-shake {
+    animation: var(--animate-shake);
+  }
+
+  .animate-in {
+    animation-name: ds-enter;
+    animation-duration: 150ms;
+    animation-fill-mode: both;
+    animation-timing-function: ease-out;
+  }
+
+  .animate-out {
+    animation-name: ds-exit;
+    animation-duration: 150ms;
+    animation-fill-mode: both;
+    animation-timing-function: ease-in;
+  }
+
+  .fade-in {
+    --ds-enter-opacity: 0;
+  }
+
+  .fade-out {
+    --ds-exit-opacity: 0;
+  }
+
+  .zoom-in-95 {
+    --ds-enter-scale: 0.95;
+  }
+
+  .zoom-out-95 {
+    --ds-exit-scale: 0.95;
+  }
+
+  .slide-in-from-top-2 {
+    --ds-enter-translate-y: -0.5rem;
+  }
+
+  .slide-in-from-bottom-2 {
+    --ds-enter-translate-y: 0.5rem;
+  }
+
+  .slide-in-from-left-2 {
+    --ds-enter-translate-x: -0.5rem;
+  }
+
+  .slide-in-from-right-2 {
+    --ds-enter-translate-x: 0.5rem;
+  }
+
+  .slide-out-to-top-2 {
+    --ds-exit-translate-y: -0.5rem;
+  }
+
+  .slide-out-to-bottom-2 {
+    --ds-exit-translate-y: 0.5rem;
+  }
+
+  .slide-out-to-left-2 {
+    --ds-exit-translate-x: -0.5rem;
+  }
+
+  .slide-out-to-right-2 {
+    --ds-exit-translate-x: 0.5rem;
+  }
+
   [data-sidebar="content"] {
     scrollbar-width: thin;
     scrollbar-color: hsl(var(--sidebar-foreground) / 0.18) transparent;

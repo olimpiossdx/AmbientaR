@@ -156,8 +156,8 @@ const Input = React.forwardRef<IInputApi, IInputProps>(
 
     if (isCheckOrRadio) {
       const checkOrRadioClassName = type === "checkbox"
-        ? "h-4 w-4 shrink-0 cursor-pointer rounded border-slate-300 text-sky-600 accent-sky-600 focus:outline-none focus:ring-2 focus:ring-sky-100 focus:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-600 dark:bg-slate-800"
-        : "h-4 w-4 shrink-0 cursor-pointer border-slate-300 text-sky-600 accent-sky-600 focus:outline-none focus:ring-2 focus:ring-sky-100 focus:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-600 dark:bg-slate-800";
+        ? "h-4 w-4 shrink-0 cursor-pointer rounded border-input text-primary accent-primary focus:outline-none focus:ring-2 focus:ring-ring/30 focus:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-60"
+        : "h-4 w-4 shrink-0 cursor-pointer border-input text-primary accent-primary focus:outline-none focus:ring-2 focus:ring-ring/30 focus:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-60";
 
       const checkOrRadioInput = (
         <input
@@ -183,8 +183,8 @@ const Input = React.forwardRef<IInputApi, IInputProps>(
           <div className="flex items-start gap-2">
             {checkOrRadioInput}
             {label && (
-              <label htmlFor={inputId} className="cursor-pointer text-sm font-medium leading-4 text-gray-700 dark:text-gray-300">
-                {label} {props.required && <span className="text-red-500">*</span>}
+              <label htmlFor={inputId} className="cursor-pointer text-sm font-medium leading-4 text-foreground">
+                {label} {props.required && <span className="text-destructive">*</span>}
               </label>
             )}
           </div>
@@ -240,15 +240,15 @@ const Input = React.forwardRef<IInputApi, IInputProps>(
       {label && !floatingLabel && (
         <label
           htmlFor={inputId}
-          className="text-sm font-medium text-gray-700 dark:text-gray-300"
+          className="text-sm font-medium text-foreground"
         >
-          {label} {props.required && <span className="text-red-500">*</span>}
+          {label} {props.required && <span className="text-destructive">*</span>}
         </label>
       )}
 
       <div className="relative flex items-center group">
         {hasLeftContent && (
-          <span className="absolute left-3 top-1/2 z-10 flex -translate-y-1/2 items-center justify-center text-gray-500 pointer-events-none dark:text-gray-400">
+          <span className="absolute left-3 top-1/2 z-10 flex -translate-y-1/2 items-center justify-center text-muted-foreground pointer-events-none">
             {leftIcon}
           </span>
         )}
@@ -276,25 +276,25 @@ const Input = React.forwardRef<IInputApi, IInputProps>(
             htmlFor={inputId}
             className={cn(
               "absolute z-10 origin-left transition-all duration-200 pointer-events-none",
-              "text-gray-500 top-1/2 -translate-y-1/2 scale-100 dark:text-gray-400",
+              "text-muted-foreground top-1/2 -translate-y-1/2 scale-100",
               hasLeftContent ? (shouldOffsetFloatingLabel ? "left-12" : "left-10") : "left-3",
               FLOATING_LABEL_ACTIVE_STYLES[variant],
-              "peer-focus:text-blue-600 dark:peer-focus:text-blue-400",
-              "peer-data-invalid:text-red-500 peer-data-[invalid=true]:text-red-500 peer-data-[validation-status=error]:text-red-500",
+              "peer-focus:text-primary",
+              "peer-data-invalid:text-destructive peer-data-[invalid=true]:text-destructive peer-data-[validation-status=error]:text-destructive",
             )}
           >
-            {label} {props.required && <span className="text-red-500">*</span>}
+            {label} {props.required && <span className="text-destructive">*</span>}
           </label>
         )}
 
         {hasRightContent && (
-          <div className="absolute right-3 z-10 flex items-center gap-2 text-gray-400 dark:text-gray-500">
+          <div className="absolute right-3 z-10 flex items-center gap-2 text-muted-foreground">
             {rightIcon}
             {shouldShowPasswordToggle && (
               <button
                 type="button"
                 onClick={handlePasswordToggle}
-                className="p-1 transition-colors rounded-full focus:outline-none hover:text-gray-600 hover:bg-gray-200/50 dark:hover:text-gray-300 dark:hover:bg-gray-700/70"
+                className="p-1 transition-colors rounded-full focus:outline-none hover:text-foreground hover:bg-accent"
                 aria-label={isPasswordVisible ? hidePasswordLabel : showPasswordLabel}
                 aria-pressed={isPasswordVisible}
               >

@@ -6,25 +6,25 @@ import { createInstanceId } from "../../utils/object";
 
 const variants = {
  primary:
-  "bg-sky-600 !text-white hover:bg-sky-700 shadow-sm border border-transparent",
+  "bg-primary !text-primary-foreground hover:bg-primary/90 shadow-sm border border-transparent",
 
  "primary-soft":
-  "bg-sky-50 !text-sky-700 hover:bg-sky-100 hover:!text-sky-800 shadow-sm border border-sky-100",
+  "bg-primary/10 !text-primary hover:bg-primary/15 hover:!text-primary shadow-sm border border-primary/15",
 
  secondary:
-  "bg-slate-100 text-slate-700 hover:bg-slate-200 hover:text-slate-900 border border-transparent",
+  "bg-secondary text-secondary-foreground hover:bg-secondary/80 border border-transparent",
 
  outline:
-  "border border-slate-300 bg-white hover:bg-slate-50 text-slate-700",
+  "border border-input bg-background hover:bg-accent hover:text-accent-foreground text-foreground",
 
  ghost:
-  "hover:bg-slate-100 hover:text-slate-900 text-slate-600",
+  "hover:bg-accent hover:text-accent-foreground text-muted-foreground",
 
  destructive:
-  "bg-rose-600 !text-white hover:bg-rose-700 shadow-sm border border-transparent",
+  "bg-destructive !text-destructive-foreground hover:bg-destructive/90 shadow-sm border border-transparent",
 
  link:
-  "text-sky-700 underline-offset-4 hover:underline shadow-none border-transparent h-auto px-0",
+  "text-primary underline-offset-4 hover:underline shadow-none border-transparent h-auto px-0",
 } satisfies Record<NonNullable<IButtonProps["variant"]>, string>;
 
 const sizes = {
@@ -179,10 +179,10 @@ const Button = React.forwardRef<HTMLButtonElement, IButtonProps>(({
    : "cursor-not-allowed opacity-50"
   : "cursor-pointer opacity-100 hover:-translate-y-px";
 
- const finalClassName = cn("inline-flex items-center justify-center rounded-xl font-medium gap-2",
+ const finalClassName = cn("inline-flex items-center justify-center rounded-md font-medium gap-2",
   "transition-all duration-200 ease-out",
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
-  "focus-visible:ring-sky-500/30 focus-visible:ring-offset-white",
+  "focus-visible:ring-ring/30 focus-visible:ring-offset-background",
   "select-none",
   stateStyles,
   variants[variant],

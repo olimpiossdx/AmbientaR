@@ -1,6 +1,8 @@
 import { Suspense } from "react";
 import { PublicAuthLayout } from "./public-auth-layout";
 import { LoginForm } from "./login-form";
+export { ForgotPasswordView } from "./forgot-password-view";
+export { RegisterView } from "./register-view";
 
 function LoginPageContent() {
   return (

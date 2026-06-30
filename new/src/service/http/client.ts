@@ -1,16 +1,7 @@
 // src/service/http/client.ts
 import { smartAdapter } from "./adapters";
-import type {
-  ApiRequestConfig,
-  ApiResponse,
-  ApiRetryConfig,
-  ApiSerializationConfig,
-  HttpClientConfig,
-  HttpMethod,
-  RequestInterceptor,
-  ResolvedApiRequestConfig,
-  ResponseInterceptor,
-} from "./types";
+import type { ApiRequestConfig, ApiResponse, ApiRetryConfig, ApiSerializationConfig, 
+  HttpClientConfig, HttpMethod, RequestInterceptor,  ResolvedApiRequestConfig, ResponseInterceptor } from "./types";
 
 const DEFAULT_RETRY: Required<ApiRetryConfig> = {
   attempts: 0,
@@ -77,10 +68,7 @@ function mergeHeaders(defaultHeaders: Headers, requestHeaders?: HeadersInit): He
   return headers;
 }
 
-function mergeRetry(
-  globalRetry: ApiRetryConfig | false | undefined,
-  requestRetry: ApiRetryConfig | false | undefined,
-): ApiRetryConfig | false {
+function mergeRetry(globalRetry: ApiRetryConfig | false | undefined,requestRetry: ApiRetryConfig | false | undefined): ApiRetryConfig | false {
   if (requestRetry === false) {
     return false;
   }
@@ -96,10 +84,7 @@ function mergeRetry(
   };
 }
 
-function mergeSerialization(
-  globalSerialization: ApiSerializationConfig | undefined,
-  requestSerialization: ApiSerializationConfig | undefined,
-): Required<ApiSerializationConfig> {
+function mergeSerialization(globalSerialization: ApiSerializationConfig | undefined,requestSerialization: ApiSerializationConfig | undefined): Required<ApiSerializationConfig> {
   return {
     ...DEFAULT_SERIALIZATION,
     ...(globalSerialization ?? {}),
@@ -121,11 +106,7 @@ function hasHeader(headers: Headers, name: string): boolean {
   return headers.has(name);
 }
 
-function serializeBody(
-  body: unknown,
-  headers: Headers,
-  serialization: Required<ApiSerializationConfig>,
-): BodyInit | undefined {
+function serializeBody(body: unknown,headers: Headers,serialization: Required<ApiSerializationConfig>): BodyInit | undefined {
   if (body === undefined || body === null) {
     return undefined;
   }
@@ -321,10 +302,7 @@ export class HttpClient {
     });
   }
 
-  private resolveConfig<TBody>(
-    endpoint: string,
-    config: ApiRequestConfig<TBody>,
-  ): { url: string; requestConfig: ResolvedApiRequestConfig<TBody> } {
+  private resolveConfig<TBody>(endpoint: string, config: ApiRequestConfig<TBody>): { url: string; requestConfig: ResolvedApiRequestConfig<TBody> } {
     const method = config.method ?? "GET";
     const url = this.buildUrl(endpoint, config);
     const headers = mergeHeaders(this.defaultHeaders, config.headers);
@@ -358,20 +336,22 @@ export class HttpClient {
     return { url, requestConfig };
   }
 
-  async request<TResponse = void, TBody = unknown>(
-    endpoint: string,
-    config: ApiRequestConfig<TBody> = {},
-  ): Promise<ApiResponse<TResponse>> {
-    const initial = this.resolveConfig(endpoint, config);
-    let finalConfig: ResolvedApiRequestConfig = initial.requestConfig;
-    let url = initial.url;
+  private cloneResolvedConfigForRetry<TBody>(
+    config: ResolvedApiRequestConfig<TBody>,
+  ): ResolvedApiRequestConfig<TBody> {
+    return {
+      ...config,
+      headers: new Headers(config.headers),
+      authRetry: true,
+      serialization: {
+        ...config.serialization,
+        autoDetectBody: false,
+      },
+      retry: false,
+    };
+  }
 
-    for (const interceptor of this.requestInterceptors) {
-      finalConfig = await interceptor(finalConfig);
-    }
-
-    url = finalConfig.url ?? url;
-
+  private async executeResolvedRequest<TResponse = void, TBody = unknown>(endpoint: string, url: string, finalConfig: ResolvedApiRequestConfig<TBody>): Promise<ApiResponse<TResponse>> {
     const retry = finalConfig.retry;
     const attempts = retry === false ? 1 : (retry.attempts ?? 0) + 1;
     const canRetryUnsafe = retry !== false && Boolean(retry.retryUnsafeMethods);
@@ -425,63 +405,64 @@ export class HttpClient {
       }
     }
 
-    let finalResponse = response ?? createNetworkErrorResponse<TResponse>(
-      url,
-      finalConfig.method,
-      new Error("Falha desconhecida."),
-      attempts,
-    );
+    let finalResponse = response ?? createNetworkErrorResponse<TResponse>(url,finalConfig.method,
+      new Error("Falha desconhecida."), attempts);
 
     for (const interceptor of this.responseInterceptors) {
-      finalResponse = await interceptor(finalResponse);
+      finalResponse = await interceptor(finalResponse, {
+        client: this,
+        endpoint,
+        url,
+        config: finalConfig,
+        retryOriginal: <TRetryResponse = TResponse>() => {
+          const retryConfig = this.cloneResolvedConfigForRetry(finalConfig);
+          return this.executeResolvedRequest<TRetryResponse, TBody>(
+            endpoint,
+            url,
+            retryConfig,
+          );
+        },
+      });
     }
 
     return finalResponse;
   }
 
-  get<TResponse = void>(
-    url: string,
-    config?: Omit<ApiRequestConfig, "method" | "body">,
-  ): Promise<ApiResponse<TResponse>> {
+  async request<TResponse = void, TBody = unknown>(endpoint: string, config: ApiRequestConfig<TBody> = {}): Promise<ApiResponse<TResponse>> {
+    const initial = this.resolveConfig(endpoint, config);
+    let finalConfig: ResolvedApiRequestConfig = initial.requestConfig;
+    let url = initial.url;
+
+    for (const interceptor of this.requestInterceptors) {
+      finalConfig = await interceptor(finalConfig);
+    }
+
+    url = finalConfig.url ?? url;
+
+    return this.executeResolvedRequest<TResponse>(endpoint, url, finalConfig);
+  }
+
+  get<TResponse = void>( url: string, config?: Omit<ApiRequestConfig, "method" | "body">): Promise<ApiResponse<TResponse>> {
     return this.request<TResponse>(url, { ...config, method: "GET" });
   }
 
-  post<TResponse = void, TBody = unknown>(
-    url: string,
-    body?: TBody,
-    config?: Omit<ApiRequestConfig<TBody>, "method" | "body">,
-  ): Promise<ApiResponse<TResponse>> {
+  post<TResponse = void, TBody = unknown>(url: string, body?: TBody,config?: Omit<ApiRequestConfig<TBody>, "method" | "body">): Promise<ApiResponse<TResponse>> {
     return this.request<TResponse, TBody>(url, { ...config, method: "POST", body });
   }
 
-  put<TResponse = void, TBody = unknown>(
-    url: string,
-    body?: TBody,
-    config?: Omit<ApiRequestConfig<TBody>, "method" | "body">,
-  ): Promise<ApiResponse<TResponse>> {
+  put<TResponse = void, TBody = unknown>(url: string,body?: TBody,config?: Omit<ApiRequestConfig<TBody>, "method" | "body">): Promise<ApiResponse<TResponse>> {
     return this.request<TResponse, TBody>(url, { ...config, method: "PUT", body });
   }
 
-  patch<TResponse = void, TBody = unknown>(
-    url: string,
-    body?: TBody,
-    config?: Omit<ApiRequestConfig<TBody>, "method" | "body">,
-  ): Promise<ApiResponse<TResponse>> {
+  patch<TResponse = void, TBody = unknown>(url: string,body?: TBody,config?: Omit<ApiRequestConfig<TBody>, "method" | "body">): Promise<ApiResponse<TResponse>> {
     return this.request<TResponse, TBody>(url, { ...config, method: "PATCH", body });
   }
 
-  delete<TResponse = void>(
-    url: string,
-    config?: Omit<ApiRequestConfig, "method" | "body">,
-  ): Promise<ApiResponse<TResponse>> {
+  delete<TResponse = void>(url: string,config?: Omit<ApiRequestConfig, "method" | "body">): Promise<ApiResponse<TResponse>> {
     return this.request<TResponse>(url, { ...config, method: "DELETE" });
   }
 
-  deleteWithBody<TResponse = void, TBody = unknown>(
-    url: string,
-    body: TBody,
-    config?: Omit<ApiRequestConfig<TBody>, "method" | "body">,
-  ): Promise<ApiResponse<TResponse>> {
+  deleteWithBody<TResponse = void, TBody = unknown>(url: string,body: TBody,config?: Omit<ApiRequestConfig<TBody>, "method" | "body">): Promise<ApiResponse<TResponse>> {
     return this.request<TResponse, TBody>(url, { ...config, method: "DELETE", body });
   }
 }

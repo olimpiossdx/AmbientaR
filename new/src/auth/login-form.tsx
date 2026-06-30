@@ -1,3 +1,4 @@
+import { useNavigate } from "@tanstack/react-router";
 import {
   Button,
   Card,
@@ -7,8 +8,9 @@ import {
   CardTitle,
   Form,
   Input,
-  toast,
 } from "../componentes";
+import { isValidLoginIdentifier } from "./auth-validation";
+import { useAuthActions } from "./auth-provider";
 
 // const formSchema = z.object({
 //   identifier: z
@@ -25,29 +27,55 @@ import {
 // });
 
 // type FormValues = z.infer<typeof formSchema>;
+function getRedirect(): string {
+ const params = new URLSearchParams(window.location.search);
+ return params.get("redirect") || "/app";
+}
 
-interface IFormLogin {}
+
+interface LoginFormModel {
+  username: string;
+  password: string;
+}
+
 export function LoginForm() {
-  async function onSubmit(values: IFormLogin) {
-    console.log("values", values);
-    toast.success("Bem-vindo de volta!");
+  const actions = useAuthActions();
+  const navigate = useNavigate();
+  async function onSubmit(model: LoginFormModel) {
+    const session = await actions.login({
+      username: model.username.trim(),
+      password: model.password.trim(),
+    });
 
-    // setLoading(true);`
-    // const success = await login(values.identifier, values.password);
-    // if (success) {
-    //   toast({
-    //     title: 'Login bem-sucedido!',
-    //     description: 'Bem-vindo de volta!',
-    //   });
-    // }
-    // setLoading(false);
+    if (!session) {
+      return {
+        ok: false,
+        status: "error" as const,
+        message: "Não foi possível entrar. Confira usuário e senha.",
+      };
+    }
+
+    await navigate({ to: getRedirect() as never, replace: true });
+
+    return {
+      ok: true,
+      status: "success" as const,
+      message: "Login realizado com sucesso.",
+      data: session,
+    };
   }
   const validation = {
     schema: {
-      identifier: {
+      username: {
         validate: (value: unknown) => ({
-          valid: /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(String(value ?? "")),
-          message: "Informe um e-mail válido.",
+          valid: isValidLoginIdentifier(value),
+          message: "Informe um e-mail, CPF ou CNPJ válido.",
+        }),
+      },
+      password: {
+        validate: (value: unknown) => ({
+          valid: String(value ?? "").trim().length >= 6,
+          message: "A senha deve ter no mínimo 6 caracteres.",
         }),
       },
     },
@@ -64,13 +92,21 @@ export function LoginForm() {
         </CardDescription>
       </CardHeader>
       <CardContent className="pt-0">
-        <Form validation={validation} onSubmit={onSubmit}>
+        <Form
+          validation={validation}
+          onSubmit={onSubmit}
+          className="flex flex-col gap-2"
+        >
           <Input
+            label="E-mail, CPF ou CNPJ"
+            name="username"
+            type="text"
             required
-            name="identifier"
-            type="email"
             autoComplete="username"
             placeholder="seu@email.com ou documento"
+            helperStatus="neutral"
+            helperText="A recuperação de senha continua disponível apenas pelo e-mail cadastrado."
+            className="w-full"
           />
           <Input
             required
@@ -79,6 +115,7 @@ export function LoginForm() {
             type="password"
             autoComplete="current-password"
             placeholder="••••••••"
+            className="w-full"
           />
           <Button type="submit" className="w-full">
             Entrar

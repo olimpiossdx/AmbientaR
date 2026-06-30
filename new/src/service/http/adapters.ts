@@ -151,6 +151,7 @@ export const standardAdapter: ResponseAdapter = <TData = void>(
     notifications: normalizeNotifications(payload),
     headers: response.headers,
     total: typeof payload.total === "number" ? payload.total : undefined,
+    metadata: isObject(payload.metadata) ? payload.metadata : undefined,
     request: {
       url: context.url,
       method: context.method,
