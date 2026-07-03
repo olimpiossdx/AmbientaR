@@ -1,0 +1,26 @@
+{
+  "id": "gold_catingueiro",
+  "propertyName": "Faz. Araras, Catingueiro, Desbarrancado e Barro Branco",
+  "ownerName": "Célio Fontana",
+  "municipality": "Unaí-MG",
+  "areaTotalHa": 2073.8318,
+  "scale": "1:17000",
+  "matriculas": ["37.674", "37.671", "37.672", "37.663", "37.665", "37.664", "37.673"],
+  "expected": {
+    "pivoCountMin": 6,
+    "appPolygonCountMin": 15,
+    "rlGlebaCountMin": 25,
+    "rlCompensadaFlags": true,
+    "confrontantesNamed": true
+  },
+  "visualChecklist": [
+    "multi_matricula",
+    "rl_compensada",
+    "confrontantes",
+    "silos_pista_pouso",
+    "legenda_reservas_legais",
+    "grade_utm",
+    "carimbo_crea"
+  ],
+  "notes": "Mapa ouro principal para regressão v4; máxima complexidade do conjunto Célio Fontana."
+}

@@ -1,0 +1,20 @@
+Fluxo de pastas — AmbientaR (Windows)
+
+1) D:\A
+   - Workspace oficial para alterações que vão para GitHub → Cloud Run / produção.
+   - Commit e push apenas a partir desta pasta.
+
+2) D:\Ambientar-testes
+   - Segundo clone do mesmo repositório GitHub, só para testes locais (npm run dev, uploads em public/, etc.).
+   - Não confundir com D:\ambientar em minúsculas: no Windows, "D:\ambientar" e "D:\AmbientaR" são a MESMA pasta
+     (sistema de ficheiros sem distinção de maiúsculas). Por isso a cópia de testes usa o nome "Ambientar-testes".
+
+3) Scripts (executar no PowerShell)
+   - sync-d-a-to-copia-teste.ps1  → copia ficheiros de D:\A para D:\Ambientar-testes (exclui .git, node_modules, .next, .env.local).
+   - atualizar-copia-teste-git.ps1 → na cópia de testes: git pull origin main (depois de push feito em D:\A).
+
+Ordem típica após trabalho em D:\A:
+  git add / commit / push em D:\A
+  .\scripts\atualizar-copia-teste-git.ps1
+  ou, se quiser levar alterações AINDA NÃO commitadas para testar na cópia:
+  .\scripts\sync-d-a-to-copia-teste.ps1

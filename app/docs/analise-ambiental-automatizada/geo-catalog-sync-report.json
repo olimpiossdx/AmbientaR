@@ -1,0 +1,207 @@
+{
+  "generatedAtUtc": "2026-06-11T13:45:27.078Z",
+  "catalogLayerCount": 34,
+  "catalogTypeNameCount": 43,
+  "discoveredByKeyword": [
+    {
+      "keyword": "zee",
+      "records": [
+        {
+          "uuid": "00d68996-9ee2-40d9-ac5e-734fe564e007",
+          "title": "ZEE-MG - Taxa de decomposição da matéria orgânica do solo",
+          "abstract": "Mapa da taxa de composição da matéria orgânica dos solos no Estado de Minas Gerais, elaborado a partir da reinterpretação dos mapas de matéria orgânica do solo, regime hídrico do solo, textura do solo, pedológico simplificado e hidrografia. O recurso integra o componente físico do Zoneamento Ecológico-Econômico de Minas Gerais, elaborado pela Universidade Federal de Lavras (UFLA), em convênio com o Sisema, entre 2005 e 2008."
+        },
+        {
+          "uuid": "e831db72-75b6-44cc-b547-34db7cc4b87d",
+          "title": "ZEE-MG - Potencialidade do componente produtivo",
+          "abstract": "Mapa da potencialidade do componente produtivo, resultado do cruzamento dos indicadores componentes da infraestrutura de transportes e atividades produtivas. Compõe o Componente Produtivo da Potencialidade Social do Zoneamento Ecológico-Econômico de Minas Gerais, elaborado pela Universidade Federal de Lavras (UFLA), em convênio com o Sisema, entre 2005 e 2008."
+        },
+        {
+          "uuid": "0c00c5c5-cd3c-487d-99ba-683d522a0653",
+          "title": "ZEE-MG - Recursos minerais",
+          "abstract": "Mapa de estrutura fundiária, resultado da normalização do indicador \"Compensação Financeira pela Exploração de Recursos Minerais (CFEM)\". Compõe o Componente natural da Potencialidade Social do Zoneamento Ecológico-Econômico de Minas Gerais, elaborado pela Universidade Federal de Lavras (UFLA), em convênio com o Sisema, entre 2005 e 2008."
+        },
+        {
+          "uuid": "d79788a1-6f42-4615-8b38-6959d53d5a89",
+          "title": "ZEE-MG - Ocupação econômica",
+          "abstract": "Mapa de Ocupação econômica, resultado do cruzamento dos indicadores \"Taxa de ocupação\", \"Taxa de desocupação invertida\" e \"Empregos formais\". Integra a Componente Humano da Potencialidade Social do Zoneamento Ecológico-Econômico de Minas Gerais, elaborado pela Universidade Federal de Lavras (UFLA), em convênio com o Sisema, entre 2005 e 2008."
+        },
+        {
+          "uuid": "a09e61d4-57b8-44d1-b775-f961252b9aa6",
+          "title": "ZEE-MG - Organizações financeiras",
+          "abstract": "Mapa de organizações financeiras, do indicador homônimo, que avalia a presença de instituições bancárias, de crédito e fiscais, por município. Integra o Componente Institucional da Potencialidade Social do Zoneamento Ecológico-Econômico de Minas Gerais, elaborado pela Universidade Federal de Lavras (UFLA), em convênio com o Sisema, entre 2005 e 2008."
+        },
+        {
+          "uuid": "63d5bd7a-648a-445c-a0e7-9244c5210133",
+          "title": "ZEE-MG - Heterogeneidade de fitofisionomias",
+          "abstract": "Mapa do grau de heterogeneidade de fitofisionomias em Minas Gerais, elaborado a partir da distribuição de fitofisionomias ao longo da área estatística padrão do ZEE-MG (270 x 270m). O recurso integra o componente físico do Zoneamento Ecológico-Econômico de Minas Gerais, elaborado pela Universidade Federal de Lavras (UFLA), em convênio com o Sisema, entre 2005 e 2008."
+        },
+        {
+          "uuid": "df9710dc-d22c-4c2a-aca0-61ca55e27918",
+          "title": "ZEE-MG - Potencialidade do componente natural",
+          "abstract": "Mapa da potencialidade do Componente Natural, resultado do cruzamento dos componentes \"Índice de Utilização das Terras\", \"Estrutura Fundiária\", \"Recursos Minerais\" e \"ICMS Ecológico\". Compõe a Potencialidade Social do Zoneamento Ecológico-Econômico de Minas Gerais, elaborado pela Universidade Federal de Lavras (UFLA), em convênio com o Sisema, entre 2005 e 2008."
+        }
+      ]
+    },
+    {
+      "keyword": "outorga",
+      "records": [
+        {
+          "uuid": "094dcd92-45b6-4611-89cb-dc9cfbc91f30",
+          "title": "ZAP - Sub-bacia do Córrego Rico - Usuários de água superficial",
+          "abstract": "Usuários de água superficial de outorgas individuais e de cadastro insignificante da sub-bacia hidrográfica do Córrego Rico, consistidos a partir dos procedimentos mencionados na 3ª edição da metodologia do Zoneamento Ambiental Produtivo (ZAP). O mapeamento integra o ZAP da sub-bacia, elaborado em 2022"
+        },
+        {
+          "uuid": "16e8a90e-6149-4e74-bcee-4253ad523c31",
+          "title": "ZAP - ribeirão Santana - Outorgas",
+          "abstract": "Localização geográfica das outorgas da sub-bacia do ribeirão Santana, a partir do levantamento de usuários de água realizado por meio dos dados dos usuários de água fornecidos pelo Igam e Semad. O mapeamento integra o Zoneamento Ambiental Produtivo (ZAP) da região, elaborado pela Universidade Federal dos Vales do Jequitinhonha e Mucuri (UFVJM) em 2021."
+        },
+        {
+          "uuid": "48ca9402-d69f-44aa-a294-d504cdf9bb26",
+          "title": "ZAP - Ribeirão das Almas - Usuários de água",
+          "abstract": "Mapeamento dos usuários de água da sub-bacia hidrográfica do Ribeirão das Almas, com base em dados de outorgas coletivas, individuais e cadastros de uso insignificantes vigentes, informados pela Semad. O mapeamento integra o Zoneamento Ambiental Produtivo (ZAP) da região, elaborado pelo Instituto Antônio Ernesto de Salvo (INAES) em 2018"
+        },
+        {
+          "uuid": "a984f695-588a-4879-afcb-630fb9f4a9bb",
+          "title": "ZAP - rio Uberabinha - Outorgas",
+          "abstract": "Localização geográfica das outorgas da sub-bacia do rio Uberabinha, a partir do levantamento de usuários de água formalizado junto a Semad. O mapeamento integra o Zoneamento Ambiental Produtivo (ZAP) da região, elaborado Associação para a Gestão Socioambiental do Triângulo Mineiro (ANGÁ) em 2018"
+        },
+        {
+          "uuid": "04e794e8-aaef-495f-a914-9b1f6048ba23",
+          "title": "ZAP - Sub-bacia do Córrego Rico - Usuários de água subterrânea",
+          "abstract": "Usuários de água subterrânea de outorgas individuais e de cadastro insignificante da sub-bacia hidrográfica do Córrego Rico, consistidos a partir dos procedimentos mencionados na 3ª edição da metodologia do Zoneamento Ambiental Produtivo (ZAP). O mapeamento integra o ZAP da sub-bacia, elaborado em 2022"
+        },
+        {
+          "uuid": "322dfb0e-374f-4fd2-9482-4be1b6b58f05",
+          "title": "PMSH - Áreas prioritárias - 4. Águas Subterrâneas (eixo 2)",
+          "abstract": "Camada temática que representa as áreas prioritárias relacionadas à garantia de suprimento por fontes subterrâneas, no âmbito do Eixo 2 – Produção Sustentável e Uso Racional dos Recursos Hídricos, do Plano Mineiro de Segurança Hídrica (PMSH). \r\n\r\nA priorização foi realizada por meio de análise espacial multicritério aplicada às Unidades Agregadas derivadas da Base Hidrográfica Ottocodificada, tendo como critério principal a criticidade hídrica subterrânea, que considera conjuntamente o balanço hídrico subterrâneo (com base nas outorgas e usos insignificantes) e a existência de Áreas de Restrição e Controle (ARC). \r\n\r\nA classificação inicial das unidades agregadas foi definida a partir do grau de comprometimento hídrico subterrâneo, com atribuição de pesos proporcionais aos níveis de criticidade e aplicação de fator adicional nas áreas com ARC. \r\n\r\nSobre essa base, foram aplicados critérios adicionais de refinamento, relacionados a: \r\n\r\n• demandas totais por águas subterrâneas \r\n• potencial de arrecadação pela cobrança pelo uso dos recursos hídricos \r\n\r\nAs unidades agregadas foram classificadas em níveis de prioridade a partir da aplicação sequencial desses critérios, resultando no mapeamento das áreas prioritárias para ações voltadas à segurança hídrica associada às águas subterrâneas. Os níveis variam de 1 (maior prioridade) a 10 (menor prioridade).\r\n\r\nA metodologia detalhada encontra-se descrita no Relatório de Mapeamento das Áreas Prioritárias (RF003), disponível no repositório institucional do IGAM:\r\n\r\n• Repositório geral do PMSH: \r\nhttp://repositorioigam.meioambiente.mg.gov.br/handle/123456789/5234 \r\n\r\n• Relatório de Mapeamento das Áreas Prioritárias (RF003): \r\nhttp://repositorioigam.meioambiente.mg.gov.br/handle/123456789/5229"
+        }
+      ]
+    },
+    {
+      "keyword": "hidrografia",
+      "records": [
+        {
+          "uuid": "00d68996-9ee2-40d9-ac5e-734fe564e007",
+          "title": "ZEE-MG - Taxa de decomposição da matéria orgânica do solo",
+          "abstract": "Mapa da taxa de composição da matéria orgânica dos solos no Estado de Minas Gerais, elaborado a partir da reinterpretação dos mapas de matéria orgânica do solo, regime hídrico do solo, textura do solo, pedológico simplificado e hidrografia. O recurso integra o componente físico do Zoneamento Ecológico-Econômico de Minas Gerais, elaborado pela Universidade Federal de Lavras (UFLA), em convênio com o Sisema, entre 2005 e 2008."
+        }
+      ]
+    },
+    {
+      "keyword": "bioma",
+      "records": [
+        {
+          "uuid": "d1373931-1a88-459c-a871-6c96b446be4a",
+          "title": "PSCRMG - Unidades de Planejamento no estado de Minas Gerais",
+          "abstract": "Camada que divide o território estadual em Unidades de Planejamento (~ 2300 ha) empregadas na seleção de Áreas Prioritárias para conservação, restauração e uso sustentável da biodiversidade e dos bens e serviços ecossistêmicos fornecidos por ela em Minas Gerais. Contém os principais dados de atributos ambientais e socioecômicos usados na priorização de áreas.\r\n\r\nElaborada no âmbito do projeto Áreas Prioritárias: Estraté-gias para Conservação da Biodiversidade e dos Ecossiste-mas de Minas Gerais (Planejamento Sistemático da Con-servação e da Restauração da Biodiversidade e dos Serviços Ambientais dos Biomas Cerrado, Caatinga e Ma-ta Atlântica em Minas Gerais – PSCRMG), desenvolvido pelo IEF em parceria com Semad, Feam, Igam e consórcio formado por Universidade Federal de Minas Gerais, WWF-Brasil e Fundação Biodiversitas de 2018 a 2020."
+        },
+        {
+          "uuid": "bcb13ae5-5957-4990-bdbb-5f091e324522",
+          "title": "PSCRMG - Áreas Prioritárias para Estabelecimento de Rios Livres em Minas Gerais",
+          "abstract": "Camada de trechos de rios prioritários para a manutenção e incremento da conectividade de habitat para a ictiofauna de calha e orientação da criação de uma política de rios livres em Minas Gerais.\r\n\r\nElaborada no âmbito do projeto Áreas Prioritárias: Estratégias para Conservação da Biodiversidade e dos Ecossistemas de Minas Gerais (Planejamento Sistemático da Conservação e da Restauração da Biodiversidade e dos Serviços Ambientais dos Biomas Cerrado, Caatinga e Mata Atlântica em Minas Gerais – PSCRMG), desenvolvido pelo IEF em parceria com Semad, Feam, Igam e consórcio formado por Universidade Federal de Minas Gerais, WWF-Brasil e Fundação Biodiversitas de 2018 a 2020."
+        },
+        {
+          "uuid": "6c4d7471-0a1b-4633-8b2a-38b75d8543bf",
+          "title": "PSCRMG - Áreas prioritárias para pesquisa Aplicada à Conservação de Espécies Aquáticas Ameaçadas de extinção em Minas Gerais",
+          "abstract": "Camada de Áreas Prioritárias para Pesquisa Aplicada à Conservação de Espécies Aquáticas Ameaçadas em Minas Gerais.\r\n\r\nElaborada no âmbito do projeto Áreas Prioritárias: Estratégias para Conservação da Biodiversidade e dos Ecossistemas de Minas Gerais (Planejamento Sistemático da Conservação e da Restauração da Biodiversidade e dos Serviços Ambientais dos Biomas Cerrado, Caatinga e Mata Atlântica em Minas Gerais – PSCRMG), desenvolvido pelo IEF em parceria com Semad, Feam, Igam e consórcio formado por Universidade Federal de Minas Gerais, WWF-Brasil e Fundação Biodiversitas de 2018 a 2020."
+        }
+      ]
+    },
+    {
+      "keyword": "embargo",
+      "records": []
+    },
+    {
+      "keyword": "florestal",
+      "records": []
+    }
+  ],
+  "suggestionsReview": [
+    {
+      "uuid": "00d68996-9ee2-40d9-ac5e-734fe564e007",
+      "title": "ZEE-MG - Taxa de decomposição da matéria orgânica do solo",
+      "abstract": "Mapa da taxa de composição da matéria orgânica dos solos no Estado de Minas Gerais, elaborado a partir da reinterpretação dos mapas de matéria orgânica do solo, regime hídrico do solo, textura do solo, pedológico simplificado e hidrografia. O recurso integra o componente físico do Zoneamento Ecológico-Econômico de Minas Gerais, elaborado pela Universidade Federal de Lavras (UFLA), em convênio com o Sisema, entre 2005 e 2008."
+    },
+    {
+      "uuid": "e831db72-75b6-44cc-b547-34db7cc4b87d",
+      "title": "ZEE-MG - Potencialidade do componente produtivo",
+      "abstract": "Mapa da potencialidade do componente produtivo, resultado do cruzamento dos indicadores componentes da infraestrutura de transportes e atividades produtivas. Compõe o Componente Produtivo da Potencialidade Social do Zoneamento Ecológico-Econômico de Minas Gerais, elaborado pela Universidade Federal de Lavras (UFLA), em convênio com o Sisema, entre 2005 e 2008."
+    },
+    {
+      "uuid": "0c00c5c5-cd3c-487d-99ba-683d522a0653",
+      "title": "ZEE-MG - Recursos minerais",
+      "abstract": "Mapa de estrutura fundiária, resultado da normalização do indicador \"Compensação Financeira pela Exploração de Recursos Minerais (CFEM)\". Compõe o Componente natural da Potencialidade Social do Zoneamento Ecológico-Econômico de Minas Gerais, elaborado pela Universidade Federal de Lavras (UFLA), em convênio com o Sisema, entre 2005 e 2008."
+    },
+    {
+      "uuid": "d79788a1-6f42-4615-8b38-6959d53d5a89",
+      "title": "ZEE-MG - Ocupação econômica",
+      "abstract": "Mapa de Ocupação econômica, resultado do cruzamento dos indicadores \"Taxa de ocupação\", \"Taxa de desocupação invertida\" e \"Empregos formais\". Integra a Componente Humano da Potencialidade Social do Zoneamento Ecológico-Econômico de Minas Gerais, elaborado pela Universidade Federal de Lavras (UFLA), em convênio com o Sisema, entre 2005 e 2008."
+    },
+    {
+      "uuid": "a09e61d4-57b8-44d1-b775-f961252b9aa6",
+      "title": "ZEE-MG - Organizações financeiras",
+      "abstract": "Mapa de organizações financeiras, do indicador homônimo, que avalia a presença de instituições bancárias, de crédito e fiscais, por município. Integra o Componente Institucional da Potencialidade Social do Zoneamento Ecológico-Econômico de Minas Gerais, elaborado pela Universidade Federal de Lavras (UFLA), em convênio com o Sisema, entre 2005 e 2008."
+    },
+    {
+      "uuid": "63d5bd7a-648a-445c-a0e7-9244c5210133",
+      "title": "ZEE-MG - Heterogeneidade de fitofisionomias",
+      "abstract": "Mapa do grau de heterogeneidade de fitofisionomias em Minas Gerais, elaborado a partir da distribuição de fitofisionomias ao longo da área estatística padrão do ZEE-MG (270 x 270m). O recurso integra o componente físico do Zoneamento Ecológico-Econômico de Minas Gerais, elaborado pela Universidade Federal de Lavras (UFLA), em convênio com o Sisema, entre 2005 e 2008."
+    },
+    {
+      "uuid": "df9710dc-d22c-4c2a-aca0-61ca55e27918",
+      "title": "ZEE-MG - Potencialidade do componente natural",
+      "abstract": "Mapa da potencialidade do Componente Natural, resultado do cruzamento dos componentes \"Índice de Utilização das Terras\", \"Estrutura Fundiária\", \"Recursos Minerais\" e \"ICMS Ecológico\". Compõe a Potencialidade Social do Zoneamento Ecológico-Econômico de Minas Gerais, elaborado pela Universidade Federal de Lavras (UFLA), em convênio com o Sisema, entre 2005 e 2008."
+    },
+    {
+      "uuid": "094dcd92-45b6-4611-89cb-dc9cfbc91f30",
+      "title": "ZAP - Sub-bacia do Córrego Rico - Usuários de água superficial",
+      "abstract": "Usuários de água superficial de outorgas individuais e de cadastro insignificante da sub-bacia hidrográfica do Córrego Rico, consistidos a partir dos procedimentos mencionados na 3ª edição da metodologia do Zoneamento Ambiental Produtivo (ZAP). O mapeamento integra o ZAP da sub-bacia, elaborado em 2022"
+    },
+    {
+      "uuid": "16e8a90e-6149-4e74-bcee-4253ad523c31",
+      "title": "ZAP - ribeirão Santana - Outorgas",
+      "abstract": "Localização geográfica das outorgas da sub-bacia do ribeirão Santana, a partir do levantamento de usuários de água realizado por meio dos dados dos usuários de água fornecidos pelo Igam e Semad. O mapeamento integra o Zoneamento Ambiental Produtivo (ZAP) da região, elaborado pela Universidade Federal dos Vales do Jequitinhonha e Mucuri (UFVJM) em 2021."
+    },
+    {
+      "uuid": "48ca9402-d69f-44aa-a294-d504cdf9bb26",
+      "title": "ZAP - Ribeirão das Almas - Usuários de água",
+      "abstract": "Mapeamento dos usuários de água da sub-bacia hidrográfica do Ribeirão das Almas, com base em dados de outorgas coletivas, individuais e cadastros de uso insignificantes vigentes, informados pela Semad. O mapeamento integra o Zoneamento Ambiental Produtivo (ZAP) da região, elaborado pelo Instituto Antônio Ernesto de Salvo (INAES) em 2018"
+    },
+    {
+      "uuid": "a984f695-588a-4879-afcb-630fb9f4a9bb",
+      "title": "ZAP - rio Uberabinha - Outorgas",
+      "abstract": "Localização geográfica das outorgas da sub-bacia do rio Uberabinha, a partir do levantamento de usuários de água formalizado junto a Semad. O mapeamento integra o Zoneamento Ambiental Produtivo (ZAP) da região, elaborado Associação para a Gestão Socioambiental do Triângulo Mineiro (ANGÁ) em 2018"
+    },
+    {
+      "uuid": "04e794e8-aaef-495f-a914-9b1f6048ba23",
+      "title": "ZAP - Sub-bacia do Córrego Rico - Usuários de água subterrânea",
+      "abstract": "Usuários de água subterrânea de outorgas individuais e de cadastro insignificante da sub-bacia hidrográfica do Córrego Rico, consistidos a partir dos procedimentos mencionados na 3ª edição da metodologia do Zoneamento Ambiental Produtivo (ZAP). O mapeamento integra o ZAP da sub-bacia, elaborado em 2022"
+    },
+    {
+      "uuid": "322dfb0e-374f-4fd2-9482-4be1b6b58f05",
+      "title": "PMSH - Áreas prioritárias - 4. Águas Subterrâneas (eixo 2)",
+      "abstract": "Camada temática que representa as áreas prioritárias relacionadas à garantia de suprimento por fontes subterrâneas, no âmbito do Eixo 2 – Produção Sustentável e Uso Racional dos Recursos Hídricos, do Plano Mineiro de Segurança Hídrica (PMSH). \r\n\r\nA priorização foi realizada por meio de análise espacial multicritério aplicada às Unidades Agregadas derivadas da Base Hidrográfica Ottocodificada, tendo como critério principal a criticidade hídrica subterrânea, que considera conjuntamente o balanço hídrico subterrâneo (com base nas outorgas e usos insignificantes) e a existência de Áreas de Restrição e Controle (ARC). \r\n\r\nA classificação inicial das unidades agregadas foi definida a partir do grau de comprometimento hídrico subterrâneo, com atribuição de pesos proporcionais aos níveis de criticidade e aplicação de fator adicional nas áreas com ARC. \r\n\r\nSobre essa base, foram aplicados critérios adicionais de refinamento, relacionados a: \r\n\r\n• demandas totais por águas subterrâneas \r\n• potencial de arrecadação pela cobrança pelo uso dos recursos hídricos \r\n\r\nAs unidades agregadas foram classificadas em níveis de prioridade a partir da aplicação sequencial desses critérios, resultando no mapeamento das áreas prioritárias para ações voltadas à segurança hídrica associada às águas subterrâneas. Os níveis variam de 1 (maior prioridade) a 10 (menor prioridade).\r\n\r\nA metodologia detalhada encontra-se descrita no Relatório de Mapeamento das Áreas Prioritárias (RF003), disponível no repositório institucional do IGAM:\r\n\r\n• Repositório geral do PMSH: \r\nhttp://repositorioigam.meioambiente.mg.gov.br/handle/123456789/5234 \r\n\r\n• Relatório de Mapeamento das Áreas Prioritárias (RF003): \r\nhttp://repositorioigam.meioambiente.mg.gov.br/handle/123456789/5229"
+    },
+    {
+      "uuid": "00d68996-9ee2-40d9-ac5e-734fe564e007",
+      "title": "ZEE-MG - Taxa de decomposição da matéria orgânica do solo",
+      "abstract": "Mapa da taxa de composição da matéria orgânica dos solos no Estado de Minas Gerais, elaborado a partir da reinterpretação dos mapas de matéria orgânica do solo, regime hídrico do solo, textura do solo, pedológico simplificado e hidrografia. O recurso integra o componente físico do Zoneamento Ecológico-Econômico de Minas Gerais, elaborado pela Universidade Federal de Lavras (UFLA), em convênio com o Sisema, entre 2005 e 2008."
+    },
+    {
+      "uuid": "d1373931-1a88-459c-a871-6c96b446be4a",
+      "title": "PSCRMG - Unidades de Planejamento no estado de Minas Gerais",
+      "abstract": "Camada que divide o território estadual em Unidades de Planejamento (~ 2300 ha) empregadas na seleção de Áreas Prioritárias para conservação, restauração e uso sustentável da biodiversidade e dos bens e serviços ecossistêmicos fornecidos por ela em Minas Gerais. Contém os principais dados de atributos ambientais e socioecômicos usados na priorização de áreas.\r\n\r\nElaborada no âmbito do projeto Áreas Prioritárias: Estraté-gias para Conservação da Biodiversidade e dos Ecossiste-mas de Minas Gerais (Planejamento Sistemático da Con-servação e da Restauração da Biodiversidade e dos Serviços Ambientais dos Biomas Cerrado, Caatinga e Ma-ta Atlântica em Minas Gerais – PSCRMG), desenvolvido pelo IEF em parceria com Semad, Feam, Igam e consórcio formado por Universidade Federal de Minas Gerais, WWF-Brasil e Fundação Biodiversitas de 2018 a 2020."
+    },
+    {
+      "uuid": "bcb13ae5-5957-4990-bdbb-5f091e324522",
+      "title": "PSCRMG - Áreas Prioritárias para Estabelecimento de Rios Livres em Minas Gerais",
+      "abstract": "Camada de trechos de rios prioritários para a manutenção e incremento da conectividade de habitat para a ictiofauna de calha e orientação da criação de uma política de rios livres em Minas Gerais.\r\n\r\nElaborada no âmbito do projeto Áreas Prioritárias: Estratégias para Conservação da Biodiversidade e dos Ecossistemas de Minas Gerais (Planejamento Sistemático da Conservação e da Restauração da Biodiversidade e dos Serviços Ambientais dos Biomas Cerrado, Caatinga e Mata Atlântica em Minas Gerais – PSCRMG), desenvolvido pelo IEF em parceria com Semad, Feam, Igam e consórcio formado por Universidade Federal de Minas Gerais, WWF-Brasil e Fundação Biodiversitas de 2018 a 2020."
+    },
+    {
+      "uuid": "6c4d7471-0a1b-4633-8b2a-38b75d8543bf",
+      "title": "PSCRMG - Áreas prioritárias para pesquisa Aplicada à Conservação de Espécies Aquáticas Ameaçadas de extinção em Minas Gerais",
+      "abstract": "Camada de Áreas Prioritárias para Pesquisa Aplicada à Conservação de Espécies Aquáticas Ameaçadas em Minas Gerais.\r\n\r\nElaborada no âmbito do projeto Áreas Prioritárias: Estratégias para Conservação da Biodiversidade e dos Ecossistemas de Minas Gerais (Planejamento Sistemático da Conservação e da Restauração da Biodiversidade e dos Serviços Ambientais dos Biomas Cerrado, Caatinga e Mata Atlântica em Minas Gerais – PSCRMG), desenvolvido pelo IEF em parceria com Semad, Feam, Igam e consórcio formado por Universidade Federal de Minas Gerais, WWF-Brasil e Fundação Biodiversitas de 2018 a 2020."
+    }
+  ]
+}

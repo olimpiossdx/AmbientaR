@@ -1,0 +1,13 @@
+[
+  {
+    "origin": [
+      "http://localhost:9002",
+      "http://127.0.0.1:9002",
+      "https://www.ambientar.ia.br",
+      "https://ambientar.ia.br"
+    ],
+    "method": ["GET", "HEAD"],
+    "maxAgeSeconds": 3600,
+    "responseHeader": ["Content-Type", "Content-Length", "Authorization", "x-goog-resumable"]
+  }
+]

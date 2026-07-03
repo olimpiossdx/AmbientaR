@@ -20,6 +20,16 @@ Impacto direto já identificado e tratado:
 - `new/src/componentes/alert/alert.tsx` e `new/src/componentes/toast/container.tsx` usam classes como `animate-in`, `fade-in`, `slide-in-from-top-2` e `slide-in-from-bottom-2`, que no `old` vinham do padrão de animações do ecossistema Tailwind/shadcn.
 - Essas utilities foram adicionadas em `new/src/index.css` com CSS próprio, sem plugin.
 
+Padronização visual aplicada nesta rodada:
+
+- `Button`: variantes passaram a usar tokens semânticos (`primary`, `secondary`, `destructive`, `accent`, `ring`) e radius `rounded-md`.
+- `Input`: estados base, foco, erro, disabled, labels, ícones e checkbox/radio passaram a usar tokens semânticos.
+- `Card`: radius, borda, fundo, texto, overflow e espaçamentos foram aproximados do padrão visual do `old`, mantendo o componente novo.
+- `Skeleton`: passou a usar `bg-muted`.
+- `Progress`: passou a usar `bg-muted`, `bg-primary` e transição padronizada.
+- `Badge`: variantes passaram a usar tokens semânticos onde possível.
+- `Alert`: variantes `info`, `error` e `neutral` passaram a usar tokens do tema; animação continua via utilities próprias.
+
 ## Diagnóstico rápido
 
 O `old` usa uma base próxima de shadcn/ui:

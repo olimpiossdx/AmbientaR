@@ -1,0 +1,25 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Recorte teste — alerta MapBiomas (região BH/MG)",
+        "purpose": "Depuração WFS MapBiomas Alerta + PRODES marginal",
+        "source": "AmbientaR fixtures"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [-44.4796, -20.2992],
+            [-44.4778, -20.2992],
+            [-44.4778, -20.2975],
+            [-44.4796, -20.2975],
+            [-44.4796, -20.2992]
+          ]
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,1502 @@
+Log de Ações do Usuário - Gerado em: 22/06/2026, 18:08:32
+
+--- DADOS DO USUÁRIO ---
+ID: tGCl1zYz6ThVpS7No8k2FtJHJiD2
+Nome: adm
+Email: adm@adm.com
+Nível: Administrador
+Status: Ativo
+CPF/CNPJ: N/A
+
+--- HISTÓRICO DE AÇÕES ---
+- 22/06/2026, 16:47:53 - Saiu do sistema
+- 22/06/2026, 16:22:46 - Saiu do sistema
+- 22/06/2026, 16:22:43 - Entrou no sistema
+- 22/06/2026, 11:49:16 - Entrou no sistema
+- 20/06/2026, 17:43:33 - Entrou no sistema
+- 19/06/2026, 13:53:12 - Entrou no sistema
+- 19/06/2026, 13:50:32 - Entrou no sistema
+- 18/06/2026, 19:41:49 - Entrou no sistema
+- 18/06/2026, 19:41:39 - Entrou no sistema
+- 18/06/2026, 19:08:16 - Entrou no sistema
+- 18/06/2026, 15:16:11 - Entrou no sistema
+- 18/06/2026, 15:15:50 - Saiu do sistema
+- 18/06/2026, 08:26:53 - Entrou no sistema
+- 12/06/2026, 12:50:04 - Entrou no sistema
+- 12/06/2026, 10:23:07 - Entrou no sistema
+- 12/06/2026, 10:05:04 - Entrou no sistema
+- 12/06/2026, 08:06:39 - delete_user - Detalhes: {"deletedUserName":"Ricardo Rodrigues Carvalho","deletedUserId":"lehkTJTPszb7wEQ7hpQnMrgyk032"}
+- 12/06/2026, 08:06:14 - delete_user - Detalhes: {"deletedUserName":"elainepimentaconsultoria","deletedUserId":"d9CSYaVtRrNN9Fd0olyWEyneIsv1"}
+- 12/06/2026, 08:06:08 - delete_user - Detalhes: {"deletedUserName":"Allan Pimenta Barros","deletedUserId":"JRfglwCHClMcirbW71NEkaEjGgo2"}
+- 12/06/2026, 08:06:04 - delete_user - Detalhes: {"deletedUserName":"anselmo.balieiro.sgt","deletedUserId":"tVZDN2jJv1YAFbjeK23E4EGvsCj2"}
+- 12/06/2026, 07:25:05 - Entrou no sistema
+- 11/06/2026, 20:31:14 - Entrou no sistema
+- 11/06/2026, 20:30:50 - Saiu do sistema
+- 11/06/2026, 20:00:26 - Saiu do sistema
+- 11/06/2026, 19:46:54 - update_user - Detalhes: {"userId":"tGCl1zYz6ThVpS7No8k2FtJHJiD2","userName":"adm"}
+- 11/06/2026, 19:45:09 - Saiu do sistema
+- 11/06/2026, 19:43:43 - Entrou no sistema
+- 11/06/2026, 19:43:24 - Entrou no sistema
+- 11/06/2026, 19:39:10 - Saiu do sistema
+- 11/06/2026, 19:04:55 - Entrou no sistema
+- 11/06/2026, 18:23:13 - Entrou no sistema
+- 11/06/2026, 18:05:49 - Entrou no sistema
+- 11/06/2026, 17:03:05 - Entrou no sistema
+- 11/06/2026, 12:02:13 - Entrou no sistema
+- 10/06/2026, 19:47:57 - Entrou no sistema
+- 10/06/2026, 19:39:45 - Entrou no sistema
+- 10/06/2026, 18:11:49 - Entrou no sistema
+- 10/06/2026, 14:38:13 - Entrou no sistema
+- 10/06/2026, 11:45:33 - Saiu do sistema
+- 10/06/2026, 11:07:05 - Entrou no sistema
+- 10/06/2026, 11:02:37 - Entrou no sistema
+- 10/06/2026, 10:42:30 - Saiu do sistema
+- 09/06/2026, 19:11:13 - Saiu do sistema
+- 09/06/2026, 19:10:48 - delete_user - Detalhes: {"deletedUserName":"Allan Pimenta Barros","deletedUserId":"8LCwbba2uxWlvso37rXSnFZGg313"}
+- 09/06/2026, 19:10:26 - Entrou no sistema
+- 09/06/2026, 19:09:53 - Entrou no sistema
+- 09/06/2026, 19:07:20 - Saiu do sistema
+- 09/06/2026, 18:55:12 - Saiu do sistema
+- 09/06/2026, 08:44:43 - Saiu do sistema
+- 08/06/2026, 13:43:57 - Entrou no sistema
+- 08/06/2026, 11:06:52 - Saiu do sistema
+- 08/06/2026, 11:06:48 - Entrou no sistema
+- 04/06/2026, 14:21:29 - Entrou no sistema
+- 04/06/2026, 14:21:06 - Saiu do sistema
+- 03/06/2026, 14:55:49 - Entrou no sistema
+- 03/06/2026, 10:50:04 - delete_user - Detalhes: {"deletedUserName":"tributorio","deletedUserId":"7OcJaXRNWXb73qYlk0GRvP36XJO2"}
+- 03/06/2026, 10:46:21 - Entrou no sistema
+- 03/06/2026, 10:35:28 - Saiu do sistema
+- 03/06/2026, 10:31:31 - Entrou no sistema
+- 03/06/2026, 10:23:17 - Saiu do sistema
+- 03/06/2026, 10:22:58 - Entrou no sistema
+- 03/06/2026, 10:13:45 - Saiu do sistema
+- 03/06/2026, 10:13:41 - delete_user - Detalhes: {"deletedUserName":"Ricardo Rodrigues Carvalho","deletedUserId":"bMiHVrZXG0YblOFIinoSAoILijD3"}
+- 03/06/2026, 10:12:46 - Entrou no sistema
+- 03/06/2026, 08:54:58 - Entrou no sistema
+- 03/06/2026, 08:53:01 - Saiu do sistema
+- 03/06/2026, 08:06:16 - Entrou no sistema
+- 01/06/2026, 18:56:41 - Entrou no sistema
+- 31/05/2026, 13:39:04 - create_revenue - Detalhes: {"id":"QR2SqFaJjGpOcrjZi4BP","description":"recimento credito"}
+- 31/05/2026, 13:37:55 - create_expense - Detalhes: {"id":"4pPHs4GvMRwsj7rZYXqm","description":"pagamento/recebimento"}
+- 31/05/2026, 13:20:40 - create_revenue - Detalhes: {"id":"jJLRtHwCm9diJDhPYYjw","description":"Abatimento em serviços para fulano"}
+- 31/05/2026, 13:18:09 - create_revenue - Detalhes: {"id":"CTc4Z6Ft83c2gmN2xa96","description":"Pagamento de Serviços"}
+- 31/05/2026, 13:14:16 - Entrou no sistema
+- 29/05/2026, 11:53:36 - Entrou no sistema
+- 28/05/2026, 19:18:14 - Entrou no sistema
+- 28/05/2026, 10:56:47 - Entrou no sistema
+- 28/05/2026, 10:07:09 - Entrou no sistema
+- 27/05/2026, 17:14:25 - Entrou no sistema
+- 27/05/2026, 11:45:30 - Saiu do sistema
+- 26/05/2026, 11:07:48 - Entrou no sistema
+- 25/05/2026, 18:38:46 - Entrou no sistema
+- 25/05/2026, 18:36:02 - Entrou no sistema
+- 25/05/2026, 15:24:38 - Entrou no sistema
+- 25/05/2026, 14:47:47 - Entrou no sistema
+- 25/05/2026, 14:35:52 - Entrou no sistema
+- 25/05/2026, 13:40:47 - Entrou no sistema
+- 25/05/2026, 13:24:17 - Entrou no sistema
+- 25/05/2026, 12:35:36 - Entrou no sistema
+- 25/05/2026, 12:18:45 - Entrou no sistema
+- 25/05/2026, 11:17:50 - Entrou no sistema
+- 25/05/2026, 11:16:18 - Entrou no sistema
+- 25/05/2026, 11:16:08 - Entrou no sistema
+- 25/05/2026, 11:14:29 - Entrou no sistema
+- 25/05/2026, 11:06:17 - Entrou no sistema
+- 25/05/2026, 10:45:30 - Entrou no sistema
+- 25/05/2026, 10:12:56 - Entrou no sistema
+- 23/05/2026, 17:40:23 - Saiu do sistema
+- 23/05/2026, 17:35:13 - Entrou no sistema
+- 23/05/2026, 17:30:30 - Saiu do sistema
+- 22/05/2026, 17:57:47 - Entrou no sistema
+- 22/05/2026, 17:13:00 - Entrou no sistema
+- 22/05/2026, 17:09:00 - Saiu do sistema
+- 22/05/2026, 15:30:10 - Entrou no sistema
+- 22/05/2026, 14:35:07 - Entrou no sistema
+- 22/05/2026, 09:13:11 - Entrou no sistema
+- 21/05/2026, 21:39:01 - Entrou no sistema
+- 21/05/2026, 21:33:54 - Saiu do sistema
+- 21/05/2026, 21:19:15 - create_proposal - Detalhes: {"proposalNumber":"002/2026","proposalId":"H8xpSy9ostWInky177lj"}
+- 21/05/2026, 21:03:50 - Entrou no sistema
+- 21/05/2026, 21:01:25 - Saiu do sistema
+- 21/05/2026, 19:19:38 - create_proposal - Detalhes: {"proposalNumber":"0001/2026","proposalId":"phNjgf0FRC2QxuiXeqtQ"}
+- 21/05/2026, 19:18:16 - delete_proposal - Detalhes: {"proposalNumber":"002/2026","proposalId":"2591cJDBAvnYCBAS3Mwp"}
+- 21/05/2026, 19:18:14 - delete_proposal - Detalhes: {"proposalNumber":"0001/2026","proposalId":"zvNi4yXsZTcPslQEOhe2"}
+- 21/05/2026, 18:51:02 - Entrou no sistema
+- 21/05/2026, 18:29:22 - Saiu do sistema
+- 21/05/2026, 15:40:04 - Entrou no sistema
+- 20/05/2026, 18:55:27 - Entrou no sistema
+- 20/05/2026, 18:47:12 - Entrou no sistema
+- 20/05/2026, 16:59:55 - Entrou no sistema
+- 19/05/2026, 18:11:46 - Entrou no sistema
+- 19/05/2026, 16:51:42 - Entrou no sistema
+- 19/05/2026, 16:18:33 - Entrou no sistema
+- 19/05/2026, 15:29:08 - Entrou no sistema
+- 19/05/2026, 14:59:53 - Entrou no sistema
+- 19/05/2026, 14:59:37 - Entrou no sistema
+- 19/05/2026, 14:54:01 - Entrou no sistema
+- 19/05/2026, 14:43:22 - Entrou no sistema
+- 19/05/2026, 14:42:12 - Entrou no sistema
+- 19/05/2026, 14:39:46 - Entrou no sistema
+- 19/05/2026, 10:33:15 - create_financial_center - Detalhes: {"name":"EIA","id":"YTeANj6NpL7pUgciInS3"}
+- 18/05/2026, 19:47:33 - Saiu do sistema
+- 18/05/2026, 19:39:43 - Entrou no sistema
+- 18/05/2026, 19:09:55 - Entrou no sistema
+- 18/05/2026, 19:09:52 - Entrou no sistema
+- 18/05/2026, 19:08:13 - delete_client - Detalhes: {"clientName":"Wesley Moura Caetano","clientId":"4j56OPjJ9UTT77UBV5En"}
+- 18/05/2026, 19:08:11 - delete_client - Detalhes: {"clientId":"U8aFxEzRd6xp4aQjB2SX","clientName":"Mairon Mânica"}
+- 18/05/2026, 19:08:08 - delete_client - Detalhes: {"clientId":"wqh9mUjvxojuwl1wWbyO","clientName":"Helder Hofig"}
+- 18/05/2026, 19:08:06 - delete_client - Detalhes: {"clientName":"Helder Hofig","clientId":"oXggYAj8uHNX5ZG0gT43On9CYRP2"}
+- 18/05/2026, 19:08:02 - delete_client - Detalhes: {"clientName":"Célio Fontana","clientId":"rnxCLMRwGnXDL2sDkCPG"}
+- 18/05/2026, 19:07:59 - delete_client - Detalhes: {"clientId":"8LCwbba2uxWlvso37rXSnFZGg313","clientName":"Allan Pimenta Barros"}
+- 18/05/2026, 19:07:57 - delete_client - Detalhes: {"clientId":"RJFTILMSGvVFMmhXanlq","clientName":"Alfonso Fontana"}
+- 18/05/2026, 19:07:53 - delete_client - Detalhes: {"clientId":"mb8UG8MpLttOIrijafR6","clientName":"Agropecuária Nova América S/A"}
+- 18/05/2026, 19:07:49 - delete_client - Detalhes: {"clientName":"Agropecuária Forquilha LTDA","clientId":"q4Kpi4QRELMJPv0OMsO5"}
+- 18/05/2026, 18:39:33 - Entrou no sistema
+- 18/05/2026, 18:09:42 - Entrou no sistema
+- 18/05/2026, 17:39:35 - Entrou no sistema
+- 18/05/2026, 17:25:46 - Entrou no sistema
+- 18/05/2026, 14:49:44 - Entrou no sistema
+- 18/05/2026, 13:44:52 - Entrou no sistema
+- 18/05/2026, 10:54:53 - Entrou no sistema
+- 18/05/2026, 09:37:28 - Saiu do sistema
+- 17/05/2026, 18:05:38 - Entrou no sistema
+- 17/05/2026, 18:04:06 - Saiu do sistema
+- 17/05/2026, 18:00:49 - Entrou no sistema
+- 17/05/2026, 17:57:32 - Saiu do sistema
+- 16/05/2026, 19:34:00 - Entrou no sistema
+- 16/05/2026, 18:01:32 - Saiu do sistema
+- 16/05/2026, 15:49:02 - Entrou no sistema
+- 15/05/2026, 17:03:26 - Saiu do sistema
+- 15/05/2026, 17:02:47 - Entrou no sistema
+- 15/05/2026, 16:44:00 - Entrou no sistema
+- 15/05/2026, 16:37:24 - Entrou no sistema
+- 15/05/2026, 15:55:35 - Entrou no sistema
+- 15/05/2026, 15:55:27 - Entrou no sistema
+- 15/05/2026, 15:51:10 - Entrou no sistema
+- 15/05/2026, 15:50:42 - Entrou no sistema
+- 15/05/2026, 15:50:03 - Entrou no sistema
+- 15/05/2026, 15:48:25 - Entrou no sistema
+- 15/05/2026, 15:48:14 - Entrou no sistema
+- 15/05/2026, 15:47:59 - Entrou no sistema
+- 15/05/2026, 15:47:08 - Saiu do sistema
+- 15/05/2026, 15:24:18 - update_user - Detalhes: {"userId":"oXggYAj8uHNX5ZG0gT43On9CYRP2","userName":"pedro.hofig"}
+- 15/05/2026, 15:19:58 - Entrou no sistema
+- 15/05/2026, 15:19:41 - Saiu do sistema
+- 15/05/2026, 15:16:03 - create_proposal - Detalhes: {"proposalNumber":"002/2026","proposalId":"2591cJDBAvnYCBAS3Mwp"}
+- 15/05/2026, 15:13:49 - delete_client - Detalhes: {"clientName":"Allan Pimenta Barros","clientId":"RiicoBdG2saA7VCFOJdePXAbGcC3"}
+- 15/05/2026, 15:06:22 - Saiu do sistema
+- 15/05/2026, 14:51:13 - delete_proposal - Detalhes: {"proposalNumber":"001","proposalId":"0DCBQ5KIpycpCfVLY0T0"}
+- 15/05/2026, 14:51:06 - create_proposal - Detalhes: {"proposalNumber":"0001/2026","proposalId":"zvNi4yXsZTcPslQEOhe2"}
+- 15/05/2026, 14:45:58 - Entrou no sistema
+- 15/05/2026, 12:04:36 - Entrou no sistema
+- 15/05/2026, 11:34:21 - Entrou no sistema
+- 15/05/2026, 11:07:16 - Entrou no sistema
+- 15/05/2026, 08:34:14 - delete_invoice - Detalhes: {"invoiceNumber":"001","invoiceId":"gtSp3LgZUnDc4GaEiZw0"}
+- 15/05/2026, 08:26:34 - Entrou no sistema
+- 14/05/2026, 19:30:33 - Entrou no sistema
+- 14/05/2026, 19:30:16 - Saiu do sistema
+- 14/05/2026, 15:01:23 - Entrou no sistema
+- 14/05/2026, 11:06:19 - Saiu do sistema
+- 14/05/2026, 09:50:21 - Entrou no sistema
+- 14/05/2026, 09:48:20 - Saiu do sistema
+- 14/05/2026, 09:41:14 - Entrou no sistema
+- 14/05/2026, 09:39:25 - Saiu do sistema
+- 14/05/2026, 09:12:22 - Saiu do sistema
+- 14/05/2026, 09:10:30 - Entrou no sistema
+- 13/05/2026, 20:50:42 - Entrou no sistema
+- 13/05/2026, 18:31:55 - Entrou no sistema
+- 13/05/2026, 18:31:14 - Saiu do sistema
+- 13/05/2026, 18:28:58 - Entrou no sistema
+- 13/05/2026, 14:48:08 - Entrou no sistema
+- 13/05/2026, 11:44:21 - Entrou no sistema
+- 13/05/2026, 11:25:38 - Entrou no sistema
+- 13/05/2026, 11:24:03 - Entrou no sistema
+- 12/05/2026, 22:39:46 - Saiu do sistema
+- 12/05/2026, 18:22:06 - Saiu do sistema
+- 12/05/2026, 18:11:20 - Saiu do sistema
+- 12/05/2026, 18:11:10 - delete_user - Detalhes: {"deletedUserName":"Allan Pimenta Barros","deletedUserId":"RiicoBdG2saA7VCFOJdePXAbGcC3"}
+- 12/05/2026, 18:10:27 - Entrou no sistema
+- 12/05/2026, 16:30:19 - Saiu do sistema
+- 12/05/2026, 16:28:34 - Saiu do sistema
+- 12/05/2026, 15:14:26 - Entrou no sistema
+- 12/05/2026, 09:18:16 - update_user - Detalhes: {"userId":"YFkea0ZDFwU0jLHSNhQcr28OjuT2","userName":"rodrigo.barbosa"}
+- 12/05/2026, 09:05:34 - Entrou no sistema
+- 12/05/2026, 09:01:50 - Saiu do sistema
+- 11/05/2026, 19:59:03 - Entrou no sistema
+- 11/05/2026, 18:20:40 - Saiu do sistema
+- 11/05/2026, 18:20:31 - delete_user - Detalhes: {"deletedUserName":"renatobuenopaulo","deletedUserId":"MQJzn7xTtGehckD6UKSWdBsTgAZ2"}
+- 11/05/2026, 18:20:17 - delete_user - Detalhes: {"deletedUserName":"elainepimentaconsultoria","deletedUserId":"GRSTdec73MgghtmvdKZpFuW5jFE2"}
+- 11/05/2026, 18:19:28 - Entrou no sistema
+- 11/05/2026, 18:19:20 - Saiu do sistema
+- 11/05/2026, 09:16:40 - Entrou no sistema
+- 10/05/2026, 21:39:31 - Entrou no sistema
+- 10/05/2026, 21:39:20 - Saiu do sistema
+- 10/05/2026, 18:49:09 - Entrou no sistema
+- 10/05/2026, 18:40:46 - Entrou no sistema
+- 10/05/2026, 18:40:30 - Saiu do sistema
+- 10/05/2026, 10:06:37 - Entrou no sistema
+- 10/05/2026, 07:56:09 - create_revenue - Detalhes: {"description":"Recebimento de contrato","id":"ZnhGqWlWYXAprTunemqk"}
+- 09/05/2026, 22:10:32 - Entrou no sistema
+- 09/05/2026, 22:06:29 - Saiu do sistema
+- 09/05/2026, 19:31:15 - Entrou no sistema
+- 09/05/2026, 17:31:58 - Entrou no sistema
+- 09/05/2026, 17:31:55 - Entrou no sistema
+- 09/05/2026, 14:58:09 - Entrou no sistema
+- 09/05/2026, 14:57:18 - Entrou no sistema
+- 09/05/2026, 14:28:11 - Entrou no sistema
+- 09/05/2026, 14:22:34 - Entrou no sistema
+- 08/05/2026, 17:52:45 - Entrou no sistema
+- 08/05/2026, 17:50:57 - Entrou no sistema
+- 08/05/2026, 15:23:53 - Saiu do sistema
+- 08/05/2026, 15:09:27 - Entrou no sistema
+- 29/04/2026, 18:14:10 - Saiu do sistema
+- 28/04/2026, 14:22:51 - Entrou no sistema
+- 28/04/2026, 14:18:27 - Saiu do sistema
+- 28/04/2026, 13:55:14 - Entrou no sistema
+- 16/04/2026, 15:45:13 - Entrou no sistema
+- 15/04/2026, 12:23:06 - Entrou no sistema
+- 10/04/2026, 14:43:12 - Saiu do sistema
+- 09/04/2026, 17:50:59 - Entrou no sistema
+- 09/04/2026, 15:47:49 - Saiu do sistema
+- 08/04/2026, 18:28:50 - Entrou no sistema
+- 07/04/2026, 12:44:15 - Entrou no sistema
+- 31/03/2026, 22:01:57 - Saiu do sistema
+- 30/03/2026, 17:59:16 - Entrou no sistema
+- 29/03/2026, 14:18:23 - Entrou no sistema
+- 27/03/2026, 16:01:51 - Entrou no sistema
+- 24/03/2026, 16:17:17 - Entrou no sistema
+- 24/03/2026, 15:53:38 - Saiu do sistema
+- 24/03/2026, 15:52:22 - Entrou no sistema
+- 23/03/2026, 22:06:16 - Entrou no sistema
+- 23/03/2026, 16:56:19 - Entrou no sistema
+- 20/03/2026, 19:44:04 - Entrou no sistema
+- 20/03/2026, 19:33:50 - Entrou no sistema
+- 20/03/2026, 19:21:44 - Saiu do sistema
+- 20/03/2026, 19:20:03 - Entrou no sistema
+- 20/03/2026, 18:58:50 - create_proposal - Detalhes: {"proposalNumber":"001","proposalId":"0DCBQ5KIpycpCfVLY0T0"}
+- 20/03/2026, 18:00:45 - Entrou no sistema
+- 20/03/2026, 17:56:24 - Entrou no sistema
+- 20/03/2026, 14:33:27 - Entrou no sistema
+- 19/03/2026, 18:30:13 - update_client - Detalhes: {"clientId":"hsKQ76deO0htKxZeid5e","clientName":"Wilian Raimundo Ferreira Egido"}
+- 19/03/2026, 16:41:45 - Entrou no sistema
+- 19/03/2026, 16:15:28 - delete_proposal - Detalhes: {"proposalNumber":"001/2025","proposalId":"VnrhQ4oMmcMvOREqKY7q"}
+- 19/03/2026, 16:15:26 - delete_proposal - Detalhes: {"proposalNumber":"002-2026","proposalId":"Nf88dpGPG5qYvK2lMkxZ"}
+- 19/03/2026, 16:15:23 - delete_proposal - Detalhes: {"proposalNumber":"06/2026","proposalId":"6XXu15SyMFogeQjSQdAe"}
+- 19/03/2026, 16:15:09 - delete_invoice - Detalhes: {"invoiceId":"yrIvrptgJzSGWOftqAol","invoiceNumber":"001/2025"}
+- 19/03/2026, 16:15:07 - delete_invoice - Detalhes: {"invoiceId":"txsegu8uIqAju8azt9YT","invoiceNumber":"002/2025"}
+- 19/03/2026, 16:15:05 - delete_invoice - Detalhes: {"invoiceId":"6mZqreFeOZLDioIrvRlS","invoiceNumber":"003/2025"}
+- 19/03/2026, 16:15:02 - delete_invoice - Detalhes: {"invoiceId":"9GBN2mBtQ5ANpE9YYQ4f","invoiceNumber":"004/2025"}
+- 19/03/2026, 16:15:00 - delete_invoice - Detalhes: {"invoiceId":"X99aLA1zGY4EZs4eKm8H","invoiceNumber":"005/2025"}
+- 19/03/2026, 16:14:58 - delete_invoice - Detalhes: {"invoiceNumber":"006/2025","invoiceId":"kGqZuFeA9ljNuxDAcT7V"}
+- 19/03/2026, 16:14:39 - Entrou no sistema
+- 19/03/2026, 11:56:59 - Saiu do sistema
+- 19/03/2026, 11:52:24 - delete_user - Detalhes: {"deletedUserName":"Renato Bueno Paula","deletedUserId":"MQJzn7xTtGehckD6UKSWdBsTgAZ2"}
+- 19/03/2026, 11:52:13 - update_user - Detalhes: {"userId":"RiicoBdG2saA7VCFOJdePXAbGcC3","userName":"Allan Pimenta Barros"}
+- 19/03/2026, 11:51:22 - Entrou no sistema
+- 19/03/2026, 09:07:53 - Saiu do sistema
+- 18/03/2026, 18:22:55 - Entrou no sistema
+- 18/03/2026, 17:42:53 - Entrou no sistema
+- 18/03/2026, 17:33:42 - Entrou no sistema
+- 18/03/2026, 15:15:58 - Saiu do sistema
+- 18/03/2026, 14:49:29 - Saiu do sistema
+- 18/03/2026, 14:47:04 - Entrou no sistema
+- 18/03/2026, 14:45:40 - Entrou no sistema
+- 18/03/2026, 11:48:35 - update_expense - Detalhes: {"description":"Compra de Combustivel","id":"8lH7eiMg8LrvqPRzGidY"}
+- 18/03/2026, 11:14:29 - Entrou no sistema
+- 17/03/2026, 22:31:31 - Entrou no sistema
+- 17/03/2026, 21:07:52 - Entrou no sistema
+- 17/03/2026, 20:59:47 - Entrou no sistema
+- 17/03/2026, 18:25:53 - create_service - Detalhes: {"serviceId":"UiwzA7QE7ifk4VaWG1KE","serviceName":"DAIA - Corte de Arvores Isoladas"}
+- 17/03/2026, 18:23:55 - update_service - Detalhes: {"serviceName":"DAIA - Corretiva (A<190ha)","serviceId":"ZZi4tXijz2CjcPd0YGmj"}
+- 17/03/2026, 18:22:54 - update_service - Detalhes: {"serviceId":"wWXh7WQt8u0H8YZfqtRv","serviceName":"DAIA - Inventário Florestal (A<190ha)"}
+- 17/03/2026, 18:22:28 - create_service - Detalhes: {"serviceName":"Obtenção de Dispensa de Licença Ambiental - Com Relatório Final.","serviceId":"ues0sTC41D9vvK8GU0qq"}
+- 17/03/2026, 18:20:58 - update_service - Detalhes: {"serviceName":"DAIA - Corretiva (A<190ha)","serviceId":"ZZi4tXijz2CjcPd0YGmj"}
+- 17/03/2026, 18:20:35 - create_service - Detalhes: {"serviceId":"wWXh7WQt8u0H8YZfqtRv","serviceName":"Inventário Florestal (A<190ha)"}
+- 17/03/2026, 18:17:52 - create_service - Detalhes: {"serviceId":"MiNNsMn3i6BUDSWjv2Lm","serviceName":"PCA"}
+- 17/03/2026, 18:16:22 - create_service - Detalhes: {"serviceName":"PEA","serviceId":"8rb2JdIPWPWL1OHsCdfa"}
+- 17/03/2026, 18:15:18 - create_service - Detalhes: {"serviceName":"Retificação/Atualização CAR - Com ART","serviceId":"HEGhRA8ySei4e0SZky3K"}
+- 17/03/2026, 18:14:17 - create_service - Detalhes: {"serviceId":"IO2ePMD1a4n7p7dB7xT2","serviceName":"Retificação do CAR - Sem ART"}
+- 17/03/2026, 18:13:13 - create_service - Detalhes: {"serviceId":"smUWYk4medbVbGbK8fqa","serviceName":"Mapa de Uso E Ocupação do Solo"}
+- 17/03/2026, 18:12:17 - create_service - Detalhes: {"serviceId":"5EZHNxKOHm4MQphIcK0t","serviceName":"LAS-RAS"}
+- 17/03/2026, 18:11:31 - create_service - Detalhes: {"serviceId":"Op1XR3Du5LyNoxsxISRE","serviceName":"PTRF"}
+- 17/03/2026, 18:00:09 - Entrou no sistema
+- 17/03/2026, 17:56:21 - Saiu do sistema
+- 17/03/2026, 10:30:36 - Entrou no sistema
+- 16/03/2026, 21:34:52 - Saiu do sistema
+- 16/03/2026, 12:05:42 - Saiu do sistema
+- 16/03/2026, 10:45:49 - Saiu do sistema
+- 16/03/2026, 10:45:10 - Entrou no sistema
+- 16/03/2026, 10:07:56 - Entrou no sistema
+- 16/03/2026, 08:52:58 - Saiu do sistema
+- 15/03/2026, 21:23:00 - Entrou no sistema
+- 15/03/2026, 20:52:55 - Saiu do sistema
+- 14/03/2026, 15:09:53 - Saiu do sistema
+- 14/03/2026, 13:59:03 - update_client - Detalhes: {"clientId":"5oMvqLjgdtwwvyedhTx7","clientName":"Helder Hofig"}
+- 14/03/2026, 13:58:37 - update_client - Detalhes: {"clientId":"5oMvqLjgdtwwvyedhTx7","clientName":"Helder Hofig"}
+- 14/03/2026, 13:49:17 - Entrou no sistema
+- 14/03/2026, 13:42:18 - Saiu do sistema
+- 14/03/2026, 13:42:12 - delete_user - Detalhes: {"deletedUserName":"Renato Bueno Paula","deletedUserId":"pzKs3DCtwLbXGg5aTkCZWnFDI1i2"}
+- 14/03/2026, 13:41:37 - Entrou no sistema
+- 14/03/2026, 12:12:05 - Entrou no sistema
+- 14/03/2026, 11:56:19 - Saiu do sistema
+- 14/03/2026, 11:56:14 - update_user - Detalhes: {"userId":"pzKs3DCtwLbXGg5aTkCZWnFDI1i2","userName":"Renato Bueno Paula"}
+- 14/03/2026, 11:47:57 - Entrou no sistema
+- 14/03/2026, 10:46:19 - Entrou no sistema
+- 14/03/2026, 06:29:22 - Saiu do sistema
+- 14/03/2026, 06:28:10 - Entrou no sistema
+- 13/03/2026, 08:57:10 - Entrou no sistema
+- 12/03/2026, 11:58:36 - delete_user - Detalhes: {"deletedUserName":"Allan Pimenta Barros","deletedUserId":"lZ2TBHTAuSN4X7jkU7GEh8oBXoj2"}
+- 12/03/2026, 11:58:32 - delete_user - Detalhes: {"deletedUserName":"kessia tamires","deletedUserId":"CltX1e0OGsN1PsSaxOZcMBGNddl2"}
+- 12/03/2026, 11:58:27 - delete_user - Detalhes: {"deletedUserName":"Elaine","deletedUserId":"GRSTdec73MgghtmvdKZpFuW5jFE2"}
+- 12/03/2026, 11:58:24 - delete_user - Detalhes: {"deletedUserName":"Myke","deletedUserId":"QFzT86Mv8ObcrYRIQfV6T6ZAIqK2"}
+- 12/03/2026, 11:57:30 - delete_user - Detalhes: {"deletedUserName":"Sergio Cota","deletedUserId":"aUsLwtuYAgO2fsvYx2b697beI062"}
+- 12/03/2026, 11:57:25 - delete_user - Detalhes: {"deletedUserName":"Renato Bueno Paula","deletedUserId":"Qp3OVPtZMLZtGzYZ1KhHzvZNy872"}
+- 12/03/2026, 11:57:19 - delete_user - Detalhes: {"deletedUserName":"Marcio Noivo Arantes","deletedUserId":"8lmnHORTC8QEMTfGbZsKeE6uy2H2"}
+- 12/03/2026, 11:41:25 - update_client - Detalhes: {"clientId":"CxyC9gaNM57yBIIuu1kf","clientName":"Célio Fontana"}
+- 12/03/2026, 09:28:02 - Entrou no sistema
+- 12/03/2026, 08:48:17 - Entrou no sistema
+- 11/03/2026, 18:55:03 - update_client - Detalhes: {"clientName":"Célio Fontana","clientId":"CxyC9gaNM57yBIIuu1kf"}
+- 11/03/2026, 18:54:28 - Entrou no sistema
+- 11/03/2026, 18:51:09 - Saiu do sistema
+- 11/03/2026, 18:39:39 - delete_user - Detalhes: {"deletedUserName":"Célio Fontana","deletedUserId":"NoyHWlN6HJQUOh0BJ1hNFu4r0gF3"}
+- 11/03/2026, 18:11:37 - update_user - Detalhes: {"userId":"NoyHWlN6HJQUOh0BJ1hNFu4r0gF3","userName":"Célio Fontana"}
+- 11/03/2026, 18:11:00 - update_user - Detalhes: {"userName":"Marcio Noivo Arantes","userId":"8lmnHORTC8QEMTfGbZsKeE6uy2H2"}
+- 11/03/2026, 18:05:24 - Entrou no sistema
+- 11/03/2026, 17:28:26 - Saiu do sistema
+- 11/03/2026, 17:28:12 - update_user - Detalhes: {"userName":"Célio Fontana","userId":"NoyHWlN6HJQUOh0BJ1hNFu4r0gF3"}
+- 11/03/2026, 17:08:47 - update_user - Detalhes: {"userName":"Célio Fontana","userId":"NoyHWlN6HJQUOh0BJ1hNFu4r0gF3"}
+- 11/03/2026, 17:07:16 - Entrou no sistema
+- 11/03/2026, 16:06:10 - Entrou no sistema
+- 11/03/2026, 15:59:59 - Saiu do sistema
+- 11/03/2026, 15:57:26 - Entrou no sistema
+- 11/03/2026, 15:01:36 - Entrou no sistema
+- 11/03/2026, 08:03:18 - Entrou no sistema
+- 11/03/2026, 08:02:20 - Entrou no sistema
+- 10/03/2026, 17:17:57 - Saiu do sistema
+- 10/03/2026, 17:17:36 - Saiu do sistema
+- 10/03/2026, 11:56:29 - Criou o cliente: Helder Hofig
+- 10/03/2026, 09:48:59 - Criou o cliente: Mairon Mânica
+- 10/03/2026, 09:42:25 - Criou o cliente: Agropecuária Nova América S/A
+- 10/03/2026, 09:33:39 - update_client - Detalhes: {"clientName":"Agropecuária Forquilha LTDA","clientId":"q4Kpi4QRELMJPv0OMsO5"}
+- 10/03/2026, 09:24:58 - Criou o cliente: Agropecuária Forquilha LTDA
+- 10/03/2026, 09:18:51 - Criou o cliente: Alfonso Fontana
+- 10/03/2026, 09:11:21 - update_client - Detalhes: {"clientName":"Wesley Moura Caetano","clientId":"GmlrknayVHtBX6g1LIxp"}
+- 10/03/2026, 09:03:59 - update_client - Detalhes: {"clientId":"CxyC9gaNM57yBIIuu1kf","clientName":"Célio Fontana"}
+- 10/03/2026, 09:01:33 - update_client - Detalhes: {"clientName":"Célio Fontana","clientId":"CxyC9gaNM57yBIIuu1kf"}
+- 09/03/2026, 22:01:09 - Entrou no sistema
+- 09/03/2026, 16:37:46 - Entrou no sistema
+- 09/03/2026, 16:37:25 - Entrou no sistema
+- 09/03/2026, 13:10:12 - Entrou no sistema
+- 09/03/2026, 13:09:06 - Entrou no sistema
+- 09/03/2026, 13:06:15 - Entrou no sistema
+- 09/03/2026, 13:05:13 - Entrou no sistema
+- 09/03/2026, 13:02:51 - Entrou no sistema
+- 09/03/2026, 12:15:10 - Saiu do sistema
+- 09/03/2026, 12:15:05 - update_user - Detalhes: {"userId":"T3N3L3RQiffLnpRyVGLnVImU1Bu1","userName":"Laercio Ernani Busato"}
+- 09/03/2026, 12:02:56 - Saiu do sistema
+- 09/03/2026, 11:07:18 - Saiu do sistema
+- 09/03/2026, 11:04:34 - Entrou no sistema
+- 09/03/2026, 10:13:14 - Entrou no sistema
+- 08/03/2026, 20:07:51 - Entrou no sistema
+- 08/03/2026, 20:07:11 - Entrou no sistema
+- 08/03/2026, 19:27:19 - Entrou no sistema
+- 08/03/2026, 18:18:50 - Entrou no sistema
+- 08/03/2026, 18:11:40 - Entrou no sistema
+- 08/03/2026, 17:27:05 - Entrou no sistema
+- 08/03/2026, 17:27:00 - Entrou no sistema
+- 08/03/2026, 17:25:29 - Entrou no sistema
+- 08/03/2026, 17:25:13 - Saiu do sistema
+- 08/03/2026, 17:24:40 - Entrou no sistema
+- 08/03/2026, 16:51:38 - Entrou no sistema
+- 08/03/2026, 16:51:25 - Saiu do sistema
+- 08/03/2026, 16:51:13 - Entrou no sistema
+- 08/03/2026, 16:51:00 - Entrou no sistema
+- 08/03/2026, 16:49:18 - Entrou no sistema
+- 08/03/2026, 16:48:17 - Entrou no sistema
+- 08/03/2026, 16:45:59 - Entrou no sistema
+- 08/03/2026, 16:45:38 - Entrou no sistema
+- 08/03/2026, 13:22:59 - create_service - Detalhes: {"serviceName":"Programa de Afugentamento de Fauna","serviceId":"q7MbzVfaq4REAsxIcPpj"}
+- 08/03/2026, 13:21:44 - create_service - Detalhes: {"serviceId":"ArBLjpqmmYVBYnylsQkU","serviceName":"Programa de Fauna Silvestre"}
+- 08/03/2026, 13:19:24 - Entrou no sistema
+- 28/02/2026, 19:10:25 - Saiu do sistema
+- 28/02/2026, 19:06:43 - create_proposal - Detalhes: {"proposalNumber":"06/2026","proposalId":"6XXu15SyMFogeQjSQdAe"}
+- 27/02/2026, 00:18:04 - create_service - Detalhes: {"serviceName":"Logística - Deslocamento","serviceId":"09LOBY3Vau9HMkGZkhCr"}
+- 27/02/2026, 00:16:24 - create_service - Detalhes: {"serviceId":"LEGt8M23gDWUi77MdwFG","serviceName":"PRADA"}
+- 27/02/2026, 00:14:56 - create_service - Detalhes: {"serviceId":"KaVEPWRNDP3bjM107RJX","serviceName":"Elaboração de Laudo - Limpeza ou Roçada de Pastagem"}
+- 27/02/2026, 00:11:45 - Entrou no sistema
+- 27/02/2026, 00:03:48 - Entrou no sistema
+- 26/02/2026, 23:42:06 - Entrou no sistema
+- 26/02/2026, 23:41:56 - Entrou no sistema
+- 26/02/2026, 22:27:22 - Entrou no sistema
+- 26/02/2026, 21:22:25 - Entrou no sistema
+- 26/02/2026, 20:21:04 - Saiu do sistema
+- 26/02/2026, 20:20:55 - Entrou no sistema
+- 26/02/2026, 10:00:11 - Entrou no sistema
+- 26/02/2026, 10:00:04 - Entrou no sistema
+- 24/02/2026, 17:01:22 - Entrou no sistema
+- 24/02/2026, 15:49:58 - Saiu do sistema
+- 20/02/2026, 18:46:50 - Entrou no sistema
+- 20/02/2026, 18:42:22 - Saiu do sistema
+- 20/02/2026, 18:31:52 - create_expense - Detalhes: {"description":"Compra de Combustivel","id":"8lH7eiMg8LrvqPRzGidY"}
+- 20/02/2026, 18:31:21 - create_revenue - Detalhes: {"id":"444YAkqqoR4jQRrOsJDM","description":"recebimento de licença ambiental"}
+- 20/02/2026, 18:15:42 - Entrou no sistema
+- 20/02/2026, 17:44:13 - Saiu do sistema
+- 19/02/2026, 21:29:00 - delete_user - Detalhes: {"deletedUserName":"Emmanuel Nicodemos","deletedUserId":"OX9LPJH6AvgTxqWDUA7Dd2pfrze2"}
+- 19/02/2026, 21:28:54 - delete_user - Detalhes: {"deletedUserName":"Andrew","deletedUserId":"0cUlcek1DadDkhywpEEdj5mnCz03"}
+- 19/02/2026, 20:09:06 - update_proposal - Detalhes: {"proposalNumber":"002-2026","proposalId":"Nf88dpGPG5qYvK2lMkxZ"}
+- 19/02/2026, 20:04:39 - create_proposal - Detalhes: {"proposalNumber":"002-2026","proposalId":"Nf88dpGPG5qYvK2lMkxZ"}
+- 19/02/2026, 19:40:16 - update_proposal - Detalhes: {"proposalNumber":"001/2025","proposalId":"VnrhQ4oMmcMvOREqKY7q"}
+- 19/02/2026, 19:02:12 - Entrou no sistema
+- 19/02/2026, 15:26:06 - Entrou no sistema
+- 18/02/2026, 23:58:35 - Entrou no sistema
+- 18/02/2026, 23:39:56 - Entrou no sistema
+- 18/02/2026, 23:20:25 - Entrou no sistema
+- 18/02/2026, 23:18:29 - Entrou no sistema
+- 18/02/2026, 12:11:39 - Entrou no sistema
+- 04/02/2026, 21:14:48 - Entrou no sistema
+- 04/02/2026, 20:47:33 - Entrou no sistema
+- 13/01/2026, 10:26:51 - Entrou no sistema
+- 18/12/2025, 17:23:12 - Entrou no sistema
+- 18/12/2025, 17:23:09 - Entrou no sistema
+- 18/12/2025, 17:23:06 - Entrou no sistema
+- 17/12/2025, 11:45:53 - Entrou no sistema
+- 17/12/2025, 11:40:37 - Entrou no sistema
+- 17/12/2025, 11:38:03 - Entrou no sistema
+- 17/12/2025, 11:36:06 - Entrou no sistema
+- 17/12/2025, 11:34:51 - Entrou no sistema
+- 17/12/2025, 11:33:59 - Entrou no sistema
+- 17/12/2025, 11:33:14 - Entrou no sistema
+- 02/12/2025, 11:05:18 - Saiu do sistema
+- 30/11/2025, 20:59:14 - Saiu do sistema
+- 30/11/2025, 15:37:51 - Entrou no sistema
+- 30/11/2025, 15:26:24 - Entrou no sistema
+- 30/11/2025, 14:29:23 - Saiu do sistema
+- 30/11/2025, 14:28:54 - Saiu do sistema
+- 30/11/2025, 14:27:07 - Entrou no sistema
+- 30/11/2025, 13:54:20 - Saiu do sistema
+- 30/11/2025, 13:53:45 - read_inspection_report - Detalhes: {"projectId":"8vB0acy0rNwKMmkY39Mp","reportId":"xYz1qkmSnylm1WXSAObp","empreendedorId":"rnxCLMRwGnXDL2sDkCPG"}
+- 30/11/2025, 13:48:11 - read_inspection_report - Detalhes: {"projectId":"8vB0acy0rNwKMmkY39Mp","reportId":"xYz1qkmSnylm1WXSAObp","empreendedorId":"rnxCLMRwGnXDL2sDkCPG"}
+- 30/11/2025, 12:00:40 - Entrou no sistema
+- 30/11/2025, 08:46:00 - Visualizou a página: /settings
+- 30/11/2025, 08:35:41 - Visualizou a página: /settings
+- 30/11/2025, 08:25:40 - Visualizou a página: /settings
+- 30/11/2025, 08:20:50 - Visualizou a página: /settings
+- 30/11/2025, 08:17:15 - Visualizou a página: /settings
+- 30/11/2025, 08:14:27 - Visualizou a página: /settings
+- 30/11/2025, 08:12:44 - Visualizou a página: /settings
+- 30/11/2025, 07:37:12 - Visualizou a página: /settings/files
+- 30/11/2025, 07:16:59 - Visualizou a página: /settings
+- 30/11/2025, 07:12:16 - Visualizou a página: Faturas
+- 28/11/2025, 08:51:58 - Visualizou a página: /settings
+- 28/11/2025, 08:42:49 - create_proposal - Detalhes: {"proposalNumber":"001/2025","proposalId":"VnrhQ4oMmcMvOREqKY7q"}
+- 28/11/2025, 08:33:58 - Visualizou a página: /commercial-proposals
+- 28/11/2025, 08:20:52 - Visualizou a página: /commercial-proposals
+- 28/11/2025, 08:14:38 - Visualizou a página: /proposals
+- 28/11/2025, 08:13:35 - Visualizou a página: /suppliers
+- 27/11/2025, 16:56:44 - Visualizou a página: /crm
+- 27/11/2025, 16:52:18 - Visualizou a página: /financial/abc-curve
+- 27/11/2025, 16:48:53 - Visualizou a página: /financial/abc-curve
+- 27/11/2025, 16:47:27 - Visualizou a página: Painel
+- 27/11/2025, 16:44:12 - Visualizou a página: Painel
+- 27/11/2025, 16:44:11 - Entrou no sistema
+- 27/11/2025, 16:42:29 - Visualizou a página: /contracts
+- 27/11/2025, 16:40:25 - Visualizou a página: /requests
+- 27/11/2025, 16:39:39 - Visualizou a página: Painel
+- 27/11/2025, 16:39:37 - Entrou no sistema
+- 26/11/2025, 19:17:34 - Visualizou a página: /services
+- 26/11/2025, 19:17:32 - create_service - Detalhes: {"serviceId":"ULftv312lQb2FhckJsub","serviceName":"Obtenção de Dispensa de Licença Ambiental - Com Relatório final"}
+- 26/11/2025, 19:13:31 - Visualizou a página: /services/new
+- 26/11/2025, 19:13:28 - Visualizou a página: /services
+- 26/11/2025, 19:13:28 - create_service - Detalhes: {"serviceId":"9OtNJ8DTCfK7pufsvZre","serviceName":"Obtenção de Dispensa de Licença Ambiental - Sem Relatório final"}
+- 26/11/2025, 19:12:20 - Visualizou a página: /services/new
+- 26/11/2025, 19:12:17 - Visualizou a página: /services
+- 26/11/2025, 19:12:17 - create_service - Detalhes: {"serviceName":"Estudo de Impacto Ambiental -EIA/RIMA","serviceId":"7ff5Fgb6q5VCzGi2BwZk"}
+- 26/11/2025, 19:11:21 - Visualizou a página: /services/new
+- 26/11/2025, 19:11:19 - Visualizou a página: /services
+- 26/11/2025, 19:11:18 - create_service - Detalhes: {"serviceName":"DAIA - Corretiva (<190ha)","serviceId":"ZZi4tXijz2CjcPd0YGmj"}
+- 26/11/2025, 19:09:17 - Visualizou a página: /services/new
+- 26/11/2025, 19:09:15 - Visualizou a página: /services
+- 26/11/2025, 19:09:14 - create_service - Detalhes: {"serviceName":"Relatório de Controle Ambienta - RCA","serviceId":"N456Hb3VT7Ut4tZ9MjJp"}
+- 26/11/2025, 19:07:58 - Visualizou a página: /services/new
+- 26/11/2025, 19:07:51 - Visualizou a página: /settings
+- 26/11/2025, 19:07:47 - Visualizou a página: /services
+- 26/11/2025, 18:58:42 - Visualizou a página: /settings
+- 26/11/2025, 13:17:47 - Visualizou a página: /settings
+- 26/11/2025, 13:08:46 - Visualizou a página: /settings
+- 25/11/2025, 20:23:39 - Visualizou a página: /settings
+- 25/11/2025, 20:23:11 - Visualizou a página: Painel
+- 25/11/2025, 20:23:07 - Entrou no sistema
+- 25/11/2025, 16:50:19 - Visualizou a página: /settings
+- 25/11/2025, 16:45:51 - Visualizou a página: /settings
+- 25/11/2025, 15:26:31 - Visualizou a página: /settings
+- 25/11/2025, 14:40:42 - Visualizou a página: /settings
+- 25/11/2025, 14:40:30 - Visualizou a página: Log de Auditoria
+- 25/11/2025, 14:07:33 - Visualizou a página: /settings
+- 25/11/2025, 14:04:02 - Visualizou a página: /settings
+- 25/11/2025, 13:12:01 - Visualizou a página: /settings
+- 25/11/2025, 13:11:48 - Visualizou a página: Clientes
+- 25/11/2025, 09:04:48 - Visualizou a página: Painel
+- 25/11/2025, 09:00:31 - Visualizou a página: /settings
+- 25/11/2025, 08:57:12 - Visualizou a página: Painel
+- 25/11/2025, 08:57:08 - Visualizou a página: /settings
+- 25/11/2025, 08:56:29 - Visualizou a página: Faturas
+- 25/11/2025, 08:56:11 - Visualizou a página: Painel
+- 25/11/2025, 08:56:06 - Entrou no sistema
+- 24/11/2025, 21:51:02 - Visualizou a página: Faturas
+- 24/11/2025, 21:50:17 - Visualizou a página: Faturas
+- 24/11/2025, 21:50:17 - Visualizou a página: /suppliers
+- 24/11/2025, 21:49:13 - Visualizou a página: /proposals
+- 24/11/2025, 21:37:33 - Visualizou a página: Faturas
+- 24/11/2025, 21:33:01 - Visualizou a página: Faturas
+- 24/11/2025, 21:19:07 - Visualizou a página: Faturas
+- 24/11/2025, 21:11:51 - Visualizou a página: Faturas
+- 24/11/2025, 21:04:38 - Visualizou a página: Faturas
+- 24/11/2025, 20:53:34 - Visualizou a página: Faturas
+- 24/11/2025, 20:53:31 - Visualizou a página: /suppliers
+- 24/11/2025, 20:41:27 - Visualizou a página: /suppliers/new
+- 24/11/2025, 20:41:23 - Visualizou a página: /suppliers
+- 24/11/2025, 20:41:09 - Visualizou a página: Painel
+- 24/11/2025, 20:41:07 - Entrou no sistema
+- 24/11/2025, 18:22:13 - Visualizou a página: Faturas
+- 24/11/2025, 18:12:13 - Visualizou a página: Faturas
+- 24/11/2025, 18:10:53 - Visualizou a página: Faturas
+- 24/11/2025, 17:52:03 - Visualizou a página: Faturas
+- 24/11/2025, 16:53:41 - Visualizou a página: Faturas
+- 24/11/2025, 16:42:50 - Visualizou a página: /settings
+- 24/11/2025, 16:36:04 - Visualizou a página: /inspections
+- 24/11/2025, 16:35:32 - Visualizou a página: Painel
+- 24/11/2025, 16:35:31 - Entrou no sistema
+- 24/11/2025, 16:28:26 - Visualizou a página: Faturas
+- 24/11/2025, 16:05:26 - Saiu do sistema
+- 24/11/2025, 16:04:56 - Saiu do sistema
+- 24/11/2025, 11:55:39 - Visualizou a página: Faturas
+- 24/11/2025, 11:55:37 - Visualizou a página: Painel
+- 24/11/2025, 11:46:06 - Visualizou a página: Faturas
+- 24/11/2025, 11:46:03 - Visualizou a página: Painel
+- 24/11/2025, 11:32:49 - Visualizou a página: Faturas
+- 24/11/2025, 11:22:55 - Visualizou a página: Painel
+- 24/11/2025, 11:20:21 - Visualizou a página: Painel
+- 24/11/2025, 11:09:07 - Visualizou a página: Faturas
+- 24/11/2025, 11:03:18 - Visualizou a página: Faturas
+- 24/11/2025, 10:59:13 - Visualizou a página: Painel
+- 24/11/2025, 10:10:59 - Visualizou a página: Faturas
+- 24/11/2025, 10:10:57 - Visualizou a página: Painel
+- 24/11/2025, 10:03:36 - Visualizou a página: Painel
+- 24/11/2025, 10:03:36 - Visualizou a página: Faturas
+- 24/11/2025, 09:50:35 - Visualizou a página: Faturas
+- 23/11/2025, 16:35:34 - Visualizou a página: Faturas
+- 23/11/2025, 16:29:28 - Visualizou a página: Faturas
+- 23/11/2025, 16:27:57 - Visualizou a página: Faturas
+- 23/11/2025, 16:27:40 - Visualizou a página: /external
+- 23/11/2025, 16:27:14 - Visualizou a página: /external
+- 23/11/2025, 16:21:51 - Visualizou a página: /external
+- 23/11/2025, 16:15:08 - Visualizou a página: /external
+- 23/11/2025, 16:14:44 - Visualizou a página: /external
+- 23/11/2025, 16:09:23 - Visualizou a página: /external
+- 23/11/2025, 16:00:44 - Visualizou a página: /bank-access
+- 23/11/2025, 16:00:06 - Visualizou a página: Faturas
+- 23/11/2025, 15:55:28 - Visualizou a página: Faturas
+- 23/11/2025, 15:48:22 - Visualizou a página: Faturas
+- 23/11/2025, 15:15:00 - Visualizou a página: Faturas
+- 23/11/2025, 14:49:43 - Visualizou a página: Faturas
+- 23/11/2025, 14:37:05 - Visualizou a página: Faturas
+- 23/11/2025, 14:33:27 - Visualizou a página: Faturas
+- 23/11/2025, 13:04:45 - Visualizou a página: /inspections/new
+- 23/11/2025, 12:59:42 - Visualizou a página: /inspections/new
+- 23/11/2025, 12:59:14 - Visualizou a página: /inspections
+- 23/11/2025, 12:59:05 - Visualizou a página: /requests
+- 23/11/2025, 12:58:29 - Visualizou a página: /studies/barragem
+- 23/11/2025, 12:58:25 - Visualizou a página: /studies/fauna
+- 23/11/2025, 12:58:21 - Visualizou a página: /studies/cavidades
+- 23/11/2025, 12:58:15 - Visualizou a página: /studies/educacao-ambiental
+- 23/11/2025, 12:58:10 - Visualizou a página: /studies/seguranca-barragens
+- 23/11/2025, 12:58:05 - Visualizou a página: /studies/educacao-ambiental
+- 23/11/2025, 12:58:00 - Visualizou a página: /studies/reserva-legal
+- 23/11/2025, 12:57:56 - Visualizou a página: /studies/fauna
+- 23/11/2025, 12:53:05 - Visualizou a página: /studies/outorgas
+- 23/11/2025, 12:52:41 - Visualizou a página: /studies/inventario
+- 23/11/2025, 12:41:54 - Visualizou a página: /studies/inventario
+- 23/11/2025, 12:41:43 - Visualizou a página: /studies/reserva-legal
+- 23/11/2025, 12:41:33 - Visualizou a página: /studies/educacao-ambiental
+- 23/11/2025, 12:41:23 - Visualizou a página: /studies/seguranca-barragens
+- 23/11/2025, 12:41:17 - Visualizou a página: /studies/cavidades
+- 23/11/2025, 12:41:09 - Visualizou a página: /studies/prada
+- 23/11/2025, 12:37:43 - Visualizou a página: /studies/fauna
+- 23/11/2025, 12:34:14 - Visualizou a página: /studies/fauna
+- 23/11/2025, 12:33:09 - Visualizou a página: /studies/fauna/inventario
+- 23/11/2025, 12:30:13 - Visualizou a página: /studies/fauna/inventario
+- 23/11/2025, 12:29:51 - Visualizou a página: /studies/barragem
+- 23/11/2025, 12:27:41 - Visualizou a página: /studies/outorgas
+- 23/11/2025, 12:23:35 - Visualizou a página: /studies/outorgas
+- 23/11/2025, 12:23:11 - Visualizou a página: /studies/barragem
+- 23/11/2025, 12:22:53 - Visualizou a página: /studies/las-ras
+- 23/11/2025, 12:21:10 - Visualizou a página: /studies/eia-rima
+- 23/11/2025, 12:21:03 - Visualizou a página: /studies/pca
+- 23/11/2025, 12:20:49 - Visualizou a página: /studies/rca
+- 23/11/2025, 12:20:39 - Visualizou a página: /studies/pia
+- 23/11/2025, 12:18:09 - Visualizou a página: /studies/ptrf
+- 23/11/2025, 12:17:55 - Visualizou a página: /studies/prada
+- 23/11/2025, 12:14:00 - Visualizou a página: /studies/seguranca-barragens
+- 23/11/2025, 12:13:51 - Visualizou a página: /studies/cavidades
+- 23/11/2025, 10:44:06 - Visualizou a página: /studies/eia-rima
+- 23/11/2025, 10:29:40 - Visualizou a página: /studies/rca
+- 23/11/2025, 10:28:59 - Visualizou a página: /studies/ptrf
+- 23/11/2025, 10:24:09 - Visualizou a página: /studies/intervencao-ambiental
+- 23/11/2025, 10:23:44 - Visualizou a página: /studies/ptrf
+- 23/11/2025, 10:11:06 - Visualizou a página: /studies/prada
+- 23/11/2025, 10:11:01 - Visualizou a página: /studies/ptrf
+- 23/11/2025, 10:10:59 - Visualizou a página: /studies/prada
+- 23/11/2025, 10:08:25 - Visualizou a página: /studies/ptrf
+- 23/11/2025, 10:08:01 - Visualizou a página: /studies/prada
+- 23/11/2025, 10:07:57 - Visualizou a página: /studies/ptrf
+- 23/11/2025, 10:06:40 - Visualizou a página: /studies/prada
+- 23/11/2025, 10:03:18 - Visualizou a página: /studies/prada
+- 23/11/2025, 10:01:49 - Visualizou a página: /settings
+- 23/11/2025, 09:58:43 - Visualizou a página: /studies/prada
+- 23/11/2025, 09:58:24 - Visualizou a página: /studies/prada/new
+- 23/11/2025, 09:58:13 - Visualizou a página: /studies/prada
+- 23/11/2025, 09:57:59 - Visualizou a página: /studies/prada
+- 23/11/2025, 09:57:38 - Visualizou a página: /studies/prada/new
+- 23/11/2025, 09:57:19 - Visualizou a página: /studies/prada
+- 23/11/2025, 09:53:05 - Visualizou a página: /settings
+- 23/11/2025, 09:52:45 - Visualizou a página: /studies/prada
+- 23/11/2025, 09:50:03 - Visualizou a página: /studies/prada
+- 23/11/2025, 09:50:03 - Visualizou a página: /studies/prada
+- 23/11/2025, 09:47:46 - Visualizou a página: /studies/prada
+- 23/11/2025, 09:45:22 - Visualizou a página: /studies/prada
+- 23/11/2025, 09:42:46 - Visualizou a página: /settings
+- 23/11/2025, 09:40:36 - Visualizou a página: /studies/prada
+- 23/11/2025, 09:40:26 - Visualizou a página: Painel
+- 23/11/2025, 09:40:23 - Entrou no sistema
+- 23/11/2025, 09:40:19 - Visualizou a página: /studies/prada
+- 23/11/2025, 09:38:38 - Visualizou a página: /studies/prada
+- 23/11/2025, 09:37:27 - Visualizou a página: /studies/prada/T0mPVlq3YBAp6ZIsyN7g/edit
+- 23/11/2025, 09:36:23 - Visualizou a página: /studies/prada
+- 23/11/2025, 09:33:42 - Visualizou a página: /studies/prada/new
+- 23/11/2025, 09:32:51 - Visualizou a página: /studies/prada/new
+- 23/11/2025, 09:32:18 - Visualizou a página: /studies/prada
+- 23/11/2025, 09:07:17 - Visualizou a página: /settings
+- 23/11/2025, 08:53:28 - Visualizou a página: /settings
+- 23/11/2025, 08:25:22 - Visualizou a página: Faturas
+- 22/11/2025, 23:11:15 - Exportou o log do usuário: tGCl1zYz6ThVpS7No8k2FtJHJiD2
+- 22/11/2025, 23:10:04 - Visualizou a página: Log de Auditoria
+- 22/11/2025, 23:09:16 - Visualizou a página: Log de Auditoria
+- 22/11/2025, 23:09:13 - Visualizou a página: Painel
+- 22/11/2025, 23:09:11 - Visualizou a página: Usuários
+- 22/11/2025, 23:09:08 - Entrou no sistema
+- 22/11/2025, 23:07:57 - Visualizou a página: Painel
+- 22/11/2025, 23:07:56 - Visualizou a página: /login
+- 22/11/2025, 23:01:28 - Visualizou a página: Painel
+- 22/11/2025, 23:01:26 - Entrou no sistema
+- 22/11/2025, 22:55:55 - Saiu do sistema
+- 22/11/2025, 22:52:08 - Saiu do sistema
+- 22/11/2025, 22:52:02 - Visualizou a página: Painel
+- 22/11/2025, 22:52:02 - Entrou no sistema
+- 22/11/2025, 22:51:30 - Saiu do sistema
+- 22/11/2025, 22:49:34 - Visualizou a página: Faturas
+- 22/11/2025, 22:46:27 - Visualizou a página: /chat
+- 22/11/2025, 22:43:35 - Visualizou a página: Faturas
+- 22/11/2025, 22:42:43 - Visualizou a página: Faturas
+- 22/11/2025, 22:42:26 - Visualizou a página: Clientes
+- 22/11/2025, 22:42:19 - Visualizou a página: /clients/CxyC9gaNM57yBIIuu1kf/edit
+- 22/11/2025, 22:41:50 - Visualizou a página: Clientes
+- 22/11/2025, 22:39:34 - Visualizou a página: Painel
+- 22/11/2025, 22:21:03 - Visualizou a página: /calendar
+- 22/11/2025, 22:20:10 - Visualizou a página: Painel
+- 22/11/2025, 09:40:15 - Visualizou a página: /contracts
+- 22/11/2025, 09:37:06 - Visualizou a página: /proposals
+- 22/11/2025, 09:37:02 - Visualizou a página: /contracts
+- 22/11/2025, 09:36:58 - Visualizou a página: Faturas
+- 22/11/2025, 09:33:07 - Visualizou a página: /proposals
+- 22/11/2025, 09:26:18 - Visualizou a página: /contracts
+- 22/11/2025, 09:13:06 - Visualizou a página: /contracts
+- 22/11/2025, 09:12:23 - Visualizou a página: /proposals
+- 22/11/2025, 09:07:56 - Visualizou a página: /settings
+- 22/11/2025, 09:00:58 - Visualizou a página: /contracts
+- 22/11/2025, 09:00:56 - Visualizou a página: /proposals
+- 22/11/2025, 09:00:49 - Visualizou a página: /contracts
+- 22/11/2025, 09:00:33 - Visualizou a página: /cash-flow
+- 22/11/2025, 09:00:33 - create_revenue - Detalhes: {"description":"Recebimento de contrato","id":"9cdPs20r4DQmb8FrYL3N"}
+- 22/11/2025, 09:00:22 - Visualizou a página: /cash-flow/new
+- 22/11/2025, 09:00:17 - Visualizou a página: /cash-flow
+- 22/11/2025, 09:00:17 - create_expense - Detalhes: {"id":"UZCZhUEHeO3OqsRTSHnu","description":"Pagamento de Combustiveis"}
+- 22/11/2025, 08:59:48 - Visualizou a página: /cash-flow/new
+- 22/11/2025, 08:59:43 - Visualizou a página: /cash-flow
+- 22/11/2025, 08:59:36 - Visualizou a página: /contracts
+- 22/11/2025, 08:58:08 - Visualizou a página: /cash-flow/new
+- 22/11/2025, 08:52:59 - Visualizou a página: /cash-flow/new
+- 22/11/2025, 08:52:19 - Visualizou a página: /cash-flow
+- 22/11/2025, 08:52:07 - Visualizou a página: /contracts
+- 22/11/2025, 08:51:48 - Visualizou a página: /proposals
+- 22/11/2025, 08:51:36 - Visualizou a página: Faturas
+- 21/11/2025, 22:47:29 - Visualizou a página: /settings
+- 21/11/2025, 22:40:50 - Visualizou a página: /settings
+- 21/11/2025, 22:39:40 - Visualizou a página: Log de Auditoria
+- 21/11/2025, 22:38:12 - Visualizou a página: Log de Auditoria
+- 21/11/2025, 22:33:51 - Visualizou a página: Log de Auditoria
+- 21/11/2025, 22:31:22 - Visualizou a página: Log de Auditoria
+- 21/11/2025, 22:30:13 - Visualizou a página: /settings
+- 21/11/2025, 22:30:10 - Visualizou a página: Log de Auditoria
+- 21/11/2025, 22:29:55 - Visualizou a página: Log de Auditoria
+- 21/11/2025, 22:27:53 - Visualizou a página: /settings
+- 21/11/2025, 22:26:45 - Visualizou a página: /settings
+- 21/11/2025, 22:23:34 - Visualizou a página: /settings
+- 21/11/2025, 22:21:48 - Visualizou a página: /settings
+- 21/11/2025, 22:21:37 - Visualizou a página: Painel
+- 21/11/2025, 22:17:35 - Visualizou a página: /settings
+- 21/11/2025, 19:42:08 - Visualizou a página: /proposals
+- 21/11/2025, 17:42:43 - Visualizou a página: Painel
+- 21/11/2025, 16:42:52 - Visualizou a página: /settings
+- 21/11/2025, 16:40:17 - Visualizou a página: /settings
+- 21/11/2025, 16:35:01 - Visualizou a página: /settings
+- 21/11/2025, 16:31:08 - Visualizou a página: /settings
+- 21/11/2025, 16:30:48 - Visualizou a página: /settings
+- 21/11/2025, 16:28:47 - Visualizou a página: /settings
+- 21/11/2025, 16:24:16 - Visualizou a página: /oficios/new
+- 21/11/2025, 16:16:06 - Visualizou a página: /oficios/new
+- 21/11/2025, 16:15:59 - Visualizou a página: /oficios
+- 21/11/2025, 16:15:53 - Visualizou a página: /oficios/new
+- 21/11/2025, 16:15:53 - Visualizou a página: /oficios/new
+- 21/11/2025, 16:15:46 - Visualizou a página: /settings
+- 21/11/2025, 16:15:45 - Visualizou a página: /oficios
+- 21/11/2025, 16:09:37 - Visualizou a página: /settings
+- 21/11/2025, 16:09:27 - Visualizou a página: /oficios
+- 21/11/2025, 16:09:27 - Visualizou a página: /oficios
+- 21/11/2025, 16:09:13 - Visualizou a página: /oficios
+- 21/11/2025, 16:04:52 - Visualizou a página: /settings
+- 21/11/2025, 16:03:11 - Visualizou a página: /inspections/new
+- 21/11/2025, 16:03:00 - Visualizou a página: /inspections
+- 21/11/2025, 16:02:28 - Visualizou a página: /external
+- 21/11/2025, 16:02:21 - Visualizou a página: Painel
+- 21/11/2025, 16:02:16 - Visualizou a página: /calendar
+- 21/11/2025, 16:02:04 - Visualizou a página: /settings
+- 21/11/2025, 16:01:54 - Visualizou a página: /calendar
+- 21/11/2025, 16:01:30 - Visualizou a página: Painel
+- 21/11/2025, 16:01:29 - Entrou no sistema
+- 21/11/2025, 15:56:44 - Visualizou a página: /oficios
+- 21/11/2025, 15:53:29 - Visualizou a página: /settings
+- 21/11/2025, 15:51:00 - Visualizou a página: /settings
+- 21/11/2025, 15:49:34 - Visualizou a página: /calendar
+- 21/11/2025, 15:49:34 - Visualizou a página: /settings
+- 21/11/2025, 15:48:35 - Visualizou a página: /calendar
+- 21/11/2025, 15:48:34 - Visualizou a página: Usuários
+- 21/11/2025, 15:47:35 - Visualizou a página: /settings
+- 21/11/2025, 15:47:28 - Visualizou a página: /calendar
+- 21/11/2025, 15:47:09 - Visualizou a página: /settings
+- 21/11/2025, 15:47:09 - Visualizou a página: /settings
+- 21/11/2025, 15:45:19 - Visualizou a página: /settings
+- 21/11/2025, 15:44:49 - Visualizou a página: /calendar
+- 21/11/2025, 15:40:14 - Visualizou a página: /external
+- 21/11/2025, 15:40:10 - Visualizou a página: /settings
+- 21/11/2025, 15:37:52 - Visualizou a página: /settings
+- 21/11/2025, 15:37:51 - Visualizou a página: /settings
+- 21/11/2025, 15:36:44 - Visualizou a página: /settings
+- 21/11/2025, 15:36:17 - Visualizou a página: /settings
+- 21/11/2025, 15:35:59 - Visualizou a página: /proposals
+- 21/11/2025, 15:35:10 - Visualizou a página: Faturas
+- 21/11/2025, 15:34:58 - Visualizou a página: /contracts
+- 21/11/2025, 15:34:24 - Visualizou a página: /proposals
+- 21/11/2025, 15:33:53 - Visualizou a página: Faturas
+- 21/11/2025, 15:22:45 - Visualizou a página: /settings
+- 21/11/2025, 15:22:44 - Visualizou a página: /proposals
+- 21/11/2025, 15:20:12 - Visualizou a página: /settings
+- 21/11/2025, 15:19:48 - Visualizou a página: /settings
+- 21/11/2025, 15:19:04 - Visualizou a página: /settings
+- 21/11/2025, 15:18:43 - create_proposal - Detalhes: {"proposalNumber":"001/2025","proposalId":"uPBEPxTaAcE00BYO8jnw"}
+- 21/11/2025, 15:15:17 - Visualizou a página: /settings
+- 21/11/2025, 15:11:20 - Visualizou a página: /settings
+- 21/11/2025, 15:10:22 - Visualizou a página: /proposals
+- 21/11/2025, 15:10:04 - Visualizou a página: Faturas
+- 21/11/2025, 15:00:36 - Visualizou a página: /settings
+- 21/11/2025, 15:00:34 - Visualizou a página: /webmail
+- 21/11/2025, 14:59:43 - Visualizou a página: /webmail
+- 21/11/2025, 14:56:54 - Visualizou a página: /settings
+- 21/11/2025, 14:53:40 - Visualizou a página: /settings
+- 21/11/2025, 14:20:24 - Visualizou a página: Faturas
+- 21/11/2025, 14:17:51 - Visualizou a página: /settings
+- 21/11/2025, 14:16:02 - Visualizou a página: /settings
+- 21/11/2025, 13:28:31 - Visualizou a página: /settings
+- 21/11/2025, 13:22:37 - Visualizou a página: /proposals
+- 21/11/2025, 13:15:13 - Visualizou a página: /proposals
+- 21/11/2025, 13:12:11 - Visualizou a página: /proposals
+- 21/11/2025, 13:09:06 - Visualizou a página: /proposals
+- 21/11/2025, 13:08:59 - Visualizou a página: Faturas
+- 21/11/2025, 13:08:24 - Visualizou a página: /clients/new
+- 21/11/2025, 13:08:05 - Visualizou a página: /clients/new
+- 21/11/2025, 13:08:00 - Visualizou a página: Clientes
+- 21/11/2025, 13:07:44 - Visualizou a página: /empreendedores/new
+- 21/11/2025, 13:07:21 - Visualizou a página: /empreendedores
+- 21/11/2025, 13:04:27 - Visualizou a página: /technical-responsible
+- 21/11/2025, 13:01:15 - Visualizou a página: /technical-responsible
+- 21/11/2025, 13:01:02 - Visualizou a página: /requests
+- 21/11/2025, 12:55:14 - Visualizou a página: /contracts
+- 21/11/2025, 12:45:19 - Visualizou a página: /contracts
+- 21/11/2025, 12:37:08 - Visualizou a página: /proposals
+- 21/11/2025, 12:36:27 - Visualizou a página: Clientes
+- 21/11/2025, 12:36:17 - Visualizou a página: /cash-flow
+- 21/11/2025, 12:30:19 - Visualizou a página: /contracts
+- 21/11/2025, 12:29:26 - Visualizou a página: /clients/CxyC9gaNM57yBIIuu1kf/edit
+- 21/11/2025, 12:29:01 - Visualizou a página: Clientes
+- 21/11/2025, 12:21:24 - Visualizou a página: /proposals
+- 21/11/2025, 12:21:13 - Visualizou a página: Faturas
+- 21/11/2025, 12:19:02 - Visualizou a página: Clientes
+- 20/11/2025, 17:14:05 - Visualizou a página: Painel
+- 20/11/2025, 17:14:05 - Visualizou a página: Painel
+- 20/11/2025, 17:14:02 - Entrou no sistema
+- 20/11/2025, 17:05:00 - Saiu do sistema
+- 20/11/2025, 17:02:18 - Visualizou a página: /settings
+- 20/11/2025, 16:58:56 - Visualizou a página: /settings
+- 20/11/2025, 16:20:47 - Visualizou a página: /settings
+- 20/11/2025, 16:11:22 - Visualizou a página: Faturas
+- 20/11/2025, 16:10:54 - Visualizou a página: Clientes
+- 20/11/2025, 16:03:07 - Visualizou a página: /technical-responsible
+- 20/11/2025, 16:01:41 - Visualizou a página: /settings
+- 20/11/2025, 16:01:08 - Visualizou a página: Painel
+- 20/11/2025, 16:01:08 - Visualizou a página: Painel
+- 20/11/2025, 16:01:04 - Entrou no sistema
+- 20/11/2025, 15:02:21 - Visualizou a página: Usuários
+- 20/11/2025, 14:58:27 - Visualizou a página: /empreendedores/rnxCLMRwGnXDL2sDkCPG/edit
+- 20/11/2025, 14:57:56 - Visualizou a página: /empreendedores
+- 20/11/2025, 14:57:42 - Visualizou a página: /projects
+- 20/11/2025, 14:53:47 - Visualizou a página: /technical-responsible
+- 20/11/2025, 14:52:34 - Visualizou a página: /technical-responsible
+- 20/11/2025, 14:52:17 - Visualizou a página: /responsible-company
+- 20/11/2025, 14:15:13 - Visualizou a página: /empreendedores
+- 20/11/2025, 14:12:32 - Visualizou a página: /empreendedores
+- 20/11/2025, 14:04:16 - Visualizou a página: Clientes
+- 20/11/2025, 14:03:07 - Visualizou a página: /empreendedores
+- 20/11/2025, 14:00:55 - Visualizou a página: Clientes
+- 20/11/2025, 13:54:29 - Visualizou a página: Painel
+- 20/11/2025, 13:52:11 - Visualizou a página: Painel
+- 20/11/2025, 13:49:22 - Visualizou a página: Painel
+- 20/11/2025, 13:42:06 - Visualizou a página: Painel
+- 20/11/2025, 13:40:20 - Visualizou a página: Painel
+- 20/11/2025, 13:39:58 - Visualizou a página: /outorgas
+- 20/11/2025, 13:38:32 - Visualizou a página: /outorgas
+- 20/11/2025, 13:27:44 - Visualizou a página: /outorgas
+- 20/11/2025, 13:14:06 - Visualizou a página: /outorgas
+- 20/11/2025, 13:06:46 - Visualizou a página: /outorgas
+- 20/11/2025, 13:00:52 - Visualizou a página: /outorgas
+- 20/11/2025, 13:00:50 - Visualizou a página: /licenses
+- 20/11/2025, 12:57:30 - Visualizou a página: /outorgas
+- 19/11/2025, 23:50:25 - Visualizou a página: /licenses
+- 19/11/2025, 23:47:10 - Visualizou a página: /licenses
+- 19/11/2025, 23:43:13 - Visualizou a página: /licenses
+- 19/11/2025, 23:41:32 - Visualizou a página: /licenses
+- 19/11/2025, 23:39:40 - Visualizou a página: /licenses
+- 19/11/2025, 23:36:34 - Visualizou a página: /licenses
+- 19/11/2025, 23:34:30 - Visualizou a página: /licenses
+- 19/11/2025, 23:32:27 - Visualizou a página: /licenses
+- 19/11/2025, 23:29:32 - Visualizou a página: /licenses
+- 19/11/2025, 23:28:19 - Visualizou a página: /licenses
+- 19/11/2025, 23:26:08 - Visualizou a página: /licenses
+- 19/11/2025, 23:24:26 - Visualizou a página: /licenses
+- 19/11/2025, 23:23:12 - Visualizou a página: /licenses
+- 19/11/2025, 23:20:50 - Visualizou a página: /licenses
+- 19/11/2025, 23:16:31 - Visualizou a página: /licenses
+- 19/11/2025, 23:15:43 - Visualizou a página: /licenses
+- 19/11/2025, 23:08:55 - Visualizou a página: /licenses
+- 19/11/2025, 23:07:12 - Visualizou a página: /licenses
+- 19/11/2025, 23:02:39 - Visualizou a página: /licenses
+- 19/11/2025, 22:46:46 - Visualizou a página: /licenses
+- 19/11/2025, 16:06:38 - Visualizou a página: /licenses
+- 19/11/2025, 15:52:16 - Visualizou a página: /licenses
+- 19/11/2025, 15:43:06 - Visualizou a página: /licenses
+- 19/11/2025, 15:40:32 - Visualizou a página: /licenses
+- 19/11/2025, 15:37:35 - Visualizou a página: /licenses
+- 19/11/2025, 15:35:19 - Visualizou a página: /licenses
+- 19/11/2025, 14:56:12 - Visualizou a página: /licenses
+- 19/11/2025, 14:46:21 - Visualizou a página: Painel
+- 19/11/2025, 14:46:20 - Visualizou a página: /licenses
+- 19/11/2025, 14:44:15 - Visualizou a página: /licenses
+- 19/11/2025, 14:44:13 - Visualizou a página: Painel
+- 19/11/2025, 14:15:23 - Visualizou a página: /licenses
+- 18/11/2025, 23:30:08 - Visualizou a página: Painel
+- 18/11/2025, 23:26:09 - Visualizou a página: Painel
+- 18/11/2025, 23:16:07 - Visualizou a página: Painel
+- 18/11/2025, 23:13:48 - Visualizou a página: Painel
+- 18/11/2025, 23:12:13 - Visualizou a página: Painel
+- 18/11/2025, 23:12:12 - Visualizou a página: /licenses
+- 18/11/2025, 23:08:41 - Visualizou a página: /licenses
+- 18/11/2025, 23:08:36 - Visualizou a página: Painel
+- 18/11/2025, 23:08:32 - Visualizou a página: Usuários
+- 18/11/2025, 23:07:26 - Visualizou a página: Usuários
+- 18/11/2025, 23:06:11 - Visualizou a página: Painel
+- 18/11/2025, 23:05:52 - Visualizou a página: Painel
+- 18/11/2025, 23:03:39 - Visualizou a página: Painel
+- 18/11/2025, 23:02:24 - Visualizou a página: Painel
+- 18/11/2025, 22:54:28 - Visualizou a página: /licenses
+- 18/11/2025, 22:51:10 - Visualizou a página: /settings/files
+- 18/11/2025, 22:50:14 - Visualizou a página: Painel
+- 18/11/2025, 22:48:44 - Visualizou a página: Painel
+- 18/11/2025, 22:47:47 - Visualizou a página: /licenses
+- 18/11/2025, 22:45:39 - Visualizou a página: Painel
+- 18/11/2025, 22:45:38 - Visualizou a página: /licenses
+- 18/11/2025, 22:44:11 - Visualizou a página: /licenses
+- 18/11/2025, 22:43:51 - Visualizou a página: Painel
+- 18/11/2025, 22:43:41 - Visualizou a página: /licenses
+- 18/11/2025, 22:43:20 - Visualizou a página: Painel
+- 18/11/2025, 22:40:51 - Visualizou a página: Painel
+- 18/11/2025, 22:40:49 - Visualizou a página: /licenses
+- 18/11/2025, 22:39:25 - Visualizou a página: /licenses
+- 18/11/2025, 22:39:17 - Visualizou a página: Painel
+- 18/11/2025, 22:37:01 - Visualizou a página: Painel
+- 18/11/2025, 22:36:55 - Visualizou a página: /licenses
+- 18/11/2025, 22:36:50 - Visualizou a página: Painel
+- 18/11/2025, 22:36:49 - Visualizou a página: Usuários
+- 18/11/2025, 22:33:53 - update_user - Detalhes: {"userName":"Renato Bueno Paula","userId":"Qp3OVPtZMLZtGzYZ1KhHzvZNy872"}
+- 18/11/2025, 22:32:46 - Visualizou a página: Usuários
+- 18/11/2025, 22:32:35 - Visualizou a página: Painel
+- 18/11/2025, 22:32:35 - Visualizou a página: /licenses
+- 18/11/2025, 22:28:01 - Visualizou a página: /licenses
+- 18/11/2025, 22:25:10 - Visualizou a página: /licenses
+- 18/11/2025, 22:22:41 - Visualizou a página: Painel
+- 18/11/2025, 22:22:39 - Visualizou a página: /licenses
+- 18/11/2025, 22:20:57 - Visualizou a página: Painel
+- 18/11/2025, 22:19:22 - Visualizou a página: Painel
+- 18/11/2025, 22:17:46 - Visualizou a página: Painel
+- 18/11/2025, 22:17:44 - Visualizou a página: /licenses
+- 18/11/2025, 22:16:22 - Visualizou a página: Painel
+- 18/11/2025, 22:16:19 - Visualizou a página: /licenses
+- 18/11/2025, 22:14:29 - Visualizou a página: /licenses
+- 18/11/2025, 22:14:18 - Visualizou a página: /projects
+- 18/11/2025, 22:14:12 - Visualizou a página: Clientes
+- 18/11/2025, 22:11:32 - Visualizou a página: /licenses
+- 18/11/2025, 22:01:03 - Visualizou a página: Painel
+- 18/11/2025, 21:59:44 - Visualizou a página: /licenses
+- 18/11/2025, 21:58:32 - Visualizou a página: /projects
+- 18/11/2025, 21:55:24 - Visualizou a página: /projects/new
+- 18/11/2025, 21:55:22 - Visualizou a página: /projects
+- 18/11/2025, 21:23:04 - Visualizou a página: /projects/new
+- 18/11/2025, 21:22:47 - Visualizou a página: /projects
+- 18/11/2025, 21:22:42 - Visualizou a página: Usuários
+- 18/11/2025, 21:21:37 - Visualizou a página: Usuários
+- 18/11/2025, 21:21:35 - Visualizou a página: Painel
+- 18/11/2025, 21:18:30 - Visualizou a página: Painel
+- 18/11/2025, 21:17:51 - Visualizou a página: Usuários
+- 18/11/2025, 21:17:29 - Visualizou a página: /clients/new
+- 18/11/2025, 21:17:26 - Visualizou a página: Clientes
+- 18/11/2025, 21:17:16 - Visualizou a página: Painel
+- 18/11/2025, 21:15:05 - Visualizou a página: Painel
+- 18/11/2025, 21:15:05 - Visualizou a página: Painel
+- 18/11/2025, 21:15:00 - Entrou no sistema
+- 18/11/2025, 21:09:24 - Saiu do sistema
+- 18/11/2025, 21:09:21 - Visualizou a página: Usuários
+- 18/11/2025, 21:07:27 - Saiu do sistema
+- 18/11/2025, 21:06:49 - Visualizou a página: Painel
+- 18/11/2025, 21:04:58 - Visualizou a página: /clients/new
+- 18/11/2025, 20:54:54 - Visualizou a página: /clients/new
+- 18/11/2025, 20:54:45 - Visualizou a página: Clientes
+- 18/11/2025, 20:47:12 - Visualizou a página: /studies/fauna/inventario
+- 18/11/2025, 20:36:13 - Visualizou a página: Usuários
+- 18/11/2025, 20:35:49 - Visualizou a página: Painel
+- 18/11/2025, 20:35:48 - Visualizou a página: Painel
+- 18/11/2025, 20:35:48 - Entrou no sistema
+- 18/11/2025, 20:34:00 - Visualizou a página: Painel
+- 18/11/2025, 20:18:59 - Visualizou a página: Painel
+- 18/11/2025, 20:16:45 - Visualizou a página: /studies/fauna
+- 18/11/2025, 20:14:02 - Visualizou a página: Painel
+- 18/11/2025, 20:08:19 - Visualizou a página: Painel
+- 18/11/2025, 20:08:19 - Visualizou a página: /studies/fauna
+- 18/11/2025, 20:05:09 - Visualizou a página: /studies/fauna
+- 18/11/2025, 20:05:09 - Visualizou a página: Painel
+- 18/11/2025, 19:59:04 - Visualizou a página: Painel
+- 18/11/2025, 19:59:04 - Visualizou a página: /studies/fauna
+- 18/11/2025, 19:56:56 - Visualizou a página: /studies/fauna
+- 18/11/2025, 19:55:14 - Visualizou a página: Painel
+- 18/11/2025, 14:50:35 - Visualizou a página: Painel
+- 17/11/2025, 15:08:38 - Visualizou a página: Painel
+- 17/11/2025, 15:08:33 - Visualizou a página: Painel
+- 17/11/2025, 15:08:33 - Visualizou a página: Painel
+- 17/11/2025, 15:02:55 - Visualizou a página: Painel
+- 17/11/2025, 14:58:05 - Visualizou a página: Painel
+- 17/11/2025, 11:46:06 - Visualizou a página: Painel
+- 17/11/2025, 11:43:21 - Visualizou a página: Painel
+- 17/11/2025, 11:43:12 - Visualizou a página: Painel
+- 17/11/2025, 11:10:24 - Saiu do sistema
+- 17/11/2025, 10:29:52 - Visualizou a página: Painel
+- 17/11/2025, 10:24:50 - Visualizou a página: Painel
+- 17/11/2025, 10:16:37 - Visualizou a página: Painel
+- 17/11/2025, 10:16:18 - Visualizou a página: Painel
+- 17/11/2025, 10:15:52 - Visualizou a página: Painel
+- 17/11/2025, 10:11:54 - Visualizou a página: Painel
+- 17/11/2025, 10:09:27 - Visualizou a página: Painel
+- 17/11/2025, 10:09:27 - Visualizou a página: Painel
+- 17/11/2025, 10:09:26 - Entrou no sistema
+- 17/11/2025, 10:08:50 - Visualizou a página: Painel
+- 17/11/2025, 10:06:19 - Visualizou a página: Painel
+- 17/11/2025, 10:00:13 - Visualizou a página: Painel
+- 17/11/2025, 09:32:46 - Visualizou a página: Painel
+- 17/11/2025, 08:52:51 - Visualizou a página: Painel
+- 15/11/2025, 18:50:48 - Visualizou a página: Painel
+- 15/11/2025, 12:09:32 - Visualizou a página: Painel
+- 15/11/2025, 12:08:52 - Visualizou a página: Painel
+- 15/11/2025, 12:08:46 - Visualizou a página: Painel
+- 15/11/2025, 12:05:21 - Visualizou a página: Painel
+- 15/11/2025, 09:19:27 - Visualizou a página: /inspections/new
+- 15/11/2025, 09:11:56 - Visualizou a página: /inspections/new
+- 15/11/2025, 08:59:54 - Visualizou a página: Painel
+- 15/11/2025, 08:58:28 - Visualizou a página: /inspections/new
+- 15/11/2025, 08:57:03 - Visualizou a página: Painel
+- 15/11/2025, 08:54:39 - Visualizou a página: Painel
+- 15/11/2025, 08:50:32 - Visualizou a página: Painel
+- 15/11/2025, 08:50:17 - Visualizou a página: /inspections/new
+- 15/11/2025, 08:48:45 - Visualizou a página: /inspections/new
+- 15/11/2025, 08:48:43 - Visualizou a página: Painel
+- 15/11/2025, 08:47:13 - Visualizou a página: /inspections/new
+- 15/11/2025, 08:46:33 - Visualizou a página: Painel
+- 15/11/2025, 08:36:37 - Visualizou a página: Painel
+- 15/11/2025, 08:34:10 - Visualizou a página: /inspections/new
+- 15/11/2025, 08:30:05 - Visualizou a página: /inspections/new
+- 15/11/2025, 08:29:21 - Visualizou a página: /inspections/new
+- 15/11/2025, 08:28:56 - Visualizou a página: /inspections
+- 15/11/2025, 08:27:38 - Visualizou a página: Painel
+- 15/11/2025, 08:10:53 - Visualizou a página: Painel
+- 15/11/2025, 08:04:32 - Visualizou a página: Painel
+- 15/11/2025, 07:55:59 - Visualizou a página: Painel
+- 15/11/2025, 07:51:54 - Visualizou a página: Painel
+- 15/11/2025, 07:51:53 - Visualizou a página: Painel
+- 15/11/2025, 07:51:49 - Entrou no sistema
+- 14/11/2025, 17:13:29 - Visualizou a página: Painel
+- 14/11/2025, 17:07:08 - Visualizou a página: Painel
+- 14/11/2025, 17:07:08 - Visualizou a página: Painel
+- 14/11/2025, 17:07:06 - Entrou no sistema
+- 14/11/2025, 17:05:46 - Visualizou a página: Painel
+- 14/11/2025, 17:05:40 - Visualizou a página: Painel
+- 14/11/2025, 17:05:39 - Visualizou a página: /inspections
+- 14/11/2025, 17:04:45 - Visualizou a página: /inspections/new
+- 14/11/2025, 17:04:36 - Visualizou a página: /inspections
+- 14/11/2025, 16:50:32 - Visualizou a página: Painel
+- 14/11/2025, 16:17:14 - Visualizou a página: Painel
+- 14/11/2025, 16:12:10 - Visualizou a página: Painel
+- 14/11/2025, 16:11:25 - Visualizou a página: Painel
+- 14/11/2025, 16:00:40 - Visualizou a página: Painel
+- 14/11/2025, 15:52:16 - Visualizou a página: Painel
+- 14/11/2025, 15:50:18 - Visualizou a página: Painel
+- 14/11/2025, 15:46:09 - Visualizou a página: Painel
+- 14/11/2025, 15:43:07 - Visualizou a página: Painel
+- 14/11/2025, 15:32:20 - Visualizou a página: Painel
+- 14/11/2025, 15:26:00 - Visualizou a página: Painel
+- 14/11/2025, 15:14:09 - Saiu do sistema
+- 14/11/2025, 15:09:57 - Visualizou a página: Usuários
+- 14/11/2025, 15:03:48 - Visualizou a página: Painel
+- 14/11/2025, 15:03:48 - Visualizou a página: Painel
+- 14/11/2025, 15:03:45 - Entrou no sistema
+- 14/11/2025, 14:58:36 - Visualizou a página: Painel
+- 14/11/2025, 14:55:40 - Visualizou a página: Painel
+- 14/11/2025, 14:53:38 - Saiu do sistema
+- 14/11/2025, 14:53:06 - Visualizou a página: Usuários
+- 14/11/2025, 14:45:07 - Visualizou a página: /compliance
+- 14/11/2025, 14:40:05 - Visualizou a página: Painel
+- 14/11/2025, 14:36:20 - Visualizou a página: /compliance
+- 14/11/2025, 14:32:07 - Visualizou a página: /compliance
+- 14/11/2025, 14:26:56 - Visualizou a página: /outorgas
+- 14/11/2025, 14:25:33 - Visualizou a página: /licenses
+- 14/11/2025, 14:24:18 - Visualizou a página: Painel
+- 14/11/2025, 14:23:26 - Visualizou a página: /compliance
+- 14/11/2025, 14:14:31 - Visualizou a página: /licenses
+- 14/11/2025, 14:03:48 - Visualizou a página: /compliance
+- 14/11/2025, 13:50:11 - Visualizou a página: /clients/new
+- 14/11/2025, 13:49:46 - Visualizou a página: Clientes
+- 14/11/2025, 12:53:20 - Visualizou a página: /settings
+- 14/11/2025, 12:46:25 - Visualizou a página: /settings/files
+- 14/11/2025, 12:45:58 - Visualizou a página: /settings/files
+- 14/11/2025, 12:29:59 - Visualizou a página: /requests/new
+- 14/11/2025, 12:28:13 - Visualizou a página: /requests
+- 14/11/2025, 12:28:05 - Visualizou a página: /projects
+- 14/11/2025, 12:26:20 - Visualizou a página: Painel
+- 14/11/2025, 12:24:43 - Visualizou a página: /requests
+- 14/11/2025, 12:21:16 - Visualizou a página: /requests
+- 14/11/2025, 12:20:55 - Visualizou a página: /projects/new
+- 14/11/2025, 12:18:43 - Visualizou a página: /projects/new
+- 14/11/2025, 12:18:40 - Visualizou a página: /empreendedores/new
+- 14/11/2025, 12:17:46 - Visualizou a página: /empreendedores
+- 14/11/2025, 12:11:02 - Visualizou a página: /projects/new
+- 14/11/2025, 12:10:55 - Visualizou a página: /projects
+- 14/11/2025, 12:10:40 - Visualizou a página: /projects/new
+- 14/11/2025, 12:10:32 - Visualizou a página: /projects
+- 14/11/2025, 12:04:28 - Visualizou a página: Painel
+- 14/11/2025, 12:02:58 - Visualizou a página: /projects
+- 14/11/2025, 11:59:58 - Visualizou a página: /projects/new
+- 14/11/2025, 11:59:50 - Visualizou a página: /projects
+- 14/11/2025, 11:59:29 - Visualizou a página: /projects/new
+- 13/11/2025, 11:36:06 - Visualizou a página: /projects/new
+- 13/11/2025, 11:36:04 - Visualizou a página: /projects
+- 13/11/2025, 11:35:55 - Visualizou a página: /projects/new
+- 13/11/2025, 11:34:27 - Visualizou a página: /projects/new
+- 13/11/2025, 11:34:24 - Visualizou a página: /empreendedores
+- 13/11/2025, 11:34:12 - Visualizou a página: /projects/new
+- 13/11/2025, 11:34:10 - Visualizou a página: /projects
+- 13/11/2025, 11:34:02 - Visualizou a página: /projects/new
+- 13/11/2025, 11:33:10 - Visualizou a página: Log de Auditoria
+- 13/11/2025, 11:33:01 - Visualizou a página: /projects/new
+- 13/11/2025, 11:29:38 - Visualizou a página: /projects/new
+- 13/11/2025, 11:29:35 - Visualizou a página: /projects
+- 13/11/2025, 11:29:28 - Visualizou a página: /projects/new
+- 13/11/2025, 11:29:26 - Visualizou a página: /empreendedores
+- 13/11/2025, 11:28:06 - Visualizou a página: /projects/new
+- 13/11/2025, 11:28:02 - Visualizou a página: /projects
+- 13/11/2025, 11:24:47 - Visualizou a página: Log de Auditoria
+- 13/11/2025, 11:22:31 - Exportou o log do usuário: tGCl1zYz6ThVpS7No8k2FtJHJiD2
+- 13/11/2025, 11:22:24 - Visualizou a página: Log de Auditoria
+- 13/11/2025, 11:21:49 - Visualizou a página: Usuários
+- 13/11/2025, 11:21:17 - Visualizou a página: /projects/new
+- 13/11/2025, 11:10:33 - Visualizou a página: /projects
+- 13/11/2025, 11:07:58 - Visualizou a página: /projects
+- 13/11/2025, 11:03:28 - Visualizou a página: /projects
+- 13/11/2025, 10:45:10 - Visualizou a página: /projects
+- 13/11/2025, 10:40:41 - Visualizou a página: /projects/new
+- 13/11/2025, 10:40:36 - Visualizou a página: /projects
+- 13/11/2025, 10:40:25 - Visualizou a página: /projects/new
+- 13/11/2025, 10:40:14 - Visualizou a página: /projects
+- 13/11/2025, 10:40:01 - Visualizou a página: Painel
+- 13/11/2025, 10:39:44 - Visualizou a página: /technical-responsible/new
+- 13/11/2025, 10:39:34 - Visualizou a página: /technical-responsible
+- 13/11/2025, 10:29:21 - Visualizou a página: /projects/new
+- 13/11/2025, 10:26:52 - Visualizou a página: /projects/new
+- 13/11/2025, 10:17:55 - Visualizou a página: /projects/new
+- 13/11/2025, 10:17:43 - Visualizou a página: /studies/rca/new
+- 13/11/2025, 10:17:28 - Visualizou a página: /studies/rca
+- 13/11/2025, 10:16:39 - Visualizou a página: /projects/new
+- 13/11/2025, 09:35:24 - Visualizou a página: /clients/new
+- 13/11/2025, 09:35:16 - Visualizou a página: Clientes
+- 13/11/2025, 09:34:50 - Visualizou a página: /empreendedores
+- 13/11/2025, 09:34:27 - Visualizou a página: Painel
+- 12/11/2025, 23:34:31 - Visualizou a página: /projects/new
+- 12/11/2025, 23:34:28 - Visualizou a página: /projects/new
+- 12/11/2025, 23:29:00 - Visualizou a página: /projects/new
+- 12/11/2025, 23:28:48 - Visualizou a página: /projects/new
+- 12/11/2025, 23:20:47 - Visualizou a página: /projects/new
+- 12/11/2025, 23:20:26 - Visualizou a página: /projects/new
+- 12/11/2025, 23:16:45 - Visualizou a página: /projects/new
+- 12/11/2025, 23:13:34 - Visualizou a página: /projects/new
+- 12/11/2025, 23:12:59 - Visualizou a página: /projects/new
+- 12/11/2025, 23:08:53 - Visualizou a página: /projects/new
+- 12/11/2025, 23:08:53 - Visualizou a página: /projects/new
+- 12/11/2025, 23:05:59 - Visualizou a página: /projects/new
+- 12/11/2025, 23:03:11 - Visualizou a página: /projects/new
+- 12/11/2025, 23:03:06 - Visualizou a página: /projects/new
+- 12/11/2025, 23:03:06 - Visualizou a página: /projects/new
+- 12/11/2025, 22:56:38 - Visualizou a página: Painel
+- 12/11/2025, 22:49:41 - Visualizou a página: /projects/new
+- 12/11/2025, 22:49:38 - Visualizou a página: /projects/new
+- 12/11/2025, 22:43:37 - Visualizou a página: /projects/new
+- 12/11/2025, 22:33:43 - Visualizou a página: /projects/new
+- 12/11/2025, 22:28:25 - Visualizou a página: /projects/new
+- 12/11/2025, 22:22:38 - Visualizou a página: /projects/new
+- 12/11/2025, 22:22:35 - Visualizou a página: /projects/new
+- 12/11/2025, 22:22:35 - Visualizou a página: /projects/new
+- 12/11/2025, 22:17:26 - Visualizou a página: /projects/new
+- 12/11/2025, 22:11:57 - Visualizou a página: /projects/new
+- 12/11/2025, 22:10:04 - Visualizou a página: /projects/new
+- 12/11/2025, 22:10:01 - Visualizou a página: /projects/new
+- 12/11/2025, 22:03:22 - Visualizou a página: /projects/new
+- 12/11/2025, 21:50:47 - Visualizou a página: /reporting
+- 12/11/2025, 21:47:36 - Visualizou a página: /projects/new
+- 12/11/2025, 21:45:37 - Visualizou a página: /projects/new
+- 12/11/2025, 21:44:28 - Visualizou a página: /settings/files
+- 12/11/2025, 21:43:58 - Visualizou a página: Painel
+- 12/11/2025, 21:39:09 - Visualizou a página: /projects/new
+- 12/11/2025, 21:39:05 - Visualizou a página: /projects/new
+- 12/11/2025, 19:34:11 - Visualizou a página: /projects/new
+- 12/11/2025, 18:39:16 - Visualizou a página: /projects/new
+- 12/11/2025, 18:36:50 - Visualizou a página: /projects/new
+- 12/11/2025, 18:36:50 - Visualizou a página: /projects/new
+- 12/11/2025, 18:34:11 - Visualizou a página: /projects/new
+- 12/11/2025, 18:34:09 - Visualizou a página: /projects/new
+- 12/11/2025, 18:30:22 - Visualizou a página: /projects/new
+- 12/11/2025, 18:30:21 - Visualizou a página: /projects/new
+- 12/11/2025, 18:26:23 - Visualizou a página: /projects/new
+- 12/11/2025, 18:25:51 - Visualizou a página: Painel
+- 12/11/2025, 18:15:06 - Visualizou a página: Faturas
+- 12/11/2025, 18:15:06 - Visualizou a página: /projects/new
+- 12/11/2025, 18:07:29 - Visualizou a página: Faturas
+- 12/11/2025, 18:02:12 - Visualizou a página: /projects/new
+- 12/11/2025, 18:02:05 - Visualizou a página: /empreendedores/new
+- 12/11/2025, 18:01:22 - Visualizou a página: Faturas
+- 12/11/2025, 17:59:32 - Visualizou a página: /projects/new
+- 12/11/2025, 17:48:05 - Visualizou a página: Faturas
+- 12/11/2025, 17:44:07 - Visualizou a página: /projects/new
+- 12/11/2025, 17:41:53 - Visualizou a página: Faturas
+- 12/11/2025, 17:41:52 - Visualizou a página: /empreendedores/new
+- 12/11/2025, 17:38:25 - Visualizou a página: /empreendedores/new
+- 12/11/2025, 17:38:19 - Visualizou a página: /empreendedores
+- 12/11/2025, 17:33:05 - Visualizou a página: Faturas
+- 12/11/2025, 17:19:49 - Visualizou a página: /empreendedores/new
+- 12/11/2025, 17:19:35 - Visualizou a página: /empreendedores
+- 12/11/2025, 17:19:21 - Visualizou a página: /projects/new
+- 12/11/2025, 17:18:37 - Visualizou a página: /empreendedores
+- 12/11/2025, 17:18:23 - Visualizou a página: /empreendedores/rnxCLMRwGnXDL2sDkCPG/edit
+- 12/11/2025, 17:14:21 - Visualizou a página: /empreendedores
+- 12/11/2025, 17:14:11 - Visualizou a página: /projects/new
+- 12/11/2025, 17:13:51 - Visualizou a página: /projects/new
+- 12/11/2025, 17:13:45 - Visualizou a página: /empreendedores
+- 12/11/2025, 17:10:45 - Visualizou a página: /empreendedores/rnxCLMRwGnXDL2sDkCPG/edit
+- 12/11/2025, 17:10:29 - Visualizou a página: /empreendedores
+- 12/11/2025, 17:10:26 - Visualizou a página: /projects/new
+- 12/11/2025, 17:10:25 - Visualizou a página: /empreendedores
+- 12/11/2025, 15:54:50 - Visualizou a página: /clients/GmlrknayVHtBX6g1LIxp/edit
+- 12/11/2025, 15:54:33 - Visualizou a página: Clientes
+- 12/11/2025, 15:54:32 - Criou o cliente: Wesley Moura Caetano
+- 12/11/2025, 15:44:08 - Visualizou a página: /clients/new
+- 12/11/2025, 15:43:26 - Visualizou a página: Clientes
+- 12/11/2025, 15:43:10 - Visualizou a página: /cash-flow
+- 12/11/2025, 15:39:31 - Visualizou a página: /technical-responsible/new
+- 12/11/2025, 15:39:20 - Visualizou a página: /technical-responsible
+- 12/11/2025, 15:36:25 - Visualizou a página: Painel
+- 12/11/2025, 12:58:06 - Visualizou a página: Faturas
+- 12/11/2025, 12:57:32 - Visualizou a página: /studies/rca
+- 12/11/2025, 12:57:14 - Visualizou a página: /studies/rca/new
+- 12/11/2025, 12:57:01 - Visualizou a página: /studies/rca
+- 11/11/2025, 22:44:09 - Visualizou a página: Faturas
+- 11/11/2025, 22:43:50 - Visualizou a página: /invoices/new
+- 11/11/2025, 22:43:10 - Visualizou a página: Faturas
+- 11/11/2025, 22:40:33 - Visualizou a página: Faturas
+- 11/11/2025, 22:40:15 - Visualizou a página: /invoices/new
+- 11/11/2025, 22:39:53 - Visualizou a página: Faturas
+- 11/11/2025, 22:38:17 - Visualizou a página: Faturas
+- 11/11/2025, 22:37:58 - Visualizou a página: /invoices/new
+- 11/11/2025, 22:37:53 - delete_invoice - Detalhes: {"invoiceId":"anL3XJEbgYIBxOmiO40q","invoiceNumber":"01/2025"}
+- 11/11/2025, 22:34:50 - Visualizou a página: Faturas
+- 11/11/2025, 22:34:02 - Visualizou a página: /invoices/new
+- 11/11/2025, 22:32:06 - Visualizou a página: Faturas
+- 11/11/2025, 22:28:20 - Visualizou a página: Faturas
+- 11/11/2025, 22:27:57 - Visualizou a página: /invoices/new
+- 11/11/2025, 22:15:22 - Visualizou a página: Faturas
+- 11/11/2025, 22:13:57 - Visualizou a página: Faturas
+- 11/11/2025, 22:09:10 - Visualizou a página: /invoices/new
+- 11/11/2025, 22:07:21 - Visualizou a página: Faturas
+- 11/11/2025, 22:06:52 - Visualizou a página: /invoices/new
+- 11/11/2025, 22:06:45 - Visualizou a página: Faturas
+- 11/11/2025, 22:02:49 - Visualizou a página: /settings/files
+- 11/11/2025, 22:02:44 - Visualizou a página: Usuários
+- 11/11/2025, 22:02:33 - Visualizou a página: /settings/files
+- 11/11/2025, 22:02:26 - Visualizou a página: Log de Auditoria
+- 11/11/2025, 22:02:12 - Visualizou a página: /settings/files
+- 11/11/2025, 22:02:10 - Visualizou a página: /settings
+- 11/11/2025, 22:01:58 - Visualizou a página: /settings/files
+- 11/11/2025, 22:01:41 - Visualizou a página: /settings
+- 11/11/2025, 22:01:04 - Visualizou a página: /settings
+- 11/11/2025, 21:52:44 - Visualizou a página: /projects/new
+- 11/11/2025, 21:49:43 - Visualizou a página: /projects/new
+- 11/11/2025, 21:48:18 - Visualizou a página: /projects/new
+- 11/11/2025, 21:46:18 - Visualizou a página: /projects/new
+- 11/11/2025, 21:42:46 - Visualizou a página: /projects/new
+- 11/11/2025, 21:31:23 - Visualizou a página: /projects/new
+- 11/11/2025, 21:31:20 - Visualizou a página: /technical-responsible
+- 11/11/2025, 21:31:16 - Visualizou a página: /technical-responsible/new
+- 11/11/2025, 21:31:06 - Visualizou a página: /technical-responsible
+- 11/11/2025, 21:30:59 - Visualizou a página: /responsible-company
+- 11/11/2025, 21:30:57 - Visualizou a página: /responsible-company/new
+- 11/11/2025, 21:30:53 - Visualizou a página: /responsible-company
+- 11/11/2025, 21:30:26 - Visualizou a página: /projects/new
+- 11/11/2025, 21:30:24 - Visualizou a página: /empreendedores
+- 11/11/2025, 21:30:21 - Visualizou a página: /empreendedores/new
+- 11/11/2025, 21:30:17 - Visualizou a página: /empreendedores
+- 11/11/2025, 21:27:11 - Visualizou a página: /projects/new
+- 11/11/2025, 21:22:48 - Visualizou a página: /responsible-company/new
+- 11/11/2025, 21:22:20 - Visualizou a página: /responsible-company/new
+- 11/11/2025, 21:22:12 - Visualizou a página: /responsible-company
+- 11/11/2025, 21:22:09 - Visualizou a página: /technical-responsible
+- 11/11/2025, 21:21:55 - Visualizou a página: /responsible-company
+- 11/11/2025, 21:18:58 - Visualizou a página: /projects/new
+- 11/11/2025, 21:18:57 - Visualizou a página: /responsible-company
+- 11/11/2025, 21:18:45 - Visualizou a página: /projects/new
+- 11/11/2025, 21:18:31 - Visualizou a página: /empreendedores/new
+- 11/11/2025, 21:18:23 - Visualizou a página: /empreendedores
+- 11/11/2025, 21:16:30 - Visualizou a página: /bank-access
+- 11/11/2025, 21:16:20 - Visualizou a página: /cash-flow/new
+- 11/11/2025, 21:16:06 - Visualizou a página: /cash-flow
+- 11/11/2025, 21:15:25 - Visualizou a página: /proposals/new
+- 11/11/2025, 21:15:18 - Visualizou a página: /proposals
+- 11/11/2025, 21:15:10 - Visualizou a página: Faturas
+- 11/11/2025, 21:15:04 - Visualizou a página: /invoices/new
+- 11/11/2025, 21:14:57 - Visualizou a página: Faturas
+- 11/11/2025, 21:14:50 - Visualizou a página: Clientes
+- 11/11/2025, 21:14:44 - Visualizou a página: /clients/new
+- 11/11/2025, 21:14:32 - Visualizou a página: Clientes
+- 11/11/2025, 21:12:22 - Visualizou a página: Clientes
+- 11/11/2025, 21:08:06 - Visualizou a página: Faturas
+- 11/11/2025, 21:07:47 - Visualizou a página: Clientes
+- 11/11/2025, 21:04:22 - Visualizou a página: Faturas
+- 11/11/2025, 21:03:59 - Visualizou a página: Clientes
+- 11/11/2025, 21:03:41 - Visualizou a página: Painel
+- 11/11/2025, 21:03:39 - Visualizou a página: /empreendedores
+- 11/11/2025, 21:02:35 - Visualizou a página: Painel
+- 11/11/2025, 21:02:12 - Visualizou a página: Painel
+- 10/11/2025, 19:50:46 - Visualizou a página: /studies/rca/new
+- 10/11/2025, 19:42:23 - Visualizou a página: /studies/rca/new
+- 10/11/2025, 19:29:40 - Visualizou a página: /studies/rca/new
+- 10/11/2025, 19:29:38 - Visualizou a página: /studies/rca/new
+- 10/11/2025, 19:26:36 - Visualizou a página: /studies/rca/new
+- 10/11/2025, 19:19:39 - Visualizou a página: /studies/rca/new
+- 10/11/2025, 19:19:39 - Visualizou a página: /studies/rca/new
+- 10/11/2025, 19:10:27 - Visualizou a página: /studies/rca/new
+- 10/11/2025, 19:04:31 - Visualizou a página: /studies/rca/new
+- 10/11/2025, 19:04:30 - Visualizou a página: /studies/rca/new
+- 10/11/2025, 19:00:53 - Visualizou a página: /studies/rca/new
+- 10/11/2025, 18:50:18 - Visualizou a página: /studies/rca/new
+- 10/11/2025, 18:44:11 - Visualizou a página: /studies/rca/new
+- 10/11/2025, 18:37:57 - Visualizou a página: /studies/rca/new
+- 10/11/2025, 18:37:51 - Visualizou a página: /studies/rca
+- 10/11/2025, 18:01:19 - Visualizou a página: /studies/rca/new
+- 10/11/2025, 17:39:15 - Visualizou a página: /studies/rca/new
+- 10/11/2025, 17:33:03 - Visualizou a página: /studies/rca/new
+- 10/11/2025, 17:24:02 - Visualizou a página: /studies/rca/new
+- 10/11/2025, 17:08:59 - Visualizou a página: /studies/rca/new
+- 10/11/2025, 16:56:54 - Visualizou a página: /studies/rca/new
+- 10/11/2025, 16:53:42 - Visualizou a página: /studies/rca/new
+- 10/11/2025, 16:37:31 - Visualizou a página: /studies/rca/new
+- 10/11/2025, 16:36:43 - Visualizou a página: /studies/rca
+- 10/11/2025, 16:34:27 - Visualizou a página: /studies/rca/new
+- 10/11/2025, 16:34:21 - Visualizou a página: /studies/rca
+- 10/11/2025, 16:33:34 - Visualizou a página: Painel
+- 10/11/2025, 16:25:22 - Visualizou a página: /studies/rca/new
+- 10/11/2025, 14:43:16 - Visualizou a página: /studies/rca/new
+- 10/11/2025, 14:40:52 - Visualizou a página: /studies/rca/new
+- 10/11/2025, 14:40:31 - Visualizou a página: /studies/rca/new
+- 10/11/2025, 14:39:17 - Visualizou a página: /studies/rca
+- 10/11/2025, 14:37:16 - Visualizou a página: /studies/rca/new
+- 10/11/2025, 14:36:34 - Visualizou a página: /studies/rca
+- 10/11/2025, 14:36:15 - Visualizou a página: /studies/rca
+- 10/11/2025, 14:30:15 - Visualizou a página: /studies/rca/new
+- 10/11/2025, 14:26:34 - Visualizou a página: /studies/rca/new
+- 10/11/2025, 14:23:24 - Visualizou a página: /studies/rca/new
+- 10/11/2025, 14:19:03 - Visualizou a página: /studies/rca/new
+- 10/11/2025, 14:17:33 - Visualizou a página: /studies/rca/new
+- 10/11/2025, 14:13:15 - Visualizou a página: /studies/rca
+- 10/11/2025, 14:07:43 - Visualizou a página: /studies/rca/new
+- 10/11/2025, 14:04:25 - Visualizou a página: /studies/rca/new
+- 10/11/2025, 14:02:12 - Visualizou a página: /studies/rca/new
+- 10/11/2025, 13:57:34 - Visualizou a página: /studies/rca/new
+- 10/11/2025, 13:53:46 - Visualizou a página: /studies/rca/new
+- 10/11/2025, 13:52:14 - Visualizou a página: /studies/rca
+- 10/11/2025, 13:50:43 - Visualizou a página: /studies/rca
+- 10/11/2025, 13:48:46 - Visualizou a página: /studies/rca
+- 10/11/2025, 12:19:01 - Visualizou a página: Painel
+- 10/11/2025, 12:18:19 - Visualizou a página: /settings
+- 10/11/2025, 12:16:01 - Visualizou a página: Painel
+- 10/11/2025, 12:15:26 - Visualizou a página: /studies/rca
+- 10/11/2025, 12:02:49 - Visualizou a página: /studies/rca
+- 10/11/2025, 11:54:02 - Visualizou a página: /studies/rca
+- 10/11/2025, 11:51:58 - Visualizou a página: /studies/rca
+- 10/11/2025, 11:46:36 - Visualizou a página: /studies/rca
+- 10/11/2025, 11:44:09 - Visualizou a página: /studies/rca
+- 10/11/2025, 11:38:11 - Visualizou a página: /studies/rca
+- 10/11/2025, 11:35:52 - Visualizou a página: /studies/rca
+- 10/11/2025, 11:34:33 - Visualizou a página: /studies/rca
+- 10/11/2025, 11:33:51 - Visualizou a página: Painel
+- 10/11/2025, 11:32:29 - Visualizou a página: Painel
+- 10/11/2025, 11:28:36 - Visualizou a página: Painel
+- 10/11/2025, 11:24:27 - Visualizou a página: Painel
+- 10/11/2025, 11:23:43 - Visualizou a página: Painel
+- 10/11/2025, 11:23:07 - Visualizou a página: /studies/rca/new
+- 10/11/2025, 11:21:34 - Visualizou a página: /studies/rca/new
+- 10/11/2025, 11:20:05 - Visualizou a página: /studies/rca/new
+- 10/11/2025, 11:18:11 - Visualizou a página: /studies/rca/new
+- 10/11/2025, 11:18:06 - Visualizou a página: /studies/rca
+- 10/11/2025, 11:04:56 - Visualizou a página: /studies/rca/new
+- 10/11/2025, 11:04:45 - Visualizou a página: /studies/rca
+- 10/11/2025, 11:04:27 - Visualizou a página: /studies/prada
+- 10/11/2025, 11:04:21 - Visualizou a página: /studies/prada/new
+- 10/11/2025, 11:00:25 - Visualizou a página: /empreendedores
+- 10/11/2025, 10:46:14 - Visualizou a página: /studies/rca
+- 10/11/2025, 10:45:59 - Visualizou a página: /empreendedores
+- 10/11/2025, 10:45:51 - Visualizou a página: /projects/new
+- 10/11/2025, 10:45:47 - Visualizou a página: /empreendedores
+- 10/11/2025, 10:45:33 - Visualizou a página: /projects/new
+- 10/11/2025, 10:45:27 - Visualizou a página: /empreendedores
+- 10/11/2025, 10:45:20 - Visualizou a página: /empreendedores
+- 10/11/2025, 10:45:05 - Visualizou a página: /empreendedores/rnxCLMRwGnXDL2sDkCPG/edit
+- 10/11/2025, 10:44:46 - Visualizou a página: /empreendedores
+- 10/11/2025, 10:44:36 - Visualizou a página: /projects/new
+- 10/11/2025, 10:44:20 - Visualizou a página: /empreendedores
+- 10/11/2025, 10:40:04 - Visualizou a página: /empreendedores
+- 10/11/2025, 10:36:57 - Visualizou a página: /studies/rca
+- 10/11/2025, 09:38:16 - Visualizou a página: /studies/rca/new
+- 10/11/2025, 09:23:09 - Visualizou a página: /studies/rca/new
+- 10/11/2025, 09:21:21 - Visualizou a página: /studies/rca/new
+- 10/11/2025, 09:18:01 - Visualizou a página: /studies/rca/new
+- 10/11/2025, 09:16:31 - Visualizou a página: /studies/rca/new
+- 10/11/2025, 09:10:18 - Visualizou a página: /studies/rca/new
+- 10/11/2025, 09:08:58 - Visualizou a página: /studies/rca/new
+- 10/11/2025, 09:04:59 - Visualizou a página: /studies/rca/new
+- 10/11/2025, 09:03:29 - Visualizou a página: /studies/rca/new
+- 10/11/2025, 09:02:51 - Visualizou a página: /studies/rca
+- 10/11/2025, 08:58:21 - Visualizou a página: /studies/rca
+- 10/11/2025, 08:53:36 - Visualizou a página: /studies/rca
+- 10/11/2025, 08:52:31 - Visualizou a página: /studies/rca
+- 10/11/2025, 08:50:11 - Visualizou a página: /settings
+- 10/11/2025, 08:36:38 - Visualizou a página: /settings
+- 10/11/2025, 08:30:18 - Visualizou a página: /settings
+- 10/11/2025, 07:59:56 - Visualizou a página: Painel
+- 09/11/2025, 21:52:34 - Visualizou a página: /inspections
+- 09/11/2025, 21:48:52 - Visualizou a página: /settings
+- 09/11/2025, 21:40:55 - Visualizou a página: /settings
+- 09/11/2025, 21:37:30 - Visualizou a página: /settings
+- 09/11/2025, 21:23:28 - Visualizou a página: /settings
+- 09/11/2025, 21:15:49 - Visualizou a página: /settings
+- 09/11/2025, 21:15:07 - Visualizou a página: /settings
+- 09/11/2025, 20:58:01 - Visualizou a página: /settings
+- 09/11/2025, 20:49:18 - Visualizou a página: /settings
+- 09/11/2025, 20:41:38 - Visualizou a página: /settings
+- 09/11/2025, 20:35:25 - Visualizou a página: /settings
+- 09/11/2025, 20:35:24 - Visualizou a página: /settings
+- 09/11/2025, 20:09:42 - Visualizou a página: /settings
+- 09/11/2025, 20:09:41 - Visualizou a página: /settings
+- 09/11/2025, 20:08:17 - Visualizou a página: /settings
+- 09/11/2025, 20:08:17 - Visualizou a página: /settings
+- 09/11/2025, 20:06:43 - Visualizou a página: /settings
+- 09/11/2025, 20:06:23 - Visualizou a página: /settings
+- 09/11/2025, 20:05:48 - Exportou o log do usuário: tGCl1zYz6ThVpS7No8k2FtJHJiD2
+- 09/11/2025, 19:57:15 - Visualizou a página: /settings
+- 09/11/2025, 19:52:55 - Visualizou a página: /studies/outorgas
+- 09/11/2025, 19:50:02 - Visualizou a página: /studies/outorgas
+- 09/11/2025, 19:25:19 - Visualizou a página: Log de Auditoria
+- 09/11/2025, 19:20:36 - Exportou o log do usuário: tGCl1zYz6ThVpS7No8k2FtJHJiD2
+- 09/11/2025, 19:20:29 - Visualizou a página: Log de Auditoria
+- 09/11/2025, 19:18:47 - Visualizou a página: Log de Auditoria
+- 09/11/2025, 19:15:16 - Visualizou a página: Log de Auditoria
+- 09/11/2025, 19:14:39 - Visualizou a página: /studies/intervencao-ambiental
+- 09/11/2025, 19:14:27 - Visualizou a página: /compliance
+- 09/11/2025, 19:14:16 - Visualizou a página: /monitoring/telemetric
+- 09/11/2025, 19:14:07 - Visualizou a página: /monitoring/manual
+- 09/11/2025, 19:03:57 - Visualizou a página: /responsible-company
+- 09/11/2025, 19:00:34 - Visualizou a página: /responsible-company
+- 09/11/2025, 18:56:45 - Visualizou a página: /responsible-company
+- 09/11/2025, 18:53:41 - Visualizou a página: /responsible-company
+- 09/11/2025, 18:53:23 - Visualizou a página: /technical-responsible
+- 09/11/2025, 18:53:13 - Visualizou a página: /responsible-company
+- 09/11/2025, 18:51:49 - Visualizou a página: /projects/new
+- 09/11/2025, 18:51:33 - Visualizou a página: /empreendedores
+- 09/11/2025, 18:50:36 - Visualizou a página: /projects
+- 09/11/2025, 18:46:51 - Visualizou a página: /projects
+- 09/11/2025, 18:46:40 - Visualizou a página: /empreendedores
+- 09/11/2025, 18:46:25 - Visualizou a página: /projects
+- 09/11/2025, 18:39:24 - Visualizou a página: /projects
+- 09/11/2025, 18:38:33 - Visualizou a página: /empreendedores
+- 09/11/2025, 18:37:51 - Visualizou a página: /bank-access
+- 09/11/2025, 18:35:53 - Visualizou a página: /cash-flow
+- 09/11/2025, 18:35:26 - Visualizou a página: /contracts
+- 09/11/2025, 18:34:52 - Visualizou a página: /proposals
+- 09/11/2025, 18:34:25 - Visualizou a página: Faturas
+- 09/11/2025, 18:34:09 - Visualizou a página: Clientes
+- 09/11/2025, 18:34:06 - Visualizou a página: Faturas
+- 09/11/2025, 18:32:22 - Visualizou a página: Painel
+- 09/11/2025, 18:31:48 - Exportou o log do usuário: tGCl1zYz6ThVpS7No8k2FtJHJiD2
+- 09/11/2025, 18:29:25 - Visualizou a página: Log de Auditoria
+- 09/11/2025, 18:22:50 - Exportou o log do usuário: tGCl1zYz6ThVpS7No8k2FtJHJiD2
+- 09/11/2025, 18:22:29 - Visualizou a página: Log de Auditoria
+- 09/11/2025, 18:19:56 - Exportou o log do usuário: tGCl1zYz6ThVpS7No8k2FtJHJiD2
+- 09/11/2025, 18:19:49 - Visualizou a página: Log de Auditoria
+- 09/11/2025, 18:18:49 - Visualizou a página: /outorgas
+- 09/11/2025, 18:18:40 - Visualizou a página: /licenses
+- 09/11/2025, 18:18:04 - Exportou o log do usuário: tGCl1zYz6ThVpS7No8k2FtJHJiD2
+- 09/11/2025, 18:17:03 - Visualizou a página: Log de Auditoria
+- 09/11/2025, 18:14:10 - Exportou o log do usuário: tGCl1zYz6ThVpS7No8k2FtJHJiD2
+- 09/11/2025, 18:12:08 - Exportou o log do usuário: tGCl1zYz6ThVpS7No8k2FtJHJiD2
+- 09/11/2025, 18:08:05 - Exportou o log do usuário: tGCl1zYz6ThVpS7No8k2FtJHJiD2
+- 09/11/2025, 18:05:52 - Exportou o log do usuário: tGCl1zYz6ThVpS7No8k2FtJHJiD2
+- 09/11/2025, 18:02:51 - Exportou o log do usuário: tGCl1zYz6ThVpS7No8k2FtJHJiD2
+- 09/11/2025, 18:00:43 - Exportou o log do usuário: tGCl1zYz6ThVpS7No8k2FtJHJiD2

@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 520" role="img" aria-labelledby="title desc">
+  <title id="title">Ipê-amarelo  ilustração padrão</title>
+  <desc id="desc">Árvore com copa florida em tons de amarelo e tronco escuro.</desc>
+  <defs>
+    <linearGradient id="sky" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#e8f4fc"/>
+      <stop offset="100%" stop-color="#f5faf3"/>
+    </linearGradient>
+    <linearGradient id="canopy" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffe566"/>
+      <stop offset="45%" stop-color="#ffc107"/>
+      <stop offset="100%" stop-color="#f59e0b"/>
+    </linearGradient>
+    <linearGradient id="trunk" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#5d4037"/>
+      <stop offset="100%" stop-color="#3e2723"/>
+    </linearGradient>
+  </defs>
+  <rect width="400" height="520" fill="url(#sky)"/>
+  <!-- chão suave -->
+  <ellipse cx="200" cy="498" rx="160" ry="18" fill="#c8e6c9" opacity="0.45"/>
+  <!-- copa principal -->
+  <ellipse cx="200" cy="175" rx="150" ry="120" fill="url(#canopy)" opacity="0.95"/>
+  <ellipse cx="115" cy="210" rx="85" ry="70" fill="#ffca28" opacity="0.88"/>
+  <ellipse cx="285" cy="205" rx="90" ry="75" fill="#ffb300" opacity="0.9"/>
+  <ellipse cx="200" cy="130" rx="95" ry="65" fill="#fff176" opacity="0.75"/>
+  <!-- flores pontuais -->
+  <g fill="#fff59d" opacity="0.9">
+    <circle cx="140" cy="140" r="12"/><circle cx="230" cy="115" r="10"/><circle cx="270" cy="160" r="11"/>
+    <circle cx="160" cy="200" r="9"/><circle cx="310" cy="190" r="10"/><circle cx="95" cy="175" r="8"/>
+  </g>
+  <!-- tronco -->
+  <path d="M175 280 Q200 260 225 280 L218 420 Q200 435 182 420 Z" fill="url(#trunk)"/>
+  <path d="M168 320 Q200 300 232 320" stroke="#4e342e" stroke-width="3" fill="none" opacity="0.35"/>
+  <!-- ramos -->
+  <path d="M200 280 L140 220" stroke="#5d4037" stroke-width="8" stroke-linecap="round" opacity="0.6"/>
+  <path d="M205 295 L275 235" stroke="#5d4037" stroke-width="7" stroke-linecap="round" opacity="0.55"/>
+</svg>

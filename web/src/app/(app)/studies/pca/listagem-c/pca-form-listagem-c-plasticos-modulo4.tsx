@@ -1,0 +1,450 @@
+'use client';
+
+import * as React from 'react';
+import { useFieldArray } from 'react-hook-form';
+import {
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Button } from '@/components/ui/button';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { PlusCircle, Trash2 } from 'lucide-react';
+import {
+  BooleanRadio,
+  CaracterizacaoEfluenteAntesDepois,
+  DetalhesControleEmissoes,
+  DisposicaoTemporariaResiduo,
+  PcaCheckboxOptions,
+  PcaNumField,
+  PcaSectionCard,
+  PcaSituacaoRegularizacao,
+  PcaTabelaLinhasFixas,
+  PcaTextField,
+  PcaTextAreaField,
+} from '../lib/pca-form-helpers';
+import { PcaMedidasSection } from '../lib/pca-medidas-section';
+const ocupacaoEntorno = [
+  'Lavouras ou pastagens',
+  'Residências',
+  'Comércio',
+  'Indústrias',
+  'Escolas',
+  'Hospitais ou centros de saúde',
+  'Instalações agropecuárias',
+  'Área com atividades de mineração',
+  'Posto de combustível',
+  'Depósito de GLP',
+  'Vias públicas e passeios',
+  'Dispositivos de drenagem',
+  'Redes de outras concessionárias',
+  'Loteamentos / expansão urbana',
+  'Centro de recreação (parques, clubes etc.)',
+  'Rodovia ou ferrovia',
+  'Recurso hídrico (lago, lagoa, córrego, rio, nascente)',
+  'Outras',
+];
+
+const usosCorpoHidrico = [
+  'Captação para uso no próprio empreendimento',
+  'Captação para abastecimento público',
+  'Captação para uso industrial (terceiros)',
+  'Captação para irrigação (terceiros)',
+  'Captação para piscicultura (terceiros)',
+  'Lançamento de efluentes (terceiros)',
+  'Lançamento de esgotos (terceiros)',
+  'Barragem',
+  'Outros usos',
+];
+
+function slugify(text: string) {
+  return text.replace(/[^a-zA-Z0-9]+/g, '_').toLowerCase().slice(0, 48);
+}
+
+export function PcaFormListagemCPlasticosModulo4({ form }: { form: any }) {
+  const programaParceria = form.watch('listagemC.relacionamentoComunidade.desenvolvePrograma');
+  const usosAnteriores = form.watch('listagemC.usosAnteriores.comUsosAnteriores');
+  const indicamPassivos = form.watch('listagemC.usosAnteriores.indicamPassivos');
+  const receptorEfluente = form.watch('listagemC.recursosHidricos.corpoReceptorEfluente');
+  const sigiloIndustrial = form.watch('listagemC.plasticos.sigiloIndustrial');
+
+  const { fields: nucleoPopulacionalFields, append: appendNucleo, remove: removeNucleo } = useFieldArray({
+    control: form.control,
+    name: 'listagemC.legislacaoMunicipal.nucleosPopulacionais',
+  });
+  const { fields: corposHidricos, append: appendCorpo, remove: removeCorpo } = useFieldArray({
+    control: form.control,
+    name: 'listagemC.recursosHidricos.corposSuperficiais',
+  });
+
+  return (
+    <div className="space-y-6">
+      <PcaSectionCard title="15. Planta de localização">
+        <FormDescription>Apresentar planta de localização no Anexo XVIII.</FormDescription>
+        <PcaTextField form={form} name="listagemC.plasticos.anexoPlantaLocalizacao" label="Referência / observações (Anexo XVIII)" />
+      </PcaSectionCard>
+
+      <PcaSectionCard title="16. Relacionamento com a comunidade (AI-MSE)">
+        <FormDescription>
+          Apresentar texto assinado no Anexo XIX descrevendo como foi feita a verificação do relacionamento.
+        </FormDescription>
+        <PcaCheckboxOptions
+          form={form}
+          name="listagemC.relacionamentoComunidade.situacao"
+          options={[
+            { id: 'nao_informou', label: 'Empresa ainda não informou a comunidade (apenas LP/LI)' },
+            { id: 'sem_rejeicao', label: 'Comunidade não apresenta rejeição (apenas LP/LI)' },
+            { id: 'com_rejeicao', label: 'Comunidade ou parte dela apresenta rejeição (apenas LP/LI)' },
+            { id: 'operacao_sem_reclamacoes', label: 'Em operação e empresa desconhece reclamações' },
+          ]}
+        />
+        <FormField
+          control={form.control}
+          name="listagemC.relacionamentoComunidade.registrosReclamacoes"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Em operação: existem reclamações?</FormLabel>
+              <FormControl>
+                <BooleanRadio value={field.value} onChange={field.onChange} />
+              </FormControl>
+              <FormDescription>Se sim, apresentar registro no Anexo XX.</FormDescription>
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="listagemC.relacionamentoComunidade.possuiTac"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Possui TAC firmado?</FormLabel>
+              <FormControl>
+                <BooleanRadio value={field.value} onChange={field.onChange} />
+              </FormControl>
+              <FormDescription>Se sim, informar instituição e apresentar Anexo XXI.</FormDescription>
+            </FormItem>
+          )}
+        />
+        {form.watch('listagemC.relacionamentoComunidade.possuiTac') && (
+          <PcaTextField form={form} name="listagemC.relacionamentoComunidade.instituicaoTac" label="Instituição signatária do TAC" />
+        )}
+        <FormField
+          control={form.control}
+          name="listagemC.relacionamentoComunidade.outrasInformacoes"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Outras informações sobre relacionamento com a comunidade</FormLabel>
+              <FormControl>
+                <Textarea rows={3} {...field} />
+              </FormControl>
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="listagemC.relacionamentoComunidade.desenvolvePrograma"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Desenvolve programas socioeconômicos para a comunidade?</FormLabel>
+              <FormControl>
+                <BooleanRadio value={field.value} onChange={field.onChange} />
+              </FormControl>
+            </FormItem>
+          )}
+        />
+        {programaParceria && (
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+            <PcaTextField form={form} name="listagemC.relacionamentoComunidade.nomePrograma" label="Nome do programa" />
+            <PcaTextField form={form} name="listagemC.relacionamentoComunidade.tempoPrograma" label="Prazo de implementação" />
+          </div>
+        )}
+      </PcaSectionCard>
+
+      <PcaSectionCard title="17. Caracterização frente à legislação municipal">
+        <FormField
+          control={form.control}
+          name="listagemC.legislacaoMunicipal.temPlanoDiretor"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Município possui Plano Diretor ou Lei de Uso e Ocupação do Solo?</FormLabel>
+              <FormControl>
+                <BooleanRadio value={field.value} onChange={field.onChange} />
+              </FormControl>
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="listagemC.legislacaoMunicipal.interfereNucleosPopulacionais"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Interfere com núcleos populacionais urbanos ou rurais?</FormLabel>
+              <FormControl>
+                <BooleanRadio value={field.value} onChange={field.onChange} />
+              </FormControl>
+            </FormItem>
+          )}
+        />
+        {nucleoPopulacionalFields.map((item, index) => (
+          <div key={item.id} className="grid grid-cols-1 gap-3 rounded-md border p-3 md:grid-cols-5">
+            <PcaTextField form={form} name={`listagemC.legislacaoMunicipal.nucleosPopulacionais.${index}.nome`} label="Núcleo populacional" />
+            <PcaTextField form={form} name={`listagemC.legislacaoMunicipal.nucleosPopulacionais.${index}.localizacao`} label="Localização (urbano/rural)" />
+            <PcaTextField form={form} name={`listagemC.legislacaoMunicipal.nucleosPopulacionais.${index}.distanciaM`} label="Distância da rede (m)" />
+            <PcaTextField form={form} name={`listagemC.legislacaoMunicipal.nucleosPopulacionais.${index}.referencia`} label="Referência" className="md:col-span-2" />
+            <div className="md:col-span-5 flex justify-end">
+              <Button type="button" variant="outline" size="sm" onClick={() => removeNucleo(index)}>
+                <Trash2 className="mr-2 h-4 w-4" />Remover
+              </Button>
+            </div>
+          </div>
+        ))}
+        <Button type="button" variant="outline" onClick={() => appendNucleo({ nome: '', localizacao: '', distanciaM: '', referencia: '' })}>
+          <PlusCircle className="mr-2 h-4 w-4" />Adicionar núcleo populacional
+        </Button>
+        <FormField
+          control={form.control}
+          name="listagemC.legislacaoMunicipal.interferePatrimonio"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Interfere com exploração mineral, sítios arqueológicos ou patrimônio histórico/cultural?</FormLabel>
+              <FormControl>
+                <BooleanRadio value={field.value} onChange={field.onChange} />
+              </FormControl>
+            </FormItem>
+          )}
+        />
+        {form.watch('listagemC.legislacaoMunicipal.interferePatrimonio') && (
+          <FormField
+            control={form.control}
+            name="listagemC.legislacaoMunicipal.descricaoPatrimonio"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Descrever interferência</FormLabel>
+                <FormControl>
+                  <Textarea rows={2} {...field} />
+                </FormControl>
+              </FormItem>
+            )}
+          />
+        )}
+        <FormField
+          control={form.control}
+          name="listagemC.legislacaoMunicipal.interfereCavidades"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Interfere com áreas de potencial existência de cavidades naturais?</FormLabel>
+              <FormControl>
+                <BooleanRadio value={field.value} onChange={field.onChange} />
+              </FormControl>
+            </FormItem>
+          )}
+        />
+        {form.watch('listagemC.legislacaoMunicipal.interfereCavidades') && (
+          <FormField
+            control={form.control}
+            name="listagemC.legislacaoMunicipal.descricaoCavidades"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Descrever interferência</FormLabel>
+                <FormControl>
+                  <Textarea rows={2} {...field} />
+                </FormControl>
+              </FormItem>
+            )}
+          />
+        )}
+        <FormField
+          control={form.control}
+          name="listagemC.legislacaoMunicipal.interfereInfraestrutura"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Interfere com infraestrutura básica e social existente?</FormLabel>
+              <FormControl>
+                <BooleanRadio value={field.value} onChange={field.onChange} />
+              </FormControl>
+            </FormItem>
+          )}
+        />
+        {form.watch('listagemC.legislacaoMunicipal.interfereInfraestrutura') && (
+          <FormField
+            control={form.control}
+            name="listagemC.legislacaoMunicipal.descricaoInfraestrutura"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Descrever interferência</FormLabel>
+                <FormControl>
+                  <Textarea rows={2} {...field} />
+                </FormControl>
+              </FormItem>
+            )}
+          />
+        )}
+      </PcaSectionCard>
+
+      <PcaSectionCard title="18. Tipo de ocupação da área de entorno">
+        <FormDescription>Indicar distância aproximada (m) dos limites do terreno.</FormDescription>
+        {ocupacaoEntorno.map((label) => {
+          const slug = slugify(label);
+          return (
+            <div key={slug} className="mb-2 grid grid-cols-1 gap-2 rounded-md border p-2 md:grid-cols-3">
+              <p className="text-sm md:col-span-2">{label}</p>
+              <PcaNumField form={form} name={`listagemC.ocupacaoEntorno.itens.${slug}.distanciaM`} label="Distância (m)" />
+            </div>
+          );
+        })}
+        <FormField
+          control={form.control}
+          name="listagemC.ocupacaoEntorno.observacoes"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Observações (rodovia, ferrovia, recurso hídrico etc.)</FormLabel>
+              <FormControl>
+                <Textarea rows={2} {...field} />
+              </FormControl>
+            </FormItem>
+          )}
+        />
+        <FormDescription className="mt-4">Corpos hídricos superficiais na área de influência</FormDescription>
+        {corposHidricos.map((item, index) => (
+          <div key={item.id} className="grid grid-cols-1 gap-3 rounded-md border p-3 md:grid-cols-3">
+            <PcaTextField form={form} name={`listagemC.recursosHidricos.corposSuperficiais.${index}.nome`} label="Nome do corpo hídrico" />
+            <PcaNumField form={form} name={`listagemC.recursosHidricos.corposSuperficiais.${index}.menorDistanciaM`} label="Menor distância (m)" />
+            <div className="flex items-end justify-end">
+              <Button type="button" variant="outline" size="sm" onClick={() => removeCorpo(index)}>
+                <Trash2 className="mr-2 h-4 w-4" />Remover
+              </Button>
+            </div>
+          </div>
+        ))}
+        <Button type="button" variant="outline" onClick={() => appendCorpo({})}>
+          <PlusCircle className="mr-2 h-4 w-4" />Adicionar corpo hídrico
+        </Button>
+        <FormField
+          control={form.control}
+          name="listagemC.recursosHidricos.corpoReceptorEfluente"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Algum corpo hídrico receberá efluente industrial e/ou esgoto?</FormLabel>
+              <FormControl>
+                <BooleanRadio value={field.value} onChange={field.onChange} />
+              </FormControl>
+            </FormItem>
+          )}
+        />
+        {receptorEfluente && (
+          <PcaTextField
+            form={form}
+            name="listagemC.recursosHidricos.receptoresDescricao"
+            label="Nomes e classe de enquadramento (DN COPAM/CERH 01/2008)"
+          />
+        )}
+        {usosCorpoHidrico.map((uso) => {
+          const slug = slugify(uso);
+          return (
+            <div key={slug} className="grid grid-cols-1 gap-2 rounded-md border p-2 md:grid-cols-3">
+              <p className="text-sm md:col-span-3">{uso}</p>
+              <PcaNumField form={form} name={`listagemC.recursosHidricos.usosCorpo.${slug}.montanteM`} label="A montante (m)" />
+              <PcaNumField form={form} name={`listagemC.recursosHidricos.usosCorpo.${slug}.jusanteM`} label="A jusante (m)" />
+            </div>
+          );
+        })}
+        <FormDescription>Planta georreferenciada: Anexo XXV (ABNT/NBR 6492/1994).</FormDescription>
+      </PcaSectionCard>
+
+      <PcaSectionCard title="19. Usos anteriores do terreno">
+        <FormField
+          control={form.control}
+          name="listagemC.usosAnteriores.comUsosAnteriores"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>O local foi submetido a usos antrópicos anteriores?</FormLabel>
+              <FormControl>
+                <BooleanRadio value={field.value} onChange={field.onChange} />
+              </FormControl>
+            </FormItem>
+          )}
+        />
+        {usosAnteriores && (
+          <>
+            <FormField
+              control={form.control}
+              name="listagemC.usosAnteriores.indicamPassivos"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Esses usos podem indicar passivos ambientais?</FormLabel>
+                  <FormControl>
+                    <BooleanRadio value={field.value} onChange={field.onChange} />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="listagemC.usosAnteriores.descricao"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Descrever usos anteriores{indicamPassivos ? ' e passivos' : ''}</FormLabel>
+                  <FormControl>
+                    <Textarea rows={3} {...field} />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+          </>
+        )}
+      </PcaSectionCard>
+
+      <PcaSectionCard title="20 e 21. Croqui de acesso e justificativas">
+        <FormDescription>
+          Anexo XXVI – croqui de acesso; Anexos XXVII a XXX – justificativas tecnológica, técnico/socioeconômica,
+          ambiental e locacional.
+        </FormDescription>
+        <PcaTextField form={form} name="listagemC.plasticos.anexoCroquiAcesso" label="Referência croqui (Anexo XXVI)" />
+        <PcaTextField form={form} name="listagemC.plasticos.anexoJustificativas" label="Referência justificativas (Anexos XXVII–XXX)" />
+      </PcaSectionCard>
+
+      <PcaSectionCard title="22. Caracterização técnica">
+        <FormDescription>
+          A partir do item 23, apresentar as informações técnicas específicas da indústria de plásticos em regularização.
+        </FormDescription>
+      </PcaSectionCard>
+
+      <PcaSectionCard title="23. Sigilo industrial">
+        <FormField
+          control={form.control}
+          name="listagemC.plasticos.sigiloIndustrial"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Deseja manter sigilo industrial sobre informações do processo?</FormLabel>
+              <FormControl>
+                <BooleanRadio value={field.value} onChange={field.onChange} />
+              </FormControl>
+              <FormDescription>Se sim, apresentar Anexo XXXI.</FormDescription>
+            </FormItem>
+          )}
+        />
+        {sigiloIndustrial && (
+          <PcaTextField form={form} name="listagemC.plasticos.sigiloIndustrialReferencia" label="Referência ao Anexo XXXI" />
+        )}
+      </PcaSectionCard>
+
+      <PcaSectionCard title="24. Área do empreendimento">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          <PcaNumField form={form} name="listagemC.plasticos.areas.areaTotalM2" label="Área total do terreno (m²)" />
+          <PcaNumField form={form} name="listagemC.plasticos.areas.areaUtilM2" label="Área útil (m²)" />
+          <PcaNumField form={form} name="listagemC.plasticos.areas.areaConstruidaM2" label="Área construída (m²)" />
+        </div>
+        <FormDescription>
+          Área útil: soma das áreas para o objetivo do empreendimento (apoio, armazenamento, manobras, estacionamento,
+          tratamento de efluentes/resíduos), excluindo APP e reserva legal.
+        </FormDescription>
+      </PcaSectionCard>
+    </div>
+  );
+}

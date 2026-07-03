@@ -1,0 +1,26 @@
+# Dependências básicas do AmbientaR
+# Nota: Frappe Framework e ERPNext serão instalados via git clone
+
+# Dependências para desenvolvimento
+pytest>=7.0.0
+pytest-cov>=4.0.0
+black>=23.0.0
+flake8>=6.0.0
+
+# Dependências para relatórios
+reportlab>=4.0.0
+weasyprint>=60.0.0
+jinja2>=3.1.0
+
+# Dependências para API
+requests>=2.28.0
+fastapi>=0.100.0
+uvicorn>=0.23.0
+
+# Dependências para banco de dados
+pymysql>=1.0.0
+sqlalchemy>=2.0.0
+
+# Dependências para autenticação
+python-jose>=3.3.0
+passlib>=1.7.0

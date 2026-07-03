@@ -1,0 +1,654 @@
+﻿"use client";
+
+import { handleFirestoreFormError } from '@/lib/firestore-form-errors';
+import * as React from "react";
+import { z } from "zod";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Button } from "@/components/ui/button";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue} from "@/components/ui/select";
+import { Loader2, Upload } from "lucide-react";
+import { BrDateFormControl } from "@/components/form/br-date-input";
+import { useToast } from "@/hooks/use-toast";
+import { CONTRACT_NONE_SELECT_VALUE } from "@/lib/financial-core";
+import type { Invoice, Client, Contract, ProjectRoiCase } from "@/lib/types";
+import { ProjectRoiCaseSelectField } from "@/components/financial/project-roi-case-select-field";
+import {
+  useFirebase,
+  useCollection,
+  useMemoFirebase} from "@/firebase";
+
+import {
+  collection,
+  doc,
+  addDoc,
+  updateDoc,
+  query,
+  where} from "firebase/firestore";
+import { DialogFooter } from "@/components/ui/dialog";
+import { AttachmentPreviewSection } from "@/components/shared/attachment-preview-section";
+import { UploadPreparationDialog } from "@/components/shared/upload-preparation-dialog";
+import { useStorageFileUpload } from "@/hooks/use-storage-file-upload";
+import { UPLOAD_RAW_FILE_SAFETY_MAX } from "@/lib/upload-limits";
+import { NOTIFICATION_LINKS, NOTIFICATION_SOURCE } from "@/lib/notification-events";
+import { notifyClientDocPortalUsers } from "@/lib/notifications";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle} from "@/components/ui/alert-dialog";
+import { createRevenueFromPaidInvoice } from "@/lib/financial-invoice-revenue";
+
+const formSchema = z
+  .object({
+    clientId: z.string().min(1, "Selecione um cliente."),
+    invoiceNumber: z.string().min(1, "O número da fatura é obrigatório."),
+    amount: z.coerce.number().positive("O valor deve ser positivo."),
+    status: z.enum(["Paid", "Unpaid", "Overdue"]),
+    invoiceDate: z.date({ required_error: "A data de emissão é obrigatória." }),
+    dueDate: z.date({ required_error: "A data de vencimento é obrigatória." }),
+    contractId: z.string().optional(),
+    projectRoiCaseId: z.string().optional(),
+    file: z
+      .any()
+      .optional()
+      .refine(
+        (files) =>
+          !files ||
+          files.length === 0 ||
+          files?.[0]?.size <= UPLOAD_RAW_FILE_SAFETY_MAX,
+        "Arquivo excede o limite de processamento no navegador.",
+      )})
+  .refine((data) => data.dueDate >= data.invoiceDate, {
+    message: "A data de vencimento não pode ser anterior à data de emissão.",
+    path: ["dueDate"]});
+
+type FormValues = z.infer<typeof formSchema>;
+
+interface InvoiceFormProps {
+  currentItem?: Invoice | null;
+  onSuccess?: () => void;
+  onCancel?: () => void;
+}
+
+const invoiceStatuses: { value: Invoice["status"]; label: string }[] = [
+  { value: "Paid", label: "Paga" },
+  { value: "Unpaid", label: "Pendente" },
+  { value: "Overdue", label: "Atrasada" },
+];
+
+const formatCurrencyBRL = (value: number) => {
+  if (isNaN(value)) value = 0;
+  return new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL"}).format(value);
+};
+
+const CurrencyInput = React.forwardRef<
+  HTMLInputElement,
+  Omit<React.InputHTMLAttributes<HTMLInputElement>, "onChange"> & {
+    onChange: (value: number) => void;
+    value: number;
+  }
+>(({ value, onChange, ...props }, ref) => {
+  const [displayValue, setDisplayValue] = React.useState(
+    formatCurrencyBRL(value || 0),
+  );
+
+  React.useEffect(() => {
+    setDisplayValue(formatCurrencyBRL(value || 0));
+  }, [value]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const rawValue = e.target.value.replace(/\D/g, "");
+    const numericValue = Number(rawValue) / 100;
+    onChange(numericValue);
+    setDisplayValue(formatCurrencyBRL(numericValue));
+  };
+
+  const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    const rawValue = e.target.value.replace(/\D/g, "");
+    const numericValue = Number(rawValue) / 100;
+    setDisplayValue(formatCurrencyBRL(numericValue));
+  };
+
+  return (
+    <Input
+      ref={ref}
+      value={displayValue}
+      onChange={handleChange}
+      onBlur={handleBlur}
+      {...props}
+    />
+  );
+});
+CurrencyInput.displayName = "CurrencyInput";
+
+export function InvoiceForm({
+  currentItem,
+  onSuccess,
+  onCancel}: InvoiceFormProps) {
+  const [loading, setLoading] = React.useState(false);
+  const [revenuePrompt, setRevenuePrompt] = React.useState<{
+    invoiceId: string;
+    invoice: Invoice;
+  } | null>(null);
+  const [creatingRevenue, setCreatingRevenue] = React.useState(false);
+  const [isUploading, setIsUploading] = React.useState(false);
+  const [uploadedFileUrl, setUploadedFileUrl] = React.useState<string | null>(
+    currentItem?.fileUrl || null,
+  );
+
+  const { toast } = useToast();
+  const { firestore, user } = useFirebase();
+  const { uploadFile, dialogProps, limitLabel } = useStorageFileUpload({
+    storageFolder: "invoices"});
+
+  const clientsQuery = useMemoFirebase(
+    () => (firestore ? collection(firestore, "clients") : null),
+    [firestore],
+  );
+  const { data: clients, isLoading: isLoadingClients } =
+    useCollection<Client>(clientsQuery);
+
+  const contractsQuery = useMemoFirebase(
+    () =>
+      firestore
+        ? query(
+            collection(firestore, "contracts"),
+            where("status", "==", "Aprovado"),
+          )
+        : null,
+    [firestore],
+  );
+  const { data: contracts, isLoading: isLoadingContracts } =
+    useCollection<Contract>(contractsQuery);
+
+  const roiCasesQuery = useMemoFirebase(
+    () => (firestore ? collection(firestore, "project_roi_cases") : null),
+    [firestore],
+  );
+  const { data: roiCases, isLoading: isLoadingRoiCases } =
+    useCollection<ProjectRoiCase>(roiCasesQuery);
+
+  const form = useForm<FormValues>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      clientId: currentItem?.clientId || "",
+      invoiceNumber: currentItem?.invoiceNumber || "",
+      amount: currentItem?.amount || undefined,
+      status: currentItem?.status || "Unpaid",
+      invoiceDate: currentItem?.invoiceDate
+        ? new Date(currentItem.invoiceDate)
+        : new Date(),
+      dueDate: currentItem?.dueDate
+        ? new Date(currentItem.dueDate)
+        : new Date(),
+      contractId: currentItem?.contractId || "",
+      projectRoiCaseId: currentItem?.projectRoiCaseId || ""}});
+
+  const handleFileChange = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    // Capture o input agora; não reutilizar `event` após `await`.
+    const inputEl = event.currentTarget;
+    const file = inputEl.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    setUploadedFileUrl(null);
+
+    try {
+      // Permite selecionar o mesmo arquivo novamente.
+      inputEl.value = "";
+
+      const downloadUrl = await uploadFile(file);
+      if (!downloadUrl) return;
+      setUploadedFileUrl(downloadUrl);
+      toast({
+        title: "Anexo carregado",
+        description: "O arquivo está pronto para ser salvo com a fatura."});
+    } catch (error) {
+      console.error("File upload error:", error);
+      toast({
+        variant: "destructive",
+        title: "Erro no Upload",
+        description: "Não foi possível enviar o arquivo."});
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  async function onSubmit(values: FormValues) {
+    setLoading(true);
+
+    if (!firestore) {
+      toast({ variant: "destructive", title: "Firebase não inicializado." });
+      setLoading(false);
+      return;
+    }
+
+    const dataToSave: Omit<Invoice, "id"> = {
+      clientId: values.clientId,
+      invoiceNumber: values.invoiceNumber,
+      amount: values.amount,
+      status: values.status,
+      invoiceDate: values.invoiceDate.toISOString(),
+      dueDate: values.dueDate.toISOString(),
+      fileUrl: uploadedFileUrl || currentItem?.fileUrl || "",
+      contractId: values.contractId || "",
+      projectRoiCaseId: values.projectRoiCaseId || ""};
+
+    const wasPaid = currentItem?.status === "Paid";
+    const nowPaid = values.status === "Paid";
+
+    if (currentItem) {
+      const docRef = doc(firestore, "invoices", currentItem.id);
+      updateDoc(docRef, dataToSave)
+        .then(() => {
+          toast({
+            title: "Fatura atualizada!",
+            description: "As informações foram salvas com sucesso."});
+          if (nowPaid && !wasPaid) {
+            setRevenuePrompt({
+              invoiceId: currentItem.id,
+              invoice: { id: currentItem.id, ...dataToSave }});
+          } else {
+            onSuccess?.();
+          }
+        })
+        .catch((error) => {
+          handleFirestoreFormError(error, {
+            toast,
+            title: 'Erro ao salvar fatura',
+            context: {
+            path: docRef.path,
+            operation: "update",
+            requestResourceData: dataToSave}});
+        })
+        .finally(() => setLoading(false));
+    } else {
+      const collectionRef = collection(firestore, "invoices");
+      addDoc(collectionRef, dataToSave)
+        .then(async (docRef) => {
+          try {
+            await notifyClientDocPortalUsers(
+              firestore,
+              values.clientId,
+              {
+                title: "Nova fatura disponível",
+                description: `Fatura ${values.invoiceNumber} no menu Financeiro.`,
+                link: NOTIFICATION_LINKS.invoices,
+                sourceType: NOTIFICATION_SOURCE.fatura,
+                sourceId: docRef.id,
+                actorRole: user?.role},
+              { excludeUserId: user?.uid },
+            );
+          } catch (e) {
+            console.warn("[Fatura] notificação:", e);
+          }
+          toast({
+            title: "Fatura criada!",
+            description: `A fatura ${values.invoiceNumber} foi criada.`});
+          if (nowPaid) {
+            setRevenuePrompt({
+              invoiceId: docRef.id,
+              invoice: { ...dataToSave, id: docRef.id } as Invoice});
+          } else {
+            form.reset();
+            onSuccess?.();
+          }
+        })
+        .catch((error) => {
+          handleFirestoreFormError(error, {
+            toast,
+            title: 'Erro ao salvar fatura',
+            context: {
+            path: collectionRef.path,
+            operation: "create",
+            requestResourceData: dataToSave}});
+        })
+        .finally(() => setLoading(false));
+    }
+  }
+
+  return (
+    <Form {...form}>
+      <form
+        onSubmit={form.handleSubmit(onSubmit)}
+        className="h-full flex flex-col overflow-hidden"
+      >
+        <div className="form-scroll-body space-y-4">
+          <FormField
+            control={form.control}
+            name="clientId"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Cliente</FormLabel>
+                <Select
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                  disabled={isLoadingClients || !clients}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue
+                        placeholder={
+                          isLoadingClients
+                            ? "Carregando..."
+                            : "Selecione um cliente"
+                        }
+                      />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {clients?.map((client) => (
+                      <SelectItem key={client.id} value={client.id}>
+                        {client.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="contractId"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Contrato (Opcional)</FormLabel>
+                <Select
+                  onValueChange={(v) => {
+                    const cid =
+                      v === CONTRACT_NONE_SELECT_VALUE ? "" : v;
+                    field.onChange(cid);
+                    if (cid && roiCases?.length) {
+                      const match = roiCases.find(
+                        (c) => c.contractId === cid,
+                      );
+                      if (match) {
+                        form.setValue("projectRoiCaseId", match.id);
+                      }
+                    }
+                  }}
+                  value={
+                    field.value
+                      ? field.value
+                      : CONTRACT_NONE_SELECT_VALUE
+                  }
+                  disabled={isLoadingContracts}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue
+                        placeholder={
+                          isLoadingContracts
+                            ? "Carregando..."
+                            : "Selecione um contrato"
+                        }
+                      />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value={CONTRACT_NONE_SELECT_VALUE}>
+                      — Nenhum —
+                    </SelectItem>
+                    {contracts?.map((contract) => (
+                      <SelectItem key={contract.id} value={contract.id}>
+                        {contract.objeto?.empreendimento ?? "Contrato"} -{" "}
+                        {new Date(contract.dataContrato).toLocaleDateString(
+                          "pt-BR",
+                        )}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormDescription>
+                  Vincule esta fatura a um contrato aprovado. Se existir caso
+                  Projetos & ROI para o contrato, o vínculo é preenchido
+                  automaticamente.
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <ProjectRoiCaseSelectField
+            control={form.control}
+            name="projectRoiCaseId"
+            cases={roiCases ?? undefined}
+            isLoading={isLoadingRoiCases}
+          />
+          <FormField
+            control={form.control}
+            name="invoiceNumber"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Número da Fatura</FormLabel>
+                <FormControl>
+                  <Input placeholder="Ex: FAT-2024-001" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="amount"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Valor (R$)</FormLabel>
+                <FormControl>
+                  <CurrencyInput
+                    placeholder="R$ 0,00"
+                    value={field.value}
+                    onChange={field.onChange}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="invoiceDate"
+              render={({ field }) => (
+                <FormItem className="flex flex-col">
+                  <FormLabel>Data de Emissão</FormLabel>
+                  <FormControl>
+                    <BrDateFormControl
+                      value={field.value}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      asDate
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="dueDate"
+              render={({ field }) => (
+                <FormItem className="flex flex-col">
+                  <FormLabel>Data de Vencimento</FormLabel>
+                  <FormControl>
+                    <BrDateFormControl
+                      value={field.value}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      asDate
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+          <FormField
+            control={form.control}
+            name="status"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Status</FormLabel>
+                <Select
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione a fase atual" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {invoiceStatuses.map((s) => (
+                      <SelectItem key={s.value} value={s.value}>
+                        {s.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="file"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Boleto / Comprovante (Opcional)</FormLabel>
+                <FormControl>
+                  <Input
+                    type="file"
+                    accept="application/pdf,image/jpeg,image/png"
+                    onChange={handleFileChange}
+                    disabled={isUploading}
+                  />
+                </FormControl>
+                <FormDescription>
+                  Anexe o boleto ou comprovante (PDF, JPG, PNG). Limite após
+                  otimização: {limitLabel}. Arquivos maiores serão comprimidos
+                  automaticamente.
+                </FormDescription>
+                {(currentItem?.fileUrl || uploadedFileUrl) && (
+                  <div className="mt-3">
+                    <AttachmentPreviewSection
+                      fileUrl={uploadedFileUrl || currentItem?.fileUrl || null}
+                      sectionLabel={
+                        uploadedFileUrl
+                          ? "Pré-visualização do novo anexo"
+                          : "Anexo atual"
+                      }
+                      zoomTitle="Anexo da fatura"
+                    />
+                  </div>
+                )}
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={onCancel}>
+            Cancelar
+          </Button>
+          <Button type="submit" disabled={loading || isUploading}>
+            {loading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Salvando...
+              </>
+            ) : isUploading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Carregando
+                anexo...
+              </>
+            ) : (
+              "Salvar Fatura"
+            )}
+          </Button>
+        </DialogFooter>
+      </form>
+      <UploadPreparationDialog {...dialogProps} />
+      <AlertDialog
+        open={!!revenuePrompt}
+        onOpenChange={(open) => {
+          if (!open) {
+            setRevenuePrompt(null);
+            onSuccess?.();
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Registrar receita no caixa?</AlertDialogTitle>
+            <AlertDialogDescription>
+              A fatura foi marcada como paga. Deseja criar um lançamento de receita
+              vinculado (evita duplicar na DRE quando usar o regime combinado)?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              onClick={() => {
+                setRevenuePrompt(null);
+                onSuccess?.();
+              }}
+            >
+              Agora não
+            </AlertDialogCancel>
+            <AlertDialogAction
+              disabled={creatingRevenue || !firestore}
+              onClick={async (e) => {
+                e.preventDefault();
+                if (!firestore || !revenuePrompt) return;
+                setCreatingRevenue(true);
+                try {
+                  await createRevenueFromPaidInvoice(
+                    firestore,
+                    revenuePrompt.invoice,
+                    revenuePrompt.invoiceId,
+                  );
+                  toast({
+                    title: "Receita registrada",
+                    description: "Lançamento criado em Lançamentos de Caixa."});
+                } catch {
+                  toast({
+                    variant: "destructive",
+                    title: "Erro",
+                    description: "Não foi possível criar a receita."});
+                } finally {
+                  setCreatingRevenue(false);
+                  setRevenuePrompt(null);
+                  onSuccess?.();
+                }
+              }}
+            >
+              {creatingRevenue ? "Criando…" : "Sim, registrar receita"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </Form>
+  );
+}

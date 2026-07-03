@@ -1,0 +1,23 @@
+{
+  "id": "gold_mangabeiras",
+  "propertyName": "Faz. Mangabeira e outras",
+  "ownerName": "Célio Fontana",
+  "municipality": "Unaí-MG",
+  "areaTotalHa": 1125.4836,
+  "scale": "1:12000",
+  "matriculas": ["37.668", "37.669"],
+  "expected": {
+    "pivoCountMin": 5,
+    "appPolygonCountMin": 10,
+    "rlGlebaCountMin": 10,
+    "daiaCorretiva": true
+  },
+  "visualChecklist": [
+    "uso_ocupacao_completo",
+    "quadro_matriculas",
+    "inset_1_48000",
+    "rede_eletrica",
+    "legenda_reservas_legais"
+  ],
+  "notes": "RL fracionada por gleba; DAIA corretiva; inset múltiplas escalas."
+}

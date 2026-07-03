@@ -1,0 +1,78 @@
+{
+  "generatedAtUtc": "2026-06-11T15:29:56.760Z",
+  "fixture": "D:\\AmbientaR\\fixtures\\geo\\test-polygon-mg-alerta-hit.geojson",
+  "bbox": [
+    -44.4796,
+    -20.2992,
+    -44.4778,
+    -20.2975
+  ],
+  "results": [
+    {
+      "layerId": "br_prodes_cerrado",
+      "title": "Desmatamento PRODES — Cerrado (INPE)",
+      "status": "no_features",
+      "featureCount": 0,
+      "marginDegrees": 0.04,
+      "queryBbox": [
+        -44.5196,
+        -20.339199999999998,
+        -44.4378,
+        -20.2575
+      ],
+      "typeName": "prodes-cerrado-nb:yearly_deforestation",
+      "error": "prodes-cerrado-nb:yearly_deforestation: sem feições no recorte"
+    },
+    {
+      "layerId": "br_prodes_mata_atlantica",
+      "title": "Desmatamento MA — PRODES / MapBiomas Alerta",
+      "status": "ok_proxy",
+      "featureCount": 6,
+      "marginDegrees": 0.04,
+      "queryBbox": [
+        -44.5196,
+        -20.339199999999998,
+        -44.4378,
+        -20.2575
+      ],
+      "typeName": "mapbiomas-alertas:dashboard_alerts-shapefile"
+    },
+    {
+      "layerId": "br_prodes_legal_amazon",
+      "title": "Desmatamento PRODES — Amazônia Legal (INPE)",
+      "status": "skipped",
+      "featureCount": 0,
+      "marginDegrees": 0.04,
+      "queryBbox": [
+        -44.5196,
+        -20.339199999999998,
+        -44.4378,
+        -20.2575
+      ],
+      "typeName": "prodes-legal-amz:yearly_deforestation",
+      "error": "Perímetro fora da Amazônia Legal — camada omitida."
+    },
+    {
+      "layerId": "br_mapbiomas_alerta",
+      "title": "Alertas de desmatamento (MapBiomas Alerta)",
+      "status": "ok",
+      "featureCount": 6,
+      "marginDegrees": 0.03,
+      "queryBbox": [
+        -44.5096,
+        -20.3292,
+        -44.4478,
+        -20.2675
+      ],
+      "typeName": "mapbiomas-alertas:dashboard_alerts-shapefile"
+    }
+  ],
+  "summary": {
+    "ok": 1,
+    "okProxy": 1,
+    "skipped": 1,
+    "noFeatures": 1,
+    "degraded": 0,
+    "error": 0
+  }
+}

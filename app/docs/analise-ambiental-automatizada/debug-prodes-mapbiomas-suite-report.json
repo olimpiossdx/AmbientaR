@@ -1,0 +1,175 @@
+{
+  "generatedAtUtc": "2026-06-11T15:38:24.598Z",
+  "catalogCheck": {
+    "federalStaticCount": 7,
+    "waveFederalLayerCount": 8,
+    "layerIds": [
+      "br_ibama_embargos",
+      "br_uc_mma",
+      "br_ti_funai",
+      "br_prodes_cerrado",
+      "br_prodes_mata_atlantica",
+      "br_prodes_legal_amazon",
+      "br_mapbiomas_alerta"
+    ]
+  },
+  "probes": [
+    {
+      "script": "scripts/probe-terrabrasilis-prodes.mjs",
+      "exitCode": 0,
+      "ok": true,
+      "tail": "OK layer:deter-amz:deter_amz 200 1 \nWARN analytics-api 404  Endpoint documentado no pacote R terrabrasilisAnalyticsAPI — responde HTML (provável descontinuação).\n\nResumo: 0 falha(s) crítica(s)."
+    },
+    {
+      "script": "scripts/probe-mapbiomas-alerta.mjs",
+      "exitCode": 0,
+      "ok": true,
+      "tail": "OK layer:mapbiomas-alertas:crew_simplified-alerts 200 1 \nOK graphql-introspection 200  Queries de dados exigem Bearer token (conta MapBiomas Alerta).\n\nResumo: 0 falha(s)."
+    }
+  ],
+  "fetchMatrix": [
+    {
+      "fixtureId": "mg-850ha",
+      "bbox": [
+        -45.5234,
+        -21.2156,
+        -45.4982,
+        -21.1928
+      ],
+      "legalAmazon": false,
+      "rows": [
+        {
+          "layerId": "br_prodes_cerrado",
+          "ok": true,
+          "features": 2,
+          "proxied": false,
+          "skipped": false,
+          "degraded": false,
+          "noFeatures": false
+        },
+        {
+          "layerId": "br_prodes_mata_atlantica",
+          "ok": false,
+          "features": 0,
+          "proxied": false,
+          "skipped": false,
+          "degraded": false,
+          "noFeatures": true,
+          "error": "mapbiomas-alertas:dashboard_alerts-shapefile: sem feições no recorte"
+        },
+        {
+          "layerId": "br_prodes_legal_amazon",
+          "ok": false,
+          "features": 0,
+          "proxied": false,
+          "skipped": true,
+          "degraded": false,
+          "noFeatures": true,
+          "error": "Perímetro fora da Amazônia Legal — camada omitida."
+        },
+        {
+          "layerId": "br_mapbiomas_alerta",
+          "ok": false,
+          "features": 0,
+          "proxied": false,
+          "skipped": false,
+          "degraded": false,
+          "noFeatures": true,
+          "error": "mapbiomas-alertas:dashboard_alerts-shapefile: sem feições no recorte"
+        }
+      ]
+    },
+    {
+      "fixtureId": "mg-alerta-hit",
+      "bbox": [
+        -44.4796,
+        -20.2992,
+        -44.4778,
+        -20.2975
+      ],
+      "legalAmazon": false,
+      "rows": [
+        {
+          "layerId": "br_prodes_cerrado",
+          "ok": false,
+          "features": 0,
+          "proxied": false,
+          "skipped": false,
+          "degraded": false,
+          "noFeatures": true,
+          "error": "prodes-cerrado-nb:yearly_deforestation: sem feições no recorte"
+        },
+        {
+          "layerId": "br_prodes_mata_atlantica",
+          "ok": true,
+          "features": 6,
+          "proxied": true,
+          "skipped": false,
+          "degraded": false,
+          "noFeatures": false
+        },
+        {
+          "layerId": "br_prodes_legal_amazon",
+          "ok": false,
+          "features": 0,
+          "proxied": false,
+          "skipped": true,
+          "degraded": false,
+          "noFeatures": true,
+          "error": "Perímetro fora da Amazônia Legal — camada omitida."
+        },
+        {
+          "layerId": "br_mapbiomas_alerta",
+          "ok": true,
+          "features": 6,
+          "proxied": false,
+          "skipped": false,
+          "degraded": false,
+          "noFeatures": false
+        }
+      ]
+    }
+  ],
+  "waveAnalysis": [
+    {
+      "fixtureId": "mg-alerta-hit",
+      "file": "fixtures/geo/test-polygon-mg-alerta-hit.geojson",
+      "federalLayers": [
+        {
+          "layerId": "br_prodes_cerrado",
+          "title": "Desmatamento PRODES — Cerrado (INPE)",
+          "status": "partial",
+          "statsCount": 0,
+          "summary": "Nenhum polígono PRODES anual intersectou o perímetro no recorte WFS INPE."
+        },
+        {
+          "layerId": "br_prodes_mata_atlantica",
+          "title": "Desmatamento MA — PRODES / MapBiomas Alerta",
+          "status": "ok",
+          "statsCount": 1,
+          "summary": "1 alerta(s) MapBiomas (Mata Atlântica) no perímetro (destaque: 1310644) ~1.17 ha PRODES MA indisponível via WFS INPE — proxy MapBiomas Alerta; confira série PRODES em terrabrasilis.dpi.inpe.br.",
+          "sourceMethod": "WFS MapBiomas Alerta (proxy MA — PRODES indisponível) + interseção",
+          "sourceName": "MapBiomas Alerta (proxy PRODES MA)"
+        },
+        {
+          "layerId": "br_prodes_legal_amazon",
+          "title": "Desmatamento PRODES — Amazônia Legal (INPE)",
+          "status": "partial",
+          "statsCount": 0,
+          "summary": "Camada não aplicável ao recorte geográfico do perímetro (fora da Amazônia Legal)."
+        },
+        {
+          "layerId": "br_mapbiomas_alerta",
+          "title": "Alertas de desmatamento (MapBiomas Alerta)",
+          "status": "ok",
+          "statsCount": 1,
+          "summary": "1 alerta(s) MapBiomas no perímetro (destaque: 1310644) ~1.17 ha Dado MapBiomas Alerta — confira laudo e status na plataforma oficial.",
+          "sourceMethod": "WFS GetFeature (bbox) + interseção",
+          "sourceName": "MapBiomas Alerta (WFS)"
+        }
+      ]
+    }
+  ],
+  "allProbesOk": true,
+  "federalFetchErrors": []
+}

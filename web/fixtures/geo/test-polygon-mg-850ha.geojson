@@ -1,0 +1,27 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Polígono teste MG (~850 ha)",
+        "areaHaApprox": 850.52,
+        "purpose": "Probe e testes SIG AmbientaR (P0+)",
+        "municipio": "Região central MG (referência Lavras/Perdões)",
+        "source": "AmbientaR fixtures"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [-45.5234, -21.2156],
+            [-45.4982, -21.2156],
+            [-45.4982, -21.1928],
+            [-45.5234, -21.1928],
+            [-45.5234, -21.2156]
+          ]
+        ]
+      }
+    }
+  ]
+}
