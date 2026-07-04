@@ -1,14 +1,20 @@
 import React from "react";
 import { api } from "../service/api";
+import type { ApiResponse } from "../service/http/types";
 import { authService } from "./auth-service";
 import { ensureRouterSession } from "./auth-router-context";
 import { installAuthInterceptors } from "./auth-interceptors";
 import { authStore } from "./auth-store";
 import { extractAuthSessionData, type AuthSessionData, type AuthSnapshot, type LoginModel, type ReloginModel } from "./auth.types";
 
+export type LoginResult = {
+ session: AuthSessionData | null;
+ response: ApiResponse<AuthSessionData>;
+};
+
 export type AuthActions = {
  ensureSession: () => Promise<AuthSnapshot>;
- login: (model: LoginModel) => Promise<AuthSessionData | null>;
+ login: (model: LoginModel) => Promise<LoginResult>;
  relogin: (model: ReloginModel) => Promise<AuthSessionData | null>;
  logout: () => Promise<void>;
  switchUser: () => Promise<void>;
@@ -24,11 +30,11 @@ export function AuthProvider({ children }: React.PropsWithChildren) {
   const session = response.ok ? extractAuthSessionData(response) : null;
 
   if (!session) {
-   return null;
+   return { session: null, response };
   }
 
   authStore.setAuthenticated(session);
-  return session;
+  return { session, response };
  }, []);
 
  const relogin = React.useCallback(async (model: ReloginModel) => {

@@ -15,6 +15,7 @@ import {
 } from "../componentes";
 import type { ApiServiceResponse } from "../componentes";
 import { authService } from "./auth-service";
+import { getApiResponseMessage } from "./auth-api-response";
 import { authStore } from "./auth-store";
 import {
   isValidCpf,
@@ -111,7 +112,12 @@ export function RegisterView() {
       });
 
       if (!response.ok) {
-        setDocumentPreview(response.error?.message || "Não foi possível verificar este documento agora.");
+        setDocumentPreview(
+          getApiResponseMessage(
+            response,
+            "Não foi possível verificar este documento agora.",
+          ),
+        );
         return;
       }
 
@@ -180,7 +186,11 @@ export function RegisterView() {
       return {
         ok: false,
         status: "error",
-        message: response.error?.message || "Não foi possível concluir o cadastro agora.",
+        message: getApiResponseMessage(
+          response,
+          "Não foi possível concluir o cadastro agora.",
+        ),
+        notifications: response.notifications,
       };
     }
 

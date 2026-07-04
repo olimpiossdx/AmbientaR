@@ -10,6 +10,7 @@ import {
   Input,
 } from "../componentes";
 import { authService } from "./auth-service";
+import { getApiResponseMessage } from "./auth-api-response";
 import { isValidEmail } from "./auth-validation";
 import { PublicAuthLayout } from "./public-auth-layout";
 
@@ -38,9 +39,11 @@ export function ForgotPasswordView() {
       return {
         ok: false,
         status: "error" as const,
-        message:
-          response.error?.message ||
+        message: getApiResponseMessage(
+          response,
           "Não foi possível enviar a recuperação de senha agora.",
+        ),
+        notifications: response.notifications,
       };
     }
 

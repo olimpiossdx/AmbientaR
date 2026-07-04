@@ -10,6 +10,7 @@ import {
   Input,
 } from "../componentes";
 import { isValidLoginIdentifier } from "./auth-validation";
+import { getApiResponseMessage } from "./auth-api-response";
 import { useAuthActions } from "./auth-provider";
 
 // const formSchema = z.object({
@@ -42,16 +43,20 @@ export function LoginForm() {
   const actions = useAuthActions();
   const navigate = useNavigate();
   async function onSubmit(model: LoginFormModel) {
-    const session = await actions.login({
+    const result = await actions.login({
       username: model.username.trim(),
       password: model.password.trim(),
     });
 
-    if (!session) {
+    if (!result.session) {
       return {
         ok: false,
         status: "error" as const,
-        message: "Não foi possível entrar. Confira usuário e senha.",
+        message: getApiResponseMessage(
+          result.response,
+          "Não foi possível entrar. Confira usuário e senha.",
+        ),
+        notifications: result.response.notifications,
       };
     }
 
@@ -61,7 +66,7 @@ export function LoginForm() {
       ok: true,
       status: "success" as const,
       message: "Login realizado com sucesso.",
-      data: session,
+      data: result.session,
     };
   }
   const validation = {
