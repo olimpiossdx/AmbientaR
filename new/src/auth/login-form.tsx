@@ -100,6 +100,7 @@ export function LoginForm() {
         <Form
           validation={validation}
           onSubmit={onSubmit}
+          defaultNotificationChannels={["toast"]}
           className="flex flex-col gap-2"
         >
           <Input

@@ -12,6 +12,7 @@ import {
   Input,
   RadioGroup,
   RadioGroupItem,
+  toast,
 } from "../componentes";
 import type { ApiServiceResponse } from "../componentes";
 import { authService } from "./auth-service";
@@ -60,6 +61,9 @@ export function RegisterView() {
   const navigate = useNavigate();
   const [mode, setMode] = React.useState<RegisterMode>("cliente_autonomo");
   const [documentPreview, setDocumentPreview] = React.useState<string | null>(null);
+  const [documentPreviewStatus, setDocumentPreviewStatus] = React.useState<
+    "neutral" | "info" | "success" | "error"
+  >("neutral");
   const [documentPreviewLoading, setDocumentPreviewLoading] = React.useState(false);
 
   const isTitularMode = mode === "cliente_autonomo";
@@ -101,10 +105,12 @@ export function RegisterView() {
 
     if (!isTitularMode || !isValidCpfCnpj(document)) {
       setDocumentPreview(null);
+      setDocumentPreviewStatus("neutral");
       return;
     }
 
     setDocumentPreviewLoading(true);
+    setDocumentPreviewStatus("info");
     try {
       const response = await authService.registerDocumentPreview({
         mode: "cliente_autonomo",
@@ -112,19 +118,27 @@ export function RegisterView() {
       });
 
       if (!response.ok) {
-        setDocumentPreview(
-          getApiResponseMessage(
-            response,
-            "Não foi possível verificar este documento agora.",
-          ),
+        const message = getApiResponseMessage(
+          response,
+          "Não foi possível verificar este documento agora.",
         );
+        setDocumentPreview(message);
+        setDocumentPreviewStatus("error");
+        toast.error(message);
         return;
       }
 
-      setDocumentPreview(
+      const message =
         response.data?.message ||
-          "Documento verificado. A API fará o vínculo com registros existentes quando houver correspondência.",
-      );
+        "Documento verificado. A API fará o vínculo com registros existentes quando houver correspondência.";
+      const isAlreadyRegistered = message.toLowerCase().includes("já cadastrado");
+
+      setDocumentPreview(message);
+      setDocumentPreviewStatus(isAlreadyRegistered ? "error" : "success");
+
+      if (isAlreadyRegistered) {
+        toast.error(message);
+      }
     } finally {
       setDocumentPreviewLoading(false);
     }
@@ -270,7 +284,7 @@ export function RegisterView() {
                     required
                     mask="digits"
                     placeholder="Digite CPF ou CNPJ"
-                    helperStatus={documentPreviewLoading ? "info" : documentPreview ? "success" : "neutral"}
+                    helperStatus={documentPreviewLoading ? "info" : documentPreviewStatus}
                     helperText={
                       documentPreviewLoading
                         ? "Verificando documento..."
