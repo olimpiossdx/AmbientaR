@@ -9,6 +9,31 @@
     @apply flex w-full flex-col gap-1;
   }
 
+  .ui-field-container {
+    @apply flex w-full flex-col gap-1;
+  }
+
+  .ui-field-label {
+    @apply text-sm font-medium text-foreground;
+  }
+
+  .ui-field-description {
+    @apply text-xs text-muted-foreground;
+  }
+
+  .ui-control {
+    @apply w-full rounded-md border border-input bg-background text-foreground shadow-sm outline-none transition-all duration-200;
+    @apply placeholder:text-muted-foreground;
+    @apply focus:border-ring focus:ring-1 focus:ring-ring;
+    @apply disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground disabled:opacity-50;
+  }
+
+  .ui-control[data-invalid],
+  .ui-control[data-invalid='true'],
+  .ui-control[aria-invalid='true'] {
+    @apply border-destructive text-destructive placeholder:text-destructive/50 focus:border-destructive focus:ring-destructive/30;
+  }
+
   .ui-input {
     @apply w-full px-3 text-foreground transition-all duration-200 focus:outline-none;
     @apply placeholder:text-muted-foreground;

@@ -25,7 +25,7 @@ export const RadioGroupItem = React.forwardRef<HTMLInputElement, RadioGroupItemP
   const defaultChecked = context.value === undefined ? context.defaultValue === value : undefined;
 
   return (
-   <label htmlFor={inputId} className={cn('flex cursor-pointer items-start gap-2 rounded-md p-1 text-sm text-gray-700', props.disabled && 'cursor-not-allowed opacity-60', className)}>
+   <label htmlFor={inputId} className={cn('flex cursor-pointer items-start gap-2 rounded-md p-1 text-sm text-foreground', props.disabled && 'cursor-not-allowed opacity-60', className)}>
     <input
      ref={ref}
      id={inputId}
@@ -35,13 +35,13 @@ export const RadioGroupItem = React.forwardRef<HTMLInputElement, RadioGroupItemP
      checked={checked}
      defaultChecked={defaultChecked}
      aria-invalid={context.invalid || undefined}
-     className="mt-0.5 h-4 w-4 accent-blue-600"
+     className="mt-0.5 h-4 w-4 accent-primary focus:outline-none focus:ring-2 focus:ring-ring/30 disabled:cursor-not-allowed disabled:opacity-60"
      onChange={(event) => { onChange?.(event); if (event.currentTarget.checked) context.onValueChange?.(value); }}
      {...props}
     />
     <span className="grid gap-0.5">
      {label && <span className="font-medium">{label}</span>}
-     {description && <span className="text-xs text-gray-500">{description}</span>}
+     {description && <span className="ui-field-description">{description}</span>}
     </span>
    </label>
   );

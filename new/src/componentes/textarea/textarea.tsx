@@ -23,8 +23,8 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
   React.useLayoutEffect(() => { resize(); }, [resize, props.value, props.defaultValue]);
 
   return (
-   <div className={cn('flex flex-col gap-1.5', fullWidth && 'w-full', containerClassName)}>
-    {label && <label htmlFor={textareaId} className="text-sm font-medium text-gray-700">{label}</label>}
+   <div className={cn('ui-field-container', fullWidth && 'w-full', containerClassName)}>
+    {label && <label htmlFor={textareaId} className="ui-field-label">{label}</label>}
     <textarea
      ref={setRef}
      id={textareaId}
@@ -32,11 +32,7 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
      data-invalid={invalid || undefined}
      onInput={(event) => { resize(); onInput?.(event); }}
      className={cn(
-      'min-h-24 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-950 shadow-sm outline-none transition',
-      'placeholder:text-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20',
-      'disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500',
-      '',
-      invalid && 'border-red-500 focus:border-red-500 focus:ring-red-500/20',
+      'ui-control min-h-24 px-3 py-2 text-sm',
       fullWidth && 'w-full',
       className,
      )}
