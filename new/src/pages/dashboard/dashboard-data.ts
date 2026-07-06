@@ -14,7 +14,7 @@ import {
  WalletCards,
  Waves,
 } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
+import type { HubGridItem, MetricGridItem, ProcessTableRow, TaskListItem } from "../../componentes";
 
 export type DashboardRole =
  | "admin"
@@ -30,29 +30,7 @@ export type DashboardRole =
  | "representative"
  | "consultor_representante";
 
-export type DashboardMetric = {
- label: string;
- value: string;
- detail: string;
- tone: "emerald" | "amber" | "red" | "blue" | "slate";
- icon: LucideIcon;
-};
-
-export type DashboardTask = {
- title: string;
- detail: string;
- status: "Hoje" | "Atrasado" | "Semana" | "Em andamento";
-};
-
-export type DashboardTableRow = {
- process: string;
- subject: string;
- status: string;
- dueDate: string;
- tone: "emerald" | "amber" | "red" | "blue" | "slate";
-};
-
-export const environmentalMetrics: DashboardMetric[] = [
+export const environmentalMetrics: MetricGridItem[] = [
  {
   label: "Licencas validas",
   value: "128",
@@ -83,7 +61,7 @@ export const environmentalMetrics: DashboardMetric[] = [
  },
 ];
 
-export const expiryMetrics: DashboardMetric[] = [
+export const expiryMetrics: MetricGridItem[] = [
  {
   label: "Vencem em 30 dias",
   value: "5",
@@ -114,7 +92,7 @@ export const expiryMetrics: DashboardMetric[] = [
  },
 ];
 
-export const financialMetrics: DashboardMetric[] = [
+export const financialMetrics: MetricGridItem[] = [
  {
   label: "Receita prevista",
   value: "R$ 284 mil",
@@ -138,7 +116,7 @@ export const financialMetrics: DashboardMetric[] = [
  },
 ];
 
-export const crmMetrics: DashboardMetric[] = [
+export const crmMetrics: MetricGridItem[] = [
  {
   label: "Oportunidades abertas",
   value: "54",
@@ -162,7 +140,7 @@ export const crmMetrics: DashboardMetric[] = [
  },
 ];
 
-export const officeTasks: DashboardTask[] = [
+export const officeTasks: TaskListItem[] = [
  {
   title: "Renovar licenca Fazenda Santa Clara",
   detail: "Preparar protocolo com comprovantes e condicionantes cumpridas.",
@@ -180,7 +158,7 @@ export const officeTasks: DashboardTask[] = [
  },
 ];
 
-export const agendaItems: DashboardTask[] = [
+export const agendaItems: TaskListItem[] = [
  {
   title: "Reuniao tecnica com cliente",
   detail: "Hoje, 14:00 - Licenciamento corretivo",
@@ -198,7 +176,7 @@ export const agendaItems: DashboardTask[] = [
  },
 ];
 
-export const recentRows: DashboardTableRow[] = [
+export const recentRows: ProcessTableRow[] = [
  {
   process: "SEMAD 0412/2026",
   subject: "Renovacao de licenca operacional",
@@ -229,7 +207,7 @@ export const recentRows: DashboardTableRow[] = [
  },
 ];
 
-export const adminHubItems = [
+export const adminHubItems: HubGridItem[] = [
  {
   label: "Documentos ambientais",
   detail: "Licencas, outorgas, condicionantes e intervencoes.",

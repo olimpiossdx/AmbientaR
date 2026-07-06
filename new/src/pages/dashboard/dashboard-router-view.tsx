@@ -4,7 +4,7 @@ import { AdminDashboard } from "./admin-dashboard";
 import type { DashboardRole } from "./dashboard-data";
 import { EnvironmentalDashboard } from "./environmental-dashboard";
 import { FocusedDashboard } from "./focused-dashboard";
-import { PageHeader } from "./dashboard-ui";
+import { PageHeader } from "../../componentes";
 
 export function DashboardRouterView() {
  const user = useAuthUser();

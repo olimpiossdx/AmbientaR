@@ -8,7 +8,7 @@ import {
  officeTasks,
  recentRows,
 } from "./dashboard-data";
-import { HubGrid, MetricGrid, PageHeader, RecentProcessTable, TaskList } from "./dashboard-ui";
+import { HubGrid, MetricGrid, PageHeader, ProcessTable, TaskList } from "../../componentes";
 
 export function AdminDashboard({ isSupervisor = false }: { isSupervisor?: boolean }) {
  return (
@@ -35,11 +35,15 @@ export function AdminDashboard({ isSupervisor = false }: { isSupervisor?: boolea
      <MetricGrid metrics={crmMetrics} columns="three" />
     </section>
 
-    <section className="space-y-4" aria-labelledby="ambiental-title">
+   <section className="space-y-4" aria-labelledby="ambiental-title">
      <h2 id="ambiental-title" className="text-xl font-semibold text-slate-950">Visao geral de gestao ambiental</h2>
      <MetricGrid metrics={environmentalMetrics} />
      <MetricGrid metrics={expiryMetrics} />
-     <RecentProcessTable rows={recentRows} />
+     <ProcessTable
+      title="Licencas e projetos recentes"
+      description="Ultimos processos ambientais adicionados ao painel."
+      rows={recentRows}
+     />
     </section>
    </main>
   </div>

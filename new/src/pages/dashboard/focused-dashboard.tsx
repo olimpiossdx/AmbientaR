@@ -1,5 +1,5 @@
 import { crmMetrics, financialMetrics } from "./dashboard-data";
-import { MetricGrid, PageHeader } from "./dashboard-ui";
+import { MetricGrid, PageHeader } from "../../componentes";
 
 export function FocusedDashboard({ kind }: { kind: "financial" | "sales" }) {
  const isFinancial = kind === "financial";

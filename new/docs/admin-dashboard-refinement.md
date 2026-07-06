@@ -29,6 +29,62 @@ No `new`, a rota `/app` já está protegida pelo TanStack Router, mas ainda exib
    - CRM;
    - gestão ambiental.
 
+## Auditoria de componentes
+
+Diretriz: toda a virada deve usar componentes do `new/src/componentes`. Quando um bloco ainda não existir no catálogo, ele deve ser reportado aqui antes de virar implementação definitiva.
+
+### Componentes do `new` já disponíveis
+
+- `Button`: ações de header, menu mobile, logout e comandos dos widgets.
+- `Avatar`: identificação do usuário logado.
+- `Badge`: perfil do usuário, status de processos, status de tarefas e indicadores.
+- `Card`, `CardHeader`, `CardTitle`, `CardDescription`, `CardContent`: cards de métricas, widgets e hubs.
+- `Table`, `TableHeader`, `TableBody`, `TableRow`, `TableHead`, `TableCell`: listas recentes e detalhes de processos.
+- `Sidebar`: base do menu lateral.
+- `Dialog`: disponível para detalhar licenças/condicionantes, equivalente ao dashboard antigo.
+- `Skeleton`: disponível para estados de carregamento.
+- `DropdownMenu`: disponível, mas com API diferente da usada no `web` antigo.
+- `Chart`: disponível para substituir gráficos financeiros/CRM quando os dados reais forem plugados.
+- `Tooltip`, `Popover`, `Sheet`, `ScrollArea`, `Separator`, `Tabs`: disponíveis para refinamentos de navegação e filtros.
+- `PageHeader`: criado no catálogo para cabeçalhos de página do painel.
+- `MetricGrid`: criado no catálogo para cards de indicadores.
+- `HubGrid`: criado no catálogo para hubs de acesso rápido.
+- `TaskList`: criado no catálogo para agenda, tarefas e listas operacionais compactas.
+- `ProcessTable`: criado no catálogo para tabelas de processos/licenças recentes.
+- `AppSidebar`: criado no catálogo para navegação lateral autenticada.
+- `AppHeader`: criado no catálogo para topo do shell autenticado.
+- `AppUserMenu`: criado no catálogo para ações de usuário.
+- `NotificationMenu`: criado no catálogo para notificações, ainda aguardando dados reais.
+
+### Blocos usados no painel antigo que ainda precisam virar componentes próprios
+
+- `DocumentosAmbientaisHubCard`: não existe no `new`. Deve virar componente próprio usando `Card`, `Button`, `Badge` e ícones.
+- `NavContent`: a navegação lateral agora usa `AppSidebar`, mas ainda falta migrar a matriz completa de rotas/permissões do antigo.
+- `SidebarProvider`, `SidebarInset`, `SidebarTrigger`, `SidebarResizeHandle`: o `new` tem `Sidebar` + `AppSidebar`. Se quisermos paridade com recolhimento, resize persistido e inset dedicado, precisamos ampliar o componente `sidebar`.
+- `AgendaWidget`: não existe como componente no `new`; deve ser migrado usando `Card`, `Badge`, `Button` e `Skeleton`.
+- `OfficeTasksWidget`: não existe como componente no `new`; deve ser migrado usando `Card`, `Badge`, `Button` e `Skeleton`.
+- `BirthdayWidget`: não existe como componente no `new`; deve ser migrado usando `Card` e `Skeleton`.
+- `FinancialDashboard`: não existe no `new`; precisa de componente de dashboard com `Card`, `Table`, `Chart` e serviço de estatísticas.
+- `CrmDashboard`: não existe no `new`; precisa de componente de dashboard com `Card`, `Table` e `Chart`.
+- `EnvironmentalDashboard`: existe apenas como primeira versão local em `pages/dashboard`; deve virar módulo/componente de dashboard com serviço real.
+- `DocumentDetailDialog`: no antigo os detalhes ficam embutidos em `EnvironmentalDashboard`; no `new`, deve virar componente dedicado usando `Dialog` + `Table`.
+- `ThemeToggle`, `OfflineQueueBadge`, `UpgradeButton`, `ChatWidget`: não existem no catálogo do `new`. Devem ser avaliados separadamente, porque dependem de infraestrutura ainda não migrada.
+
+### Uso provisório que deve ser refinado antes da virada definitiva
+
+- Os blocos antes concentrados em `new/src/pages/dashboard/dashboard-ui.tsx` foram migrados para `new/src/componentes`.
+- `new/src/layouts/authenticated-layout.tsx` agora delega o shell para `AppSidebar`, `AppHeader`, `AppUserMenu` e `NotificationMenu`.
+- Os dados em `new/src/pages/dashboard/dashboard-data.ts` são de preparação. A versão definitiva deve consumir serviços do `new/src/service`.
+- Os itens de menu desabilitados no layout representam módulos não roteados ainda. Antes da virada, cada item deve apontar para rota real ou ser removido por feature flag/permissão.
+
+## Plano de refinamento por componentes
+
+1. Migrar os widgets do painel antigo um por um: `DocumentosAmbientaisHubCard`, `AgendaWidget`, `OfficeTasksWidget`, `BirthdayWidget`.
+2. Migrar os dashboards de domínio com contratos de dados: financeiro, CRM e ambiental.
+3. Evoluir o menu lateral com rotas/permissões reais, substituindo os itens desabilitados.
+4. Avaliar se precisamos de paridade completa do `SidebarProvider`, `SidebarInset`, `SidebarTrigger` e `SidebarResizeHandle`.
+5. Trocar os dados mock por chamadas reais e validar o pós-login com usuário `admin`.
+
 ## Critérios de aceite desta etapa
 
 - Após login, `/app` mostra o painel do administrador quando `role` for `admin` ou `supervisor`.
