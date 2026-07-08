@@ -1,10 +1,13 @@
 import type React from "react";
 
 export type AppShellNavItem = {
- to: "/app" | "/app/exemplos";
+ to?: string;
+ legacyHref?: string;
  label: React.ReactNode;
  icon?: React.ComponentType<{ className?: string }>;
- disabled?: boolean;
+  disabled?: boolean;
+ roles?: string[];
+ children?: AppShellNavItem[];
 };
 
 export type AppUserMenuItem = {

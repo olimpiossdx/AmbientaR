@@ -1,12 +1,12 @@
 # Auditoria de Rotas e Menu
 
-Gerado em: 2026-06-25T17:57:54.435Z
+Gerado em: 2026-07-08T01:20:04.519Z
 
 Classificação inicial para limpeza cirúrgica. Rotas órfãs não devem ser removidas automaticamente; precisam de validação funcional antes.
 
 ## Código ativo ou coberto por menu
 
-Total: 279
+Total: 284
 
 | Rota | Arquivo |
 |------|---------|
@@ -281,6 +281,11 @@ Total: 279
 | `/suppliers` | `src/app/(app)/suppliers/page.tsx` |
 | `/suppliers/[id]/edit` | `src/app/(app)/suppliers/[id]/edit/page.tsx` |
 | `/suppliers/new` | `src/app/(app)/suppliers/new/page.tsx` |
+| `/tacs` | `src/app/(app)/tacs/page.tsx` |
+| `/tacs/[id]/edit` | `src/app/(app)/tacs/(.)[id]/edit/page.tsx` |
+| `/tacs/[id]/edit` | `src/app/(app)/tacs/[id]/edit/page.tsx` |
+| `/tacs/new` | `src/app/(app)/tacs/(.)new/page.tsx` |
+| `/tacs/new` | `src/app/(app)/tacs/new/page.tsx` |
 | `/technical-responsible` | `src/app/(app)/technical-responsible/page.tsx` |
 | `/technical-responsible/[id]/edit` | `src/app/(app)/technical-responsible/(.)[id]/edit/page.tsx` |
 | `/technical-responsible/[id]/edit` | `src/app/(app)/technical-responsible/[id]/edit/page.tsx` |
@@ -302,13 +307,14 @@ Total: 3
 
 ## Rotas estáticas sem entrada direta no menu
 
-Total: 8
+Total: 9
 
 | Rota | Arquivo |
 |------|---------|
 | `/gestao-processos` | `src/app/(app)/gestao-processos/page.tsx` |
 | `/gestao-processos/fluxo` | `src/app/(app)/gestao-processos/fluxo/page.tsx` |
 | `/gestao-processos/indicadores` | `src/app/(app)/gestao-processos/indicadores/page.tsx` |
+| `/gestao-processos/indicadores/analise` | `src/app/(app)/gestao-processos/indicadores/analise/page.tsx` |
 | `/gestao-processos/planilha` | `src/app/(app)/gestao-processos/planilha/page.tsx` |
 | `/gestao-processos/projetos` | `src/app/(app)/gestao-processos/projetos/page.tsx` |
 | `/gestao-processos/tarefas` | `src/app/(app)/gestao-processos/tarefas/page.tsx` |

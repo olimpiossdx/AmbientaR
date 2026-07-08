@@ -8,10 +8,13 @@ import {
 import { AuthenticatedLayout } from "./layouts/authenticated-layout";
 import { ForgotPasswordView, LoginView, RegisterView } from "./auth";
 import HomePage from "./pages/home-page";
+import { LegacyFeaturePage } from "./modules/legacy-feature";
+import { MigrationPlanPage } from "./modules/migration-plan";
 import {
   authRouterContext,
   type AuthRouterContext,
 } from "./auth/auth-router-context";
+import { isRoleAllowedForPath } from "./modules/auth/route-access";
 
 function RootLayout() {
   return <Outlet />;
@@ -66,6 +69,13 @@ const authenticatedRoute = createRoute({
     if (auth.status === "locked") {
       context.auth.setPendingLocation(location.href);
     }
+
+    if (
+      auth.status === "authenticated" &&
+      !isRoleAllowedForPath(auth.user?.role, location.pathname)
+    ) {
+      throw redirect({ to: "/app" });
+    }
   },
 });
 
@@ -83,12 +93,24 @@ const examplesRoute = createRoute({
   },
 });
 
+const migrationPlanRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: "/plano-migracao",
+  component: MigrationPlanPage,
+});
+
+const legacyFeatureRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: "$",
+  component: LegacyFeaturePage,
+});
+
 const routeTree = rootRoute.addChildren([
   indexRoute,
   loginRoute,
   forgotPasswordRoute,
   registerRoute,
-  authenticatedRoute.addChildren([appIndexRoute, examplesRoute]),
+  authenticatedRoute.addChildren([appIndexRoute, examplesRoute, migrationPlanRoute, legacyFeatureRoute]),
 ]);
 
 export const router = createRouter({

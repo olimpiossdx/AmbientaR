@@ -1,51 +1,14 @@
-import { Outlet, useNavigate } from "@tanstack/react-router";
+import { Outlet, useLocation, useNavigate } from "@tanstack/react-router";
 import {
- BarChart3,
- CalendarDays,
- FileSearch,
- LayoutDashboard,
  Leaf,
- LogOut,
- Settings,
- UsersRound,
 } from "lucide-react";
 import React from "react";
-import Button from "../componentes/button";
 import { useAuthActions } from "../auth/auth-provider";
 import { useAuthUser } from "../auth/auth-hooks";
 import { SessionLockModal } from "../auth/session-lock-modal";
 import { AppHeader, AppSidebar, AppUserMenu, Avatar, NotificationMenu } from "../componentes";
-
-type NavigationItem = {
- to: "/app" | "/app/exemplos";
- label: string;
- icon: React.ComponentType<{ className?: string }>;
- disabled?: boolean;
-};
-
-const navigationItems: NavigationItem[] = [
- { to: "/app", label: "Painel", icon: LayoutDashboard },
- { to: "/app/exemplos", label: "Catalogo UI", icon: FileSearch },
- { to: "/app", label: "Agenda", icon: CalendarDays, disabled: true },
- { to: "/app", label: "Financeiro", icon: BarChart3, disabled: true },
- { to: "/app", label: "Clientes", icon: UsersRound, disabled: true },
- { to: "/app", label: "Sistema", icon: Settings, disabled: true },
-];
-
-const roleLabels: Record<string, string> = {
- admin: "Administrador",
- supervisor: "Supervisor",
- gestor: "Gestao ambiental",
- financial: "Financeiro",
- sales: "Vendas",
- technical: "Tecnico",
- diretor_fauna: "Diretor de fauna",
- advogado: "Advogado",
- client: "Cliente",
- cliente_autonomo: "Cliente autonomo",
- representative: "Representante",
- consultor_representante: "Consultor-Representante",
-};
+import { getNavigationItemsForRole, getNavigationMatchForPath } from "../modules/navigation";
+import { getRoleLabel } from "../modules/auth/permissions";
 
 function getInitials(name?: string | null) {
  if (!name) return "AR";
@@ -62,10 +25,20 @@ export function AuthenticatedLayout() {
  const user = useAuthUser();
  const actions = useAuthActions();
  const navigate = useNavigate();
+ const location = useLocation();
  const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
 
  const userName = user?.nome ?? "Usuario";
- const userRole = user?.role ? roleLabels[user.role] ?? user.role : "Sessao ativa";
+ const userRole = getRoleLabel(user?.role) ?? "Sessao ativa";
+ const navigationItems = React.useMemo(() => getNavigationItemsForRole(user?.role), [user?.role]);
+ const navigationMatch = React.useMemo(
+  () => getNavigationMatchForPath(location.pathname),
+  [location.pathname],
+ );
+ const headerTitle = navigationMatch?.title ?? "Painel";
+ const headerSubtitle = navigationMatch?.moduleTitle && navigationMatch.moduleTitle !== headerTitle
+  ? navigationMatch.moduleTitle
+  : "AmbientaR";
 
  const handleLogout = async () => {
   await actions.logout();
@@ -115,9 +88,9 @@ export function AuthenticatedLayout() {
    )}
 
    <div className="flex min-w-0 flex-1 flex-col">
-    <AppHeader
-     title="Painel operacional"
-     subtitle="Tela inicial apos login"
+   <AppHeader
+     title={headerTitle}
+     subtitle={headerSubtitle}
      roleLabel={userRole}
      userName={userName}
      userIdentifier={user?.username}
@@ -135,12 +108,7 @@ export function AuthenticatedLayout() {
          onSelect: handleLogout,
         },
        ]}
-      />
-     )}
-     actions={(
-      <Button variant="outline" size="sm" leftIcon={<LogOut className="h-4 w-4" />} onClick={handleLogout}>
-       Sair
-      </Button>
+     />
      )}
     />
 

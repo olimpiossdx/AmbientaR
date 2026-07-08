@@ -1,6 +1,7 @@
 import {
  adminHubItems,
  agendaItems,
+ birthdayItems,
  crmMetrics,
  environmentalMetrics,
  expiryMetrics,
@@ -18,11 +19,12 @@ export function AdminDashboard({ isSupervisor = false }: { isSupervisor?: boolea
     description="Visao consolidada para acompanhar documentos ambientais, tarefas, agenda, financeiro e vendas depois do login."
    />
    <main className="flex-1 space-y-8 p-4 sm:p-6 lg:p-8">
-    <HubGrid items={adminHubItems} />
+   <HubGrid items={adminHubItems} />
 
-    <div className="grid gap-4 xl:grid-cols-2">
+    <div className="grid gap-4 xl:grid-cols-3">
      <TaskList title="Agenda" description="Compromissos e entregas proximas." items={agendaItems} />
      <TaskList title="Tarefas internas" description="Pendencias operacionais do escritorio." items={officeTasks} />
+     <TaskList title="Aniversariantes" description="Relacionamentos importantes do mes." items={birthdayItems} />
     </div>
 
     <section className="space-y-4" aria-labelledby="financeiro-title">

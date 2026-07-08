@@ -9,6 +9,7 @@ import {
  FolderKanban,
  LineChart,
  Recycle,
+ ShieldCheck,
  TrendingUp,
  UsersRound,
  WalletCards,
@@ -176,6 +177,24 @@ export const agendaItems: TaskListItem[] = [
  },
 ];
 
+export const birthdayItems: TaskListItem[] = [
+ {
+  title: "Marina Albuquerque",
+  detail: "Cliente - aniversario hoje",
+  status: "Hoje",
+ },
+ {
+  title: "Rafael Martins",
+  detail: "Contato comercial - aniversario nesta semana",
+  status: "Semana",
+ },
+ {
+  title: "Helena Costa",
+  detail: "Responsavel tecnico - enviar felicitacao",
+  status: "Mes",
+ },
+];
+
 export const recentRows: ProcessTableRow[] = [
  {
   process: "SEMAD 0412/2026",
@@ -227,5 +246,25 @@ export const adminHubItems: HubGridItem[] = [
   label: "Agenda",
   detail: "Compromissos tecnicos, vistorias e entregas.",
   icon: CalendarDays,
+ },
+ {
+  label: "Acessos governamentais",
+  detail: "SEI, SLA, CTF/IBAMA e consultas oficiais.",
+  icon: ShieldCheck,
+ },
+ {
+  label: "Estudos tecnicos",
+  detail: "PCA, RCA, PIA, PRADA, barragens e relatorios.",
+  icon: FileSearch,
+ },
+ {
+  label: "Georeferenciamento",
+  detail: "CAR, SIGEF/INCRA, memorial e validacoes.",
+  icon: Waves,
+ },
+ {
+  label: "Ferramentas do sistema",
+  detail: "Templates, laudos, auditoria, RAG e integracoes.",
+  icon: BarChart3,
  },
 ];

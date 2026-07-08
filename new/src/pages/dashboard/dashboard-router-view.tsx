@@ -1,15 +1,10 @@
 import { Leaf } from "lucide-react";
 import { useAuthUser } from "../../auth/auth-hooks";
-import { AdminDashboard } from "./admin-dashboard";
-import type { DashboardRole } from "./dashboard-data";
-import { EnvironmentalDashboard } from "./environmental-dashboard";
-import { FocusedDashboard } from "./focused-dashboard";
 import { PageHeader } from "../../componentes";
+import { getDashboardForRole } from "../../modules/dashboard";
 
 export function DashboardRouterView() {
  const user = useAuthUser();
- const role = user?.role as DashboardRole | undefined;
-
  if (!user) {
   return (
    <div className="flex min-h-full items-center justify-center bg-white p-8">
@@ -21,22 +16,7 @@ export function DashboardRouterView() {
   );
  }
 
- const dashboards: Partial<Record<DashboardRole, React.ReactNode>> = {
-  admin: <AdminDashboard />,
-  supervisor: <AdminDashboard isSupervisor />,
-  financial: <FocusedDashboard kind="financial" />,
-  sales: <FocusedDashboard kind="sales" />,
-  gestor: <EnvironmentalDashboard />,
-  technical: <EnvironmentalDashboard />,
-  advogado: <EnvironmentalDashboard title="Painel do Advogado" />,
-  diretor_fauna: <EnvironmentalDashboard title="Painel de Fauna" />,
-  client: <EnvironmentalDashboard title="Painel do Cliente" />,
-  cliente_autonomo: <EnvironmentalDashboard title="Painel do Cliente" />,
-  representative: <EnvironmentalDashboard title="Painel do Representante" />,
-  consultor_representante: <EnvironmentalDashboard title="Painel do Consultor-Representante" />,
- };
-
- const dashboard = role ? dashboards[role] : null;
+ const dashboard = getDashboardForRole(user.role);
 
  if (dashboard) {
   return <>{dashboard}</>;
