@@ -8,7 +8,7 @@ import type { AppHeaderProps } from "./app-shell.types";
 export const AppHeader = React.forwardRef<HTMLElement, AppHeaderProps>(({
  title,
  subtitle,
- roleLabel,
+ sessionLabel,
  userName,
  userIdentifier,
  onOpenMenu,
@@ -36,10 +36,10 @@ export const AppHeader = React.forwardRef<HTMLElement, AppHeaderProps>(({
   </div>
 
   <div className="flex min-w-0 items-center gap-3">
-   {roleLabel ? (
+   {sessionLabel ? (
     <Badge variant="outline" className="hidden items-center gap-1.5 sm:inline-flex">
      <ShieldCheck className="h-3.5 w-3.5" />
-     {roleLabel}
+     {sessionLabel}
     </Badge>
    ) : null}
    {notifications}

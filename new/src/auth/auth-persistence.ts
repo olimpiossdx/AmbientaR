@@ -1,7 +1,7 @@
-import type { AuthSessionData } from "./auth.types";
+import type { PersistedAuthSnapshot } from "./auth.types";
 import { isAuthSessionData } from "./auth.types";
 
-const AUTH_STORAGE_KEY = "new_arq.auth.known_session.v1";
+export const AUTH_STORAGE_KEY = "ambientar.auth.session.v2";
 
 function getStorage(): Storage | null {
  if (typeof window === "undefined") {
@@ -15,7 +15,19 @@ function getStorage(): Storage | null {
  }
 }
 
-export function loadKnownSession(): AuthSessionData | null {
+export function isPersistedAuthSnapshot(value: unknown): value is PersistedAuthSnapshot {
+ if (!isAuthSessionData(value)) {
+  return false;
+ }
+
+ const snapshot = value as Partial<PersistedAuthSnapshot>;
+ return (
+  typeof snapshot.requiresRelogin === "boolean" &&
+  (snapshot.pendingLocation === null || typeof snapshot.pendingLocation === "string")
+ );
+}
+
+export function loadKnownSession(): PersistedAuthSnapshot | null {
  const storage = getStorage();
 
  if (!storage) {
@@ -30,13 +42,19 @@ export function loadKnownSession(): AuthSessionData | null {
 
  try {
   const parsed = JSON.parse(raw) as unknown;
-  return isAuthSessionData(parsed) ? parsed : null;
+  if (isPersistedAuthSnapshot(parsed)) {
+   return parsed;
+  }
+
+  storage.removeItem(AUTH_STORAGE_KEY);
+  return null;
  } catch {
+  storage.removeItem(AUTH_STORAGE_KEY);
   return null;
  }
 }
 
-export function saveKnownSession(session: AuthSessionData): void {
+export function saveKnownSession(session: PersistedAuthSnapshot): void {
  const storage = getStorage();
 
  if (!storage) {

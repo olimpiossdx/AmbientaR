@@ -7,8 +7,11 @@ import { useAuthActions } from "../auth/auth-provider";
 import { useAuthUser } from "../auth/auth-hooks";
 import { SessionLockModal } from "../auth/session-lock-modal";
 import { AppHeader, AppSidebar, AppUserMenu, Avatar, NotificationMenu } from "../componentes";
-import { getNavigationItemsForRole, getNavigationMatchForPath } from "../modules/navigation";
-import { getRoleLabel } from "../modules/auth/permissions";
+import { getNavigationMatchForPath } from "../modules/navigation";
+import { authorizationService } from "../app/authorization/authorization-service";
+import { filterNavigationByClaims } from "../app/navigation/navigation-filter";
+import { appNavigation } from "../app/navigation/navigation-registry";
+import { useAuthSnapshot } from "../auth/auth-hooks";
 
 function getInitials(name?: string | null) {
  if (!name) return "AR";
@@ -23,14 +26,20 @@ function getInitials(name?: string | null) {
 
 export function AuthenticatedLayout() {
  const user = useAuthUser();
+ const { revision } = useAuthSnapshot();
  const actions = useAuthActions();
  const navigate = useNavigate();
  const location = useLocation();
  const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
 
  const userName = user?.nome ?? "Usuario";
- const userRole = getRoleLabel(user?.role) ?? "Sessao ativa";
- const navigationItems = React.useMemo(() => getNavigationItemsForRole(user?.role), [user?.role]);
+ const navigationItems = React.useMemo(
+  () => {
+   void revision;
+   return filterNavigationByClaims(appNavigation, authorizationService);
+  },
+  [revision],
+ );
  const navigationMatch = React.useMemo(
   () => getNavigationMatchForPath(location.pathname),
   [location.pathname],
@@ -91,7 +100,7 @@ export function AuthenticatedLayout() {
    <AppHeader
      title={headerTitle}
      subtitle={headerSubtitle}
-     roleLabel={userRole}
+     sessionLabel="Sessão ativa"
      userName={userName}
      userIdentifier={user?.username}
      onOpenMenu={() => setMobileMenuOpen(true)}

@@ -6,8 +6,7 @@ export type AppShellNavItem = {
  label: React.ReactNode;
  icon?: React.ComponentType<{ className?: string }>;
   disabled?: boolean;
- roles?: string[];
- children?: AppShellNavItem[];
+	 children?: AppShellNavItem[];
 };
 
 export type AppUserMenuItem = {
@@ -39,7 +38,7 @@ export interface AppSidebarProps extends React.HTMLAttributes<HTMLElement> {
 export interface AppHeaderProps extends Omit<React.HTMLAttributes<HTMLElement>, "title"> {
  title: React.ReactNode;
  subtitle?: React.ReactNode;
- roleLabel?: React.ReactNode;
+	 sessionLabel?: React.ReactNode;
  userName?: React.ReactNode;
  userIdentifier?: React.ReactNode;
  onOpenMenu?: () => void;

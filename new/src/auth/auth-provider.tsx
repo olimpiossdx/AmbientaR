@@ -4,6 +4,7 @@ import type { ApiResponse } from "../service/http/types";
 import { authService } from "./auth-service";
 import { ensureRouterSession } from "./auth-router-context";
 import { installAuthInterceptors } from "./auth-interceptors";
+import { installAuthSessionLifecycle } from "./auth-session-lifecycle";
 import { authStore } from "./auth-store";
 import { extractAuthSessionData, type AuthSessionData, type AuthSnapshot, type LoginModel, type ReloginModel } from "./auth.types";
 
@@ -55,8 +56,9 @@ export function AuthProvider({ children }: React.PropsWithChildren) {
  }, []);
 
  const logout = React.useCallback(async () => {
-  await authService.logout().catch(() => undefined);
+  const request = authService.logout().catch(() => undefined);
   authStore.clearToAnonymous();
+  await request;
  }, []);
 
  const switchUser = React.useCallback(async () => {
@@ -64,6 +66,7 @@ export function AuthProvider({ children }: React.PropsWithChildren) {
  }, [logout]);
 
  React.useEffect(() => installAuthInterceptors(api), []);
+ React.useEffect(() => installAuthSessionLifecycle(), []);
 
  const actions = React.useMemo<AuthActions>(() => ({
   ensureSession,

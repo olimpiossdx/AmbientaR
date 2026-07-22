@@ -1,7 +1,6 @@
 import { Leaf } from "lucide-react";
 import { useAuthUser } from "../../auth/auth-hooks";
-import { PageHeader } from "../../componentes";
-import { getDashboardForRole } from "../../modules/dashboard";
+import { EnvironmentalDashboard } from "./environmental-dashboard";
 
 export function DashboardRouterView() {
  const user = useAuthUser();
@@ -16,18 +15,5 @@ export function DashboardRouterView() {
   );
  }
 
- const dashboard = getDashboardForRole(user.role);
-
- if (dashboard) {
-  return <>{dashboard}</>;
- }
-
- return (
-  <div className="flex min-h-full flex-col">
-   <PageHeader
-    title="Painel nao configurado"
-    description="Este perfil ainda nao possui um dashboard dedicado no novo painel."
-   />
-  </div>
- );
+ return <EnvironmentalDashboard title="Painel AmbientaR" />;
 }

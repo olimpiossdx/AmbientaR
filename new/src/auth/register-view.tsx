@@ -25,7 +25,7 @@ import {
   normalizeCpfCnpj,
 } from "./auth-validation";
 import type { AuthSessionData, RegisterMode, RegisterModel, RegisterResult } from "./auth.types";
-import { isAuthSessionData } from "./auth.types";
+import { parseAuthSessionData } from "./auth.types";
 import { PublicAuthLayout } from "./public-auth-layout";
 
 type RegisterFormModel = {
@@ -50,11 +50,7 @@ const PROFILE_DESCRIPTIONS: Record<RegisterMode, string> = {
 };
 
 function extractSession(result: RegisterResult | null): AuthSessionData | null {
-  if (isAuthSessionData(result?.session)) {
-    return result.session;
-  }
-
-  return null;
+  return parseAuthSessionData(result?.session);
 }
 
 export function RegisterView() {

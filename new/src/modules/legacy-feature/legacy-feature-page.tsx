@@ -8,20 +8,18 @@ import {
  CardTitle,
  PageHeader,
 } from "../../componentes";
-import { useAuthUser } from "../../auth/auth-hooks";
-import type { AppShellNavItem } from "../../componentes";
-import { getAllowedRolesForPath } from "../auth/route-access";
+import type { NavigationItem } from "../../app/navigation/navigation.types";
 import { adminNavigationItems } from "../navigation/navigation-registry";
 
 type FlatNavigationItem = {
- item: AppShellNavItem;
- module: AppShellNavItem;
- parents: AppShellNavItem[];
+ item: NavigationItem;
+ module: NavigationItem;
+ parents: NavigationItem[];
  legacyPath: string;
  legacyHref: string;
 };
 
-function text(value: AppShellNavItem["label"]): string {
+function text(value: NavigationItem["label"]): string {
  if (typeof value === "string") return value;
  if (typeof value === "number") return String(value);
  return "Modulo";
@@ -40,8 +38,8 @@ function normalizePath(pathname: string): string {
 }
 
 function flattenNavigation(
- items: AppShellNavItem[],
- parents: AppShellNavItem[] = [],
+ items: NavigationItem[],
+ parents: NavigationItem[] = [],
  out: FlatNavigationItem[] = [],
 ): FlatNavigationItem[] {
  for (const item of items) {
@@ -91,7 +89,7 @@ function findCurrentItem(legacyHref: string): FlatNavigationItem | null {
  return bestScore >= 0 ? best : null;
 }
 
-function moduleChildren(module: AppShellNavItem): FlatNavigationItem[] {
+function moduleChildren(module: NavigationItem): FlatNavigationItem[] {
  return flatNavigation.filter((entry) => entry.module === module && entry.item !== module);
 }
 
@@ -106,7 +104,6 @@ function pathToInternalHref(legacyHref: string): string {
 
 export function LegacyFeaturePage() {
  const location = useLocation();
- const user = useAuthUser();
  const legacyHref = legacyHrefForLocation(
   location.pathname,
   typeof window === "undefined" ? "" : window.location.search,
@@ -114,7 +111,6 @@ export function LegacyFeaturePage() {
  );
  const current = findCurrentItem(legacyHref);
  const module = current?.module;
- const allowedRoles = getAllowedRolesForPath(location.pathname);
  const siblings = module ? moduleChildren(module) : [];
 
  return (
@@ -138,7 +134,6 @@ export function LegacyFeaturePage() {
        <div className="flex flex-wrap gap-2">
         <Badge variant="outline">Nova rota: {location.pathname}</Badge>
         <Badge variant="outline">Legado: {legacyHref}</Badge>
-        {user?.role ? <Badge variant="success">Perfil: {user.role}</Badge> : null}
        </div>
        <ul className="grid gap-2 pl-4">
         <li>Implementar a pagina em `new/src/modules/{text(module?.label ?? "modulo").toLowerCase()}/pages`.</li>
@@ -153,15 +148,16 @@ export function LegacyFeaturePage() {
      <Card>
       <CardHeader>
        <CardTitle>Permissoes</CardTitle>
-       <CardDescription>Roles herdadas do menu/guard do legado.</CardDescription>
+       <CardDescription>Claim declarada para esta funcionalidade.</CardDescription>
       </CardHeader>
       <CardContent className="flex flex-wrap gap-2">
-       {(allowedRoles ?? current?.item.roles ?? []).map((role) => (
-        <Badge key={role} variant="secondary">{role}</Badge>
-       ))}
-       {!allowedRoles?.length && !current?.item.roles?.length ? (
-        <span className="text-sm text-slate-500">Sem roles explicitas.</span>
-       ) : null}
+       {current?.item.claim ? (
+        <Badge variant="secondary">
+         {current.item.claim.claimType}:{current.item.claim.claimValue}
+        </Badge>
+       ) : (
+        <span className="text-sm text-slate-500">Sem claim explícita durante a migração.</span>
+       )}
       </CardContent>
      </Card>
     </div>

@@ -1,5 +1,5 @@
 export {
  adminNavigationItems,
  getNavigationMatchForPath,
- getNavigationItemsForRole,
+ getNavigationRequirementsForPath,
 } from "./navigation-registry";

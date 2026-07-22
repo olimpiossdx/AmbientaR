@@ -85,6 +85,7 @@ export function SessionLockModal() {
     actionsClassName="border-t border-border bg-muted/40 px-4 py-3 -mx-4 -mb-4 sm:-mx-6 sm:-mb-5 sm:px-6 sm:py-4"
     defaultNotificationChannels={["alert"]}
     onSubmit={async (model) => {
+     const pendingLocation = authStore.getSnapshot().pendingLocation;
      const session = await actions.relogin({ password: model.password });
 
      if (!session) {
@@ -94,8 +95,6 @@ export function SessionLockModal() {
        message: "Não foi possível revalidar sua sessão. Confira a senha e tente novamente.",
       };
      }
-
-     const pendingLocation = authStore.getSnapshot().pendingLocation;
 
      if (pendingLocation) {
       authStore.setPendingLocation(null);

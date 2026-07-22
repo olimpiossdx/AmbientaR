@@ -17,20 +17,6 @@ import {
 } from "lucide-react";
 import type { HubGridItem, MetricGridItem, ProcessTableRow, TaskListItem } from "../../componentes";
 
-export type DashboardRole =
- | "admin"
- | "supervisor"
- | "financial"
- | "sales"
- | "gestor"
- | "technical"
- | "advogado"
- | "diretor_fauna"
- | "client"
- | "cliente_autonomo"
- | "representative"
- | "consultor_representante";
-
 export const environmentalMetrics: MetricGridItem[] = [
  {
   label: "Licencas validas",

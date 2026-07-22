@@ -1,138 +1,274 @@
+import { authorizationCache, type AuthorizationCache } from "../app/authorization/authorization-cache";
 import { clearKnownSession, loadKnownSession, saveKnownSession } from "./auth-persistence";
-import type { AuthLockedReason, AuthSessionData, AuthSnapshot } from "./auth.types";
+import type {
+ AuthLockedReason,
+ AuthSessionData,
+ AuthSnapshot,
+ PersistedAuthSnapshot,
+} from "./auth.types";
 
-const initialSnapshot: AuthSnapshot = {
- status: "unknown",
- user: null,
- accessTokenExpiresAt: null,
- refreshTokenExpiresAt: null,
- hasKnownUser: false,
- canUseApp: false,
- isRefreshing: false,
- isLocked: false,
- lockedReason: null,
- pendingLocation: null,
-};
+function createInitialSnapshot(revision = 0): AuthSnapshot {
+ return {
+  status: "unknown",
+  user: null,
+  claims: [],
+  accessTokenExpiresAt: null,
+  refreshTokenExpiresAt: null,
+  requiresRelogin: false,
+  hasKnownUser: false,
+  canUseApp: false,
+  isRefreshing: false,
+  isLocked: false,
+  lockedReason: null,
+  pendingLocation: null,
+  revision,
+ };
+}
 
 type Listener = () => void;
 
 export class AuthStore {
- private snapshot: AuthSnapshot = initialSnapshot;
+ private snapshot: AuthSnapshot = createInitialSnapshot();
  private listeners = new Set<Listener>();
  private expirationTimer: number | null = null;
+ private readonly cache: AuthorizationCache;
+
+ constructor(cache: AuthorizationCache = authorizationCache) {
+  this.cache = cache;
+ }
 
  getSnapshot = (): AuthSnapshot => this.snapshot;
 
  subscribe = (listener: Listener): (() => void) => {
   this.listeners.add(listener);
-
-  return () => {
-   this.listeners.delete(listener);
-  };
+  return () => this.listeners.delete(listener);
  };
 
  hydrateFromPersistence(): AuthSnapshot {
-  const knownSession = loadKnownSession();
+  const persisted = loadKnownSession();
 
-  if (!knownSession) {
-   this.setSnapshot({ ...initialSnapshot, status: "anonymous" });
+  if (!persisted) {
+   this.cache.clear();
+   this.replaceSnapshot({ ...createInitialSnapshot(), status: "anonymous" });
    return this.snapshot;
   }
 
-  this.setSnapshot({
-   ...initialSnapshot,
-   status: "locked",
-   user: knownSession.user,
-   accessTokenExpiresAt: knownSession.accessTokenExpiresAt,
-   refreshTokenExpiresAt: knownSession.refreshTokenExpiresAt,
-   hasKnownUser: true,
-   canUseApp: false,
-   isLocked: true,
-   lockedReason: "session-unavailable",
-  });
+  this.cache.replace(persisted.claims);
 
+  if (persisted.requiresRelogin || persisted.accessTokenExpiresAt <= Date.now()) {
+   const lockedReason = persisted.lockedReason ?? "access-expired";
+   this.persistLocked(persisted, lockedReason);
+   this.replaceSnapshot(this.lockedSnapshotFrom(persisted, lockedReason));
+   return this.snapshot;
+  }
+
+  this.restoreAuthenticated(persisted);
   return this.snapshot;
  }
 
  setAuthenticated(session: AuthSessionData): void {
-  saveKnownSession(session);
+  const persisted: PersistedAuthSnapshot = {
+   ...session,
+   requiresRelogin: false,
+   lockedReason: null,
+   pendingLocation: null,
+  };
 
-  this.setSnapshot({
+  saveKnownSession(persisted);
+  this.cache.replace(session.claims);
+  this.replaceSnapshot({
    status: "authenticated",
    user: session.user,
+   claims: session.claims,
    accessTokenExpiresAt: session.accessTokenExpiresAt,
    refreshTokenExpiresAt: session.refreshTokenExpiresAt,
+   requiresRelogin: false,
    hasKnownUser: true,
    canUseApp: true,
    isRefreshing: false,
    isLocked: false,
    lockedReason: null,
    pendingLocation: null,
+   revision: this.snapshot.revision + 1,
   });
-
   this.scheduleAccessExpiration(session.accessTokenExpiresAt);
  }
 
  setRefreshing(): void {
-  if (this.snapshot.status === "anonymous") {
+  if (this.snapshot.status === "anonymous" || this.snapshot.status === "locked") {
    return;
   }
 
   this.clearExpirationTimer();
-  this.setSnapshot({
+  this.replaceSnapshot({
    ...this.snapshot,
    status: "refreshing",
    canUseApp: false,
    isRefreshing: true,
    isLocked: false,
    lockedReason: null,
+   revision: this.snapshot.revision + 1,
   });
  }
 
  lock(reason: Exclude<AuthLockedReason, null>, pendingLocation?: string | null): void {
   this.clearExpirationTimer();
+  const persisted = loadKnownSession();
+  const user = this.snapshot.user ?? persisted?.user ?? null;
+  const claims = this.snapshot.claims.length > 0 ? this.snapshot.claims : persisted?.claims ?? [];
 
-  const knownSession = loadKnownSession();
-  const user = this.snapshot.user ?? knownSession?.user ?? null;
+  if (persisted) {
+   this.persistLocked(
+    persisted,
+    reason,
+    pendingLocation ?? this.snapshot.pendingLocation ?? persisted.pendingLocation,
+   );
+  }
 
-  this.setSnapshot({
+  this.cache.replace(claims);
+  this.replaceSnapshot({
    ...this.snapshot,
    status: "locked",
    user,
-   accessTokenExpiresAt: this.snapshot.accessTokenExpiresAt ?? knownSession?.accessTokenExpiresAt ?? null,
-   refreshTokenExpiresAt: this.snapshot.refreshTokenExpiresAt ?? knownSession?.refreshTokenExpiresAt ?? null,
+   claims,
+   accessTokenExpiresAt: this.snapshot.accessTokenExpiresAt ?? persisted?.accessTokenExpiresAt ?? null,
+   refreshTokenExpiresAt: this.snapshot.refreshTokenExpiresAt ?? persisted?.refreshTokenExpiresAt ?? null,
+   requiresRelogin: true,
    hasKnownUser: Boolean(user),
    canUseApp: false,
    isRefreshing: false,
    isLocked: true,
    lockedReason: reason,
-   pendingLocation: pendingLocation ?? this.snapshot.pendingLocation,
+   pendingLocation: pendingLocation ?? this.snapshot.pendingLocation ?? persisted?.pendingLocation ?? null,
+   revision: this.snapshot.revision + 1,
+  });
+ }
+
+ checkExpiration(): AuthSnapshot {
+  if (
+   this.snapshot.status === "authenticated" &&
+   this.snapshot.accessTokenExpiresAt !== null &&
+   this.snapshot.accessTokenExpiresAt <= Date.now()
+  ) {
+   this.lock("access-expired");
+  }
+
+  return this.snapshot;
+ }
+
+ waitForSettled(): Promise<AuthSnapshot> {
+  if (this.snapshot.status !== "refreshing" && this.snapshot.status !== "unknown") {
+   return Promise.resolve(this.snapshot);
+  }
+
+  return new Promise((resolve) => {
+   const unsubscribe = this.subscribe(() => {
+    if (this.snapshot.status === "refreshing" || this.snapshot.status === "unknown") {
+     return;
+    }
+
+    unsubscribe();
+    resolve(this.snapshot);
+   });
   });
  }
 
  setPendingLocation(location: string | null): void {
-  this.setSnapshot({
+  if (this.snapshot.pendingLocation === location) {
+   return;
+  }
+
+  const persisted = loadKnownSession();
+  if (persisted) {
+   saveKnownSession({ ...persisted, pendingLocation: location });
+  }
+
+  this.replaceSnapshot({
    ...this.snapshot,
    pendingLocation: location,
+   revision: this.snapshot.revision + 1,
   });
+ }
+
+ syncFromPersistence(): void {
+  this.clearExpirationTimer();
+  this.hydrateFromPersistence();
  }
 
  clearToAnonymous(): void {
   clearKnownSession();
   this.clearExpirationTimer();
-  this.setSnapshot({ ...initialSnapshot, status: "anonymous" });
+  this.cache.clear();
+  this.replaceSnapshot({
+   ...createInitialSnapshot(this.snapshot.revision + 1),
+   status: "anonymous",
+  });
  }
 
  resetForTests(): void {
   this.clearExpirationTimer();
-  this.snapshot = { ...initialSnapshot };
+  this.cache.clear();
+  this.snapshot = createInitialSnapshot();
   this.listeners.clear();
   clearKnownSession();
  }
 
+ private restoreAuthenticated(session: PersistedAuthSnapshot): void {
+  this.cache.replace(session.claims);
+  this.replaceSnapshot({
+   status: "authenticated",
+   user: session.user,
+   claims: session.claims,
+   accessTokenExpiresAt: session.accessTokenExpiresAt,
+   refreshTokenExpiresAt: session.refreshTokenExpiresAt,
+   requiresRelogin: false,
+   hasKnownUser: true,
+   canUseApp: true,
+   isRefreshing: false,
+   isLocked: false,
+   lockedReason: null,
+   pendingLocation: session.pendingLocation,
+   revision: this.snapshot.revision + 1,
+  });
+  this.scheduleAccessExpiration(session.accessTokenExpiresAt);
+ }
+
+ private lockedSnapshotFrom(
+  session: PersistedAuthSnapshot,
+  reason: Exclude<AuthLockedReason, null>,
+ ): AuthSnapshot {
+  return {
+   status: "locked",
+   user: session.user,
+   claims: session.claims,
+   accessTokenExpiresAt: session.accessTokenExpiresAt,
+   refreshTokenExpiresAt: session.refreshTokenExpiresAt,
+   requiresRelogin: true,
+   hasKnownUser: true,
+   canUseApp: false,
+   isRefreshing: false,
+   isLocked: true,
+   lockedReason: reason,
+   pendingLocation: session.pendingLocation,
+   revision: this.snapshot.revision + 1,
+  };
+ }
+
+ private persistLocked(
+  session: PersistedAuthSnapshot,
+  reason: Exclude<AuthLockedReason, null>,
+  pendingLocation = this.snapshot.pendingLocation ?? session.pendingLocation,
+ ): void {
+  saveKnownSession({
+   ...session,
+   requiresRelogin: true,
+   lockedReason: reason,
+   pendingLocation,
+  });
+ }
+
  private scheduleAccessExpiration(expiresAt: number): void {
   this.clearExpirationTimer();
-
   const delay = expiresAt - Date.now();
 
   if (delay <= 0) {
@@ -140,15 +276,21 @@ export class AuthStore {
    return;
   }
 
+  if (typeof window === "undefined") {
+   return;
+  }
+
   this.expirationTimer = window.setTimeout(() => {
-   if (this.snapshot.status === "authenticated") {
-    this.lock("access-expired");
+   const snapshot = this.checkExpiration();
+
+   if (snapshot.status === "authenticated" && snapshot.accessTokenExpiresAt !== null) {
+    this.scheduleAccessExpiration(snapshot.accessTokenExpiresAt);
    }
-  }, delay);
+  }, Math.min(delay, 2_147_483_647));
  }
 
  private clearExpirationTimer(): void {
-  if (this.expirationTimer === null) {
+  if (this.expirationTimer === null || typeof window === "undefined") {
    return;
   }
 
@@ -156,7 +298,7 @@ export class AuthStore {
   this.expirationTimer = null;
  }
 
- private setSnapshot(snapshot: AuthSnapshot): void {
+ private replaceSnapshot(snapshot: AuthSnapshot): void {
   this.snapshot = snapshot;
   this.listeners.forEach((listener) => listener());
  }

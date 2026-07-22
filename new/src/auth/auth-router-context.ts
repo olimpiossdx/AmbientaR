@@ -1,6 +1,5 @@
 import { authStore } from "./auth-store";
-import { authService } from "./auth-service";
-import { extractAuthSessionData, type AuthSnapshot } from "./auth.types";
+import type { AuthSnapshot } from "./auth.types";
 
 export type AuthRouterContext = {
  getSnapshot: typeof authStore.getSnapshot;
@@ -9,30 +8,28 @@ export type AuthRouterContext = {
  setPendingLocation: typeof authStore.setPendingLocation;
 };
 
-export async function ensureRouterSession(): Promise<AuthSnapshot> {
- const current = authStore.getSnapshot();
+let ensureSessionPromise: Promise<AuthSnapshot> | null = null;
 
- if (current.status === "authenticated" || current.status === "locked") {
-  return current;
+export function ensureRouterSession(): Promise<AuthSnapshot> {
+ const current = authStore.checkExpiration();
+
+ if (current.status === "refreshing") {
+  return authStore.waitForSettled();
  }
 
- const hydrated = authStore.hydrateFromPersistence();
-
- if (!hydrated.hasKnownUser) {
-  authStore.clearToAnonymous();
-  return authStore.getSnapshot();
+ if (current.status !== "unknown") {
+  return Promise.resolve(current);
  }
 
- const response = await authService.session();
- const session = response.ok ? extractAuthSessionData(response) : null;
-
- if (session) {
-  authStore.setAuthenticated(session);
-  return authStore.getSnapshot();
+ if (!ensureSessionPromise) {
+  ensureSessionPromise = Promise.resolve()
+   .then(() => authStore.hydrateFromPersistence())
+   .finally(() => {
+    ensureSessionPromise = null;
+   });
  }
 
- authStore.lock("session-unavailable");
- return authStore.getSnapshot();
+ return ensureSessionPromise;
 }
 
 export const authRouterContext: AuthRouterContext = {
