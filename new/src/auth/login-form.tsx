@@ -10,8 +10,12 @@ import {
   Input,
 } from "../componentes";
 import { isValidLoginIdentifier } from "./auth-validation";
-import { getApiResponseMessage } from "./auth-api-response";
 import { useAuthActions } from "./auth-provider";
+import {
+  getLoginErrorMessage,
+  normalizeLoginModel,
+  resolveLoginRedirect,
+} from "./login-policy";
 
 // const formSchema = z.object({
 //   identifier: z
@@ -28,12 +32,6 @@ import { useAuthActions } from "./auth-provider";
 // });
 
 // type FormValues = z.infer<typeof formSchema>;
-function getRedirect(): string {
- const params = new URLSearchParams(window.location.search);
- return params.get("redirect") || "/app";
-}
-
-
 interface LoginFormModel {
   username: string;
   password: string;
@@ -43,24 +41,21 @@ export function LoginForm() {
   const actions = useAuthActions();
   const navigate = useNavigate();
   async function onSubmit(model: LoginFormModel) {
-    const result = await actions.login({
-      username: model.username.trim(),
-      password: model.password.trim(),
-    });
+    const result = await actions.login(normalizeLoginModel(model));
 
     if (!result.session) {
       return {
         ok: false,
         status: "error" as const,
-        message: getApiResponseMessage(
-          result.response,
-          "Não foi possível entrar. Confira usuário e senha.",
-        ),
+        message: getLoginErrorMessage(result.response),
         notifications: result.response.notifications,
       };
     }
 
-    await navigate({ to: getRedirect() as never, replace: true });
+    await navigate({
+      to: resolveLoginRedirect(window.location.search) as never,
+      replace: true,
+    });
 
     return {
       ok: true,

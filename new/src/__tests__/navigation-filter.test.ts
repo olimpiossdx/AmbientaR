@@ -37,6 +37,7 @@ describe("filtro recursivo de navegação", () => {
 
  it("expõe a mesma claim inline para proteção da URL legada", () => {
   assert.deepEqual(getNavigationRequirementsForPath("/app/users"), [
+   { claimType: "modulo.cadastro", claimValue: "acessar" },
    { claimType: "recurso.usuario", claimValue: "visualizar" },
   ]);
  });

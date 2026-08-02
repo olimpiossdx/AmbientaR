@@ -7,6 +7,8 @@ import { rootRoute } from "./app/router/root-route";
 import { authRouterContext } from "./auth/auth-router-context";
 import { ForgotPasswordView, LoginView, RegisterView } from "./auth";
 import { AccessDeniedPage } from "./pages/access-denied-page";
+import { OfflinePage } from "./pages/offline-page";
+import { PrivacyPolicyPage } from "./pages/privacy-policy-page";
 
 const indexRoute = createRoute({
  getParentRoute: () => rootRoute,
@@ -34,6 +36,18 @@ const registerRoute = createRoute({
  component: RegisterView,
 });
 
+const privacyPolicyRoute = createRoute({
+ getParentRoute: () => rootRoute,
+ path: "/politica-privacidade",
+ component: PrivacyPolicyPage,
+});
+
+const offlineRoute = createRoute({
+ getParentRoute: () => rootRoute,
+ path: "/offline",
+ component: OfflinePage,
+});
+
 const accessDeniedRoute = createRoute({
  getParentRoute: () => authenticatedRoute,
  path: "/acesso-negado",
@@ -53,6 +67,8 @@ const routeTree = rootRoute.addChildren([
  loginRoute,
  forgotPasswordRoute,
  registerRoute,
+ privacyPolicyRoute,
+ offlineRoute,
  authenticatedRoute.addChildren([
   accessDeniedRoute,
   sessionLockedRoute,

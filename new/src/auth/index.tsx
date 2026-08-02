@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { Link } from "@tanstack/react-router";
 import { PublicAuthLayout } from "./public-auth-layout";
 import { LoginForm } from "./login-form";
 export { ForgotPasswordView } from "./forgot-password-view";
@@ -13,19 +14,19 @@ function LoginPageContent() {
         <div className="space-y-4 text-center text-sm">
           <p className="text-muted-foreground">
             Não tem uma conta?{" "}
-            <a
-              href="/register"
+            <Link
+              to="/register"
               className="font-medium text-primary underline underline-offset-2 hover:no-underline"
             >
               Cadastre-se
-            </a>
+            </Link>
           </p>
-          <a
-            href="/forgot-password"
+          <Link
+            to="/forgot-password"
             className="inline-block text-primary underline underline-offset-2 hover:no-underline"
           >
             Esqueceu a senha?
-          </a>
+          </Link>
         </div>
       </div>
     </PublicAuthLayout>

@@ -13,7 +13,6 @@ import {
  Bug,
  Building,
  Building2,
- Calendar,
  ClipboardCheck,
  ClipboardList,
  ClipboardPenLine,
@@ -203,6 +202,7 @@ export const adminNavigationItems: NavigationItem[] = [
  {
   label: "Cadastro",
   icon: Book,
+  claim: { claimType: "modulo.cadastro", claimValue: "acessar" },
   children: [
    legacyItem({
     legacyHref: "/users",
@@ -443,7 +443,6 @@ export const adminNavigationItems: NavigationItem[] = [
    },
   ],
  },
- legacyItem({ legacyHref: "/calendar", label: "Agenda", icon: Calendar }),
  {
   to: "/app/exemplos",
   label: "Catálogo UI",
@@ -514,7 +513,22 @@ export function getNavigationRequirementsForPath(
  return getNavigationMatchForPath(pathname)?.requirements ?? [];
 }
 
-const navigationMatches = flattenNavigationMatches(adminNavigationItems);
+// Rotas já migradas não pertencem mais à árvore legada, mas permanecem no
+// índice compartilhado de títulos/claims enquanto esse índice atende também o
+// catch-all das funcionalidades ainda não migradas.
+const migratedRouteItems: NavigationItem[] = [
+ {
+  to: "/app/calendar",
+  legacyHref: "/calendar",
+  label: "Agenda",
+  claim: { claimType: "recurso.agenda", claimValue: "visualizar" },
+ },
+];
+
+const navigationMatches = flattenNavigationMatches([
+ ...adminNavigationItems,
+ ...migratedRouteItems,
+]);
 
 export function getNavigationMatchForPath(pathname: string): NavigationMatch | null {
  const legacyPath = normalizeComparablePath(stripAppPath(pathname));
