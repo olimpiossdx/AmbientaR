@@ -63,18 +63,18 @@ O status abaixo considera o gate vertical completo. Rota, tela ou service isolad
 | --- | ---: |
 | Funcionalidades catalogadas | 188 |
 | Funcionalidades concluídas | 1 (`FUN-AUTH-001`) |
-| Funcionalidades com frontend parcial em execução | 2 (`FUN-CAD-001`, `FUN-AGEN-001`) |
+| Funcionalidades com frontend parcial | 3 (`FUN-CAD-001`, `FUN-AGEN-001`, `FUN-CORE-001`) |
 | Variações do inventário atendidas por rota concreta | 8 de 285 |
 | Padrões do inventário atendidos por rota concreta | 8 de 267 |
 | Funcionalidades cuja rota declarada já existe | 9 |
 | Catch-all de compatibilidade | 1, excluído da cobertura |
 
-As nove funcionalidades com rota concreta são `FUN-AUTH-001..006`, `FUN-CORE-001`, `FUN-CAD-001` e `FUN-AGEN-001`. Destas, somente o login está concluído. Cadastro, recuperação, política, offline e sessão ainda precisam de aceite individual; o Painel usa dados estáticos; Usuários e Agenda ainda não fecharam o corte vertical com o `ambientaR-api`.
+As nove funcionalidades com rota concreta são `FUN-AUTH-001..006`, `FUN-CORE-001`, `FUN-CAD-001` e `FUN-AGEN-001`. Destas, somente o login está concluído. Cadastro, recuperação, política, offline e sessão ainda precisam de aceite individual; Painel, Usuários e Agenda já têm frontend modular, mas ainda não fecharam o corte vertical com o `ambientaR-api`.
 
 | Módulo/pai | Estado | Pendência principal |
 | --- | --- | --- |
 | Acesso e sessão | parcial | login concluído; `FUN-AUTH-002..006` sem gate individual completo |
-| Painel e Carteira | pendente | Painel é protótipo com dados estáticos; Carteira não iniciada |
+| Painel e Carteira | bloqueado | frontend do Painel consome `GET /dashboard` sem fallback; endpoint ausente; Carteira não iniciada |
 | Cadastro | em execução | finalizar `FUN-CAD-001` Usuários; Empreendedores, Empreendimentos e Empresas pendentes |
 | Agenda | bloqueado | frontend existe; domínio, persistência e endpoints `/calendar-events` não existem na API |
 | Financeiro | pendente | 25 funcionalidades |

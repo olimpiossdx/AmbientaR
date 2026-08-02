@@ -39,7 +39,7 @@ Touchpoints detectados apenas nessas páginas (levantamento estático inicial):
 - [x] Criar tipos de apresentação e service próprio usando exclusivamente o cliente HTTP central.
 - [x] Implementar listagem, busca, paginação, formulário CRUD e painel de grupos/claims.
 - [x] Aplicar guard de rota e guards de experiência por claim; não usar `role`, `isAdmin` ou Firebase como autorização.
-- [ ] Mover a definição do item de navegação de Usuários para o próprio módulo, preservando a composição com os filhos ainda legados de Cadastro.
+- [x] Mover a definição do item de navegação de Usuários para o próprio módulo, preservando a composição com os filhos ainda legados de Cadastro.
 - [ ] Fechar schemas/DTOs, edição própria versus administração, escopo e controle de versão do usuário.
 - [ ] Cobrir loading, vazio, erro de validação, 401, 403, 404, conflito de versão e indisponibilidade da API.
 - [ ] Garantir responsividade, teclado, foco, rótulos, feedback de operação e persistência em URL dos filtros relevantes.

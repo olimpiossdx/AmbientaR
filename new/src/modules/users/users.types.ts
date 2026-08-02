@@ -61,6 +61,17 @@ export type UserInput = {
  ctfIbama?: string;
 };
 
+export type UserCreateInput = UserInput;
+
+/**
+ * PUT /user/:id deliberately accepts only mutable profile fields. Keeping the
+ * immutable identity fields out of this contract avoids implying that the API
+ * can change tipo, CPF/CNPJ or entityType when it silently ignores them.
+ */
+export type UserUpdateInput = Omit<UserInput, "tipo" | "cpfCnpj" | "entityType">;
+
+export type UserFieldErrors = Partial<Record<keyof UserInput, string>>;
+
 export type AuthorizationClaim = { id: string; type: string; value: string };
 
 export type AuthorizationGroup = {

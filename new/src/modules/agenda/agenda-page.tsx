@@ -144,7 +144,14 @@ export function AgendaPage() {
   if (!canView) { setForbidden(true); setLoading(false); return; }
   setLoading(true); setError(null); setForbidden(false);
   try {
-   const result = await agendaService.list({ ...filters, page, size: PAGE_SIZE }, signal);
+   const selectedDateValue = dateToUrlValue(selectedDate);
+   const result = await agendaService.list({
+    ...filters,
+    startsFrom: selectedDateValue ?? filters.startsFrom,
+    startsTo: selectedDateValue ?? filters.startsTo,
+    page,
+    size: PAGE_SIZE,
+   }, signal);
    if (signal?.aborted || requestId !== requestRevision.current) return;
    const lastPage = Math.max(1, Math.ceil(result.total / result.size));
    if (page > lastPage) {
@@ -160,7 +167,7 @@ export function AgendaPage() {
   } finally {
    if (!signal?.aborted && requestId === requestRevision.current) setLoading(false);
   }
- }, [canView, filters, page]);
+ }, [canView, filters, page, selectedDate]);
 
  React.useEffect(() => {
   const controller = new AbortController();

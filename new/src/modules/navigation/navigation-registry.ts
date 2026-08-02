@@ -200,6 +200,7 @@ export const adminNavigationItems: NavigationItem[] = [
   ],
  },
  {
+  id: "cadastro",
   label: "Cadastro",
   icon: Book,
   claim: { claimType: "modulo.cadastro", claimValue: "acessar" },

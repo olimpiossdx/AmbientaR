@@ -8,6 +8,7 @@ import { AuthorizationGroupsPanel } from "./authorization-groups-panel";
 import { UserFormDialog } from "./user-form-dialog";
 import { getUsersTotalPages } from "./users-list-state";
 import { UsersApiError, usersService } from "./users.service";
+import { toUserCreateInput, toUserUpdateInput } from "./users.schemas";
 import { AUTHORIZATION_CLAIMS, USERS_CLAIMS, type UserInput, type UserListItem } from "./users.types";
 import { useUsersList } from "./use-users-list";
 
@@ -38,8 +39,8 @@ export function UsersListPage() {
   finally { setLoadingUserId(null); }
  }
  async function save(input: UserInput) {
-  if (editing === "new") await usersService.create(input);
-  else if (editing) await usersService.update(editing.id, input);
+  if (editing === "new") await usersService.create(toUserCreateInput(input));
+  else if (editing) await usersService.update(editing.id, toUserUpdateInput(input));
   retry();
  }
  async function remove(user: UserListItem) {

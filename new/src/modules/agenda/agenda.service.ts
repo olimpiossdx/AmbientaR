@@ -32,15 +32,14 @@ function dataOrThrow<T>(response: ApiResponse<T>): T {
 }
 
 export function agendaErrorMessage(httpStatus: number, apiMessage?: string): string {
- if (apiMessage?.trim()) return apiMessage;
  if (httpStatus === 0) return "A API da agenda esta indisponivel. Verifique sua conexao e tente novamente.";
  if (httpStatus === 401) return "Sua sessao expirou. Entre novamente para acessar a agenda.";
  if (httpStatus === 403) return "Voce nao possui permissao para esta operacao.";
  if (httpStatus === 404) return "O evento nao existe mais ou esta fora do seu escopo.";
  if (httpStatus === 409) return "O evento foi alterado por outra pessoa. Atualize a agenda antes de tentar novamente.";
- if (httpStatus === 422 || httpStatus === 400) return "Os dados informados sao invalidos. Revise os campos e tente novamente.";
+ if (httpStatus === 422 || httpStatus === 400) return apiMessage?.trim() || "Os dados informados sao invalidos. Revise os campos e tente novamente.";
  if (httpStatus >= 500) return "A API da agenda esta temporariamente indisponivel. Tente novamente em instantes.";
- return "Nao foi possivel concluir a operacao.";
+ return apiMessage?.trim() || "Nao foi possivel concluir a operacao.";
 }
 
 export function createAgendaService(client: HttpClient) {
@@ -73,7 +72,13 @@ export function createAgendaService(client: HttpClient) {
   },
   async remove(id: string): Promise<void> {
    const response = await client.delete<unknown>(`/calendar-events/${encodeURIComponent(id)}`);
-   if (!response.ok) throw new AgendaApiError(response.error?.message ?? "Nao foi possivel excluir o evento.", response.httpStatus, response.error?.code);
+   if (!response.ok) {
+    throw new AgendaApiError(
+     agendaErrorMessage(response.httpStatus, response.error?.message),
+     response.httpStatus,
+     response.error?.code,
+    );
+   }
   },
   async invite(id: string, input: CalendarEventInviteInput): Promise<CalendarEvent> {
    const userIds = [...new Set(input.userIds.map((item) => item.trim()).filter(Boolean))];

@@ -5,6 +5,7 @@ import {
  defineAppModules,
  getModuleNavigation,
  getModuleRouteTrees,
+ mergeNavigationItems,
 } from "../app/define-app-modules";
 
 describe("registro estático de módulos", () => {
@@ -30,4 +31,47 @@ describe("registro estático de módulos", () => {
    ["Segundo", "Primeiro"],
   );
  });
+
+ it("mescla contribuições de módulos para o mesmo agrupador", () => {
+  const items = mergeNavigationItems([
+   {
+    id: "cadastro",
+    label: "Cadastro",
+    claim: { claimType: "modulo.cadastro", claimValue: "acessar" },
+    children: [{
+     to: "/app/users",
+     legacyHref: "/users",
+     label: "Usuários",
+    }],
+   },
+   {
+    id: "cadastro",
+    label: "Cadastro",
+    children: [
+     {
+      to: "/app/users",
+      legacyHref: "/users",
+      label: "Usuários",
+      claim: { claimType: "recurso.usuario", claimValue: "visualizar" },
+     },
+     {
+      to: "/app/empreendedores",
+      legacyHref: "/empreendedores",
+      label: "Empreendedores",
+     },
+    ],
+   },
+  ]);
+
+  assert.equal(items.length, 1);
+  assert.deepEqual(items[0]?.children?.map((item) => item.label), [
+   "Usuários",
+   "Empreendedores",
+  ]);
+  assert.deepEqual(items[0]?.children?.[0]?.claim, {
+   claimType: "recurso.usuario",
+   claimValue: "visualizar",
+  });
+ });
+
 });

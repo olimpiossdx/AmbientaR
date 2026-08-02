@@ -72,7 +72,7 @@ test("estado da agenda faz round-trip na URL e preserva parametros externos", ()
 });
 
 test("estado da URL ignora valores invalidos e datas usam o fuso local", () => {
- assert.deepEqual(parseAgendaUrlState("?status=unknown&page=-2&from=ontem"), {
+ assert.deepEqual(parseAgendaUrlState("?status=unknown&page=-2&from=ontem&to=2026-02-31&date=2026-13-01"), {
   filters: { search: undefined, status: "all", startsFrom: undefined, startsTo: undefined },
   page: 1,
   selectedDate: undefined,
@@ -88,7 +88,8 @@ test("mensagens de falha cobrem sessao, ausencia, conflito e indisponibilidade",
  assert.match(agendaErrorMessage(409), /alterado por outra pessoa/i);
  assert.match(agendaErrorMessage(503), /temporariamente indisponivel/i);
  assert.match(agendaErrorMessage(0), /indisponivel/i);
- assert.equal(agendaErrorMessage(409, "Versao divergente"), "Versao divergente");
+ assert.match(agendaErrorMessage(409, "Conflict"), /alterado por outra pessoa/i);
+ assert.equal(agendaErrorMessage(422, "Titulo obrigatorio"), "Titulo obrigatorio");
 });
 
 test("service lista pelo cliente central e serializa filtros", async () => {

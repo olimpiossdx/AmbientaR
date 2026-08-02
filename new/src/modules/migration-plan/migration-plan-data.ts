@@ -26,12 +26,17 @@ export const initialExecutionProgress: Record<string, ExecutionProgress> = {
  "FUN-CAD-001": {
   status: "in_progress",
   completedSteps: [],
-  evidence: "Front parcial: rota, listagem paginada, formulário CRUD, service /user e painel de grupos/claims implementados. Ainda faltam contrato final, edição própria versus administração, escopo, testes negativos de integração, navegação pertencente ao módulo e aceite vertical.",
+  evidence: "Front parcial: rota, navegação modular, listagem paginada, formulário CRUD validado, DTOs separados de criação/atualização, service /user e painel de grupos/claims implementados. A API ainda não oferece versionamento de usuário, edição própria separada nem policy de escopo; faltam testes HTTP negativos e aceite vertical.",
  },
  "FUN-AGEN-001": {
   status: "blocked",
   completedSteps: [],
-  evidence: "Front parcial: tela responsiva, filtros, CRUD, convite/resposta, claims por ação e service /calendar-events implementados. Bloqueado até domínio, persistência, endpoints, escopo e testes verticais existirem na API ambientaR-api.",
+  evidence: "Front parcial: tela responsiva, filtros/página/data persistidos na URL, CRUD, convite/resposta, claims por ação, validações e service /calendar-events implementados. Bloqueado até domínio, persistência, endpoints, escopo e testes verticais existirem na API ambientaR-api.",
+ },
+ "FUN-CORE-001": {
+  status: "blocked",
+  completedSteps: [],
+  evidence: "Front parcial: rota e navegação modulares protegidas por recurso.dashboard=visualizar, contrato discriminado de widgets, service GET /dashboard e estados de loading/vazio/erro implementados sem dados fictícios. Bloqueado até GET /dashboard existir no ambientaR-api com agregações autorizadas e escopadas.",
  },
 };
 

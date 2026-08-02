@@ -4,8 +4,9 @@ import type {
  AuthorizationClaim,
  AuthorizationGroup,
  AuthorizationGroupInput,
- UserInput,
+ UserCreateInput,
  UserListItem,
+ UserUpdateInput,
  UsersListParams,
  UsersListResult,
 } from "./users.types";
@@ -22,18 +23,35 @@ type UsersHttpClient = {
 export class UsersApiError extends Error {
  readonly httpStatus: number;
  readonly code?: string;
+ readonly fieldErrors: Readonly<Record<string, string>>;
 
- constructor(message: string, httpStatus: number, code?: string) {
+ constructor(message: string, httpStatus: number, code?: string, fieldErrors: Readonly<Record<string, string>> = {}) {
   super(message);
   this.name = "UsersApiError";
   this.httpStatus = httpStatus;
   this.code = code;
+  this.fieldErrors = fieldErrors;
  }
+}
+
+export function usersErrorMessage(httpStatus: number, apiMessage?: string): string {
+ if (apiMessage?.trim()) return apiMessage;
+ if (httpStatus === 0) return "A API de usuários está indisponível. Verifique sua conexão e tente novamente.";
+ if (httpStatus === 401) return "Sua sessão expirou. Entre novamente para acessar os usuários.";
+ if (httpStatus === 403) return "Você não possui permissão para esta operação.";
+ if (httpStatus === 404) return "O usuário ou grupo não existe mais ou está fora do seu escopo.";
+ if (httpStatus === 409) return "O registro foi alterado ou já existe. Atualize os dados e tente novamente.";
+ if (httpStatus === 400 || httpStatus === 422) return "Os dados informados são inválidos. Revise os campos e tente novamente.";
+ if (httpStatus >= 500) return "A API de usuários está temporariamente indisponível. Tente novamente em instantes.";
+ return "Não foi possível concluir a operação.";
 }
 
 function dataOrThrow<T>(response: ApiResponse<T>, fallback: string): T {
  if (!response.ok || response.data === null) {
-  throw new UsersApiError(response.error?.message || fallback, response.httpStatus, response.error?.code);
+  const fieldErrors = Object.fromEntries(response.notifications.filter((item) => item.status === "error" && item.field).map((item) => [item.field as string, item.message]));
+  const notificationMessage = response.notifications.find((item) => item.status === "error")?.message;
+  const apiMessage = response.error?.message || notificationMessage || (response.httpStatus === 200 ? fallback : undefined);
+  throw new UsersApiError(usersErrorMessage(response.httpStatus, apiMessage), response.httpStatus, response.error?.code, fieldErrors);
  }
  return response.data;
 }
@@ -45,6 +63,7 @@ function idString(value: unknown): string | null {
 function parseUser(value: unknown): UserListItem {
  if (!value || typeof value !== "object") throw new Error("Usuário inválido retornado pela API.");
  const user = value as Record<string, unknown>;
+ if ("passwordHash" in user || "password" in user) throw new Error("A API retornou credenciais que não podem ser expostas.");
  const id = idString(user.id);
  if (!id || typeof user.nome !== "string" || typeof user.email !== "string" || typeof user.telefone !== "string" || typeof user.cpfCnpj !== "string" || typeof user.tipo !== "string") {
   throw new Error("Usuário inválido retornado pela API.");
@@ -86,8 +105,8 @@ export function createUsersService(client: UsersHttpClient = api) {
    const page = Math.max(1, Math.trunc(params.page));
    const size = Math.min(100, Math.max(1, Math.trunc(params.size)));
    const response = await client.get<unknown[]>("/user", { params: { search: params.search?.trim() ?? "", page, size }, signal: params.signal });
-   if (response.httpStatus === 403) return { status: "forbidden", message: "Você não possui permissão para consultar usuários." };
-   if (!response.ok) return { status: "error", message: response.error?.message || "Não foi possível carregar os usuários." };
+   if (response.httpStatus === 401 || response.httpStatus === 403) return { status: "forbidden", message: usersErrorMessage(response.httpStatus, response.error?.message) };
+   if (!response.ok) return { status: "error", message: usersErrorMessage(response.httpStatus, response.error?.message) };
    try {
     if (!Array.isArray(response.data)) throw new Error();
     const items = response.data.map(parseUser);
@@ -99,15 +118,15 @@ export function createUsersService(client: UsersHttpClient = api) {
   async get(id: string, signal?: AbortSignal) {
    return parseUser(dataOrThrow(await client.get<unknown>(`/user/${encodeURIComponent(id)}`, { signal }), "Não foi possível carregar o usuário."));
   },
-  async create(input: UserInput) {
-   return parseUser(dataOrThrow(await client.post<unknown, UserInput>("/user", input), "Não foi possível criar o usuário."));
+  async create(input: UserCreateInput) {
+   return parseUser(dataOrThrow(await client.post<unknown, UserCreateInput>("/user", input), "Não foi possível criar o usuário."));
   },
-  async update(id: string, input: UserInput) {
-   return parseUser(dataOrThrow(await client.put<unknown, UserInput>(`/user/${encodeURIComponent(id)}`, input), "Não foi possível atualizar o usuário."));
+  async update(id: string, input: UserUpdateInput) {
+   return parseUser(dataOrThrow(await client.put<unknown, UserUpdateInput>(`/user/${encodeURIComponent(id)}`, input), "Não foi possível atualizar o usuário."));
   },
   async remove(id: string) {
    const response = await client.delete<unknown>(`/user/${encodeURIComponent(id)}`);
-   if (!response.ok) throw new UsersApiError(response.error?.message || "Não foi possível excluir o usuário.", response.httpStatus, response.error?.code);
+   if (!response.ok) throw new UsersApiError(usersErrorMessage(response.httpStatus, response.error?.message), response.httpStatus, response.error?.code);
   },
   async listGroups(signal?: AbortSignal) {
    const data = dataOrThrow(await client.get<unknown[]>("/authorization/groups", { signal }), "Não foi possível carregar os grupos.");
@@ -141,7 +160,7 @@ export function createUsersService(client: UsersHttpClient = api) {
   },
   async deleteGroup(id: string, version: number) {
    const response = await client.delete<unknown>(`/authorization/groups/${encodeURIComponent(id)}`, { params: { version } });
-   if (!response.ok) throw new UsersApiError(response.error?.message || "Não foi possível excluir o grupo.", response.httpStatus, response.error?.code);
+   if (!response.ok) throw new UsersApiError(usersErrorMessage(response.httpStatus, response.error?.message), response.httpStatus, response.error?.code);
   },
   async listClaims(signal?: AbortSignal) {
    const data = dataOrThrow(await client.get<unknown[]>("/authorization/claims", { signal }), "Não foi possível carregar as claims.");

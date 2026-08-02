@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { createUsersService, UsersApiError } from "../modules/users/users.service";
+import { createUsersService, UsersApiError, usersErrorMessage } from "../modules/users/users.service";
 import type { ApiResponse } from "../service/http/types";
 
 function apiResponse<T>(overrides: Partial<ApiResponse<T>>): ApiResponse<T> {
@@ -60,6 +60,51 @@ describe("usersService", () => {
 
   const result = await service.list({ page: 1, size: 10 });
   assert.equal(result.status, "error");
+ });
+
+ it("rejeita respostas que exponham senha ou hash", async () => {
+  const service = createUsersService({
+   async get() {
+    return apiResponse({ data: [{ id: "1", nome: "Ana Silva", email: "ana@exemplo.com", telefone: "31999999999", cpfCnpj: "52998224725", tipo: "FISICA", passwordHash: "segredo" }] });
+   },
+  });
+
+  const result = await service.list({ page: 1, size: 10 });
+  assert.deepEqual(result, { status: "error", message: "A API retornou uma lista de usuários em formato inválido." });
+ });
+
+ it("preserva erros de campo retornados nas notificações da API", async () => {
+  const service = createUsersService({
+   get: async () => apiResponse({ data: [] }),
+   post: async () => apiResponse({
+    ok: false,
+    status: "error",
+    httpStatus: 200,
+    notifications: [{ status: "error", field: "email", message: "Introduza um e-mail válido." }],
+   }),
+  });
+
+  await assert.rejects(
+   () => service.create({
+    tipo: "FISICA", cpfCnpj: "52998224725", entityType: "CLIENTE", nome: "Ana Silva",
+    email: "invalido", telefone: "31999999999", cep: "30100000", logradouro: "Rua A",
+    numero: "1", bairro: "Centro", municipio: "Belo Horizonte", uf: "MG",
+    nacionalidade: "Brasileira", dataNascimento: "1990-01-01", estadoCivil: "SOLTEIRO",
+   }),
+   (error: unknown) => {
+    assert.ok(error instanceof UsersApiError);
+    assert.deepEqual(error.fieldErrors, { email: "Introduza um e-mail válido." });
+    return true;
+   },
+  );
+ });
+
+ it("traduz estados HTTP sem mensagem fornecida pela API", () => {
+  assert.match(usersErrorMessage(0), /indisponível/);
+  assert.match(usersErrorMessage(401), /sessão expirou/);
+  assert.match(usersErrorMessage(404), /não existe mais/);
+  assert.match(usersErrorMessage(409), /alterado ou já existe/);
+  assert.match(usersErrorMessage(503), /temporariamente indisponível/);
  });
 
  it("não envia senha ou hash ao criar usuário", async () => {

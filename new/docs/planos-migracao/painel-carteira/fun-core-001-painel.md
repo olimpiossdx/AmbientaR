@@ -1,6 +1,6 @@
 # FUN-CORE-001 — Painel
 
-Status: protótipo visual com dados estáticos; migração funcional não iniciada  
+Status: frontend modular concluído; bloqueado pela ausência de `GET /dashboard` na API
 Módulo pai: **Painel e Carteira**  
 Origem funcional: seção “Painel e carteira” do catálogo  
 Dependência de acesso do pai: `entrada principal`
@@ -35,11 +35,11 @@ Touchpoints detectados apenas nessas páginas (levantamento estático inicial):
 
 ## Plano do front-end (`new`)
 
-- [ ] Registrar módulo, rotas lazy, item filho e breadcrumb no registro central, mantendo **Painel e Carteira** como pai.
-- [ ] Criar tipos de domínio de apresentação, schemas de URL/formulário e service próprio usando exclusivamente o cliente HTTP central.
-- [ ] Implementar todas as variações de tela declaradas (1), preservando busca, filtros, paginação, seleção, ações, anexos e exportações existentes que forem confirmados no refinamento.
-- [ ] Aplicar guard antes do carregamento e guard de ação para recurso.dashboard=visualizar; não usar `role`, `isAdmin` ou Firebase como autorização.
-- [ ] Cobrir loading, vazio, erro de validação, 401, 403, 404, conflito de versão e indisponibilidade da API.
+- [x] Registrar módulo, rota e item de navegação no registro central.
+- [x] Criar DTO discriminado de widgets, schema defensivo e service usando exclusivamente o cliente HTTP central.
+- [x] Remover métricas e registros estáticos; renderizar somente widgets retornados pela API.
+- [x] Aplicar `recurso.dashboard=visualizar` na rota e na tela; não usar `role`, `isAdmin` ou Firebase.
+- [x] Cobrir loading, vazio, contrato inválido, 401, 403, 404, conflito e indisponibilidade da API.
 - [ ] Garantir responsividade, teclado, foco, rótulos, feedback de operação e persistência em URL dos filtros relevantes.
 - [ ] Remover qualquer chamada direta a `/api/*` do legado; arquivos e jobs devem seguir os contratos comuns do catálogo.
 
@@ -83,5 +83,5 @@ Situação encontrada: **Não localizado no `ambientaR-api`; tratar como contrat
 - Confirmar fonte de dados, estratégia de migração, volume, retenção, anexos e deduplicação.
 - Confirmar se rotas auxiliares sem entrada direta de menu são telas do mesmo filho ou ações internas.
 - Resolver qualquer divergência entre contrato proposto e endpoints já existentes antes de codificar.
-- Substituir `new/src/pages/dashboard/dashboard-data.ts` e demais dados estáticos por DTOs autorizados de `GET /dashboard`.
-- Aplicar `recurso.dashboard=visualizar` à rota e ao item de navegação antes de considerar o Painel migrado.
+- Implementar `GET /dashboard` no `ambientaR-api`, retornando somente widgets autorizados e agregações já escopadas.
+- Cobrir a API com testes de claim, escopo, ausência de dados e falha parcial das agregações.
