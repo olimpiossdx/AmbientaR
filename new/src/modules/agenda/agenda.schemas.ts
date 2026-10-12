@@ -32,7 +32,19 @@ function status(value: unknown): CalendarEventStatus {
 
 export function parseCalendarEvent(value: unknown): CalendarEvent {
  if (!isRecord(value)) throw new Error("Evento de calendario invalido");
+ if (!Number.isSafeInteger(value.version) || (value.version as number) < 1) throw new Error("Versao de evento invalida");
+ if (typeof value.canManage !== "boolean" || typeof value.canRespond !== "boolean") throw new Error("Permissoes de evento invalidas");
+ if (!["appointment", "deadline", "audit"].includes(String(value.type))) throw new Error("Tipo de evento invalido");
+ if (typeof value.allDay !== "boolean" || typeof value.isPublic !== "boolean") throw new Error("Indicadores de evento invalidos");
+ if (Date.parse(isoDate(value.endsAt, "endsAt")) <= Date.parse(isoDate(value.startsAt, "startsAt"))) throw new Error("Periodo de evento invalido");
+ const invitation = value.invitation;
+ if (invitation != null && (!isRecord(invitation) || !["pending", "accepted", "declined", "tentative"].includes(String(invitation.response)))) throw new Error("Convite invalido");
  return {
+  version: value.version as number,
+  type: value.type as CalendarEvent["type"],
+  canManage: value.canManage,
+  canRespond: value.canRespond,
+  invitation: isRecord(invitation) ? { response: invitation.response as "pending" | "accepted" | "declined" | "tentative", message: nullableString(invitation.message, "message"), comment: nullableString(invitation.comment, "comment") } : null,
   id: requiredString(value.id, "id"),
   title: requiredString(value.title, "title"),
   description: nullableString(value.description, "description"),
@@ -69,11 +81,22 @@ export function validateCalendarEventInput(value: CalendarEventInput): CalendarE
 }
 
 export function validateCalendarEventFilters(value: CalendarEventFilters): CalendarEventFilters {
- if (value.startsFrom && Number.isNaN(Date.parse(`${value.startsFrom}T00:00:00`))) throw new Error("Data inicial invalida.");
- if (value.startsTo && Number.isNaN(Date.parse(`${value.startsTo}T23:59:59`))) throw new Error("Data final invalida.");
+ if (value.startsFrom && !validDate(value.startsFrom)) throw new Error("Data inicial invalida.");
+ if (value.startsTo && !validDate(value.startsTo)) throw new Error("Data final invalida.");
  if (value.startsFrom && value.startsTo && value.startsFrom > value.startsTo) {
   throw new Error("A data final do filtro deve ser igual ou posterior a data inicial.");
  }
  if (value.status && value.status !== "all") status(value.status);
  return value;
+}
+
+function validDate(value: string): boolean {
+ return /^\d{4}-\d{2}-\d{2}$/.test(value) && Number.isFinite(Date.parse(value)) && new Date(value).toISOString().slice(0, 10) === value;
+}
+
+export function agendaDateBoundary(value: string | undefined, end = false): string | undefined {
+ if (!value) return undefined;
+ if (!validDate(value)) throw new Error("Data invalida.");
+ const [year, month, day] = value.split("-").map(Number);
+ return new Date(year, month - 1, day, end ? 23 : 0, end ? 59 : 0, end ? 59 : 0, end ? 999 : 0).toISOString();
 }

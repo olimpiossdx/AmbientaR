@@ -9,6 +9,7 @@ import { buildAgendaSearch, dateToUrlValue, parseAgendaUrlState, urlValueToDate 
 
 const event = {
  id: "event-1",
+ version: 1, type: "appointment", canManage: true, canRespond: false,
  title: "Reuniao ambiental",
  description: null,
  startsAt: "2026-07-22T12:00:00.000Z",
@@ -103,7 +104,7 @@ test("service lista pelo cliente central e serializa filtros", async () => {
  } as unknown as HttpClient;
  const result = await createAgendaService(client).list({ search: " reuniao ", status: "confirmed", page: 2, size: 15 });
  assert.equal(receivedUrl, "/calendar-events");
- assert.deepEqual(receivedParams, { search: "reuniao", startsFrom: undefined, startsTo: undefined, status: "confirmed", page: 2, size: 15 });
+ assert.deepEqual(receivedParams, { search: "reuniao", from: undefined, to: undefined, status: "confirmed", page: 2, size: 15 });
  assert.equal(result.total, 37);
  assert.equal(result.page, 2);
  assert.equal(result.size, 15);
@@ -120,9 +121,9 @@ test("service usa PATCH para editar e endpoints REST para convite e resposta", a
   title: "Reuniao ambiental", startsAt: event.startsAt, endsAt: event.endsAt,
   allDay: false, status: "scheduled", isPublic: false,
  };
- await service.update("event/1", input);
- await service.invite("event/1", { userIds: [" user-1 ", "user-1", "user-2"] });
- await service.respond("event/1", { response: "accepted" });
+ await service.update("event/1", 1, input);
+ await service.invite("event/1", 1, { userIds: [" user-1 ", "user-1", "user-2"] });
+ await service.respond("event/1", 1, { response: "accepted" });
  assert.equal(calls[0]?.method, "PATCH");
  assert.equal(calls[0]?.url, "/calendar-events/event%2F1");
  assert.deepEqual(calls[1], { method: "POST", url: "/calendar-events/event%2F1/invite", body: { userIds: ["user-1", "user-2"] } });
@@ -137,4 +138,23 @@ test("service transforma 403 da API em erro de agenda tipado", async () => {
   assert.equal(error.code, "FORBIDDEN");
   return true;
  });
+});
+
+
+test("schema recusa eventos sem versão, flags de escopo ou datas reais", () => {
+ assert.throws(() => parseCalendarEventList([{ ...event, version: undefined }]), /versao/i);
+ assert.throws(() => parseCalendarEventList([{ ...event, canManage: undefined }]), /permissoes/i);
+ assert.throws(() => validateCalendarEventFilters({ startsFrom: "2026-02-31" }), /data inicial/i);
+});
+
+test("todas as mutacoes enviam a versao observada, sem sobrescrever silenciosamente", async () => {
+ const versions: unknown[] = [];
+ const mutation = async (_url: string, _body: unknown, config: { params: unknown }) => { versions.push(config.params); return response(event); };
+ const client = { patch: mutation, post: mutation, delete: async (_url: string, config: { params: unknown }) => { versions.push(config.params); return response({ deleted: true }); } } as unknown as HttpClient;
+ const service = createAgendaService(client);
+ await service.update(event.id, 7, { title: event.title, startsAt: event.startsAt, endsAt: event.endsAt, allDay: false, status: "scheduled", isPublic: false });
+ await service.invite(event.id, 8, { userIds: ["user-2"] });
+ await service.respond(event.id, 9, { response: "declined" });
+ await service.remove(event.id, 10);
+ assert.deepEqual(versions, [{ version: 7 }, { version: 8 }, { version: 9 }, { version: 10 }]);
 });

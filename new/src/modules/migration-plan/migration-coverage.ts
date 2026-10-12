@@ -91,16 +91,21 @@ export function discoverRouteDefinitions(sources: Record<string, string>): Disco
  const discovered: DiscoveredRoute[] = [];
 
  for (const [source, contents] of Object.entries(sources)) {
-  const definitions = contents.matchAll(/createRoute\s*\(\s*\{([\s\S]*?)\}\s*\)/g);
+  const definitions = [...contents.matchAll(/(?:\b(?:const|let)\s+(\w+)\s*=\s*)?createRoute\s*\(\s*\{([\s\S]*?)\}\s*\)/g)]
+   .map(match => ({ name: match[1], path: match[2].match(/\bpath:\s*["']([^"']+)["']/)?.[1], parent: match[2].match(/getParentRoute:\s*\(\)\s*=>\s*(\w+)/)?.[1] }));
+  type Definition = (typeof definitions)[number];
+  const resolvePath = (definition: Definition, seen = new Set<Definition>()): string | undefined => {
+   if (!definition.path || seen.has(definition)) return undefined;
+   seen.add(definition);
+   const parent = definitions.find(candidate => candidate.name && candidate.name === definition.parent);
+   const prefix = definition.parent === "authenticatedRoute" ? "/app" : parent ? resolvePath(parent, seen) : "";
+   if (prefix === undefined) return undefined;
+   return routePattern(`${prefix}/${definition.path.replace(/^\//, "")}`);
+  };
   for (const definition of definitions) {
-   const body = definition[1];
-   const path = body.match(/\bpath:\s*["']([^"']+)["']/)?.[1];
-   if (!path) continue;
-   const authenticated = /getParentRoute:\s*\(\)\s*=>\s*authenticatedRoute/.test(body);
-   const pattern = authenticated
-    ? path === "/" ? "/app" : routePattern(`/app/${path.replace(/^\//, "")}`)
-    : routePattern(path);
-   discovered.push({ pattern, source, kind: isCatchAllPath(path) ? "catch_all" : "concrete" });
+   const pattern = resolvePath(definition);
+   if (!pattern || !definition.path) continue;
+   discovered.push({ pattern, source, kind: isCatchAllPath(definition.path) ? "catch_all" : "concrete" });
   }
  }
 

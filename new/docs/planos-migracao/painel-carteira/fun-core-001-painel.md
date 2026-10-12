@@ -1,9 +1,13 @@
 # FUN-CORE-001 — Painel
 
-Status: frontend modular concluído; bloqueado pela ausência de `GET /dashboard` na API
+Status: em execução; API e widgets iniciais da Agenda implementados
 Módulo pai: **Painel e Carteira**  
 Origem funcional: seção “Painel e carteira” do catálogo  
 Dependência de acesso do pai: `entrada principal`
+
+## Atualização de execução — 19/09/2026
+
+GET /dashboard existe, com projeções da Agenda autorizadas e por empresa. Indicadores de outros módulos permanecem pendentes. Ver [registro de execução](../../EXECUCAO-MIGRACAO-2026-09-19.md). Os levantamentos abaixo descrevem a linha de base anterior; os checklists sem evidência permanecem abertos.
 
 ## Objetivo e escopo
 

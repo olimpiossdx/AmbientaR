@@ -7,8 +7,9 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
-    "test": "tsx --test src/__tests__/*.test.ts",
-    "preview": "vite preview"
+    "test": "node --import tsx --test src/__tests__/*.test.ts src/modules/migration-plan/*.test.ts",
+    "preview": "vite preview",
+    "migration:audit": "node --import tsx scripts/audit-migration.ts"
   },
   "dependencies": {
     "@sglara/cn": "^1.0.0",

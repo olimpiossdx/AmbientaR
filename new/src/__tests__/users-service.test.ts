@@ -183,3 +183,25 @@ describe("usersService", () => {
   });
  });
 });
+
+describe("paginação de usuários para grupos", () => {
+ it("carrega usuários além da primeira página sem exceder o limite da API", async () => {
+  const pages: number[] = [];
+  const service = createUsersService({ async get(_url, config) {
+   const page = Number(config?.params?.page);
+   pages.push(page);
+   assert.equal(config?.params?.size, 100);
+   return apiResponse({ total: 205, data: Array.from({ length: page === 3 ? 5 : 100 }, (_, index) => ({
+    id: String((page - 1) * 100 + index + 1), nome: "Usuário", email: "user@example.com", telefone: "31999999999", cpfCnpj: "123", tipo: "FISICA",
+   })) });
+  } });
+  assert.equal((await service.listUsersForGroups()).length, 205);
+  assert.deepEqual(pages, [1, 2, 3]);
+ });
+ it("interrompe paginação inconsistente em vez de entrar em loop", async () => {
+  const service = createUsersService({ async get() { return apiResponse({ total: 200, data: Array.from({ length: 100 }, (_, index) => ({
+   id: String(index + 1), nome: "Usuário", email: "user@example.com", telefone: "31999999999", cpfCnpj: "123", tipo: "FISICA",
+  })) }); } });
+  await assert.rejects(() => service.listUsersForGroups(), /mudou durante a consulta/);
+ });
+});

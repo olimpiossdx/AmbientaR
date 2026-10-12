@@ -139,10 +139,21 @@ export function createUsersService(client: UsersHttpClient = api) {
    return data.map((value) => String(value));
   },
   async listUsersForGroups(signal?: AbortSignal) {
-   const response = await client.get<unknown[]>("/user", { params: { search: "", page: 1, size: 250 }, signal });
-   const data = dataOrThrow(response, "Não foi possível carregar os usuários para associação.");
-   if (!Array.isArray(data)) throw new Error("Lista de usuários inválida.");
-   return data.map(parseUser);
+   const users: UserListItem[] = [];
+   const seen = new Set<string>();
+   const size = 100;
+   for (let page = 1; ; page += 1) {
+    const response = await client.get<unknown[]>("/user", { params: { search: "", page, size }, signal });
+    const data = dataOrThrow(response, "Não foi possível carregar os usuários para associação.");
+    if (!Array.isArray(data)) throw new Error("Lista de usuários inválida.");
+    const items = data.map(parseUser);
+    for (const user of items) {
+     if (seen.has(user.id)) throw new Error("A lista de usuários mudou durante a consulta. Recarregue os dados.");
+     seen.add(user.id);
+     users.push(user);
+    }
+    if (items.length === 0 || (typeof response.total === "number" && users.length >= response.total) || items.length < size) return users;
+   }
   },
   async createGroup(input: AuthorizationGroupInput) {
    return parseGroup(dataOrThrow(await client.post<unknown, AuthorizationGroupInput>("/authorization/groups", input), "Não foi possível criar o grupo."));

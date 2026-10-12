@@ -45,6 +45,15 @@ describe("gate automatizado do inventário de migração", () => {
   ]);
  });
 
+ it("resolve rotas filhas sem confundir /new com uma rota pública", () => {
+  const routes = discoverRouteDefinitions({ "entrepreneurs.routes.tsx": `
+   const root = createRoute({ getParentRoute: () => authenticatedRoute, path: "/empreendedores" });
+   const create = createRoute({ getParentRoute: () => root, path: "/new" });
+   const edit = createRoute({ getParentRoute: () => root, path: "/$id/edit" });
+  ` });
+  assert.deepEqual(routes.map(route => route.pattern), ["/app/empreendedores", "/app/empreendedores/new", "/app/empreendedores/$id/edit"]);
+ });
+
  it("não usa o catch-all legado para inflar a cobertura atual", () => {
   const coverage = buildMigrationCoverage(inventoryMarkdown, catalog, currentRouteSources());
   assert.equal(coverage.catchAllRoutes.length, 1);

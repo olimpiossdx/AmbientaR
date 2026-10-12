@@ -34,6 +34,7 @@ function initialInput(event?: CalendarEvent): CalendarEventInput {
  const startsAt = event?.startsAt ?? new Date().toISOString();
  const defaultEnd = new Date(Date.parse(startsAt) + 60 * 60_000).toISOString();
  return {
+  type: event?.type ?? "appointment",
   title: event?.title ?? "",
   description: event?.description ?? "",
   startsAt: localDateTime(startsAt),
@@ -62,6 +63,9 @@ function EventForm({ event, saving, onCancel, onSubmit }: {
  return <form onSubmit={submit} className="space-y-4">
   {validation ? <Alert variant="error" title="Nao foi possivel salvar">{validation}</Alert> : null}
   <Input name="event-title" label="Titulo" required maxLength={160} value={input.title} onChange={(e) => setInput({ ...input, title: e.target.value })} />
+  <Select name="event-type" label="Tipo" value={input.type ?? "appointment"} onChange={(e) => setInput({ ...input, type: e.target.value as CalendarEventInput["type"] })}>
+   <option value="appointment">Reunião</option><option value="deadline">Prazo</option><option value="audit">Auditoria</option>
+  </Select>
   <Textarea label="Descricao" rows={3} value={input.description ?? ""} onChange={(e) => setInput({ ...input, description: e.target.value })} />
   <div className="grid gap-4 sm:grid-cols-2">
    <Input name="event-start" label="Inicio" type="datetime-local" required value={input.startsAt} onChange={(e) => setInput({ ...input, startsAt: e.target.value })} />
@@ -75,7 +79,7 @@ function EventForm({ event, saving, onCancel, onSubmit }: {
   </div>
   <div className="flex flex-wrap gap-5">
    <Input name="event-all-day" type="checkbox" label="Dia inteiro" checked={input.allDay} onChange={(e) => setInput({ ...input, allDay: e.target.checked })} />
-   <Input name="event-public" type="checkbox" label="Evento publico" checked={input.isPublic} onChange={(e) => setInput({ ...input, isPublic: e.target.checked })} />
+   <Input name="event-public" type="checkbox" label="Visível aos usuários desta empresa com acesso à agenda" checked={input.isPublic} onChange={(e) => setInput({ ...input, isPublic: e.target.checked })} />
   </div>
   <DialogFooter>
    <Button type="button" variant="outline" onClick={onCancel}>Cancelar</Button>
@@ -196,7 +200,7 @@ export function AgendaPage() {
   setActionError(null);
   try {
    if (editing === "new") await agendaService.create(input);
-   else if (editing) await agendaService.update(editing.id, input);
+   else if (editing) await agendaService.update(editing.id, editing.version, input);
    setEditing(null);
    await load();
   } catch (caught) {
@@ -211,7 +215,7 @@ export function AgendaPage() {
   if (!globalThis.confirm(`Excluir o evento "${event.title}"?`)) return;
   setError(null);
   setActionError(null);
-  try { await agendaService.remove(event.id); await load(); }
+  try { await agendaService.remove(event.id, event.version); await load(); }
   catch (caught) {
    setActionError(caught instanceof AgendaApiError && caught.httpStatus === 403
     ? "Voce nao possui permissao para excluir este evento. A agenda carregada foi preservada."
@@ -222,7 +226,7 @@ export function AgendaPage() {
  const invite = async (input: CalendarEventInviteInput) => {
   if (!inviting) return;
   setSaving(true); setActionError(null);
-  try { await agendaService.invite(inviting.id, input); setInviting(null); await load(); }
+  try { await agendaService.invite(inviting.id, inviting.version, input); setInviting(null); await load(); }
   catch (caught) {
    setActionError(caught instanceof AgendaApiError && caught.httpStatus === 403
     ? "Voce nao possui permissao para convidar neste evento. A agenda carregada foi preservada."
@@ -234,7 +238,7 @@ export function AgendaPage() {
  const respond = async (event: CalendarEvent, response: CalendarEventResponse) => {
   const actionId = `${event.id}:${response}`;
   setPendingAction(actionId); setActionError(null);
-  try { await agendaService.respond(event.id, { response }); await load(); }
+  try { await agendaService.respond(event.id, event.version, { response }); await load(); }
   catch (caught) {
    setActionError(caught instanceof AgendaApiError && caught.httpStatus === 403
     ? "Voce nao pode responder a este convite. A agenda carregada foi preservada."
@@ -274,13 +278,14 @@ export function AgendaPage() {
     {loading ? <LoadingState /> : visibleEvents.length === 0 ? <Card><CardContent className="flex min-h-52 flex-col items-center justify-center text-center"><CalendarDays className="mb-3 text-slate-400" size={36} /><h3 className="font-semibold">Nenhum evento encontrado</h3><p className="mt-1 text-sm text-slate-600">Ajuste os filtros ou selecione outra data.</p></CardContent></Card> :
      <div className="space-y-3">{visibleEvents.map((event) => <Card key={event.id}><CardContent className="flex flex-col gap-4 p-4 sm:flex-row sm:items-start sm:justify-between sm:p-5">
       <div className="min-w-0 space-y-2"><div className="flex flex-wrap items-center gap-2"><h3 className="font-semibold text-slate-950">{event.title}</h3><Badge variant={statusVariants[event.status]}>{statusLabels[event.status]}</Badge>{event.isPublic ? <Badge variant="outline">Publico</Badge> : null}</div>
+       {event.invitation ? <p className="text-sm text-slate-600">Seu convite: {{ pending: "Pendente", accepted: "Aceito", declined: "Recusado", tentative: "Talvez" }[event.invitation.response]}{event.invitation.message ? ` — ${event.invitation.message}` : ""}</p> : null}
        {event.description ? <p className="text-sm text-slate-600">{event.description}</p> : null}
        <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-600"><span className="inline-flex items-center gap-1"><Clock3 size={14} />{new Date(event.startsAt).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: event.allDay ? undefined : "short" })}</span>{event.location ? <span className="inline-flex items-center gap-1"><MapPin size={14} />{event.location}</span> : null}</div>
       </div>
       {(canUpdate || canDelete || canInvite || canRespond) ? <div className="flex max-w-72 shrink-0 flex-wrap justify-end gap-2">
-       {canRespond ? <><Button size="icon" variant="outline" aria-label={`Aceitar convite ${event.title}`} isLoading={pendingAction === `${event.id}:accepted`} onClick={() => void respond(event, "accepted")}><Check size={16} /></Button><Button size="icon" variant="outline" aria-label={`Marcar talvez ${event.title}`} isLoading={pendingAction === `${event.id}:tentative`} onClick={() => void respond(event, "tentative")}><HelpCircle size={16} /></Button><Button size="icon" variant="outline" aria-label={`Recusar convite ${event.title}`} isLoading={pendingAction === `${event.id}:declined`} onClick={() => void respond(event, "declined")}><X size={16} /></Button></> : null}
-       {canInvite ? <Button size="icon" variant="outline" aria-label={`Convidar para ${event.title}`} onClick={() => setInviting(event)}><UserPlus size={16} /></Button> : null}
-       {canUpdate ? <Button size="icon" variant="outline" aria-label={`Editar ${event.title}`} onClick={() => setEditing(event)}><Pencil size={16} /></Button> : null}{canDelete ? <Button size="icon" variant="destructive" aria-label={`Excluir ${event.title}`} onClick={() => void remove(event)}><Trash2 size={16} /></Button> : null}
+       {canRespond && event.canRespond ? <><Button size="icon" variant="outline" aria-label={`Aceitar convite ${event.title}`} isLoading={pendingAction === `${event.id}:accepted`} onClick={() => void respond(event, "accepted")}><Check size={16} /></Button><Button size="icon" variant="outline" aria-label={`Marcar talvez ${event.title}`} isLoading={pendingAction === `${event.id}:tentative`} onClick={() => void respond(event, "tentative")}><HelpCircle size={16} /></Button><Button size="icon" variant="outline" aria-label={`Recusar convite ${event.title}`} isLoading={pendingAction === `${event.id}:declined`} onClick={() => void respond(event, "declined")}><X size={16} /></Button></> : null}
+       {canInvite && event.canManage ? <Button size="icon" variant="outline" aria-label={`Convidar para ${event.title}`} onClick={() => setInviting(event)}><UserPlus size={16} /></Button> : null}
+       {canUpdate && event.canManage ? <Button size="icon" variant="outline" aria-label={`Editar ${event.title}`} onClick={() => setEditing(event)}><Pencil size={16} /></Button> : null}{canDelete && event.canManage ? <Button size="icon" variant="destructive" aria-label={`Excluir ${event.title}`} onClick={() => void remove(event)}><Trash2 size={16} /></Button> : null}
       </div> : null}
      </CardContent></Card>)}</div>}
     {!loading && total > 0 ? <div className="flex flex-col gap-2 rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600 sm:flex-row sm:items-center sm:justify-between">

@@ -2,6 +2,7 @@ import type { ApiResponse } from "../service/http/types";
 import type { AuthClaim } from "../app/authorization/claim.types";
 
 export type AuthUser = {
+ organizationId?: string;
  id: number | string;
  nome: string;
  username: string;

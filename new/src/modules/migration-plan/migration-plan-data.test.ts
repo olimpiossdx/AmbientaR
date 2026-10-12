@@ -54,7 +54,7 @@ test("inicializa pilotos sem substituir progresso existente", () => {
   "FUN-CAD-001": { status: "blocked", completedSteps: [1], evidence: "Decisão existente" },
  });
  assert.deepEqual(initialized["FUN-CAD-001"], { status: "blocked", completedSteps: [1], evidence: "Decisão existente" });
- assert.equal(initialized["FUN-AGEN-001"].status, "blocked");
+ assert.equal(initialized["FUN-AGEN-001"].status, "in_progress");
  assert.match(initialized["FUN-AGEN-001"].evidence ?? "", /API/);
 });
 

@@ -11,6 +11,11 @@ export type CalendarEventStatus = "scheduled" | "confirmed" | "cancelled" | "com
 
 export type CalendarEvent = {
  id: string;
+ version: number;
+ type: "appointment" | "deadline" | "audit";
+ canManage: boolean;
+ canRespond: boolean;
+ invitation?: { response: "pending" | CalendarEventResponse; message: string | null; comment: string | null } | null;
  title: string;
  description: string | null;
  startsAt: string;
@@ -25,6 +30,7 @@ export type CalendarEvent = {
 };
 
 export type CalendarEventInput = {
+ type?: "appointment" | "deadline" | "audit";
  title: string;
  description?: string | null;
  startsAt: string;

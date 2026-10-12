@@ -1,7 +1,7 @@
 import { api } from "../../service/api";
 import type { HttpClient } from "../../service/http/client";
 import type { ApiResponse } from "../../service/http/types";
-import { parseCalendarEvent, parseCalendarEventList, validateCalendarEventFilters, validateCalendarEventInput } from "./agenda.schemas";
+import { agendaDateBoundary, parseCalendarEvent, parseCalendarEventList, validateCalendarEventFilters, validateCalendarEventInput } from "./agenda.schemas";
 import type { CalendarEvent, CalendarEventFilters, CalendarEventInput, CalendarEventInviteInput, CalendarEventList, CalendarEventRespondInput } from "./agenda.types";
 
 export class AgendaApiError extends Error {
@@ -52,8 +52,8 @@ export function createAgendaService(client: HttpClient) {
     signal,
     params: {
      search: filters.search?.trim() || undefined,
-     startsFrom: filters.startsFrom || undefined,
-     startsTo: filters.startsTo || undefined,
+     from: agendaDateBoundary(filters.startsFrom),
+     to: agendaDateBoundary(filters.startsTo, true),
      status: filters.status === "all" ? undefined : filters.status,
      page,
      size,
@@ -67,11 +67,11 @@ export function createAgendaService(client: HttpClient) {
   async create(input: CalendarEventInput): Promise<CalendarEvent> {
    return parseCalendarEvent(dataOrThrow(await client.post<unknown, CalendarEventInput>("/calendar-events", validateCalendarEventInput(input))));
   },
-  async update(id: string, input: CalendarEventInput): Promise<CalendarEvent> {
-   return parseCalendarEvent(dataOrThrow(await client.patch<unknown, CalendarEventInput>(`/calendar-events/${encodeURIComponent(id)}`, validateCalendarEventInput(input))));
+  async update(id: string, version: number, input: CalendarEventInput): Promise<CalendarEvent> {
+   return parseCalendarEvent(dataOrThrow(await client.patch<unknown, CalendarEventInput>(`/calendar-events/${encodeURIComponent(id)}`, validateCalendarEventInput(input), { params: { version } })));
   },
-  async remove(id: string): Promise<void> {
-   const response = await client.delete<unknown>(`/calendar-events/${encodeURIComponent(id)}`);
+  async remove(id: string, version: number): Promise<void> {
+   const response = await client.delete<unknown>(`/calendar-events/${encodeURIComponent(id)}`, { params: { version } });
    if (!response.ok) {
     throw new AgendaApiError(
      agendaErrorMessage(response.httpStatus, response.error?.message),
@@ -80,16 +80,16 @@ export function createAgendaService(client: HttpClient) {
     );
    }
   },
-  async invite(id: string, input: CalendarEventInviteInput): Promise<CalendarEvent> {
+  async invite(id: string, version: number, input: CalendarEventInviteInput): Promise<CalendarEvent> {
    const userIds = [...new Set(input.userIds.map((item) => item.trim()).filter(Boolean))];
    if (userIds.length === 0) throw new Error("Informe ao menos um usuario para convidar.");
    return parseCalendarEvent(dataOrThrow(await client.post<unknown, CalendarEventInviteInput>(
-    `/calendar-events/${encodeURIComponent(id)}/invite`, { ...input, userIds },
+    `/calendar-events/${encodeURIComponent(id)}/invite`, { ...input, userIds }, { params: { version } },
    )));
   },
-  async respond(id: string, input: CalendarEventRespondInput): Promise<CalendarEvent> {
+  async respond(id: string, version: number, input: CalendarEventRespondInput): Promise<CalendarEvent> {
    return parseCalendarEvent(dataOrThrow(await client.post<unknown, CalendarEventRespondInput>(
-    `/calendar-events/${encodeURIComponent(id)}/respond`, input,
+    `/calendar-events/${encodeURIComponent(id)}/respond`, input, { params: { version } },
    )));
   },
  };

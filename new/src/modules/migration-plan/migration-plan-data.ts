@@ -26,17 +26,22 @@ export const initialExecutionProgress: Record<string, ExecutionProgress> = {
  "FUN-CAD-001": {
   status: "in_progress",
   completedSteps: [],
-  evidence: "Front parcial: rota, navegação modular, listagem paginada, formulário CRUD validado, DTOs separados de criação/atualização, service /user e painel de grupos/claims implementados. A API ainda não oferece versionamento de usuário, edição própria separada nem policy de escopo; faltam testes HTTP negativos e aceite vertical.",
+  evidence: "19/09/2026: listagem e CRUD /user isolados pela empresa persistida da conta; DTO explícito sem credenciais; claims cumulativas de Cadastro + Usuários; grupos e vínculos protegidos contra outra empresa; paginação completa no seletor. Pendentes: versionamento de usuário, edição própria, gestão de membros existentes e aceite vertical. Integração real MongoDB/Redis aprovada em 27/09/2026.",
+ },
+ "FUN-CAD-002": {
+  status: "in_progress",
+  completedSteps: [],
+  evidence: "27/09/2026: rotas /app/empreendedores, /new e /$id/edit implementadas no new. CRUD /empreendedores no ambientaR-api com cadastro comercial separado de identidade, claims cumulativas, isolamento por empresa, índice único por empresa/documento, versão atômica e exclusão lógica. Testes HTTP reais com MongoDB e Redis aprovados para duplicidade, acesso cruzado e concorrência. Pendentes: vínculos/aprovações de representantes, importação de clientes, mesclagem, CTF detalhado, IA, MTR, reconciliação e homologação visual.",
  },
  "FUN-AGEN-001": {
-  status: "blocked",
+  status: "in_progress",
   completedSteps: [],
-  evidence: "Front parcial: tela responsiva, filtros/página/data persistidos na URL, CRUD, convite/resposta, claims por ação, validações e service /calendar-events implementados. Bloqueado até domínio, persistência, endpoints, escopo e testes verticais existirem na API ambientaR-api.",
+  evidence: "19/09/2026: API /calendar-events implementada no ambientaR-api com persistência MongoDB, empresa obrigatória, escopo próprio/público/convidado, convites, respostas, exclusão lógica e versão atômica. Front integrado com permissões por registro, versão e filtros no fuso local. Testes de serviço, contrato HTTP e filtros de repositório passaram. Integração real MongoDB/Redis aprovada em 27/09/2026. Pendentes: convites por seleção de pessoas, vínculos do legado e homologação visual.",
  },
  "FUN-CORE-001": {
-  status: "blocked",
+  status: "in_progress",
   completedSteps: [],
-  evidence: "Front parcial: rota e navegação modulares protegidas por recurso.dashboard=visualizar, contrato discriminado de widgets, service GET /dashboard e estados de loading/vazio/erro implementados sem dados fictícios. Bloqueado até GET /dashboard existir no ambientaR-api com agregações autorizadas e escopadas.",
+  evidence: "19/09/2026: GET /dashboard implementado no ambientaR-api com totais e próximos compromissos da Agenda, exigindo claim do widget e filtrando por empresa/usuário. Sem dados fictícios para outros domínios. Pendentes: projeções financeiras, ambientais e operacionais e homologação. Integração real MongoDB/Redis aprovada em 27/09/2026.",
  },
 };
 

@@ -1,6 +1,6 @@
 # Plano mestre de migração do `web` para o `new`
 
-Data-base: 21/07/2026  
+Data-base original: 21/07/2026; execução atualizada em 20/09/2026
 Escopo: reimplementar no `new` e no `ambientaR-api` todas as funcionalidades, menus, interfaces e integrações identificadas no portal `web`, sem reutilizar código, endpoints, Firebase ou infraestrutura do legado e sem autorização baseada em perfis.
 
 ## 1. Resultado esperado
@@ -53,60 +53,30 @@ Inventários executáveis deste plano:
 - `new/docs/CATALOGO-MENUS-FUNCIONALIDADES-API.md`: 188 funcionalidades `FUN-*`, incluindo cada menu/submenu, endpoints, claims, regras e aceite;
 - este documento: ordem, dependências, gates e processo de execução.
 
-### 2.1 Estado validado da migração
+### 2.1 Estado da execução em 19/09/2026
 
-Última validação: 23/07/2026.
+Decisão confirmada pelo usuário: **várias empresas, com dados isolados**. O backend deve derivar a empresa da identidade persistida, nunca de parâmetros enviados pelo navegador. O vínculo atual de uma conta é com uma empresa; acesso de uma mesma identidade a várias empresas exige evolução explícita para memberships e troca de contexto com renovação de autorização.
 
-O status abaixo considera o gate vertical completo. Rota, tela ou service isolados não tornam uma funcionalidade migrada.
+A contagem permanece em 188 funcionalidades catalogadas. Não considerar um endpoint, menu, placeholder ou build aprovado como paridade concluída.
 
-| Indicador | Estado atual |
-| --- | ---: |
-| Funcionalidades catalogadas | 188 |
-| Funcionalidades concluídas | 1 (`FUN-AUTH-001`) |
-| Funcionalidades com frontend parcial | 3 (`FUN-CAD-001`, `FUN-AGEN-001`, `FUN-CORE-001`) |
-| Variações do inventário atendidas por rota concreta | 8 de 285 |
-| Padrões do inventário atendidos por rota concreta | 8 de 267 |
-| Funcionalidades cuja rota declarada já existe | 9 |
-| Catch-all de compatibilidade | 1, excluído da cobertura |
-
-As nove funcionalidades com rota concreta são `FUN-AUTH-001..006`, `FUN-CORE-001`, `FUN-CAD-001` e `FUN-AGEN-001`. Destas, somente o login está concluído. Cadastro, recuperação, política, offline e sessão ainda precisam de aceite individual; Painel, Usuários e Agenda já têm frontend modular, mas ainda não fecharam o corte vertical com o `ambientaR-api`.
-
-| Módulo/pai | Estado | Pendência principal |
+| Entrega | Implementação atual | Gate ainda pendente |
 | --- | --- | --- |
-| Acesso e sessão | parcial | login concluído; `FUN-AUTH-002..006` sem gate individual completo |
-| Painel e Carteira | bloqueado | frontend do Painel consome `GET /dashboard` sem fallback; endpoint ausente; Carteira não iniciada |
-| Cadastro | em execução | finalizar `FUN-CAD-001` Usuários; Empreendedores, Empreendimentos e Empresas pendentes |
-| Agenda | bloqueado | frontend existe; domínio, persistência e endpoints `/calendar-events` não existem na API |
-| Financeiro | pendente | 25 funcionalidades |
-| Documentos Ambientais | pendente | 13 funcionalidades |
-| Multas e Defesas | pendente | 2 funcionalidades |
-| Vistoria Técnica | pendente | 3 funcionalidades |
-| Licenciamento | pendente | 3 funcionalidades |
-| Gestão de Projetos e Processos | pendente | 6 funcionalidades |
-| IA | pendente | 9 funcionalidades |
-| Fiscal Ambiental Digital | pendente | 14 funcionalidades |
-| Estudos Técnicos | pendente | 49 funcionalidades |
-| Inventários de campo | pendente | 1 funcionalidade |
-| Georreferenciamento | pendente | 12 funcionalidades |
-| Vendas & CRM | pendente | 9 funcionalidades |
-| Ofícios | pendente | 1 funcionalidade |
-| Webmail | pendente | 1 funcionalidade |
-| Acessos Governamentais | pendente | 8 funcionalidades |
-| Ferramentas do Sistema | pendente | 19 funcionalidades |
+| Login | implementação anterior preservada | revalidar no ambiente integrado multiempresa |
+| Empresa da conta | `POST /organizations`, `GET /organizations/current`, tela `/app/organization` | provisionamento dos membros/permissões, índices existentes e homologação |
+| Usuários | CRUD e busca por empresa; DTO sem credenciais; claims cumulativas; grupos e vínculos por empresa | concorrência, edição própria, membros, testes reais de persistência |
+| Agenda | CRUD, filtros, convites, respostas, versão atômica, exclusão lógica e escopo de empresa | integração MongoDB, vínculos funcionais restantes e aceite completo |
+| Painel | API com projeções da Agenda autorizadas e isoladas | indicadores dos demais domínios |
+| Imóveis na API | leituras/gravações e referências filtradas por empresa | frontend e paridade completa do cadastro do legado |
+| Demais funcionalidades | inventariadas; execução pendente | contratos, backend, frontend e homologação individuais |
 
-Itens visuais de menu sem requisito funcional confirmado no `web` permanecem como `GAP-*` e não entram nas 188 funcionalidades até especificação de produto.
+Auditoria regenerável: `npm run migration:audit` em `new`. Evidências e fila: [EXECUCAO-MIGRACAO-2026-09-19.md](EXECUCAO-MIGRACAO-2026-09-19.md). Resultado técnico: [AUDITORIA-MIGRACAO-ATUAL.md](AUDITORIA-MIGRACAO-ATUAL.md).
 
-#### Próxima entrega
+#### Próxima sequência obrigatória
 
-A próxima entrega deve ser **concluir `FUN-CAD-001` — Cadastro / Usuários**, e não abrir outro módulo amplo. É o piloto com menor distância para o gate: a API já possui CRUD de `/user`, grupos e catálogo de claims, e o `new` já possui rota, listagem, formulário e painel de grupos.
-
-Ordem imediata:
-
-1. fechar contrato, escopo, edição própria versus administração, DTOs sem senha/hash e versionamento;
-2. alinhar menu e rota ao registro do próprio módulo, com claims cumulativas de Cadastro + Usuários;
-3. completar testes negativos e de integração do `ambientaR-api`;
-4. executar aceite desktop/mobile e anexar evidência dos dez passos;
-5. em seguida, implementar a API da Agenda e substituir os dados estáticos do Painel.
+1. Homologar a fundação multiempresa em MongoDB/Redis de teste; classificar dados existentes antes de associar empresas.
+2. Fechar Usuários/organizações: provisionamento, membros, autorização, concorrência e relações com clientes/empreendedores. Separar identidade de login de cadastro comercial para não impor unicidade global de CPF/CNPJ aos dados de cada empresa.
+3. Fechar Agenda e Painel sem considerar concluídos os widgets de domínios ainda não implementados.
+4. Executar as ondas das seções seguintes até cobrir cada uma das 188 funcionalidades e todas as variações do inventário.
 
 ## 3. Princípios obrigatórios
 
@@ -168,6 +138,9 @@ Regras:
 - alterações de claims deverão invalidar ou renovar a sessão para produzir efeito previsível.
 
 ### 3.3 Permissão e escopo são problemas diferentes
+
+Toda consulta de dados empresariais deve incluir a empresa da conta. Evento público significa público **dentro da empresa**. Contas e registros sem empresa não recebem um tenant padrão e não entram em consultas empresariais. Uma claim administrativa não remove essa fronteira. Relacionamentos, convites e atribuições de grupos também devem pertencer à mesma empresa.
+
 
 A claim responde **o que** a pessoa pode fazer. O backend responde **sobre quais registros** ela pode fazer.
 

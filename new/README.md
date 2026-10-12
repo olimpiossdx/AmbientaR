@@ -1,32 +1,25 @@
-# React + TypeScript + Vite
+# AmbientaR — novo portal
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+React 19, TypeScript, Vite e TanStack Router. O backend é exclusivamente o projeto irmão `ambientaR-api` (NestJS/MongoDB/Redis). O `web` serve como referência funcional; não é dependência de execução.
 
-Currently, two official plugins are available:
+## Desenvolvimento
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```sh
+npm run dev
+npm test
+npm run build
+npm run migration:audit
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+Configure `VITE_API_URL` para o backend (padrão `http://localhost:3001`). A autenticação usa cookies; configure a origem do Vite entre as origens permitidas na API. Não colocar credenciais de banco, Firebase ou provedores no frontend.
+
+## Migração e empresas
+
+- [Plano mestre](docs/PLANO-MIGRACAO-WEB-PARA-NEW.md)
+- [Execução e pendências](docs/EXECUCAO-MIGRACAO-2026-09-19.md)
+- [Auditoria regenerável](docs/AUDITORIA-MIGRACAO-ATUAL.md)
+- [188 funcionalidades por módulo](docs/planos-migracao/README.md)
+
+A implantação atende empresas com dados isolados. O vínculo de empresa é resolvido pela API a partir da conta. Contas sem empresa não acessam dados empresariais; `/app/organization` permite consultar/criar o espaço da própria conta. As permissões são atribuídas explicitamente, e a criação de empresa não equivale a concessão de acesso a todos os módulos.
+
+Agenda e Painel já consomem APIs próprias. A migração integral continua em execução: menus e telas provisórias não representam funcionalidades concluídas. A auditoria registra essa diferença e verifica que não há imports de Firebase/Next no novo frontend.

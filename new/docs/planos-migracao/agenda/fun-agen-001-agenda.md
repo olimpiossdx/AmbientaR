@@ -1,9 +1,13 @@
 # FUN-AGEN-001 — Agenda
 
-Status: frontend parcial; bloqueado pela ausência do domínio e endpoints na API  
+Status: em execução; frontend e backend implementados parcialmente
 Módulo pai: **Agenda**  
 Origem funcional: seção “Ofícios, governo e ferramentas do sistema” do catálogo  
 Dependência de acesso do pai: `recurso.agenda=*`
+
+## Atualização de execução — 19/09/2026
+
+API implementada com isolamento por empresa e versão; integração MongoDB real, seleção de convidados e paridade completa ainda pendentes. Ver [registro de execução](../../EXECUCAO-MIGRACAO-2026-09-19.md). Os levantamentos abaixo descrevem a linha de base anterior; os checklists sem evidência permanecem abertos.
 
 ## Objetivo e escopo
 

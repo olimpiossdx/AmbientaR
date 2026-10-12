@@ -1,0 +1,5268 @@
+{
+  "schemaVersion": 1,
+  "scope": "Todas as funcionalidades do web; frontend no new; backend exclusivo no ambientaR-api.",
+  "source": {
+    "webPages": 301,
+    "webApiRoutes": 157,
+    "frontendFilesWithFirebase": 493
+  },
+  "summary": {
+    "features": 188,
+    "done": 1,
+    "concreteInventoryPatterns": 11,
+    "inventoryPatterns": 267,
+    "declaredApiEndpoints": 67,
+    "forbiddenFrontendImports": 0
+  },
+  "caveats": [
+    "Rotas e endpoints declarados não comprovam paridade funcional, registro do módulo ou homologação.",
+    "APIs dinâmicas e chamadas indiretas exigem refinamento individual.",
+    "Status concluído exige os gates do plano mestre; não é inferido de arquivos existentes."
+  ],
+  "violations": [],
+  "endpoints": [
+    {
+      "method": "POST",
+      "path": "/auth/login",
+      "source": "src/controllers/auth.controller.ts"
+    },
+    {
+      "method": "POST",
+      "path": "/auth/logout",
+      "source": "src/controllers/auth.controller.ts"
+    },
+    {
+      "method": "POST",
+      "path": "/auth/password-reset",
+      "source": "src/controllers/auth.controller.ts"
+    },
+    {
+      "method": "GET",
+      "path": "/auth/profile",
+      "source": "src/controllers/auth.controller.ts"
+    },
+    {
+      "method": "POST",
+      "path": "/auth/refresh",
+      "source": "src/controllers/auth.controller.ts"
+    },
+    {
+      "method": "POST",
+      "path": "/auth/refresh-token",
+      "source": "src/controllers/auth.controller.ts"
+    },
+    {
+      "method": "POST",
+      "path": "/auth/register",
+      "source": "src/controllers/auth.controller.ts"
+    },
+    {
+      "method": "POST",
+      "path": "/auth/register/document-preview",
+      "source": "src/controllers/auth.controller.ts"
+    },
+    {
+      "method": "POST",
+      "path": "/auth/relogin",
+      "source": "src/controllers/auth.controller.ts"
+    },
+    {
+      "method": "GET",
+      "path": "/auth/session",
+      "source": "src/controllers/auth.controller.ts"
+    },
+    {
+      "method": "POST",
+      "path": "/auth/test-dashboard-users",
+      "source": "src/controllers/auth.controller.ts"
+    },
+    {
+      "method": "GET",
+      "path": "/authorization/claims",
+      "source": "src/authorization/controllers/claim-catalog.controller.ts"
+    },
+    {
+      "method": "POST",
+      "path": "/authorization/claims/sync",
+      "source": "src/authorization/controllers/claim-catalog.controller.ts"
+    },
+    {
+      "method": "GET",
+      "path": "/authorization/groups",
+      "source": "src/authorization/controllers/authorization-group.controller.ts"
+    },
+    {
+      "method": "POST",
+      "path": "/authorization/groups",
+      "source": "src/authorization/controllers/authorization-group.controller.ts"
+    },
+    {
+      "method": "DELETE",
+      "path": "/authorization/groups/:groupId",
+      "source": "src/authorization/controllers/authorization-group.controller.ts"
+    },
+    {
+      "method": "PATCH",
+      "path": "/authorization/groups/:groupId",
+      "source": "src/authorization/controllers/authorization-group.controller.ts"
+    },
+    {
+      "method": "PUT",
+      "path": "/authorization/groups/:groupId/claims",
+      "source": "src/authorization/controllers/authorization-group.controller.ts"
+    },
+    {
+      "method": "DELETE",
+      "path": "/authorization/groups/:groupId/claims/:claimId",
+      "source": "src/authorization/controllers/authorization-group.controller.ts"
+    },
+    {
+      "method": "POST",
+      "path": "/authorization/groups/:groupId/claims/:claimId",
+      "source": "src/authorization/controllers/authorization-group.controller.ts"
+    },
+    {
+      "method": "GET",
+      "path": "/authorization/groups/:groupId/users",
+      "source": "src/authorization/controllers/authorization-group.controller.ts"
+    },
+    {
+      "method": "PUT",
+      "path": "/authorization/groups/:groupId/users",
+      "source": "src/authorization/controllers/authorization-group.controller.ts"
+    },
+    {
+      "method": "DELETE",
+      "path": "/authorization/groups/:groupId/users/:userId",
+      "source": "src/authorization/controllers/authorization-group.controller.ts"
+    },
+    {
+      "method": "POST",
+      "path": "/authorization/groups/:groupId/users/:userId",
+      "source": "src/authorization/controllers/authorization-group.controller.ts"
+    },
+    {
+      "method": "GET",
+      "path": "/calendar-events",
+      "source": "src/modules/calendar/presentation/calendar.controller.ts"
+    },
+    {
+      "method": "POST",
+      "path": "/calendar-events",
+      "source": "src/modules/calendar/presentation/calendar.controller.ts"
+    },
+    {
+      "method": "DELETE",
+      "path": "/calendar-events/:id",
+      "source": "src/modules/calendar/presentation/calendar.controller.ts"
+    },
+    {
+      "method": "GET",
+      "path": "/calendar-events/:id",
+      "source": "src/modules/calendar/presentation/calendar.controller.ts"
+    },
+    {
+      "method": "PATCH",
+      "path": "/calendar-events/:id",
+      "source": "src/modules/calendar/presentation/calendar.controller.ts"
+    },
+    {
+      "method": "POST",
+      "path": "/calendar-events/:id/invite",
+      "source": "src/modules/calendar/presentation/calendar.controller.ts"
+    },
+    {
+      "method": "POST",
+      "path": "/calendar-events/:id/respond",
+      "source": "src/modules/calendar/presentation/calendar.controller.ts"
+    },
+    {
+      "method": "GET",
+      "path": "/dashboard",
+      "source": "src/modules/dashboard/dashboard.controller.ts"
+    },
+    {
+      "method": "GET",
+      "path": "/empreendedores",
+      "source": "src/modules/entrepreneurs/entrepreneur.controller.ts"
+    },
+    {
+      "method": "POST",
+      "path": "/empreendedores",
+      "source": "src/modules/entrepreneurs/entrepreneur.controller.ts"
+    },
+    {
+      "method": "DELETE",
+      "path": "/empreendedores/:id",
+      "source": "src/modules/entrepreneurs/entrepreneur.controller.ts"
+    },
+    {
+      "method": "GET",
+      "path": "/empreendedores/:id",
+      "source": "src/modules/entrepreneurs/entrepreneur.controller.ts"
+    },
+    {
+      "method": "PATCH",
+      "path": "/empreendedores/:id",
+      "source": "src/modules/entrepreneurs/entrepreneur.controller.ts"
+    },
+    {
+      "method": "GET",
+      "path": "/empreendimento",
+      "source": "src/controllers/empreendimento/controller.ts"
+    },
+    {
+      "method": "POST",
+      "path": "/empreendimento",
+      "source": "src/controllers/empreendimento/controller.ts"
+    },
+    {
+      "method": "PUT",
+      "path": "/empreendimento",
+      "source": "src/controllers/empreendimento/controller.ts"
+    },
+    {
+      "method": "DELETE",
+      "path": "/empreendimento/:id",
+      "source": "src/controllers/empreendimento/controller.ts"
+    },
+    {
+      "method": "GET",
+      "path": "/empreendimento/:id",
+      "source": "src/controllers/empreendimento/controller.ts"
+    },
+    {
+      "method": "POST",
+      "path": "/empreendimento/seed",
+      "source": "src/controllers/empreendimento/controller.ts"
+    },
+    {
+      "method": "DELETE",
+      "path": "/estado/:id",
+      "source": "src/controllers/estado/controller.ts"
+    },
+    {
+      "method": "GET",
+      "path": "/estado/:id",
+      "source": "src/controllers/estado/controller.ts"
+    },
+    {
+      "method": "POST",
+      "path": "/estado/search",
+      "source": "src/controllers/estado/controller.ts"
+    },
+    {
+      "method": "GET",
+      "path": "/health/live",
+      "source": "src/health/health.controller.ts"
+    },
+    {
+      "method": "GET",
+      "path": "/health/ready",
+      "source": "src/health/health.controller.ts"
+    },
+    {
+      "method": "GET",
+      "path": "/imovel",
+      "source": "src/controllers/imovel/controller.ts"
+    },
+    {
+      "method": "POST",
+      "path": "/imovel",
+      "source": "src/controllers/imovel/controller.ts"
+    },
+    {
+      "method": "PUT",
+      "path": "/imovel",
+      "source": "src/controllers/imovel/controller.ts"
+    },
+    {
+      "method": "DELETE",
+      "path": "/imovel/:id",
+      "source": "src/controllers/imovel/controller.ts"
+    },
+    {
+      "method": "GET",
+      "path": "/imovel/:id",
+      "source": "src/controllers/imovel/controller.ts"
+    },
+    {
+      "method": "PUT",
+      "path": "/imovel/:id",
+      "source": "src/controllers/imovel/controller.ts"
+    },
+    {
+      "method": "DELETE",
+      "path": "/municipio/:id",
+      "source": "src/controllers/municipio/controller.ts"
+    },
+    {
+      "method": "GET",
+      "path": "/municipio/:id",
+      "source": "src/controllers/municipio/controller.ts"
+    },
+    {
+      "method": "POST",
+      "path": "/municipio/search",
+      "source": "src/controllers/municipio/controller.ts"
+    },
+    {
+      "method": "POST",
+      "path": "/organizations",
+      "source": "src/tenancy/organization.controller.ts"
+    },
+    {
+      "method": "GET",
+      "path": "/organizations/current",
+      "source": "src/tenancy/organization.controller.ts"
+    },
+    {
+      "method": "GET",
+      "path": "/user",
+      "source": "src/controllers/user/controller.ts"
+    },
+    {
+      "method": "POST",
+      "path": "/user",
+      "source": "src/controllers/user/controller.ts"
+    },
+    {
+      "method": "DELETE",
+      "path": "/user/:id",
+      "source": "src/controllers/user/controller.ts"
+    },
+    {
+      "method": "GET",
+      "path": "/user/:id",
+      "source": "src/controllers/user/controller.ts"
+    },
+    {
+      "method": "PATCH",
+      "path": "/user/:id",
+      "source": "src/controllers/user/controller.ts"
+    },
+    {
+      "method": "PUT",
+      "path": "/user/:id",
+      "source": "src/controllers/user/controller.ts"
+    },
+    {
+      "method": "POST",
+      "path": "/user/search",
+      "source": "src/controllers/user/controller.ts"
+    },
+    {
+      "method": "POST",
+      "path": "/user/seed",
+      "source": "src/controllers/user/controller.ts"
+    }
+  ],
+  "features": [
+    {
+      "id": "FUN-AUTH-001",
+      "group": "Rotas públicas e sessão",
+      "name": "Login",
+      "routes": "/login",
+      "api": "POST /auth/login, GET /auth/session",
+      "claims": "Claim da funcionalidade definida pela família no DOC-CATALOGO",
+      "acceptance": "e-mail/CPF/CNPJ; erro não enumera usuário; cookies e redirecionamento testados",
+      "wave": 1,
+      "progress": {
+        "status": "done",
+        "completedSteps": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10
+        ],
+        "evidence": "Concluído em 22/07/2026: login público por e-mail/CPF/CNPJ, sessão por cookies HttpOnly, claims efetivas, redirecionamento interno validado, mensagens sem enumeração, rate limiting e auditoria sem PII. Evidências: 42 testes + build do new; 68 testes + build do ambientaR-api."
+      },
+      "routesCoverage": {
+        "featureId": "FUN-AUTH-001",
+        "expected": [
+          "/login"
+        ],
+        "implemented": [
+          "/login"
+        ],
+        "missing": [],
+        "hasConcreteRoute": true
+      }
+    },
+    {
+      "id": "FUN-AUTH-002",
+      "group": "Rotas públicas e sessão",
+      "name": "Cadastro",
+      "routes": "/register",
+      "api": "POST /auth/register, POST /auth/register/document-preview",
+      "claims": "Claim da funcionalidade definida pela família no DOC-CATALOGO",
+      "acceptance": "documento único, senha com hash, cadastro parcial consistente e sessão válida",
+      "wave": 1,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-AUTH-002",
+        "expected": [
+          "/register"
+        ],
+        "implemented": [
+          "/register"
+        ],
+        "missing": [],
+        "hasConcreteRoute": true
+      }
+    },
+    {
+      "id": "FUN-AUTH-003",
+      "group": "Rotas públicas e sessão",
+      "name": "Recuperar senha",
+      "routes": "/forgot-password",
+      "api": "POST /auth/password-reset, POST /auth/password-reset/confirm",
+      "claims": "Claim da funcionalidade definida pela família no DOC-CATALOGO",
+      "acceptance": "resposta genérica, expiração, revogação e troca real da senha",
+      "wave": 1,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-AUTH-003",
+        "expected": [
+          "/forgot-password"
+        ],
+        "implemented": [
+          "/forgot-password"
+        ],
+        "missing": [],
+        "hasConcreteRoute": true
+      }
+    },
+    {
+      "id": "FUN-AUTH-004",
+      "group": "Rotas públicas e sessão",
+      "name": "Política de privacidade",
+      "routes": "/politica-privacidade",
+      "api": "GET /public/legal/privacy-policy",
+      "claims": "Claim da funcionalidade definida pela família no DOC-CATALOGO",
+      "acceptance": "versão e vigência visíveis; aceite vinculável quando exigido",
+      "wave": 1,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-AUTH-004",
+        "expected": [
+          "/politica-privacidade"
+        ],
+        "implemented": [
+          "/politica-privacidade"
+        ],
+        "missing": [],
+        "hasConcreteRoute": true
+      }
+    },
+    {
+      "id": "FUN-AUTH-005",
+      "group": "Rotas públicas e sessão",
+      "name": "Estado offline",
+      "routes": "/offline",
+      "api": "GET /health/ready",
+      "claims": "Claim da funcionalidade definida pela família no DOC-CATALOGO",
+      "acceptance": "distingue API indisponível de navegador offline; retry sem loop",
+      "wave": 1,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-AUTH-005",
+        "expected": [
+          "/offline"
+        ],
+        "implemented": [
+          "/offline"
+        ],
+        "missing": [],
+        "hasConcreteRoute": true
+      }
+    },
+    {
+      "id": "FUN-AUTH-006",
+      "group": "Rotas públicas e sessão",
+      "name": "Sessão",
+      "routes": "modal e /sessao-bloqueada",
+      "api": "POST /auth/refresh, POST /auth/relogin, POST /auth/logout",
+      "claims": "Claim da funcionalidade definida pela família no DOC-CATALOGO",
+      "acceptance": "refresh concorrente único, retorno à rota e limpeza completa no logout",
+      "wave": 1,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-AUTH-006",
+        "expected": [
+          "/app/sessao-bloqueada"
+        ],
+        "implemented": [
+          "/app/sessao-bloqueada"
+        ],
+        "missing": [],
+        "hasConcreteRoute": true
+      }
+    },
+    {
+      "id": "FUN-CORE-001",
+      "group": "Painel e carteira",
+      "name": "Painel",
+      "routes": "/app",
+      "api": "GET /dashboard",
+      "claims": "recurso.dashboard=visualizar",
+      "acceptance": "API retorna somente widgets autorizados e agregados já escopados; AC-READ, AC-FRONT",
+      "wave": 2,
+      "progress": {
+        "status": "in_progress",
+        "completedSteps": [],
+        "evidence": "19/09/2026: GET /dashboard implementado no ambientaR-api com totais e próximos compromissos da Agenda, exigindo claim do widget e filtrando por empresa/usuário. Sem dados fictícios para outros domínios. Pendentes: projeções financeiras, ambientais e operacionais e homologação. Integração real MongoDB/Redis aprovada em 27/09/2026."
+      },
+      "routesCoverage": {
+        "featureId": "FUN-CORE-001",
+        "expected": [
+          "/app"
+        ],
+        "implemented": [
+          "/app"
+        ],
+        "missing": [],
+        "hasConcreteRoute": true
+      }
+    },
+    {
+      "id": "FUN-CORE-002",
+      "group": "Painel e carteira",
+      "name": "Minha Carteira",
+      "routes": "/app/carteira, /app/carteira/$clientId",
+      "api": "GET /carteira, GET /carteira/{clientId}",
+      "claims": "recurso.carteira=visualizar",
+      "acceptance": "titular, representante ou consultor só recebe vínculos aprovados; AC-READ, AC-FRONT",
+      "wave": 3,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-CORE-002",
+        "expected": [
+          "/app/carteira",
+          "/app/carteira/$clientId"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/carteira",
+          "/app/carteira/$clientId"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-FIN-001",
+      "group": "Financeiro",
+      "name": "Acesso Bancário",
+      "routes": "/app/bank-access",
+      "api": "CRUD /bank-access",
+      "claims": "modulo.financeiro=acessar + recurso.acesso-bancario=*",
+      "acceptance": "segredos cifrados e nunca retornados completos; auditoria de leitura; AC-CRUD",
+      "wave": 6,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-FIN-001",
+        "expected": [
+          "/app/bank-access"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/bank-access"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-FIN-002",
+      "group": "Financeiro",
+      "name": "Clientes",
+      "routes": "/app/clients, /new, /$id/edit",
+      "api": "CRUD /financial/clients",
+      "claims": "modulo.financeiro=acessar + recurso.cliente-financeiro=*",
+      "acceptance": "CPF/CNPJ único, vínculo comercial e escopo; AC-CRUD",
+      "wave": 6,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-FIN-002",
+        "expected": [
+          "/app/clients",
+          "/app/clients/new",
+          "/app/clients/$id/edit"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/clients",
+          "/app/clients/new",
+          "/app/clients/$id/edit"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-FIN-003",
+      "group": "Financeiro",
+      "name": "Contratos",
+      "routes": "/app/contracts, /new, /$id/edit",
+      "api": "CRUD /contracts; POST /contracts/{id}/actions/{action} com approve/sign/cancel",
+      "claims": "modulo.financeiro=acessar + recurso.contrato=*",
+      "acceptance": "versões, partes, vigência, aprovação/assinatura; AC-WORKFLOW, AC-FILE",
+      "wave": 6,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-FIN-003",
+        "expected": [
+          "/app/contracts",
+          "/app/contracts/new",
+          "/app/contracts/$id/edit"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/contracts",
+          "/app/contracts/new",
+          "/app/contracts/$id/edit"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-FIN-004",
+      "group": "Financeiro",
+      "name": "Contratos da Plataforma",
+      "routes": "/app/financial/platform-subscription-contracts",
+      "api": "GET /platform-contracts, GET /{id}, ações activate/suspend/cancel",
+      "claims": "modulo.financeiro=acessar + recurso.contrato-plataforma=*",
+      "acceptance": "cobrança e acesso mudam atomicamente; AC-WORKFLOW",
+      "wave": 6,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-FIN-004",
+        "expected": [
+          "/app/financial/platform-subscription-contracts"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/financial/platform-subscription-contracts"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-FIN-005",
+      "group": "Financeiro",
+      "name": "Contratos de Fornecedores",
+      "routes": "/app/contracts-suppliers",
+      "api": "CRUD /supplier-contracts",
+      "claims": "modulo.financeiro=acessar + recurso.contrato-fornecedor=*",
+      "acceptance": "fornecedor, centro de custo, vigência e anexos; AC-CRUD, AC-FILE",
+      "wave": 6,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-FIN-005",
+        "expected": [
+          "/app/contracts-suppliers"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/contracts-suppliers"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-FIN-006",
+      "group": "Financeiro",
+      "name": "Curva ABC de Clientes",
+      "routes": "/app/financial/abc-curve",
+      "api": "GET /financial/reports/abc-clients",
+      "claims": "modulo.financeiro=acessar + recurso.relatorio-financeiro=visualizar",
+      "acceptance": "período, critério e totais reconciliáveis; AC-READ",
+      "wave": 6,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-FIN-006",
+        "expected": [
+          "/app/financial/abc-curve"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/financial/abc-curve"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-FIN-007",
+      "group": "Financeiro",
+      "name": "Bens e Patrimônio",
+      "routes": "/app/financial/bens-patrimonio, /new, /$id/edit",
+      "api": "CRUD /assets",
+      "claims": "modulo.financeiro=acessar + recurso.patrimonio=*",
+      "acceptance": "tombamento único, depreciação e baixa por ação; AC-CRUD, AC-WORKFLOW",
+      "wave": 6,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-FIN-007",
+        "expected": [
+          "/app/financial/bens-patrimonio",
+          "/app/financial/bens-patrimonio/new",
+          "/app/financial/bens-patrimonio/$id/edit"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/financial/bens-patrimonio",
+          "/app/financial/bens-patrimonio/new",
+          "/app/financial/bens-patrimonio/$id/edit"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-FIN-008",
+      "group": "Financeiro",
+      "name": "DRE Contábil",
+      "routes": "/app/financial/dre-contabil",
+      "api": "GET /financial/reports/income-statement",
+      "claims": "modulo.financeiro=acessar + recurso.dre=visualizar",
+      "acceptance": "competência/caixa explícito, categorias e totalização; AC-READ",
+      "wave": 6,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-FIN-008",
+        "expected": [
+          "/app/financial/dre-contabil"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/financial/dre-contabil"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-FIN-009",
+      "group": "Financeiro",
+      "name": "Faturas",
+      "routes": "/app/invoices, /new, /$id/edit",
+      "api": "CRUD /invoices; ações issue/cancel/mark-paid",
+      "claims": "modulo.financeiro=acessar + recurso.fatura=*",
+      "acceptance": "portal só vê próprias faturas; pagamento idempotente; AC-WORKFLOW",
+      "wave": 6,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-FIN-009",
+        "expected": [
+          "/app/invoices",
+          "/app/invoices/new",
+          "/app/invoices/$id/edit"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/invoices",
+          "/app/invoices/new",
+          "/app/invoices/$id/edit"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-FIN-010",
+      "group": "Financeiro",
+      "name": "Fornecedores",
+      "routes": "/app/suppliers, /new, /$id/edit",
+      "api": "CRUD /suppliers",
+      "claims": "modulo.financeiro=acessar + recurso.fornecedor=*",
+      "acceptance": "documento e dados bancários validados/mascarados; AC-CRUD",
+      "wave": 6,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-FIN-010",
+        "expected": [
+          "/app/suppliers",
+          "/app/suppliers/new",
+          "/app/suppliers/$id/edit"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/suppliers",
+          "/app/suppliers/new",
+          "/app/suppliers/$id/edit"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-FIN-011",
+      "group": "Financeiro",
+      "name": "Lançamentos de Caixa",
+      "routes": "/app/cash-flow, /new, /$id/edit",
+      "api": "CRUD /cash-transactions; ação reverse",
+      "claims": "modulo.financeiro=acessar + recurso.lancamento-caixa=*",
+      "acceptance": "valor monetário decimal, competência, conta e estorno imutável; AC-WORKFLOW",
+      "wave": 6,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-FIN-011",
+        "expected": [
+          "/app/cash-flow",
+          "/app/cash-flow/new",
+          "/app/cash-flow/$id/edit"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/cash-flow",
+          "/app/cash-flow/new",
+          "/app/cash-flow/$id/edit"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-FIN-012",
+      "group": "Financeiro",
+      "name": "NFe Eletrônica",
+      "routes": "/app/external?target=nfe",
+      "api": "GET /external-targets/nfe",
+      "claims": "modulo.financeiro=acessar + recurso.nfe=acessar",
+      "acceptance": "destino cadastrado no API, sem parâmetro de URL livre; AC-INT",
+      "wave": 6,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-FIN-012",
+        "expected": [
+          "/app/external"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/external"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-FIN-013",
+      "group": "Financeiro",
+      "name": "Orçamentos",
+      "routes": "/app/proposals, /new, /$id/edit",
+      "api": "CRUD /quotes; POST /quotes/{id}/exports",
+      "claims": "modulo.financeiro=acessar + recurso.orcamento=*",
+      "acceptance": "numeração, itens, impostos, validade e PDF; AC-CRUD, AC-JOB",
+      "wave": 6,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-FIN-013",
+        "expected": [
+          "/app/proposals",
+          "/app/proposals/new",
+          "/app/proposals/$id/edit"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/proposals",
+          "/app/proposals/new",
+          "/app/proposals/$id/edit"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-FIN-014",
+      "group": "Financeiro",
+      "name": "Orçamentos e Propostas Comerciais",
+      "routes": "/app/commercial-proposals, /new, /$id/edit",
+      "api": "CRUD /commercial-proposals; ações send/accept/reject/expire",
+      "claims": "modulo.financeiro=acessar + recurso.proposta-comercial=*",
+      "acceptance": "aceite guarda autor/data/versão; AC-WORKFLOW, AC-JOB",
+      "wave": 6,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-FIN-014",
+        "expected": [
+          "/app/commercial-proposals",
+          "/app/commercial-proposals/new",
+          "/app/commercial-proposals/$id/edit"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/commercial-proposals",
+          "/app/commercial-proposals/new",
+          "/app/commercial-proposals/$id/edit"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-FIN-015",
+      "group": "Financeiro",
+      "name": "Painel Financeiro",
+      "routes": "/app/financial/painel",
+      "api": "GET /financial/dashboard",
+      "claims": "modulo.financeiro=acessar + recurso.dashboard-financeiro=visualizar",
+      "acceptance": "período, moeda e origem de cada KPI; AC-READ",
+      "wave": 6,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-FIN-015",
+        "expected": [
+          "/app/financial/painel"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/financial/painel"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-FIN-016",
+      "group": "Financeiro",
+      "name": "Projetos e ROI",
+      "routes": "/app/financial/projetos-roi, /$caseId",
+      "api": "CRUD /roi-cases; /time-entries; ações de aprovação/estorno",
+      "claims": "modulo.financeiro=acessar + recurso.projeto-roi=*",
+      "acceptance": "custos restritos por claim específica; ROI consistente; AC-WORKFLOW",
+      "wave": 6,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-FIN-016",
+        "expected": [
+          "/app/financial/projetos-roi",
+          "/app/financial/projetos-roi/$caseId"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/financial/projetos-roi",
+          "/app/financial/projetos-roi/$caseId"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-FIN-017",
+      "group": "Financeiro",
+      "name": "Fluxo de Caixa Projetado",
+      "routes": "/app/financial/fluxo-projetado",
+      "api": "GET /financial/reports/cash-flow-forecast",
+      "claims": "modulo.financeiro=acessar + recurso.fluxo-projetado=visualizar",
+      "acceptance": "cenário, período e premissas explícitos; AC-READ",
+      "wave": 6,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-FIN-017",
+        "expected": [
+          "/app/financial/fluxo-projetado"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/financial/fluxo-projetado"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-FIN-018",
+      "group": "Financeiro",
+      "name": "Conciliação Bancária",
+      "routes": "/app/financial/conciliacao",
+      "api": "GET /bank-reconciliation, POST /matches, DELETE /matches/{id}",
+      "claims": "modulo.financeiro=acessar + recurso.conciliacao-bancaria=executar",
+      "acceptance": "match idempotente, diferença e desfazer auditado; AC-WORKFLOW",
+      "wave": 6,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-FIN-018",
+        "expected": [
+          "/app/financial/conciliacao"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/financial/conciliacao"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-FIN-019",
+      "group": "Financeiro",
+      "name": "Diagnóstico PIX",
+      "routes": "/app/financial/billing-debug",
+      "api": "GET /billing/diagnostics, POST /billing/charges/{id}/retry",
+      "claims": "modulo.financeiro=acessar + recurso.diagnostico-cobranca=visualizar ou executar",
+      "acceptance": "sem segredo/payload sensível; retry idempotente; AC-READ, AC-WORKFLOW",
+      "wave": 6,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-FIN-019",
+        "expected": [
+          "/app/financial/billing-debug"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/financial/billing-debug"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-FIN-020",
+      "group": "Financeiro",
+      "name": "Curva ABC de Serviços",
+      "routes": "/app/financial/abc-servicos",
+      "api": "GET /financial/reports/abc-services",
+      "claims": "modulo.financeiro=acessar + recurso.relatorio-financeiro=visualizar",
+      "acceptance": "AC-READ",
+      "wave": 6,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-FIN-020",
+        "expected": [
+          "/app/financial/abc-servicos"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/financial/abc-servicos"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-FIN-021",
+      "group": "Financeiro",
+      "name": "Curva ABC de Fornecedores",
+      "routes": "/app/financial/abc-fornecedores",
+      "api": "GET /financial/reports/abc-suppliers",
+      "claims": "modulo.financeiro=acessar + recurso.relatorio-financeiro=visualizar",
+      "acceptance": "AC-READ",
+      "wave": 6,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-FIN-021",
+        "expected": [
+          "/app/financial/abc-fornecedores"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/financial/abc-fornecedores"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-FIN-022",
+      "group": "Financeiro",
+      "name": "Orçamento Anual",
+      "routes": "/app/financial/orcamento",
+      "api": "CRUD /annual-budgets; ação approve",
+      "claims": "modulo.financeiro=acessar + recurso.orcamento-anual=*",
+      "acceptance": "versão por exercício e centro de custo; AC-WORKFLOW",
+      "wave": 6,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-FIN-022",
+        "expected": [
+          "/app/financial/orcamento"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/financial/orcamento"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-FIN-023",
+      "group": "Financeiro",
+      "name": "Exportação Contábil",
+      "routes": "/app/financial/export-contabil",
+      "api": "POST /accounting-exports, GET /jobs/{id}",
+      "claims": "modulo.financeiro=acessar + recurso.exportacao-contabil=exportar",
+      "acceptance": "layout, período, checksum e reprocessamento idempotente; AC-JOB",
+      "wave": 6,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-FIN-023",
+        "expected": [
+          "/app/financial/export-contabil"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/financial/export-contabil"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-FIN-024",
+      "group": "Financeiro",
+      "name": "Assistente Financeiro",
+      "routes": "/app/studies/assistant?type=financeiro",
+      "api": "POST /ai/assistants/financial/runs",
+      "claims": "modulo.financeiro=acessar + recurso.assistente-financeiro=executar",
+      "acceptance": "fontes autorizadas, custo/rate limit e sem acesso implícito a dados; AC-JOB",
+      "wave": 6,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-FIN-024",
+        "expected": [
+          "/app/studies/assistant"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/studies/assistant"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-FIN-025",
+      "group": "Financeiro",
+      "name": "Tabela de Serviços",
+      "routes": "/app/services, /new, /$id/edit",
+      "api": "CRUD /services",
+      "claims": "modulo.financeiro=acessar + recurso.servico=*",
+      "acceptance": "código único, preço decimal e vigência; AC-CRUD",
+      "wave": 6,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-FIN-025",
+        "expected": [
+          "/app/services",
+          "/app/services/new",
+          "/app/services/$id/edit"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/services",
+          "/app/services/new",
+          "/app/services/$id/edit"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-CAD-001",
+      "group": "Cadastro",
+      "name": "Usuários",
+      "routes": "/app/users e formulário/modal",
+      "api": "CRUD existente /user; /authorization/groups; /authorization/claims",
+      "claims": "modulo.cadastro=acessar + recurso.usuario=*; claims de grupo existentes",
+      "acceptance": "edição própria separada da administração; senha nunca retorna; grupos usam versão; AC-CRUD",
+      "wave": 2,
+      "progress": {
+        "status": "in_progress",
+        "completedSteps": [],
+        "evidence": "19/09/2026: listagem e CRUD /user isolados pela empresa persistida da conta; DTO explícito sem credenciais; claims cumulativas de Cadastro + Usuários; grupos e vínculos protegidos contra outra empresa; paginação completa no seletor. Pendentes: versionamento de usuário, edição própria, gestão de membros existentes e aceite vertical. Integração real MongoDB/Redis aprovada em 27/09/2026."
+      },
+      "routesCoverage": {
+        "featureId": "FUN-CAD-001",
+        "expected": [
+          "/app/users"
+        ],
+        "implemented": [
+          "/app/users"
+        ],
+        "missing": [],
+        "hasConcreteRoute": true
+      }
+    },
+    {
+      "id": "FUN-CAD-002",
+      "group": "Cadastro",
+      "name": "Empreendedores",
+      "routes": "/app/empreendedores, /new, /$id/edit",
+      "api": "CRUD /empreendedores",
+      "claims": "modulo.cadastro=acessar + recurso.empreendedor=*",
+      "acceptance": "CPF/CNPJ, titularidade e vínculos; AC-CRUD",
+      "wave": 3,
+      "progress": {
+        "status": "in_progress",
+        "completedSteps": [],
+        "evidence": "27/09/2026: rotas /app/empreendedores, /new e /$id/edit implementadas no new. CRUD /empreendedores no ambientaR-api com cadastro comercial separado de identidade, claims cumulativas, isolamento por empresa, índice único por empresa/documento, versão atômica e exclusão lógica. Testes HTTP reais com MongoDB e Redis aprovados para duplicidade, acesso cruzado e concorrência. Pendentes: vínculos/aprovações de representantes, importação de clientes, mesclagem, CTF detalhado, IA, MTR, reconciliação e homologação visual."
+      },
+      "routesCoverage": {
+        "featureId": "FUN-CAD-002",
+        "expected": [
+          "/app/empreendedores",
+          "/app/empreendedores/new",
+          "/app/empreendedores/$id/edit"
+        ],
+        "implemented": [
+          "/app/empreendedores",
+          "/app/empreendedores/new",
+          "/app/empreendedores/$id/edit"
+        ],
+        "missing": [],
+        "hasConcreteRoute": true
+      }
+    },
+    {
+      "id": "FUN-CAD-003",
+      "group": "Cadastro",
+      "name": "Empreendimentos",
+      "routes": "/app/projects, /new, /$id/edit",
+      "api": "CRUD /empreendimentos",
+      "claims": "modulo.cadastro=acessar + recurso.empreendimento=*",
+      "acceptance": "vínculo autorizado, coordenadas, pacote e status; AC-CRUD",
+      "wave": 3,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-CAD-003",
+        "expected": [
+          "/app/projects",
+          "/app/projects/new",
+          "/app/projects/$id/edit"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/projects",
+          "/app/projects/new",
+          "/app/projects/$id/edit"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-CAD-004",
+      "group": "Cadastro",
+      "name": "Empresas",
+      "routes": "/app/responsible-company, /new, /$id/edit",
+      "api": "CRUD /empresas-responsaveis",
+      "claims": "modulo.cadastro=acessar + recurso.empresa-responsavel=*",
+      "acceptance": "CNPJ, responsáveis e apenas uma empresa ativa quando aplicável; AC-CRUD",
+      "wave": 3,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-CAD-004",
+        "expected": [
+          "/app/responsible-company",
+          "/app/responsible-company/new",
+          "/app/responsible-company/$id/edit"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/responsible-company",
+          "/app/responsible-company/new",
+          "/app/responsible-company/$id/edit"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-DOC-001",
+      "group": "Documentos Ambientais",
+      "name": "CAR",
+      "routes": "/app/car",
+      "api": "CRUD /car-records; anexos/geometria",
+      "claims": "modulo.documentos-ambientais=acessar + recurso.car=*",
+      "acceptance": "recibo, imóvel, geometria e histórico; AC-CRUD, AC-FILE",
+      "wave": 4,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-DOC-001",
+        "expected": [
+          "/app/car"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/car"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-DOC-002",
+      "group": "Documentos Ambientais",
+      "name": "Condicionantes",
+      "routes": "/app/compliance",
+      "api": "CRUD /conditions; ação fulfill",
+      "claims": "modulo.documentos-ambientais=acessar + recurso.condicionante=*",
+      "acceptance": "prazo, recorrência, evidência e alerta; AC-WORKFLOW, AC-FILE",
+      "wave": 4,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-DOC-002",
+        "expected": [
+          "/app/compliance"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/compliance"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-DOC-003",
+      "group": "Documentos Ambientais",
+      "name": "CTF/IBAMA",
+      "routes": "/app/ctf-ibama",
+      "api": "CRUD /ctf-ibama-records",
+      "claims": "modulo.documentos-ambientais=acessar + recurso.ctf-ibama=*",
+      "acceptance": "validade, titular e certificado; AC-CRUD, AC-FILE",
+      "wave": 4,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-DOC-003",
+        "expected": [
+          "/app/ctf-ibama"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/ctf-ibama"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-DOC-004",
+      "group": "Documentos Ambientais",
+      "name": "DAIA",
+      "routes": "/app/intervencoes",
+      "api": "CRUD /environmental-interventions",
+      "claims": "modulo.documentos-ambientais=acessar + recurso.daia=*",
+      "acceptance": "área, modalidade, validade e empreendimento; AC-CRUD, AC-FILE",
+      "wave": 4,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-DOC-004",
+        "expected": [
+          "/app/intervencoes"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/intervencoes"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-DOC-005",
+      "group": "Documentos Ambientais",
+      "name": "Fauna documental",
+      "routes": "/app/fauna",
+      "api": "CRUD /fauna-documents",
+      "claims": "modulo.documentos-ambientais=acessar + recurso.fauna-documento=*",
+      "acceptance": "tipo, vigência, projeto e anexo; AC-CRUD, AC-FILE",
+      "wave": 4,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-DOC-005",
+        "expected": [
+          "/app/fauna"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/fauna"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-DOC-006",
+      "group": "Documentos Ambientais",
+      "name": "Licenças",
+      "routes": "/app/licenses, /new, /$id/edit",
+      "api": "CRUD /licenses; ações de status",
+      "claims": "modulo.documentos-ambientais=acessar + recurso.licenca=*",
+      "acceptance": "número, órgão, modalidade, validade e alertas; AC-WORKFLOW, AC-FILE",
+      "wave": 4,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-DOC-006",
+        "expected": [
+          "/app/licenses",
+          "/app/licenses/new",
+          "/app/licenses/$id/edit"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/licenses",
+          "/app/licenses/new",
+          "/app/licenses/$id/edit"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-DOC-007",
+      "group": "Documentos Ambientais",
+      "name": "TAC",
+      "routes": "/app/tacs, /new, /$id/edit",
+      "api": "CRUD /tacs; compromissos",
+      "claims": "modulo.documentos-ambientais=acessar + recurso.tac=*",
+      "acceptance": "partes, obrigações, prazo e evidências; AC-WORKFLOW, AC-FILE",
+      "wave": 4,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-DOC-007",
+        "expected": [
+          "/app/tacs",
+          "/app/tacs/new",
+          "/app/tacs/$id/edit"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/tacs",
+          "/app/tacs/new",
+          "/app/tacs/$id/edit"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-DOC-008",
+      "group": "Documentos Ambientais",
+      "name": "MTR Declaração",
+      "routes": "/app/mtr-declaracao",
+      "api": "CRUD /mtr-declarations; POST /sync-jobs",
+      "claims": "modulo.documentos-ambientais=acessar + recurso.mtr-declaracao=*",
+      "acceptance": "período, manifesto, integração e deduplicação; AC-CRUD, AC-JOB, AC-INT",
+      "wave": 4,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-DOC-008",
+        "expected": [
+          "/app/mtr-declaracao"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/mtr-declaracao"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-DOC-009",
+      "group": "Documentos Ambientais",
+      "name": "Pasta do cliente",
+      "routes": "/app/documentos-ambientais/pasta-cliente",
+      "api": "GET /client-folders/{clientId}, API-FILE",
+      "claims": "modulo.documentos-ambientais=acessar + recurso.pasta-cliente com visualizar/enviar/excluir",
+      "acceptance": "árvore virtual por metadados, não path livre; AC-FILE",
+      "wave": 4,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-DOC-009",
+        "expected": [
+          "/app/documentos-ambientais/pasta-cliente"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/documentos-ambientais/pasta-cliente"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-DOC-010",
+      "group": "Documentos Ambientais",
+      "name": "Monitoramento manual",
+      "routes": "/app/monitoring/manual",
+      "api": "CRUD /water-monitoring/manual-readings; export",
+      "claims": "modulo.documentos-ambientais=acessar + recurso.monitoramento-outorga=*",
+      "acceptance": "unidade, data, ponto e limites; AC-CRUD, AC-JOB",
+      "wave": 4,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-DOC-010",
+        "expected": [
+          "/app/monitoring/manual"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/monitoring/manual"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-DOC-011",
+      "group": "Documentos Ambientais",
+      "name": "Telemetria",
+      "routes": "/app/monitoring/telemetric",
+      "api": "GET /water-monitoring/telemetry; ingestão protegida separada",
+      "claims": "modulo.documentos-ambientais=acessar + recurso.telemetria com visualizar/exportar",
+      "acceptance": "série temporal paginada/agregada e gaps explícitos; AC-READ, AC-JOB",
+      "wave": 4,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-DOC-011",
+        "expected": [
+          "/app/monitoring/telemetric"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/monitoring/telemetric"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-DOC-012",
+      "group": "Documentos Ambientais",
+      "name": "Outorgas",
+      "routes": "/app/outorgas, /new, /$id/edit",
+      "api": "CRUD /water-grants",
+      "claims": "modulo.documentos-ambientais=acessar + recurso.outorga=*",
+      "acceptance": "ponto, finalidade, vazão, portaria e validade; AC-CRUD, AC-FILE",
+      "wave": 4,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-DOC-012",
+        "expected": [
+          "/app/outorgas",
+          "/app/outorgas/new",
+          "/app/outorgas/$id/edit"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/outorgas",
+          "/app/outorgas/new",
+          "/app/outorgas/$id/edit"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-DOC-013",
+      "group": "Documentos Ambientais",
+      "name": "Usos Insignificantes",
+      "routes": "/app/usos-insignificantes",
+      "api": "CRUD /insignificant-water-uses",
+      "claims": "modulo.documentos-ambientais=acessar + recurso.uso-insignificante=*",
+      "acceptance": "enquadramento, vazão, validade e vínculo; AC-CRUD, AC-FILE",
+      "wave": 4,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-DOC-013",
+        "expected": [
+          "/app/usos-insignificantes"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/usos-insignificantes"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-LEG-001",
+      "group": "Multas, vistorias, licenciamento e processos",
+      "name": "Multas e Defesas / Consultar",
+      "routes": "/app/multas-defesas, /$id",
+      "api": "GET /environmental-fines, GET /{id}",
+      "claims": "recurso.multa-defesa=visualizar",
+      "acceptance": "prazo processual e escopo; AC-READ",
+      "wave": 5,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-LEG-001",
+        "expected": [
+          "/app/multas-defesas",
+          "/app/multas-defesas/$id"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/multas-defesas",
+          "/app/multas-defesas/$id"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-LEG-002",
+      "group": "Multas, vistorias, licenciamento e processos",
+      "name": "Multas e Defesas / Nova",
+      "routes": "/app/multas-defesas/nova",
+      "api": "POST /environmental-fines; ações e anexos",
+      "claims": "recurso.multa-defesa com criar/editar/protocolar",
+      "acceptance": "defesa versionada, protocolo e documentos; AC-WORKFLOW, AC-FILE",
+      "wave": 5,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-LEG-002",
+        "expected": [
+          "/app/multas-defesas/nova"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/multas-defesas/nova"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-VIS-001",
+      "group": "Multas, vistorias, licenciamento e processos",
+      "name": "Vistoria / Consultar",
+      "routes": "/app/inspections, /$id/edit",
+      "api": "CRUD /inspections",
+      "claims": "recurso.vistoria=*",
+      "acceptance": "empreendimento, equipe, agenda e status; AC-CRUD",
+      "wave": 5,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-VIS-001",
+        "expected": [
+          "/app/inspections",
+          "/app/inspections/$id/edit"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/inspections",
+          "/app/inspections/$id/edit"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-VIS-002",
+      "group": "Multas, vistorias, licenciamento e processos",
+      "name": "Vistoria / Nova",
+      "routes": "/app/inspections/new",
+      "api": "POST /inspections",
+      "claims": "recurso.vistoria=criar",
+      "acceptance": "checklist coerente com tipo; AC-CRUD",
+      "wave": 5,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-VIS-002",
+        "expected": [
+          "/app/inspections/new"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/inspections/new"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-VIS-003",
+      "group": "Multas, vistorias, licenciamento e processos",
+      "name": "Vistoria / Relatórios de Campo",
+      "routes": "/app/inspections/reports",
+      "api": "POST /inspections/{id}/report-jobs",
+      "claims": "recurso.vistoria-relatorio=exportar",
+      "acceptance": "fotos, coordenadas, assinatura e documento visual validado; AC-JOB, AC-FILE",
+      "wave": 5,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-VIS-003",
+        "expected": [
+          "/app/inspections/reports"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/inspections/reports"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-LIC-001",
+      "group": "Multas, vistorias, licenciamento e processos",
+      "name": "Licenciamento / Trâmites",
+      "routes": "/app/requests, /$id/edit",
+      "api": "CRUD /licensing-requests; ações",
+      "claims": "recurso.tramite-licenciamento=*",
+      "acceptance": "protocolo, órgão, fase e transições; AC-WORKFLOW, AC-FILE",
+      "wave": 5,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-LIC-001",
+        "expected": [
+          "/app/requests",
+          "/app/requests/$id/edit"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/requests",
+          "/app/requests/$id/edit"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-LIC-002",
+      "group": "Multas, vistorias, licenciamento e processos",
+      "name": "Licenciamento / Nova solicitação",
+      "routes": "/app/requests/new",
+      "api": "POST /licensing-requests",
+      "claims": "recurso.tramite-licenciamento=criar",
+      "acceptance": "pré-requisitos e titularidade; AC-WORKFLOW",
+      "wave": 5,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-LIC-002",
+        "expected": [
+          "/app/requests/new"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/requests/new"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-LIC-003",
+      "group": "Multas, vistorias, licenciamento e processos",
+      "name": "Licenciamento / AIA",
+      "routes": "/app/requests/$id/aia",
+      "api": "GET/PUT /licensing-requests/{id}/aia",
+      "claims": "recurso.aia com visualizar/editar",
+      "acceptance": "checklist AIA e vínculo com solicitação; AC-CRUD",
+      "wave": 5,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-LIC-003",
+        "expected": [
+          "/app/requests/$id/aia"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/requests/$id/aia"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-PRO-001",
+      "group": "Multas, vistorias, licenciamento e processos",
+      "name": "Processos / Projetos",
+      "routes": "/app/gestao-processos/projetos, /$id",
+      "api": "CRUD /process-projects",
+      "claims": "recurso.projeto-processo=*",
+      "acceptance": "escopo por carteira/titular; AC-CRUD",
+      "wave": 5,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-PRO-001",
+        "expected": [
+          "/app/gestao-processos/projetos",
+          "/app/gestao-processos/projetos/$id"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/gestao-processos/projetos",
+          "/app/gestao-processos/projetos/$id"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-PRO-002",
+      "group": "Multas, vistorias, licenciamento e processos",
+      "name": "Processos / Fluxo",
+      "routes": "/app/gestao-processos/fluxo",
+      "api": "CRUD /processes; ações de transição",
+      "claims": "recurso.fluxo-processo=*",
+      "acceptance": "kanban deriva estados válidos; AC-WORKFLOW",
+      "wave": 5,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-PRO-002",
+        "expected": [
+          "/app/gestao-processos/fluxo"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/gestao-processos/fluxo"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-PRO-003",
+      "group": "Multas, vistorias, licenciamento e processos",
+      "name": "Processos / Tarefas",
+      "routes": "/app/gestao-processos/tarefas",
+      "api": "CRUD /tasks; ações assign/complete/reopen",
+      "claims": "recurso.tarefa=*",
+      "acceptance": "participante, prazo e visibilidade; AC-WORKFLOW",
+      "wave": 5,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-PRO-003",
+        "expected": [
+          "/app/gestao-processos/tarefas"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/gestao-processos/tarefas"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-PRO-004",
+      "group": "Multas, vistorias, licenciamento e processos",
+      "name": "Processos / Indicadores / Resumo",
+      "routes": "/app/gestao-processos/indicadores",
+      "api": "GET /process-indicators/summary",
+      "claims": "recurso.indicador-processo=visualizar",
+      "acceptance": "agregação escopada; AC-READ",
+      "wave": 5,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-PRO-004",
+        "expected": [
+          "/app/gestao-processos/indicadores"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/gestao-processos/indicadores"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-PRO-005",
+      "group": "Multas, vistorias, licenciamento e processos",
+      "name": "Processos / Indicadores / Análise",
+      "routes": "/app/gestao-processos/indicadores/analise",
+      "api": "GET /process-indicators/analysis",
+      "claims": "recurso.indicador-processo=visualizar",
+      "acceptance": "séries e filtros reproduzíveis; AC-READ",
+      "wave": 5,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-PRO-005",
+        "expected": [
+          "/app/gestao-processos/indicadores/analise"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/gestao-processos/indicadores/analise"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-PRO-006",
+      "group": "Multas, vistorias, licenciamento e processos",
+      "name": "Processos / Planilha",
+      "routes": "/app/gestao-processos/planilha",
+      "api": "POST /process-import-jobs",
+      "claims": "recurso.processo=importar",
+      "acceptance": "preview, validação por linha e importação idempotente; AC-JOB, AC-FILE",
+      "wave": 5,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-PRO-006",
+        "expected": [
+          "/app/gestao-processos/planilha"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/gestao-processos/planilha"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-IA-001",
+      "group": "IA e Fiscal Ambiental Digital",
+      "name": "Águas / MIRA",
+      "routes": "/app/studies/assistant?type=mira",
+      "api": "POST /ai/assistants/mira/runs",
+      "claims": "modulo.ia=acessar + recurso.assistente-mira=executar",
+      "acceptance": "fontes e escopo explícitos; AC-JOB",
+      "wave": 12,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-IA-001",
+        "expected": [
+          "/app/studies/assistant"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/studies/assistant"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-IA-002",
+      "group": "IA e Fiscal Ambiental Digital",
+      "name": "Análise Geoespacial",
+      "routes": "/app/analise-ambiental",
+      "api": "POST /geo-analysis-jobs",
+      "claims": "modulo.ia=acessar + recurso.analise-geoespacial=executar",
+      "acceptance": "geometria válida, catálogo versionado e resultado reproduzível; AC-JOB, AC-FILE",
+      "wave": 12,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-IA-002",
+        "expected": [
+          "/app/analise-ambiental"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/analise-ambiental"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-IA-003",
+      "group": "IA e Fiscal Ambiental Digital",
+      "name": "Análise Socioambiental",
+      "routes": "/app/studies/analise-socioambiental",
+      "api": "POST /socio-environmental-analysis-jobs",
+      "claims": "modulo.ia=acessar + recurso.analise-socioambiental=executar",
+      "acceptance": "ondas/fontes registradas; AC-JOB",
+      "wave": 12,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-IA-003",
+        "expected": [
+          "/app/studies/analise-socioambiental"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/studies/analise-socioambiental"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-IA-004",
+      "group": "IA e Fiscal Ambiental Digital",
+      "name": "Cruzamento de dados",
+      "routes": "/app/studies/assistant?type=mcp",
+      "api": "POST /ai/assistants/data-crossing/runs",
+      "claims": "modulo.ia=acessar + recurso.assistente-cruzamento=executar",
+      "acceptance": "tools allowlist e rate limit; AC-JOB",
+      "wave": 12,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-IA-004",
+        "expected": [
+          "/app/studies/assistant"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/studies/assistant"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-IA-005",
+      "group": "IA e Fiscal Ambiental Digital",
+      "name": "Legislação e estudos",
+      "routes": "/app/studies/assistant?type=geral",
+      "api": "POST /ai/assistants/legal/runs",
+      "claims": "modulo.ia=acessar + recurso.assistente-legislacao=executar",
+      "acceptance": "citações e fontes retornadas; AC-JOB",
+      "wave": 12,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-IA-005",
+        "expected": [
+          "/app/studies/assistant"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/studies/assistant"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-IA-006",
+      "group": "IA e Fiscal Ambiental Digital",
+      "name": "Relatórios de IA",
+      "routes": "/app/reporting",
+      "api": "GET /ai/reports, GET /{id}",
+      "claims": "modulo.ia=acessar + recurso.relatorio-ia=visualizar",
+      "acceptance": "escopo por autor/organização; AC-READ",
+      "wave": 12,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-IA-006",
+        "expected": [
+          "/app/reporting"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/reporting"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-IA-007",
+      "group": "IA e Fiscal Ambiental Digital",
+      "name": "Síntese de texto",
+      "routes": "/app/studies/assistant?type=rag",
+      "api": "POST /ai/assistants/summarization/runs",
+      "claims": "modulo.ia=acessar + recurso.assistente-sintese=executar",
+      "acceptance": "arquivos autorizados e retenção definida; AC-JOB, AC-FILE",
+      "wave": 12,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-IA-007",
+        "expected": [
+          "/app/studies/assistant"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/studies/assistant"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-IA-008",
+      "group": "IA e Fiscal Ambiental Digital",
+      "name": "Automações IA",
+      "routes": "/app/ai-lab/automations",
+      "api": "CRUD /ai-automations; ações run/enable/disable",
+      "claims": "modulo.ia=acessar + recurso.automacao-ia=*",
+      "acceptance": "agenda, limites e execução auditada; AC-WORKFLOW, AC-JOB",
+      "wave": 12,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-IA-008",
+        "expected": [
+          "/app/ai-lab/automations"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/ai-lab/automations"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-IA-009",
+      "group": "IA e Fiscal Ambiental Digital",
+      "name": "Hub IA",
+      "routes": "/app/ai-lab",
+      "api": "GET /ai/capabilities",
+      "claims": "modulo.ia=acessar + modulo.ia=acessar",
+      "acceptance": "só mostra capacidades com claim; AC-READ",
+      "wave": 12,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-IA-009",
+        "expected": [
+          "/app/ai-lab"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/ai-lab"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-FAD-001",
+      "group": "IA e Fiscal Ambiental Digital",
+      "name": "FAD / Início",
+      "routes": "/app/ia/fiscal-ambiental-digital/dashboard",
+      "api": "GET /fad/dashboard",
+      "claims": "modulo.ia=acessar + recurso.fad-dashboard=visualizar",
+      "acceptance": "AC-READ",
+      "wave": 12,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-FAD-001",
+        "expected": [
+          "/app/ia/fiscal-ambiental-digital/dashboard"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/ia/fiscal-ambiental-digital/dashboard"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-FAD-002",
+      "group": "IA e Fiscal Ambiental Digital",
+      "name": "FAD / Montar acervo",
+      "routes": "/app/ia/fiscal-ambiental-digital/montar-acervo",
+      "api": "POST /fad/collection-jobs",
+      "claims": "modulo.ia=acessar + recurso.fad-acervo=criar",
+      "acceptance": "fonte, perímetro e período; AC-JOB",
+      "wave": 12,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-FAD-002",
+        "expected": [
+          "/app/ia/fiscal-ambiental-digital/montar-acervo"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/ia/fiscal-ambiental-digital/montar-acervo"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-FAD-003",
+      "group": "IA e Fiscal Ambiental Digital",
+      "name": "FAD / Biblioteca",
+      "routes": "/app/ia/fiscal-ambiental-digital/biblioteca",
+      "api": "GET /fad/assets, API-FILE",
+      "claims": "modulo.ia=acessar + recurso.fad-biblioteca=visualizar",
+      "acceptance": "ownership e download; AC-READ, AC-FILE",
+      "wave": 12,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-FAD-003",
+        "expected": [
+          "/app/ia/fiscal-ambiental-digital/biblioteca"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/ia/fiscal-ambiental-digital/biblioteca"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-FAD-004",
+      "group": "IA e Fiscal Ambiental Digital",
+      "name": "FAD / Linha do tempo",
+      "routes": "/app/ia/fiscal-ambiental-digital/linha-do-tempo",
+      "api": "CRUD /fad/timeline-events",
+      "claims": "modulo.ia=acessar + recurso.fad-linha-tempo=*",
+      "acceptance": "ordenação temporal e fonte; AC-CRUD",
+      "wave": 12,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-FAD-004",
+        "expected": [
+          "/app/ia/fiscal-ambiental-digital/linha-do-tempo"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/ia/fiscal-ambiental-digital/linha-do-tempo"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-FAD-005",
+      "group": "IA e Fiscal Ambiental Digital",
+      "name": "FAD / Comparar",
+      "routes": "/app/ia/fiscal-ambiental-digital/comparador",
+      "api": "POST /fad/comparison-jobs",
+      "claims": "modulo.ia=acessar + recurso.fad-comparador=executar",
+      "acceptance": "duas fontes compatíveis e resultado versionado; AC-JOB",
+      "wave": 12,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-FAD-005",
+        "expected": [
+          "/app/ia/fiscal-ambiental-digital/comparador"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/ia/fiscal-ambiental-digital/comparador"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-FAD-006",
+      "group": "IA e Fiscal Ambiental Digital",
+      "name": "FAD / Evidências",
+      "routes": "/app/ia/fiscal-ambiental-digital/evidencias",
+      "api": "CRUD /fad/evidence",
+      "claims": "modulo.ia=acessar + recurso.fad-evidencia=*",
+      "acceptance": "cadeia de custódia e checksum; AC-CRUD, AC-FILE",
+      "wave": 12,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-FAD-006",
+        "expected": [
+          "/app/ia/fiscal-ambiental-digital/evidencias"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/ia/fiscal-ambiental-digital/evidencias"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-FAD-007",
+      "group": "IA e Fiscal Ambiental Digital",
+      "name": "FAD / Inteligência",
+      "routes": "/app/ia/fiscal-ambiental-digital/inteligencia",
+      "api": "POST /fad/intelligence-jobs",
+      "claims": "modulo.ia=acessar + recurso.fad-inteligencia=executar",
+      "acceptance": "modelo/fonte/custo registrados; AC-JOB",
+      "wave": 12,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-FAD-007",
+        "expected": [
+          "/app/ia/fiscal-ambiental-digital/inteligencia"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/ia/fiscal-ambiental-digital/inteligencia"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-FAD-008",
+      "group": "IA e Fiscal Ambiental Digital",
+      "name": "FAD / Fiscalização",
+      "routes": "/app/ia/fiscal-ambiental-digital/fiscalizacao",
+      "api": "POST /fad/inspection-check-jobs",
+      "claims": "modulo.ia=acessar + recurso.fad-fiscalizacao=executar",
+      "acceptance": "checks determinísticos identificados; AC-JOB",
+      "wave": 12,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-FAD-008",
+        "expected": [
+          "/app/ia/fiscal-ambiental-digital/fiscalizacao"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/ia/fiscal-ambiental-digital/fiscalizacao"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-FAD-009",
+      "group": "IA e Fiscal Ambiental Digital",
+      "name": "FAD / Relatórios",
+      "routes": "/app/ia/fiscal-ambiental-digital/relatorios",
+      "api": "POST /fad/report-jobs, GET /fad/reports",
+      "claims": "modulo.ia=acessar + recurso.fad-relatorio com visualizar/exportar",
+      "acceptance": "AC-JOB",
+      "wave": 12,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-FAD-009",
+        "expected": [
+          "/app/ia/fiscal-ambiental-digital/relatorios"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/ia/fiscal-ambiental-digital/relatorios"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-FAD-010",
+      "group": "IA e Fiscal Ambiental Digital",
+      "name": "FAD / Monitoramento",
+      "routes": "/app/ia/fiscal-ambiental-digital/monitoramento",
+      "api": "CRUD /fad/monitoring-rules; POST /runs",
+      "claims": "modulo.ia=acessar + recurso.fad-monitoramento=*",
+      "acceptance": "regra, agenda e deduplicação; AC-WORKFLOW, AC-JOB",
+      "wave": 12,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-FAD-010",
+        "expected": [
+          "/app/ia/fiscal-ambiental-digital/monitoramento"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/ia/fiscal-ambiental-digital/monitoramento"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-FAD-011",
+      "group": "IA e Fiscal Ambiental Digital",
+      "name": "FAD / Auditoria ESG",
+      "routes": "/app/ia/fiscal-ambiental-digital/esg",
+      "api": "GET /fad/esg, POST /fad/esg/snapshots",
+      "claims": "modulo.ia=acessar + recurso.fad-esg com visualizar/executar",
+      "acceptance": "metodologia e snapshot imutável; AC-READ",
+      "wave": 12,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-FAD-011",
+        "expected": [
+          "/app/ia/fiscal-ambiental-digital/esg"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/ia/fiscal-ambiental-digital/esg"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-FAD-012",
+      "group": "IA e Fiscal Ambiental Digital",
+      "name": "FAD / Configurações",
+      "routes": "/app/ia/fiscal-ambiental-digital/configuracoes",
+      "api": "GET/PATCH /fad/settings",
+      "claims": "modulo.ia=acessar + recurso.fad-configuracao=configurar",
+      "acceptance": "segredo não retorna; versão e auditoria; AC-CRUD",
+      "wave": 12,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-FAD-012",
+        "expected": [
+          "/app/ia/fiscal-ambiental-digital/configuracoes"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/ia/fiscal-ambiental-digital/configuracoes"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-FAD-013",
+      "group": "IA e Fiscal Ambiental Digital",
+      "name": "FAD / Novo workspace",
+      "routes": "/app/ia/fiscal-ambiental-digital/workspace/novo",
+      "api": "POST /fad/workspaces",
+      "claims": "modulo.ia=acessar + recurso.fad-workspace=criar",
+      "acceptance": "AC-CRUD",
+      "wave": 12,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-FAD-013",
+        "expected": [
+          "/app/ia/fiscal-ambiental-digital/workspace/novo"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/ia/fiscal-ambiental-digital/workspace/novo"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-FAD-014",
+      "group": "IA e Fiscal Ambiental Digital",
+      "name": "FAD / Workspace",
+      "routes": "/app/ia/fiscal-ambiental-digital/workspace/$workspaceId",
+      "api": "CRUD /fad/workspaces",
+      "claims": "modulo.ia=acessar + recurso.fad-workspace=*",
+      "acceptance": "membro/ownership e sub-recursos escopados; AC-CRUD",
+      "wave": 12,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-FAD-014",
+        "expected": [
+          "/app/ia/fiscal-ambiental-digital/workspace/$workspaceId"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/ia/fiscal-ambiental-digital/workspace/$workspaceId"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-EST-001",
+      "group": "Estudos Técnicos",
+      "name": "Programa de Educação Ambiental",
+      "routes": "/app/studies/educacao-ambiental, /novo, /$id/edit, /solicitar-dispensa, /dispensas/$id",
+      "api": "CRUD /studies/environmental-education; /waivers; exports",
+      "claims": "modulo.estudos-tecnicos=acessar + Claim da funcionalidade definida pela família no DOC-CATALOGO",
+      "acceptance": "projeto, público, cronograma e fluxo de dispensa; AC-WORKFLOW",
+      "wave": 8,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-EST-001",
+        "expected": [
+          "/app/studies/educacao-ambiental",
+          "/app/studies/educacao-ambiental/novo",
+          "/app/studies/educacao-ambiental/$id/edit",
+          "/app/studies/educacao-ambiental/solicitar-dispensa",
+          "/app/studies/educacao-ambiental/dispensas/$id"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/studies/educacao-ambiental",
+          "/app/studies/educacao-ambiental/novo",
+          "/app/studies/educacao-ambiental/$id/edit",
+          "/app/studies/educacao-ambiental/solicitar-dispensa",
+          "/app/studies/educacao-ambiental/dispensas/$id"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-EST-002",
+      "group": "Estudos Técnicos",
+      "name": "Programa de Ação Emergencial",
+      "routes": "/app/studies/acao-emergencial",
+      "api": "CRUD /studies/emergency-action-programs",
+      "claims": "modulo.estudos-tecnicos=acessar + Claim da funcionalidade definida pela família no DOC-CATALOGO",
+      "acceptance": "cenários, responsáveis e revisão; AC-CRUD, AC-JOB",
+      "wave": 8,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-EST-002",
+        "expected": [
+          "/app/studies/acao-emergencial"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/studies/acao-emergencial"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-EST-003",
+      "group": "Estudos Técnicos",
+      "name": "EIA/RIMA",
+      "routes": "/app/studies/eia-rima, /new, /$id/edit",
+      "api": "CRUD /studies/eia-rima; exports",
+      "claims": "modulo.estudos-tecnicos=acessar + Claim da funcionalidade definida pela família no DOC-CATALOGO",
+      "acceptance": "versão, capítulos, equipe e anexos; AC-CRUD, AC-JOB",
+      "wave": 8,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-EST-003",
+        "expected": [
+          "/app/studies/eia-rima",
+          "/app/studies/eia-rima/new",
+          "/app/studies/eia-rima/$id/edit"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/studies/eia-rima",
+          "/app/studies/eia-rima/new",
+          "/app/studies/eia-rima/$id/edit"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-EST-004",
+      "group": "Estudos Técnicos",
+      "name": "Estudo de Cavidades",
+      "routes": "/app/studies/cavidades, /new, /$id/edit",
+      "api": "CRUD /studies/caves; analysis/exports",
+      "claims": "modulo.estudos-tecnicos=acessar + Claim da funcionalidade definida pela família no DOC-CATALOGO",
+      "acceptance": "coordenadas, relevância e fontes; AC-CRUD, AC-JOB",
+      "wave": 8,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-EST-004",
+        "expected": [
+          "/app/studies/cavidades",
+          "/app/studies/cavidades/new",
+          "/app/studies/cavidades/$id/edit"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/studies/cavidades",
+          "/app/studies/cavidades/new",
+          "/app/studies/cavidades/$id/edit"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-EST-005",
+      "group": "Estudos Técnicos",
+      "name": "Estudos de Fauna / Hub",
+      "routes": "/app/studies/fauna",
+      "api": "GET /fauna-studies/dashboard",
+      "claims": "modulo.estudos-tecnicos=acessar + Claim da funcionalidade definida pela família no DOC-CATALOGO",
+      "acceptance": "cards somente com claims filhas; AC-READ",
+      "wave": 9,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-EST-005",
+        "expected": [
+          "/app/studies/fauna"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/studies/fauna"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-EST-006",
+      "group": "Estudos Técnicos",
+      "name": "Fauna / Inventário",
+      "routes": "/app/studies/fauna/inventario, /$id",
+      "api": "CRUD /fauna-studies/inventories",
+      "claims": "modulo.estudos-tecnicos=acessar + Claim da funcionalidade definida pela família no DOC-CATALOGO",
+      "acceptance": "campanha, grupo, ponto e espécie; AC-CRUD",
+      "wave": 9,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-EST-006",
+        "expected": [
+          "/app/studies/fauna/inventario",
+          "/app/studies/fauna/inventario/$id"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/studies/fauna/inventario",
+          "/app/studies/fauna/inventario/$id"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-EST-007",
+      "group": "Estudos Técnicos",
+      "name": "Fauna / Relatório de Inventário",
+      "routes": "/app/studies/fauna/inventario-relatorio, /$id",
+      "api": "POST /fauna-studies/inventories/{id}/report-jobs",
+      "claims": "modulo.estudos-tecnicos=acessar + Claim da funcionalidade definida pela família no DOC-CATALOGO",
+      "acceptance": "documento visual e dados congelados por versão; AC-JOB",
+      "wave": 9,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-EST-007",
+        "expected": [
+          "/app/studies/fauna/inventario-relatorio",
+          "/app/studies/fauna/inventario-relatorio/$id"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/studies/fauna/inventario-relatorio",
+          "/app/studies/fauna/inventario-relatorio/$id"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-EST-008",
+      "group": "Estudos Técnicos",
+      "name": "Fauna / Monitoramento",
+      "routes": "/app/studies/fauna/monitoramento, /$id",
+      "api": "CRUD /fauna-studies/monitoring",
+      "claims": "modulo.estudos-tecnicos=acessar + Claim da funcionalidade definida pela família no DOC-CATALOGO",
+      "acceptance": "campanhas comparáveis; AC-CRUD",
+      "wave": 9,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-EST-008",
+        "expected": [
+          "/app/studies/fauna/monitoramento",
+          "/app/studies/fauna/monitoramento/$id"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/studies/fauna/monitoramento",
+          "/app/studies/fauna/monitoramento/$id"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-EST-009",
+      "group": "Estudos Técnicos",
+      "name": "Fauna / Relatório de Monitoramento",
+      "routes": "/app/studies/fauna/monitoramento-relatorio, /$id",
+      "api": "/app/studies/fauna/monitoramento-relatorio, /$id",
+      "claims": "modulo.estudos-tecnicos=acessar + Claim da funcionalidade definida pela família no DOC-CATALOGO",
+      "acceptance": "AC-JOB",
+      "wave": 9,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-EST-009",
+        "expected": [
+          "/app/studies/fauna/monitoramento-relatorio",
+          "/app/studies/fauna/monitoramento-relatorio/$id"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/studies/fauna/monitoramento-relatorio",
+          "/app/studies/fauna/monitoramento-relatorio/$id"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-EST-010",
+      "group": "Estudos Técnicos",
+      "name": "Fauna / Resgate",
+      "routes": "/app/studies/fauna/resgate, /$id",
+      "api": "CRUD /fauna-studies/rescues",
+      "claims": "modulo.estudos-tecnicos=acessar + Claim da funcionalidade definida pela família no DOC-CATALOGO",
+      "acceptance": "indivíduo, destino e cadeia de custódia; AC-CRUD",
+      "wave": 9,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-EST-010",
+        "expected": [
+          "/app/studies/fauna/resgate",
+          "/app/studies/fauna/resgate/$id"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/studies/fauna/resgate",
+          "/app/studies/fauna/resgate/$id"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-EST-011",
+      "group": "Estudos Técnicos",
+      "name": "Fauna / Relatório de Resgate",
+      "routes": "/app/studies/fauna/resgate-relatorio, /$id",
+      "api": "/app/studies/fauna/resgate-relatorio, /$id",
+      "claims": "modulo.estudos-tecnicos=acessar + Claim da funcionalidade definida pela família no DOC-CATALOGO",
+      "acceptance": "AC-JOB",
+      "wave": 9,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-EST-011",
+        "expected": [
+          "/app/studies/fauna/resgate-relatorio",
+          "/app/studies/fauna/resgate-relatorio/$id"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/studies/fauna/resgate-relatorio",
+          "/app/studies/fauna/resgate-relatorio/$id"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-EST-012",
+      "group": "Estudos Técnicos",
+      "name": "IDE-SisemaNet",
+      "routes": "/app/studies/ide-sisemanet",
+      "api": "GET /integrations/ide-sisema/catalog, analysis jobs",
+      "claims": "modulo.estudos-tecnicos=acessar + recurso.ide-sisema=consultar; AC-INT, AC-JOB",
+      "acceptance": "recurso.ide-sisema=consultar; AC-INT, AC-JOB",
+      "wave": 9,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-EST-012",
+        "expected": [
+          "/app/studies/ide-sisemanet"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/studies/ide-sisemanet"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-EST-013",
+      "group": "Estudos Técnicos",
+      "name": "Inventário Florestal / Lista",
+      "routes": "/app/studies/inventario, /$id",
+      "api": "CRUD /forest-inventories",
+      "claims": "modulo.estudos-tecnicos=acessar + Claim da funcionalidade definida pela família no DOC-CATALOGO",
+      "acceptance": "unidade amostral, método e versão; AC-CRUD",
+      "wave": 9,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-EST-013",
+        "expected": [
+          "/app/studies/inventario",
+          "/app/studies/inventario/$id"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/studies/inventario",
+          "/app/studies/inventario/$id"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-EST-014",
+      "group": "Estudos Técnicos",
+      "name": "Inventário / Árvores",
+      "routes": "/app/studies/inventario/$id/arvores",
+      "api": "CRUD /forest-inventories/{id}/trees",
+      "claims": "modulo.estudos-tecnicos=acessar + Claim da funcionalidade definida pela família no DOC-CATALOGO",
+      "acceptance": "DAP, altura, espécie e parcela; AC-CRUD",
+      "wave": 9,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-EST-014",
+        "expected": [
+          "/app/studies/inventario/$id/arvores"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/studies/inventario/$id/arvores"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-EST-015",
+      "group": "Estudos Técnicos",
+      "name": "Inventário / Parcelas",
+      "routes": "/app/studies/inventario/$id/parcelas",
+      "api": "CRUD /forest-inventories/{id}/plots",
+      "claims": "modulo.estudos-tecnicos=acessar + Claim da funcionalidade definida pela família no DOC-CATALOGO",
+      "acceptance": "área e geometria; AC-CRUD",
+      "wave": 9,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-EST-015",
+        "expected": [
+          "/app/studies/inventario/$id/parcelas"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/studies/inventario/$id/parcelas"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-EST-016",
+      "group": "Estudos Técnicos",
+      "name": "Inventário / Espécies",
+      "routes": "/app/studies/inventario/$id/especies",
+      "api": "CRUD /forest-inventories/{id}/species",
+      "claims": "modulo.estudos-tecnicos=acessar + Claim da funcionalidade definida pela família no DOC-CATALOGO",
+      "acceptance": "taxonomia e proteção; AC-CRUD",
+      "wave": 9,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-EST-016",
+        "expected": [
+          "/app/studies/inventario/$id/especies"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/studies/inventario/$id/especies"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-EST-017",
+      "group": "Estudos Técnicos",
+      "name": "Inventário / Fórmulas",
+      "routes": "/app/studies/inventario/$id/formulas",
+      "api": "CRUD /forest-inventories/{id}/formulas",
+      "claims": "modulo.estudos-tecnicos=acessar + Claim da funcionalidade definida pela família no DOC-CATALOGO",
+      "acceptance": "expressão validada e versionada; AC-CRUD",
+      "wave": 9,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-EST-017",
+        "expected": [
+          "/app/studies/inventario/$id/formulas"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/studies/inventario/$id/formulas"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-EST-018",
+      "group": "Estudos Técnicos",
+      "name": "Inventário / Calculadora e Resultado",
+      "routes": "/app/studies/inventario/$id/calculadora, /resultado/$runId",
+      "api": "POST /forest-inventories/{id}/calculation-jobs; resultado",
+      "claims": "modulo.estudos-tecnicos=acessar + Claim da funcionalidade definida pela família no DOC-CATALOGO",
+      "acceptance": "fórmula/entrada congeladas e reprodutíveis; AC-JOB",
+      "wave": 9,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-EST-018",
+        "expected": [
+          "/app/studies/inventario/$id/calculadora",
+          "/app/studies/inventario/$id/calculadora/resultado/$runId"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/studies/inventario/$id/calculadora",
+          "/app/studies/inventario/$id/calculadora/resultado/$runId"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-EST-019",
+      "group": "Estudos Técnicos",
+      "name": "Coleta de Campo",
+      "routes": "/app/coleta-campo, /nova, /$id, /$id/parcelas/$parcelaId",
+      "api": "CRUD /field-collections; sub-recurso plots",
+      "claims": "modulo.estudos-tecnicos=acessar + Claim da funcionalidade definida pela família no DOC-CATALOGO",
+      "acceptance": "offline apenas se aprovado; conflito explícito; AC-CRUD",
+      "wave": 9,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-EST-019",
+        "expected": [
+          "/app/coleta-campo",
+          "/app/coleta-campo/nova",
+          "/app/coleta-campo/$id",
+          "/app/coleta-campo/$id/parcelas/$parcelaId"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/coleta-campo",
+          "/app/coleta-campo/nova",
+          "/app/coleta-campo/$id",
+          "/app/coleta-campo/$id/parcelas/$parcelaId"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-EST-020",
+      "group": "Estudos Técnicos",
+      "name": "LAS-RAS",
+      "routes": "/app/studies/las-ras, /new, /$id/edit",
+      "api": "CRUD /studies/las-ras; exports",
+      "claims": "modulo.estudos-tecnicos=acessar + Claim da funcionalidade definida pela família no DOC-CATALOGO",
+      "acceptance": "formulário e anexos versionados; AC-CRUD, AC-JOB",
+      "wave": 8,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-EST-020",
+        "expected": [
+          "/app/studies/las-ras",
+          "/app/studies/las-ras/new",
+          "/app/studies/las-ras/$id/edit"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/studies/las-ras",
+          "/app/studies/las-ras/new",
+          "/app/studies/las-ras/$id/edit"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-EST-021",
+      "group": "Estudos Técnicos",
+      "name": "Reanálise",
+      "routes": "/app/studies/reanalise, /new, /$id/edit",
+      "api": "CRUD /studies/reanalysis; exports",
+      "claims": "modulo.estudos-tecnicos=acessar + Claim da funcionalidade definida pela família no DOC-CATALOGO",
+      "acceptance": "referência ao estudo anterior e motivo; AC-CRUD, AC-JOB",
+      "wave": 8,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-EST-021",
+        "expected": [
+          "/app/studies/reanalise",
+          "/app/studies/reanalise/new",
+          "/app/studies/reanalise/$id/edit"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/studies/reanalise",
+          "/app/studies/reanalise/new",
+          "/app/studies/reanalise/$id/edit"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-EST-022",
+      "group": "Estudos Técnicos",
+      "name": "Procuração",
+      "routes": "/app/studies/procuracao, /new, /$id/edit",
+      "api": "CRUD /powers-of-attorney; exports",
+      "claims": "modulo.estudos-tecnicos=acessar + Claim da funcionalidade definida pela família no DOC-CATALOGO",
+      "acceptance": "outorgante/outorgado, poderes e validade; AC-CRUD, AC-JOB",
+      "wave": 8,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-EST-022",
+        "expected": [
+          "/app/studies/procuracao",
+          "/app/studies/procuracao/new",
+          "/app/studies/procuracao/$id/edit"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/studies/procuracao",
+          "/app/studies/procuracao/new",
+          "/app/studies/procuracao/$id/edit"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-EST-023",
+      "group": "Estudos Técnicos",
+      "name": "Mapas",
+      "routes": "/app/studies/mapas",
+      "api": "CRUD /study-maps; render jobs",
+      "claims": "modulo.estudos-tecnicos=acessar + Claim da funcionalidade definida pela família no DOC-CATALOGO",
+      "acceptance": "CRS, camadas, escala e layout; AC-CRUD, AC-JOB",
+      "wave": 8,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-EST-023",
+        "expected": [
+          "/app/studies/mapas"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/studies/mapas"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-EST-024",
+      "group": "Estudos Técnicos",
+      "name": "Memorial Descritivo",
+      "routes": "/app/studies/memorial-descritivo",
+      "api": "CRUD /descriptive-memorials; calculation/export jobs",
+      "claims": "modulo.estudos-tecnicos=acessar + Claim da funcionalidade definida pela família no DOC-CATALOGO",
+      "acceptance": "polígono fechado, azimute, distância e CRS; AC-JOB",
+      "wave": 8,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-EST-024",
+        "expected": [
+          "/app/studies/memorial-descritivo"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/studies/memorial-descritivo"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-EST-025",
+      "group": "Estudos Técnicos",
+      "name": "Outorgas / Processos",
+      "routes": "/app/studies/outorgas, /processo/$id, /$id/edit",
+      "api": "CRUD /water-grant-processes",
+      "claims": "modulo.estudos-tecnicos=acessar + Claim da funcionalidade definida pela família no DOC-CATALOGO",
+      "acceptance": "fases, protocolo e documentos; AC-WORKFLOW",
+      "wave": 8,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-EST-025",
+        "expected": [
+          "/app/studies/outorgas",
+          "/app/studies/outorgas/processo/$id",
+          "/app/studies/outorgas/$id/edit"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/studies/outorgas",
+          "/app/studies/outorgas/processo/$id",
+          "/app/studies/outorgas/$id/edit"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-EST-026",
+      "group": "Estudos Técnicos",
+      "name": "Outorgas / Nova",
+      "routes": "/app/studies/outorgas/new",
+      "api": "POST /water-grant-processes",
+      "claims": "modulo.estudos-tecnicos=acessar + Claim da funcionalidade definida pela família no DOC-CATALOGO",
+      "acceptance": "pré-requisitos e escopo; AC-WORKFLOW",
+      "wave": 8,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-EST-026",
+        "expected": [
+          "/app/studies/outorgas/new"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/studies/outorgas/new"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-EST-027",
+      "group": "Estudos Técnicos",
+      "name": "PCA / Lista",
+      "routes": "/app/studies/pca, /$id/edit",
+      "api": "CRUD /studies/pca",
+      "claims": "modulo.estudos-tecnicos=acessar + Claim da funcionalidade definida pela família no DOC-CATALOGO",
+      "acceptance": "listagem A–H é enum validado; AC-CRUD",
+      "wave": 8,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-EST-027",
+        "expected": [
+          "/app/studies/pca",
+          "/app/studies/pca/$id/edit"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/studies/pca",
+          "/app/studies/pca/$id/edit"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-EST-028",
+      "group": "Estudos Técnicos",
+      "name": "PCA / Listagens A–H",
+      "routes": "/app/studies/pca/new?listagem=A..H",
+      "api": "POST /studies/pca; schemas GET /study-schemas/pca/{A..H}",
+      "claims": "modulo.estudos-tecnicos=acessar + Claim da funcionalidade definida pela família no DOC-CATALOGO",
+      "acceptance": "cada schema versionado; export preserva versão; AC-CRUD, AC-JOB",
+      "wave": 8,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-EST-028",
+        "expected": [
+          "/app/studies/pca/new"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/studies/pca/new"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-EST-029",
+      "group": "Estudos Técnicos",
+      "name": "PIA",
+      "routes": "/app/studies/pia, /new, /$id/edit",
+      "api": "CRUD /studies/pia; inventory/export jobs",
+      "claims": "modulo.estudos-tecnicos=acessar + Claim da funcionalidade definida pela família no DOC-CATALOGO",
+      "acceptance": "inventário vinculado e cálculo consistente; AC-CRUD, AC-JOB",
+      "wave": 8,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-EST-029",
+        "expected": [
+          "/app/studies/pia",
+          "/app/studies/pia/new",
+          "/app/studies/pia/$id/edit"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/studies/pia",
+          "/app/studies/pia/new",
+          "/app/studies/pia/$id/edit"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-EST-030",
+      "group": "Estudos Técnicos",
+      "name": "PRADA",
+      "routes": "/app/studies/prada, /new, /$id/edit",
+      "api": "CRUD /studies/prada; exports",
+      "claims": "modulo.estudos-tecnicos=acessar + Claim da funcionalidade definida pela família no DOC-CATALOGO",
+      "acceptance": "diagnóstico, ações, cronograma e indicadores; AC-CRUD, AC-JOB",
+      "wave": 8,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-EST-030",
+        "expected": [
+          "/app/studies/prada",
+          "/app/studies/prada/new",
+          "/app/studies/prada/$id/edit"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/studies/prada",
+          "/app/studies/prada/new",
+          "/app/studies/prada/$id/edit"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-EST-031",
+      "group": "Estudos Técnicos",
+      "name": "Barragens / Visão geral",
+      "routes": "/app/studies/barragens",
+      "api": "GET /dam-studies/dashboard",
+      "claims": "modulo.estudos-tecnicos=acessar + Claim da funcionalidade definida pela família no DOC-CATALOGO",
+      "acceptance": "agregação escopada; AC-READ",
+      "wave": 10,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-EST-031",
+        "expected": [
+          "/app/studies/barragens"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/studies/barragens"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-EST-032",
+      "group": "Estudos Técnicos",
+      "name": "Barragens / Projeto técnico",
+      "routes": "/app/studies/barragem, /new, /$id/edit",
+      "api": "CRUD /dam-projects; calculation/export jobs",
+      "claims": "modulo.estudos-tecnicos=acessar + Claim da funcionalidade definida pela família no DOC-CATALOGO",
+      "acceptance": "geometria, estruturas, hidrologia e versão; AC-JOB",
+      "wave": 10,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-EST-032",
+        "expected": [
+          "/app/studies/barragem",
+          "/app/studies/barragem/new",
+          "/app/studies/barragem/$id/edit"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/studies/barragem",
+          "/app/studies/barragem/new",
+          "/app/studies/barragem/$id/edit"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-EST-033",
+      "group": "Estudos Técnicos",
+      "name": "Barragens / Segurança e emergência",
+      "routes": "/app/studies/seguranca-barragens, /new, /$id/edit",
+      "api": "CRUD /dam-safety-plans; HEC-RAS/export jobs",
+      "claims": "modulo.estudos-tecnicos=acessar + Claim da funcionalidade definida pela família no DOC-CATALOGO",
+      "acceptance": "cenários, classificação e plano; AC-JOB, AC-FILE",
+      "wave": 10,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-EST-033",
+        "expected": [
+          "/app/studies/seguranca-barragens",
+          "/app/studies/seguranca-barragens/new",
+          "/app/studies/seguranca-barragens/$id/edit"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/studies/seguranca-barragens",
+          "/app/studies/seguranca-barragens/new",
+          "/app/studies/seguranca-barragens/$id/edit"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-EST-034",
+      "group": "Estudos Técnicos",
+      "name": "Barragens / Piscinão",
+      "routes": "/app/studies/piscinao-off-stream, /new, /$id/edit",
+      "api": "CRUD /offstream-reservoir-projects; calculation/export jobs",
+      "claims": "modulo.estudos-tecnicos=acessar + Claim da funcionalidade definida pela família no DOC-CATALOGO",
+      "acceptance": "balanço hídrico e geometria; AC-JOB",
+      "wave": 10,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-EST-034",
+        "expected": [
+          "/app/studies/piscinao-off-stream",
+          "/app/studies/piscinao-off-stream/new",
+          "/app/studies/piscinao-off-stream/$id/edit"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/studies/piscinao-off-stream",
+          "/app/studies/piscinao-off-stream/new",
+          "/app/studies/piscinao-off-stream/$id/edit"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-EST-035",
+      "group": "Estudos Técnicos",
+      "name": "PTRF",
+      "routes": "/app/studies/ptrf, /new, /$id/edit",
+      "api": "CRUD /studies/ptrf; exports",
+      "claims": "modulo.estudos-tecnicos=acessar + Claim da funcionalidade definida pela família no DOC-CATALOGO",
+      "acceptance": "intervenção, recomposição e cronograma; AC-CRUD, AC-JOB",
+      "wave": 10,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-EST-035",
+        "expected": [
+          "/app/studies/ptrf",
+          "/app/studies/ptrf/new",
+          "/app/studies/ptrf/$id/edit"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/studies/ptrf",
+          "/app/studies/ptrf/new",
+          "/app/studies/ptrf/$id/edit"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-EST-036",
+      "group": "Estudos Técnicos",
+      "name": "RCA / Lista",
+      "routes": "/app/studies/rca, /$id/edit",
+      "api": "CRUD /studies/rca",
+      "claims": "modulo.estudos-tecnicos=acessar + Claim da funcionalidade definida pela família no DOC-CATALOGO",
+      "acceptance": "listagem A–H; AC-CRUD",
+      "wave": 10,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-EST-036",
+        "expected": [
+          "/app/studies/rca",
+          "/app/studies/rca/$id/edit"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/studies/rca",
+          "/app/studies/rca/$id/edit"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-EST-037",
+      "group": "Estudos Técnicos",
+      "name": "RCA / Listagens A–H",
+      "routes": "/app/studies/rca/new?listagem=A..H",
+      "api": "POST /studies/rca; schemas GET /study-schemas/rca/{A..H}",
+      "claims": "modulo.estudos-tecnicos=acessar + Claim da funcionalidade definida pela família no DOC-CATALOGO",
+      "acceptance": "schema/export versionados; AC-CRUD, AC-JOB",
+      "wave": 10,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-EST-037",
+        "expected": [
+          "/app/studies/rca/new"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/studies/rca/new"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-EST-038",
+      "group": "Estudos Técnicos",
+      "name": "Relatórios Diversos / Visão geral",
+      "routes": "/app/studies/relatorios-diversos",
+      "api": "GET /misc-reports/catalog",
+      "claims": "modulo.estudos-tecnicos=acessar + recurso.relatorio-diverso=visualizar; AC-READ",
+      "acceptance": "recurso.relatorio-diverso=visualizar; AC-READ",
+      "wave": 10,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-EST-038",
+        "expected": [
+          "/app/studies/relatorios-diversos"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/studies/relatorios-diversos"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-EST-039",
+      "group": "Estudos Técnicos",
+      "name": "Carvão vegetal",
+      "routes": "/app/studies/relatorios-diversos/carvao-vegetal",
+      "api": "CRUD /misc-reports/charcoal; exports",
+      "claims": "modulo.estudos-tecnicos=acessar + Claim da funcionalidade definida pela família no DOC-CATALOGO",
+      "acceptance": "AC-CRUD, AC-JOB",
+      "wave": 10,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-EST-039",
+        "expected": [
+          "/app/studies/relatorios-diversos/carvao-vegetal"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/studies/relatorios-diversos/carvao-vegetal"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-EST-040",
+      "group": "Estudos Técnicos",
+      "name": "PTRF/PRAD",
+      "routes": "/app/studies/relatorios-diversos/ptrf-prad",
+      "api": "CRUD /misc-reports/ptrf-prad; exports",
+      "claims": "modulo.estudos-tecnicos=acessar + Claim da funcionalidade definida pela família no DOC-CATALOGO",
+      "acceptance": "AC-CRUD, AC-JOB",
+      "wave": 10,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-EST-040",
+        "expected": [
+          "/app/studies/relatorios-diversos/ptrf-prad"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/studies/relatorios-diversos/ptrf-prad"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-EST-041",
+      "group": "Estudos Técnicos",
+      "name": "Transporte de resíduos",
+      "routes": "/app/studies/relatorios-diversos/transporte-residuos",
+      "api": "CRUD /misc-reports/waste-transport; exports",
+      "claims": "modulo.estudos-tecnicos=acessar + Claim da funcionalidade definida pela família no DOC-CATALOGO",
+      "acceptance": "transportador, resíduo e destino; AC-CRUD, AC-JOB",
+      "wave": 10,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-EST-041",
+        "expected": [
+          "/app/studies/relatorios-diversos/transporte-residuos"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/studies/relatorios-diversos/transporte-residuos"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-EST-042",
+      "group": "Estudos Técnicos",
+      "name": "MTR-MG",
+      "routes": "/app/studies/mtr",
+      "api": "CRUD /mtr-studies; sync/export jobs",
+      "claims": "modulo.estudos-tecnicos=acessar + Claim da funcionalidade definida pela família no DOC-CATALOGO",
+      "acceptance": "integração isolada e idempotente; AC-INT, AC-JOB",
+      "wave": 10,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-EST-042",
+        "expected": [
+          "/app/studies/mtr"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/studies/mtr"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-EST-043",
+      "group": "Estudos Técnicos",
+      "name": "Compensação / Visão geral",
+      "routes": "/app/studies/compensacao-ambiental",
+      "api": "GET /environmental-compensations/dashboard",
+      "claims": "modulo.estudos-tecnicos=acessar + Claim da funcionalidade definida pela família no DOC-CATALOGO",
+      "acceptance": "AC-READ",
+      "wave": 10,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-EST-043",
+        "expected": [
+          "/app/studies/compensacao-ambiental"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/studies/compensacao-ambiental"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-EST-044",
+      "group": "Estudos Técnicos",
+      "name": "Compensação / Espécies",
+      "routes": "/app/studies/compensacao-ambiental/especies",
+      "api": "CRUD /environmental-compensations/protected-species",
+      "claims": "modulo.estudos-tecnicos=acessar + Claim da funcionalidade definida pela família no DOC-CATALOGO",
+      "acceptance": "base normativa versionada; AC-CRUD",
+      "wave": 10,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-EST-044",
+        "expected": [
+          "/app/studies/compensacao-ambiental/$tipo"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/studies/compensacao-ambiental/$tipo"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-EST-045",
+      "group": "Estudos Técnicos",
+      "name": "Compensação / SNUC",
+      "routes": "/app/studies/compensacao-ambiental/snuc",
+      "api": "CRUD /environmental-compensations/snuc",
+      "claims": "modulo.estudos-tecnicos=acessar + Claim da funcionalidade definida pela família no DOC-CATALOGO",
+      "acceptance": "cálculo e base legal; AC-CRUD",
+      "wave": 10,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-EST-045",
+        "expected": [
+          "/app/studies/compensacao-ambiental/$tipo"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/studies/compensacao-ambiental/$tipo"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-EST-046",
+      "group": "Estudos Técnicos",
+      "name": "Compensação / Mata Atlântica",
+      "routes": "/app/studies/compensacao-ambiental/mata-atlantica",
+      "api": "CRUD /environmental-compensations/atlantic-forest",
+      "claims": "modulo.estudos-tecnicos=acessar + Claim da funcionalidade definida pela família no DOC-CATALOGO",
+      "acceptance": "área e proporção; AC-CRUD",
+      "wave": 10,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-EST-046",
+        "expected": [
+          "/app/studies/compensacao-ambiental/$tipo"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/studies/compensacao-ambiental/$tipo"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-EST-047",
+      "group": "Estudos Técnicos",
+      "name": "Compensação / Minerária",
+      "routes": "/app/studies/compensacao-ambiental/mineraria",
+      "api": "CRUD /environmental-compensations/mining",
+      "claims": "modulo.estudos-tecnicos=acessar + Claim da funcionalidade definida pela família no DOC-CATALOGO",
+      "acceptance": "empreendimento e cálculo; AC-CRUD",
+      "wave": 10,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-EST-047",
+        "expected": [
+          "/app/studies/compensacao-ambiental/$tipo"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/studies/compensacao-ambiental/$tipo"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-EST-048",
+      "group": "Estudos Técnicos",
+      "name": "Compensação / APP",
+      "routes": "/app/studies/compensacao-ambiental/app",
+      "api": "CRUD /environmental-compensations/app",
+      "claims": "modulo.estudos-tecnicos=acessar + Claim da funcionalidade definida pela família no DOC-CATALOGO",
+      "acceptance": "intervenção e área; AC-CRUD",
+      "wave": 10,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-EST-048",
+        "expected": [
+          "/app/studies/compensacao-ambiental/$tipo"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/studies/compensacao-ambiental/$tipo"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-EST-049",
+      "group": "Estudos Técnicos",
+      "name": "Reserva Legal",
+      "routes": "/app/studies/reserva-legal",
+      "api": "CRUD /legal-reserves; analysis/export jobs",
+      "claims": "modulo.estudos-tecnicos=acessar + Claim da funcionalidade definida pela família no DOC-CATALOGO",
+      "acceptance": "imóvel, percentual, geometria e compensação; AC-JOB",
+      "wave": 10,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-EST-049",
+        "expected": [
+          "/app/studies/reserva-legal"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/studies/reserva-legal"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-GEO-001",
+      "group": "Georreferenciamento",
+      "name": "Painel",
+      "routes": "/app/georeferenciamento",
+      "api": "GET /georeferencing/dashboard",
+      "claims": "modulo.georreferenciamento=acessar + Claim da funcionalidade definida pela família no DOC-CATALOGO",
+      "acceptance": "AC-READ",
+      "wave": 11,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-GEO-001",
+        "expected": [
+          "/app/georeferenciamento"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/georeferenciamento"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-GEO-002",
+      "group": "Georreferenciamento",
+      "name": "Trâmites fundiários",
+      "routes": "/app/georeferenciamento/processos, /$id",
+      "api": "CRUD /georeferencing/processes; ações",
+      "claims": "modulo.georreferenciamento=acessar + Claim da funcionalidade definida pela família no DOC-CATALOGO",
+      "acceptance": "estados, responsável e prazos; AC-WORKFLOW",
+      "wave": 11,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-GEO-002",
+        "expected": [
+          "/app/georeferenciamento/processos",
+          "/app/georeferenciamento/processos/$id"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/georeferenciamento/processos",
+          "/app/georeferenciamento/processos/$id"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-GEO-003",
+      "group": "Georreferenciamento",
+      "name": "Rural SIGEF/INCRA",
+      "routes": "/app/georeferenciamento/rural",
+      "api": "CRUD /georeferencing/rural-projects; validation jobs",
+      "claims": "modulo.georreferenciamento=acessar + Claim da funcionalidade definida pela família no DOC-CATALOGO",
+      "acceptance": "datum, vértices, confrontantes e normas; AC-JOB",
+      "wave": 11,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-GEO-003",
+        "expected": [
+          "/app/georeferenciamento/rural"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/georeferenciamento/rural"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-GEO-004",
+      "group": "Georreferenciamento",
+      "name": "Urbano cartório",
+      "routes": "/app/georeferenciamento/urbano",
+      "api": "CRUD /georeferencing/urban-projects",
+      "claims": "modulo.georreferenciamento=acessar + Claim da funcionalidade definida pela família no DOC-CATALOGO",
+      "acceptance": "matrícula, quadra/lote e memorial; AC-CRUD, AC-JOB",
+      "wave": 11,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-GEO-004",
+        "expected": [
+          "/app/georeferenciamento/urbano"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/georeferenciamento/urbano"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-GEO-005",
+      "group": "Georreferenciamento",
+      "name": "CAR/SICAR",
+      "routes": "/app/georeferenciamento/ambiental",
+      "api": "CRUD /georeferencing/car-projects; integration jobs",
+      "claims": "modulo.georreferenciamento=acessar + Claim da funcionalidade definida pela família no DOC-CATALOGO",
+      "acceptance": "recibo, imóvel e geometria; AC-INT, AC-JOB",
+      "wave": 11,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-GEO-005",
+        "expected": [
+          "/app/georeferenciamento/ambiental"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/georeferenciamento/ambiental"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-GEO-006",
+      "group": "Georreferenciamento",
+      "name": "Histórico CAR",
+      "routes": "/app/georeferenciamento/historico-car",
+      "api": "GET /car-history; snapshot jobs",
+      "claims": "modulo.georreferenciamento=acessar + Claim da funcionalidade definida pela família no DOC-CATALOGO",
+      "acceptance": "snapshots imutáveis e comparação; AC-READ, AC-JOB",
+      "wave": 11,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-GEO-006",
+        "expected": [
+          "/app/georeferenciamento/historico-car"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/georeferenciamento/historico-car"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-GEO-007",
+      "group": "Georreferenciamento",
+      "name": "Campo e levantamento",
+      "routes": "/app/georeferenciamento/campo",
+      "api": "CRUD /georeferencing/surveys",
+      "claims": "modulo.georreferenciamento=acessar + Claim da funcionalidade definida pela família no DOC-CATALOGO",
+      "acceptance": "equipamento, precisão e pontos; AC-CRUD, AC-FILE",
+      "wave": 11,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-GEO-007",
+        "expected": [
+          "/app/georeferenciamento/campo"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/georeferenciamento/campo"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-GEO-008",
+      "group": "Georreferenciamento",
+      "name": "Documentação técnica",
+      "routes": "/app/georeferenciamento/documentos",
+      "api": "CRUD /georeferencing/documents; API-FILE",
+      "claims": "modulo.georreferenciamento=acessar + Claim da funcionalidade definida pela família no DOC-CATALOGO",
+      "acceptance": "tipo, projeto e versão; AC-FILE",
+      "wave": 11,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-GEO-008",
+        "expected": [
+          "/app/georeferenciamento/documentos"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/georeferenciamento/documentos"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-GEO-009",
+      "group": "Georreferenciamento",
+      "name": "Memorial descritivo",
+      "routes": "/app/georeferenciamento/memorial-descritivo",
+      "api": "/app/georeferenciamento/memorial-descritivo",
+      "claims": "modulo.georreferenciamento=acessar + Claim da funcionalidade definida pela família no DOC-CATALOGO",
+      "acceptance": "fechamento, área, azimute e CRS; AC-JOB",
+      "wave": 11,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-GEO-009",
+        "expected": [
+          "/app/georeferenciamento/memorial-descritivo"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/georeferenciamento/memorial-descritivo"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-GEO-010",
+      "group": "Georreferenciamento",
+      "name": "Validações",
+      "routes": "/app/georeferenciamento/validacoes",
+      "api": "POST /georeferencing/validation-jobs",
+      "claims": "modulo.georreferenciamento=acessar + Claim da funcionalidade definida pela família no DOC-CATALOGO",
+      "acceptance": "topologia, sobreposição e precisão; AC-JOB",
+      "wave": 11,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-GEO-010",
+        "expected": [
+          "/app/georeferenciamento/validacoes"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/georeferenciamento/validacoes"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-GEO-011",
+      "group": "Georreferenciamento",
+      "name": "Cartório e registro",
+      "routes": "/app/georeferenciamento/registro",
+      "api": "CRUD /georeferencing/registrations; ações",
+      "claims": "modulo.georreferenciamento=acessar + Claim da funcionalidade definida pela família no DOC-CATALOGO",
+      "acceptance": "protocolo e status; AC-WORKFLOW",
+      "wave": 11,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-GEO-011",
+        "expected": [
+          "/app/georeferenciamento/registro"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/georeferenciamento/registro"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-GEO-012",
+      "group": "Georreferenciamento",
+      "name": "Referências normativas",
+      "routes": "/app/georeferenciamento/referencias",
+      "api": "CRUD /georeferencing/references",
+      "claims": "modulo.georreferenciamento=acessar + Claim da funcionalidade definida pela família no DOC-CATALOGO",
+      "acceptance": "vigência e fonte; AC-CRUD",
+      "wave": 11,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-GEO-012",
+        "expected": [
+          "/app/georeferenciamento/referencias"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/georeferenciamento/referencias"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-CRM-001",
+      "group": "Vendas e CRM",
+      "name": "Alertas e notificações",
+      "routes": "/app/crm/alerts",
+      "api": "CRUD /crm/alerts; ações read/dismiss",
+      "claims": "modulo.crm=acessar + recurso.crm-alerta=*; AC-WORKFLOW",
+      "acceptance": "recurso.crm-alerta=*; AC-WORKFLOW",
+      "wave": 7,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-CRM-001",
+        "expected": [
+          "/app/crm/alerts"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/crm/alerts"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-CRM-002",
+      "group": "Vendas e CRM",
+      "name": "Configurações CRM",
+      "routes": "/app/crm/settings",
+      "api": "GET/PATCH /crm/settings",
+      "claims": "modulo.crm=acessar + recurso.crm-configuracao=configurar; versão/auditoria",
+      "acceptance": "recurso.crm-configuracao=configurar; versão/auditoria",
+      "wave": 7,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-CRM-002",
+        "expected": [
+          "/app/crm/settings"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/crm/settings"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-CRM-003",
+      "group": "Vendas e CRM",
+      "name": "Equipe e desempenho",
+      "routes": "/app/crm/team",
+      "api": "GET /crm/team-performance; metas CRUD",
+      "claims": "modulo.crm=acessar + recurso.crm-equipe com visualizar/editar; AC-READ",
+      "acceptance": "recurso.crm-equipe com visualizar/editar; AC-READ",
+      "wave": 7,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-CRM-003",
+        "expected": [
+          "/app/crm/team"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/crm/team"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-CRM-004",
+      "group": "Vendas e CRM",
+      "name": "Gestão de clientes",
+      "routes": "/app/crm/clients",
+      "api": "CRUD /crm/clients",
+      "claims": "modulo.crm=acessar + recurso.crm-cliente=*; deduplicação e ownership; AC-CRUD",
+      "acceptance": "recurso.crm-cliente=*; deduplicação e ownership; AC-CRUD",
+      "wave": 7,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-CRM-004",
+        "expected": [
+          "/app/crm/clients"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/crm/clients"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-CRM-005",
+      "group": "Vendas e CRM",
+      "name": "Mídias sociais",
+      "routes": "/app/social-media",
+      "api": "CRUD /social-media/posts; ações schedule/publish",
+      "claims": "modulo.crm=acessar + recurso.midia-social=*; AC-WORKFLOW, AC-INT",
+      "acceptance": "recurso.midia-social=*; AC-WORKFLOW, AC-INT",
+      "wave": 7,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-CRM-005",
+        "expected": [
+          "/app/social-media"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/social-media"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-CRM-006",
+      "group": "Vendas e CRM",
+      "name": "Oportunidades e pipeline",
+      "routes": "/app/crm/opportunities, /new, /$id/edit",
+      "api": "CRUD /crm/opportunities; ação move-stage",
+      "claims": "modulo.crm=acessar + recurso.crm-oportunidade=*; estágio validado; AC-WORKFLOW",
+      "acceptance": "recurso.crm-oportunidade=*; estágio validado; AC-WORKFLOW",
+      "wave": 7,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-CRM-006",
+        "expected": [
+          "/app/crm/opportunities",
+          "/app/crm/opportunities/new",
+          "/app/crm/opportunities/$id/edit"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/crm/opportunities",
+          "/app/crm/opportunities/new",
+          "/app/crm/opportunities/$id/edit"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-CRM-007",
+      "group": "Vendas e CRM",
+      "name": "Painel de vendas",
+      "routes": "/app/crm",
+      "api": "GET /crm/dashboard",
+      "claims": "modulo.crm=acessar + recurso.crm-dashboard=visualizar; AC-READ",
+      "acceptance": "recurso.crm-dashboard=visualizar; AC-READ",
+      "wave": 7,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-CRM-007",
+        "expected": [
+          "/app/crm"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/crm"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-CRM-008",
+      "group": "Vendas e CRM",
+      "name": "Relatórios e análises",
+      "routes": "/app/crm/reports",
+      "api": "GET /crm/reports/*",
+      "claims": "modulo.crm=acessar + recurso.crm-relatorio=visualizar; AC-READ",
+      "acceptance": "recurso.crm-relatorio=visualizar; AC-READ",
+      "wave": 7,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-CRM-008",
+        "expected": [
+          "/app/crm/reports"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/crm/reports"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-CRM-009",
+      "group": "Vendas e CRM",
+      "name": "Vendas e propostas",
+      "routes": "/app/crm/proposals",
+      "api": "/app/crm/proposals",
+      "claims": "modulo.crm=acessar + recurso.proposta-comercial=visualizar; é atalho, não API duplicada",
+      "acceptance": "recurso.proposta-comercial=visualizar; é atalho, não API duplicada",
+      "wave": 7,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-CRM-009",
+        "expected": [
+          "/app/crm/proposals"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/crm/proposals"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-OFI-001",
+      "group": "Ofícios, governo e ferramentas do sistema",
+      "name": "Ofícios",
+      "routes": "/app/oficios, /new, /$id/edit",
+      "api": "CRUD /official-letters; ações number/approve/send; exports",
+      "claims": "recurso.oficio=*; numeração atômica; AC-WORKFLOW, AC-JOB",
+      "acceptance": "recurso.oficio=*; numeração atômica; AC-WORKFLOW, AC-JOB",
+      "wave": 5,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-OFI-001",
+        "expected": [
+          "/app/oficios",
+          "/app/oficios/new",
+          "/app/oficios/$id/edit"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/oficios",
+          "/app/oficios/new",
+          "/app/oficios/$id/edit"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-EXT-001",
+      "group": "Ofícios, governo e ferramentas do sistema",
+      "name": "Webmail",
+      "routes": "/app/external?target=webmail",
+      "api": "GET /external-targets/webmail",
+      "claims": "recurso.webmail=acessar; allowlist; AC-INT",
+      "acceptance": "recurso.webmail=acessar; allowlist; AC-INT",
+      "wave": 13,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-EXT-001",
+        "expected": [
+          "/app/external"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/external"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-GOV-001",
+      "group": "Ofícios, governo e ferramentas do sistema",
+      "name": "Consulta Intervenção Ambiental",
+      "routes": "/app/external?target=gov-intervencao",
+      "api": "GET /external-targets/gov-intervencao",
+      "claims": "recurso.acesso-governo-intervencao=acessar; AC-INT",
+      "acceptance": "recurso.acesso-governo-intervencao=acessar; AC-INT",
+      "wave": 13,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-GOV-001",
+        "expected": [
+          "/app/external"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/external"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-GOV-002",
+      "group": "Ofícios, governo e ferramentas do sistema",
+      "name": "Consulta Licenciamento",
+      "routes": "/app/external?target=gov-licenciamento",
+      "api": "GET /external-targets/gov-licenciamento",
+      "claims": "recurso.acesso-governo-licenciamento=acessar; AC-INT",
+      "acceptance": "recurso.acesso-governo-licenciamento=acessar; AC-INT",
+      "wave": 13,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-GOV-002",
+        "expected": [
+          "/app/external"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/external"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-GOV-003",
+      "group": "Ofícios, governo e ferramentas do sistema",
+      "name": "Consulta Outorgas",
+      "routes": "/app/external?target=gov-outorgas",
+      "api": "GET /external-targets/gov-outorgas",
+      "claims": "recurso.acesso-governo-outorgas=acessar; AC-INT",
+      "acceptance": "recurso.acesso-governo-outorgas=acessar; AC-INT",
+      "wave": 13,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-GOV-003",
+        "expected": [
+          "/app/external"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/external"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-GOV-004",
+      "group": "Ofícios, governo e ferramentas do sistema",
+      "name": "CTF/IBAMA externo",
+      "routes": "/app/external?target=gov-ctf",
+      "api": "GET /external-targets/gov-ctf",
+      "claims": "recurso.acesso-governo-ctf=acessar; AC-INT",
+      "acceptance": "recurso.acesso-governo-ctf=acessar; AC-INT",
+      "wave": 13,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-GOV-004",
+        "expected": [
+          "/app/external"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/external"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-GOV-005",
+      "group": "Ofícios, governo e ferramentas do sistema",
+      "name": "IDE-SisemaNet externo",
+      "routes": "/app/external?target=gov-ide",
+      "api": "GET /external-targets/gov-ide",
+      "claims": "recurso.acesso-governo-ide=acessar; AC-INT",
+      "acceptance": "recurso.acesso-governo-ide=acessar; AC-INT",
+      "wave": 13,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-GOV-005",
+        "expected": [
+          "/app/external"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/external"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-GOV-006",
+      "group": "Ofícios, governo e ferramentas do sistema",
+      "name": "SEI-IBAMA",
+      "routes": "/app/external?target=gov-sei-ibama",
+      "api": "GET /external-targets/gov-sei-ibama",
+      "claims": "recurso.acesso-governo-sei-ibama=acessar; AC-INT",
+      "acceptance": "recurso.acesso-governo-sei-ibama=acessar; AC-INT",
+      "wave": 13,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-GOV-006",
+        "expected": [
+          "/app/external"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/external"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-GOV-007",
+      "group": "Ofícios, governo e ferramentas do sistema",
+      "name": "SEI-MG",
+      "routes": "/app/external?target=gov-sei-mg",
+      "api": "GET /external-targets/gov-sei-mg",
+      "claims": "recurso.acesso-governo-sei-mg=acessar; AC-INT",
+      "acceptance": "recurso.acesso-governo-sei-mg=acessar; AC-INT",
+      "wave": 13,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-GOV-007",
+        "expected": [
+          "/app/external"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/external"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-GOV-008",
+      "group": "Ofícios, governo e ferramentas do sistema",
+      "name": "SLA Ecossistemas",
+      "routes": "/app/external?target=gov-sla",
+      "api": "GET /external-targets/gov-sla",
+      "claims": "recurso.acesso-governo-sla=acessar; AC-INT",
+      "acceptance": "recurso.acesso-governo-sla=acessar; AC-INT",
+      "wave": 13,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-GOV-008",
+        "expected": [
+          "/app/external"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/external"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-SIS-001",
+      "group": "Ofícios, governo e ferramentas do sistema",
+      "name": "Informações da empresa",
+      "routes": "/app/settings/company",
+      "api": "GET/PATCH /organization/settings",
+      "claims": "recurso.configuracao-empresa=configurar; versão/auditoria",
+      "acceptance": "recurso.configuracao-empresa=configurar; versão/auditoria",
+      "wave": 13,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-SIS-001",
+        "expected": [
+          "/app/settings/company"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/settings/company"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-SIS-002",
+      "group": "Ofícios, governo e ferramentas do sistema",
+      "name": "Responsáveis técnicos",
+      "routes": "/app/technical-responsible, /new, /$id/edit",
+      "api": "CRUD /technical-responsibles",
+      "claims": "recurso.responsavel-tecnico=*; conselho/registro únicos; AC-CRUD",
+      "acceptance": "recurso.responsavel-tecnico=*; conselho/registro únicos; AC-CRUD",
+      "wave": 13,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-SIS-002",
+        "expected": [
+          "/app/technical-responsible",
+          "/app/technical-responsible/new",
+          "/app/technical-responsible/$id/edit"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/technical-responsible",
+          "/app/technical-responsible/new",
+          "/app/technical-responsible/$id/edit"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-SIS-003",
+      "group": "Ofícios, governo e ferramentas do sistema",
+      "name": "Identidade visual",
+      "routes": "/app/settings#identidade-visual",
+      "api": "GET/PATCH /organization/branding, API-FILE",
+      "claims": "recurso.identidade-visual=configurar; AC-FILE",
+      "acceptance": "recurso.identidade-visual=configurar; AC-FILE",
+      "wave": 13,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-SIS-003",
+        "expected": [
+          "/app/settings#identidade-visual"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/settings#identidade-visual"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-SIS-004",
+      "group": "Ofícios, governo e ferramentas do sistema",
+      "name": "Aparência",
+      "routes": "/app/settings/appearance",
+      "api": "GET/PATCH /users/me/preferences",
+      "claims": "recurso.preferencia-propria=editar; sempre escopo próprio",
+      "acceptance": "recurso.preferencia-propria=editar; sempre escopo próprio",
+      "wave": 13,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-SIS-004",
+        "expected": [
+          "/app/settings/appearance"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/settings/appearance"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-SIS-005",
+      "group": "Ofícios, governo e ferramentas do sistema",
+      "name": "Templates",
+      "routes": "/app/settings/templates, /rca",
+      "api": "CRUD /document-templates; API-FILE",
+      "claims": "recurso.template-documento=*; placeholders/schema versionados",
+      "acceptance": "recurso.template-documento=*; placeholders/schema versionados",
+      "wave": 13,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-SIS-005",
+        "expected": [
+          "/app/settings/templates",
+          "/app/settings/templates/rca"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/settings/templates",
+          "/app/settings/templates/rca"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-SIS-006",
+      "group": "Ofícios, governo e ferramentas do sistema",
+      "name": "Laudos",
+      "routes": "/app/laudos, /new, /$id",
+      "api": "CRUD /technical-reports; report jobs",
+      "claims": "recurso.laudo=*; AC-CRUD, AC-JOB",
+      "acceptance": "recurso.laudo=*; AC-CRUD, AC-JOB",
+      "wave": 13,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-SIS-006",
+        "expected": [
+          "/app/laudos",
+          "/app/laudos/new",
+          "/app/laudos/$id"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/laudos",
+          "/app/laudos/new",
+          "/app/laudos/$id"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-SIS-007",
+      "group": "Ofícios, governo e ferramentas do sistema",
+      "name": "Consultas técnicas",
+      "routes": "/app/consultas, /new, /$id, /$id/edit",
+      "api": "CRUD /technical-consultations; ações",
+      "claims": "recurso.consulta-tecnica=*; vínculo opcional com laudo; AC-WORKFLOW",
+      "acceptance": "recurso.consulta-tecnica=*; vínculo opcional com laudo; AC-WORKFLOW",
+      "wave": 13,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-SIS-007",
+        "expected": [
+          "/app/consultas",
+          "/app/consultas/new",
+          "/app/consultas/$id",
+          "/app/consultas/$id/edit"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/consultas",
+          "/app/consultas/new",
+          "/app/consultas/$id",
+          "/app/consultas/$id/edit"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-SIS-008",
+      "group": "Ofícios, governo e ferramentas do sistema",
+      "name": "MCP + RAG",
+      "routes": "/app/configuracoes/mcp-rag",
+      "api": "GET/PATCH /ai-platform/settings; sync jobs",
+      "claims": "recurso.configuracao-ia=configurar; segredos write-only",
+      "acceptance": "recurso.configuracao-ia=configurar; segredos write-only",
+      "wave": 13,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-SIS-008",
+        "expected": [
+          "/app/configuracoes/mcp-rag"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/configuracoes/mcp-rag"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-SIS-009",
+      "group": "Ofícios, governo e ferramentas do sistema",
+      "name": "Fontes de conhecimento",
+      "routes": "/app/knowledge-sources, /new, /$id",
+      "api": "CRUD /knowledge-sources; indexing jobs",
+      "claims": "recurso.fonte-conhecimento=*; versão, origem e índice; AC-JOB",
+      "acceptance": "recurso.fonte-conhecimento=*; versão, origem e índice; AC-JOB",
+      "wave": 13,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-SIS-009",
+        "expected": [
+          "/app/knowledge-sources",
+          "/app/knowledge-sources/new",
+          "/app/knowledge-sources/$id"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/knowledge-sources",
+          "/app/knowledge-sources/new",
+          "/app/knowledge-sources/$id"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-SIS-010",
+      "group": "Ofícios, governo e ferramentas do sistema",
+      "name": "Biblioteca IA OneDrive",
+      "routes": "/app/ai-lab/cloud-library",
+      "api": "GET /cloud-library; sync jobs",
+      "claims": "recurso.biblioteca-nuvem com visualizar/sincronizar; AC-INT, AC-JOB",
+      "acceptance": "recurso.biblioteca-nuvem com visualizar/sincronizar; AC-INT, AC-JOB",
+      "wave": 13,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-SIS-010",
+        "expected": [
+          "/app/ai-lab/cloud-library"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/ai-lab/cloud-library"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-SIS-011",
+      "group": "Ofícios, governo e ferramentas do sistema",
+      "name": "Integração OneDrive",
+      "routes": "/app/settings/onedrive-integration",
+      "api": "/app/settings/onedrive-integration",
+      "claims": "recurso.integracao-onedrive=configurar; token cifrado; AC-INT",
+      "acceptance": "recurso.integracao-onedrive=configurar; token cifrado; AC-INT",
+      "wave": 13,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-SIS-011",
+        "expected": [
+          "/app/settings/onedrive-integration"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/settings/onedrive-integration"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-SIS-012",
+      "group": "Ofícios, governo e ferramentas do sistema",
+      "name": "Ferramentas MCP",
+      "routes": "/app/ai-lab/mcp",
+      "api": "CRUD /mcp-tools; test action",
+      "claims": "recurso.ferramenta-mcp=*; allowlist e segredo write-only",
+      "acceptance": "recurso.ferramenta-mcp=*; allowlist e segredo write-only",
+      "wave": 13,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-SIS-012",
+        "expected": [
+          "/app/ai-lab/mcp"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/ai-lab/mcp"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-SIS-013",
+      "group": "Ofícios, governo e ferramentas do sistema",
+      "name": "Laboratório RAG",
+      "routes": "/app/ai-lab/rag",
+      "api": "/app/ai-lab/rag",
+      "claims": "recurso.laboratorio-rag=executar; isolamento de índice",
+      "acceptance": "recurso.laboratorio-rag=executar; isolamento de índice",
+      "wave": 13,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-SIS-013",
+        "expected": [
+          "/app/ai-lab/rag"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/ai-lab/rag"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-SIS-014",
+      "group": "Ofícios, governo e ferramentas do sistema",
+      "name": "Importação de fonte local",
+      "routes": "/app/settings/ai-local-source",
+      "api": "POST /knowledge-import-jobs",
+      "claims": "recurso.fonte-conhecimento=importar; sem dependência de caminho do legado; AC-JOB",
+      "acceptance": "recurso.fonte-conhecimento=importar; sem dependência de caminho do legado; AC-JOB",
+      "wave": 13,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-SIS-014",
+        "expected": [
+          "/app/settings/ai-local-source"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/settings/ai-local-source"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-SIS-015",
+      "group": "Ofícios, governo e ferramentas do sistema",
+      "name": "Backup de excluídos",
+      "routes": "/app/settings/deleted-backups",
+      "api": "GET /deleted-records; ação restore",
+      "claims": "recurso.registro-excluido com visualizar/restaurar; restauração auditada",
+      "acceptance": "recurso.registro-excluido com visualizar/restaurar; restauração auditada",
+      "wave": 13,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-SIS-015",
+        "expected": [
+          "/app/settings/deleted-backups"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/settings/deleted-backups"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-SIS-016",
+      "group": "Ofícios, governo e ferramentas do sistema",
+      "name": "Explorador de arquivos",
+      "routes": "/app/settings/files",
+      "api": "GET /files; API-FILE",
+      "claims": "recurso.arquivo com visualizar/excluir; nunca aceita path físico",
+      "acceptance": "recurso.arquivo com visualizar/excluir; nunca aceita path físico",
+      "wave": 13,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-SIS-016",
+        "expected": [
+          "/app/settings/files"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/settings/files"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-SIS-017",
+      "group": "Ofícios, governo e ferramentas do sistema",
+      "name": "Log de auditoria",
+      "routes": "/app/audit-log",
+      "api": "GET /audit-events",
+      "claims": "recurso.auditoria=visualizar; somente leitura, paginação e filtros",
+      "acceptance": "recurso.auditoria=visualizar; somente leitura, paginação e filtros",
+      "wave": 13,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-SIS-017",
+        "expected": [
+          "/app/audit-log"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/audit-log"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-SIS-018",
+      "group": "Ofícios, governo e ferramentas do sistema",
+      "name": "Canais WhatsApp/Instagram",
+      "routes": "/app/canais",
+      "api": "CRUD /communication-channels; OAuth/webhooks",
+      "claims": "recurso.canal-comunicacao=*; segredos cifrados; AC-INT",
+      "acceptance": "recurso.canal-comunicacao=*; segredos cifrados; AC-INT",
+      "wave": 13,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-SIS-018",
+        "expected": [
+          "/app/canais"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/canais"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-SIS-019",
+      "group": "Ofícios, governo e ferramentas do sistema",
+      "name": "App/Coleta de campo",
+      "routes": "/app/app-campo",
+      "api": "GET /field-app/bootstrap; sync commands se offline aprovado",
+      "claims": "recurso.app-campo=acessar; escopo mínimo e conflitos explícitos",
+      "acceptance": "recurso.app-campo=acessar; escopo mínimo e conflitos explícitos",
+      "wave": 13,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-SIS-019",
+        "expected": [
+          "/app/app-campo"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/app-campo"
+        ],
+        "hasConcreteRoute": false
+      }
+    },
+    {
+      "id": "FUN-AGEN-001",
+      "group": "Ofícios, governo e ferramentas do sistema",
+      "name": "Agenda",
+      "routes": "/app/calendar",
+      "api": "CRUD /calendar-events; ações invite/respond",
+      "claims": "recurso.agenda=*; eventos próprios/públicos/organização escopados; AC-WORKFLOW",
+      "acceptance": "recurso.agenda=*; eventos próprios/públicos/organização escopados; AC-WORKFLOW",
+      "wave": 2,
+      "progress": {
+        "status": "in_progress",
+        "completedSteps": [],
+        "evidence": "19/09/2026: API /calendar-events implementada no ambientaR-api com persistência MongoDB, empresa obrigatória, escopo próprio/público/convidado, convites, respostas, exclusão lógica e versão atômica. Front integrado com permissões por registro, versão e filtros no fuso local. Testes de serviço, contrato HTTP e filtros de repositório passaram. Integração real MongoDB/Redis aprovada em 27/09/2026. Pendentes: convites por seleção de pessoas, vínculos do legado e homologação visual."
+      },
+      "routesCoverage": {
+        "featureId": "FUN-AGEN-001",
+        "expected": [
+          "/app/calendar"
+        ],
+        "implemented": [
+          "/app/calendar"
+        ],
+        "missing": [],
+        "hasConcreteRoute": true
+      }
+    },
+    {
+      "id": "FUN-INV-001",
+      "group": "Ofícios, governo e ferramentas do sistema",
+      "name": "Inventários de campo",
+      "routes": "/app/inventarios, /new, /$id, /$id/parcelas/$parcelaId",
+      "api": "CRUD /field-inventories; plots",
+      "claims": "recurso.inventario-campo=*; AC-CRUD",
+      "acceptance": "recurso.inventario-campo=*; AC-CRUD",
+      "wave": 9,
+      "progress": {
+        "status": "pending",
+        "completedSteps": []
+      },
+      "routesCoverage": {
+        "featureId": "FUN-INV-001",
+        "expected": [
+          "/app/inventarios",
+          "/app/inventarios/new",
+          "/app/inventarios/$id",
+          "/app/inventarios/$id/parcelas/$parcelaId"
+        ],
+        "implemented": [],
+        "missing": [
+          "/app/inventarios",
+          "/app/inventarios/new",
+          "/app/inventarios/$id",
+          "/app/inventarios/$id/parcelas/$parcelaId"
+        ],
+        "hasConcreteRoute": false
+      }
+    }
+  ]
+}

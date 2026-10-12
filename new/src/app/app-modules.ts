@@ -1,3 +1,5 @@
+import { entrepreneursModule } from "../modules/entrepreneurs/entrepreneurs.module";
+import { organizationModule } from "../modules/organization/organization.module";
 import { agendaModule } from "../modules/agenda/agenda.module";
 import { examplesModule } from "../modules/examples/examples.module";
 import { homeModule } from "../modules/home/home.module";
@@ -8,8 +10,10 @@ import { defineAppModules, getModuleRouteTrees } from "./define-app-modules";
 
 export const appModules = defineAppModules(
  homeModule,
+ organizationModule,
  migrationPlanModule,
  usersModule,
+ entrepreneursModule,
  agendaModule,
  legacyFeatureModule,
  examplesModule,

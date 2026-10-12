@@ -1,6 +1,6 @@
 # FUN-CAD-002 — Empreendedores
 
-Status: análise inicial; implementação não iniciada por este plano  
+Status: em implementação; núcleo cadastral entregue em 27/09/2026
 Módulo pai: **Cadastro**  
 Origem funcional: seção “Cadastro” do catálogo  
 Dependência de acesso do pai: `modulo.cadastro=acessar`
@@ -49,9 +49,9 @@ Touchpoints detectados apenas nessas páginas (levantamento estático inicial):
 
 Contrato alvo: CRUD /empreendedores.
 
-Situação encontrada: **Não localizado no `ambientaR-api`; tratar como contrato e implementação novos**.
+Situação atual: **CRUD `/empreendedores` implementado em `ambientaR-api/src/modules/entrepreneurs`; integrações do legado ainda pendentes**.
 
-- sem controller correspondente localizado
+- `../ambientaR-api/src/modules/entrepreneurs/entrepreneur.controller.ts`
 
 - [ ] Refinar DTOs de entrada/saída, filtros, ordenação, paginação, erros de campo e envelope sem expor schema de banco.
 - [ ] Implementar controller fino, caso de uso, regras de domínio/policy, porta de repositório e adaptador de infraestrutura.
@@ -85,3 +85,15 @@ Situação encontrada: **Não localizado no `ambientaR-api`; tratar como contrat
 - Confirmar fonte de dados, estratégia de migração, volume, retenção, anexos e deduplicação.
 - Confirmar se rotas auxiliares sem entrada direta de menu são telas do mesmo filho ou ações internas.
 - Resolver qualquer divergência entre contrato proposto e endpoints já existentes antes de codificar.
+
+## Execução em 27/09/2026
+
+Entregues listagem, busca por nome/documento, paginação em URL, detalhes, criação, edição com versão e exclusão lógica. As três rotas usam carregamento lazy e exigem a claim pai de Cadastro; edição exige também visualizar e editar. API exige `modulo.cadastro=acessar` e a ação de `recurso.empreendedor`.
+
+Campos: nome/razão social, CPF/CNPJ, tipos de pessoa (múltiplos), telefone, e-mail, nascimento, CTF IBAMA e endereço completo. CPF/CNPJ é normalizado e validado por formato/comprimento; dígitos verificadores não são validados nesta entrega. A coleção comercial `Entrepreneur` é separada de `User`, não concede login e permite o mesmo documento em empresas diferentes. A exclusão preserva o documento reservado, inclusive para evitar recriação acidental de registros vinculados no futuro.
+
+Contrato: `GET/POST /empreendedores`, `GET/PATCH/DELETE /empreendedores/:id`. PATCH e DELETE exigem `?version=N`. A listagem usa `search`, `page` e `size` (máximo 100), com envelope de dados e total. A empresa e o autor são derivados da sessão. Campos não previstos, incluindo `organizationId`, `userId`, aprovações e credenciais MTR, são rejeitados.
+
+Teste real: login, catálogo de claims, MongoDB e Redis; duplicidade na mesma empresa retorna 409; mesmo documento em outra empresa é aceito; leitura/edição/exclusão cruzadas retornam 404; duas gravações na mesma versão resultam em 200 e 409; exclusão torna o registro indisponível para consulta/listagem. O teste detectou e permitiu corrigir a declaração do índice único antes da aplicação no projeto. Banco descartável removido ao final.
+
+Refinamento adicional confirmado nos componentes legados: importação de clientes, mesclagem com atualização de referências, aprovações de representantes/consultores, preenchimento por IA/OneDrive, seção detalhada de CTF e credenciais/automação MTR. Esses fluxos não foram substituídos pelo CRUD e permanecem pendentes, assim como vínculos com empreendimentos, reconciliação de dados e homologação visual. As claims atuais de cadastro são destinadas à equipe interna da empresa; não atribuir esse acesso amplo ao portal de representantes antes da implementação do escopo por vínculo.
