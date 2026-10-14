@@ -14,7 +14,7 @@ import { useAuthActions } from "./auth-provider";
 import {
   getLoginErrorMessage,
   normalizeLoginModel,
-  resolveLoginRedirect,
+  resolvePostLoginRoute,
 } from "./login-policy";
 
 // const formSchema = z.object({
@@ -53,7 +53,7 @@ export function LoginForm() {
     }
 
     await navigate({
-      to: resolveLoginRedirect(window.location.search) as never,
+      to: resolvePostLoginRoute(window.location.search, result.session) as never,
       replace: true,
     });
 

@@ -5,6 +5,10 @@ export function filterNavigationByClaims( items: readonly NavigationItem[],autho
   const visible: NavigationItem[] = [];
 
   for (const item of items) {
+    if (!item.claim && !item.children?.length) {
+      continue;
+    }
+
     if (item.claim && !authorization.satisfies(item.claim)) {
       continue;
     }

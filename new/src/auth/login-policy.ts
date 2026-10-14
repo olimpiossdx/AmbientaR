@@ -1,5 +1,5 @@
 import type { ApiResponse } from "../service/http/types";
-import type { LoginModel } from "./auth.types";
+import type { AuthSessionData, LoginModel } from "./auth.types";
 import { isEmailIdentifier, normalizeCpfCnpj } from "./auth-validation";
 
 export const DEFAULT_AUTHENTICATED_ROUTE = "/app";
@@ -28,6 +28,21 @@ export function resolveLoginRedirect(search: string): string {
  }
 
  return redirect;
+}
+
+export function resolvePostLoginRoute(search: string, session: AuthSessionData): string {
+ if (session.onboarding && session.onboarding.nextAction !== "open_app") {
+  return "/app/primeiros-passos";
+ }
+
+ if (
+  (session.registrationMode && session.claims.length === 0) ||
+  !session.claims.some((claim) => claim.claimType === "recurso.dashboard" && claim.claimValue === "visualizar")
+ ) {
+  return "/app/primeiros-passos";
+ }
+
+ return resolveLoginRedirect(search);
 }
 
 export function getLoginErrorMessage(response: ApiResponse<unknown>): string {

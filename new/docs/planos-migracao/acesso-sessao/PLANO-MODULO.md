@@ -1,6 +1,6 @@
 # Plano do módulo — Acesso e sessão
 
-Status: análise inicial  
+Status: **refinamento prioritário — fluxo pós-cadastro e autorização pendentes**
 Diretório: `acesso-sessao`  
 Dependência de acesso do pai: `rota pública ou sessão autenticada`  
 Filhos mapeados: **6**
@@ -40,11 +40,12 @@ Migrar o menu **Acesso e sessão** como módulo coeso do `new`, mantendo cada su
 
 ## Ordem de execução do módulo
 
-1. Fechar claims, escopo e dados mestres compartilhados.
-2. Migrar filhos de leitura/hub para validar navegação e autorização.
-3. Migrar CRUDs e workflows, começando pelos que desbloqueiam outros filhos.
-4. Migrar arquivos, integrações, cálculos, IA e exports como jobs protegidos.
-5. Homologar todos os filhos, reconciliar dados e retirar o menu legado por feature flag.
+1. Fechar a jornada de primeiros passos por modo/estado e a matriz de grupos, claims, menu, rota, ação e API.
+2. Completar FUN-AUTH-002 (cadastro + onboarding) e validar o gate de autorização comum no `new` e `ambientaR-api`.
+3. Homologar login/refresh para contas com onboarding pendente e autorização alterada.
+4. Retomar filhos de leitura/hub e CRUDs/workflows somente depois que a navegação por claims estiver demonstrada ponta a ponta.
+5. Migrar arquivos, integrações, cálculos, IA e exports como jobs protegidos.
+6. Homologar todos os filhos, reconciliar dados e retirar o menu legado por feature flag.
 
 ## Critério de conclusão do módulo
 

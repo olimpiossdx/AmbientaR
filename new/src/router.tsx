@@ -7,6 +7,7 @@ import { rootRoute } from "./app/router/root-route";
 import { authRouterContext } from "./auth/auth-router-context";
 import { ForgotPasswordView, LoginView, RegisterView } from "./auth";
 import { AccessDeniedPage } from "./pages/access-denied-page";
+import { FirstStepsPage } from "./pages/first-steps-page";
 import { OfflinePage } from "./pages/offline-page";
 import { PrivacyPolicyPage } from "./pages/privacy-policy-page";
 
@@ -62,6 +63,13 @@ const sessionLockedRoute = createRoute({
  component: () => null,
 });
 
+const firstStepsRoute = createRoute({
+ getParentRoute: () => authenticatedRoute,
+ path: "/primeiros-passos",
+ beforeLoad: createAuthGuard(),
+ component: FirstStepsPage,
+});
+
 const routeTree = rootRoute.addChildren([
  indexRoute,
  loginRoute,
@@ -70,6 +78,7 @@ const routeTree = rootRoute.addChildren([
  privacyPolicyRoute,
  offlineRoute,
  authenticatedRoute.addChildren([
+  firstStepsRoute,
   accessDeniedRoute,
   sessionLockedRoute,
   ...appModuleRoutes,

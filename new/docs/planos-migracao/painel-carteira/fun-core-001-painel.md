@@ -13,7 +13,7 @@ GET /dashboard existe, com projeções da Agenda autorizadas e por empresa. Indi
 
 Migrar a funcionalidade **Painel** do `web` para o `new`, sem dependência de Firebase nem das rotas Next.js do legado. O corte deve ser vertical: navegação, telas, serviço HTTP, contrato, autorização, persistência, testes e observabilidade entram na mesma entrega.
 
-Regra funcional levantada: API retorna somente widgets autorizados e agregados já escopados; AC-READ, AC-FRONT.
+Regra funcional levantada: API retorna somente widgets autorizados e agregados já escopados; AC-READ, AC-FRONT. Conta com onboarding incompleto ou vínculo pendente deve continuar pelo fluxo de primeiros passos definido em FUN-AUTH-002; o painel não pode substituir essa jornada por uma tela genérica.
 
 ## Hierarquia e rotas
 

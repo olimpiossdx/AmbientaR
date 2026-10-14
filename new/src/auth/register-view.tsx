@@ -208,7 +208,7 @@ export function RegisterView() {
 
     if (session) {
       authStore.setAuthenticated(session);
-      await navigate({ to: "/app", replace: true });
+      await navigate({ to: "/app/primeiros-passos", replace: true });
     } else {
       await navigate({ to: "/login", replace: true });
     }
@@ -218,9 +218,7 @@ export function RegisterView() {
       status: "success",
       data: response.data ?? undefined,
       message:
-        response.data?.status === "access_pending"
-          ? "Conta criada. Entre para solicitar acesso ao titular."
-          : "Cadastro realizado com sucesso.",
+        "Cadastro realizado. Vamos orientar seus próximos passos.",
     };
   }
 

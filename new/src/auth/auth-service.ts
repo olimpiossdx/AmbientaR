@@ -20,6 +20,9 @@ const AUTH_ENDPOINTS = {
  passwordReset: "/auth/password-reset",
  register: "/auth/register",
  registerDocumentPreview: "/auth/register/document-preview",
+ accessRequests: "/auth/access-requests",
+ myAccessRequests: "/auth/access-requests/mine",
+ receivedAccessRequests: "/auth/access-requests/received",
 };
 
 export function isAuthEndpoint(url: string): boolean {
@@ -79,5 +82,21 @@ export const authService = {
    model,
    { skipAuthRefresh: true },
   );
+ },
+
+ listMyAccessRequests(signal?: AbortSignal): Promise<ApiResponse<unknown>> {
+  return api.get<unknown>(AUTH_ENDPOINTS.myAccessRequests, { signal });
+ },
+
+ createAccessRequest(targetDocument: string): Promise<ApiResponse<unknown>> {
+  return api.post<unknown, { targetDocument: string }>(AUTH_ENDPOINTS.accessRequests, { targetDocument });
+ },
+
+ listReceivedAccessRequests(signal?: AbortSignal): Promise<ApiResponse<unknown>> {
+  return api.get<unknown>(AUTH_ENDPOINTS.receivedAccessRequests, { signal });
+ },
+
+ decideAccessRequest(requestId: string, decision: "approve" | "reject"): Promise<ApiResponse<unknown>> {
+  return api.patch<unknown, { decision: "approve" | "reject" }>(`${AUTH_ENDPOINTS.accessRequests}/${encodeURIComponent(requestId)}`, { decision });
  },
 };

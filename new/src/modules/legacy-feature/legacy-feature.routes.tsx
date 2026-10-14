@@ -11,6 +11,9 @@ export const legacyFeatureRouteTree = createRoute({
   await createAuthGuard()(options);
 
   const requirements = getNavigationRequirementsForPath(options.location.pathname);
+  if (requirements.length === 0) {
+   throw redirect({ to: "/app/acesso-negado" });
+  }
   const allowed = requirements.every((requirement) => (
    options.context.authorization.satisfies(requirement)
   ));

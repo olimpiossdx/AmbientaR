@@ -124,7 +124,7 @@ Antes do primeiro módulo funcional, a API deve:
 | ID | Menu/funcionalidade | Telas no `new` | API | Claims/escopo | Aceite adicional |
 | --- | --- | --- | --- | --- | --- |
 | FUN-AUTH-001 | Login | `/login` | `POST /auth/login`, `GET /auth/session` | pública; sessão devolve claims efetivas | e-mail/CPF/CNPJ; erro não enumera usuário; cookies e redirecionamento testados |
-| FUN-AUTH-002 | Cadastro | `/register` | `POST /auth/register`, `POST /auth/register/document-preview` | pública; vínculos criados pelo caso de uso | documento único, senha com hash, cadastro parcial consistente e sessão válida |
+| FUN-AUTH-002 | Cadastro e primeiros passos | `/register`, `/app/primeiros-passos`, `/app/organization` | `POST /auth/register`, `POST /auth/register/document-preview`, `GET /auth/session`, `POST /organizations`, `/auth/access-requests/*` | cadastro público; sessão informa modo/estado; claims derivadas de grupos persistidos | documento único, senha com hash, continuação por estado; titularidade/vínculos validados pela API; menu/rota/API coerentes com claims e sem acesso direto indevido; ver plano P0 FUN-AUTH-002 |
 | FUN-AUTH-003 | Recuperar senha | `/forgot-password` | `POST /auth/password-reset`, `POST /auth/password-reset/confirm` | pública; token único e expirável | resposta genérica, expiração, revogação e troca real da senha |
 | FUN-AUTH-004 | Política de privacidade | `/politica-privacidade` | `GET /public/legal/privacy-policy` | pública | versão e vigência visíveis; aceite vinculável quando exigido |
 | FUN-AUTH-005 | Estado offline | `/offline` | `GET /health/ready` | pública | distingue API indisponível de navegador offline; retry sem loop |
@@ -134,7 +134,7 @@ Antes do primeiro módulo funcional, a API deve:
 
 | ID | Menu/submenu | Telas no `new` | API | Claim do filho | Regra e aceite adicional |
 | --- | --- | --- | --- | --- | --- |
-| FUN-CORE-001 | Painel | `/app` | `GET /dashboard` | `recurso.dashboard=visualizar` | API retorna somente widgets autorizados e agregados já escopados; `AC-READ`, `AC-FRONT` |
+| FUN-CORE-001 | Painel | `/app` | `GET /dashboard` | `recurso.dashboard=visualizar` | API retorna somente widgets autorizados e agregados já escopados; onboarding/primeiros passos nunca ficam ocultos por painel genérico; `AC-READ`, `AC-FRONT`; depende do gate P0 FUN-AUTH-002 |
 | FUN-CORE-002 | Minha Carteira | `/app/carteira`, `/app/carteira/$clientId` | `GET /carteira`, `GET /carteira/{clientId}` | `recurso.carteira=visualizar` | titular, representante ou consultor só recebe vínculos aprovados; `AC-READ`, `AC-FRONT` |
 
 ## 5. Financeiro

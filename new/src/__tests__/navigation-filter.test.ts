@@ -41,4 +41,21 @@ describe("filtro recursivo de navegação", () => {
    { claimType: "recurso.usuario", claimValue: "visualizar" },
   ]);
  });
+
+ it("oculta ações de menu sem claim e mantém agrupadores somente com filhos autorizados", () => {
+  const authorization: AuthorizationService = {
+   hasClaim: () => false,
+   satisfies: (claim) => claim?.claimType === "recurso.agenda" && claim.claimValue === "visualizar",
+  };
+  const result = filterNavigationByClaims([
+   { label: "Ação sem claim" },
+   { label: "Módulo", children: [
+    { label: "Agenda", to: "/app/calendar", claim: { claimType: "recurso.agenda", claimValue: "visualizar" } },
+    { label: "Usuários", to: "/app/users" },
+   ] },
+  ], authorization);
+
+  assert.deepEqual(result.map((item) => item.label), ["Módulo"]);
+  assert.deepEqual(result[0]?.children?.map((item) => item.label), ["Agenda"]);
+ });
 });

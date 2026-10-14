@@ -27,6 +27,18 @@ export type RegisterMode =
  | "representative"
  | "consultor_representante";
 
+export type AuthOnboardingAction =
+ | "create_organization"
+ | "request_access"
+ | "awaiting_permissions"
+ | "open_app";
+
+export type AuthOnboarding = {
+ status: "partial" | "complete";
+ nextAction: AuthOnboardingAction;
+ accessRequestStatus?: "not_requested" | "pending" | "approved" | "rejected";
+};
+
 export type RegisterPaymentMethod = "pix" | "credit_card" | "debit_card";
 
 export type RegisterModel = {
@@ -87,6 +99,9 @@ export type RegisterDocumentPreview = {
 export type AuthSessionData = {
  user: AuthUser;
  claims: readonly AuthClaim[];
+ registrationMode?: RegisterMode | null;
+ onboardingStatus?: "partial" | "complete";
+ onboarding?: AuthOnboarding;
  accessTokenExpiresAt: number;
  refreshTokenExpiresAt: number;
 };
@@ -116,6 +131,8 @@ export type AuthSnapshot = {
  status: AuthStatus;
  user: AuthUser | null;
  claims: readonly AuthClaim[];
+ registrationMode: RegisterMode | null;
+ onboarding: AuthOnboarding | null;
  accessTokenExpiresAt: number | null;
  refreshTokenExpiresAt: number | null;
  requiresRelogin: boolean;
@@ -133,6 +150,9 @@ export type AuthSessionMetadata = {
  refreshTokenExpiresAt?: number;
  user?: AuthUser;
  claims?: readonly AuthClaim[];
+ registrationMode?: RegisterMode | null;
+ onboardingStatus?: "partial" | "complete";
+ onboarding?: AuthOnboarding;
 };
 
 export type AuthApiResponse<TData = unknown> = ApiResponse<TData> & {
@@ -227,8 +247,21 @@ export function isAuthSessionData(value: unknown): value is AuthSessionData {
   isAuthUser(session.user) &&
   Array.isArray(session.claims) &&
   session.claims.every(isAuthClaim) &&
+  (session.registrationMode === undefined || session.registrationMode === null || ["cliente_autonomo", "representative", "consultor_representante"].includes(session.registrationMode)) &&
+  (session.onboardingStatus === undefined || session.onboardingStatus === "partial" || session.onboardingStatus === "complete") &&
+  (session.onboarding === undefined || isAuthOnboarding(session.onboarding)) &&
   typeof session.accessTokenExpiresAt === "number" &&
   typeof session.refreshTokenExpiresAt === "number"
+ );
+}
+
+function isAuthOnboarding(value: unknown): value is AuthOnboarding {
+ if (!value || typeof value !== "object") return false;
+ const onboarding = value as Partial<AuthOnboarding>;
+ return (
+  (onboarding.status === "partial" || onboarding.status === "complete") &&
+  ["create_organization", "request_access", "awaiting_permissions", "open_app"].includes(String(onboarding.nextAction)) &&
+  (onboarding.accessRequestStatus === undefined || ["not_requested", "pending", "approved", "rejected"].includes(onboarding.accessRequestStatus))
  );
 }
 
@@ -252,6 +285,9 @@ export function parseAuthSessionData(value: unknown): AuthSessionData | null {
  return {
   user: session.user,
   claims,
+  registrationMode: session.registrationMode,
+  onboardingStatus: session.onboardingStatus,
+  onboarding: session.onboarding,
   accessTokenExpiresAt: session.accessTokenExpiresAt,
   refreshTokenExpiresAt: session.refreshTokenExpiresAt,
  };
@@ -283,6 +319,9 @@ export function extractAuthSessionData(response: ApiResponse<unknown>): AuthSess
   return {
    user,
    claims,
+   registrationMode: session.registrationMode ?? currentData?.registrationMode,
+   onboardingStatus: session.onboardingStatus ?? currentData?.onboardingStatus,
+   onboarding: session.onboarding ?? currentData?.onboarding,
    accessTokenExpiresAt: session.accessTokenExpiresAt,
    refreshTokenExpiresAt: session.refreshTokenExpiresAt,
   };

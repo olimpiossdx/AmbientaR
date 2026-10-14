@@ -1,9 +1,14 @@
 import { useEffect, useState, type FormEvent } from "react";
+import { useNavigate } from "@tanstack/react-router";
 import { Building2 } from "lucide-react";
 import { Button, Card, CardContent, Input, PageHeader, Skeleton } from "../../componentes";
 import Alert from "../../componentes/alert/alert";
 import { organizationService, type Organization } from "./organization.service";
+import { authService } from "../../auth/auth-service";
+import { authStore } from "../../auth/auth-store";
+import { extractAuthSessionData } from "../../auth/auth.types";
 export function OrganizationPage() {
+ const navigate = useNavigate();
  const [organization, setOrganization] = useState<Organization | null>(null);
  const [loading, setLoading] = useState(true);
  const [saving, setSaving] = useState(false);
@@ -23,7 +28,16 @@ export function OrganizationPage() {
  }, [revision]);
  async function submit(event: FormEvent) {
   event.preventDefault(); setSaving(true); setError(null);
-  try { setOrganization(await organizationService.create(name)); }
+  try {
+   setOrganization(await organizationService.create(name));
+   const session = await authService.session();
+   const refreshed = session.ok ? extractAuthSessionData(session) : null;
+   if (refreshed) {
+    authStore.setAuthenticated(refreshed);
+    setName("");
+    await navigate({ to: "/app/primeiros-passos", replace: true });
+   }
+  }
   catch (cause) { setError(cause instanceof Error ? cause.message : "Não foi possível criar a empresa."); }
   finally { setSaving(false); }
  }

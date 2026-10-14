@@ -5,7 +5,9 @@ import {
  getLoginErrorMessage,
  normalizeLoginModel,
  resolveLoginRedirect,
+ resolvePostLoginRoute,
 } from "../auth/login-policy";
+import type { AuthSessionData } from "../auth/auth.types";
 
 function errorResponse(httpStatus: number, message = "detalhe interno"): ApiResponse<unknown> {
  return {
@@ -46,6 +48,31 @@ test("redirecionamento pós-login aceita somente rotas autenticadas internas", (
  assert.equal(resolveLoginRedirect("?redirect=https%3A%2F%2Fexample.com"), "/app");
  assert.equal(resolveLoginRedirect("?redirect=%2F%2Fevil.example"), "/app");
  assert.equal(resolveLoginRedirect("?redirect=%2Flogin"), "/app");
+});
+
+test("pós-login retoma o onboarding antes de rotas que exigem permissões", () => {
+ const session: AuthSessionData = {
+  user: { id: "u-1", nome: "Ana", username: "ana@example.com" },
+  claims: [],
+  registrationMode: "representative",
+  onboarding: { status: "partial", nextAction: "request_access" },
+  accessTokenExpiresAt: Date.now() + 60_000,
+  refreshTokenExpiresAt: Date.now() + 120_000,
+ };
+ assert.equal(resolvePostLoginRoute("", session), "/app/primeiros-passos");
+
+ const hasDashboard: AuthSessionData = {
+  ...session,
+  claims: [{ claimType: "recurso.dashboard", claimValue: "visualizar" }],
+  onboarding: { status: "complete", nextAction: "open_app" },
+ };
+ assert.equal(resolvePostLoginRoute("", hasDashboard), "/app");
+
+ const featureOnly: AuthSessionData = {
+  ...hasDashboard,
+  claims: [{ claimType: "recurso.empreendedor", claimValue: "visualizar" }],
+ };
+ assert.equal(resolvePostLoginRoute("", featureOnly), "/app/primeiros-passos");
 });
 
 test("login não enumera usuário e diferencia indisponibilidade", () => {

@@ -1,9 +1,10 @@
 import { api } from "../../service/api";
 import type { HttpClient } from "../../service/http/client";
-export type Organization = { id: string; name: string };
+export type Organization = { id: string; name: string; packageId?: string };
 function parseOrganization(value: unknown): Organization {
  if (!value || typeof value !== "object" || !("id" in value) || !("name" in value) || typeof value.id !== "string" || typeof value.name !== "string") throw new Error("A API retornou uma empresa inválida.");
- return { id: value.id, name: value.name };
+ const data = value as Record<string, unknown>;
+ return { id: value.id, name: value.name, ...(typeof data.packageId === "string" ? { packageId: data.packageId } : {}) };
 }
 export function createOrganizationService(client: HttpClient = api) {
  return {
