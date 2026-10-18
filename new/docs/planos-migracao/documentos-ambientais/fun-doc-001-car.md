@@ -1,6 +1,6 @@
 # FUN-DOC-001 — CAR
 
-Status: análise inicial; implementação não iniciada por este plano  
+Status: em implementação; primeira fatia de recibo entregue em 18/10/2026
 Módulo pai: **Documentos Ambientais**  
 Origem funcional: seção “Documentos Ambientais” do catálogo  
 Dependência de acesso do pai: `modulo.documentos-ambientais=acessar`
@@ -35,29 +35,27 @@ Touchpoints detectados apenas nessas páginas (levantamento estático inicial):
 
 ## Plano do front-end (`new`)
 
-- [ ] Registrar módulo, rotas lazy, item filho e breadcrumb no registro central, mantendo **Documentos Ambientais** como pai.
-- [ ] Criar tipos de domínio de apresentação, schemas de URL/formulário e service próprio usando exclusivamente o cliente HTTP central.
-- [ ] Implementar todas as variações de tela declaradas (1), preservando busca, filtros, paginação, seleção, ações, anexos e exportações existentes que forem confirmados no refinamento.
-- [ ] Aplicar guard antes do carregamento e guard de ação para recurso.car=*; não usar `role`, `isAdmin` ou Firebase como autorização.
-- [ ] Cobrir loading, vazio, erro de validação, 401, 403, 404, conflito de versão e indisponibilidade da API.
-- [ ] Garantir responsividade, teclado, foco, rótulos, feedback de operação e persistência em URL dos filtros relevantes.
+- [x] Registrar módulo, rotas lazy e item filho, mantendo **Documentos Ambientais** como pai.
+- [x] Criar tipos e service HTTP próprio.
+- [x] Implementar lista paginada, busca, vínculo de recibo, edição e exclusão.
+- [x] Aplicar guards de rota e ações com claims do recurso CAR.
+- [x] Cobrir carregamento, vazio, erros HTTP e conflito de versão.
+- [ ] Homologar interação por teclado, foco e responsividade.
 - [ ] Remover qualquer chamada direta a `/api/*` do legado; arquivos e jobs devem seguir os contratos comuns do catálogo.
 
 ## Plano da API (`ambientaR-api`)
 
 Contrato alvo: CRUD /car-records; anexos/geometria.
 
-Situação encontrada: **Não localizado no `ambientaR-api`; tratar como contrato e implementação novos**.
+Situação encontrada: **CRUD básico `/car-records` implementado no `ambientaR-api`; armazenamento de arquivos ainda não disponível**.
 
-- sem controller correspondente localizado
-
-- [ ] Refinar DTOs de entrada/saída, filtros, ordenação, paginação, erros de campo e envelope sem expor schema de banco.
-- [ ] Implementar controller fino, caso de uso, regras de domínio/policy, porta de repositório e adaptador de infraestrutura.
-- [ ] Declarar claim no controller e valor em cada ação; aplicar escopo no repositório antes de consultar, agregar ou alterar.
-- [ ] Derivar tenant, titularidade e autor da sessão; nunca confiar nesses campos vindos do payload.
-- [ ] Aplicar idempotência, controle de versão, auditoria, correlação e exclusão lógica conforme o risco da operação.
-- [ ] Para arquivos, integrações e processamento pesado, aplicar respectivamente `API-FILE`, `API-INTEGRATION` e `API-JOB` do catálogo.
-- [ ] Criar testes unitários de domínio, integração HTTP e contrato para autorizado, sem claim, fora do escopo, payload inválido e conflito.
+- [x] Validar DTOs, filtros e paginação; rejeitar propriedades desconhecidas.
+- [x] Implementar controller, serviço e repositório com escopo por organização.
+- [x] Exigir claims cumulativas de Documentos Ambientais + CAR.
+- [x] Derivar organização e autor da sessão e validar o vínculo ao empreendimento no mesmo tenant.
+- [x] Aplicar versão, exclusão lógica e unicidade de um CAR ativo por empreendimento.
+- [x] Integrar armazenamento local configurável e biblioteca SharePoint via Microsoft Graph; validar tipo e limite de anexos.
+- [ ] Cobrir contrato e isolamento HTTP de anexos com testes de integração.
 
 ## Sequência de migração
 
@@ -76,6 +74,12 @@ Situação encontrada: **Não localizado no `ambientaR-api`; tratar como contrat
 - [ ] Nenhum import ou chamada para Firebase, Next API ou runtime do `web` permanece.
 - [ ] Dados migrados/reconciliados, rollback ensaiado e evidências anexadas ao acompanhamento da migração.
 - [ ] Produto homologa regras, cálculos, documentos gerados, permissões negativas e comportamento responsivo.
+
+## Implementação inicial em 18/10/2026
+
+O new permite vincular o número do recibo a um empreendimento da organização, consultar, buscar, editar e remover o vínculo. A API expõe `GET/POST /car-records`, `GET/PATCH/DELETE /car-records/:id` e `GET /car-records/projects`, com uma relação ativa por empreendimento, claims cumulativas, isolamento por organização e versionamento.
+
+O new/API agora enviam, baixam e removem anexos PDF/ZIP/SHP (até 40 MB), com isolamento por organização, autorização CAR e metadados que identificam o provedor de armazenamento. O ambiente local usa disco persistente; para novas gravações no Microsoft 365, `FILE_STORAGE_PROVIDER=sharepoint` seleciona uma biblioteca do SharePoint Online por Microsoft Graph. A pasta precisa existir e o administrador do tenant precisa conceder acesso de escrita à aplicação. O provedor gravado em cada anexo preserva downloads e remoções após a mudança; mantenha o volume antigo até migrar arquivos previamente gravados nele. A edição substitui o recibo atual; histórico imutável de recibos ainda permanece pendente.
 
 ## Pendências para o refinamento
 

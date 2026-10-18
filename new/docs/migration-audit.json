@@ -9,9 +9,9 @@
   "summary": {
     "features": 188,
     "done": 1,
-    "concreteInventoryPatterns": 17,
+    "concreteInventoryPatterns": 18,
     "inventoryPatterns": 267,
-    "declaredApiEndpoints": 82,
+    "declaredApiEndpoints": 91,
     "forbiddenFrontendImports": 0
   },
   "caveats": [
@@ -195,6 +195,51 @@
       "method": "POST",
       "path": "/calendar-events/:id/respond",
       "source": "src/modules/calendar/presentation/calendar.controller.ts"
+    },
+    {
+      "method": "GET",
+      "path": "/car-records",
+      "source": "src/modules/car-records/car-record.controller.ts"
+    },
+    {
+      "method": "POST",
+      "path": "/car-records",
+      "source": "src/modules/car-records/car-record.controller.ts"
+    },
+    {
+      "method": "DELETE",
+      "path": "/car-records/:id",
+      "source": "src/modules/car-records/car-record.controller.ts"
+    },
+    {
+      "method": "GET",
+      "path": "/car-records/:id",
+      "source": "src/modules/car-records/car-record.controller.ts"
+    },
+    {
+      "method": "PATCH",
+      "path": "/car-records/:id",
+      "source": "src/modules/car-records/car-record.controller.ts"
+    },
+    {
+      "method": "POST",
+      "path": "/car-records/:id/files",
+      "source": "src/modules/car-records/car-record.controller.ts"
+    },
+    {
+      "method": "DELETE",
+      "path": "/car-records/:id/files/:fileId",
+      "source": "src/modules/car-records/car-record.controller.ts"
+    },
+    {
+      "method": "GET",
+      "path": "/car-records/:id/files/:fileId",
+      "source": "src/modules/car-records/car-record.controller.ts"
+    },
+    {
+      "method": "GET",
+      "path": "/car-records/projects",
+      "source": "src/modules/car-records/car-record.controller.ts"
     },
     {
       "method": "GET",
@@ -1442,19 +1487,20 @@
       "acceptance": "recibo, imóvel, geometria e histórico; AC-CRUD, AC-FILE",
       "wave": 4,
       "progress": {
-        "status": "pending",
-        "completedSteps": []
+        "status": "in_progress",
+        "completedSteps": [],
+        "evidence": "18/10/2026: primeira fatia no new e API. CRUD de recibo CAR vinculado a empreendimento, com consulta, busca paginada, edição e exclusão lógica; referência validada dentro da organização, uma relação CAR ativa por empreendimento, controle de versão e claims cumulativas. Builds dos dois projetos aprovados. Pendentes: anexos PDF/geométricos e armazenamento seguro, trilha histórica de recibos, paridade de escopo por titular/representante/equipe e homologação."
       },
       "routesCoverage": {
         "featureId": "FUN-DOC-001",
         "expected": [
           "/app/car"
         ],
-        "implemented": [],
-        "missing": [
+        "implemented": [
           "/app/car"
         ],
-        "hasConcreteRoute": false
+        "missing": [],
+        "hasConcreteRoute": true
       }
     },
     {

@@ -2,10 +2,12 @@
 import { smartAdapter } from "./http/adapters";
 import { createHttpClient } from "./http/client";
 
+export const API_BASE_URL =
+  (import.meta as ImportMeta & { env?: { VITE_API_URL?: string } }).env
+    ?.VITE_API_URL ?? "http://localhost:3001";
+
 export const api = createHttpClient({
-  baseURL:
-    (import.meta as ImportMeta & { env?: { VITE_API_URL?: string } }).env
-      ?.VITE_API_URL ?? "http://localhost:3001",
+  baseURL: API_BASE_URL,
   credentials: "include",
   adapter: smartAdapter,
   retry: {

@@ -48,6 +48,11 @@ export const initialExecutionProgress: Record<string, ExecutionProgress> = {
   completedSteps: [],
   evidence: "18/10/2026: módulo Empresas adicionado ao new com listagem, busca paginada, formulário jurídico/bancário, edição e exclusão. API /empresas-responsaveis com isolamento por organização, CNPJ único, claims cumulativas, versão otimista e exclusão lógica; builds new e API passaram. Pendentes: estado global da empresa de contrato/pagamento da plataforma, testes HTTP/isolamento e homologação visual.",
  },
+ "FUN-DOC-001": {
+  status: "in_progress",
+  completedSteps: [],
+  evidence: "18/10/2026: primeira fatia no new e API. CRUD de recibo CAR vinculado a empreendimento, com consulta, busca paginada, edição e exclusão lógica; referência validada dentro da organização, uma relação CAR ativa por empreendimento, controle de versão e claims cumulativas. Builds dos dois projetos aprovados. Pendentes: anexos PDF/geométricos e armazenamento seguro, trilha histórica de recibos, paridade de escopo por titular/representante/equipe e homologação.",
+ },
  "FUN-AGEN-001": {
   status: "in_progress",
   completedSteps: [],
