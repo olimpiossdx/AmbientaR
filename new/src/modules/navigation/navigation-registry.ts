@@ -221,7 +221,7 @@ export const adminNavigationItems: NavigationItem[] = [
   icon: Recycle,
   children: [
    legacyItem({ legacyHref: "/car", label: "CAR", icon: FileText}),
-   legacyItem({ legacyHref: "/compliance", label: "Condicionantes", icon: ClipboardCheck}),
+   { to: "/app/compliance", legacyHref: "/compliance", label: "Condicionantes", icon: ClipboardCheck, claim: { claimType: "recurso.condicionante", claimValue: "visualizar" } },
    legacyItem({ legacyHref: "/ctf-ibama", label: "CTF/IBAMA", icon: ShieldCheck}),
    legacyItem({ legacyHref: "/intervencoes", label: "DAIA's", icon: Trees}),
    legacyItem({ legacyHref: "/fauna", label: "Fauna", icon: Leaf }),

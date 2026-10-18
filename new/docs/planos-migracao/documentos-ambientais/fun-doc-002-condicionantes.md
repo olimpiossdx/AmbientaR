@@ -1,6 +1,6 @@
 # FUN-DOC-002 — Condicionantes
 
-Status: análise inicial; implementação não iniciada por este plano  
+Status: implementação parcial em `new` e `ambientaR-api`; pendente homologação e notificações automáticas
 Módulo pai: **Documentos Ambientais**  
 Origem funcional: seção “Documentos Ambientais” do catálogo  
 Dependência de acesso do pai: `modulo.documentos-ambientais=acessar`
@@ -35,12 +35,13 @@ Touchpoints detectados apenas nessas páginas (levantamento estático inicial):
 
 ## Plano do front-end (`new`)
 
-- [ ] Registrar módulo, rotas lazy, item filho e breadcrumb no registro central, mantendo **Documentos Ambientais** como pai.
-- [ ] Criar tipos de domínio de apresentação, schemas de URL/formulário e service próprio usando exclusivamente o cliente HTTP central.
-- [ ] Implementar todas as variações de tela declaradas (1), preservando busca, filtros, paginação, seleção, ações, anexos e exportações existentes que forem confirmados no refinamento.
-- [ ] Aplicar guard antes do carregamento e guard de ação para recurso.condicionante=*; não usar `role`, `isAdmin` ou Firebase como autorização.
-- [ ] Cobrir loading, vazio, erro de validação, 401, 403, 404, conflito de versão e indisponibilidade da API.
-- [ ] Garantir responsividade, teclado, foco, rótulos, feedback de operação e persistência em URL dos filtros relevantes.
+- [x] Registrar módulo, rotas lazy e item filho no registro central, mantendo **Documentos Ambientais** como pai.
+- [x] Criar tipos de domínio e service próprio usando exclusivamente o cliente HTTP central; filtros de busca, status e página ficam na URL.
+- [x] Implementar lista paginada, busca, filtro de status, cadastro, edição, exclusão lógica, mudança de status, cumprimento e evidências.
+- [x] Aplicar guard antes do carregamento e guard de ação para `recurso.condicionante=*`; não usar `role`, `isAdmin` ou Firebase como autorização.
+- [x] Cobrir carregamento, lista vazia e mensagens para 401, 403, 404, 409 e indisponibilidade.
+- [x] Usar layout responsivo, controles rotulados e feedback de operação.
+- [ ] Substituir a digitação manual do ID do documento vinculado por seletor após migrar as telas/endpoints de licença, outorga, TAC e intervenção.
 - [ ] Remover qualquer chamada direta a `/api/*` do legado; arquivos e jobs devem seguir os contratos comuns do catálogo.
 
 ## Plano da API (`ambientaR-api`)
@@ -51,35 +52,37 @@ Situação encontrada: **Não localizado no `ambientaR-api`; tratar como contrat
 
 - sem controller correspondente localizado
 
-- [ ] Refinar DTOs de entrada/saída, filtros, ordenação, paginação, erros de campo e envelope sem expor schema de banco.
-- [ ] Implementar controller fino, caso de uso, regras de domínio/policy, porta de repositório e adaptador de infraestrutura.
-- [ ] Declarar claim no controller e valor em cada ação; aplicar escopo no repositório antes de consultar, agregar ou alterar.
-- [ ] Derivar tenant, titularidade e autor da sessão; nunca confiar nesses campos vindos do payload.
-- [ ] Aplicar idempotência, controle de versão, auditoria, correlação e exclusão lógica conforme o risco da operação.
-- [ ] Para arquivos, integrações e processamento pesado, aplicar respectivamente `API-FILE`, `API-INTEGRATION` e `API-JOB` do catálogo.
-- [ ] Criar testes unitários de domínio, integração HTTP e contrato para autorizado, sem claim, fora do escopo, payload inválido e conflito.
+- [x] Definir DTOs, filtros, paginação e validação de entrada sem expor schema de banco.
+- [x] Implementar controller, serviço de aplicação, repositório Mongo, autorização e exclusão lógica.
+- [x] Declarar `recurso.condicionante` e restringir consultas/mutações à organização da sessão.
+- [x] Derivar organização e autor da sessão; rejeitar tenant/autor enviados no payload.
+- [x] Aplicar controle de versão em edição, status e exclusão, log de auditoria e cumprimento idempotente.
+- [x] Salvar evidências PDF/JPG/PNG pelo `FILE_STORAGE_PROVIDER` (local ou SharePoint/Microsoft Graph).
+- [ ] Completar testes do serviço, integração HTTP e autorização negativa (claim ausente, outro tenant e conflito).
+- [ ] Automatizar notificações de prazo; nesta entrega, vencimento é calculado e sinalizado visualmente na lista.
 
 ## Sequência de migração
 
-1. Refinar o comportamento real percorrendo páginas, componentes, hooks, coleções, regras e documentos vinculados.
-2. Congelar contrato e matriz de autorização/escopo antes de desenvolver a tela.
-3. Implementar domínio e endpoint no `ambientaR-api`, com testes negativos.
-4. Implementar o módulo no `new`, integrar ao endpoint e completar estados de interface.
-5. Executar testes verticais, homologar desktop/mobile e liberar por feature flag.
-6. Comparar dados/resultados com o legado e só então retirar a rota antiga.
+1. [x] Refinar o comportamento principal do formulário e da listagem legados.
+2. [x] Definir contrato inicial, claims e escopo organizacional.
+3. [x] Implementar domínio e endpoint; testes de integração e autorização negativa seguem pendentes.
+4. [x] Integrar o módulo `new` ao endpoint com CRUD, filtros, status e evidências.
+5. [ ] Executar testes verticais, homologar desktop/mobile e liberar por feature flag.
+6. [ ] Reconciliar dados com o legado e retirar a rota antiga após homologação.
 
 ## Critérios de aceite e saída
 
-- [ ] Regra específica validada: prazo, recorrência, evidência e alerta; AC-WORKFLOW, AC-FILE.
+- [ ] Regra específica homologada: prazo e recorrência disponíveis; evidência obrigatória para cumprimento; alerta visual de atraso. Notificação automática segue pendente.
 - [ ] Critérios comuns aplicáveis (`AC-FRONT`, `AC-CRUD`, `AC-READ`, `AC-WORKFLOW`, `AC-FILE`, `AC-JOB`, `AC-INT`) atendidos conforme o contrato.
-- [ ] Menu pai, filho, rota, botões e endpoint negam acesso de forma coerente.
-- [ ] Nenhum import ou chamada para Firebase, Next API ou runtime do `web` permanece.
+- [x] Menu filho, rota, ações e endpoint aplicam as claims da funcionalidade.
+- [x] O módulo `new` não importa Firebase, Next API ou runtime do `web`.
 - [ ] Dados migrados/reconciliados, rollback ensaiado e evidências anexadas ao acompanhamento da migração.
 - [ ] Produto homologa regras, cálculos, documentos gerados, permissões negativas e comportamento responsivo.
 
 ## Pendências para o refinamento
 
-- Confirmar campos, validações, estados, transições e mensagens que hoje vivem em componentes importados.
-- Confirmar fonte de dados, estratégia de migração, volume, retenção, anexos e deduplicação.
+- [x] Confirmar os campos principais, status, recorrência e anexos do formulário legado.
+- [ ] Confirmar estratégia de migração, volume, retenção e reconciliação de referências; os IDs externos são preservados como texto nesta etapa.
+- [ ] Definir regra e canal das notificações automáticas de prazo.
 - Confirmar se rotas auxiliares sem entrada direta de menu são telas do mesmo filho ou ações internas.
 - Resolver qualquer divergência entre contrato proposto e endpoints já existentes antes de codificar.
