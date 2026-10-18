@@ -67,3 +67,8 @@ Implementado núcleo de `FUN-CAD-002`: três rotas concretas no `new`, API exclu
 Próximo encadeamento: vínculo de empreendimentos com a nova coleção comercial, sem reutilizar IDs de `User`; cadastro de empresas responsáveis separado de `Organization` (a fronteira de isolamento). O formulário legado de empresas contém dados bancários/Pix e seleção de empresa ativa, que exigem contrato específico e não devem ser tratados como campos de configuração da organização.
 
 A auditoria agora resolve pais de rotas declarados no mesmo arquivo e registra 11/267 padrões concretos, 67 endpoints declarados e zero imports proibidos. Isso não representa conclusão funcional de todas essas rotas.
+
+
+## Onda seguinte — base de Empreendimentos (12/10/2026)
+
+Iniciada FUN-CAD-003 com listagem e CRUD no new e API `ambientaR-api:/empreendimentos`. O backend valida vínculo a Empreendedor da mesma empresa, deriva tenant/autor da sessão, usa claims cumulativas, versionamento e exclusão lógica. Os dados técnicos do legado são preservados em JSON limitado na edição enquanto as Listagens A–H são migradas. Builds do new e API passaram; o build front reporta o aviso já conhecido de chunk principal acima de 500 kB. A FUN continua em andamento. Limite do plano no servidor, anexos, CAR/perímetro, escopo de portal/equipe, campos completos, integração com módulos dependentes e homologação precisam vir antes de produção.

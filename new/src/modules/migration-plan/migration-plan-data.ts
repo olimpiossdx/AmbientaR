@@ -23,6 +23,11 @@ export const initialExecutionProgress: Record<string, ExecutionProgress> = {
   completedSteps: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
   evidence: "Concluído em 22/07/2026: login público por e-mail/CPF/CNPJ, sessão por cookies HttpOnly, claims efetivas, redirecionamento interno validado, mensagens sem enumeração, rate limiting e auditoria sem PII. Evidências: 42 testes + build do new; 68 testes + build do ambientaR-api.",
  },
+ "FUN-AUTH-002": {
+  status: "in_progress",
+  completedSteps: [],
+  evidence: "12/10/2026: fluxo pós-cadastro implementado: sessão em register/login/session/refresh retorna modo, estado e próximo passo; /app/primeiros-passos oferece criação de empresa a titular e pedido de acesso a representantes/consultores. Aprovação do titular vincula à empresa sem conceder claims; empresa nova recebe grupo inicial de gestão restrito ao tenant, e módulos de negócio seguem sem acesso até atribuição explícita. Menu oculta folhas sem claim e catch-all legado nega rota sem claim catalogada. Validação: build + 83 testes do new; tsc + 110 testes da API. FUN-AUTH-002 continua em execução para homologação das jornadas e paridade completa do formulário legado. Ver planos-migracao/acesso-sessao/fun-auth-002-cadastro.md.",
+ },
  "FUN-CAD-001": {
   status: "in_progress",
   completedSteps: [],
@@ -32,6 +37,11 @@ export const initialExecutionProgress: Record<string, ExecutionProgress> = {
   status: "in_progress",
   completedSteps: [],
   evidence: "27/09/2026: rotas /app/empreendedores, /new e /$id/edit implementadas no new. CRUD /empreendedores no ambientaR-api com cadastro comercial separado de identidade, claims cumulativas, isolamento por empresa, índice único por empresa/documento, versão atômica e exclusão lógica. Testes HTTP reais com MongoDB e Redis aprovados para duplicidade, acesso cruzado e concorrência. Pendentes: vínculos/aprovações de representantes, importação de clientes, mesclagem, CTF detalhado, IA, MTR, reconciliação e homologação visual.",
+ },
+ "FUN-CAD-003": {
+  status: "in_progress",
+  completedSteps: [],
+  evidence: "12/10/2026: fluxo base no new (/app/projects, /new, /$id/edit) e API /empreendimentos implementados. Busca por imóvel/município/atividade/CNPJ/empreendedor, filtro de situação no servidor, paginação, visualização, CRUD com versão e exclusão lógica; organizationId e auditor vêm da sessão; referência Entrepreneur exige vínculo na mesma empresa. Pacote gratuito e contador por empresa agora limitam a criação também no servidor, com uso exibido no new; limite é compartilhado por todos os membros do tenant. Formulário geral inclui endereço, condição do empreendedor e entrada/validação de coordenadas UTM/GMS; SIRGAS 2000 UTM nos fusos sul 22–24 agora é convertido para decimal e exibido antes de salvar. Edição preserva dados técnicos JSON existentes. Pendentes: assinaturas pagas/alteração de pacote, Listagens A–H, outros datums e regras ambientais condicionais, arquivos/CAR/perímetros, escopo por empreendedor/portal e equipes, dependências dos demais módulos, reconciliação/homologação visual.",
  },
  "FUN-AGEN-001": {
   status: "in_progress",

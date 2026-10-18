@@ -24,8 +24,8 @@ export function inputOnly(value: EntrepreneurInput): EntrepreneurInput {
 }
 export function createEntrepreneursService(client: HttpClient) {
  return {
-  async list(search: string, page: number, signal?: AbortSignal) {
-   const response = await client.get<unknown>("/empreendedores", { params: { search, page, size: 10 }, signal });
+  async list(search: string, page: number, signal?: AbortSignal, size = 10) {
+   const response = await client.get<unknown>("/empreendedores", { params: { search, page, size: Math.min(100, Math.max(1, size)) }, signal });
    const result = data(response);
    if (Array.isArray(result)) {
     if (!Number.isSafeInteger(response.total) || Number(response.total) < 0) throw new Error("Listagem inválida.");

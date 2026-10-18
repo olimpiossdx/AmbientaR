@@ -9,9 +9,9 @@
   "summary": {
     "features": 188,
     "done": 1,
-    "concreteInventoryPatterns": 11,
+    "concreteInventoryPatterns": 14,
     "inventoryPatterns": 267,
-    "declaredApiEndpoints": 67,
+    "declaredApiEndpoints": 73,
     "forbiddenFrontendImports": 0
   },
   "caveats": [
@@ -235,6 +235,36 @@
       "method": "POST",
       "path": "/empreendimento/seed",
       "source": "src/controllers/empreendimento/controller.ts"
+    },
+    {
+      "method": "GET",
+      "path": "/empreendimentos",
+      "source": "src/modules/projects/project.controller.ts"
+    },
+    {
+      "method": "POST",
+      "path": "/empreendimentos",
+      "source": "src/modules/projects/project.controller.ts"
+    },
+    {
+      "method": "DELETE",
+      "path": "/empreendimentos/:id",
+      "source": "src/modules/projects/project.controller.ts"
+    },
+    {
+      "method": "GET",
+      "path": "/empreendimentos/:id",
+      "source": "src/modules/projects/project.controller.ts"
+    },
+    {
+      "method": "PATCH",
+      "path": "/empreendimentos/:id",
+      "source": "src/modules/projects/project.controller.ts"
+    },
+    {
+      "method": "GET",
+      "path": "/empreendimentos/usage",
+      "source": "src/modules/projects/project.controller.ts"
     },
     {
       "method": "DELETE",
@@ -1302,8 +1332,9 @@
       "acceptance": "vínculo autorizado, coordenadas, pacote e status; AC-CRUD",
       "wave": 3,
       "progress": {
-        "status": "pending",
-        "completedSteps": []
+        "status": "in_progress",
+        "completedSteps": [],
+        "evidence": "12/10/2026: fluxo base no new (/app/projects, /new, /$id/edit) e API /empreendimentos implementados. Busca por imóvel/município/atividade/CNPJ/empreendedor, filtro de situação no servidor, paginação, visualização, CRUD com versão e exclusão lógica; organizationId e auditor vêm da sessão; referência Entrepreneur exige vínculo na mesma empresa. Pacote gratuito e contador por empresa agora limitam a criação também no servidor, com uso exibido no new; limite é compartilhado por todos os membros do tenant. Formulário geral inclui endereço, condição do empreendedor e entrada/validação de coordenadas UTM/GMS; edição preserva dados técnicos JSON existentes. Pendentes: assinaturas pagas/alteração de pacote, Listagens A–H, conversão UTM e regras ambientais condicionais, arquivos/CAR/perímetros, escopo por empreendedor/portal e equipes, dependências dos demais módulos, reconciliação/homologação visual."
       },
       "routesCoverage": {
         "featureId": "FUN-CAD-003",
@@ -1312,13 +1343,13 @@
           "/app/projects/new",
           "/app/projects/$id/edit"
         ],
-        "implemented": [],
-        "missing": [
+        "implemented": [
           "/app/projects",
           "/app/projects/new",
           "/app/projects/$id/edit"
         ],
-        "hasConcreteRoute": false
+        "missing": [],
+        "hasConcreteRoute": true
       }
     },
     {

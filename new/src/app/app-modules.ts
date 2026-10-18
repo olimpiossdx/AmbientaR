@@ -1,3 +1,4 @@
+import { projectsModule } from "../modules/projects/projects.module";
 import { entrepreneursModule } from "../modules/entrepreneurs/entrepreneurs.module";
 import { organizationModule } from "../modules/organization/organization.module";
 import { agendaModule } from "../modules/agenda/agenda.module";
@@ -14,6 +15,7 @@ export const appModules = defineAppModules(
  migrationPlanModule,
  usersModule,
  entrepreneursModule,
+ projectsModule,
  agendaModule,
  legacyFeatureModule,
  examplesModule,

@@ -73,10 +73,12 @@ Auditoria regenerável: `npm run migration:audit` em `new`. Evidências e fila: 
 
 #### Próxima sequência obrigatória
 
-1. Homologar a fundação multiempresa em MongoDB/Redis de teste; classificar dados existentes antes de associar empresas.
-2. Fechar Usuários/organizações: provisionamento, membros, autorização, concorrência e relações com clientes/empreendedores. Separar identidade de login de cadastro comercial para não impor unicidade global de CPF/CNPJ aos dados de cada empresa.
-3. Fechar Agenda e Painel sem considerar concluídos os widgets de domínios ainda não implementados.
-4. Executar as ondas das seções seguintes até cobrir cada uma das 188 funcionalidades e todas as variações do inventário.
+1. **P0 — Cadastro, primeiros passos e autorização coerente:** concluir FUN-AUTH-002, recuperar a jornada dos três modos de cadastro, definir ações por estado persistido, devolver onboarding na sessão e demonstrar que menu, rota direta e API aplicam as mesmas claims efetivas. Critérios em [FUN-AUTH-002 — Cadastro](planos-migracao/acesso-sessao/fun-auth-002-cadastro.md).
+2. Homologar a fundação multiempresa em MongoDB/Redis de teste; classificar dados existentes antes de associar empresas.
+3. Fechar Usuários/organizações: provisionamento, membros, autorização, concorrência e relações com clientes/empreendedores. Separar identidade de login de cadastro comercial para não impor unicidade global de CPF/CNPJ aos dados de cada empresa.
+4. Retomar e concluir Empreendimentos e as demais funcionalidades de cadastro após o gate P0; a implementação atual permanece parcial.
+5. Fechar Agenda e Painel sem considerar concluídos os widgets de domínios ainda não implementados.
+6. Executar as ondas das seções seguintes até cobrir cada uma das 188 funcionalidades e todas as variações do inventário.
 
 ## 3. Princípios obrigatórios
 

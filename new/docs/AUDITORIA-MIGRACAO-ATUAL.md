@@ -2,7 +2,7 @@
 
 Gerar com `npm run migration:audit` em `new`. API padrão: projeto irmão `ambientaR-api`; alternativa: `AMBIENTAR_API_PATH`.
 
-301 páginas e 157 rotas de API no legado. 188 funcionalidades catalogadas; 1 com status concluído. 11/267 padrões de rota com implementação declarada. 67 endpoints declarados na API; 0 imports proibidos no frontend.
+301 páginas e 157 rotas de API no legado. 188 funcionalidades catalogadas; 1 com status concluído. 14/267 padrões de rota com implementação declarada. 73 endpoints declarados na API; 0 imports proibidos no frontend.
 
 Contagem de rotas não é contagem de funcionalidades migradas. Dados e evidências por funcionalidade, contratos e endpoints: [migration-audit.json](migration-audit.json).
 
@@ -43,7 +43,7 @@ Contagem de rotas não é contagem de funcionalidades migradas. Dados e evidênc
 | FUN-FIN-025 | Tabela de Serviços | 6 | pending | 0/3 |
 | FUN-CAD-001 | Usuários | 2 | in_progress | 1/1 |
 | FUN-CAD-002 | Empreendedores | 3 | in_progress | 3/3 |
-| FUN-CAD-003 | Empreendimentos | 3 | pending | 0/3 |
+| FUN-CAD-003 | Empreendimentos | 3 | in_progress | 3/3 |
 | FUN-CAD-004 | Empresas | 3 | pending | 0/3 |
 | FUN-DOC-001 | CAR | 4 | pending | 0/1 |
 | FUN-DOC-002 | Condicionantes | 4 | pending | 0/1 |
