@@ -43,6 +43,11 @@ export const initialExecutionProgress: Record<string, ExecutionProgress> = {
   completedSteps: [],
   evidence: "12/10/2026: fluxo base no new (/app/projects, /new, /$id/edit) e API /empreendimentos implementados. Busca por imóvel/município/atividade/CNPJ/empreendedor, filtro de situação no servidor, paginação, visualização, CRUD com versão e exclusão lógica; organizationId e auditor vêm da sessão; referência Entrepreneur exige vínculo na mesma empresa. Pacote gratuito e contador por empresa agora limitam a criação também no servidor, com uso exibido no new; limite é compartilhado por todos os membros do tenant. Formulário geral inclui endereço, condição do empreendedor e entrada/validação de coordenadas UTM/GMS; SIRGAS 2000 UTM nos fusos sul 22–24 agora é convertido para decimal e exibido antes de salvar. Edição preserva dados técnicos JSON existentes. Pendentes: assinaturas pagas/alteração de pacote, Listagens A–H, outros datums e regras ambientais condicionais, arquivos/CAR/perímetros, escopo por empreendedor/portal e equipes, dependências dos demais módulos, reconciliação/homologação visual.",
  },
+ "FUN-CAD-004": {
+  status: "in_progress",
+  completedSteps: [],
+  evidence: "18/10/2026: módulo Empresas adicionado ao new com listagem, busca paginada, formulário jurídico/bancário, edição e exclusão. API /empresas-responsaveis com isolamento por organização, CNPJ único, claims cumulativas, versão otimista e exclusão lógica; builds new e API passaram. Pendentes: estado global da empresa de contrato/pagamento da plataforma, testes HTTP/isolamento e homologação visual.",
+ },
  "FUN-AGEN-001": {
   status: "in_progress",
   completedSteps: [],

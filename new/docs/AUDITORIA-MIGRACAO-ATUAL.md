@@ -2,14 +2,14 @@
 
 Gerar com `npm run migration:audit` em `new`. API padrão: projeto irmão `ambientaR-api`; alternativa: `AMBIENTAR_API_PATH`.
 
-301 páginas e 157 rotas de API no legado. 188 funcionalidades catalogadas; 1 com status concluído. 14/267 padrões de rota com implementação declarada. 73 endpoints declarados na API; 0 imports proibidos no frontend.
+301 páginas e 157 rotas de API no legado. 188 funcionalidades catalogadas; 1 com status concluído. 17/267 padrões de rota com implementação declarada. 82 endpoints declarados na API; 0 imports proibidos no frontend.
 
 Contagem de rotas não é contagem de funcionalidades migradas. Dados e evidências por funcionalidade, contratos e endpoints: [migration-audit.json](migration-audit.json).
 
 | Funcionalidade | Nome | Onda | Estado | Rotas concretas/esperadas |
 | --- | --- | --- | --- | --- |
 | FUN-AUTH-001 | Login | 1 | done | 1/1 |
-| FUN-AUTH-002 | Cadastro | 1 | pending | 1/1 |
+| FUN-AUTH-002 | Cadastro e primeiros passos | 1 | in_progress | 3/3 |
 | FUN-AUTH-003 | Recuperar senha | 1 | pending | 1/1 |
 | FUN-AUTH-004 | Política de privacidade | 1 | pending | 1/1 |
 | FUN-AUTH-005 | Estado offline | 1 | pending | 1/1 |
@@ -44,7 +44,7 @@ Contagem de rotas não é contagem de funcionalidades migradas. Dados e evidênc
 | FUN-CAD-001 | Usuários | 2 | in_progress | 1/1 |
 | FUN-CAD-002 | Empreendedores | 3 | in_progress | 3/3 |
 | FUN-CAD-003 | Empreendimentos | 3 | in_progress | 3/3 |
-| FUN-CAD-004 | Empresas | 3 | pending | 0/3 |
+| FUN-CAD-004 | Empresas | 3 | in_progress | 3/3 |
 | FUN-DOC-001 | CAR | 4 | pending | 0/1 |
 | FUN-DOC-002 | Condicionantes | 4 | pending | 0/1 |
 | FUN-DOC-003 | CTF/IBAMA | 4 | pending | 0/1 |

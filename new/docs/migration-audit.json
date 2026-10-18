@@ -9,9 +9,9 @@
   "summary": {
     "features": 188,
     "done": 1,
-    "concreteInventoryPatterns": 14,
+    "concreteInventoryPatterns": 17,
     "inventoryPatterns": 267,
-    "declaredApiEndpoints": 73,
+    "declaredApiEndpoints": 82,
     "forbiddenFrontendImports": 0
   },
   "caveats": [
@@ -21,6 +21,26 @@
   ],
   "violations": [],
   "endpoints": [
+    {
+      "method": "POST",
+      "path": "/auth/access-requests",
+      "source": "src/modules/access-requests/access-request.controller.ts"
+    },
+    {
+      "method": "PATCH",
+      "path": "/auth/access-requests/:requestId",
+      "source": "src/modules/access-requests/access-request.controller.ts"
+    },
+    {
+      "method": "GET",
+      "path": "/auth/access-requests/mine",
+      "source": "src/modules/access-requests/access-request.controller.ts"
+    },
+    {
+      "method": "GET",
+      "path": "/auth/access-requests/received",
+      "source": "src/modules/access-requests/access-request.controller.ts"
+    },
     {
       "method": "POST",
       "path": "/auth/login",
@@ -267,6 +287,31 @@
       "source": "src/modules/projects/project.controller.ts"
     },
     {
+      "method": "GET",
+      "path": "/empresas-responsaveis",
+      "source": "src/modules/companies-responsible/company.controller.ts"
+    },
+    {
+      "method": "POST",
+      "path": "/empresas-responsaveis",
+      "source": "src/modules/companies-responsible/company.controller.ts"
+    },
+    {
+      "method": "DELETE",
+      "path": "/empresas-responsaveis/:id",
+      "source": "src/modules/companies-responsible/company.controller.ts"
+    },
+    {
+      "method": "GET",
+      "path": "/empresas-responsaveis/:id",
+      "source": "src/modules/companies-responsible/company.controller.ts"
+    },
+    {
+      "method": "PATCH",
+      "path": "/empresas-responsaveis/:id",
+      "source": "src/modules/companies-responsible/company.controller.ts"
+    },
+    {
       "method": "DELETE",
       "path": "/estado/:id",
       "source": "src/controllers/estado/controller.ts"
@@ -428,23 +473,28 @@
     {
       "id": "FUN-AUTH-002",
       "group": "Rotas públicas e sessão",
-      "name": "Cadastro",
-      "routes": "/register",
-      "api": "POST /auth/register, POST /auth/register/document-preview",
+      "name": "Cadastro e primeiros passos",
+      "routes": "/register, /app/primeiros-passos, /app/organization",
+      "api": "POST /auth/register, POST /auth/register/document-preview, GET /auth/session, POST /organizations, /auth/access-requests/*",
       "claims": "Claim da funcionalidade definida pela família no DOC-CATALOGO",
-      "acceptance": "documento único, senha com hash, cadastro parcial consistente e sessão válida",
+      "acceptance": "documento único, senha com hash, continuação por estado; titularidade/vínculos validados pela API; menu/rota/API coerentes com claims e sem acesso direto indevido; ver plano P0 FUN-AUTH-002",
       "wave": 1,
       "progress": {
-        "status": "pending",
-        "completedSteps": []
+        "status": "in_progress",
+        "completedSteps": [],
+        "evidence": "12/10/2026: fluxo pós-cadastro implementado: sessão em register/login/session/refresh retorna modo, estado e próximo passo; /app/primeiros-passos oferece criação de empresa a titular e pedido de acesso a representantes/consultores. Aprovação do titular vincula à empresa sem conceder claims; empresa nova recebe grupo inicial de gestão restrito ao tenant, e módulos de negócio seguem sem acesso até atribuição explícita. Menu oculta folhas sem claim e catch-all legado nega rota sem claim catalogada. Validação: build + 83 testes do new; tsc + 110 testes da API. FUN-AUTH-002 continua em execução para homologação das jornadas e paridade completa do formulário legado. Ver planos-migracao/acesso-sessao/fun-auth-002-cadastro.md."
       },
       "routesCoverage": {
         "featureId": "FUN-AUTH-002",
         "expected": [
-          "/register"
+          "/register",
+          "/app/primeiros-passos",
+          "/app/organization"
         ],
         "implemented": [
-          "/register"
+          "/register",
+          "/app/primeiros-passos",
+          "/app/organization"
         ],
         "missing": [],
         "hasConcreteRoute": true
@@ -557,7 +607,7 @@
       "routes": "/app",
       "api": "GET /dashboard",
       "claims": "recurso.dashboard=visualizar",
-      "acceptance": "API retorna somente widgets autorizados e agregados já escopados; AC-READ, AC-FRONT",
+      "acceptance": "API retorna somente widgets autorizados e agregados já escopados; onboarding/primeiros passos nunca ficam ocultos por painel genérico; AC-READ, AC-FRONT; depende do gate P0 FUN-AUTH-002",
       "wave": 2,
       "progress": {
         "status": "in_progress",
@@ -1334,7 +1384,7 @@
       "progress": {
         "status": "in_progress",
         "completedSteps": [],
-        "evidence": "12/10/2026: fluxo base no new (/app/projects, /new, /$id/edit) e API /empreendimentos implementados. Busca por imóvel/município/atividade/CNPJ/empreendedor, filtro de situação no servidor, paginação, visualização, CRUD com versão e exclusão lógica; organizationId e auditor vêm da sessão; referência Entrepreneur exige vínculo na mesma empresa. Pacote gratuito e contador por empresa agora limitam a criação também no servidor, com uso exibido no new; limite é compartilhado por todos os membros do tenant. Formulário geral inclui endereço, condição do empreendedor e entrada/validação de coordenadas UTM/GMS; edição preserva dados técnicos JSON existentes. Pendentes: assinaturas pagas/alteração de pacote, Listagens A–H, conversão UTM e regras ambientais condicionais, arquivos/CAR/perímetros, escopo por empreendedor/portal e equipes, dependências dos demais módulos, reconciliação/homologação visual."
+        "evidence": "12/10/2026: fluxo base no new (/app/projects, /new, /$id/edit) e API /empreendimentos implementados. Busca por imóvel/município/atividade/CNPJ/empreendedor, filtro de situação no servidor, paginação, visualização, CRUD com versão e exclusão lógica; organizationId e auditor vêm da sessão; referência Entrepreneur exige vínculo na mesma empresa. Pacote gratuito e contador por empresa agora limitam a criação também no servidor, com uso exibido no new; limite é compartilhado por todos os membros do tenant. Formulário geral inclui endereço, condição do empreendedor e entrada/validação de coordenadas UTM/GMS; SIRGAS 2000 UTM nos fusos sul 22–24 agora é convertido para decimal e exibido antes de salvar. Edição preserva dados técnicos JSON existentes. Pendentes: assinaturas pagas/alteração de pacote, Listagens A–H, outros datums e regras ambientais condicionais, arquivos/CAR/perímetros, escopo por empreendedor/portal e equipes, dependências dos demais módulos, reconciliação/homologação visual."
       },
       "routesCoverage": {
         "featureId": "FUN-CAD-003",
@@ -1362,8 +1412,9 @@
       "acceptance": "CNPJ, responsáveis e apenas uma empresa ativa quando aplicável; AC-CRUD",
       "wave": 3,
       "progress": {
-        "status": "pending",
-        "completedSteps": []
+        "status": "in_progress",
+        "completedSteps": [],
+        "evidence": "18/10/2026: módulo Empresas adicionado ao new com listagem, busca paginada, formulário jurídico/bancário, edição e exclusão. API /empresas-responsaveis com isolamento por organização, CNPJ único, claims cumulativas, versão otimista e exclusão lógica; builds new e API passaram. Pendentes: estado global da empresa de contrato/pagamento da plataforma, testes HTTP/isolamento e homologação visual."
       },
       "routesCoverage": {
         "featureId": "FUN-CAD-004",
@@ -1372,13 +1423,13 @@
           "/app/responsible-company/new",
           "/app/responsible-company/$id/edit"
         ],
-        "implemented": [],
-        "missing": [
+        "implemented": [
           "/app/responsible-company",
           "/app/responsible-company/new",
           "/app/responsible-company/$id/edit"
         ],
-        "hasConcreteRoute": false
+        "missing": [],
+        "hasConcreteRoute": true
       }
     },
     {

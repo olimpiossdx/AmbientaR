@@ -1,6 +1,6 @@
 # FUN-CAD-004 — Empresas
 
-Status: análise inicial; implementação não iniciada por este plano  
+Status: em implementação; CRUD básico integrado em 18/10/2026
 Módulo pai: **Cadastro**  
 Origem funcional: seção “Cadastro” do catálogo  
 Dependência de acesso do pai: `modulo.cadastro=acessar`
@@ -39,29 +39,26 @@ Touchpoints detectados apenas nessas páginas (levantamento estático inicial):
 
 ## Plano do front-end (`new`)
 
-- [ ] Registrar módulo, rotas lazy, item filho e breadcrumb no registro central, mantendo **Cadastro** como pai.
-- [ ] Criar tipos de domínio de apresentação, schemas de URL/formulário e service próprio usando exclusivamente o cliente HTTP central.
-- [ ] Implementar todas as variações de tela declaradas (3), preservando busca, filtros, paginação, seleção, ações, anexos e exportações existentes que forem confirmados no refinamento.
-- [ ] Aplicar guard antes do carregamento e guard de ação para recurso.empresa-responsavel=*; não usar `role`, `isAdmin` ou Firebase como autorização.
-- [ ] Cobrir loading, vazio, erro de validação, 401, 403, 404, conflito de versão e indisponibilidade da API.
-- [ ] Garantir responsividade, teclado, foco, rótulos, feedback de operação e persistência em URL dos filtros relevantes.
+- [x] Registrar módulo, rotas lazy e item filho no registro central, mantendo **Cadastro** como pai.
+- [x] Criar tipos de apresentação e service HTTP próprio.
+- [x] Implementar listagem paginada, busca por razão social/nome fantasia/CNPJ, criação, edição e exclusão.
+- [x] Aplicar guard de rota e ações para recurso.empresa-responsavel=*; autorização adicional é exigida pela API.
+- [x] Cobrir estados de carregamento, vazio, erros HTTP e conflito de versão.
+- [ ] Confirmar paridade visual, teclado, foco e rótulos na homologação.
 - [ ] Remover qualquer chamada direta a `/api/*` do legado; arquivos e jobs devem seguir os contratos comuns do catálogo.
 
 ## Plano da API (`ambientaR-api`)
 
 Contrato alvo: CRUD /empresas-responsaveis.
 
-Situação encontrada: **Não localizado no `ambientaR-api`; tratar como contrato e implementação novos**.
+Situação encontrada: **CRUD `/empresas-responsaveis` implementado no `ambientaR-api` em 18/10/2026**.
 
-- sem controller correspondente localizado
-
-- [ ] Refinar DTOs de entrada/saída, filtros, ordenação, paginação, erros de campo e envelope sem expor schema de banco.
-- [ ] Implementar controller fino, caso de uso, regras de domínio/policy, porta de repositório e adaptador de infraestrutura.
-- [ ] Declarar claim no controller e valor em cada ação; aplicar escopo no repositório antes de consultar, agregar ou alterar.
-- [ ] Derivar tenant, titularidade e autor da sessão; nunca confiar nesses campos vindos do payload.
-- [ ] Aplicar idempotência, controle de versão, auditoria, correlação e exclusão lógica conforme o risco da operação.
-- [ ] Para arquivos, integrações e processamento pesado, aplicar respectivamente `API-FILE`, `API-INTEGRATION` e `API-JOB` do catálogo.
-- [ ] Criar testes unitários de domínio, integração HTTP e contrato para autorizado, sem claim, fora do escopo, payload inválido e conflito.
+- [x] Validar DTOs, filtros, paginação e rejeitar propriedades não permitidas.
+- [x] Implementar controller, serviço e repositório isolados por organização.
+- [x] Declarar claims cumulativas Cadastro + empresa responsável; escopo aplicado em cada consulta e mutação.
+- [x] Derivar organização da sessão; não aceitar tenant ou autor no payload.
+- [x] Aplicar CNPJ único por organização, versão otimista, log de ação e exclusão lógica.
+- [ ] Testar contrato HTTP e tentativas de acesso entre organizações.
 
 ## Sequência de migração
 
@@ -80,6 +77,14 @@ Situação encontrada: **Não localizado no `ambientaR-api`; tratar como contrat
 - [ ] Nenhum import ou chamada para Firebase, Next API ou runtime do `web` permanece.
 - [ ] Dados migrados/reconciliados, rollback ensaiado e evidências anexadas ao acompanhamento da migração.
 - [ ] Produto homologa regras, cálculos, documentos gerados, permissões negativas e comportamento responsivo.
+
+## Implementação em 18/10/2026
+
+No `new`: menu Cadastro → Empresas, rotas de listagem/criação/edição, busca paginada, formulário com dados jurídicos, endereço, contato, banco e PIX. Claims cumulativas protegem as rotas e os botões.
+
+Na API: `GET/POST /empresas-responsaveis`, `GET/PATCH/DELETE /empresas-responsaveis/:id`; filtros limitados, CNPJ normalizado e único por organização, escopo derivado da sessão, versionamento e exclusão lógica. Build de frontend e API aprovados.
+
+**Pendente:** definir como a opção de empresa usada no contrato/pagamento da plataforma será administrada; integrar esse estado sem misturá-lo ao tenant, e homologar UI, claims, concorrência, dados e exclusão.
 
 ## Pendências para o refinamento
 
